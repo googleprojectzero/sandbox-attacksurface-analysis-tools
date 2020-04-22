@@ -231,6 +231,33 @@ namespace NtApiDotNet.Win32.Security.AuthZ
         }
 
         /// <summary>
+        /// Add a SID to the context.
+        /// </summary>
+        /// <param name="sid">The SID to add.</param>
+        public void AddSid(Sid sid)
+        {
+            ModifyGroups(AuthZGroupSidType.Normal, new Sid[] { sid }, AuthZSidOperation.Add);
+        }
+
+        /// <summary>
+        /// Add a Device SID to the context.
+        /// </summary>
+        /// <param name="sid">The SID to add.</param>
+        public void AddDeviceSid(Sid sid)
+        {
+            ModifyGroups(AuthZGroupSidType.Device, new Sid[] { sid }, AuthZSidOperation.Add);
+        }
+
+        /// <summary>
+        /// Add a Device SID to the context.
+        /// </summary>
+        /// <param name="sid">The SID to add.</param>
+        public void AddRestrictedSid(Sid sid)
+        {
+            ModifyGroups(AuthZGroupSidType.Restricted, new Sid[] { sid }, AuthZSidOperation.Add);
+        }
+
+        /// <summary>
         /// Perform an Access Check.
         /// </summary>
         /// <param name="sd">The security descriptor for the check.</param>

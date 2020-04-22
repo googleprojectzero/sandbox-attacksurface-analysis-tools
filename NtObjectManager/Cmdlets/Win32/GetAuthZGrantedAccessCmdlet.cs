@@ -18,7 +18,6 @@ using NtApiDotNet.Win32.Security.AuthZ;
 using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;
-using System.Security.Permissions;
 
 namespace NtObjectManager.Cmdlets.Win32
 {
@@ -33,7 +32,7 @@ namespace NtObjectManager.Cmdlets.Win32
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AuthZGrantedAccess")]
     [OutputType(typeof(AuthZAccessCheckResult))]
-    public class GetAuthZGrantedAccess : PSCmdlet, IDynamicParameters
+    public class GetAuthZGrantedAccessCmdlet : PSCmdlet, IDynamicParameters
     {
         private RuntimeDefinedParameterDictionary _dict;
 

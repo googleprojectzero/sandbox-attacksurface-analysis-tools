@@ -48,7 +48,7 @@ namespace NtObjectManager.Cmdlets.Win32
 
     [Cmdlet(VerbsCommon.Set, "Win32SecurityDescriptor", DefaultParameterSetName = "FromName")]
     [OutputType(typeof(Win32SetSecurityDescriptorResult))]
-    public sealed class SetWin32SecurityDescriptor : PSCmdlet
+    public sealed class SetWin32SecurityDescriptorCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">The name of the object.</para>
@@ -179,7 +179,7 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SetWin32SecurityDescriptor()
+        public SetWin32SecurityDescriptorCmdlet()
         {
             Action = TreeSecInfo.Set;
             Type = SeObjectType.File;

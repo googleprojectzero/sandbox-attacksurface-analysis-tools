@@ -31,7 +31,7 @@ namespace NtObjectManager.Cmdlets.Win32
     /// </example>
     [Cmdlet(VerbsCommon.Search, "Win32SecurityDescriptor")]
     [OutputType(typeof(SecurityDescriptorInheritanceSource))]
-    public sealed class SearchWin32SecurityDescriptor : PSCmdlet
+    public sealed class SearchWin32SecurityDescriptorCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">The name of the object.</para>
@@ -104,7 +104,7 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SearchWin32SecurityDescriptor()
+        public SearchWin32SecurityDescriptorCmdlet()
         {
             Type = SeObjectType.File;
         }

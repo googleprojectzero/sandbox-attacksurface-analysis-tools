@@ -38,7 +38,7 @@ namespace NtObjectManager.Cmdlets.Win32
     /// </example>
     [Cmdlet(VerbsCommon.Get, "Win32SecurityDescriptor", DefaultParameterSetName = "FromName")]
     [OutputType(typeof(SecurityDescriptor))]
-    public sealed class GetWin32SecurityDescriptor : PSCmdlet
+    public sealed class GetWin32SecurityDescriptorCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">The name of the object.</para>
@@ -97,7 +97,7 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GetWin32SecurityDescriptor()
+        public GetWin32SecurityDescriptorCmdlet()
         {
             Type = SeObjectType.File;
             SecurityInformation = SecurityInformation.AllBasic;

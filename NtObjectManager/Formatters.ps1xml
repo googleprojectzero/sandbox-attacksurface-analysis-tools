@@ -2466,6 +2466,43 @@
       </TableControl>
     </View>
     <View>
+      <Name>AuthZAccessCheckResultGenericTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.Security.AuthZ.AuthZAccessCheckResult</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Error</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Granted Access</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Privileges</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Error</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>SpecificGenericGrantedAccess</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>if ($_.PrivilegesRequired.Count -gt 0) { $_.PrivilegesRequired } else { "NONE" }</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
       <Name>AccessCheckResultGenericTable</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.AccessCheckResultGeneric</TypeName>
