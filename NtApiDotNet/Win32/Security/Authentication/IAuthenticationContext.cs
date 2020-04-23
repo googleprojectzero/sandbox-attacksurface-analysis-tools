@@ -28,5 +28,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Whether the authentication is done.
         /// </summary>
         bool Done { get; }
+
+        /// <summary>
+        /// Expiry of the authentication.
+        /// </summary>
+        long Expiry { get; }
     }
 }
