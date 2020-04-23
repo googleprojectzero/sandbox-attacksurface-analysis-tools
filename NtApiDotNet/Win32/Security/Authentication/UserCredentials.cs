@@ -16,7 +16,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// Class to hold user credentials.
@@ -88,7 +88,7 @@ namespace NtApiDotNet.Win32.Security
         /// </summary>
         /// <param name="username">Username.</param>
         /// <param name="domain">Domain name.</param>
-        public UserCredentials(string username, string domain) 
+        public UserCredentials(string username, string domain)
             : this(username, domain, (SecureString)null)
         {
         }
@@ -97,7 +97,7 @@ namespace NtApiDotNet.Win32.Security
         /// Constructor.
         /// </summary>
         /// <param name="username">Username.</param>
-        public UserCredentials(string username) 
+        public UserCredentials(string username)
             : this(username, null)
         {
         }

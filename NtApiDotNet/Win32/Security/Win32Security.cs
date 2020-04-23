@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.DirectoryService;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,140 +23,6 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security
 {
-#pragma warning disable 1591
-    /// <summary>
-    /// Enumeration for object type.
-    /// </summary>
-    public enum SeObjectType
-    {
-        Unknown = 0,
-        File,
-        Service,
-        Printer,
-        RegistryKey,
-        LMShare,
-        Kernel,
-        Window,
-        Ds,
-        DsAll,
-        ProviderDefined,
-        WmiGuid,
-        RegistryWow6432Key,
-        RegistryWow6464Key
-    }
-
-    /// <summary>
-    /// Tree security mode.
-    /// </summary>
-    public enum TreeSecInfo
-    {
-        Set = 1,
-        Reset = 2,
-        ResetKeepExplicit = 3
-    }
-
-    /// <summary>
-    /// Progress invoke setting for tree security.
-    /// </summary>
-    public enum ProgressInvokeSetting
-    {
-        InvokeNever = 1,
-        EveryObject,
-        OnError,
-        CancelOperation,
-        RetryOperation,
-        PrePostError
-    }
-
-    /// <summary>
-    /// Progress function for tree named security info.
-    /// </summary>
-    /// <param name="object_name">The name of the object.</param>
-    /// <param name="status">The operation status.</param>
-    /// <param name="invoke_setting">The current invoke setting.</param>
-    /// <param name="security_set">True if security is set.</param>
-    /// <returns>The invoke setting. Return original invoke_setting if no change.</returns>
-    public delegate ProgressInvokeSetting TreeProgressFunction(string object_name, Win32Error status,
-        ProgressInvokeSetting invoke_setting, bool security_set);
-
-    /// <summary>
-    /// The source of inheritance for a resource.
-    /// </summary>
-    public class SecurityDescriptorInheritanceSource
-    {
-        /// <summary>
-        /// The depth between the resource and the parent.
-        /// </summary>
-        public int Depth { get; }
-
-        /// <summary>
-        /// The name of the ancestor.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// The security descriptor if accessible.
-        /// </summary>
-        public SecurityDescriptor SecurityDescriptor { get; }
-
-        /// <summary>
-        /// The original ACE which was inherited.
-        /// </summary>
-        public Ace InheritedAce { get; }
-
-        /// <summary>
-        /// The SID of the original ACE.
-        /// </summary>
-        public Sid Sid { get; }
-
-        /// <summary>
-        /// Access mask as a formatted string.
-        /// </summary>
-        public string Access { get; }
-
-        /// <summary>
-        /// Generic access mask as a formatted string.
-        /// </summary>
-        public string GenericAccess { get; }
-
-        internal SecurityDescriptorInheritanceSource(
-            Ace ace, INHERITED_FROM inherited_from, SeObjectType type, 
-            NtType native_type,
-            bool container,
-            bool query_security, bool sacl)
-        {
-            InheritedAce = ace;
-            Sid = ace.Sid;
-            if (native_type != null)
-            {
-                Access = NtSecurity.AccessMaskToString(ace.Mask, container
-                    ? native_type.ContainerAccessRightsType
-                    : native_type.AccessRightsType,
-                    native_type.GenericMapping, false);
-                GenericAccess = NtSecurity.AccessMaskToString(ace.Mask, container
-                    ? native_type.ContainerAccessRightsType
-                    : native_type.AccessRightsType,
-                    native_type.GenericMapping, true);
-            }
-            else
-            {
-                Access = NtSecurity.AccessMaskToString(ace.Mask.ToGenericAccess());
-                GenericAccess = NtSecurity.AccessMaskToString(ace.Mask.ToGenericAccess());
-            }
-            Depth = inherited_from.GenerationGap;
-            Name = Marshal.PtrToStringUni(inherited_from.AncestorName);
-            if (query_security && Name != null)
-            {
-                SecurityInformation sec_info = sacl ? SecurityInformation.All : SecurityInformation.AllNoSacl;
-                var sd = Win32Security.GetSecurityInfo(Name, type, sec_info, false);
-                if (sd.IsSuccess)
-                {
-                    SecurityDescriptor = sd.Result;
-                }
-            }
-        }
-    }
-
 #pragma warning restore 1591
 
     /// <summary>
@@ -177,7 +44,7 @@ namespace NtApiDotNet.Win32.Security
             SecurityInformation security_information, 
             SecurityDescriptor security_descriptor, bool throw_on_error)
         {
-            return Win32NativeMethods.SetNamedSecurityInfo(
+            return SecurityNativeMethods.SetNamedSecurityInfo(
                 name, type, security_information, 
                 security_descriptor.Owner?.Sid.ToArray(),
                 security_descriptor.Group?.Sid.ToArray(), 
@@ -226,7 +93,7 @@ namespace NtApiDotNet.Win32.Security
             ProgressInvokeSetting invoke_setting,
             bool throw_on_error)
         {
-            return Win32NativeMethods.TreeSetNamedSecurityInfo(
+            return SecurityNativeMethods.TreeSetNamedSecurityInfo(
                 name, type, security_information,
                 security_descriptor.Owner?.Sid.ToArray(),
                 security_descriptor.Group?.Sid.ToArray(),
@@ -267,7 +134,7 @@ namespace NtApiDotNet.Win32.Security
             SecurityInformation security_information,
             SecurityDescriptor security_descriptor, bool throw_on_error)
         {
-            return Win32NativeMethods.SetSecurityInfo(
+            return SecurityNativeMethods.SetSecurityInfo(
                 handle, type, security_information,
                 security_descriptor.Owner?.Sid.ToArray(),
                 security_descriptor.Group?.Sid.ToArray(),
@@ -363,7 +230,7 @@ namespace NtApiDotNet.Win32.Security
             bool keep_explicit,
             bool throw_on_error)
         {
-            return Win32NativeMethods.TreeResetNamedSecurityInfo(
+            return SecurityNativeMethods.TreeResetNamedSecurityInfo(
                 name, type, security_information,
                 security_descriptor.Owner?.Sid.ToArray(),
                 security_descriptor.Group?.Sid.ToArray(),
@@ -420,7 +287,7 @@ namespace NtApiDotNet.Win32.Security
                 NtStatus status = NtStatus.STATUS_INVALID_PARAMETER;
                 try
                 {
-                    status = Win32NativeMethods.GetInheritanceSource(name, type, sacl ? SecurityInformation.Sacl : SecurityInformation.Dacl,
+                    status = SecurityNativeMethods.GetInheritanceSource(name, type, sacl ? SecurityInformation.Sacl : SecurityInformation.Dacl,
                         container, guids, guids.Count, acl.ToByteArray(), IntPtr.Zero, ref generic_mapping, inherited_from).MapDosErrorToStatus();
                     return status.CreateResult(throw_on_error, () => (IEnumerable<SecurityDescriptorInheritanceSource>)inherited_from
                         .Select((s, i) => new SecurityDescriptorInheritanceSource(acl[i], s, type,
@@ -430,7 +297,7 @@ namespace NtApiDotNet.Win32.Security
                 {
                     if (status.IsSuccess())
                     {
-                        Win32NativeMethods.FreeInheritedFromArray(inherited_from, (ushort)inherited_from.Length, IntPtr.Zero);
+                        SecurityNativeMethods.FreeInheritedFromArray(inherited_from, (ushort)inherited_from.Length, IntPtr.Zero);
                     }
                 }
             }
@@ -477,7 +344,7 @@ namespace NtApiDotNet.Win32.Security
             SecurityInformation security_information,
             bool throw_on_error)
         {
-            using (var result = Win32NativeMethods.GetNamedSecurityInfo(name, type,
+            using (var result = SecurityNativeMethods.GetNamedSecurityInfo(name, type,
                 security_information, null,
                 null, null, null, out SafeLocalAllocBuffer sd).MapDosErrorToStatus().CreateResult(throw_on_error, () => sd))
             {
@@ -519,7 +386,7 @@ namespace NtApiDotNet.Win32.Security
             SecurityInformation security_information,
             bool throw_on_error)
         {
-            using (var result = Win32NativeMethods.GetSecurityInfo(handle, type,
+            using (var result = SecurityNativeMethods.GetSecurityInfo(handle, type,
                 security_information, null,
                 null, null, null, out SafeLocalAllocBuffer sd).MapDosErrorToStatus().CreateResult(throw_on_error, () => sd))
             {

@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.AuthZ;
+using NtApiDotNet.Win32.Security.Authorization;
 using NtObjectManager.Utils;
 using System.Management.Automation;
 

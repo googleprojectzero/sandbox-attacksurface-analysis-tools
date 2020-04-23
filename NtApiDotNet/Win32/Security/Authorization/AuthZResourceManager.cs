@@ -15,7 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 
-namespace NtApiDotNet.Win32.Security.AuthZ
+namespace NtApiDotNet.Win32.Security.Authorization
 {
     /// <summary>
     /// Initialization flags for resource manager.
@@ -114,7 +114,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
                 callback = ret.HandleCallbackAce;
             }
 
-            return Win32NativeMethods.AuthzInitializeResourceManager(flags, callback, IntPtr.Zero, 
+            return SecurityNativeMethods.AuthzInitializeResourceManager(flags, callback, IntPtr.Zero,
                 IntPtr.Zero, name, out ret._handle).CreateWin32Result(throw_on_error, () => ret);
         }
 

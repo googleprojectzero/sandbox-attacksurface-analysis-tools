@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -225,13 +225,13 @@ namespace NtApiDotNet.Security.Policy
         /// <returns>The list of Central Access Policies.</returns>
         public static NtResult<CentralAccessPolicy[]> ParseFromLsa(bool throw_on_error)
         {
-            NtStatus status = Win32NativeMethods.LsaGetAppliedCAPIDs(null, out SafeLsaMemoryBuffer capids, out int capid_count);
+            NtStatus status = SecurityNativeMethods.LsaGetAppliedCAPIDs(null, out SafeLsaMemoryBuffer capids, out int capid_count);
             if (!status.IsSuccess())
                 return status.CreateResultFromError<CentralAccessPolicy[]>(throw_on_error);
             List<CentralAccessPolicy> ret = new List<CentralAccessPolicy>();
             using (capids)
             {
-                status = Win32NativeMethods.LsaQueryCAPs(capids.DangerousGetHandle(), capid_count, out SafeLsaMemoryBuffer caps, out uint cap_count);
+                status = SecurityNativeMethods.LsaQueryCAPs(capids.DangerousGetHandle(), capid_count, out SafeLsaMemoryBuffer caps, out uint cap_count);
                 if (!status.IsSuccess())
                     return status.CreateResultFromError<CentralAccessPolicy[]>(throw_on_error);
                 caps.Initialize<CENTRAL_ACCESS_POLICY>(cap_count);

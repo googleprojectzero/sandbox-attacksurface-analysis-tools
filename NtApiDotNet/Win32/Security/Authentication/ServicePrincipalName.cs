@@ -15,12 +15,12 @@
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// Class to represent a service principal name.
     /// </summary>
-    public class ServicePrincipalName 
+    public class ServicePrincipalName
     {
         /// <summary>
         /// SPN service class.
@@ -92,7 +92,7 @@ namespace NtApiDotNet.Win32.Security
             StringBuilder InstanceName = new StringBuilder(1);
             OptionalUInt16 InstancePort = 0;
 
-            var err = SecurityNativeMethods.DsCrackSpn(spn, cServiceClass, ServiceClass, 
+            var err = SecurityNativeMethods.DsCrackSpn(spn, cServiceClass, ServiceClass,
                 cServiceName, ServiceName, cInstanceName, InstanceName, InstancePort);
             if (err != Win32Error.ERROR_BUFFER_OVERFLOW)
             {
@@ -127,7 +127,7 @@ namespace NtApiDotNet.Win32.Security
         public override string ToString()
         {
             int length = 0;
-            Win32Error err = SecurityNativeMethods.DsMakeSpn(ServiceClass, ServiceName, InstanceName, 
+            Win32Error err = SecurityNativeMethods.DsMakeSpn(ServiceClass, ServiceName, InstanceName,
                 (ushort)InstancePort, Referrer, ref length, null);
             if (err == Win32Error.SUCCESS)
                 return string.Empty;

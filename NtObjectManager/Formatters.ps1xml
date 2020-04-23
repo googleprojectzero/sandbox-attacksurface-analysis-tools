@@ -2059,7 +2059,7 @@
     <View>
       <Name>AuthenticationPackageTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.AuthenticationPackage</TypeName>
+        <TypeName>NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2357,7 +2357,7 @@
     <View>
       <Name>SecurityDescriptorInheritanceSourceTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.SecurityDescriptorInheritanceSource</TypeName>
+        <TypeName>NtApiDotNet.Win32.Security.Authorization.SecurityDescriptorInheritanceSource</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2468,7 +2468,7 @@
     <View>
       <Name>AuthZAccessCheckResultGenericTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.AuthZ.AuthZAccessCheckResult</TypeName>
+        <TypeName>NtApiDotNet.Win32.Security.Authorization.AuthZAccessCheckResult</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>

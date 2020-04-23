@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.AuthZ
+namespace NtApiDotNet.Win32.Security.Authorization
 {
     /// <summary>
     /// Access check result from AuthZ.
@@ -25,7 +25,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
         /// The Win32 error code from the access check.
         /// </summary>
         public Win32Error Error { get; }
-        
+
         internal AuthZAccessCheckResult(
             NtType type,
             Win32Error error,
@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
             ObjectTypeEntry object_type) : base(error.MapDosErrorToStatus(),
                 granted_access, type.GenericMapping.UnmapMask(granted_access),
                 new TokenPrivilege[0], granted_access.ToSpecificAccess(type.AccessRightsType),
-                type.GenericMapping.UnmapMask(granted_access).ToSpecificAccess(type.AccessRightsType), 
+                type.GenericMapping.UnmapMask(granted_access).ToSpecificAccess(type.AccessRightsType),
                 object_type?.ObjectType ?? Guid.Empty, object_type?.Name ?? string.Empty, false)
         {
             Error = error;

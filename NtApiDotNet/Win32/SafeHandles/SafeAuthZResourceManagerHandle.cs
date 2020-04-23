@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security;
 using System;
 using System.Runtime.InteropServices;
 
@@ -21,7 +22,7 @@ namespace NtApiDotNet.Win32.SafeHandles
     {
         protected override bool ReleaseHandle()
         {
-            return Win32NativeMethods.AuthzFreeResourceManager(handle);
+            return SecurityNativeMethods.AuthzFreeResourceManager(handle);
         }
 
         public SafeAuthZResourceManagerHandle(IntPtr handle, bool owns_handle) 

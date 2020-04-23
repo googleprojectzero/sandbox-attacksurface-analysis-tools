@@ -12,25 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authorization
 {
+#pragma warning disable 1591
     /// <summary>
-    /// Impersonation context for a server authentication.
+    /// Progress invoke setting for tree security.
     /// </summary>
-    public struct AuthenticationImpersonationContext : IDisposable
+    public enum ProgressInvokeSetting
     {
-        private readonly SecHandle _context;
-
-        internal AuthenticationImpersonationContext(SecHandle context)
-        {
-            _context = context;
-        }
-
-        void IDisposable.Dispose()
-        {
-            SecurityNativeMethods.RevertSecurityContext(_context);
-        }
+        InvokeNever = 1,
+        EveryObject,
+        OnError,
+        CancelOperation,
+        RetryOperation,
+        PrePostError
     }
 }

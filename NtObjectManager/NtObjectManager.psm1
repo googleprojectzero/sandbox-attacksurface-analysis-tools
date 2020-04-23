@@ -6491,7 +6491,7 @@ The name of the authentication package.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.AuthenticationPackage
+NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage
 .EXAMPLE
 Get-AuthPackage
 Get all authentication packages.
@@ -6508,10 +6508,10 @@ function Get-AuthPackage {
 
     switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Security.AuthenticationPackage]::Get() | Write-Output
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::Get() | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.Security.AuthenticationPackage]::FromName($Name) | Write-Output
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::FromName($Name) | Write-Output
         }
     }
 }
@@ -6530,7 +6530,7 @@ The password to use.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.UserCredentials
+NtApiDotNet.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
 $user_creds = Read-UserCredentials
 Read user credentials from the shell.
@@ -6546,7 +6546,7 @@ function Read-AuthCredential {
         [string]$Password
     )
 
-    $creds = [NtApiDotNet.Win32.Security.UserCredentials]::new()
+    $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
     if ($UserName -eq "") {
         $UserName = Read-Host -Prompt "UserName"
     }
@@ -6584,7 +6584,7 @@ Specify to read the credentials from the console.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.CredentialHandle
+NtApiDotNet.Win32.Security.Authentication.CredentialHandle
 .EXAMPLE
 $h = Get-AuthCredentialHandle "NTLM" Both
 Get a credential handle for the NTLM package for both directions.
@@ -6595,10 +6595,10 @@ function Get-AuthCredentialHandle {
         [Parameter(Position = 0, Mandatory)]
         [string]$Package,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.Win32.Security.SecPkgCredFlags]$UseFlag,
+        [NtApiDotNet.Win32.Security.Authentication.SecPkgCredFlags]$UseFlag,
         [Nullable[NtApiDotNet.Luid]]$AuthId,
         [string]$Principal,
-        [NtApiDotNet.Win32.Security.AuthenticationCredentials]$Credentials,
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
         [switch]$ReadCredentials
     )
 
@@ -6606,7 +6606,7 @@ function Get-AuthCredentialHandle {
         $Credentials = Read-AuthCredential
     }
 
-    [NtApiDotNet.Win32.Security.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credentials) | Write-Output
+    [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credentials) | Write-Output
 }
 
 <#
@@ -6625,19 +6625,19 @@ Data representation format.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.ClientAuthenticationContext
+NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
 #>
 function Get-AuthClient {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.CredentialHandle]$CredHandle,
-        [NtApiDotNet.Win32.Security.InitializeContextReqFlags]$RequestAttributes = 0,
+        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttributes = 0,
         [string]$Target,
-        [NtApiDotNet.Win32.Security.SecDataRep]$DataRepresentation = "Native"
+        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
     )
 
-    [NtApiDotNet.Win32.Security.ClientAuthenticationContext]::new($CredHandle, `
+    [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
             $RequestAttributes, $Target, $DataRepresentation) | Write-Output
 }
 
@@ -6663,14 +6663,14 @@ function Get-AuthServer {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.CredentialHandle]$CredHandle,
+        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [Parameter(Position = 1, Mandatory)]
         [byte[]]$Token,
-        [NtApiDotNet.Win32.Security.AcceptContextReqFlags]$RequestAttributes = 0,
-        [NtApiDotNet.Win32.Security.SecDataRep]$DataRepresentation = "Native"
+        [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttributes = 0,
+        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
     )
 
-    [NtApiDotNet.Win32.Security.ServerAuthenticationContext]::new($CredHandle, `
+    [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
             $Token, $RequestAttributes, $DataRepresentation) | Write-Output
 }
 
@@ -6692,7 +6692,7 @@ function Update-AuthClient {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.ClientAuthenticationContext]$Client,
+        [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory)]
         [byte[]]$Token
     )
@@ -6719,7 +6719,7 @@ function Update-AuthServer {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.ServerAuthenticationContext]$Server,
+        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory)]
         [byte[]]$Token
     )
@@ -6744,7 +6744,7 @@ function Get-AuthAccessToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.ServerAuthenticationContext]$Server
+        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server
     )
 
     $Server.GetAccessToken() | Write-Output
@@ -7942,7 +7942,7 @@ function Format-Win32SecurityDescriptor {
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName", Mandatory)]
         [string]$Name,
-        [NtApiDotNet.Win32.Security.SeObjectType]$Type = "File",
+        [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$Container,
         [switch]$ToSddl,

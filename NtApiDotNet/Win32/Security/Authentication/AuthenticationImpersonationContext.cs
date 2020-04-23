@@ -12,29 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security;
 using System;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Authentication
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+    /// <summary>
+    /// Impersonation context for a server authentication.
+    /// </summary>
+    public struct AuthenticationImpersonationContext : IDisposable
     {
-        protected override bool ReleaseHandle()
+        private readonly SecHandle _context;
+
+        internal AuthenticationImpersonationContext(SecHandle context)
         {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
+            _context = context;
         }
 
-        public SafeLsaMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
+        void IDisposable.Dispose()
         {
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
+            SecurityNativeMethods.RevertSecurityContext(_context);
         }
     }
 }

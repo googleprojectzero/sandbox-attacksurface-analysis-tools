@@ -14,7 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Utilities.Security;
-using NtApiDotNet.Win32.Security.AuthZ;
+using NtApiDotNet.Win32.Security.Authorization;
 using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;

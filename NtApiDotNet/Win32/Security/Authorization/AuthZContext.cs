@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.AuthZ
+namespace NtApiDotNet.Win32.Security.Authorization
 {
     /// <summary>
     /// Flags to initialize a client context from a SID.
@@ -115,7 +115,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
             }
         }
 
-        private static AuthZAccessCheckResult[] CreateResult(int count, SafeBuffer error, SafeBuffer access, 
+        private static AuthZAccessCheckResult[] CreateResult(int count, SafeBuffer error, SafeBuffer access,
             ObjectTypeEntry[] object_types, NtType type)
         {
             int[] error_array = new int[count];
@@ -145,7 +145,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
                 var cap_sids = capabilities?.ToArray() ?? new UserGroup[0];
                 SafeTokenGroupsBuffer cap_buffer = list.AddResource(SafeTokenGroupsBuffer.Create(cap_sids));
                 SafeBuffer buffer = cap_sids.Length > 0 ? cap_buffer.Data : SafeHGlobalBuffer.Null;
-                if (!Win32NativeMethods.AuthzSetAppContainerInformation(_handle,
+                if (!SecurityNativeMethods.AuthzSetAppContainerInformation(_handle,
                     sid_buffer, cap_sids.Length, buffer))
                 {
                     return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
@@ -193,7 +193,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
 
             using (var buffer = SafeTokenGroupsBuffer.Create(groups))
             {
-                if (!Win32NativeMethods.AuthzModifySids(_handle, SidTypeToInfoClass(type),
+                if (!SecurityNativeMethods.AuthzModifySids(_handle, SidTypeToInfoClass(type),
                     ops_array, buffer))
                 {
                     return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
@@ -285,7 +285,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
                 {
                     request.PrincipalSelfSid = list.AddResource(principal.ToSafeBuffer()).DangerousGetHandle();
                 }
-                
+
                 int result_count = 1;
                 var object_list = NtSecurity.ConvertObjectTypes(object_types, list);
                 if (object_list?.Length > 0)
@@ -310,9 +310,9 @@ namespace NtApiDotNet.Win32.Security.AuthZ
                 var audit_buffer = list.AddResource(new int[result_count].ToBuffer());
                 reply.SaclEvaluationResults = audit_buffer.DangerousGetHandle();
 
-                return Win32NativeMethods.AuthzAccessCheck(AuthZAccessCheckFlags.None, _handle,
+                return SecurityNativeMethods.AuthzAccessCheck(AuthZAccessCheckFlags.None, _handle,
                         ref request, IntPtr.Zero, sd_buffer, optional_sd_buffers, optional_sd_count,
-                        ref reply, IntPtr.Zero).CreateWin32Result(throw_on_error, 
+                        ref reply, IntPtr.Zero).CreateWin32Result(throw_on_error,
                         () => CreateResult(result_count, error_buffer, access_buffer, object_types?.ToArray(), type));
             }
         }
@@ -348,8 +348,8 @@ namespace NtApiDotNet.Win32.Security.AuthZ
         /// <returns>The new client context.</returns>
         public NtResult<AuthZContext> Clone(bool throw_on_error)
         {
-            return Win32NativeMethods.AuthzInitializeContextFromAuthzContext(0, _handle, null, default,
-                IntPtr.Zero, 
+            return SecurityNativeMethods.AuthzInitializeContextFromAuthzContext(0, _handle, null, default,
+                IntPtr.Zero,
                 out SafeAuthZClientContextHandle new_handle)
                 .CreateWin32Result(throw_on_error, () => new AuthZContext(new_handle));
         }
@@ -372,7 +372,7 @@ namespace NtApiDotNet.Win32.Security.AuthZ
                 throw new ArgumentNullException(nameof(token));
             }
 
-            return Win32NativeMethods.AuthzInitializeContextFromToken(0, token.Handle, resource_manager,
+            return SecurityNativeMethods.AuthzInitializeContextFromToken(0, token.Handle, resource_manager,
                 null, default, IntPtr.Zero, out SafeAuthZClientContextHandle handle).CreateWin32Result(throw_on_error, () => new AuthZContext(handle));
         }
         #endregion

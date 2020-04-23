@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
 
 namespace NtApiDotNet.Win32.Security.Audit
 {
@@ -62,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// <returns>The security descriptor.</returns>
         public static NtResult<SecurityDescriptor> QuerySecurity(SecurityInformation security_information, bool throw_on_error)
         {
-            if (!Win32NativeMethods.AuditQuerySecurity(security_information, out SafeAuditBuffer buffer))
+            if (!SecurityNativeMethods.AuditQuerySecurity(security_information, out SafeAuditBuffer buffer))
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<SecurityDescriptor>(throw_on_error);
             using (buffer)
             {
@@ -100,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         {
             using (var buffer = security_descriptor.ToSafeBuffer())
             {
-                if (!Win32NativeMethods.AuditSetSecurity(security_information, buffer))
+                if (!SecurityNativeMethods.AuditSetSecurity(security_information, buffer))
                 {
                     return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
                 }
@@ -127,7 +126,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// <returns>The global SACL in a Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> QueryGlobalSacl(AuditGlobalSaclType type, bool throw_on_error)
         {
-            if (!Win32NativeMethods.AuditQueryGlobalSacl(type.ToString(), out SafeAuditBuffer buffer))
+            if (!SecurityNativeMethods.AuditQueryGlobalSacl(type.ToString(), out SafeAuditBuffer buffer))
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<SecurityDescriptor>(throw_on_error);
             using (buffer)
             {
@@ -159,7 +158,7 @@ namespace NtApiDotNet.Win32.Security.Audit
                 throw new ArgumentException("Must specify a SACL.");
             using (var buffer = security_descriptor.Sacl.ToSafeBuffer())
             {
-                if (!Win32NativeMethods.AuditSetGlobalSacl(type.ToString(), buffer))
+                if (!SecurityNativeMethods.AuditSetGlobalSacl(type.ToString(), buffer))
                 {
                     return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
                 }
@@ -294,7 +293,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         #region Private Members
         private static NtResult<string> LookupCategoryName(Guid category, bool throw_on_error)
         {
-            return Win32NativeMethods.AuditLookupCategoryName(ref category,
+            return SecurityNativeMethods.AuditLookupCategoryName(ref category,
                 out SafeAuditBuffer buffer).CreateWin32Result(throw_on_error, () => {
                     using (buffer)
                     {
@@ -323,7 +322,7 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private static NtResult<AuditCategory[]> GetCategoriesInternal(bool throw_on_error)
         {
-            return Win32NativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
+            return SecurityNativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
                 out uint count).CreateWin32Result(throw_on_error, ()
                 => GetCategories(buffer, count, (i, n) => new AuditCategory(i, n)));
         }
@@ -335,14 +334,14 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private static NtResult<AuditCategory> GetCategoryInternal(AuditPolicyEventType type, bool throw_on_error)
         {
-            if (!Win32NativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
+            if (!SecurityNativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<AuditCategory>(throw_on_error);
             return GetCategoryInternal(category, throw_on_error);
         }
 
         private static NtResult<AuditPerUserCategory[]> GetPerUserCategoriesInternal(Sid user, bool throw_on_error)
         {
-            return Win32NativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
+            return SecurityNativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
                 out uint count).CreateWin32Result(throw_on_error, () => GetCategories(buffer, count,
                 (i, n) => new AuditPerUserCategory(i, n, user)));
         }
@@ -354,14 +353,14 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private static NtResult<AuditPerUserCategory> GetPerUserCategoryInternal(Sid user, AuditPolicyEventType type, bool throw_on_error)
         {
-            if (!Win32NativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
+            if (!SecurityNativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<AuditPerUserCategory>(throw_on_error);
             return GetPerUserCategoryInternal(user, category, throw_on_error);
         }
 
         private static NtResult<List<Sid>> GetValidUsers(bool throw_on_error)
         {
-            if (!Win32NativeMethods.AuditEnumeratePerUserPolicy(out SafeAuditBuffer buffer))
+            if (!SecurityNativeMethods.AuditEnumeratePerUserPolicy(out SafeAuditBuffer buffer))
             {
                 return NtObjectUtils.CreateResultFromDosError<List<Sid>>(throw_on_error);
             }

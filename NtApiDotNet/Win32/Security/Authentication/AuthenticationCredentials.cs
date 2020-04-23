@@ -14,7 +14,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// Base class for authentication credentials.

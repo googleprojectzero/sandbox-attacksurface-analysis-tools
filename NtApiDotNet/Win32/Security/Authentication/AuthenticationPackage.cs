@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// An authentication package entry.

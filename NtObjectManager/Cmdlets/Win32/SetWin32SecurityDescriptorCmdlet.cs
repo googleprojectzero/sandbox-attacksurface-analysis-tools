@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Security;
+using NtApiDotNet.Win32.Security.Authorization;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 

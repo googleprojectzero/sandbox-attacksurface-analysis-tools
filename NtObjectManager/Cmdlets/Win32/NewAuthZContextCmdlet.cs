@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using NtApiDotNet.Win32.Security.AuthZ;
+using NtApiDotNet.Win32.Security.Authorization;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Win32

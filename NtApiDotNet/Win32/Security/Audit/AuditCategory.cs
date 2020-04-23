@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private protected override Win32Error SetPolicy(AUDIT_POLICY_INFORMATION[] policies)
         {
-            return Win32NativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
+            return SecurityNativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
         }
     }
 
@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private protected override Win32Error SetPolicy(AUDIT_POLICY_INFORMATION[] policies)
         {
-            return Win32NativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
+            return SecurityNativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
         }
     }
 
@@ -133,7 +133,7 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private static NtResult<string> LookupSubCategoryName(Guid id, bool throw_on_error)
         {
-            return Win32NativeMethods.AuditLookupSubCategoryName(ref id,
+            return SecurityNativeMethods.AuditLookupSubCategoryName(ref id,
                 out SafeAuditBuffer buffer).CreateWin32Result(throw_on_error, () => {
                     using (buffer)
                     {
@@ -162,7 +162,7 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         internal NtResult<List<S>> GetSubCategories(Func<Guid, string, AuditCategory<T, S>, S> create_sub_category, bool throw_on_error)
         {
-            return Win32NativeMethods.AuditEnumerateSubCategories(Id, false,
+            return SecurityNativeMethods.AuditEnumerateSubCategories(Id, false,
                 out SafeAuditBuffer buffer, out uint count)
                 .CreateWin32Result(throw_on_error, () => GetSubCategories(buffer, count, create_sub_category));
         }

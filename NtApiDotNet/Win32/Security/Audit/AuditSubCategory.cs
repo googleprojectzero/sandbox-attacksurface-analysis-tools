@@ -35,12 +35,12 @@ namespace NtApiDotNet.Win32.Security.Audit
 
         private protected override Win32Error SetPolicy(AUDIT_POLICY_INFORMATION[] policies)
         {
-            return Win32NativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
+            return SecurityNativeMethods.AuditSetSystemPolicy(policies, policies.Length).GetLastWin32Error();
         }
 
         private protected override Win32Error QueryPolicy(Guid[] system_policies, out SafeAuditBuffer buffer)
         {
-            return Win32NativeMethods.AuditQuerySystemPolicy(system_policies, system_policies.Length, out buffer).GetLastWin32Error();
+            return SecurityNativeMethods.AuditQuerySystemPolicy(system_policies, system_policies.Length, out buffer).GetLastWin32Error();
         }
     }
 
@@ -70,7 +70,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         {
             using (var buffer = User.ToSafeBuffer())
             {
-                return Win32NativeMethods.AuditSetPerUserPolicy(buffer, policies, policies.Length).GetLastWin32Error();
+                return SecurityNativeMethods.AuditSetPerUserPolicy(buffer, policies, policies.Length).GetLastWin32Error();
             }
         }
 
@@ -78,7 +78,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         {
             using (var sid_buffer = User.ToSafeBuffer())
             {
-                return Win32NativeMethods.AuditQueryPerUserPolicy(sid_buffer, 
+                return SecurityNativeMethods.AuditQueryPerUserPolicy(sid_buffer, 
                     system_policies, system_policies.Length, out buffer).GetLastWin32Error();
             }
         }

@@ -15,7 +15,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// Class to represent a credential handle.
@@ -75,7 +75,7 @@ namespace NtApiDotNet.Win32.Security
         /// <param name="cred_use_flag">Credential user flags.</param>
         /// <param name="credentials">Optional credentials.</param>
         /// <returns>The credential handle.</returns>
-        public static CredentialHandle Create(string principal, string package, Luid? auth_id, 
+        public static CredentialHandle Create(string principal, string package, Luid? auth_id,
             SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
         {
             using (var list = new DisposableList())
@@ -106,7 +106,7 @@ namespace NtApiDotNet.Win32.Security
         /// <param name="cred_use_flag">Credential user flags.</param>
         /// <param name="credentials">Optional credentials.</param>
         /// <returns>The credential handle.</returns>
-        public static CredentialHandle Create(string package, 
+        public static CredentialHandle Create(string package,
             SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
         {
             return Create(null, package, null, cred_use_flag, credentials);

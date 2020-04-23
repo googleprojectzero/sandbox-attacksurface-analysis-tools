@@ -14,17 +14,16 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
-    /// Class to represent a client authentication context.
+    /// Class to represent a server authentication context.
     /// </summary>
-    public sealed class ClientAuthenticationContext : IDisposable
+    public sealed class ServerAuthenticationContext : IDisposable
     {
         private readonly CredentialHandle _creds;
-        private readonly InitializeContextReqFlags _req_attributes;
         private readonly SecHandle _context;
-        private readonly string _target;
+        private readonly AcceptContextReqFlags _req_flags;
         private readonly SecDataRep _data_rep;
 
         /// <summary>
@@ -40,7 +39,7 @@ namespace NtApiDotNet.Win32.Security
         /// <summary>
         /// Current status flags.
         /// </summary>
-        public InitializeContextRetFlags Flags { get; private set; }
+        public AcceptContextRetFlags Flags { get; private set; }
 
         /// <summary>
         /// Expiry of the authentication.
@@ -48,80 +47,76 @@ namespace NtApiDotNet.Win32.Security
         public long Expiry { get; private set; }
 
         /// <summary>
+        /// Get an access token for the authenticated user.
+        /// </summary>
+        /// <returns>The user's access token.</returns>
+        public NtToken GetAccessToken()
+        {
+            SecurityNativeMethods.QuerySecurityContextToken(_context, out SafeKernelObjectHandle token).CheckResult();
+            return NtToken.FromHandle(token);
+        }
+
+        /// <summary>
+        /// Impersonate the security context.
+        /// </summary>
+        /// <returns>The disposable context to revert the impersonation.</returns>
+        public AuthenticationImpersonationContext Impersonate()
+        {
+            SecurityNativeMethods.ImpersonateSecurityContext(_context).CheckResult();
+            return new AuthenticationImpersonationContext(_context);
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>
         /// <param name="req_attributes">Request attribute flags.</param>
-        /// <param name="target">Target SPN (optional).</param>
         /// <param name="data_rep">Data representation.</param>
-        public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes, 
-            string target, SecDataRep data_rep)
+        /// <param name="token">Initial authentication token.</param>
+        public ServerAuthenticationContext(CredentialHandle creds, byte[] token,
+            AcceptContextReqFlags req_attributes, SecDataRep data_rep)
         {
             _creds = creds;
-            _req_attributes = req_attributes & ~InitializeContextReqFlags.AllocateMemory;
             _context = new SecHandle();
-            _target = target;
+            _req_flags = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
             _data_rep = data_rep;
-            Continue(null);
+            Done = GenServerContext(true, token);
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>
-        /// <param name="req_attributes">Request attribute flags.</param>
-        /// <param name="data_rep">Data representation.</param>
-        public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes, SecDataRep data_rep) 
-            : this(creds, req_attributes, null, data_rep)
+        /// <param name="token">Initial authentication token.</param>
+        public ServerAuthenticationContext(CredentialHandle creds, byte[] token) : this(creds, token,
+            AcceptContextReqFlags.None, SecDataRep.Native)
         {
         }
 
         /// <summary>
-        /// Constructor.
+        /// Continue the authentication with the client token.
         /// </summary>
-        /// <param name="creds">Credential handle.</param>
-        public ClientAuthenticationContext(CredentialHandle creds) 
-            : this(creds, InitializeContextReqFlags.None, null, SecDataRep.Native)
-        {
-        }
-
-        /// <summary>
-        /// Continue the authentication with the server token.
-        /// </summary>
-        /// <param name="token">The server token to continue authentication.</param>
+        /// <param name="token">The client token to continue authentication.</param>
         public void Continue(byte[] token)
         {
-            Done = GenClientContext(token);
+            Done = GenServerContext(false, token);
         }
 
-        private bool GenClientContext(byte[] token)
+        private bool GenServerContext(
+            bool new_context, byte[] token)
         {
             using (DisposableList list = new DisposableList())
             {
-                SecStatusCode result = 0;
-
                 SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 8192));
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
+                SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
+                SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
 
-                InitializeContextRetFlags flags;
                 LargeInteger expiry = new LargeInteger();
-                if (token != null)
-                {
-                    SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
-                    SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
-                    result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, _context, _target, _req_attributes, 0,
-                        _data_rep, in_buffer_desc, 0, _context, out_buffer_desc, out flags, expiry).CheckResult();
-                    Flags = flags;
-                }
-                else
-                {
-                    result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, null, _target,
-                        _req_attributes, 0, _data_rep, null, 0, _context,
-                        out_buffer_desc, out flags, expiry).CheckResult();
-                }
-
+                SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, new_context ? null : _context,
+                    in_buffer_desc, _req_flags, _data_rep, _context, out_buffer_desc, out AcceptContextRetFlags context_attr, expiry).CheckResult();
+                Flags = context_attr;
                 Expiry = expiry.QuadPart;
-                Flags = flags;
                 if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
                 {
                     SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();
