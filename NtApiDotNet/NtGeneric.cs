@@ -69,7 +69,7 @@ namespace NtApiDotNet
                 {
                     using (var obj = ToTypedObject(false))
                     {
-                        if (obj.IsSuccess)
+                        if (obj.IsSuccess && !(obj.Result is NtGeneric))
                         {
                             _is_container = obj.Result.IsContainer;
                         }
