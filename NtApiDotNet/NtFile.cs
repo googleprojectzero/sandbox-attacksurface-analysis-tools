@@ -3630,13 +3630,14 @@ namespace NtApiDotNet
             {
                 if (!_is_directory.HasValue)
                 {
-                    if (IsAccessGranted(FileAccessRights.ReadAttributes))
+                    var attr = Query<FileBasicInformation>(FileInformationClass.FileBasicInformation, default, false);
+                    if (!attr.IsSuccess)
                     {
-                        _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                        _is_directory = false;
                     }
                     else
                     {
-                        _is_directory = false;
+                        _is_directory = (attr.Result.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
                     }
                 }
                 return _is_directory.Value;
