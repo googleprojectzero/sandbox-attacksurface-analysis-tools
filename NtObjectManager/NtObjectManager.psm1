@@ -6627,7 +6627,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
 #>
-function Get-AuthClient {
+function Get-AuthClientContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -6650,8 +6650,6 @@ This cmdlet creates a new authentication server.
 The credential handle to use.
 .PARAMETER RequestAttributes
 Request attributes.
-.PARAMETER Token
-Initial client token.
 .PARAMETER DataRepresentation
 Data representation format.
 .INPUTS
@@ -6659,19 +6657,17 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.ServerAuthenticationContext
 #>
-function Get-AuthServer {
+function Get-AuthServerContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
-        [Parameter(Position = 1, Mandatory)]
-        [byte[]]$Token,
         [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttributes = 0,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $Token, $RequestAttributes, $DataRepresentation) | Write-Output
+            $RequestAttributes, $DataRepresentation) | Write-Output
 }
 
 <#
@@ -6688,17 +6684,21 @@ None
 .OUTPUTS
 bool
 #>
-function Update-AuthClient {
-    [CmdletBinding()]
+function Update-AuthClientContext {
+    [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
-        [Parameter(Position = 1, Mandatory)]
-        [byte[]]$Token
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server
     )
 
+    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+        $Token = $Server.Token
+    }
     $Client.Continue($Token)
-    $Client.Done | Write-Output
 }
 
 <#
@@ -6708,6 +6708,8 @@ Update an authentication server.
 This cmdlet updates an authentication server. Returns true if the authentication is complete.
 .PARAMETER Server
 The authentication server.
+.PARAMETER Client
+The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
 .INPUTS
@@ -6715,17 +6717,22 @@ None
 .OUTPUTS
 bool
 #>
-function Update-AuthServer {
-    [CmdletBinding()]
+function Update-AuthServerContext {
+    [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
-        [Parameter(Position = 1, Mandatory)]
-        [byte[]]$Token
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token
     )
 
+    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+        $Token = $Client.Token
+    }
+
     $Server.Continue($Token)
-    $Server.Done | Write-Output
 }
 
 <#
@@ -6748,6 +6755,99 @@ function Get-AuthAccessToken {
     )
 
     $Server.GetAccessToken() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Gets an authentication token.
+.DESCRIPTION
+This cmdlet gets an authentication token from a context or from 
+an array of bytes.
+.PARAMETER Context
+The authentication context to extract token from.
+.PARAMETER Token
+The array of bytes for the new token.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+#>
+function Get-AuthToken {
+    [CmdletBinding(DefaultParameterSetName="FromContext")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromBytes")]
+        [byte[]]$Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
+    )
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+            $Context.Token | Write-Output
+        } else {
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Token)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Tests an authentication context to determine if it's complete.
+.DESCRIPTION
+This cmdlet tests and authentication context to determine if it's complete.
+.PARAMETER Context
+The authentication context to test.
+.INPUTS
+None
+.OUTPUTS
+bool
+#>
+function Test-AuthContext {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
+    )
+
+    return $Context.Done
+}
+
+<#
+.SYNOPSIS
+Format an authentication token.
+.DESCRIPTION
+This cmdlet formats an authentication token. Defaults to
+a hex dump if format unknown.
+.PARAMETER Context
+The authentication context to extract token from.
+.PARAMETER Token
+The authentication token to format.
+.PARAMETER AsBytes
+Always format as a hex dump.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Format-AuthToken {
+    [CmdletBinding(DefaultParameterSetName="FromContext")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [switch]$AsBytes
+    )
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+            $Token = $Context.Token
+        }
+        $ba = $Token.ToArray()
+        if ($ba.Length -gt 0) {
+            Out-HexDump -Bytes $ba -ShowAll
+        }
+    }
 }
 
 <#

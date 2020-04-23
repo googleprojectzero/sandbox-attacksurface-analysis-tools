@@ -344,6 +344,10 @@
     <Compile Include="Win32\Security\Audit\AuditSecurityUtils.cs" />
     <Compile Include="Win32\Security\Audit\AuditSubCategory.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationImpersonationContext.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthenticationFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\IAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\Authentication\RawAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZAccessCheckResult.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContext.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZResourceManager.cs" />

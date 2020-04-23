@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a client authentication context.
     /// </summary>
-    public sealed class ClientAuthenticationContext : IDisposable
+    public sealed class ClientAuthenticationContext : IDisposable, IAuthenticationContext
     {
         private readonly CredentialHandle _creds;
         private readonly InitializeContextReqFlags _req_attributes;
@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// The current authentication token.
         /// </summary>
-        public byte[] Token { get; private set; }
+        public AuthenticationToken Token { get; private set; }
 
         /// <summary>
         /// Whether the authentication is done.
@@ -89,12 +89,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Continue the authentication with the server token.
         /// </summary>
         /// <param name="token">The server token to continue authentication.</param>
-        public void Continue(byte[] token)
+        public void Continue(AuthenticationToken token)
         {
             Done = GenClientContext(token);
         }
 
-        private bool GenClientContext(byte[] token)
+        private bool GenClientContext(AuthenticationToken token)
         {
             using (DisposableList list = new DisposableList())
             {
@@ -107,7 +107,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 LargeInteger expiry = new LargeInteger();
                 if (token != null)
                 {
-                    SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
+                    SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray()));
                     SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
                     result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, _context, _target, _req_attributes, 0,
                         _data_rep, in_buffer_desc, 0, _context, out_buffer_desc, out flags, expiry).CheckResult();
@@ -127,7 +127,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();
                 }
 
-                Token = out_buffer_desc.ToArray()[0].ToArray();
+                Token = AuthenticationToken.Parse(out_buffer_desc.ToArray()[0].ToArray());
                 return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
             }
         }

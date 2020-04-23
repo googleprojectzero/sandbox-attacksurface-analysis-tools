@@ -19,17 +19,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a server authentication context.
     /// </summary>
-    public sealed class ServerAuthenticationContext : IDisposable
+    public sealed class ServerAuthenticationContext : IDisposable, IAuthenticationContext
     {
         private readonly CredentialHandle _creds;
         private readonly SecHandle _context;
         private readonly AcceptContextReqFlags _req_flags;
         private readonly SecDataRep _data_rep;
+        private bool _new_context;
 
         /// <summary>
         /// The current authentication token.
         /// </summary>
-        public byte[] Token { get; private set; }
+        public AuthenticationToken Token { get; private set; }
 
         /// <summary>
         /// Whether the authentication is done.
@@ -72,24 +73,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="creds">Credential handle.</param>
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="data_rep">Data representation.</param>
-        /// <param name="token">Initial authentication token.</param>
-        public ServerAuthenticationContext(CredentialHandle creds, byte[] token,
-            AcceptContextReqFlags req_attributes, SecDataRep data_rep)
+        public ServerAuthenticationContext(CredentialHandle creds, AcceptContextReqFlags req_attributes, SecDataRep data_rep)
         {
             _creds = creds;
             _context = new SecHandle();
             _req_flags = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
             _data_rep = data_rep;
-            Done = GenServerContext(true, token);
+            _new_context = true;
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>
-        /// <param name="token">Initial authentication token.</param>
-        public ServerAuthenticationContext(CredentialHandle creds, byte[] token) : this(creds, token,
-            AcceptContextReqFlags.None, SecDataRep.Native)
+        public ServerAuthenticationContext(CredentialHandle creds) 
+            : this(creds, AcceptContextReqFlags.None, SecDataRep.Native)
         {
         }
 
@@ -97,19 +95,20 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Continue the authentication with the client token.
         /// </summary>
         /// <param name="token">The client token to continue authentication.</param>
-        public void Continue(byte[] token)
+        public void Continue(AuthenticationToken token)
         {
-            Done = GenServerContext(false, token);
+            Done = GenServerContext(token);
         }
 
-        private bool GenServerContext(
-            bool new_context, byte[] token)
+        private bool GenServerContext(AuthenticationToken token)
         {
+            bool new_context = _new_context;
+            _new_context = false;
             using (DisposableList list = new DisposableList())
             {
                 SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 8192));
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
-                SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
+                SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray()));
                 SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
 
                 LargeInteger expiry = new LargeInteger();
@@ -122,14 +121,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();
                 }
 
-                Token = out_buffer_desc.ToArray()[0].ToArray();
+                Token = AuthenticationToken.Parse(out_buffer_desc.ToArray()[0].ToArray());
                 return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
             }
         }
 
         void IDisposable.Dispose()
         {
-            SecurityNativeMethods.DeleteSecurityContext(_context);
+            if (!_new_context)
+                SecurityNativeMethods.DeleteSecurityContext(_context);
         }
     }
 }
