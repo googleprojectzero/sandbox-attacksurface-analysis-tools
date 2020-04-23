@@ -3552,6 +3552,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the file attributes.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The file attributes.</returns>
+        public NtResult<FileAttributes> GetFileAttributes(bool throw_on_error)
+        {
+            return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation, 
+                default, throw_on_error).Map(b => b.FileAttributes);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -3612,7 +3623,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
+                return GetFileAttributes(true).Result;
             }
             set
             {
@@ -3630,15 +3641,8 @@ namespace NtApiDotNet
             {
                 if (!_is_directory.HasValue)
                 {
-                    var attr = Query<FileBasicInformation>(FileInformationClass.FileBasicInformation, default, false);
-                    if (!attr.IsSuccess)
-                    {
-                        _is_directory = false;
-                    }
-                    else
-                    {
-                        _is_directory = (attr.Result.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
-                    }
+                    var attr = GetFileAttributes(false).GetResultOrDefault(FileAttributes.None);
+                    _is_directory = attr.HasFlagSet(FileAttributes.Directory);
                 }
                 return _is_directory.Value;
             }
@@ -3651,7 +3655,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (FileAttributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
+                return GetFileAttributes(false).GetResultOrDefault(FileAttributes.None).HasFlagSet(FileAttributes.ReparsePoint);
             }
         }
 
@@ -3955,7 +3959,7 @@ namespace NtApiDotNet
         /// </summary>
         public bool ReadOnly
         {
-            get => (FileAttributes & FileAttributes.ReadOnly) != 0;
+            get => !FileAttributes.HasFlagSet(FileAttributes.ReadOnly);
             set
             {
                 var current_attributes = FileAttributes;
