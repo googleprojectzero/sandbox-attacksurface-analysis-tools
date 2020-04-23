@@ -8351,10 +8351,15 @@ Specify the category type GUID.
 Specify the policy to set.
 .PARAMETER PassThru
 Specify to pass through the category objects.
+.PARAMETER User
+Specify the SID of the user to set a per-user audit policy.
+.PARAMETER UserPolicy
+Specify the policy to set for a per-user policy.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Audit.AuditSubCategory
+NtApiDotNet.Win32.Security.Audit.AuditPerUserSubCategory
 .EXAMPLE
 Set-NtAuditPolicy -Category 
 Get all audit policy categories.
@@ -8366,42 +8371,65 @@ Get-NtAuditPolicy -Category ObjectAccess -Expand
 Get the ObjectAccess audit policy category and return the SubCategory policies.
 #>
 function Set-NtAuditPolicy {
-    [CmdletBinding(DefaultParameterSetName = "FromCategory", SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName = "FromCategoryType", SupportsShouldProcess)]
     param (
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategory")]
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategoryType")]
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategoryTypeUser")]
         [NtApiDotNet.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
         [parameter(Mandatory, ParameterSetName = "FromCategoryGuid")]
+        [parameter(Mandatory, ParameterSetName = "FromCategoryGuidUser")]
         [Guid[]]$CategoryGuid,
         [parameter(Mandatory, ParameterSetName = "FromSubCategoryName")]
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryNameUser")]
         [string[]]$SubCategoryName,
         [parameter(Mandatory, ParameterSetName = "FromSubCategoryGuid")]
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryUser")]
         [guid[]]$SubCategoryGuid,
-        [parameter(Mandatory, Position = 1)]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryType")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryGuid")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryName")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryGuid")]
         [NtApiDotNet.Win32.Security.Audit.AuditPolicyFlags]$Policy,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryTypeUser")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryGuidUser")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryNameUser")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryGuidUser")]
+        [NtApiDotNet.Win32.Security.Audit.AuditPerUserPolicyFlags]$UserPolicy,
+        [parameter(Mandatory, ParameterSetName="FromCategoryTypeUser")]
+        [parameter(Mandatory, ParameterSetName="FromCategoryGuidUser")]
+        [parameter(Mandatory, ParameterSetName="FromSubCategoryNameUser")]
+        [parameter(Mandatory, ParameterSetName="FromSubCategoryGuidUser")]
+        [NtApiDotNet.Sid]$User,
         [switch]$PassThru
     )
     if (!(Test-NtTokenPrivilege SeSecurityPrivilege)) {
         Write-Warning "SeSecurityPrivilege not enabled. Might not change Audit settings."
     }
 
-    $cats = switch($PSCmdlet.ParameterSetName) {
-        "FromCategory" {
-            Get-NtAuditPolicy -Category $Category -ExpandCategory
+    $cats = switch -Wildcard ($PSCmdlet.ParameterSetName) {
+        "FromCategoryType*" {
+            Get-NtAuditPolicy -Category $Category -ExpandCategory -User $User
         }
-        "FromCategoryGuid" {
-            Get-NtAuditPolicy -CategoryGuid $CategoryGuid -ExpandCategory
+        "FromCategoryGuid*" {
+            Get-NtAuditPolicy -CategoryGuid $CategoryGuid -ExpandCategory -User $User
         }
-        "FromSubCategoryName" {
-            Get-NtAuditPolicy -SubCategoryName $SubCategoryName
+        "FromSubCategoryName*" {
+            Get-NtAuditPolicy -SubCategoryName $SubCategoryName -User $User
         }
-        "FromSubCategoryGuid" {
-            Get-NtAuditPolicy -SubCategoryGuid $SubCategoryGuid
+        "FromSubCategoryGuid*" {
+            Get-NtAuditPolicy -SubCategoryGuid $SubCategoryGuid -User $User
         }
     }
 
     foreach($cat in $cats) {
-        if ($PSCmdlet.ShouldProcess($cat.Name, "Set $Policy")) {
-            $cat.SetPolicy($Policy)
+        $policy_value = if ($null -eq $User) {
+            $Policy
+        }
+        else {
+            $UserPolicy
+        }
+        if ($PSCmdlet.ShouldProcess($cat.Name, "Set $policy_value")) {
+            $cat.SetPolicy($policy_value)
             if ($PassThru) {
                 Write-Output $cat
             }

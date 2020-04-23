@@ -82,11 +82,46 @@ namespace NtObjectManager.Cmdlets.Accessible
         [Parameter(ParameterSetName = "handles")]
         public SwitchParameter CheckUnnamed { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to query all file device paths. Doing this might cause the cmdlet to hang.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "handles")]
+        public SwitchParameter QueryAllDevicePaths { get; set; }
+
+
+        private string GetObjectName(NtObject obj)
+        {
+            try
+            {
+                if (FromHandles && !QueryAllDevicePaths)
+                {
+                    if (obj is NtGeneric generic && obj.NtTypeName == "File")
+                    {
+                        using (var typed = generic.ToTypedObject())
+                        {
+                            return GetObjectName(typed);
+                        }
+                    }
+
+                    if (obj is NtFile file_obj && file_obj.DeviceType != FileDeviceType.DISK)
+                    {
+                        return string.Empty;
+                    }
+                }
+
+                return obj.FullPath;
+            }
+            catch (NtException)
+            {
+                return string.Empty;
+            }
+        }
+
         private string ConvertPath(NtObject obj)
         {
             try
             {
-                string path = obj.FullPath;
+                string path = GetObjectName(obj);
                 if (FormatWin32Path)
                 {
                     if (path.Equals(_base_named_objects, StringComparison.OrdinalIgnoreCase))
@@ -342,7 +377,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                     if (checked_objects.Add(handle.Object))
                     {
-                        if (CheckUnnamed || !string.IsNullOrEmpty(obj.Result.FullPath))
+                        if (CheckUnnamed || !string.IsNullOrEmpty(GetObjectName(obj.Result)))
                         {
                             DumpObject(tokens, type_filter, Access, obj.Result, 
                                 obj.Result.NtTypeName.Equals("Directory", StringComparison.OrdinalIgnoreCase));
