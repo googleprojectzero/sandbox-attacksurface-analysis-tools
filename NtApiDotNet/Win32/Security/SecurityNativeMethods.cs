@@ -384,6 +384,69 @@ namespace NtApiDotNet.Win32.Security
         public IntPtr UserSidArray;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_LAST_INTER_LOGON_INFO
+    {
+        public LargeIntegerStruct LastSuccessfulLogon;
+        public LargeIntegerStruct LastFailedLogon;
+        public int FailedAttemptCountSinceLastSuccessfulLogon;
+    }
+
+    /// <summary>
+    /// Logon UserFlags.
+    /// </summary>
+    [Flags]
+    public enum LsaLogonUserFlags
+    {
+        Guest = 0x01,
+        NoEncryption = 0x02,
+        CachedAccount = 0x04,
+        UsedLmPassword = 0x08,
+        ExtraSids = 0x20,
+        SubAuthSessionKey = 0x40,
+        ServerTrustAccount = 0x80,
+        NtlmV2Enabled = 0x100,
+        ResourceGroups = 0x200,
+        ProfilePathReturned = 0x400,
+        NtV2 = 0x800,
+        LmV2 = 0x1000,
+        NtlmV2 = 0x2000,
+        Optimized = 0x4000,
+        WinLogon = 0x8000,
+        PKInit = 0x10000,
+        NoOptimized = 0x20000,
+        NoElevation = 0x40000,
+        ManagedService = 0x80000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SECURITY_LOGON_SESSION_DATA
+    {
+        public int Size;
+        public Luid LogonId;
+        public UnicodeStringOut UserName;
+        public UnicodeStringOut LogonDomain;
+        public UnicodeStringOut AuthenticationPackage;
+        public SecurityLogonType LogonType;
+        public int Session;
+        public IntPtr Sid;
+        public LargeIntegerStruct LogonTime;
+        public UnicodeStringOut LogonServer;
+        public UnicodeStringOut DnsDomainName;
+        public UnicodeStringOut Upn;
+        public LsaLogonUserFlags UserFlags;
+        public LSA_LAST_INTER_LOGON_INFO LastLogonInfo;
+        public UnicodeStringOut LogonScript;
+        public UnicodeStringOut ProfilePath;
+        public UnicodeStringOut HomeDirectory;
+        public UnicodeStringOut HomeDirectoryDrive;
+        public LargeIntegerStruct LogoffTime;
+        public LargeIntegerStruct KickOffTime;
+        public LargeIntegerStruct PasswordLastSet;
+        public LargeIntegerStruct PasswordCanChange;
+        public LargeIntegerStruct PasswordMustChange;
+    }
+
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -807,6 +870,18 @@ namespace NtApiDotNet.Win32.Security
             SafeSidBufferHandle pSid,
             AUDIT_POLICY_INFORMATION[] pAuditPolicy,
             int dwPolicyCount
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumerateLogonSessions(
+          out int LogonSessionCount,
+          out SafeLsaReturnBufferHandle LogonSessionList
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaGetLogonSessionData(
+          ref Luid LogonId,
+          out SafeLsaReturnBufferHandle ppLogonSessionData
         );
 
         public static SecStatusCode CheckResult(this SecStatusCode result)

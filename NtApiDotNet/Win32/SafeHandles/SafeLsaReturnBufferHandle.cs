@@ -17,7 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal class SafeLsaReturnBufferHandle : SafeHandle
+    internal class SafeLsaReturnBufferHandle : SafeBuffer
     {
         protected override bool ReleaseHandle()
         {
@@ -26,13 +26,13 @@ namespace NtApiDotNet.Win32.SafeHandles
         }
 
         public SafeLsaReturnBufferHandle(IntPtr handle, bool owns_handle)
-            : base(IntPtr.Zero, owns_handle)
+            : base(owns_handle)
         {
             SetHandle(handle);
         }
 
         public SafeLsaReturnBufferHandle() 
-            : base(IntPtr.Zero, true)
+            : base(true)
         {
         }
 

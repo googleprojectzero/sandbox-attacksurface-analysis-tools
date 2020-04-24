@@ -348,6 +348,7 @@
     <Compile Include="Win32\Security\Authentication\AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationFlags.cs" />
     <Compile Include="Win32\Security\Authentication\IAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\Authentication\LogonSession.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAvPair.cs" />

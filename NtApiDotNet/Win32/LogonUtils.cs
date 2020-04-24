@@ -14,9 +14,11 @@
 
 using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 
 namespace NtApiDotNet.Win32
@@ -130,6 +132,22 @@ namespace NtApiDotNet.Win32
         /// Clone caller, new default credentials
         /// </summary>
         NewCredentials,
+        /// <summary>
+        /// Remove interactive.
+        /// </summary>
+        RemoteInteractive,
+        /// <summary>
+        /// Cached Interactive.
+        /// </summary>
+        CachedInteractive,
+        /// <summary>
+        /// Cached Remote Interactive.
+        /// </summary>
+        CachedRemoteInteractive,
+        /// <summary>
+        /// Cached unlock.
+        /// </summary>
+        CachedUnlock
     }
 
     internal class SafeLsaHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -277,6 +295,65 @@ namespace NtApiDotNet.Win32
         public static NtToken LogonS4U(string user, string realm, SecurityLogonType type)
         {
             return LogonS4U(user, realm, type, "Negotiate", true).Result;
+        }
+
+        /// <summary>
+        /// Get a logon session.
+        /// </summary>
+        /// <param name="luid">The logon session ID.</param>
+        /// <param name="throw_on_error">True to thrown on error.</param>
+        /// <returns>The logon session.</returns>
+        public static NtResult<LogonSession> GetLogonSession(Luid luid, bool throw_on_error)
+        {
+            return LogonSession.GetLogonSession(luid, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a logon session.
+        /// </summary>
+        /// <param name="luid">The logon session ID.</param>
+        /// <returns>The logon session.</returns>
+        public static LogonSession GetLogonSession(Luid luid)
+        {
+            return GetLogonSession(luid, true).Result;
+        }
+
+        /// <summary>
+        /// Get the logon session LUIDs
+        /// </summary>
+        /// <param name="throw_on_error">True throw on error.</param>
+        /// <returns>The list of logon sessions. Only returns ones you can access.</returns>
+        public static NtResult<IEnumerable<Luid>> GetLogonSessionIds(bool throw_on_error)
+        {
+            return LogonSession.GetLogonSessionIds(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the logon session LUIDs
+        /// </summary>
+        /// <returns>The list of logon sessions. Only returns ones you can access.</returns>
+        public static IEnumerable<Luid> GetLogonSessionIds()
+        {
+            return GetLogonSessionIds(true).Result;
+        }
+
+        /// <summary>
+        /// Get the logon sessions.
+        /// </summary>
+        /// <param name="throw_on_error">True throw on error.</param>
+        /// <returns>The list of logon sessions. Only returns ones you can access.</returns>
+        public static NtResult<IEnumerable<LogonSession>> GetLogonSessions(bool throw_on_error)
+        {
+            return LogonSession.GetLogonSessions(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the logon sessions.
+        /// </summary>
+        /// <returns>The list of logon sessions.</returns>
+        public static IEnumerable<LogonSession> GetLogonSessions()
+        {
+            return GetLogonSessions(true).Result;
         }
     }
 }

@@ -55,7 +55,14 @@ namespace NtApiDotNet
 
         internal DateTime ToDateTime()
         {
-            return DateTime.FromFileTime(QuadPart);
+            try
+            {
+                return DateTime.FromFileTime(QuadPart);
+            }
+            catch (ArgumentException)
+            {
+                return DateTime.MinValue;
+            }
         }
     }
 #pragma warning restore 1591

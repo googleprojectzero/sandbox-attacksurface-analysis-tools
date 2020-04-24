@@ -804,7 +804,8 @@ namespace NtApiDotNet.Win32
         internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
 
         [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaLogonUser(SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
+        internal static extern NtStatus LsaLogonUser(
+            SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
             SafeBuffer AuthenticationInformation,
             int AuthenticationInformationLength,
             IntPtr LocalGroups,
