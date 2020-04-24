@@ -12,27 +12,63 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+
 namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
     /// Base class to represent an authentication token.
     /// </summary>
-    public abstract class AuthenticationToken
+    public class AuthenticationToken
     {
+        private readonly byte[] _data;
+
         /// <summary>
         /// Convert the authentication token to a byte array.
         /// </summary>
         /// <returns>The byte array.</returns>
-        public abstract byte[] ToArray();
+        public virtual byte[] ToArray()
+        {
+            return (byte[])_data.Clone();
+        }
+
+        /// <summary>
+        /// Format the authentication token.
+        /// </summary>
+        /// <returns>The token as a formatted string.</returns>
+        public virtual string Format()
+        {
+            if (_data.Length == 0)
+                return string.Empty;
+            HexDumpBuilder builder = new HexDumpBuilder(true, true, true, false, 0);
+            builder.Append(_data);
+            builder.Complete();
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="data">The authentication token data.</param>
+        public AuthenticationToken(byte[] data)
+        {
+            _data = (byte[])data.Clone();
+        }
 
         /// <summary>
         /// Parse a structured authentication token.
         /// </summary>
         /// <param name="token">The token to parse.</param>
-        /// <returns>The parsed authentication token.</returns>
+        /// <returns>The parsed authentication token. If can't parse any other format returns
+        /// RawAuthenticationToken.</returns>
         public static AuthenticationToken Parse(byte[] token)
         {
-            return new RawAuthenticationToken(token);
+            if (NtlmAuthenticationToken.TryParse(token, out NtlmAuthenticationToken ntlm_token))
+            {
+                return ntlm_token;
+            }
+            return new AuthenticationToken(token);
         }
     }
 }

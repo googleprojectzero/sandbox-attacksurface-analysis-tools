@@ -793,6 +793,13 @@ namespace NtApiDotNet.Win32
         [DllImport("Secur32.dll")]
         internal static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);
 
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaRegisterLogonProcess(
+          LsaString LogonProcessName,
+          out SafeLsaHandle LsaHandle,
+          out uint SecurityMode // PLSA_OPERATIONAL_MODE
+        );
+
         [DllImport("Secur32.dll")]
         internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
 
@@ -802,7 +809,7 @@ namespace NtApiDotNet.Win32
             int AuthenticationInformationLength,
             IntPtr LocalGroups,
             TOKEN_SOURCE SourceContext,
-            out IntPtr ProfileBuffer,
+            out SafeLsaReturnBufferHandle ProfileBuffer,
             out int ProfileBufferLength,
             out Luid LogonId,
             out SafeKernelObjectHandle Token,

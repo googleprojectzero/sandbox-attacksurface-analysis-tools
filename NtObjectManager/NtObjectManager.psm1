@@ -6843,9 +6843,13 @@ function Format-AuthToken {
         if ($PSCmdlet.ParameterSetName -eq "FromContext") {
             $Token = $Context.Token
         }
-        $ba = $Token.ToArray()
-        if ($ba.Length -gt 0) {
-            Out-HexDump -Bytes $ba -ShowAll
+        if ($AsBytes) {
+            $ba = $Token.ToArray()
+            if ($ba.Length -gt 0) {
+                Out-HexDump -Bytes $ba -ShowAll
+            }
+        } else {
+            $Token.Format() | Write-Output
         }
     }
 }

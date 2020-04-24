@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -204,16 +205,25 @@ namespace NtApiDotNet.Win32
         /// <param name="user">The username.</param>
         /// <param name="realm">The user's realm.</param>
         /// <param name="type">The type of logon token.</param>
+        /// <param name="auth_package">The name of the auth package to user.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The logged on token.</returns>
-        public static NtToken LogonS4U(string user, string realm, SecurityLogonType type)
+        public static NtResult<NtToken> LogonS4U(string user, string realm, SecurityLogonType type, string auth_package, bool throw_on_error)
         {
-            LsaString pkgName = new LsaString("Negotiate");
+            NtStatus status;
+            SafeLsaHandle hlsa;
+            if (!Win32NativeMethods.LsaRegisterLogonProcess(new LsaString("NtApiDotNet"), out hlsa, out uint _).IsSuccess())
+            {
+                status = Win32NativeMethods.LsaConnectUntrusted(out hlsa);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<NtToken>(throw_on_error);
+            }
 
-            Win32NativeMethods.LsaConnectUntrusted(out SafeLsaHandle hlsa).ToNtException();
             using (hlsa)
             {
-                uint authnPkg;
-                Win32NativeMethods.LsaLookupAuthenticationPackage(hlsa, pkgName, out authnPkg).ToNtException();
+                status = Win32NativeMethods.LsaLookupAuthenticationPackage(hlsa, new LsaString(auth_package), out uint authnPkg);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<NtToken>(throw_on_error);
                 byte[] user_bytes = Encoding.Unicode.GetBytes(user);
                 byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
 
@@ -237,20 +247,36 @@ namespace NtApiDotNet.Win32
 
                     Marshal.StructureToPtr(logon_struct, buffer.DangerousGetHandle(), false);
 
-                    TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NtLmSsp");
+                    TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NT.NET");
                     Win32NativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
 
                     LsaString originName = new LsaString("S4U");
                     QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
 
-                    Win32NativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
+                    return Win32NativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
-                        tokenSource, out IntPtr profile, out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
-                        quota_limits, out NtStatus subStatus).ToNtException();
-                    Win32NativeMethods.LsaFreeReturnBuffer(profile);
-                    return NtToken.FromHandle(token_handle);
+                        tokenSource, out SafeLsaReturnBufferHandle profile, 
+                        out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
+                        quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () => {
+                            using (profile)
+                            {
+                                return NtToken.FromHandle(token_handle);
+                            }
+                    });
                 }
             }
+        }
+
+        /// <summary>
+        /// Logon user using S4U
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="realm">The user's realm.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LogonS4U(string user, string realm, SecurityLogonType type)
+        {
+            return LogonS4U(user, realm, type, "Negotiate", true).Result;
         }
     }
 }

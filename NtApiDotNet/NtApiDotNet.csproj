@@ -336,6 +336,7 @@
     <Compile Include="Win32\SafeHandles\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeLocalAllocBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaMemoryBuffer.cs" />
+    <Compile Include="Win32\SafeHandles\SafeLsaReturnBufferHandle.cs" />
     <Compile Include="Win32\Security\Audit\AuditAccessRights.cs" />
     <Compile Include="Win32\Security\Audit\AuditCategory.cs" />
     <Compile Include="Win32\Security\Audit\AuditGlobalSaclType.cs" />
@@ -347,7 +348,12 @@
     <Compile Include="Win32\Security\Authentication\AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationFlags.cs" />
     <Compile Include="Win32\Security\Authentication\IAuthenticationContext.cs" />
-    <Compile Include="Win32\Security\Authentication\RawAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAvPair.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmChallengeAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmNegotiateAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZAccessCheckResult.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContext.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZResourceManager.cs" />
