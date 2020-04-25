@@ -2747,5 +2747,49 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>LogonSessionTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.Security.Authentication.LogonSession</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>LogonId</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>UserName</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>LogonType</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SessionId</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>LogonId</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>FullQualifiedUserName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>LogonType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>SessionId</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

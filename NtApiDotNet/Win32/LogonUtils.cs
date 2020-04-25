@@ -18,7 +18,6 @@ using NtApiDotNet.Win32.Security.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
 
 namespace NtApiDotNet.Win32

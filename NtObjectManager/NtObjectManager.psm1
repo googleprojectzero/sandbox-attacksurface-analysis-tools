@@ -8614,3 +8614,59 @@ function Set-NtAuditSecurity {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get logon sessions for current system.
+.DESCRIPTION
+This cmdlet gets the active logon sessions for the current system.
+.PARAMETER LogonId
+Specify the Logon ID for the session.
+.PARAMETER Token
+Specify a Token to get the session for.
+.PARAMETER IdOnly
+Specify to only get the Logon ID rather than full details.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.LogonSession
+NtApiDotNet.Luid
+.EXAMPLE
+Get-NtLogonSession
+Get all accessible logon sessions.
+.EXAMPLE
+Get-NtLogonSession -LogonId 123456
+Get logon session with ID 123456
+.EXAMPLE
+Get-NtLogonSession -Token $token
+Get logon session from Token Authentication ID.
+.EXAMPLE
+Get-NtLogonSession -IdOnly
+Get all logon sesion IDs only.
+#>
+function Get-NtLogonSession {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    param (
+        [parameter(Mandatory, ParameterSetName = "FromLogonId")]
+        [NtApiDotNet.Luid]$LogonId,
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromToken")]
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(ParameterSetName = "All")]
+        [switch]$IdOnly
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            if ($IdOnly) {
+                [NtApiDotNet.Win32.LogonUtils]::GetLogonSessionIds() | Write-Output
+            } else {
+                [NtApiDotNet.Win32.LogonUtils]::GetLogonSessions() | Write-Output
+            }
+        }
+        "FromLogonId" {
+            [NtApiDotNet.Win32.LogonUtils]::GetLogonSession($LogonId) | Write-Output
+        }
+        "FromToken" {
+            [NtApiDotNet.Win32.LogonUtils]::GetLogonSession($Token.AuthenticationId) | Write-Output
+        }
+    }
+}

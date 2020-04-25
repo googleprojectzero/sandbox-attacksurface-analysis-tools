@@ -28,17 +28,28 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Logon/Authentication ID for session.
         /// </summary>
         public Luid LogonId { get; }
-
         /// <summary>
         /// Username.
         /// </summary>
         public string UserName { get; }
-
         /// <summary>
         /// Logon domain.
         /// </summary>
         public string LogonDomain { get; }
-
+        /// <summary>
+        /// Get the FQ User Name.
+        /// </summary>
+        public string FullQualifiedUserName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(LogonDomain))
+                {
+                    return UserName;
+                }
+                return $"{LogonDomain}\\{UserName}";
+            }
+        }
         /// <summary>
         /// Authentication package.
         /// </summary>
