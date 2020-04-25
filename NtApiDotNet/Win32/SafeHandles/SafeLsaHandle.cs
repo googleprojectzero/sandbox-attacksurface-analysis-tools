@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2016 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,37 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal class SafeLsaReturnBufferHandle : SafeBuffer
+    internal class SafeLsaHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected override bool ReleaseHandle()
-        {
-            SecurityNativeMethods.LsaFreeReturnBuffer(handle);
-            return true;
-        }
-
-        public SafeLsaReturnBufferHandle(IntPtr handle, bool owns_handle)
-            : base(owns_handle)
+        public SafeLsaHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(handle);
         }
 
-        public SafeLsaReturnBufferHandle() 
-            : base(true)
+        public SafeLsaHandle() : base(true)
         {
         }
 
-        public override bool IsInvalid
+        protected override bool ReleaseHandle()
         {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
+            return SecurityNativeMethods.LsaClose(handle).IsSuccess();
         }
     }
 }

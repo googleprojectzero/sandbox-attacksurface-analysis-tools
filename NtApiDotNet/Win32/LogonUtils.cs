@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -22,74 +22,6 @@ using System.Text;
 
 namespace NtApiDotNet.Win32
 {
-    enum KERB_LOGON_SUBMIT_TYPE
-    {
-        KerbInteractiveLogon = 2,
-        KerbSmartCardLogon = 6,
-        KerbWorkstationUnlockLogon = 7,
-        KerbSmartCardUnlockLogon = 8,
-        KerbProxyLogon = 9,
-        KerbTicketLogon = 10,
-        KerbTicketUnlockLogon = 11,
-        KerbS4ULogon = 12,        
-        KerbCertificateLogon = 13, 
-        KerbCertificateS4ULogon = 14,
-        KerbCertificateUnlockLogon = 15,
-        KerbNoElevationLogon = 83,
-        KerbLuidLogon = 84,
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct KERB_S4U_LOGON
-    {
-        public KERB_LOGON_SUBMIT_TYPE MessageType;
-        public int Flags;
-        public UnicodeStringOut ClientUpn;
-        public UnicodeStringOut ClientRealm;
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
-    class LsaString
-    {
-        public ushort Length;
-        public ushort MaximumLength;
-        [MarshalAs(UnmanagedType.LPStr)]
-        string Buffer;
-
-        public LsaString(string str)
-        {
-            Length = (ushort)str.Length;
-            MaximumLength = (ushort)(str.Length + 1);
-            Buffer = str;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    class TOKEN_SOURCE
-    {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst=8)]
-        public byte[] SourceName;
-        public Luid SourceIdentifier;
-
-        public TOKEN_SOURCE(string source_name)
-        {
-            SourceName = Encoding.ASCII.GetBytes(source_name);
-            Array.Resize(ref SourceName, 8);
-            SourceIdentifier = new Luid();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    class QUOTA_LIMITS
-    {
-        public IntPtr PagedPoolLimit;
-        public IntPtr NonPagedPoolLimit;
-        public IntPtr MinimumWorkingSetSize;
-        public IntPtr MaximumWorkingSetSize;
-        public IntPtr PagefileLimit;
-        public LargeIntegerStruct TimeLimit;
-    }
-
     /// <summary>
     /// Logon type
     /// </summary>
@@ -149,23 +81,6 @@ namespace NtApiDotNet.Win32
         CachedUnlock
     }
 
-    internal class SafeLsaHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeLsaHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
-        {
-            SetHandle(handle);
-        }
-
-        public SafeLsaHandle() : base(true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.LsaClose(handle).IsSuccess();
-        }
-    }
-
     /// <summary>
     /// Utilities for user logon.
     /// </summary>
@@ -181,7 +96,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The logged on token.</returns>
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type)
         {
-            if (!Win32NativeMethods.LogonUser(user, domain, password, type, 0, out SafeKernelObjectHandle handle))
+            if (!SecurityNativeMethods.LogonUser(user, domain, password, type, 0, out SafeKernelObjectHandle handle))
             {
                 throw new SafeWin32Exception();
             }
@@ -207,7 +122,7 @@ namespace NtApiDotNet.Win32
 
             using (var group_buffer = builder.ToBuffer())
             {
-                if (!Win32NativeMethods.LogonUserExExW(user, domain, password, type, 0, group_buffer, 
+                if (!SecurityNativeMethods.LogonUserExExW(user, domain, password, type, 0, group_buffer, 
                     out SafeKernelObjectHandle token, null, null, null, null))
                 {
                     throw new SafeWin32Exception();
@@ -229,16 +144,16 @@ namespace NtApiDotNet.Win32
         {
             NtStatus status;
             SafeLsaHandle hlsa;
-            if (!Win32NativeMethods.LsaRegisterLogonProcess(new LsaString("NtApiDotNet"), out hlsa, out uint _).IsSuccess())
+            if (!SecurityNativeMethods.LsaRegisterLogonProcess(new LsaString("NtApiDotNet"), out hlsa, out uint _).IsSuccess())
             {
-                status = Win32NativeMethods.LsaConnectUntrusted(out hlsa);
+                status = SecurityNativeMethods.LsaConnectUntrusted(out hlsa);
                 if (!status.IsSuccess())
                     return status.CreateResultFromError<NtToken>(throw_on_error);
             }
 
             using (hlsa)
             {
-                status = Win32NativeMethods.LsaLookupAuthenticationPackage(hlsa, new LsaString(auth_package), out uint authnPkg);
+                status = SecurityNativeMethods.LsaLookupAuthenticationPackage(hlsa, new LsaString(auth_package), out uint authnPkg);
                 if (!status.IsSuccess())
                     return status.CreateResultFromError<NtToken>(throw_on_error);
                 byte[] user_bytes = Encoding.Unicode.GetBytes(user);
@@ -265,12 +180,12 @@ namespace NtApiDotNet.Win32
                     Marshal.StructureToPtr(logon_struct, buffer.DangerousGetHandle(), false);
 
                     TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NT.NET");
-                    Win32NativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
+                    SecurityNativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
 
                     LsaString originName = new LsaString("S4U");
                     QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
 
-                    return Win32NativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
+                    return SecurityNativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
                         tokenSource, out SafeLsaReturnBufferHandle profile, 
                         out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,

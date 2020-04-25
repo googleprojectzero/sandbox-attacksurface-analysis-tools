@@ -790,62 +790,6 @@ namespace NtApiDotNet.Win32
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, IntPtr lpName, IntPtr lpType);
 
-        [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);
-
-        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
-        internal static extern NtStatus LsaRegisterLogonProcess(
-          LsaString LogonProcessName,
-          out SafeLsaHandle LsaHandle,
-          out uint SecurityMode // PLSA_OPERATIONAL_MODE
-        );
-
-        [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
-
-        [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaLogonUser(
-            SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
-            SafeBuffer AuthenticationInformation,
-            int AuthenticationInformationLength,
-            IntPtr LocalGroups,
-            TOKEN_SOURCE SourceContext,
-            out SafeLsaReturnBufferHandle ProfileBuffer,
-            out int ProfileBufferLength,
-            out Luid LogonId,
-            out SafeKernelObjectHandle Token,
-            QUOTA_LIMITS Quotas,
-            out NtStatus SubStatus
-        );
-
-        [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaFreeReturnBuffer(IntPtr Buffer);
-
-        [DllImport("Advapi32.dll")]
-        internal static extern bool AllocateLocallyUniqueId(out Luid Luid);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
-            int dwLogonProvider, out SafeKernelObjectHandle phToken);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool LogonUserExExW(
-              string lpszUsername,
-              string lpszDomain,
-              string lpszPassword,
-              SecurityLogonType dwLogonType,
-              int dwLogonProvider,
-              SafeTokenGroupsBuffer pTokenGroups,
-              out SafeKernelObjectHandle phToken,
-              [Out] OptionalPointer ppLogonSid,
-              [Out] OptionalPointer ppProfileBuffer,
-              [Out] OptionalPointer pdwProfileLength,
-              [Out] QUOTA_LIMITS pQuotaLimits
-            );
-
-        [DllImport("Advapi32.dll")]
-        internal static extern NtStatus LsaClose(IntPtr handle);
-
         [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool CloseServiceHandle(IntPtr hSCObject);
 
