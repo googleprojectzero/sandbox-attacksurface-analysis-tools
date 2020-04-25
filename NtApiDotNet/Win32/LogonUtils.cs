@@ -15,8 +15,10 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Native;
+using NtApiDotNet.Win32.Security.Policy;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -268,6 +270,101 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<LogonSession> GetLogonSessions()
         {
             return GetLogonSessions(true).Result;
+        }
+
+        /// <summary>
+        /// Get account rights assigned to a SID.
+        /// </summary>
+        /// <param name="sid">The SID to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of account rights.</returns>
+        public static NtResult<IEnumerable<AccountRight>> GetAccountRights(Sid sid, bool throw_on_error)
+        {
+            return AccountRight.GetAccountRights(null, sid, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get account rights assigned to a SID.
+        /// </summary>
+        /// <param name="sid">The SID to query.</param>
+        /// <returns>The list of account rights.</returns>
+        public static IEnumerable<AccountRight> GetAccountRights(Sid sid)
+        {
+            return GetAccountRights(sid, true).Result;
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="account_right">The name of the account right, such as SeImpersonatePrivilege.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static NtResult<IEnumerable<Sid>> GetAccountRightSids(string account_right, bool throw_on_error)
+        {
+            return AccountRight.GetSids(null, account_right, throw_on_error).Map<IEnumerable<Sid>>(s => s.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="account_right">The name of the account right, such as SeImpersonatePrivilege.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static IEnumerable<Sid> GetAccountRightSids(string account_right)
+        {
+            return GetAccountRightSids(account_right, true).Result;
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="privilege">The account right privilege to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static NtResult<IEnumerable<Sid>> GetAccountRightSids(TokenPrivilegeValue privilege, bool throw_on_error)
+        {
+            return GetAccountRightSids(privilege.ToString(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="privilege">The account right privilege to query.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static IEnumerable<Sid> GetAccountRightSids(TokenPrivilegeValue privilege)
+        {
+            return GetAccountRightSids(privilege, true).Result;
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="logon_type">The logon account right to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static NtResult<IEnumerable<Sid>> GetAccountRightSids(AccountRightLogonType logon_type, bool throw_on_error)
+        {
+            return GetAccountRightSids(logon_type.ToString(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Get SIDs associated with an account right.
+        /// </summary>
+        /// <param name="logon_type">The logon account right to query.</param>
+        /// <returns>The list of SIDs assigned to the account right.</returns>
+        public static IEnumerable<Sid> GetAccountRightSids(AccountRightLogonType logon_type)
+        {
+            return GetAccountRightSids(logon_type, true).Result;
+        }
+
+        /// <summary>
+        /// Get all account rights.
+        /// </summary>
+        /// <returns>All account rights.</returns>
+        public static IEnumerable<AccountRight> GetAccountRights()
+        {
+            return Enum.GetNames(typeof(TokenPrivilegeValue))
+                .Concat(Enum.GetNames(typeof(AccountRightLogonType)))
+                .Select(n => new AccountRight(null, n, null)).ToList().AsReadOnly();
         }
     }
 }

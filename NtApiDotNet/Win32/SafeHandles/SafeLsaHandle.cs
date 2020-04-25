@@ -14,6 +14,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
+using NtApiDotNet.Win32.Security.Policy;
 using System;
 
 namespace NtApiDotNet.Win32.SafeHandles
@@ -32,6 +33,14 @@ namespace NtApiDotNet.Win32.SafeHandles
         protected override bool ReleaseHandle()
         {
             return SecurityNativeMethods.LsaClose(handle).IsSuccess();
+        }
+
+        internal static NtResult<SafeLsaHandle> OpenPolicy(string system_name, LsaPolicyAccessRights desired_access, bool throw_on_error)
+        {
+            UnicodeString str = system_name != null ? new UnicodeString(system_name) : null;
+
+            return SecurityNativeMethods.LsaOpenPolicy(str, new ObjectAttributes(),
+                desired_access, out SafeLsaHandle policy).CreateResult(throw_on_error, () => policy);
         }
     }
 }

@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security
 {
@@ -445,6 +446,30 @@ namespace NtApiDotNet.Win32.Security
                     return DirectoryServiceUtils.NtType;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Lookup a privilege display name.
+        /// </summary>
+        /// <param name="system_name">The system name to do the lookup on.</param>
+        /// <param name="privilege_name">The privilege name.</param>
+        /// <returns>The display name. Empty string on error.</returns>
+        public static string LookupPrivilegeDisplayName(string system_name, string privilege_name)
+        {
+            int name_length = 0;
+            Win32NativeMethods.LookupPrivilegeDisplayName(system_name, privilege_name, null, ref name_length, out int lang_id);
+            if (name_length <= 0)
+            {
+                return  string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(name_length + 1);
+            name_length = builder.Capacity;
+            if (Win32NativeMethods.LookupPrivilegeDisplayName(system_name, privilege_name, builder, ref name_length, out lang_id))
+            {
+                return builder.ToString();
+            }
+            return string.Empty;
         }
 
         #endregion

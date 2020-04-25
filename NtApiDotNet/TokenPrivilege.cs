@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Security;
 using System;
 using System.Text;
 
@@ -77,27 +78,7 @@ namespace NtApiDotNet
         /// Get the display name/description of the privilege
         /// </summary>
         /// <returns>The display name</returns>
-        public string DisplayName
-        {
-            get
-            {
-                int name_length = 0;
-                string name = Name;
-                Win32NativeMethods.LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
-                if (name_length <= 0)
-                {
-                    return string.Empty;
-                }
-
-                StringBuilder builder = new StringBuilder(name_length + 1);
-                name_length = builder.Capacity;
-                if (Win32NativeMethods.LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
-                {
-                    return builder.ToString();
-                }
-                return string.Empty;
-            }
-        }
+        public string DisplayName => Win32Security.LookupPrivilegeDisplayName(null, Name);
 
         /// <summary>
         /// Get whether privilege is enabled

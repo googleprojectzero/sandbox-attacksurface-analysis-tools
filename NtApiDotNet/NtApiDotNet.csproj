@@ -307,8 +307,11 @@
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\Debugger\ISymbolTypeResolver.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
+    <Compile Include="Win32\Security\Policy\AccountRight.cs" />
+    <Compile Include="Win32\Security\Policy\AccountRightLogonType.cs" />
     <Compile Include="Win32\Security\Native\KERB_S4U_LOGON.cs" />
     <Compile Include="Win32\Security\Native\LsaString.cs" />
+    <Compile Include="Win32\Security\Native\LSA_ENUMERATION_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\QUOTA_LIMITS.cs" />
     <Compile Include="Win32\Security\Native\KERB_LOGON_SUBMIT_TYPE.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
@@ -394,6 +397,7 @@
     <Compile Include="Win32\Security\Native\SecWinNtAuthIdentityFlags.cs" />
     <Compile Include="Win32\Security\Native\SEC_WINNT_AUTH_IDENTITY.cs" />
     <Compile Include="Win32\Security\Native\SEC_WINNT_AUTH_IDENTITY_EX.cs" />
+    <Compile Include="Win32\Security\Policy\LsaPolicyAccessRights.cs" />
     <Compile Include="Win32\Security\Win32Security.cs" />
     <Compile Include="Win32\Security\Native\SecurityNativeMethods.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationPackage.cs" />

@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Audit;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authorization;
+using NtApiDotNet.Win32.Security.Policy;
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -527,6 +528,30 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("Advapi32.dll")]
         internal static extern NtStatus LsaClose(IntPtr handle);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaOpenPolicy(
+          UnicodeString SystemName,
+          ObjectAttributes ObjectAttributes,
+          LsaPolicyAccessRights DesiredAccess,
+          out SafeLsaHandle PolicyHandle
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumerateAccountRights(
+          SafeLsaHandle PolicyHandle,
+          SafeSidBufferHandle AccountSid,
+          out SafeLsaMemoryBuffer UserRights,
+          out int CountOfRights
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumerateAccountsWithUserRight(
+          SafeLsaHandle PolicyHandle,
+          UnicodeString UserRight,
+          out SafeLsaMemoryBuffer Buffer,
+          out int CountReturned
+        );
 
         public static SecStatusCode CheckResult(this SecStatusCode result)
         {
