@@ -12,29 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
-using System;
-
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Native
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+#pragma warning disable 1591
+    internal enum SecStatusCode : uint
     {
-        protected override bool ReleaseHandle()
-        {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
-        }
-
-        public SafeLsaMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
-        }
+        Success = 0,
+        ContinueNeeded = 0x00090312,
+        CompleteNeeded = 0x00090313,
+        CompleteAndContinue = 0x00090314,
     }
 }

@@ -16,6 +16,7 @@ using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.DirectoryService;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authorization;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;

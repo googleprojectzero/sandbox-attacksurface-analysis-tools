@@ -12,28 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.InteropServices;
+using System.Security;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Native
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+#pragma warning disable 1591
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SecureStringMarshal : IDisposable
     {
-        protected override bool ReleaseHandle()
+        public IntPtr Ptr;
+
+        public SecureStringMarshal(SecureString s)
         {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
+            Ptr = Marshal.SecureStringToBSTR(s);
         }
 
-        public SafeLsaMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
+        public void Dispose()
         {
-        }
-
-        public override bool IsInvalid
-        {
-            get
+            if (Ptr != IntPtr.Zero)
             {
-                return handle == IntPtr.Zero;
+                Marshal.ZeroFreeBSTR(Ptr);
             }
         }
     }
