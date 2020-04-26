@@ -474,21 +474,24 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);
+        internal static extern NtStatus LsaConnectUntrusted(out SafeLsaLogonHandle handle);
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaRegisterLogonProcess(
           LsaString LogonProcessName,
-          out SafeLsaHandle LsaHandle,
+          out SafeLsaLogonHandle LsaHandle,
           out uint SecurityMode // PLSA_OPERATIONAL_MODE
         );
 
         [DllImport("Secur32.dll")]
-        internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
+        internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaLogonHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
 
         [DllImport("Secur32.dll")]
         internal static extern NtStatus LsaLogonUser(
-            SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
+            SafeLsaLogonHandle LsaHandle, 
+            LsaString OriginName, 
+            SecurityLogonType LogonType, 
+            uint AuthenticationPackage,
             SafeBuffer AuthenticationInformation,
             int AuthenticationInformationLength,
             IntPtr LocalGroups,
@@ -528,6 +531,11 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("Advapi32.dll")]
         internal static extern NtStatus LsaClose(IntPtr handle);
+
+        [DllImport("Advapi32.dll")]
+        internal static extern NtStatus LsaDeregisterLogonProcess(
+          IntPtr LsaHandle
+        );
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaOpenPolicy(

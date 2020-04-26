@@ -163,18 +163,11 @@ namespace NtApiDotNet.Win32
         /// <returns>The logged on token.</returns>
         public static NtResult<NtToken> LogonS4U(string user, string realm, SecurityLogonType type, string auth_package, bool throw_on_error)
         {
-            NtStatus status;
-            SafeLsaHandle hlsa;
-            if (!SecurityNativeMethods.LsaRegisterLogonProcess(new LsaString("NtApiDotNet"), out hlsa, out uint _).IsSuccess())
+            using (var hlsa = SafeLsaLogonHandle.Connect(throw_on_error))
             {
-                status = SecurityNativeMethods.LsaConnectUntrusted(out hlsa);
-                if (!status.IsSuccess())
-                    return status.CreateResultFromError<NtToken>(throw_on_error);
-            }
-
-            using (hlsa)
-            {
-                status = SecurityNativeMethods.LsaLookupAuthenticationPackage(hlsa, new LsaString(auth_package), out uint authnPkg);
+                if (!hlsa.IsSuccess)
+                    return hlsa.Cast<NtToken>();
+                NtStatus status = SecurityNativeMethods.LsaLookupAuthenticationPackage(hlsa.Result, new LsaString(auth_package), out uint authnPkg);
                 if (!status.IsSuccess())
                     return status.CreateResultFromError<NtToken>(throw_on_error);
                 byte[] user_bytes = Encoding.Unicode.GetBytes(user);
@@ -206,7 +199,7 @@ namespace NtApiDotNet.Win32
                     LsaString originName = new LsaString("S4U");
                     QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
 
-                    return SecurityNativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
+                    return SecurityNativeMethods.LsaLogonUser(hlsa.Result, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
                         tokenSource, out SafeLsaReturnBufferHandle profile, 
                         out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
