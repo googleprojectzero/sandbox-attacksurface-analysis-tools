@@ -78,7 +78,8 @@
                 <PropertyName>ValueCount</PropertyName>
               </ListItem>
               <ListItem>
-                <PropertyName>Values</PropertyName>
+                <ScriptBlock>$_.Values.Name</ScriptBlock>
+                <Label>Values</Label>
               </ListItem>
             </ListItems>
           </ListEntry>
@@ -2803,7 +2804,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>DisplayName</Label>
+            <Label>Sids</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -2814,7 +2815,7 @@
                 <PropertyName>Name</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>DisplayName</PropertyName>
+                <ScriptBlock>[string]::Join(", ", $_.Sids.Name)</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

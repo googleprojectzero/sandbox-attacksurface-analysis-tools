@@ -84,6 +84,25 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
+    /// Specify what account rights to get.
+    /// </summary>
+    public enum AccountRightType
+    {
+        /// <summary>
+        /// Get all account rights.
+        /// </summary>
+        All,
+        /// <summary>
+        /// Get all privilege account rights.
+        /// </summary>
+        Privilege,
+        /// <summary>
+        /// Get logon account rights.
+        /// </summary>
+        Logon
+    }
+
+    /// <summary>
     /// Utilities for user logon.
     /// </summary>
     public static class LogonUtils
@@ -357,14 +376,32 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Get account rights.
+        /// </summary>
+        /// <param name="type">Specify the type of account rights to get.</param>
+        /// <returns>Account rights.</returns>
+        public static IEnumerable<AccountRight> GetAccountRights(AccountRightType type)
+        {
+            IEnumerable<string> rights = new string[0];
+            if (type == AccountRightType.All || type == AccountRightType.Privilege)
+            {
+                rights = Enum.GetNames(typeof(TokenPrivilegeValue));
+            }
+            if (type == AccountRightType.All || type == AccountRightType.Logon)
+            {
+                rights = rights.Concat(Enum.GetNames(typeof(AccountRightLogonType)));
+            }
+
+            return rights.Select(n => new AccountRight(null, n, null)).ToList().AsReadOnly();
+        }
+
+        /// <summary>
         /// Get all account rights.
         /// </summary>
         /// <returns>All account rights.</returns>
         public static IEnumerable<AccountRight> GetAccountRights()
         {
-            return Enum.GetNames(typeof(TokenPrivilegeValue))
-                .Concat(Enum.GetNames(typeof(AccountRightLogonType)))
-                .Select(n => new AccountRight(null, n, null)).ToList().AsReadOnly();
+            return GetAccountRights(AccountRightType.All);
         }
     }
 }

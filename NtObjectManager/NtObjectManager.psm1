@@ -8670,3 +8670,102 @@ function Get-NtLogonSession {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get account rights for current system.
+.DESCRIPTION
+This cmdlet gets account rights for the current system.
+.PARAMETER Type
+Specify the type of account rights to query.
+.PARAMETER Sid
+Specify a SID to get all account rights for.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.AccountRight
+.EXAMPLE
+Get-NtAccountRight
+Get all account rights.
+.EXAMPLE
+Get-NtAccountRight -Type Privilege
+Get all privilege account rights.
+.EXAMPLE
+Get-NtAccountRight -Type Logon
+Get all logon account rights.
+.EXAMPLE
+Get-NtAccountRight -SID $sid
+Get account rights for SID.
+.EXAMPLE
+Get-NtAccountRight -KnownSid World
+Get account rights for known SID.
+.EXAMPLE
+Get-NtAccountRight -Name "Everyone"
+Get account rights for group name.
+#>
+function Get-NtAccountRight {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    param (
+        [parameter(Position = 0, ParameterSetName = "All")]
+        [NtApiDotNet.Win32.AccountRightType]$Type = "All",
+        [parameter(Mandatory, ParameterSetName = "FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, ParameterSetName = "FromKnownSid")]
+        [NtApiDotNet.KnownSidValue]$KnownSid,
+        [parameter(Mandatory, ParameterSetName = "FromName")]
+        [string]$Name
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights($Type) | Write-Output
+        }
+        "FromSid" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights($Sid) | Write-Output
+        }
+        "FromKnownSid" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights((Get-NtSid -KnownSid $KnownSid)) | Write-Output
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights((Get-NtSid -Name $Name)) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get SIDs for an account right for current system.
+.DESCRIPTION
+This cmdlet gets SIDs for an account rights for the current system.
+.PARAMETER Privilege
+Specify a privileges to query.
+.PARAMETER Logon
+Specify a logon rights to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid
+.EXAMPLE
+Get-NtAccountRightSid -Privilege SeBackupPrivilege
+Get all SIDs for SeBackupPrivilege.
+.EXAMPLE
+Get-NtAccountRightSid -Logon SeInteractiveLogonRight
+Get all SIDs which can logon interactively.
+#>
+function Get-NtAccountRightSid {
+    [CmdletBinding(DefaultParameterSetName = "Privilege")]
+    param (
+        [parameter(Mandatory, ParameterSetName = "FromPrivilege")]
+        [NtApiDotNet.TokenPrivilegeValue]$Privilege,
+        [parameter(Mandatory, ParameterSetName = "FromLogon")]
+        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType]$Logon
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPrivilege" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRightSids($Privilege) | Write-Output
+        }
+        "FromLogon" {
+            [NtApiDotNet.Win32.LogonUtils]::GetAccountRightSids($Logon) | Write-Output
+        }
+    }
+}
