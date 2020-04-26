@@ -22,7 +22,7 @@ namespace NtObjectManager.Provider
     /// </summary>
     public class NtDirectoryEntry
     {
-        private readonly NtObject _root;
+        private protected readonly NtObject _root;
         private SecurityDescriptor _sd;
         private string _symlink_target;
         private bool? _is_symlink;
@@ -153,7 +153,7 @@ namespace NtObjectManager.Provider
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The object opened.</returns>
         /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
-        public NtResult<NtObject> ToObject(bool throw_on_error)
+        public virtual NtResult<NtObject> ToObject(bool throw_on_error)
         {
             AttributeFlags flags = AttributeFlags.CaseInsensitive;
             if (TypeName.Equals("key", StringComparison.OrdinalIgnoreCase))

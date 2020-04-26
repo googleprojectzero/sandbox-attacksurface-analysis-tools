@@ -23,29 +23,31 @@ namespace NtObjectManager.Provider
     internal class NtKeyContainer : NtObjectContainer
     {
         private readonly NtKey _key;
+        private readonly bool _open_for_backup;
 
         private NtResult<NtKey> Open(string path, KeyAccessRights desired_access, bool throw_on_error)
         {
             using (var obja = new ObjectAttributes(path, AttributeFlags.OpenLink | AttributeFlags.CaseInsensitive, _key))
             {
-                return NtKey.Open(obja, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
+                return NtKey.Open(obja, desired_access, _open_for_backup ? KeyCreateOptions.BackupRestore : KeyCreateOptions.NonVolatile, throw_on_error);
             }
         }
 
         public NtKeyContainer() 
-            : this(NtKey.Open(@"\REGISTRY", null, KeyAccessRights.MaximumAllowed))
+            : this(NtKey.Open(@"\REGISTRY", null, KeyAccessRights.MaximumAllowed), false)
         {
         }
 
-        public NtKeyContainer(NtKey key) 
+        public NtKeyContainer(NtKey key, bool open_for_backup) 
             : base(key)
         {
             _key = key;
+            _open_for_backup = open_for_backup;
         }
 
-        private static NtObjectContainer Create(NtKey dir)
+        private NtObjectContainer Create(NtKey dir)
         {
-            return new NtKeyContainer(dir);
+            return new NtKeyContainer(dir, _open_for_backup);
         }
 
         public override bool QueryAccessGranted => _key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys | KeyAccessRights.QueryValue);
@@ -58,6 +60,11 @@ namespace NtObjectManager.Provider
         public override NtResult<NtObjectContainer> DuplicateForQuery(bool throw_on_error)
         {
             return _key.Duplicate(KeyAccessRights.EnumerateSubKeys | KeyAccessRights.QueryValue, throw_on_error).Map(Create);
+        }
+
+        public override NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
+        {
+            return new NtKeyEntry(_obj, relative_path, name, _open_for_backup);
         }
 
         public override bool Exists(string path)

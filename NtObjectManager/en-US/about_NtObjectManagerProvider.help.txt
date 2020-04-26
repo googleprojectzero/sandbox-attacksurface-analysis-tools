@@ -1,92 +1,99 @@
 ﻿TOPIC
-	about_NtObjectManagerProvider
+    about_NtObjectManagerProvider
 
 SHORT DESCRIPTION
-	The NtObjectManager Module includes a PS drive provider to inspect and manipulate the object 
-	manager namespace.
+    The NtObjectManager Module includes a PS drive provider to inspect and manipulate the object 
+    manager namespace.
 
 LONG DESCRIPTION
-	Under the hood of the Win32 API is the NT Object Manager which acts similar to a filesystem.
-	This is normally hidden from view and requires specialist tools such as WinObj to inspect it.
-	This NtObjectManager Module comes with a PS drive provider which allows you to enumerate entries
-	and modify certain properties in the name space.
+    Under the hood of the Win32 API is the NT Object Manager which acts similar to a filesystem.
+    This is normally hidden from view and requires specialist tools such as WinObj to inspect it.
+    This NtObjectManager Module comes with a PS drive provider which allows you to enumerate entries
+    and modify certain properties in the name space.
 
-	By default two new drives will be created, NtObject: which can be used to access the root namespace,
-	and NtObjectSession: which points to the current user session's BaseNamedObjects directory. It's
-	also possible to add other drives with different roots if needed. The root name for the drive provider
-	is nt:\path. 
-	
-	Accessing the namespace works just like other PS driver providers. You can use Get-ChildItems to 
-	enumerate items Get-Item to get an individual object. Get/Set-Acl and wildcards are also supported.
-	The items returned are directory entries which contain basic information such as the name,
-	type name and security descriptor of the object. To get a handle to the object to work with you
-	must call the ToObject method. Ensure you call the Close method after you've finished with the 
-	handle to prevent a leak.
-	
-	As an additional feature it's possible to map Private Namespaces assuming you known the boundary
-	descriptor required. The format of the drive root name must be of the form:
-	ntpriv:[SID[:SID]@]NAME
-	SIDs are optional and can are specified in SDDL format (either S-X-X-X or short forms such as BA).
+    By default two new drives will be created, NtObject: which can be used to access the root namespace,
+    and NtObjectSession: which points to the current user session's BaseNamedObjects directory. It's
+    also possible to add other drives with different roots if needed. The root name for the drive provider
+    is nt:\path.
 
-	New-Item is supported for a limited number of object types, Event, Directory, SymbolicLink (link),
-	Mutant and Semaphore. You need to specify the type using the -ItemType parameter, and for reasons
-	for symbolic links you need to use the name link otherwise it will fail. SymbolicLink and Semaphore
-	take an additional Value, the link target for the former and the maximum semaphore count for the latter.
-	Also note that the return value of New-Item is a handle to the underlying object (like you would get from
-	calling ToObject on a directory entry). This is because without a handle reference by default the 
-	kernel will delete the named object. 
+    The provider also supports Registry Keys. The root of the Registry is mapped under the NtKey: drive
+    while the current user hive is mapped to NtKeyUser:. If you create a new drive with SeBackupPrivilege
+    enabled it will set backup mode which bypasses most access control for the Registry.
+
+    Accessing the namespace works just like other PS driver providers. You can use Get-ChildItems to 
+    enumerate items Get-Item to get an individual object. Get/Set-Acl and wildcards are also supported.
+    The items returned are directory entries which contain basic information such as the name,
+    type name and security descriptor of the object. To get a handle to the object to work with you
+    must call the ToObject method. Ensure you call the Close method after you've finished with the 
+    handle to prevent a leak.
+    
+    As an additional feature it's possible to map Private Namespaces assuming you known the boundary
+    descriptor required. The format of the drive root name must be of the form:
+    ntpriv:[SID[:SID]@]NAME
+    SIDs are optional and can are specified in SDDL format (either S-X-X-X or short forms such as BA).
+
+    New-Item is supported for a limited number of object types, Event, Directory, SymbolicLink (link),
+    Mutant and Semaphore. You need to specify the type using the -ItemType parameter, and for reasons
+    for symbolic links you need to use the name link otherwise it will fail. SymbolicLink and Semaphore
+    take an additional Value, the link target for the former and the maximum semaphore count for the latter.
+    Also note that the return value of New-Item is a handle to the underlying object (like you would get from
+    calling ToObject on a directory entry). This is because without a handle reference by default the 
+    kernel will delete the named object. 
 
 EXAMPLES
-	Example 1: List child items of object manager namespace root.
-	Get-ChildItem NtObject:\
+    Example 1: List child items of object manager namespace root.
+    Get-ChildItem NtObject:\
 
-	Example 2: List maximum allowed access for objects.
-	Get-ChildItem NtObject:\Dir | Select-Object Name,MaximumGrantedAccess
+    Example 2: List maximum allowed access for objects.
+    Get-ChildItem NtObject:\Dir | Select-Object Name,MaximumGrantedAccess
 
-	Example 3: List symbolic links in a directory and print their targets.
-	Get-ChildItem NtObject:\Dir | Where-Object IsSymbolicLink -eq $True | Select-Object Name,SymbolicLinkTarget
+    Example 3: List symbolic links in a directory and print their targets.
+    Get-ChildItem NtObject:\Dir | Where-Object IsSymbolicLink -eq $True | Select-Object Name,SymbolicLinkTarget
 
-	Example 4: Get an event object and Set it.
-	$event = Get-Item NtObjectSession:\Eventname
-	$event_obj = $event.ToObject()
-	$event_obj.Set()
-	$event_obj.Close()
+    Example 4: Get an event object and Set it.
+    $event = Get-Item NtObjectSession:\Eventname
+    $event_obj = $event.ToObject()
+    $event_obj.Set()
+    $event_obj.Close()
 
-	Example 5: Create a new directory ABC in the user's base named objects.
-	$obj = New-Item NtObjectSession:\ABC -ItemType Directory
-	# Do something with directory.
-	# ...
-	$obj.Close()
+    Example 5: Create a new directory ABC in the user's base named objects.
+    $obj = New-Item NtObjectSession:\ABC -ItemType Directory
+    # Do something with directory.
+    # ...
+    $obj.Close()
 
-	Example 6: Create a new symbolic link ABC in the user's base named objects pointer to \BaseNamedObjects
-	$obj = New-Item NtObjectSession:\ABC -ItemType Link -Value \BaseNamedObjects
-	# Do something
-	# ...
-	$obj.Close()
+    Example 6: Create a new symbolic link ABC in the user's base named objects pointer to \BaseNamedObjects
+    $obj = New-Item NtObjectSession:\ABC -ItemType Link -Value \BaseNamedObjects
+    # Do something
+    # ...
+    $obj.Close()
 
-	Example 7: Create a new event ABC in the user's base named objects 
-	$obj = New-Item NtObjectSession:\ABC -ItemType Event
-	# Do something
-	# ...
-	$obj.Close()
+    Example 7: Create a new event ABC in the user's base named objects 
+    $obj = New-Item NtObjectSession:\ABC -ItemType Event
+    # Do something
+    # ...
+    $obj.Close()
 
-	Example 8: Create a new semaphore ABC in the user's base named objects with max count of 10
-	$obj = New-Item NtObjectSession:\ABC -ItemType Semaphore -Value 10
-	# Do something
-	# ...
-	$obj.Close()
+    Example 8: Create a new semaphore ABC in the user's base named objects with max count of 10
+    $obj = New-Item NtObjectSession:\ABC -ItemType Semaphore -Value 10
+    # Do something
+    # ...
+    $obj.Close()
 
-	Example 9: Create a new mutant ABC in the user's base named objects
-	$obj = New-Item NtObjectSession:\ABC -ItemType Mutant
-	# Do something
-	# ...
-	$obj.Close()
+    Example 9: Create a new mutant ABC in the user's base named objects
+    $obj = New-Item NtObjectSession:\ABC -ItemType Mutant
+    # Do something
+    # ...
+    $obj.Close()
 
-	Example 10: Mount an existing global directory.
-	New-PSDrive -PSProvider ObjectManager -Name BNO -Root nt:BaseNamedObjects
+    Example 10: Mount an existing global directory.
+    New-PSDrive -PSProvider NtObjectManager -Name BNO -Root nt:BaseNamedObjects
 
-	Example 11: Mount an existing private namespace, with name ABC and SIDs Everyone and Low Mandatory Level.
-	New-PSDrive -PSProvider ObjectManager -Name PrivNS -Root ntpriv:WD:LW@ABC
+    Example 11: Mount an existing private namespace, with name ABC and SIDs Everyone and Low Mandatory Level.
+    New-PSDrive -PSProvider NtObjectManager -Name PrivNS -Root ntpriv:WD:LW@ABC
+
+    Example 12: Mount the Machine Registry KEY.
+    New-PSDrive -PSProvider NtObjectManager -Name MACHINEKEY -Root ntkey:MACHINE
 
 KEYWORDS
-	Objects, ObjectManager.
+    Objects, ObjectManager.

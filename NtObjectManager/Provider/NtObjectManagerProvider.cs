@@ -161,7 +161,7 @@ namespace NtObjectManager.Provider
                 {
                     using (NtKey root = NtKey.Open(@"\Registry", null, KeyAccessRights.MaximumAllowed))
                     {
-                        using (NtKey key = NtKey.Open(drive.Root.Substring(KEY_ROOT.Length), root, KeyAccessRights.MaximumAllowed))
+                        using (NtKey key = NtKey.Open(drive.Root.Substring(KEY_ROOT.Length).TrimStart('\\'), root, KeyAccessRights.MaximumAllowed))
                         {
                             ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(key.Duplicate(), drive);
                             return objmgr_drive;

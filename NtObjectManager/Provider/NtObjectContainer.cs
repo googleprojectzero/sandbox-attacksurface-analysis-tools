@@ -21,7 +21,7 @@ namespace NtObjectManager.Provider
 {
     internal abstract class NtObjectContainer : IDisposable
     {
-        private readonly NtObject _obj;
+        private protected readonly NtObject _obj;
 
         private protected NtObjectContainer(NtObject obj)
         {
@@ -48,12 +48,8 @@ namespace NtObjectManager.Provider
 
         public abstract NtObjectContainerEntry GetEntry(string path);
 
-        public NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
+        public virtual NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
         {
-            if (typename.Equals("key", StringComparison.OrdinalIgnoreCase))
-            {
-                return new NtKeyEntry(_obj, relative_path, name);
-            }
             return new NtDirectoryEntry(_obj, relative_path, name, typename);
         }
 

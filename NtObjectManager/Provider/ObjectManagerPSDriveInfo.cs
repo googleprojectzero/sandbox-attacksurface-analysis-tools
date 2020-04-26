@@ -29,7 +29,16 @@ namespace NtObjectManager.Provider
             }
             else if (root is NtKey key)
             {
-                DirectoryRoot = new NtKeyContainer(key);
+                bool open_for_backup = false;
+                using (var token = NtToken.OpenProcessToken())
+                {
+                    if (token.SinglePrivilegeCheck(TokenPrivilegeValue.SeBackupPrivilege))
+                    {
+                        open_for_backup = true;
+                    }
+                }
+
+                DirectoryRoot = new NtKeyContainer(key, open_for_backup);
             }
             else
             {

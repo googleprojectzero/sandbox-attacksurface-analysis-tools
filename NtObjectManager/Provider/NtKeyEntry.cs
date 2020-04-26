@@ -23,6 +23,7 @@ namespace NtObjectManager.Provider
     public sealed class NtKeyEntry : NtDirectoryEntry
     {
         private List<NtKeyValue> _values;
+        private readonly bool _open_for_backup;
 
         private protected override void PopulateKeyData(NtKey key)
         {
@@ -33,9 +34,26 @@ namespace NtObjectManager.Provider
             }
         }
 
-        internal NtKeyEntry(NtObject root, string relative_path, string name)
+        /// <summary>
+        /// Try and open the directory entry and return an actual NtObject handle.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The object opened.</returns>
+        /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
+        public override NtResult<NtObject> ToObject(bool throw_on_error)
+        {
+            using (var obja = new ObjectAttributes(RelativePath, AttributeFlags.OpenLink | AttributeFlags.CaseInsensitive, _root))
+            {
+                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, 
+                    _open_for_backup ? KeyCreateOptions.BackupRestore : KeyCreateOptions.NonVolatile, 
+                    throw_on_error).Cast<NtObject>();
+            }
+        }
+
+        internal NtKeyEntry(NtObject root, string relative_path, string name, bool open_for_backup)
             : base(root, relative_path, name, "Key")
         {
+            _open_for_backup = open_for_backup;
         }
 
         /// <summary>
