@@ -348,7 +348,7 @@ namespace NtApiDotNet.Win32
                     {
                         WTS_SESSION_INFO session_info = (WTS_SESSION_INFO)Marshal.PtrToStructure(current, typeof(WTS_SESSION_INFO));
 
-                        if (session_info.State == WTS_CONNECTSTATE_CLASS.WTSActive && Win32NativeMethods.WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
+                        if (session_info.State == ConsoleSessionConnectState.Active && Win32NativeMethods.WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
                         {
                             tokens.Add(NtToken.FromHandle(handle));
                         }

@@ -566,5 +566,52 @@ namespace NtApiDotNet.Win32
         {
             return CreateRemoteThread(process, null, false, 0, start_address, parameter, flags);
         }
+
+        /// <summary>
+        /// Get a list of all console sessions.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of console sessions.</returns>
+        public static NtResult<IEnumerable<ConsoleSession>> GetConsoleSessions(bool throw_on_error)
+        {
+            List<ConsoleSession> sessions = new List<ConsoleSession>();
+            IntPtr session_info = IntPtr.Zero;
+            int session_count = 0;
+            try
+            {
+                int level = 1;
+                if (!Win32NativeMethods.WTSEnumerateSessionsEx(IntPtr.Zero, ref level, 0, out session_info, out session_count))
+                {
+                    return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<IEnumerable<ConsoleSession>>(throw_on_error);
+                }
+
+                IntPtr current = session_info;
+                for (int i = 0; i < session_count; ++i)
+                {
+                    WTS_SESSION_INFO_1 info = (WTS_SESSION_INFO_1)Marshal.PtrToStructure(current, typeof(WTS_SESSION_INFO_1));
+                    sessions.Add(new ConsoleSession(info));
+                    current += Marshal.SizeOf(typeof(WTS_SESSION_INFO_1));
+                }
+            }
+            finally
+            {
+                if (session_info != IntPtr.Zero)
+                {
+                    Win32NativeMethods.WTSFreeMemoryEx(WTS_TYPE_CLASS.WTSTypeSessionInfoLevel1, 
+                        session_info, session_count);
+                }
+            }
+
+            return sessions.AsReadOnly().CreateResult<IEnumerable<ConsoleSession>>();
+        }
+
+        /// <summary>
+        /// Get a list of all console sessions.
+        /// </summary>
+        /// <returns>The list of console sessions.</returns>
+        public static IEnumerable<ConsoleSession> GetConsoleSessions()
+        {
+            return GetConsoleSessions(true).Result;
+        }
     }
 }

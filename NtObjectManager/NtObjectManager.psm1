@@ -8769,3 +8769,20 @@ function Get-NtAccountRightSid {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get current console sessions for the system.
+.DESCRIPTION
+This cmdlet gets current console sessions for the system.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.ConsoleSession
+.EXAMPLE
+Get-NtConsoleSession
+Get all Console Sesssions.
+#>
+function Get-NtConsoleSession {
+    [NtApiDotNet.Win32.Win32Utils]::GetConsoleSessions() | Write-Output
+}

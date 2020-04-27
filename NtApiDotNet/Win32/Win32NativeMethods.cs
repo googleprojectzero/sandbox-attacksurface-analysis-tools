@@ -13,12 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
-using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.Debugger;
 using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security;
-using NtApiDotNet.Win32.Security.Audit;
-using NtApiDotNet.Win32.Security.Authorization;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -118,18 +114,44 @@ namespace NtApiDotNet.Win32
         WriteThrough = 0x80000000,
     }
 
-    internal enum WTS_CONNECTSTATE_CLASS
+    internal enum WTS_INFO_CLASS
     {
-        WTSActive,              // User logged on to WinStation
-        WTSConnected,           // WinStation connected to client
-        WTSConnectQuery,        // In the process of connecting to client
-        WTSShadow,              // Shadowing another WinStation
-        WTSDisconnected,        // WinStation logged on without client
-        WTSIdle,                // Waiting for client to connect
-        WTSListen,              // WinStation is listening for connection
-        WTSReset,               // WinStation is being reset
-        WTSDown,                // WinStation is down due to error
-        WTSInit,                // WinStation in initialization
+        WTSInitialProgram,
+        WTSApplicationName,
+        WTSWorkingDirectory,
+        WTSOEMId,
+        WTSSessionId,
+        WTSUserName,
+        WTSWinStationName,
+        WTSDomainName,
+        WTSConnectState,
+        WTSClientBuildNumber,
+        WTSClientName,
+        WTSClientDirectory,
+        WTSClientProductId,
+        WTSClientHardwareId,
+        WTSClientAddress,
+        WTSClientDisplay,
+        WTSClientProtocolType,
+        WTSIdleTime,
+        WTSLogonTime,
+        WTSIncomingBytes,
+        WTSOutgoingBytes,
+        WTSIncomingFrames,
+        WTSOutgoingFrames,
+        WTSClientInfo,
+        WTSSessionInfo,
+        WTSSessionInfoEx,
+        WTSConfigInfo,
+        WTSValidationInfo,
+        WTSSessionAddressV4,
+        WTSIsRemoteSession
+    }
+    internal enum WTS_TYPE_CLASS
+    {
+        WTSTypeProcessInfoLevel0,
+        WTSTypeProcessInfoLevel1,
+        WTSTypeSessionInfoLevel1
     }
 
     [Flags]
@@ -153,7 +175,25 @@ namespace NtApiDotNet.Win32
     {
         public int SessionId;
         public IntPtr pWinStationName;
-        public WTS_CONNECTSTATE_CLASS State;
+        public ConsoleSessionConnectState State;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct WTS_SESSION_INFO_1
+    {
+        public int ExecEnvId;
+        public ConsoleSessionConnectState State;
+        public int SessionId;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pSessionName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pHostName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pUserName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pDomainName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pFarmName;
     }
 
     internal enum SidNameUse
@@ -691,6 +731,31 @@ namespace NtApiDotNet.Win32
 
         [DllImport("wtsapi32.dll", SetLastError = true)]
         internal static extern void WTSFreeMemory(IntPtr memory);
+
+        [DllImport("wtsapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool WTSFreeMemoryEx(
+          WTS_TYPE_CLASS WTSTypeClass,
+          IntPtr pMemory,
+          int NumberOfEntries
+        );
+
+        [DllImport("wtsapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool WTSEnumerateSessionsEx(
+          IntPtr hServer,
+          ref int pLevel,
+          int Filter,
+          out IntPtr ppSessionInfo,
+          out int pCount
+        );
+
+        [DllImport("wtsapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool WTSQuerySessionInformation(
+          IntPtr hServer,
+          int SessionId,
+          WTS_INFO_CLASS WTSInfoClass,
+          out IntPtr ppBuffer,
+          out int pBytesReturned
+        );
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int GetFinalPathNameByHandle(SafeKernelObjectHandle hFile, StringBuilder lpszFilePath,
