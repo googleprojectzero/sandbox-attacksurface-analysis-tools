@@ -8809,3 +8809,64 @@ function Get-ServicePrincipalName {
     )
     [NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName]::Parse($Name) | Write-Output
 }
+
+<#
+.SYNOPSIS
+Get a token's ID values.
+.DESCRIPTION
+This cmdlet will get Token's ID values such as Authentication ID and Origin ID.
+.PARAMETER Authentication
+Specify to get authentication Id.
+.PARAMETER Origin
+Specify to get origin Id.
+.PARAMETER Modified
+Specify to get modified Id.
+.PARAMETER Token
+Optional token object to use to get ID. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Luid
+.EXAMPLE
+Get-NtTokenId
+Get the Token ID field.
+.EXAMPLE
+Get-NtTokenOwner -Token $token
+Get Token ID on an explicit token object.
+.EXAMPLE
+Get-NtTokenOwner -Authentication
+Get the token's Authentication ID.
+.EXAMPLE
+Get-NtTokenOwner -Origin
+Get the token's Origin ID.
+#>
+function Get-NtTokenId {
+    [CmdletBinding(DefaultParameterSetName="FromId")]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory, ParameterSetName="FromOrigin")]
+        [switch]$Origin,
+        [Parameter(Mandatory, ParameterSetName="FromAuth")]
+        [switch]$Authentication,
+        [Parameter(Mandatory, ParameterSetName="FromModified")]
+        [switch]$Modified
+    )
+    if ($null -eq $Token) {
+        $Token = Get-NtToken -Effective -Access Query
+    }
+    elseif (!$Token.IsPseudoToken) {
+        $Token = $Token.Duplicate()
+    }
+
+    Use-NtObject($Token) {
+        if ($Origin) {
+            $Token.Origin | Write-Output
+        } elseif ($Authentication) {
+            $Token.AuthenticationId
+        } elseif ($Modified) {
+            $Token.ModifiedId
+        } else {
+            $Token.Id
+        }
+    }
+}
