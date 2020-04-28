@@ -532,7 +532,7 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("Advapi32.dll")]
         internal static extern NtStatus LsaClose(IntPtr handle);
 
-        [DllImport("Advapi32.dll")]
+        [DllImport("Secur32.dll")]
         internal static extern NtStatus LsaDeregisterLogonProcess(
           IntPtr LsaHandle
         );

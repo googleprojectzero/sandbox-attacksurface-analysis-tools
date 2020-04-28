@@ -101,7 +101,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 SecStatusCode result = 0;
 
-                SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 8192));
+                SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 64 * 1024));
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
 
                 InitializeContextRetFlags flags;
