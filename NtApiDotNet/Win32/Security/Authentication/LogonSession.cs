@@ -44,6 +44,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             get
             {
+                if (Sid != null)
+                {
+                    var name = NtSecurity.LookupAccountSid(Sid, false);
+                    if (name.IsSuccess)
+                        return name.Result;
+                }
+
                 if (string.IsNullOrEmpty(LogonDomain))
                 {
                     return UserName;
