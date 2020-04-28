@@ -52,11 +52,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Constructor.
         /// </summary>
         /// <param name="service_class">The service class name.</param>
-        /// <param name="service_name">The name of the service.</param>
-        public ServicePrincipalName(string service_class, string service_name)
+        /// <param name="instance_name">The name of the instance.</param>
+        public ServicePrincipalName(string service_class, string instance_name)
         {
             ServiceClass = service_class;
-            ServiceName = service_name;
+            InstanceName = instance_name;
         }
 
         /// <summary>

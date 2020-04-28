@@ -8786,3 +8786,26 @@ Get all Console Sesssions.
 function Get-NtConsoleSession {
     [NtApiDotNet.Win32.Win32Utils]::GetConsoleSessions() | Write-Output
 }
+
+<#
+.SYNOPSIS
+Get a service principal name.
+.DESCRIPTION
+This cmdlet gets SPN for a string.
+.PARAMETER Name
+Specify the SPN.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName
+.EXAMPLE
+Get-ServicePrincipalName -Name "HTTP/www.domain.com"
+Get the SPN from a string.
+#>
+function Get-ServicePrincipalName {
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name
+    )
+    [NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName]::Parse($Name) | Write-Output
+}
