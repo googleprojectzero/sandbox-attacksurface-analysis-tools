@@ -153,6 +153,55 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Logon user using Kerberos Ticket.
+        /// </summary>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="service_ticket">The service ticket.</param>
+        /// <param name="tgt_ticket">Optional TGT.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtResult<NtToken> LsaLogonTicket(SecurityLogonType type, byte[] service_ticket, byte[] tgt_ticket, bool throw_on_error)
+        {
+            if (service_ticket is null)
+            {
+                throw new ArgumentNullException(nameof(service_ticket));
+            }
+            int total_size = service_ticket.Length + (tgt_ticket?.Length ?? 0);
+
+            using (var buffer = new SafeStructureInOutBuffer<KERB_TICKET_LOGON>(total_size, true))
+            {
+                KERB_TICKET_LOGON logon_struct = new KERB_TICKET_LOGON
+                {
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
+                    ServiceTicketLength = service_ticket.Length,
+                    ServiceTicket = buffer.Data.DangerousGetHandle(),
+                    TicketGrantingTicket = tgt_ticket != null ? buffer.Data.DangerousGetHandle() + service_ticket.Length : IntPtr.Zero,
+                    TicketGrantingTicketLength = tgt_ticket?.Length ?? 0
+                };
+                buffer.Data.WriteArray(0, service_ticket, 0, service_ticket.Length);
+                if (tgt_ticket != null)
+                {
+                    buffer.Data.WriteArray((ulong)service_ticket.Length, tgt_ticket, 0, tgt_ticket.Length);
+                }
+
+                buffer.Result = logon_struct;
+                return LsaLogonUser(type, "Kerberos", "KTIK", buffer, null, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Logon user using Kerberos Ticket.
+        /// </summary>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="service_ticket">The service ticket.</param>
+        /// <param name="tgt_ticket">Optional TGT.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonTicket(SecurityLogonType type, byte[] service_ticket, byte[] tgt_ticket)
+        {
+            return LsaLogonTicket(type, service_ticket, tgt_ticket, true).Result;
+        }
+
+        /// <summary>
         /// Logon user using S4U
         /// </summary>
         /// <param name="user">The username.</param>
@@ -161,55 +210,41 @@ namespace NtApiDotNet.Win32
         /// <param name="auth_package">The name of the auth package to user.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The logged on token.</returns>
-        public static NtResult<NtToken> LogonS4U(string user, string realm, SecurityLogonType type, string auth_package, bool throw_on_error)
+        public static NtResult<NtToken> LsaLogonS4U(string user, string realm, SecurityLogonType type, string auth_package, bool throw_on_error)
         {
-            using (var hlsa = SafeLsaLogonHandle.Connect(throw_on_error))
+            if (user is null)
             {
-                if (!hlsa.IsSuccess)
-                    return hlsa.Cast<NtToken>();
-                NtStatus status = SecurityNativeMethods.LsaLookupAuthenticationPackage(hlsa.Result, new LsaString(auth_package), out uint authnPkg);
-                if (!status.IsSuccess())
-                    return status.CreateResultFromError<NtToken>(throw_on_error);
-                byte[] user_bytes = Encoding.Unicode.GetBytes(user);
-                byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
+                throw new ArgumentNullException(nameof(user));
+            }
 
-                using (var buffer = new SafeStructureInOutBuffer<KERB_S4U_LOGON>(user_bytes.Length + realm_bytes.Length, true))
+            if (realm is null)
+            {
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            byte[] user_bytes = Encoding.Unicode.GetBytes(user);
+            byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
+
+            using (var buffer = new SafeStructureInOutBuffer<KERB_S4U_LOGON>(user_bytes.Length + realm_bytes.Length, true))
+            {
+                KERB_S4U_LOGON logon_struct = new KERB_S4U_LOGON
                 {
-                    KERB_S4U_LOGON logon_struct = new KERB_S4U_LOGON
-                    {
-                        MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon
-                    };
-                    SafeHGlobalBuffer data_buffer = buffer.Data;
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon
+                };
+                SafeHGlobalBuffer data_buffer = buffer.Data;
 
-                    logon_struct.ClientUpn.Buffer = data_buffer.DangerousGetHandle();
-                    data_buffer.WriteArray(0, user_bytes, 0, user_bytes.Length);
-                    logon_struct.ClientUpn.Length = (ushort)user_bytes.Length;
-                    logon_struct.ClientUpn.MaximumLength = (ushort)user_bytes.Length;
+                logon_struct.ClientUpn.Buffer = data_buffer.DangerousGetHandle();
+                data_buffer.WriteArray(0, user_bytes, 0, user_bytes.Length);
+                logon_struct.ClientUpn.Length = (ushort)user_bytes.Length;
+                logon_struct.ClientUpn.MaximumLength = (ushort)user_bytes.Length;
 
-                    logon_struct.ClientRealm.Buffer = data_buffer.DangerousGetHandle() + user_bytes.Length;
-                    data_buffer.WriteArray((ulong)user_bytes.Length, realm_bytes, 0, realm_bytes.Length);
-                    logon_struct.ClientRealm.Length = (ushort)realm_bytes.Length;
-                    logon_struct.ClientRealm.MaximumLength = (ushort)realm_bytes.Length;
+                logon_struct.ClientRealm.Buffer = data_buffer.DangerousGetHandle() + user_bytes.Length;
+                data_buffer.WriteArray((ulong)user_bytes.Length, realm_bytes, 0, realm_bytes.Length);
+                logon_struct.ClientRealm.Length = (ushort)realm_bytes.Length;
+                logon_struct.ClientRealm.MaximumLength = (ushort)realm_bytes.Length;
+                buffer.Result = logon_struct;
 
-                    Marshal.StructureToPtr(logon_struct, buffer.DangerousGetHandle(), false);
-
-                    TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NT.NET");
-                    SecurityNativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
-
-                    LsaString originName = new LsaString("S4U");
-                    QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
-
-                    return SecurityNativeMethods.LsaLogonUser(hlsa.Result, originName, type, authnPkg,
-                        buffer, buffer.Length, IntPtr.Zero,
-                        tokenSource, out SafeLsaReturnBufferHandle profile, 
-                        out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
-                        quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () => {
-                            using (profile)
-                            {
-                                return NtToken.FromHandle(token_handle);
-                            }
-                    });
-                }
+                return LsaLogonUser(type, auth_package, "S4U", buffer, null, throw_on_error);
             }
         }
 
@@ -219,10 +254,36 @@ namespace NtApiDotNet.Win32
         /// <param name="user">The username.</param>
         /// <param name="realm">The user's realm.</param>
         /// <param name="type">The type of logon token.</param>
+        /// <param name="auth_package">The name of the auth package to user.</param>
         /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonS4U(string user, string realm, SecurityLogonType type, string auth_package)
+        {
+            return LsaLogonS4U(user, realm, type, auth_package, true).Result;
+        }
+
+        /// <summary>
+        /// Logon user using S4U
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="realm">The user's realm.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonS4U(string user, string realm, SecurityLogonType type)
+        {
+            return LsaLogonS4U(user, realm, type, "Negotiate");
+        }
+
+        /// <summary>
+        /// Logon user using S4U
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="realm">The user's realm.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <returns>The logged on token.</returns>
+        [Obsolete("Use LsaLogonS4U")]
         public static NtToken LogonS4U(string user, string realm, SecurityLogonType type)
         {
-            return LogonS4U(user, realm, type, "Negotiate", true).Result;
+            return LsaLogonS4U(user, realm, type);
         }
 
         /// <summary>
@@ -395,6 +456,39 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<AccountRight> GetAccountRights()
         {
             return GetAccountRights(AccountRightType.All);
+        }
+
+        private static NtResult<NtToken> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name, 
+            SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var hlsa = list.AddResource(SafeLsaLogonHandle.Connect(throw_on_error));
+                if (!hlsa.IsSuccess)
+                    return hlsa.Cast<NtToken>();
+                NtStatus status = SecurityNativeMethods.LsaLookupAuthenticationPackage(
+                    hlsa.Result, new LsaString(auth_package), out uint auth_pkg);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<NtToken>(throw_on_error);
+
+                var groups = local_groups == null ? SafeTokenGroupsBuffer.Null 
+                    : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
+
+                TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NT.NET");
+                SecurityNativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
+                QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
+                return SecurityNativeMethods.LsaLogonUser(hlsa.Result, new LsaString(origin_name),
+                    type, auth_pkg, buffer, buffer.GetLength(), groups,
+                    tokenSource, out SafeLsaReturnBufferHandle profile,
+                    out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
+                    quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () =>
+                    {
+                        using (profile)
+                        {
+                            return NtToken.FromHandle(token_handle);
+                        }
+                    });
+            }
         }
     }
 }

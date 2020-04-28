@@ -292,7 +292,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify additional group sids for logon token. Needs TCB privilege.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "Logon"), Parameter(ParameterSetName = "Service")]
+        [Parameter(ParameterSetName = "Logon"), 
+            Parameter(ParameterSetName = "Service")]
         public Sid[] AdditionalGroups { get; set; }
 
         /// <summary>
@@ -581,7 +582,7 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtToken GetS4UToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = LogonUtils.LogonS4U(User, Domain, LogonType))
+            using (NtToken token = LogonUtils.LsaLogonS4U(User, Domain, LogonType, "Negotiate"))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {

@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32
                     throw new ArgumentException("Invalid logon type for S4U");
             }
 
-            return LogonUtils.LogonS4U(user, realm, logon_type);
+            return LogonUtils.LsaLogonS4U(user, realm, logon_type);
         }
 
         /// <summary>

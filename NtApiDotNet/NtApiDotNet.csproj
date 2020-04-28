@@ -309,6 +309,7 @@
     <Compile Include="Win32\Debugger\ISymbolTypeResolver.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
+    <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Policy\AccountRight.cs" />
     <Compile Include="Win32\Security\Policy\AccountRightLogonType.cs" />
     <Compile Include="Win32\Security\Native\KERB_S4U_LOGON.cs" />
