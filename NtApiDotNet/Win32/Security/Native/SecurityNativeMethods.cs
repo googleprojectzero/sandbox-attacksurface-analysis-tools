@@ -561,6 +561,14 @@ namespace NtApiDotNet.Win32.Security.Native
           out int CountReturned
         );
 
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode QueryContextAttributesEx(
+          SecHandle phContext,
+          SECPKG_ATTR ulAttribute,
+          SafeBuffer pBuffer,
+          int cbBuffer
+        );
+
         public static SecStatusCode CheckResult(this SecStatusCode result)
         {
             ((NtStatus)(uint)result).ToNtException();

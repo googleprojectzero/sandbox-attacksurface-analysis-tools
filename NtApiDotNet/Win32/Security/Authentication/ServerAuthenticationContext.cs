@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -48,6 +49,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Expiry of the authentication.
         /// </summary>
         public long Expiry { get; private set; }
+
+        /// <summary>
+        /// Get the client name supplied by the Client.
+        /// </summary>
+        public string ClientTargetName => GetTargetName();
 
         /// <summary>
         /// Get an access token for the authenticated user.
@@ -133,6 +139,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             if (!_new_context)
                 SecurityNativeMethods.DeleteSecurityContext(_context);
+        }
+
+        private string GetTargetName()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_ClientSpecifiedTarget>())
+            {
+                var result = SecurityNativeMethods.QueryContextAttributesEx(_context, SECPKG_ATTR.CLIENT_SPECIFIED_TARGET, buffer, buffer.Length);
+                if (result == SecStatusCode.Success)
+                    return Marshal.PtrToStringUni(buffer.Result.sTargetName);
+            }
+            return string.Empty;
         }
     }
 }

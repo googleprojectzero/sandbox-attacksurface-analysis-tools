@@ -28,6 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         internal NegotiateAuthenticationToken(byte[] data, DERValue[] values) 
             : base(data)
         {
+            _values = values;
         }
 
         private static void DumpValue(StringBuilder builder, DERValue v, int depth)
