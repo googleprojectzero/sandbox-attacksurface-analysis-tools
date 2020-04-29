@@ -26,6 +26,26 @@ namespace NtApiDotNet.Win32.Security.Authentication
     public sealed class AuthenticationPackage
     {
         /// <summary>
+        /// Authentication package name for MSV1.0
+        /// </summary>
+        public const string MSV1_0_NAME = "MICROSOFT_AUTHENTICATION_PACKAGE_V1_0";
+
+        /// <summary>
+        /// Authentication package name for Kerberos.
+        /// </summary>
+        public const string KERBEROS_NAME = "Kerberos";
+
+        /// <summary>
+        /// Authentication package name for Negotiate.
+        /// </summary>
+        public const string NEGOSSP_NAME = "Negotiate";
+
+        /// <summary>
+        /// Authentication package name for Negotiate.
+        /// </summary>
+        public const string NTLM_NAME = "NTLM";
+
+        /// <summary>
         /// Capabilities of the package.
         /// </summary>
         public SecPkgCapabilityFlag Capabilities { get; }
@@ -112,6 +132,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 SecurityNativeMethods.FreeContextBuffer(package_info);
             }
+        }
+
+        internal static bool CheckNtlm(string package_name)
+        {
+            return package_name.Equals(NTLM_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckKerberos(string package_name)
+        {
+            return package_name.Equals(KERBEROS_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckNegotiate(string package_name)
+        {
+            return package_name.Equals(NEGOSSP_NAME, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

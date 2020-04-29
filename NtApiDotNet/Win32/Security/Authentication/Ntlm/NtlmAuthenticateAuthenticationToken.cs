@@ -104,7 +104,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 builder.AppendLine($"Workstation: {Workstation}");
             }
             builder.AppendLine($"LM Response: {NtObjectUtils.ToHexString(LmChallengeResponse)}");
-            builder.AppendLine($"Nt Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
+            builder.AppendLine($"NT Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
             builder.AppendLine($"Session Key: {NtObjectUtils.ToHexString(EncryptedSessionKey)}");
             builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
             builder.AppendLine($"Version    : {Version}");

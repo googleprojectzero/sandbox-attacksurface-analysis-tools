@@ -80,8 +80,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         #region Private Members
         private const string NTLM_MAGIC = "NTLMSSP\0";
 
-        private protected NtlmAuthenticationToken(byte[] data, 
-            NtlmMessageType message_type) : base(data)
+        private protected NtlmAuthenticationToken(
+            byte[] data, NtlmMessageType message_type) : base(data)
         {
             MessageType = message_type;
         }
@@ -95,14 +95,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public NtlmMessageType MessageType { get; }
         #endregion
 
-        #region Public Static Methods
+        #region Internal Static Methods
         /// <summary>
         /// Try and parse data into an NTLM authentication token.
         /// </summary>
         /// <param name="data">The data to parse.</param>
         /// <param name="token">The NTLM authentication token.</param>
+        /// <param name="client">True if this is a token from a client.</param>
+        /// <param name="token_count">The token count number.</param>
         /// <returns>True if parsed successfully.</returns>
-        public static bool TryParse(byte[] data, out NtlmAuthenticationToken token)
+        internal static bool TryParse(byte[] data, int token_count, bool client, out NtlmAuthenticationToken token)
         {
             token = null;
             if (data.Length < 12)
@@ -116,10 +118,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             switch (type)
             {
                 case NtlmMessageType.Negotiate:
+                    System.Diagnostics.Debug.Assert(client && token_count == 0);
                     return NtlmNegotiateAuthenticationToken.TryParse(data, reader, out token);
                 case NtlmMessageType.Challenge:
+                    System.Diagnostics.Debug.Assert(!client && token_count == 0);
                     return NtlmChallengeAuthenticationToken.TryParse(data, reader, out token);
                 case NtlmMessageType.Authenticate:
+                    System.Diagnostics.Debug.Assert(client && token_count == 1);
                     return NtlmAuthenticateAuthenticationToken.TryParse(data, reader, out token);
                 default:
                     return false;

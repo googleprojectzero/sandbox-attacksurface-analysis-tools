@@ -42,6 +42,7 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.XML" />
   </ItemGroup>
@@ -87,6 +88,10 @@
     <Compile Include="TokenGroupsBuilder.cs" />
     <Compile Include="TokenPrivilegesBuilder.cs" />
     <Compile Include="UnicodeStringBytesSafeBuffer.cs" />
+    <Compile Include="Utilities\ASN1\DERTagType.cs" />
+    <Compile Include="Utilities\ASN1\DERUtils.cs" />
+    <Compile Include="Utilities\ASN1\DERValue.cs" />
+    <Compile Include="Utilities\ASN1\UniversalTag.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
     <Compile Include="Utilities\Memory\CurrentProcessMemoryReader.cs" />
@@ -309,11 +314,14 @@
     <Compile Include="Win32\Debugger\ISymbolTypeResolver.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
+    <Compile Include="Utilities\ASN1\DERParser.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKey.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KRB_CHKSUM_TYPE.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KRB_ENC_TYPE.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KRB_NAME_TYPE.cs" />
+    <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Policy\AccountRight.cs" />
     <Compile Include="Win32\Security\Policy\AccountRightLogonType.cs" />

@@ -13,7 +13,11 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+using System;
+using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -51,7 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Constructor.
         /// </summary>
         /// <param name="data">The authentication token data.</param>
-        public AuthenticationToken(byte[] data)
+        internal AuthenticationToken(byte[] data)
         {
             _data = (byte[])data.Clone();
         }
@@ -59,15 +63,33 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Parse a structured authentication token.
         /// </summary>
+        /// <param name="package_name">Name of the authentication package.</param>
+        /// <param name="token_count">The count of the tokens before this one.</param>
         /// <param name="token">The token to parse.</param>
+        /// <param name="client">Parse operation from a client.</param>
         /// <returns>The parsed authentication token. If can't parse any other format returns
-        /// RawAuthenticationToken.</returns>
-        public static AuthenticationToken Parse(byte[] token)
+        /// a raw AuthenticationToken.</returns>
+        internal static AuthenticationToken Parse(string package_name, int token_count, bool client, byte[] token)
         {
-            if (NtlmAuthenticationToken.TryParse(token, out NtlmAuthenticationToken ntlm_token))
+            if (AuthenticationPackage.CheckNtlm(package_name) 
+                && NtlmAuthenticationToken.TryParse(token, token_count, client, out NtlmAuthenticationToken ntlm_token))
             {
                 return ntlm_token;
             }
+
+            if (AuthenticationPackage.CheckKerberos(package_name) 
+                && KerberosAuthenticationToken.TryParse(token, token_count, client, out KerberosAuthenticationToken kerb_token))
+            {
+                return kerb_token;
+            }
+
+            if (AuthenticationPackage.CheckNegotiate(package_name) 
+                && NegotiateAuthenticationToken.TryParse(token, token_count, 
+                client, out NegotiateAuthenticationToken nego_token))
+            {
+                return nego_token;
+            }
+
             return new AuthenticationToken(token);
         }
     }

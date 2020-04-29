@@ -27,6 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private readonly SecHandle _context;
         private readonly string _target;
         private readonly SecDataRep _data_rep;
+        private int _token_count;
 
         /// <summary>
         /// The current authentication token.
@@ -63,6 +64,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             _context = new SecHandle();
             _target = target;
             _data_rep = data_rep;
+            _token_count = 0;
             Continue(null);
         }
 
@@ -128,7 +130,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();
                 }
 
-                Token = AuthenticationToken.Parse(out_buffer_desc.ToArray()[0].ToArray());
+                Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, out_buffer_desc.ToArray()[0].ToArray());
                 return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
             }
         }

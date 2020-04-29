@@ -108,21 +108,6 @@ namespace NtApiDotNet.Win32
     public static class LogonUtils
     {
         /// <summary>
-        /// Authentication package name for MSV1.0
-        /// </summary>
-        public const string MSV1_0_PACKAGE_NAME = "MICROSOFT_AUTHENTICATION_PACKAGE_V1_0";
-
-        /// <summary>
-        /// Authentication package name for Kerberos.
-        /// </summary>
-        public const string MICROSOFT_KERBEROS_NAME = "Kerberos";
-
-        /// <summary>
-        /// Authentication package name for Negotiate.
-        /// </summary>
-        public const string NEGOSSP_NAME = "Negotiate";
-
-        /// <summary>
         /// Logon a user with a username and password.
         /// </summary>
         /// <param name="user">The username.</param>
@@ -200,7 +185,7 @@ namespace NtApiDotNet.Win32
                 }
 
                 buffer.Result = logon_struct;
-                return LsaLogonUser(type, MICROSOFT_KERBEROS_NAME, "KTIK", buffer, null, throw_on_error);
+                return LsaLogonUser(type, AuthenticationPackage.KERBEROS_NAME, "KTIK", buffer, null, throw_on_error);
             }
         }
 
@@ -285,7 +270,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The logged on token.</returns>
         public static NtToken LsaLogonS4U(string user, string realm, SecurityLogonType type)
         {
-            return LsaLogonS4U(user, realm, type, NEGOSSP_NAME);
+            return LsaLogonS4U(user, realm, type, AuthenticationPackage.NEGOSSP_NAME);
         }
 
         /// <summary>
