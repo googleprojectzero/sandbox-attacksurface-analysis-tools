@@ -94,6 +94,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                         return false;
                     av_pair = new NtlmAvPairFlags(type, reader.ReadInt32());
                     break;
+                case MsAvPairType.SingleHost:
+                    if (length != 48)
+                        return false;
+                    reader.ReadInt32();
+                    uint z4 = reader.ReadUInt32();
+                    byte[] custom_data = reader.ReadBytes(8);
+                    byte[] machine_id = reader.ReadBytes(32);
+                    av_pair = new NtlmAvPairSingleHostData(type, z4, custom_data, machine_id);
+                    break;
                 default:
                     av_pair = new NtlmAvPairBytes(type, reader.ReadBytes(length));
                     break;
@@ -208,6 +217,44 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public override string ToString()
         {
             return $"{Type} - {Value}";
+        }
+    }
+
+    /// <summary>
+    /// An NTLM AV_PAIR with a flags value.
+    /// </summary>
+    public sealed class NtlmAvPairSingleHostData : NtlmAvPair
+    {
+        /// <summary>
+        /// The the Z4 data.
+        /// </summary>
+        public uint Z4 { get; }
+
+        /// <summary>
+        /// Custom data blob.
+        /// </summary>
+        public byte[] CustomData { get; }
+
+        /// <summary>
+        /// Machine ID.
+        /// </summary>
+        public byte[] MachineId { get; }
+
+        internal NtlmAvPairSingleHostData(MsAvPairType type, uint z4, byte[] custom_data, byte[] machine_id)
+            : base(type)
+        {
+            Z4 = z4;
+            CustomData = custom_data;
+            MachineId = machine_id;
+        }
+
+        /// <summary>
+        /// ToString method.
+        /// </summary>
+        /// <returns>Pair as a string.</returns>
+        public override string ToString()
+        {
+            return $"{Type} - Z4 0x{Z4:X} - Custom Data: {NtObjectUtils.ToHexString(CustomData)} Machine ID: {NtObjectUtils.ToHexString(MachineId)}";
         }
     }
 }

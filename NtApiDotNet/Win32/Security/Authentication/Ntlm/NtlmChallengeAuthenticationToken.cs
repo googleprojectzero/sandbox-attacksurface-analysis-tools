@@ -99,19 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
 
         private static bool TryParseAvPairs(byte[] data, out List<NtlmAvPair> av_pairs)
         {
-            BinaryReader reader = new BinaryReader(new MemoryStream(data));
-            av_pairs = new List<NtlmAvPair>();
-            while (reader.RemainingLength() > 0)
-            {
-                if (!NtlmAvPair.TryParse(reader, out NtlmAvPair pair))
-                {
-                    return false;
-                }
-                if (pair.Type == MsAvPairType.EOL)
-                    break;
-                av_pairs.Add(pair);
-            }
-            return true;
+            return NtlmUtils.TryParseAvPairs(new BinaryReader(new MemoryStream(data)), out av_pairs);
         }
 
         #endregion

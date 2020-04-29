@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -81,6 +83,51 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         }
         #endregion
 
+        #region Priviate Members
+        private string FormatNTLMv2()
+        {
+            if (NtChallengeResponse?.Length < 44)
+                return string.Empty;
+
+            StringBuilder builder = new StringBuilder();
+            try
+            {
+                builder.AppendLine("<NTLMv2 Challenge Response>");
+                BinaryReader reader = new BinaryReader(new MemoryStream(NtChallengeResponse));
+                builder.AppendLine($"NT Response          : {NtObjectUtils.ToHexString(reader.ReadBytes(16))}");
+                builder.AppendLine($"Challenge Verison    : {reader.ReadByte()}");
+                builder.AppendLine($"Max Challenge Verison: {reader.ReadByte()}");
+                builder.AppendLine($"Reserved 1           : 0x{reader.ReadUInt16():X04}");
+                builder.AppendLine($"Reserved 2           : 0x{reader.ReadUInt32():X08}");
+                long timestamp = reader.ReadInt64();
+                try
+                {
+                    builder.AppendLine($"Timestamp            : {DateTime.FromFileTime(timestamp)}");
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    builder.AppendLine($"Timestamp            : 0x{timestamp:X016}");
+                }
+                builder.AppendLine($"Client Challenge     : {NtObjectUtils.ToHexString(reader.ReadBytes(8))}");
+                builder.AppendLine($"Reserved 3           : 0x{reader.ReadUInt32():X08}");
+                if (!NtlmUtils.TryParseAvPairs(reader, out List<NtlmAvPair> av_pairs))
+                {
+                    return string.Empty;
+                }
+                foreach (var pair in av_pairs)
+                {
+                    builder.AppendLine(pair.ToString());
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return string.Empty;
+            }
+            
+            return builder.ToString();
+        }
+        #endregion
+
         #region Public Methods
         /// <summary>
         /// Format the authentication token.
@@ -104,7 +151,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 builder.AppendLine($"Workstation: {Workstation}");
             }
             builder.AppendLine($"LM Response: {NtObjectUtils.ToHexString(LmChallengeResponse)}");
-            builder.AppendLine($"NT Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
+            string nt_challenge = FormatNTLMv2();
+            if (string.IsNullOrEmpty(nt_challenge))
+            {
+                builder.AppendLine($"NT Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
+            }
+            else
+            {
+                builder.AppendLine(nt_challenge);
+            }
             builder.AppendLine($"Session Key: {NtObjectUtils.ToHexString(EncryptedSessionKey)}");
             builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
             builder.AppendLine($"Version    : {Version}");

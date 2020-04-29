@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Text;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -32,6 +33,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             length = reader.ReadUInt16();
             _ = reader.ReadUInt16();
             position = reader.ReadInt32();
+            return true;
+        }
+
+        internal static bool TryParseAvPairs(BinaryReader reader, out List<NtlmAvPair> av_pairs)
+        {
+            av_pairs = new List<NtlmAvPair>();
+            while (reader.RemainingLength() > 0)
+            {
+                if (!NtlmAvPair.TryParse(reader, out NtlmAvPair pair))
+                {
+                    return false;
+                }
+                if (pair.Type == MsAvPairType.EOL)
+                    break;
+                av_pairs.Add(pair);
+            }
             return true;
         }
 
