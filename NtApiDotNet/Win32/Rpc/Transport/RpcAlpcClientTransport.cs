@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 DupObjectTypes = AlpcHandleObjectType.AllObjects,
                 MemoryBandwidth = new IntPtr(0),
-                Flags = AlpcPortAttributeFlags.AllowDupObject | AlpcPortAttributeFlags.AllowImpersonation | AlpcPortAttributeFlags.WaitablePort,
+                Flags = flags,
                 MaxMessageLength = new IntPtr(0x1000),
                 MaxPoolUsage = new IntPtr(-1),
                 MaxSectionSize = new IntPtr(-1),
