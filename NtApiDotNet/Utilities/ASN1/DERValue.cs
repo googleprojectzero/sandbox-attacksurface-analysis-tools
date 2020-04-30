@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -58,6 +59,25 @@ namespace NtApiDotNet.Utilities.ASN1
             return Tag.ToString();
         }
 
+        private static IEnumerable<bool> GetBool(byte b)
+        {
+            bool[] ret = new bool[8];
+            for (int i = 0; i < 8; ++i)
+            {
+                ret[i] = ((b >> (7 - i)) & 1) != 0;
+            }
+            return ret;
+        }
+
+        public BitArray ReadBitString()
+        {
+            if (Data.Length == 0)
+                return new BitArray(0);
+            IEnumerable<bool> bools = Data.Skip(1).SelectMany(b => GetBool(b));
+            int total_count = (Data.Length - 1) * 8 - Data[0];
+            return new BitArray(bools.Take(total_count).ToArray());
+        }
+
         public string ReadObjID()
         {
             List<int> values = new List<int>();
@@ -100,6 +120,8 @@ namespace NtApiDotNet.Utilities.ASN1
                     return FormatInteger();
                 if (tag == UniversalTag.OCTET_STRING)
                     return BitConverter.ToString(Data);
+                if (tag == UniversalTag.BIT_STRING)
+                    return string.Join(",", ReadBitString().Cast<bool>().Select(b => b ? 1 : 0));
             }
             return $"Len: {Data.Length:X}";
         }
