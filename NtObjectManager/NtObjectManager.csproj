@@ -150,6 +150,9 @@
     <Compile Include="Cmdlets\Object\TestNtTokenPrivilegeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\UseNtObjectCmdlet.cs" />
     <Compile Include="Cmdlets\Object\WriteNtAuditCmdlet.cs" />
+    <Compile Include="Cmdlets\Rpc\CompareRpcServerCmdlet.cs" />
+    <Compile Include="Cmdlets\Rpc\CompareRpcServerResult.cs" />
+    <Compile Include="Cmdlets\Rpc\SelectRpcServerCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\AddAuthZSidCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\GetAuthZGrantedAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
@@ -187,7 +190,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Utils\PSUtils.cs" />
-    <Compile Include="Cmdlets\Rpc\RpcServerCmdlets.cs" />
+    <Compile Include="Cmdlets\Rpc\ModifiedRpcServerResult.cs" />
     <Compile Include="Cmdlets\Rpc\RpcServerNameCmdlets.cs" />
     <Compile Include="Cmdlets\Accessible\TestNetworkAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\AddDosDeviceCmdlet.cs" />
