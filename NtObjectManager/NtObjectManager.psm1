@@ -5417,6 +5417,8 @@ Specify a Code DOM provider. Defaults to C#.
 Specify optional options for the code generation if Provider is also specified.
 .PARAMETER OutputPath
 Specify optional output directory to write formatted client.
+.PARAMETER GroupByName
+Specify when outputting to a directory to group by the name of the server executable.
 .INPUTS
 None
 .OUTPUTS
@@ -5441,7 +5443,8 @@ function Format-RpcClient {
         [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [System.CodeDom.Compiler.CodeGeneratorOptions]$Options,
-        [string]$OutputPath
+        [string]$OutputPath,
+        [switch]$GroupByName
     )
 
     BEGIN {
@@ -5473,7 +5476,13 @@ function Format-RpcClient {
                 $src | Write-Output
             }
             else {
-                $path = Join-Path -Path $OutputPath -ChildPath "$($s.InterfaceId)_$($s.InterfaceVersion).$file_ext"
+                if ($GroupByName) {
+                    $path = Join-Path -Path $OutputPath -ChildPath $s.Name.ToLower()
+                    mkdir $path -ErrorAction Ignore | Out-Null
+                } else {
+                    $path = $OutputPath
+                }
+                $path = Join-Path -Path $path -ChildPath "$($s.InterfaceId)_$($s.InterfaceVersion).$file_ext"
                 $src | Set-Content -Path $path
             }
         }

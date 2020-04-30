@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Rpc
 
         private bool HasFlag(RpcClientBuilderFlags flag)
         {
-            return (_args.Flags & flag) == flag;
+            return _args.Flags.HasFlagSet(flag);
         }
 
         private RpcTypeDescriptor GetSimpleArrayTypeDescriptor(NdrSimpleArrayTypeReference simple_array, MarshalHelperBuilder marshal_helper)
