@@ -41,9 +41,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public const string NEGOSSP_NAME = "Negotiate";
 
         /// <summary>
-        /// Authentication package name for Negotiate.
+        /// Authentication package name for NTLM.
         /// </summary>
         public const string NTLM_NAME = "NTLM";
+
+        /// <summary>
+        /// Authentication package name for Digest.
+        /// </summary>
+        public const string DIGEST_NAME = "WDigest";
 
         /// <summary>
         /// Capabilities of the package.

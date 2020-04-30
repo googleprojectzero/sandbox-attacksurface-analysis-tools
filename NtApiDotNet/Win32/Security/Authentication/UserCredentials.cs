@@ -121,6 +121,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 case "ntlm":
                 case "negotiate":
                 case "kerberos":
+                case "wdigest":
                     return new SafeStructureInOutBuffer<SEC_WINNT_AUTH_IDENTITY>(new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list));
                 default:
                     throw new ArgumentException($"Unknown credential type for package {package}");
