@@ -39,7 +39,7 @@
             // 
             this.btnEditPermissions.Enabled = false;
             this.btnEditPermissions.Location = new System.Drawing.Point(2, 376);
-            this.btnEditPermissions.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnEditPermissions.Margin = new System.Windows.Forms.Padding(2);
             this.btnEditPermissions.Name = "btnEditPermissions";
             this.btnEditPermissions.Size = new System.Drawing.Size(72, 28);
             this.btnEditPermissions.TabIndex = 1;
@@ -64,7 +64,7 @@
             this.tableLayoutPanel.Controls.Add(this.btnEditPermissions, 0, 1);
             this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
             this.tableLayoutPanel.RowCount = 2;
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -79,7 +79,7 @@
             this.ClientSize = new System.Drawing.Size(354, 406);
             this.Controls.Add(this.tableLayoutPanel);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "SecurityDescriptorViewerForm";
             this.Text = "SecurityDescriptorViewerForm";
             this.tableLayoutPanel.ResumeLayout(false);
