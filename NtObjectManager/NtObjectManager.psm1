@@ -6575,6 +6575,58 @@ function Read-AuthCredential {
 
 <#
 .SYNOPSIS
+Get user credentials.
+.DESCRIPTION
+This cmdlet gets user credentials and encodes the password.
+.PARAMETER UserName
+The username to use.
+.PARAMETER Domain
+The domain to use.
+.PARAMETER Password
+The password to use.
+.PARAMETER SecurePassword
+The secure password to use.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.UserCredentials
+.EXAMPLE
+$user_creds = Get-UserCredentials -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
+Get user credentials from components.
+#>
+function Get-AuthCredential {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0)]
+        [string]$UserName,
+        [Parameter(Position = 1)]
+        [string]$Domain,
+        [Parameter(Position = 2)]
+        [string]$Password,
+        [Parameter]
+        [System.Security.SecureString]$SecurePassword
+    )
+
+    $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
+    if ($UserName -NE "") {
+        $creds.UserName = $UserName
+    }
+    
+    if ($Domain -NE "") {
+        $creds.Domain = $Domain
+    }
+
+    if ($Password -NE "") {
+        $creds.SetPassword($Password)
+    }
+    else {
+        $creds.Password = $SecurePassword
+    }
+    $creds | Write-Output
+}
+
+<#
+.SYNOPSIS
 Create a new credentials handle.
 .DESCRIPTION
 This cmdlet creates a new authentication credentials handle.
@@ -6586,20 +6638,34 @@ The use flags for the credentials.
 Optional authentication ID to authenticate.
 .PARAMETER Principal
 Optional principal to authentication.
-.PARAMETER Credentials
+.PARAMETER Credential
 Optional Credentials for the authentication.
-.PARAMETER ReadCredentials
-Specify to read the credentials from the console.
+.PARAMETER ReadCredential
+Specify to read the credentials from the console if not specified explicitly.
+.PARAMETER UserName
+The username to use.
+.PARAMETER Domain
+The domain to use.
+.PARAMETER Password
+The password to use.
+.PARAMETER SecurePassword
+The secure password to use.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.CredentialHandle
 .EXAMPLE
-$h = Get-AuthCredentialHandle "NTLM" Both
+$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both
 Get a credential handle for the NTLM package for both directions.
+.EXAMPLE
+$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both -UserName "user" -Password "pwd"
+Get a credential handle for the NTLM package for both directions with a username password.
+.EXAMPLE
+$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Inbound -ReadCredential
+Get a credential handle for the NTLM package for outbound directions and read credentials from the shell.
 #>
 function Get-AuthCredentialHandle {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromCreds")]
     Param(
         [Parameter(Position = 0, Mandatory)]
         [string]$Package,
@@ -6607,15 +6673,31 @@ function Get-AuthCredentialHandle {
         [NtApiDotNet.Win32.Security.Authentication.SecPkgCredFlags]$UseFlag,
         [Nullable[NtApiDotNet.Luid]]$AuthId,
         [string]$Principal,
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
-        [switch]$ReadCredentials
+        [Parameter(ParameterSetName="FromCreds")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
+        [Parameter(ParameterSetName="FromParts")]
+        [switch]$ReadCredential,
+        [Parameter(ParameterSetName="FromParts")]
+        [string]$UserName,
+        [Parameter(ParameterSetName="FromParts")]
+        [string]$Domain,
+        [Parameter(ParameterSetName="FromParts")]
+        [string]$Password,
+        [Parameter(ParameterSetName="FromParts")]
+        [System.Security.SecureString]$SecurePassword
     )
 
-    if ($ReadCredentials) {
-        $Credentials = Read-AuthCredential
+    if ($PSCmdlet.ParameterSetName -EQ "FromParts") {
+        if ($ReadCredential) {
+            $Credential = Read-AuthCredential -UserName $UserName -Domain $Domain `
+                    -Password $Password
+        } else {
+            $Credential = Get-AuthCredential -UserName $UserName -Domain $Domain `
+                    -Password $Password -SecurePassword $SecurePassword
+        }
     }
 
-    [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credentials) | Write-Output
+    [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credential) | Write-Output
 }
 
 <#
@@ -6861,6 +6943,63 @@ function Format-AuthToken {
             $Token.Format() | Write-Output
         }
     }
+}
+
+<#
+.SYNOPSIS
+Exports an authentication token to a file.
+.DESCRIPTION
+This cmdlet exports an authentication token to a file.
+.PARAMETER Context
+The authentication context to extract token from.
+.PARAMETER Token
+The authentication token to export.
+.PARAMETER Path
+The path to the file to export.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Export-AuthToken {
+    [CmdletBinding(DefaultParameterSetName="FromContext")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [Parameter(Position = 1, Mandatory)]
+        [string]$Path
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+        $Token = $Context.Token
+    }
+
+    $Token.ToArray() | Set-Content -Path $Path -Encoding Byte
+}
+
+<#
+.SYNOPSIS
+Imports an authentication token to a file.
+.DESCRIPTION
+This cmdlet imports an authentication token from a file.
+.PARAMETER Path
+The path to the file to import.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+#>
+function Import-AuthToken {
+    [CmdletBinding(DefaultParameterSetName="FromContext")]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Path
+    )
+
+    $token = [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken][byte[]](Get-Content -Path $Path -Encoding Byte)
+    Write-Output $token
 }
 
 <#

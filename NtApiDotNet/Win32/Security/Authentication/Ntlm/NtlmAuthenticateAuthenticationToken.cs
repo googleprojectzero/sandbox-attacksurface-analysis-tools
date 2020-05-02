@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -158,11 +157,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             }
             else
             {
-                builder.AppendLine(nt_challenge);
+                builder.Append(nt_challenge);
             }
-            builder.AppendLine($"Session Key: {NtObjectUtils.ToHexString(EncryptedSessionKey)}");
-            builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
-            builder.AppendLine($"Version    : {Version}");
+            if (EncryptedSessionKey.Length > 0)
+            {
+                builder.AppendLine($"Session Key: {NtObjectUtils.ToHexString(EncryptedSessionKey)}");
+            }
+            if (MessageIntegrityCode.Length > 0)
+            {
+                builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
+            }
+            if (Version != null)
+            {
+                builder.AppendLine($"Version    : {Version}");
+            }
 
             return builder.ToString();
         }

@@ -16,8 +16,6 @@ using NtApiDotNet.Utilities.Text;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
-using System;
-using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -55,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Constructor.
         /// </summary>
         /// <param name="data">The authentication token data.</param>
-        internal AuthenticationToken(byte[] data)
+        public AuthenticationToken(byte[] data)
         {
             _data = (byte[])data.Clone();
         }

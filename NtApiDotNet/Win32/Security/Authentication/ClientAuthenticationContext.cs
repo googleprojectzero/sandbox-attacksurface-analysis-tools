@@ -56,13 +56,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="target">Target SPN (optional).</param>
         /// <param name="data_rep">Data representation.</param>
-        public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes,
+        public ClientAuthenticationContext(CredentialHandle creds, 
+            InitializeContextReqFlags req_attributes,
             string target, SecDataRep data_rep)
         {
             _creds = creds;
             _req_attributes = req_attributes & ~InitializeContextReqFlags.AllocateMemory;
             _context = new SecHandle();
-            _target = target;
+            _target = target == string.Empty ? null : target;
             _data_rep = data_rep;
             _token_count = 0;
             Continue(null);
