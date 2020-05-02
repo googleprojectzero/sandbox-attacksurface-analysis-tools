@@ -9018,3 +9018,50 @@ function Get-NtTokenId {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get a MD4 hash of a byte array or string.
+.DESCRIPTION
+This cmdlet calculates the MD4 hash of a byte array or string.
+.PARAMETER Byte
+Specify to byte array.
+.PARAMETER String
+Specify string.
+.PARAMETER Encoding
+Specify string encoding. Default to Unicode.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Get-MD4Hash -String "ABC"
+Get the MD4 hash of the string ABC in unicode.
+.EXAMPLE
+Get-MD4Hash -String "ABC" -Encoding "ASCII"
+Get the MD4 hash of the string ABC in ASCII.
+.EXAMPLE
+Get-MD4Hash -Byte @(0, 1, 2, 3)
+Get the MD4 hash of a byte array.
+#>
+function Get-MD4Hash {
+    [CmdletBinding(DefaultParameterSetName="FromString")]
+    Param(
+        [AllowEmptyString()]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
+        [string]$String,
+        [Parameter(Position = 1, ParameterSetName="FromString")]
+        [string]$Encoding = "Unicode",
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [byte[]]$Byte
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromString" {
+            $enc = [System.Text.Encoding]::GetEncoding($Encoding)
+            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($String, $enc)
+        }
+        "FromBytes" {
+            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($Byte)
+        }
+    }
+}
