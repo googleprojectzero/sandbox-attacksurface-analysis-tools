@@ -13,14 +13,14 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
 {
     /// <summary>
-    /// Class to represent an NTLM AUTHENTICATE token.
+    /// Class to represent an NTLM AUTHENTICATE token for NTLMv1.
     /// </summary>
     public class NtlmAuthenticateAuthenticationToken : NtlmAuthenticationToken
     {
@@ -61,13 +61,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// Message integrity code.
         /// </summary>
         public byte[] MessageIntegrityCode { get; }
+        /// <summary>
+        /// Message integrity code offset into the token data.
+        /// </summary>
+        public int MessageIntegrityCodeOffset { get; }
         #endregion
 
         #region Constructors
-        private NtlmAuthenticateAuthenticationToken(byte[] data, 
+        private protected NtlmAuthenticateAuthenticationToken(byte[] data, 
             NtlmNegotiateFlags flags, string domain, string username,
             string workstation, byte[] lmresponse, byte[] ntresponse,
-            byte[] session_key, byte[] mic, Version version)
+            byte[] session_key, byte[] mic, int mic_offset, Version version)
             : base(data, NtlmMessageType.Negotiate)
         {
             Flags = flags;
@@ -79,52 +83,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             NtChallengeResponse = ntresponse;
             EncryptedSessionKey = session_key;
             MessageIntegrityCode = mic;
+            MessageIntegrityCodeOffset = mic_offset;
         }
         #endregion
 
-        #region Priviate Members
-        private string FormatNTLMv2()
-        {
-            if (NtChallengeResponse?.Length < 44)
-                return string.Empty;
+        #region Private Members
 
-            StringBuilder builder = new StringBuilder();
-            try
-            {
-                builder.AppendLine("<NTLMv2 Challenge Response>");
-                BinaryReader reader = new BinaryReader(new MemoryStream(NtChallengeResponse));
-                builder.AppendLine($"NT Response          : {NtObjectUtils.ToHexString(reader.ReadBytes(16))}");
-                builder.AppendLine($"Challenge Verison    : {reader.ReadByte()}");
-                builder.AppendLine($"Max Challenge Verison: {reader.ReadByte()}");
-                builder.AppendLine($"Reserved 1           : 0x{reader.ReadUInt16():X04}");
-                builder.AppendLine($"Reserved 2           : 0x{reader.ReadUInt32():X08}");
-                long timestamp = reader.ReadInt64();
-                try
-                {
-                    builder.AppendLine($"Timestamp            : {DateTime.FromFileTime(timestamp)}");
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    builder.AppendLine($"Timestamp            : 0x{timestamp:X016}");
-                }
-                builder.AppendLine($"Client Challenge     : {NtObjectUtils.ToHexString(reader.ReadBytes(8))}");
-                builder.AppendLine($"Reserved 3           : 0x{reader.ReadUInt32():X08}");
-                if (!NtlmUtils.TryParseAvPairs(reader, out List<NtlmAvPair> av_pairs))
-                {
-                    return string.Empty;
-                }
-                foreach (var pair in av_pairs)
-                {
-                    builder.AppendLine(pair.ToString());
-                }
-            }
-            catch (EndOfStreamException)
-            {
-                return string.Empty;
-            }
-            
-            return builder.ToString();
+        private protected virtual void FormatNTResponse(StringBuilder builder)
+        {
+            builder.AppendLine($"NT Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
         }
+
+        private static int MinimumPosition(params int[] ps)
+        {
+            return ps.Min();
+        }
+
         #endregion
 
         #region Public Methods
@@ -150,26 +124,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 builder.AppendLine($"Workstation: {Workstation}");
             }
             builder.AppendLine($"LM Response: {NtObjectUtils.ToHexString(LmChallengeResponse)}");
-            string nt_challenge = FormatNTLMv2();
-            if (string.IsNullOrEmpty(nt_challenge))
-            {
-                builder.AppendLine($"NT Response: {NtObjectUtils.ToHexString(NtChallengeResponse)}");
-            }
-            else
-            {
-                builder.Append(nt_challenge);
-            }
+            FormatNTResponse(builder);
             if (EncryptedSessionKey.Length > 0)
             {
                 builder.AppendLine($"Session Key: {NtObjectUtils.ToHexString(EncryptedSessionKey)}");
             }
-            if (MessageIntegrityCode.Length > 0)
-            {
-                builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
-            }
+
             if (Version != null)
             {
                 builder.AppendLine($"Version    : {Version}");
+            }
+
+            if (MessageIntegrityCode.Length > 0)
+            {
+                builder.AppendLine($"MIC        : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
             }
 
             return builder.ToString();
@@ -203,9 +171,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             if (!NtlmUtils.TryParse(reader, out Version version))
                 return false;
 
-            byte[] mic = reader.ReadBytes(16);
-            if (mic.Length < 16)
-                return false;
+            long min_pos = MinimumPosition(lm_position, nt_position, domain_position, username_position, workstation_position, key_position);
+            byte[] mic = new byte[0];
+            int mic_offset = int.MaxValue;
+            if (reader.BaseStream.Position + 16 <= min_pos)
+            {
+                mic_offset = (int)reader.BaseStream.Position;
+                mic = reader.ReadBytes(16);
+                if (mic.Length < 16)
+                    return false;
+            }
 
             string domain = string.Empty;
             if (domain_position != 0)
@@ -237,8 +212,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             if (!NtlmUtils.ParseBytes(data, key_length, key_position, out byte[] key))
                 return false;
 
-            token = new NtlmAuthenticateAuthenticationToken(data, flags, domain, username, workstation, lm_response, nt_response,
-                key, mic, version);
+            if (!NtlmAuthenticateAuthenticationTokenV2.TryParse(data, flags, domain, username, workstation, lm_response, nt_response,
+                            key, mic, mic_offset, version, out token))
+            {
+                token = new NtlmAuthenticateAuthenticationToken(data, flags, domain, username, workstation, lm_response, nt_response,
+                key, mic, mic_offset, version);
+            }
+
             return true;
         }
         #endregion

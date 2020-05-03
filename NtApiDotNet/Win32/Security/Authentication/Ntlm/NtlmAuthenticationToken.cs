@@ -118,17 +118,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             switch (type)
             {
                 case NtlmMessageType.Negotiate:
-                    System.Diagnostics.Debug.Assert(client && token_count == 0);
                     return NtlmNegotiateAuthenticationToken.TryParse(data, reader, out token);
                 case NtlmMessageType.Challenge:
-                    System.Diagnostics.Debug.Assert(!client && token_count == 0);
                     return NtlmChallengeAuthenticationToken.TryParse(data, reader, out token);
                 case NtlmMessageType.Authenticate:
-                    System.Diagnostics.Debug.Assert(client && token_count == 1);
                     return NtlmAuthenticateAuthenticationToken.TryParse(data, reader, out token);
                 default:
                     return false;
             }
+        }
+        #endregion
+
+        #region Public Static Methods
+        /// <summary>
+        /// Try and parse data into an NTLM authentication token.
+        /// </summary>
+        /// <param name="data">The data to parse.</param>
+        /// <returns>The NTLM authentication token.</returns>
+        public static NtlmAuthenticationToken Parse(byte[] data)
+        {
+            if (!TryParse(data, 0, false, out NtlmAuthenticationToken token))
+                throw new ArgumentException(nameof(data));
+            return token;
         }
         #endregion
     }
