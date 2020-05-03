@@ -14,52 +14,20 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System.IO;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
     /// Authentication Token for Kerberos.
     /// </summary>
-    public class KerberosAuthenticationToken : AuthenticationToken
+    public class KerberosAuthenticationToken : ASN1AuthenticationToken
     {
-        private readonly DERValue[] _values;
-        private const string KERBEROS_OID = "1.2.840.113554.1.2.2.3";
-        private const string TRUNCATED_KERBEROS_OID = "1.2.840.48018.1.2.2";
-
-        internal KerberosAuthenticationToken(byte[] data, DERValue[] values) 
-            : base(data)
+        #region Private Members
+        private protected KerberosAuthenticationToken(byte[] data, DERValue[] values)
+            : base(data, values)
         {
-            _values = values;
         }
-
-        private static void DumpValue(StringBuilder builder, DERValue v, int depth)
-        {
-            builder.AppendFormat("{0} {1:X}/{1} {2} {3} {4} {5:X}", new string(' ', depth * 2), v.Offset, v.Type, v.Constructed, v.FormatTag(), v.FormatValue());
-            builder.AppendLine();
-
-            if (v.Children != null)
-            {
-                foreach (var c in v.Children)
-                {
-                    DumpValue(builder, c, depth + 1);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Format the Authentication Token.
-        /// </summary>
-        /// <returns>The Formatted Token.</returns>
-        public override string Format()
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (var v in _values)
-            {
-                DumpValue(builder, v, 0);
-            }
-            return builder.ToString();
-        }
+        #endregion
 
         #region Internal Static Methods
         /// <summary>
@@ -85,8 +53,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return false;
                 if (!root.Children[0].CheckPrimitive(UniversalTag.OBJECT_IDENTIFIER))
                     return false;
-                if (root.Children[0].ReadObjID() != KERBEROS_OID)
-                    return false;
+                switch (root.Children[0].ReadObjID())
+                {
+                    case OIDValues.KERBEROS_OID:
+                    case OIDValues.KERBEROS_USER_TO_USER_OID:
+                        break;
+                    default:
+                        return false;
+                }
                 // TODO: Need to select out the different types of authentication tokens.
                 token = new KerberosAuthenticationToken(data, values);
                 return true;

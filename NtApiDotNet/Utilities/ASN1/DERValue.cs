@@ -116,7 +116,7 @@ namespace NtApiDotNet.Utilities.ASN1
                     return ReadGeneralString();
                 if (tag == UniversalTag.OBJECT_IDENTIFIER)
                     return ReadObjID();
-                if (tag == UniversalTag.INTEGER)
+                if (tag == UniversalTag.INTEGER || tag == UniversalTag.ENUMERATED)
                     return FormatInteger();
                 if (tag == UniversalTag.OCTET_STRING)
                     return BitConverter.ToString(Data);

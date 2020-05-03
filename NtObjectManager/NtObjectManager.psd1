@@ -87,7 +87,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Test-NtObject', 'Get-NtTokenIntegrityLevel', 'Get-NtAuditPolicy', 'Set-NtAuditPolicy', 'Get-NtAuditSecurity',
           'Set-NtAuditSecurity', 'Format-AuthToken', 'Get-AuthToken', 'Test-AuthContext', 'Get-NtLogonSession',
           'Get-NtAccountRight', 'Get-NtAccountRightSid', 'Get-NtConsoleSession', 'Get-ServicePrincipalName',
-          'Get-NtTokenId', 'Get-AuthCredential', 'Export-AuthToken', 'Import-AuthToken', 'Get-MD4Hash'
+          'Get-NtTokenId', 'Get-AuthCredential', 'Export-AuthToken', 'Import-AuthToken', 'Get-MD4Hash',
+          'Format-ASN1DER'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

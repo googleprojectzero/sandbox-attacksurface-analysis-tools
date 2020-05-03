@@ -88,6 +88,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 return nego_token;
             }
 
+            if (ASN1AuthenticationToken.TryParse(token, token_count, 
+                client, out ASN1AuthenticationToken asn1_token))
+            {
+                return asn1_token;
+            }
+
             return new AuthenticationToken(token);
         }
     }

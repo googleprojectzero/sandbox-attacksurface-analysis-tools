@@ -577,7 +577,7 @@ Remove SeBackupPrivilege and SeRestorePrivilege from an explicit token object.
 function Remove-NtTokenPrivilege {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
-        [alias("Privilege")]
+        [alias("Privileges")]
         [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
         [NtApiDotNet.NtToken]$Token
     )
@@ -6915,6 +6915,8 @@ The authentication context to extract token from.
 The authentication token to format.
 .PARAMETER AsBytes
 Always format as a hex dump.
+.PARAMETER AsDER
+Always format as a ASN.1 DER structure.
 .INPUTS
 None
 .OUTPUTS
@@ -6927,7 +6929,8 @@ function Format-AuthToken {
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
-        [switch]$AsBytes
+        [switch]$AsBytes,
+        [switch]$AsDER
     )
 
     PROCESS {
@@ -6938,6 +6941,11 @@ function Format-AuthToken {
             $ba = $Token.ToArray()
             if ($ba.Length -gt 0) {
                 Out-HexDump -Bytes $ba -ShowAll
+            }
+        } elseif ($AsDER) {
+            $ba = $Token.ToArray()
+            if ($ba.Length -gt 0) {
+                Format-ASN1DER -Bytes $ba
             }
         } else {
             $Token.Format() | Write-Output
@@ -9024,8 +9032,8 @@ function Get-NtTokenId {
 Get a MD4 hash of a byte array or string.
 .DESCRIPTION
 This cmdlet calculates the MD4 hash of a byte array or string.
-.PARAMETER Byte
-Specify to byte array.
+.PARAMETER Bytes
+Specify a byte array.
 .PARAMETER String
 Specify string.
 .PARAMETER Encoding
@@ -9041,7 +9049,7 @@ Get the MD4 hash of the string ABC in unicode.
 Get-MD4Hash -String "ABC" -Encoding "ASCII"
 Get the MD4 hash of the string ABC in ASCII.
 .EXAMPLE
-Get-MD4Hash -Byte @(0, 1, 2, 3)
+Get-MD4Hash -Bytes @(0, 1, 2, 3)
 Get the MD4 hash of a byte array.
 #>
 function Get-MD4Hash {
@@ -9053,7 +9061,7 @@ function Get-MD4Hash {
         [Parameter(Position = 1, ParameterSetName="FromString")]
         [string]$Encoding = "Unicode",
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
-        [byte[]]$Byte
+        [byte[]]$Bytes
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromString" {
@@ -9061,7 +9069,51 @@ function Get-MD4Hash {
             [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($String, $enc)
         }
         "FromBytes" {
-            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($Byte)
+            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($Bytes)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Formats ASN.1 DER data to a string.
+.DESCRIPTION
+This cmdlet formats ASN.1 DER data to a string either from a byte array or a file.
+.PARAMETER Bytes
+Specify a byte array containing the DER data.
+.PARAMETER Path
+Specify file containing the DER data.
+.PARAMETER Depth
+Specify initialize indentation depth.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Format-ASN1DER -Bytes $ba
+Format the byte array with ASN.1 DER data.
+.EXAMPLE
+Format-ASN1DER -Bytes $ba -Depth 2
+Format the byte array with ASN.1 DER data with indentation depth of 2.
+.EXAMPLE
+Format-ASN1DER -Path file.bin
+Format the file containing ASN.1 DER data.
+#>
+function Format-ASN1DER {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [byte[]]$Bytes,
+        [int]$Depth = 0
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPath" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Path, $Depth)
+        }
+        "FromBytes" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Bytes, $Depth)
         }
     }
 }

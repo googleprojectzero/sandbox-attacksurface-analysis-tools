@@ -12,35 +12,53 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
-    /// SPNEGO Authentication Token.
+    /// Authentication token constructed from ASN1.
     /// </summary>
-    public class NegotiateAuthenticationToken : ASN1AuthenticationToken
+    public class ASN1AuthenticationToken : AuthenticationToken
     {
-        internal NegotiateAuthenticationToken(byte[] data) 
+        private protected readonly DERValue[] _values;
+
+        private protected ASN1AuthenticationToken(byte[] data, DERValue[] values)
             : base(data)
         {
+            _values = values;
+        }
+
+        private protected ASN1AuthenticationToken(byte[] data)
+            : this(data, DERParser.ParseData(data))
+        {
+        }
+
+        /// <summary>
+        /// Format the Authentication Token.
+        /// </summary>
+        /// <returns>The Formatted Token.</returns>
+        public override string Format()
+        {
+            return ASN1Utils.FormatDER(_values, 0);
         }
 
         #region Internal Static Methods
         /// <summary>
-        /// Try and parse data into an Negotiate authentication token.
+        /// Try and parse data into an ASN1 authentication token.
         /// </summary>
         /// <param name="data">The data to parse.</param>
         /// <param name="token">The Negotiate authentication token.</param>
         /// <param name="client">True if this is a token from a client.</param>
         /// <param name="token_count">The token count number.</param>
         /// <returns>True if parsed successfully.</returns>
-        internal static bool TryParse(byte[] data, int token_count, bool client, out NegotiateAuthenticationToken token)
+        internal static bool TryParse(byte[] data, int token_count, bool client, out ASN1AuthenticationToken token)
         {
             token = null;
             try
             {
-                token = new NegotiateAuthenticationToken(data);
+                token = new ASN1AuthenticationToken(data);
                 return true;
             }
             catch (EndOfStreamException)

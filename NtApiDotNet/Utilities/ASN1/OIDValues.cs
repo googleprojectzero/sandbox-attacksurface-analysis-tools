@@ -14,25 +14,17 @@
 
 namespace NtApiDotNet.Utilities.ASN1
 {
-    internal enum UniversalTag
+    /// <summary>
+    /// Class containing known OID values.
+    /// </summary>
+    internal static class OIDValues
     {
-        EOC = 0,
-        BOOLEAN = 1,
-        INTEGER = 2,
-        BIT_STRING = 3,
-        OCTET_STRING = 4,
-        NULL = 5,
-        OBJECT_IDENTIFIER = 6,
-        ENUMERATED = 10,
-        UTF8String = 12,
-        RELATIVE_OBJECT_IDENTIFIER = 13,
-        SEQUENCE = 16,
-        SET = 17,
-        PrintableString = 19,
-        T16String = 20,
-        IA5String = 22,
-        UTCTime = 23,
-        GeneralizedTime = 24,
-        GeneralString = 27,
+        internal const string KERBEROS_NAME = "1.2.840.113554.1.2.2.1";
+        internal const string KERBEROS_PRINCIPAL = "1.2.840.113554.1.2.2.2";
+        internal const string KERBEROS_USER_TO_USER_OID = "1.2.840.113554.1.2.2.3";
+        internal const string KERBEROS_OID = "1.2.840.113554.1.2.2";
+        internal const string MS_KERBEROS = "1.2.840.48018.1.2.2";
+        internal const string NTLM_SSP = "1.3.6.1.4.1.311.2.2.10";
+        internal const string MS_NEGOX = "1.3.6.1.4.1.311.2.2.30";
     }
 }

@@ -88,9 +88,11 @@
     <Compile Include="TokenGroupsBuilder.cs" />
     <Compile Include="TokenPrivilegesBuilder.cs" />
     <Compile Include="UnicodeStringBytesSafeBuffer.cs" />
+    <Compile Include="Utilities\ASN1\ASN1Utils.cs" />
     <Compile Include="Utilities\ASN1\DERTagType.cs" />
     <Compile Include="Utilities\ASN1\DERUtils.cs" />
     <Compile Include="Utilities\ASN1\DERValue.cs" />
+    <Compile Include="Utilities\ASN1\OIDValues.cs" />
     <Compile Include="Utilities\ASN1\UniversalTag.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
@@ -316,6 +318,7 @@
     <Compile Include="Win32\ISymbolResolver.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
+    <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKey.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtils.cs" />
