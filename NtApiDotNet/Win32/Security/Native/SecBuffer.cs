@@ -56,5 +56,29 @@ namespace NtApiDotNet.Win32.Security.Native
             Marshal.Copy(pvBuffer, ret, 0, ret.Length);
             return ret;
         }
+
+        public static byte[] GetChannelBinding(byte[] channel_binding_token)
+        {
+            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
+            sec_channel_bind.cbApplicationDataLength = channel_binding_token.Length;
+            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
+            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
+            {
+                binding.Data.WriteBytes(channel_binding_token);
+                return binding.ToArray();
+            }
+        }
+
+        public static SecBuffer CreateForChannelBinding(byte[] channel_binding_token)
+        {
+            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
+            sec_channel_bind.cbApplicationDataLength = channel_binding_token.Length;
+            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
+            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
+            {
+                binding.Data.WriteBytes(channel_binding_token);
+                return new SecBuffer(SecBufferType.ChannelBindings, binding.ToArray());
+            }
+        }
     }
 }

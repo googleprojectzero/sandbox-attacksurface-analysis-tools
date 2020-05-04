@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -27,6 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private readonly SecHandle _context;
         private readonly AcceptContextReqFlags _req_flags;
         private readonly SecDataRep _data_rep;
+        private readonly byte[] _channel_binding;
         private bool _new_context;
         private int _token_count;
 
@@ -56,6 +58,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public string ClientTargetName => GetTargetName();
 
         /// <summary>
+        /// Get the Session Key for this context.
+        /// </summary>
+        public byte[] SessionKey => GetSessionKey(_context);
+
+        /// <summary>
         /// Get an access token for the authenticated user.
         /// </summary>
         /// <returns>The user's access token.</returns>
@@ -80,8 +87,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         /// <param name="creds">Credential handle.</param>
         /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
         /// <param name="data_rep">Data representation.</param>
-        public ServerAuthenticationContext(CredentialHandle creds, AcceptContextReqFlags req_attributes, SecDataRep data_rep)
+        public ServerAuthenticationContext(CredentialHandle creds, AcceptContextReqFlags req_attributes,
+            byte[] channel_binding, SecDataRep data_rep)
         {
             _creds = creds;
             _context = new SecHandle();
@@ -89,6 +98,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
             _data_rep = data_rep;
             _new_context = true;
             _token_count = 0;
+            _channel_binding = channel_binding;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="data_rep">Data representation.</param>
+        public ServerAuthenticationContext(CredentialHandle creds, 
+            AcceptContextReqFlags req_attributes, SecDataRep data_rep)
+            : this(creds, req_attributes, null, data_rep)
+        {
         }
 
         /// <summary>
@@ -117,8 +139,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 64*1024));
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
-                SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray()));
-                SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
+
+                List<SecBuffer> buffers = new List<SecBuffer>();
+                buffers.Add(list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray())));
+                if (_channel_binding != null)
+                {
+                    buffers.Add(list.AddResource(SecBuffer.CreateForChannelBinding(_channel_binding)));
+                }
+                SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(buffers.ToArray()));
 
                 LargeInteger expiry = new LargeInteger();
                 SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, new_context ? null : _context,
@@ -150,6 +178,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     return Marshal.PtrToStringUni(buffer.Result.sTargetName);
             }
             return string.Empty;
+        }
+
+        internal static byte[] GetSessionKey(SecHandle context)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_SessionKey>())
+            {
+                var result = SecurityNativeMethods.QueryContextAttributesEx(context, SECPKG_ATTR.SESSION_KEY, buffer, buffer.Length);
+                if (result == SecStatusCode.Success)
+                {
+                    byte[] ret = new byte[buffer.Result.SessionKeyLength];
+                    Marshal.Copy(buffer.Result.SessionKey, ret, 0, ret.Length);
+                    return ret;
+                }
+            }
+            return new byte[0];
         }
     }
 }

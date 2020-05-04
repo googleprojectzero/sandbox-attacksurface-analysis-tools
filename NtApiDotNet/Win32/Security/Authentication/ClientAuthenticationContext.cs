@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -27,6 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private readonly SecHandle _context;
         private readonly string _target;
         private readonly SecDataRep _data_rep;
+        private readonly byte[] _channel_binding;
         private int _token_count;
 
         /// <summary>
@@ -50,15 +52,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public long Expiry { get; private set; }
 
         /// <summary>
+        /// Get the Session Key for this context.
+        /// </summary>
+        public byte[] SessionKey => ServerAuthenticationContext.GetSessionKey(_context);
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="target">Target SPN (optional).</param>
         /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
         public ClientAuthenticationContext(CredentialHandle creds, 
             InitializeContextReqFlags req_attributes,
-            string target, SecDataRep data_rep)
+            string target, byte[] channel_binding, SecDataRep data_rep)
         {
             _creds = creds;
             _req_attributes = req_attributes & ~InitializeContextReqFlags.AllocateMemory;
@@ -66,7 +74,22 @@ namespace NtApiDotNet.Win32.Security.Authentication
             _target = target == string.Empty ? null : target;
             _data_rep = data_rep;
             _token_count = 0;
+            _channel_binding = channel_binding;
             Continue(null);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        public ClientAuthenticationContext(CredentialHandle creds,
+            InitializeContextReqFlags req_attributes,
+            string target, SecDataRep data_rep)
+            : this(creds, req_attributes, target, null, data_rep)
+        {
         }
 
         /// <summary>
@@ -76,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="data_rep">Data representation.</param>
         public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes, SecDataRep data_rep)
-            : this(creds, req_attributes, null, data_rep)
+            : this(creds, req_attributes, null, null, data_rep)
         {
         }
 
@@ -111,8 +134,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 LargeInteger expiry = new LargeInteger();
                 if (token != null)
                 {
-                    SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray()));
-                    SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
+                    List<SecBuffer> buffers = new List<SecBuffer>();
+                    buffers.Add(list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray())));
+                    if (_channel_binding != null)
+                    {
+                        buffers.Add(list.AddResource(SecBuffer.CreateForChannelBinding(_channel_binding)));
+                    }
+                    SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(buffers.ToArray()));
                     result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, _context, _target, _req_attributes, 0,
                         _data_rep, in_buffer_desc, 0, _context, out_buffer_desc, out flags, expiry).CheckResult();
                     Flags = flags;

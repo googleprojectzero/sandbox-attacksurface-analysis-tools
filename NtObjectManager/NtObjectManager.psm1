@@ -6713,6 +6713,8 @@ Request attributes.
 Optional SPN target.
 .PARAMETER DataRepresentation
 Data representation format.
+.PARAMETER ChannelBinding
+Optional channel binding token.
 .INPUTS
 None
 .OUTPUTS
@@ -6725,11 +6727,12 @@ function Get-AuthClientContext {
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttributes = 0,
         [string]$Target,
+        [byte[]]$ChannelBinding,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-            $RequestAttributes, $Target, $DataRepresentation) | Write-Output
+            $RequestAttributes, $Target, $ChannelBinding, $DataRepresentation) | Write-Output
 }
 
 <#
@@ -6743,6 +6746,8 @@ The credential handle to use.
 Request attributes.
 .PARAMETER DataRepresentation
 Data representation format.
+.PARAMETER ChannelBinding
+Optional channel binding token.
 .INPUTS
 None
 .OUTPUTS
@@ -6754,11 +6759,12 @@ function Get-AuthServerContext {
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttributes = 0,
-        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
+        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
+        [byte[]]$ChannelBinding
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $RequestAttributes, $DataRepresentation) | Write-Output
+            $RequestAttributes, $ChannelBinding, $DataRepresentation) | Write-Output
 }
 
 <#

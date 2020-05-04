@@ -329,7 +329,9 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_ATTR.cs" />
+    <Compile Include="Win32\Security\Native\SEC_CHANNEL_BINDING.cs" />
     <Compile Include="Win32\Security\Policy\AccountRight.cs" />
     <Compile Include="Win32\Security\Policy\AccountRightLogonType.cs" />
     <Compile Include="Win32\Security\Native\KERB_S4U_LOGON.cs" />
