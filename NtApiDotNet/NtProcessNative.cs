@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
@@ -648,6 +649,26 @@ namespace NtApiDotNet
     {
         None = 0,
         PreviousProcess = 1,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessHandleTableEntryInfo
+    {
+        public IntPtr HandleValue;
+        public IntPtr HandleCount;
+        public IntPtr PointerCount;
+        public AccessMask GrantedAccess;
+        public int ObjectTypeIndex;
+        public AttributeFlags HandleAttributes;
+        public int Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Handles")]
+    public struct ProcessHandleSnapshotInformation
+    {
+        public IntPtr NumberOfHandles;
+        public IntPtr Reserved;
+        public ProcessHandleTableEntryInfo Handles;
     }
 
     public static partial class NtSystemCalls

@@ -152,6 +152,16 @@ namespace NtApiDotNet
             _allow_query = allow_query;
         }
 
+        internal NtHandle(int process_id, ProcessHandleTableEntryInfo entry, bool allow_query)
+        {
+            ProcessId = process_id;
+            NtType = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
+            Attributes = entry.HandleAttributes;
+            Handle = entry.HandleValue.ToInt32();
+            GrantedAccess = entry.GrantedAccess;
+            _allow_query = allow_query;
+        }
+
         /// <summary>
         /// Get handle into the current process
         /// </summary>

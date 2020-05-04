@@ -39,19 +39,29 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Get all NT handles for the current process.</para>
     /// </example>
     /// <example>
+    ///   <code>Get-NtHandle -Process $p</code>
+    ///   <para>Get all NT handles for a process.</para>
+    /// </example>
+    /// <example>
     ///   <code>Get-NtHandle 1234 -NoQuery</code>
     ///   <para>Get all NT handles filtered to a specific Process ID but don't try and query information about the handle such as name.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtHandle")]
+    [Cmdlet(VerbsCommon.Get, "NtHandle", DefaultParameterSetName = "All")]
     [OutputType(typeof(NtHandle))]
-    public class GetNtHandleCmdlet : Cmdlet
+    public class GetNtHandleCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a process ID to filter handles on.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName = "FromPid")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a process to query handles for.</para>
+        /// </summary>
+        [Parameter(Position = 0, ParameterSetName = "FromProcess")]
+        public NtProcess Process { get; set; }
 
         /// <summary>
         /// <para type="description">Specify that the returned handle entries should not be queried for additional information.</para>
@@ -78,7 +88,16 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(ProcessId, !NoQuery);
+            IEnumerable<NtHandle> handles;
+            if (ParameterSetName == "FromProcess")
+            {
+                handles = Process.GetHandles(!NoQuery);
+            }
+            else
+            {
+                handles = NtSystemInfo.GetHandles(ProcessId, !NoQuery);
+            }
+
             if (ObjectTypes != null && ObjectTypes.Length > 0)
             {
                 HashSet<string> object_types = new HashSet<string>(ObjectTypes, StringComparer.OrdinalIgnoreCase);

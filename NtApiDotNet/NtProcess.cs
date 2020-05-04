@@ -1448,6 +1448,47 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get handles for process.
+        /// </summary>
+        /// <param name="allow_query">Specify to all name/details to be queried from the handle.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of handles.</returns>
+        /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
+        public NtResult<IEnumerable<NtHandle>> GetHandles(bool allow_query, bool throw_on_error)
+        {
+            using (var buffer = QueryBuffer<ProcessHandleSnapshotInformation>(ProcessInformationClass.ProcessHandleInformation, default, throw_on_error))
+            {
+                if (!buffer.IsSuccess)
+                    return buffer.Cast<IEnumerable<NtHandle>>();
+                var info = buffer.Result;
+                ProcessHandleTableEntryInfo[] handles = new ProcessHandleTableEntryInfo[info.Result.NumberOfHandles.ToInt32()];
+                info.Data.ReadArray(0, handles, 0, handles.Length);
+                return handles.Select(h => new NtHandle(ProcessId, h, allow_query)).ToArray().CreateResult<IEnumerable<NtHandle>>();
+            }
+        }
+
+        /// <summary>
+        /// Get handles for process.
+        /// </summary>
+        /// <param name="allow_query">Specify to all name/details to be queried from the handle.</param>
+        /// <returns>The list of handles.</returns>
+        /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
+        public IEnumerable<NtHandle> GetHandles(bool allow_query)
+        {
+            return GetHandles(allow_query, true).Result;
+        }
+
+        /// <summary>
+        /// Get handles for process.
+        /// </summary>
+        /// <returns>The list of handles.</returns>
+        /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
+        public IEnumerable<NtHandle> GetHandles()
+        {
+            return GetHandles(true);
+        }
+
+        /// <summary>
         /// Get the process handle table and try and get them as objects.
         /// </summary>
         /// <param name="named_only">True to only return named objects</param>
