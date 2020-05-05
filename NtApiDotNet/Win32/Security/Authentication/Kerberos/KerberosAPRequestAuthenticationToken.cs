@@ -83,6 +83,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
+            builder.AppendLine($"Options         : {Options}");
             builder.AppendLine("<Ticket>");
             builder.Append(Ticket.Format());
             builder.AppendLine("<Authenticator>");
