@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         private protected ASN1AuthenticationToken(byte[] data)
-            : this(data, DERParser.ParseData(data))
+            : this(data, DERParser.ParseData(data, 0))
         {
         }
 

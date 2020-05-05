@@ -81,9 +81,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         private const string NTLM_MAGIC = "NTLMSSP\0";
 
         private protected NtlmAuthenticationToken(
-            byte[] data, NtlmMessageType message_type) : base(data)
+            byte[] data, NtlmMessageType message_type, 
+            NtlmNegotiateFlags flags) : base(data)
         {
             MessageType = message_type;
+            Flags = flags;
         }
 
         #endregion
@@ -93,6 +95,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// Type of NTLM message.
         /// </summary>
         public NtlmMessageType MessageType { get; }
+
+        /// <summary>
+        /// NTLM negotitation flags.
+        /// </summary>
+        public NtlmNegotiateFlags Flags { get; }
         #endregion
 
         #region Internal Static Methods

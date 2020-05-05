@@ -27,10 +27,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
     {
         #region Public Properties
         /// <summary>
-        /// NTLM negotitation flags.
-        /// </summary>
-        public NtlmNegotiateFlags Flags { get; }
-        /// <summary>
         /// Target name.
         /// </summary>
         public string TargetName { get; }
@@ -87,9 +83,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         private NtlmChallengeAuthenticationToken(byte[] data, NtlmNegotiateFlags flags, 
             string target_name, byte[] server_challenge, byte[] reserved, Version version,
             IEnumerable<NtlmAvPair> target_info)
-            : base(data, NtlmMessageType.Challenge)
+            : base(data, NtlmMessageType.Challenge, flags)
         {
-            Flags = flags;
             TargetName = target_name;
             ServerChallenge = server_challenge;
             Reserved = reserved;

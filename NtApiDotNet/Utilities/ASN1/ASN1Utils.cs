@@ -56,7 +56,7 @@ namespace NtApiDotNet.Utilities.ASN1
         /// <returns>The formatted DER data.</returns>
         public static string FormatDER(byte[] asn1_der, int depth)
         {
-            return FormatDER(DERParser.ParseData(asn1_der), depth);
+            return FormatDER(DERParser.ParseData(asn1_der, 0), depth);
         }
         /// <summary>
         /// Format an file containing of ASN.1 DER to a string.

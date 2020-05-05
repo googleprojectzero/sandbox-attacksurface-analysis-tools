@@ -47,6 +47,16 @@ namespace NtApiDotNet.Utilities.ASN1
             return Check(false, DERTagType.Universal, (int)tag);
         }
 
+        public bool CheckSequence()
+        {
+            return Check(true, DERTagType.Universal, (int)UniversalTag.SEQUENCE);
+        }
+
+        public bool CheckContext(int context)
+        {
+            return Check(true, DERTagType.ContextSpecific, context) && HasChildren();
+        }
+
         public bool HasChildren()
         {
             return (Children?.Length ?? 0) != 0;
@@ -80,31 +90,74 @@ namespace NtApiDotNet.Utilities.ASN1
 
         public string ReadObjID()
         {
-            List<int> values = new List<int>();
-            BinaryReader reader = new BinaryReader(new MemoryStream(Data));
-            byte first = reader.ReadByte();
-            values.Add(first / 40);
-            values.Add(first % 40);
-            while (reader.RemainingLength() > 0)
-            {
-                values.Add(reader.ReadEncodedInt());
-            }
-            return string.Join(".", values);
+            return DERUtils.ReadObjID(Data);
         }
 
-        public BigInteger ReadInteger()
+        public BigInteger ReadBigInteger()
         {
             return new BigInteger(Data.Reverse().ToArray());
         }
 
+        public int ReadInteger()
+        {
+            return (int)ReadBigInteger();
+        }
+
+        public long ReadLong()
+        {
+            return (long)ReadBigInteger();
+        }
+
         private string FormatInteger()
         {
-            return ReadInteger().ToString("X");
+            return ReadBigInteger().ToString("X");
         }
 
         public string ReadGeneralString()
         {
+            if (!CheckPrimitive(UniversalTag.GeneralString))
+                throw new InvalidDataException();
             return Encoding.ASCII.GetString(Data);
+        }
+
+        public int ReadChildInteger()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.INTEGER))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadInteger();
+        }
+
+        public byte[] ReadChildOctetString()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.OCTET_STRING))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].Data;
+        }
+
+        public string ReadChildGeneralString()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.GeneralString))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadGeneralString();
+        }
+
+        public List<string> ReadChildStringSequence()
+        {
+            List<string> ret = new List<string>();
+            if (!HasChildren() || Children[0].CheckSequence())
+            {
+                foreach (var v in Children[0].Children)
+                {
+                    ret.Add(v.ReadGeneralString());
+                }
+            }
+            return ret;
         }
 
         public string FormatValue()

@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace KeyTab
+namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
 #pragma warning disable 1591
     /// <summary>

@@ -18,7 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace KeyTab
+namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
     /// Utilities for Kerberos authentication.

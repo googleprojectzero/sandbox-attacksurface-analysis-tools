@@ -25,10 +25,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
     {
         #region Public Properties
         /// <summary>
-        /// NTLM negotitation flags.
-        /// </summary>
-        public NtlmNegotiateFlags Flags { get; }
-        /// <summary>
         /// Domain name.
         /// </summary>
         public string Domain { get; }
@@ -68,9 +64,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         #region Constructors
         private NtlmNegotiateAuthenticationToken(byte[] data, NtlmNegotiateFlags flags, string domain, 
             string workstation, Version version)
-            : base(data, NtlmMessageType.Negotiate)
+            : base(data, NtlmMessageType.Negotiate, flags)
         {
-            Flags = flags;
             Domain = domain;
             Workstation = workstation;
             Version = version;

@@ -16,21 +16,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
 #pragma warning disable 1591
     /// <summary>
-    /// Kerberos Name Type.
+    /// Kerberos Message Type.
     /// </summary>
-    public enum KRB_NAME_TYPE
+    public enum KRB_MSG_TYPE
     {
-        UNKNOWN = 0,
-        PRINCIPAL = 1,
-        SRV_INST = 2,
-        SRV_HST = 3,
-        SRV_XHST = 4,
-        UID = 5,
-        X500_PRINCIPAL = 6,
-        SMTP_NAME = 7,
-        ENTERPRISE_PRINCIPAL = 10,
-        ENT_PRINCIPAL_AND_ID = -130,
-        MS_PRINCIPAL = -128,
-        MS_PRINCIPAL_AND_ID = -129
+        KRB_AS_REQ  = 10,
+        KRB_AS_REP  = 11,
+        KRB_TGS_REQ = 12,
+        KRB_TGS_REP = 13,
+        KRB_AP_REQ = 14,
+        KRB_AP_REP = 15,
+        KRB_TGT_REQ = 16,
+        KRB_TGT_REP = 17,
+        KRB_SAFE = 20,
+        KRB_PRIV = 21,
+        KRB_CRED = 22,
+        KRB_ERROR = 30,
     }
 }

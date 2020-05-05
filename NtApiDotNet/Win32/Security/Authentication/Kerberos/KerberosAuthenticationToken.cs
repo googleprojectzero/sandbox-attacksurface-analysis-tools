@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using System;
 using System.IO;
+using System.Runtime.Remoting.Messaging;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -26,6 +28,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected KerberosAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values)
         {
+        }
+        #endregion
+
+        #region Public Static Methods
+        /// <summary>
+        /// Parse bytes into a kerberos token.
+        /// </summary>
+        /// <param name="data">The kerberos token in bytes.</param>
+        /// <returns>The Kerberos token.</returns>
+        public static KerberosAuthenticationToken Parse(byte[] data)
+        {
+            if (!TryParse(data, 0, false, out KerberosAuthenticationToken token))
+            {
+                throw new ArgumentException(nameof(data));
+            }
+            return token;
         }
         #endregion
 
@@ -43,24 +61,38 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                var values = DERParser.ParseData(data);
-                if (values.Length != 1)
+                if (!GSSAPIUtils.TryParse(data, out byte[] inner_token, out string oid))
+                {
                     return false;
-                var root = values[0];
-                if (!root.CheckApplication(0))
-                    return false;
-                if (!root.HasChildren())
-                    return false;
-                if (!root.Children[0].CheckPrimitive(UniversalTag.OBJECT_IDENTIFIER))
-                    return false;
-                switch (root.Children[0].ReadObjID())
+                }
+
+                byte[] tok_id = new byte[] { inner_token[0], inner_token[1] };
+                var values = DERParser.ParseData(inner_token, 2);
+
+                switch (oid)
                 {
                     case OIDValues.KERBEROS_OID:
+                        break;
                     case OIDValues.KERBEROS_USER_TO_USER_OID:
+                        if (tok_id[0] != 4)
+                        {
+                            break;
+                        }
+                        if (tok_id[1] == 0 )
+                        {
+                            if (KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token))
+                                return true;
+                        }
+                        if (tok_id[1] == 1)
+                        {
+                            if (KerberosTGTResponseAuthenticationToken.TryParse(data, values, out token))
+                                return true;
+                        }
                         break;
                     default:
                         return false;
                 }
+
                 // TODO: Need to select out the different types of authentication tokens.
                 token = new KerberosAuthenticationToken(data, values);
                 return true;

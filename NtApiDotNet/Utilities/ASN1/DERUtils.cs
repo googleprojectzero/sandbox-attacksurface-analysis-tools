@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Utilities.ASN1
@@ -72,6 +73,20 @@ namespace NtApiDotNet.Utilities.ASN1
         public static long RemainingLength(this BinaryReader reader)
         {
             return reader.BaseStream.Length - reader.BaseStream.Position;
+        }
+
+        public static string ReadObjID(byte[] data)
+        {
+            List<int> values = new List<int>();
+            BinaryReader reader = new BinaryReader(new MemoryStream(data));
+            byte first = reader.ReadByte();
+            values.Add(first / 40);
+            values.Add(first % 40);
+            while (reader.RemainingLength() > 0)
+            {
+                values.Add(reader.ReadEncodedInt());
+            }
+            return string.Join(".", values);
         }
     }
 }

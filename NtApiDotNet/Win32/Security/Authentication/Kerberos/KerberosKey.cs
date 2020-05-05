@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace KeyTab
+namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
     /// A single kerberos key.

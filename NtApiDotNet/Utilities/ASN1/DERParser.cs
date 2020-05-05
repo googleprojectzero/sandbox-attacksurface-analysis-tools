@@ -22,30 +22,33 @@ namespace NtApiDotNet.Utilities.ASN1
     /// </summary>
     internal class DERParser
     {
-        private static DERValue[] ParseData(long offset, byte[] data)
+        private static DERValue[] ParseData(long offset, byte[] data, int index)
         {
-            BinaryReader reader = new BinaryReader(new MemoryStream(data));
+            MemoryStream stm = new MemoryStream();
+            stm.Write(data, index, data.Length - index);
+            stm.Position = 0;
+            BinaryReader reader = new BinaryReader(stm);
             List<DERValue> values = new List<DERValue>();
             while (reader.RemainingLength() > 0)
             {
                 DERValue v = reader.ReadValue(offset);
                 if (v.Constructed)
                 {
-                    v.Children = ParseData(v.DataOffset, v.Data);
+                    v.Children = ParseData(v.DataOffset, v.Data, 0);
                 }
                 values.Add(v);
             }
             return values.ToArray();
         }
 
-        public static DERValue[] ParseData(byte[] data)
+        public static DERValue[] ParseData(byte[] data, int index)
         {
-            return ParseData(0, data);
+            return ParseData(0, data, index);
         }
 
         public static DERValue[] ParseFile(string path)
         {
-            return ParseData(File.ReadAllBytes(path));
+            return ParseData(File.ReadAllBytes(path), 0);
         }
     }
 }
