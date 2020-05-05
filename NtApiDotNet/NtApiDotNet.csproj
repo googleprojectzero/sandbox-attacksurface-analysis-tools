@@ -320,11 +320,13 @@
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPRequestAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPReplyAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptedData.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTRequestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKey.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTResponseAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTReplyAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicket.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KRB_CHKSUM_TYPE.cs" />

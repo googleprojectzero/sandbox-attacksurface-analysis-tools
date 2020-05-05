@@ -72,8 +72,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (oid)
                 {
                     case OIDValues.KERBEROS_OID:
-                        break;
                     case OIDValues.KERBEROS_USER_TO_USER_OID:
+                        if (tok_id[0] == 1)
+                        {
+                            if (KerberosAPRequestAuthenticationToken.TryParse(data, values, out token))
+                                return true;
+                            break;
+                        }
+                        if (tok_id[0] == 2)
+                        {
+                            if (KerberosAPReplyAuthenticationToken.TryParse(data, values, out token))
+                                return true;
+                            break;
+                        }
+                        if (tok_id[0] == 3)
+                        {
+                            // Kerberos ERROR.
+                            break;
+                        }
                         if (tok_id[0] != 4)
                         {
                             break;
@@ -85,7 +101,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         }
                         if (tok_id[1] == 1)
                         {
-                            if (KerberosTGTResponseAuthenticationToken.TryParse(data, values, out token))
+                            if (KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token))
                                 return true;
                         }
                         break;

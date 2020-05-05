@@ -20,9 +20,9 @@ using System.Text;
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
-    /// Class to represent a User to User TGT Response.
+    /// Class to represent a User to User TGT Reply.
     /// </summary>
-    public class KerberosTGTResponseAuthenticationToken : KerberosAuthenticationToken
+    public class KerberosTGTReplyAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
         /// Protocol version.
@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public KerberosTicket Ticket { get; private set; }
 
-        private protected KerberosTGTResponseAuthenticationToken(byte[] data, DERValue[] values)
+        private protected KerberosTGTReplyAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values)
         {
             ProtocolVersion = 5;
@@ -68,7 +68,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                var ret = new KerberosTGTResponseAuthenticationToken(data, values);
+                var ret = new KerberosTGTReplyAuthenticationToken(data, values);
 
                 if (values.Length != 1 || !values[0].HasChildren())
                     return false;

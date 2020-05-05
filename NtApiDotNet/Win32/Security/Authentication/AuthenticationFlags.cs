@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         None = 0,
         Delegate = 0x00000001,
-        MutalAuth = 0x00000002,
+        MutualAuth = 0x00000002,
         ReplayDetect = 0x00000004,
         SequenceDetect = 0x00000008,
         Confidentiality = 0x00000010,

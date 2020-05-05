@@ -47,13 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Ticket Version  : {TicketVersion}");
             builder.AppendLine($"ServerName      : {ServerName}");
             builder.AppendLine($"Realm           : {Realm}");
-            builder.AppendLine($"Encryption Type : {EncryptedData.EncryptionType}");
-            builder.AppendLine($"Key Version     : {EncryptedData.KeyVersion}");
-            HexDumpBuilder hex = new HexDumpBuilder(false, true, false, false, 0);
-            hex.Append(EncryptedData.CipherText);
-            hex.Complete();
-            builder.AppendLine($"Cipher Text     :");
-            builder.Append(hex);
+            builder.Append(EncryptedData.Format());
             return builder.ToString();
         }
 

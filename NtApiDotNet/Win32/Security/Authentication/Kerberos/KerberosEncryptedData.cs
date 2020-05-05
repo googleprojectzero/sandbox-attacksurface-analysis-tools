@@ -13,7 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.Text;
 using System.IO;
+using System.Linq.Expressions;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -38,6 +41,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         internal KerberosEncryptedData()
         {
             CipherText = new byte[0];
+        }
+
+        internal string Format()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Encryption Type : {EncryptionType}");
+            builder.AppendLine($"Key Version     : {KeyVersion}");
+            HexDumpBuilder hex = new HexDumpBuilder(false, true, false, false, 0);
+            hex.Append(CipherText);
+            hex.Complete();
+            builder.AppendLine($"Cipher Text     :");
+            builder.Append(hex);
+            return builder.ToString();
         }
 
         internal static KerberosEncryptedData Parse(DERValue value)
