@@ -9200,6 +9200,8 @@ The key encryption type.
 The number of iterations for the key derivation.
 .PARAMETER Principal
 The principal associated with the key.
+.PARAMETER Salt
+The salt for the key, if not specified will try and derive from the principal.
 .INPUTS
 None
 .OUTPUTS
@@ -9221,6 +9223,8 @@ function Get-KerberosKey {
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromPassword")]
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromKey")]
         [string]$Principal,
+        [Parameter(ParameterSetName="FromPassword")]
+        [string]$Salt,
         [uint32]$Version = 1,
         [Parameter(ParameterSetName="FromKey")]
         [DateTime]$Timestamp = [DateTime]::Now
@@ -9228,7 +9232,7 @@ function Get-KerberosKey {
 
     $k = switch($PSCmdlet.ParameterSetName) {
         "FromPassword" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Version)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
         }
         "FromKey" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)

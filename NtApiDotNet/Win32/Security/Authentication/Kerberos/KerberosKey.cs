@@ -16,6 +16,8 @@ using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -144,11 +146,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="iterations">Iterations for the password derivation.</param>
         /// <param name="name_type">The key name type.</param>
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
+        /// <param name="salt">Salt for the key.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
         /// <returns></returns>
         public static KerberosKey DeriveKey(KerberosEncryptionType key_encryption, string password, 
-            int iterations, KerberosNameType name_type, string principal, uint version)
+            int iterations, KerberosNameType name_type, string principal, string salt, uint version)
         {
+            if (principal is null)
+            {
+                throw new ArgumentNullException(nameof(principal));
+            }
+
             byte[] key;
 
             switch (key_encryption)
@@ -159,11 +167,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 case KerberosEncryptionType.ARCFOUR_HMAC_OLD_EXP:
                     key = MD4.CalculateHash(Encoding.Unicode.GetBytes(password));
                     break;
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    key = DeriveAesKey(password, MakeSalt(salt, principal), iterations, 16);
+                    break;
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    key = DeriveAesKey(password, MakeSalt(salt, principal), iterations, 32);
+                    break;
                 default:
                     throw new ArgumentException($"Unsupported key type {key_encryption}", nameof(key_encryption));
             }
 
             return new KerberosKey(key_encryption, key, name_type, principal, DateTime.Now, version);
+        }
+
+        private static string MakeSalt(string salt, string principal)
+        {
+            if (!string.IsNullOrEmpty(salt))
+                return salt;
+            return GetRealm(principal).ToUpper() + string.Join("", GetComponents(principal));
         }
 
         private static string GetRealm(string principal)
@@ -190,6 +211,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             for (int i = 0; i < ret.Length; ++i)
             {
                 ret[i] = Convert.ToByte(key.Substring(i * 2, 2), 16);
+            }
+            return ret;
+        }
+
+        private static byte[] DeriveAesKey(string password, string salt, int iterations, int key_size)
+        {
+            // "kerberos" n-folded out to 16 bytes.
+            byte[] folded_key = { 0x6b, 0x65, 0x72, 0x62, 0x65, 0x72, 0x6f, 0x73, 0x7b, 0x9b, 0x5b, 0x2b, 0x93, 0x13, 0x2b, 0x93 };
+
+            Rfc2898DeriveBytes pbkdf = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(password), Encoding.UTF8.GetBytes(salt), iterations);
+            byte[] random_key = pbkdf.GetBytes(key_size);
+            Aes encrypt = new AesManaged();
+            encrypt.Mode = CipherMode.ECB;
+
+            byte[] ret = new byte[random_key.Length];
+            var transform = encrypt.CreateEncryptor(random_key, new byte[16]);
+            transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
+            Array.Copy(folded_key, ret, 16);
+            if (ret.Length > 16)
+            {
+                transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
+                Array.Copy(folded_key, 0, ret, 16, 16);
             }
             return ret;
         }
