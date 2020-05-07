@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Version number for the ticket.
         /// </summary>
-        public int TicketVersion { get; }
+        public int TicketVersion { get; private set; }
         /// <summary>
         /// Realm.
         /// </summary>
@@ -73,8 +73,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        if (next.ReadChildInteger() != 5)
-                            throw new InvalidDataException();
+                        ret.TicketVersion = next.ReadChildInteger();
                         break;
                     case 1:
                         ret.Realm = next.ReadChildGeneralString();

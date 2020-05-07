@@ -135,10 +135,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             }
                             var bits = next.Children[0].ReadBitString();
                             var options = KerberosAPRequestOptions.None;
-                            if (bits[1])
-                                options |= KerberosAPRequestOptions.UseSessionKey;
-                            if (bits[2])
-                                options |= KerberosAPRequestOptions.MutualAuthRequired;
+                            if (bits.Length > 2)
+                            {
+                                if (bits[1])
+                                    options |= KerberosAPRequestOptions.UseSessionKey;
+                                if (bits[2])
+                                    options |= KerberosAPRequestOptions.MutualAuthRequired;
+                            }
                             ret.Options = options;
                             break;
                         case 3:
