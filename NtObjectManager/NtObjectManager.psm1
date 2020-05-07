@@ -9123,3 +9123,116 @@ function Format-ASN1DER {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Exports keys to a Kerberos KeyTab file file.
+.DESCRIPTION
+This cmdlet exports keys to a Kerberos KeyTab file file.
+.PARAMETER Key
+List of keys to write to the file.
+.PARAMETER Path
+The path to the file to export.
+.INPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+.OUTPUTS
+None
+#>
+function Export-KerberosKeyTab {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Path,
+        [Parameter(Position = 1, Mandatory, ValueFromPipeline)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$Key
+    )
+
+    BEGIN {
+        $keys = @()
+    }
+
+    PROCESS {
+        foreach($k in $Key) {
+            $keys += $k
+        }
+    }
+
+    END {
+        $key_arr = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$keys
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr) `
+                | Set-Content -Path $Path -Encoding Byte
+    }
+}
+
+<#
+.SYNOPSIS
+Imports a Kerberos KeyTab file into a list of keys.
+.DESCRIPTION
+This cmdlet imports a Kerberos KeyTab file into a list of keys.
+.PARAMETER Path
+The path to the file to import.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+#>
+function Import-KerberosKeyTab {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Path
+    )
+
+    $Path = Resolve-Path -Path $Path -ErrorAction Stop
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::ReadKeyTabFile($Path) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Gets a Kerberos Key from a raw key or password.
+.DESCRIPTION
+This cmdlet gets a Kerberos Key from a raw key or password.
+.PARAMETER Password
+The password to convert to a key.
+.PARAMETER KeyType
+The key encryption type.
+.PARAMETER Iterations
+The number of iterations for the key derivation.
+.PARAMETER Principal
+The principal associated with the key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+#>
+function Get-KerberosKey {
+    [CmdletBinding(DefaultParameterSetName="FromPassword")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromPassword")]
+        [string]$Password,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromKey")]
+        [byte[]]$Key,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromPassword")]
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromKey")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
+        [Parameter(ParameterSetName="FromPassword")]
+        [int]$Interations = 4096,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosNameType]$NameType = "PRINCIPAL",
+        [Parameter(Position = 2, Mandatory, ParameterSetName="FromPassword")]
+        [Parameter(Position = 2, Mandatory, ParameterSetName="FromKey")]
+        [string]$Principal,
+        [uint32]$Version = 1,
+        [Parameter(ParameterSetName="FromKey")]
+        [DateTime]$Timestamp = [DateTime]::Now
+    )
+
+    $k = switch($PSCmdlet.ParameterSetName) {
+        "FromPassword" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Version)
+        }
+        "FromKey" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+        }
+    }
+    $k | Write-Output
+}

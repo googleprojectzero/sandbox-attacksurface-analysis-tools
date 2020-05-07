@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -131,6 +133,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             string principal, DateTime timestamp, uint version)
             : this(key_encryption, GetKey(key), name_type, principal, timestamp, version)
         {
+        }
+
+        /// <summary>
+        /// Derive a key from a password.
+        /// </summary>
+        /// <remarks>Not all encryption types are supported.</remarks>
+        /// <param name="key_encryption">The key encryption to use.</param>
+        /// <param name="password">The password to derice from.</param>
+        /// <param name="iterations">Iterations for the password derivation.</param>
+        /// <param name="name_type">The key name type.</param>
+        /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
+        /// <param name="version">Key Version Number (KVNO).</param>
+        /// <returns></returns>
+        public static KerberosKey DeriveKey(KerberosEncryptionType key_encryption, string password, 
+            int iterations, KerberosNameType name_type, string principal, uint version)
+        {
+            byte[] key;
+
+            switch (key_encryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5_56:
+                case KerberosEncryptionType.ARCFOUR_HMAC_OLD:
+                case KerberosEncryptionType.ARCFOUR_HMAC_OLD_EXP:
+                    key = MD4.CalculateHash(Encoding.Unicode.GetBytes(password));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported key type {key_encryption}", nameof(key_encryption));
+            }
+
+            return new KerberosKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
 
         private static string GetRealm(string principal)

@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -242,6 +241,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 WriteKeyTabFile(stream, keys);
             }
+        }
+
+        /// <summary>
+        /// Generate an MIT KeyTab file.
+        /// </summary>
+        /// <param name="keys">List of key entries.</param>
+        /// <returns>The keytab file as bytes.</returns>
+        public static byte[] GenerateKeyTabFile(IEnumerable<KerberosKey> keys)
+        {
+            MemoryStream stm = new MemoryStream();
+            WriteKeyTabFile(stm, keys);
+            return stm.ToArray();
         }
     }
 }
