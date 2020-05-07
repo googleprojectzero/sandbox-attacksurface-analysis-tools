@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The Key encryption type.
         /// </summary>
-        public KRB_ENC_TYPE KeyEncryption { get; }
+        public KerberosEncryptionType KeyEncryption { get; }
         /// <summary>
         /// The key.
         /// </summary>
@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The key name type.
         /// </summary>
-        public KRB_NAME_TYPE NameType { get; }
+        public KerberosNameType NameType { get; }
         /// <summary>
         /// The Realm for the key.
         /// </summary>
@@ -68,7 +68,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="components">The name components for the key.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KRB_ENC_TYPE key_encryption, byte[] key, KRB_NAME_TYPE name_type, 
+        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type, 
             string realm, string[] components, DateTime timestamp, uint version)
         {
             KeyEncryption = key_encryption;
@@ -90,7 +90,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="components">The name components for the key.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KRB_ENC_TYPE key_encryption, byte[] key, KRB_NAME_TYPE name_type,
+        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
             string realm, IEnumerable<string> components, DateTime timestamp, uint version)
         {
             KeyEncryption = key_encryption;
@@ -111,7 +111,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KRB_ENC_TYPE key_encryption, byte[] key, KRB_NAME_TYPE name_type,
+        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
             string principal, DateTime timestamp, uint version)
             : this(key_encryption, key, name_type, GetRealm(principal),
                   GetComponents(principal), timestamp, version)
@@ -127,7 +127,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KRB_ENC_TYPE key_encryption, string key, KRB_NAME_TYPE name_type,
+        public KerberosKey(KerberosEncryptionType key_encryption, string key, KerberosNameType name_type,
             string principal, DateTime timestamp, uint version)
             : this(key_encryption, GetKey(key), name_type, principal, timestamp, version)
         {

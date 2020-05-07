@@ -16,21 +16,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
 #pragma warning disable 1591
     /// <summary>
-    /// Kerberos Name Type.
+    /// Kerberos Checksum Type.
     /// </summary>
-    public enum KRB_NAME_TYPE
+    public enum KerberosChecksumType
     {
-        UNKNOWN = 0,
-        PRINCIPAL = 1,
-        SRV_INST = 2,
-        SRV_HST = 3,
-        SRV_XHST = 4,
-        UID = 5,
-        X500_PRINCIPAL = 6,
-        SMTP_NAME = 7,
-        ENTERPRISE_PRINCIPAL = 10,
-        ENT_PRINCIPAL_AND_ID = -130,
-        MS_PRINCIPAL = -128,
-        MS_PRINCIPAL_AND_ID = -129
+        NONE = 0,
+        CRC32 = 1,
+        RSA_MD4 = 2,
+        RSA_MD4_DES = 3,
+        DES_MAC = 4,
+        DES_MAC_K = 5,
+        RSA_MD4_DES_K = 6,
+        RSA_MD5 = 7,
+        RSA_MD5_DES = 8,
+        RSA_MD5_DES3 = 9,
+        SHA1_OTHER = 10,
+        HMAC_SHA1_DES3 = 12,
+        SHA1 = 14,
+        HMAC_SHA1_96_AES_128 = 15,
+        HMAC_SHA1_96_AES_256 = 16,
+        GSSAPI = 32771,
+        HMAC_MD5 = -138,
+        HMAC_MD5_ENC = -1138
     }
 }

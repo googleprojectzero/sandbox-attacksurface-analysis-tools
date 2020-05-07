@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The name type.
         /// </summary>
-        public KRB_NAME_TYPE NameType { get; private set; }
+        public KerberosNameType NameType { get; private set; }
         /// <summary>
         /// The names for the principal.
         /// </summary>
@@ -47,7 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal KerberosPrincipalName()
         {
-            NameType = KRB_NAME_TYPE.UNKNOWN;
+            NameType = KerberosNameType.UNKNOWN;
             Names = new List<string>().AsReadOnly();
         }
 
@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        ret.NameType = (KRB_NAME_TYPE)next.ReadChildInteger();
+                        ret.NameType = (KerberosNameType)next.ReadChildInteger();
                         break;
                     case 1:
                         ret.Names = next.ReadChildStringSequence().AsReadOnly();

@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 version = ReadUInt32(reader);
             }
-            return new KerberosKey((KRB_ENC_TYPE)key_type, key, (KRB_NAME_TYPE)name_type, 
+            return new KerberosKey((KerberosEncryptionType)key_type, key, (KerberosNameType)name_type, 
                 realm, components, new DateTime(1970, 1, 1).AddSeconds(timestamp), version);
         }
 
@@ -145,7 +145,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return Encoding.UTF8.GetString(ReadOctets(reader));
         }
 
-        internal static bool CheckMsg(this DERValue value, KRB_MSG_TYPE msg)
+        internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
         {
             return value.CheckApplication((int)msg);
         }

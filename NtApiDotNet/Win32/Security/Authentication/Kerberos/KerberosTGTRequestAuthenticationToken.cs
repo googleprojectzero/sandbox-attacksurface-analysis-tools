@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Message type.
         /// </summary>
-        public KRB_MSG_TYPE MessageType { get; }
+        public KerberosMessageType MessageType { get; }
         /// <summary>
         /// Realm.
         /// </summary>
@@ -45,7 +45,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(data, values)
         {
             ProtocolVersion = 5;
-            MessageType = KRB_MSG_TYPE.KRB_TGT_REQ;
+            MessageType = KerberosMessageType.KRB_TGT_REQ;
             Realm = string.Empty;
             ServerName = new KerberosPrincipalName();
         }
@@ -58,7 +58,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
-            if (ServerName.NameType == KRB_NAME_TYPE.PRINCIPAL)
+            if (ServerName.NameType == KerberosNameType.PRINCIPAL)
             {
                 builder.AppendLine($"Principal: {ServerName.FullName}@{Realm}");
             }
@@ -100,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                                 return false;
                             break;
                         case 1:
-                            if ((KRB_MSG_TYPE)next.ReadChildInteger() != KRB_MSG_TYPE.KRB_TGT_REQ)
+                            if ((KerberosMessageType)next.ReadChildInteger() != KerberosMessageType.KRB_TGT_REQ)
                                 return false;
                             break;
                         case 2:

@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Message type.
         /// </summary>
-        public KRB_MSG_TYPE MessageType { get; }
+        public KerberosMessageType MessageType { get; }
         /// <summary>
         /// Client time.
         /// </summary>
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Error code.
         /// </summary>
-        public KRB_ERR_TYPE ErrorCode { get; private set; }
+        public KerberosErrorType ErrorCode { get; private set; }
         /// <summary>
         /// Client realm.
         /// </summary>
@@ -83,7 +83,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(data, values)
         {
             ProtocolVersion = 5;
-            MessageType = KRB_MSG_TYPE.KRB_ERROR;
+            MessageType = KerberosMessageType.KRB_ERROR;
             ClientRealm = string.Empty;
             ClientName = new KerberosPrincipalName();
             ClientTime = string.Empty;
@@ -144,7 +144,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 var ret = new KerberosErrorAuthenticationToken(data, values);
 
-                if (values.Length != 1 || !values[0].CheckMsg(KRB_MSG_TYPE.KRB_ERROR) || !values[0].HasChildren())
+                if (values.Length != 1 || !values[0].CheckMsg(KerberosMessageType.KRB_ERROR) || !values[0].HasChildren())
                     return false;
 
                 values = values[0].Children;
@@ -164,7 +164,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                                 return false;
                             break;
                         case 1:
-                            if ((KRB_MSG_TYPE)next.ReadChildInteger() != KRB_MSG_TYPE.KRB_ERROR)
+                            if ((KerberosMessageType)next.ReadChildInteger() != KerberosMessageType.KRB_ERROR)
                                 return false;
                             break;
                         case 2:
@@ -180,7 +180,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             ret.ServerUSec = next.ReadChildInteger();
                             break;
                         case 6:
-                            ret.ErrorCode = (KRB_ERR_TYPE)next.ReadChildInteger();
+                            ret.ErrorCode = (KerberosErrorType)next.ReadChildInteger();
                             break;
                         case 7:
                             ret.ClientRealm = next.ReadChildGeneralString();

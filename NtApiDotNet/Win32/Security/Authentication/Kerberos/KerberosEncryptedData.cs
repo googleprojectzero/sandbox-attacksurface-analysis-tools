@@ -15,7 +15,6 @@
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Text;
 using System.IO;
-using System.Linq.Expressions;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -28,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Encryption type for the CipherText.
         /// </summary>
-        public KRB_ENC_TYPE EncryptionType { get; private set; }
+        public KerberosEncryptionType EncryptionType { get; private set; }
         /// <summary>
         /// Key version number.
         /// </summary>
@@ -69,7 +68,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        ret.EncryptionType = (KRB_ENC_TYPE)next.ReadChildInteger();
+                        ret.EncryptionType = (KerberosEncryptionType)next.ReadChildInteger();
                         break;
                     case 1:
                         ret.KeyVersion = next.ReadChildInteger();

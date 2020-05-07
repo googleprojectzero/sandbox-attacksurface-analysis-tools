@@ -18,7 +18,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Kerberos Encryption Type.
     /// </summary>
-    public enum KRB_ENC_TYPE
+    public enum KerberosEncryptionType
     {
         NULL = 0,
         DES_CBC_CRC = 1,

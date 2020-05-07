@@ -330,11 +330,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTReplyAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicket.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtils.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KRB_CHKSUM_TYPE.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KRB_ENC_TYPE.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KRB_ERR_TYPE.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KRB_MSG_TYPE.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KRB_NAME_TYPE.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksumType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptionType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosMessageType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosNameType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PrincipalName.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />

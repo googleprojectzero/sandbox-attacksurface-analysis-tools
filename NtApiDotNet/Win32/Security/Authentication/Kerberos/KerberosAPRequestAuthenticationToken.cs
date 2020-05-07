@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Message type.
         /// </summary>
-        public KRB_MSG_TYPE MessageType { get; }
+        public KerberosMessageType MessageType { get; }
         /// <summary>
         /// AP Request Options.
         /// </summary>
@@ -70,7 +70,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(data, values)
         {
             ProtocolVersion = 5;
-            MessageType = KRB_MSG_TYPE.KRB_AP_REQ;
+            MessageType = KerberosMessageType.KRB_AP_REQ;
             Ticket = new KerberosTicket();
             Authenticator = new KerberosEncryptedData();
         }
@@ -125,7 +125,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                                 return false;
                             break;
                         case 1:
-                            if ((KRB_MSG_TYPE)next.ReadChildInteger() != KRB_MSG_TYPE.KRB_AP_REQ)
+                            if ((KerberosMessageType)next.ReadChildInteger() != KerberosMessageType.KRB_AP_REQ)
                                 return false;
                             break;
                         case 2:

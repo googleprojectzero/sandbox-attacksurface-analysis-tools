@@ -18,7 +18,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Kerberos Error Type.
     /// </summary>
-    public enum KRB_ERR_TYPE
+    public enum KerberosErrorType
     {
         NONE = 0,
         NAME_EXP = 1,
