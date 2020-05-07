@@ -12,10 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -140,6 +143,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private static string ReadString(BinaryReader reader)
         {
             return Encoding.UTF8.GetString(ReadOctets(reader));
+        }
+
+        internal static bool CheckMsg(this DERValue value, KRB_MSG_TYPE msg)
+        {
+            return value.CheckApplication((int)msg);
+        }
+
+        internal static DateTime ParseKerberosTime(string s, int usec)
+        {
+            if (DateTime.TryParseExact(s, "yyyyMMddHHmmssZ",
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTime time))
+            {
+                return time.AddMilliseconds(usec / 1000);
+            }
+            return DateTime.MinValue;
         }
 
         /// <summary>

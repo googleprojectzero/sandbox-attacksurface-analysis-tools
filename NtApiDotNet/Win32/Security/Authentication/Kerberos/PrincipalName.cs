@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Full name.
         /// </summary>
-        public string FullName => string.Join(".", Names);
+        public string FullName => string.Join("/", Names);
 
         /// <summary>
         /// ToString method.

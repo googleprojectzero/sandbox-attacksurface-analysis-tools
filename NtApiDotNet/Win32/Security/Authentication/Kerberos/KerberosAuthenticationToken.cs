@@ -15,7 +15,6 @@
 using NtApiDotNet.Utilities.ASN1;
 using System;
 using System.IO;
-using System.Runtime.Remoting.Messaging;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -62,9 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             try
             {
                 if (!GSSAPIUtils.TryParse(data, out byte[] inner_token, out string oid))
-                {
                     return false;
-                }
 
                 byte[] tok_id = new byte[] { inner_token[0], inner_token[1] };
                 var values = DERParser.ParseData(inner_token, 2);
@@ -87,7 +84,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         }
                         if (tok_id[0] == 3)
                         {
-                            // Kerberos ERROR.
+                            if (KerberosErrorAuthenticationToken.TryParse(data, values, out token))
+                                return true;
                             break;
                         }
                         if (tok_id[0] != 4)

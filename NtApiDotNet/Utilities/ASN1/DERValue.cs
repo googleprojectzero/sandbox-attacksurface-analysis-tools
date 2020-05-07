@@ -120,6 +120,13 @@ namespace NtApiDotNet.Utilities.ASN1
             return Encoding.ASCII.GetString(Data);
         }
 
+        public string ReadGeneralizedTime()
+        {
+            if (!CheckPrimitive(UniversalTag.GeneralizedTime))
+                throw new InvalidDataException();
+            return Encoding.ASCII.GetString(Data);
+        }
+
         public int ReadChildInteger()
         {
             if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.INTEGER))
@@ -145,6 +152,15 @@ namespace NtApiDotNet.Utilities.ASN1
                 throw new InvalidDataException();
             }
             return Children[0].ReadGeneralString();
+        }
+
+        public string ReadChildGeneralizedTime()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.GeneralizedTime))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadGeneralizedTime();
         }
 
         public List<string> ReadChildStringSequence()
