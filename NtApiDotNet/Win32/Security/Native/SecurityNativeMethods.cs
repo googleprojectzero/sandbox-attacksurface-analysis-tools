@@ -355,6 +355,16 @@ namespace NtApiDotNet.Win32.Security.Native
                 SafeTokenGroupsBuffer pSids
             );
 
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzGetInformationFromContext(
+          SafeAuthZClientContextHandle hAuthzClientContext,
+          AUTHZ_CONTEXT_INFORMATION_CLASS InfoClass,
+          int BufferSize,
+          out int pSizeRequired,
+          SafeBuffer Buffer
+        );
+
         [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern void AuditFree(IntPtr Buffer);
 

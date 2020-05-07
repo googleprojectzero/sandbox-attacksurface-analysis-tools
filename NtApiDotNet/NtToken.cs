@@ -754,7 +754,7 @@ namespace NtApiDotNet
                     IntPtr buffer = r.pAttributeV1;
                     while (count > 0)
                     {
-                        attributes.Add(new ClaimSecurityAttribute(buffer, info_class == TokenInformationClass.TokenSecurityAttributes));
+                        attributes.Add(new ClaimSecurityAttribute(buffer, native));
                         count--;
                         buffer += struct_size;
                     }

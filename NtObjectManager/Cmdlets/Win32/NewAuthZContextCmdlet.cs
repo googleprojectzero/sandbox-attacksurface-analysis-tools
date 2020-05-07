@@ -23,8 +23,20 @@ namespace NtObjectManager.Cmdlets.Win32
     /// <para type="description">This cmdlet creates a new AuthZ Client Context.</para>
     /// </summary>
     /// <example>
+    ///   <code>New-AuthZContext -ResourceManager $rm</code>
+    ///   <para>Create a new AuthZ Client Context from a Resource Manager using the current effective Token.</para>
+    /// </example>
+    /// <example>
     ///   <code>New-AuthZContext -ResourceManager $rm -Token $token</code>
     ///   <para>Create a new AuthZ Client Context from a Resource Manager and Token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>New-AuthZContext -ResourceManager $rm -Sid $user</code>
+    ///   <para>Create a new AuthZ Client Context from a Resource Manager and user SID.</para>
+    /// </example>
+    /// <example>
+    ///   <code>New-AuthZContext -ResourceManager $rm -Sid $user</code>
+    ///   <para>Create a new AuthZ Client Context from a Resource Manager and user SID.</para>
     /// </example>
     [Cmdlet(VerbsCommon.New, "AuthZContext", DefaultParameterSetName = "FromToken")]
     [OutputType(typeof(AuthZContext))]
@@ -41,6 +53,18 @@ namespace NtObjectManager.Cmdlets.Win32
         /// </summary>
         [Parameter(Position = 1, ParameterSetName = "FromToken")]
         public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the SID to base the Client Context.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromSid")]
+        public Sid Sid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the flags for the Client Context.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSid")]
+        public AuthZContextInitializeSidFlags Flags { get; set; }
 
         private NtToken GetToken()
         {
@@ -68,6 +92,9 @@ namespace NtObjectManager.Cmdlets.Win32
             {
                 case "FromToken":
                     WriteObject(ResourceManager.CreateContext(GetToken()));
+                    break;
+                case "FromSid":
+                    WriteObject(ResourceManager.CreateContext(Sid, Flags));
                     break;
             }
         }

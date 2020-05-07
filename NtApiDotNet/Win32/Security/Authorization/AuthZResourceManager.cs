@@ -94,6 +94,29 @@ namespace NtApiDotNet.Win32.Security.Authorization
             return CreateContext(token, true).Result;
         }
 
+        /// <summary>
+        /// Create a client context from a Token.
+        /// </summary>
+        /// <param name="sid">The sid to create the context from.</param>
+        /// <param name="flags">Flags for intialization.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created client context.</returns>
+        public NtResult<AuthZContext> CreateContext(Sid sid, AuthZContextInitializeSidFlags flags, bool throw_on_error)
+        {
+            return AuthZContext.Create(_handle, flags, sid, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a client context from a Token.
+        /// </summary>
+        /// <param name="sid">The sid to create the context from.</param>
+        /// <param name="flags">Flags for intialization.</param>
+        /// <returns>The created client context.</returns>
+        public AuthZContext CreateContext(Sid sid, AuthZContextInitializeSidFlags flags)
+        {
+            return CreateContext(sid, flags, true).Result;
+        }
+
         #endregion
 
         #region Public Static Methods
