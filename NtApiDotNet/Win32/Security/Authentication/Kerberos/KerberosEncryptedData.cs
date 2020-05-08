@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Key version number.
         /// </summary>
-        public int KeyVersion { get; private set; }
+        public int? KeyVersion { get; private set; }
         /// <summary>
         /// Cipher Text.
         /// </summary>
@@ -46,7 +46,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"Encryption Type : {EncryptionType}");
-            builder.AppendLine($"Key Version     : {KeyVersion}");
+            if (KeyVersion.HasValue)
+            {
+                builder.AppendLine($"Key Version     : {KeyVersion}");
+            }
             HexDumpBuilder hex = new HexDumpBuilder(false, true, false, false, 0);
             hex.Append(CipherText);
             hex.Complete();
