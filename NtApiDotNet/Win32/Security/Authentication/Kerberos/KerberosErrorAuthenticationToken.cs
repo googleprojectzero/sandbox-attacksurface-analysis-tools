@@ -151,10 +151,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
                     return false;
 
-                Queue<DERValue> queue = new Queue<DERValue>(values[0].Children);
-                while (queue.Count > 0)
+                foreach (var next in values[0].Children)
                 {
-                    var next = queue.Dequeue();
                     if (next.Type != DERTagType.ContextSpecific)
                         return false;
                     switch (next.Tag)
