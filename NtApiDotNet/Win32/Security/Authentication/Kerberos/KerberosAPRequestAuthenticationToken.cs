@@ -46,14 +46,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public class KerberosAPRequestAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
-        /// Protocol version.
-        /// </summary>
-        public int ProtocolVersion { get; }
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
         /// AP Request Options.
         /// </summary>
         public KerberosAPRequestOptions Options { get; private set; }
@@ -67,10 +59,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosEncryptedData Authenticator { get; private set; }
 
         private protected KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
-            : base(data, values)
+            : base(data, values, KerberosMessageType.KRB_AP_REQ)
         {
-            ProtocolVersion = 5;
-            MessageType = KerberosMessageType.KRB_AP_REQ;
             Ticket = new KerberosTicket();
             Authenticator = new KerberosEncryptedData();
         }

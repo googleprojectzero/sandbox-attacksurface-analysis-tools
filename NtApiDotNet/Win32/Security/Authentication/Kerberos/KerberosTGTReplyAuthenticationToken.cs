@@ -25,23 +25,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public class KerberosTGTReplyAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
-        /// Protocol version.
-        /// </summary>
-        public int ProtocolVersion { get; }
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
         /// The Kerberos Ticket.
         /// </summary>
         public KerberosTicket Ticket { get; private set; }
 
         private protected KerberosTGTReplyAuthenticationToken(byte[] data, DERValue[] values)
-            : base(data, values)
+            : base(data, values, KerberosMessageType.KRB_TGT_REP)
         {
-            ProtocolVersion = 5;
-            MessageType = KerberosMessageType.KRB_TGT_REP;
         }
 
         /// <summary>

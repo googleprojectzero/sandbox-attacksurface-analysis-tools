@@ -23,10 +23,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public class KerberosAuthenticationToken : ASN1AuthenticationToken
     {
+        #region Public Properties
+        /// <summary>
+        /// Protocol version.
+        /// </summary>
+        public int ProtocolVersion { get; }
+        /// <summary>
+        /// Message type.
+        /// </summary>
+        public KerberosMessageType MessageType { get; }
+        #endregion
+
         #region Private Members
-        private protected KerberosAuthenticationToken(byte[] data, DERValue[] values)
+        private protected KerberosAuthenticationToken(byte[] data, DERValue[] values, KerberosMessageType message_type)
             : base(data, values)
         {
+            ProtocolVersion = 5;
+            MessageType = message_type;
         }
         #endregion
 
@@ -108,7 +121,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
 
                 // TODO: Need to select out the different types of authentication tokens.
-                token = new KerberosAuthenticationToken(data, values);
+                token = new KerberosAuthenticationToken(data, values, KerberosMessageType.UNKNOWN);
                 return true;
             }
             catch (EndOfStreamException)

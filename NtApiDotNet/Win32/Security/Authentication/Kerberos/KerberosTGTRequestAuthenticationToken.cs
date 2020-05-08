@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -25,14 +24,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public class KerberosTGTRequestAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
-        /// Protocol version.
-        /// </summary>
-        public int ProtocolVersion { get; }
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
         /// Realm.
         /// </summary>
         public string Realm { get; private set; }
@@ -42,10 +33,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosPrincipalName ServerName { get; private set; }
 
         private protected KerberosTGTRequestAuthenticationToken(byte[] data, DERValue[] values)
-            : base(data, values)
+            : base(data, values, KerberosMessageType.KRB_TGT_REQ)
         {
-            ProtocolVersion = 5;
-            MessageType = KerberosMessageType.KRB_TGT_REQ;
             Realm = string.Empty;
             ServerName = new KerberosPrincipalName();
         }

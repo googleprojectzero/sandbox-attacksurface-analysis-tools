@@ -25,23 +25,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public class KerberosAPReplyAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
-        /// Protocol version.
-        /// </summary>
-        public int ProtocolVersion { get; }
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
         /// Encrypted mutual authentication data.
         /// </summary>
         public KerberosEncryptedData EncryptedPart { get; private set; }
 
         private protected KerberosAPReplyAuthenticationToken(byte[] data, DERValue[] values)
-            : base(data, values)
+            : base(data, values, KerberosMessageType.KRB_AP_REP)
         {
-            ProtocolVersion = 5;
-            MessageType = KerberosMessageType.KRB_AP_REP;
             EncryptedPart = new KerberosEncryptedData();
         }
 

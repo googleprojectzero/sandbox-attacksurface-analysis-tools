@@ -20,6 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public enum KerberosMessageType
     {
+        UNKNOWN = 0,
         KRB_AS_REQ  = 10,
         KRB_AS_REP  = 11,
         KRB_TGS_REQ = 12,

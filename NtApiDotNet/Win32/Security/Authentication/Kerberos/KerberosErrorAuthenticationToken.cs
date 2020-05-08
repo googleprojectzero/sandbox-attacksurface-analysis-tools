@@ -27,14 +27,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public class KerberosErrorAuthenticationToken : KerberosAuthenticationToken
     {
         /// <summary>
-        /// Protocol version.
-        /// </summary>
-        public int ProtocolVersion { get; }
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
         /// Client time.
         /// </summary>
         public string ClientTime { get; private set; }
@@ -80,10 +72,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public byte[] ErrorData { get; private set; }
 
         private protected KerberosErrorAuthenticationToken(byte[] data, DERValue[] values)
-            : base(data, values)
+            : base(data, values, KerberosMessageType.KRB_ERROR)
         {
-            ProtocolVersion = 5;
-            MessageType = KerberosMessageType.KRB_ERROR;
             ClientRealm = string.Empty;
             ClientName = new KerberosPrincipalName();
             ClientTime = string.Empty;
