@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
