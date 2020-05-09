@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Linq;
 
 namespace NtApiDotNet.Utilities.Security
@@ -51,7 +52,8 @@ namespace NtApiDotNet.Utilities.Security
         public static byte[] Transform(byte[] data, int offset, int length, byte[] key)
         {
             byte[] s = CreateKeySchedule(key);
-            byte[] ret = (byte[])data.Clone();
+            byte[] ret = new byte[length];
+            Buffer.BlockCopy(data, offset, ret, 0, length);
 
             int i = 0;
             int j = 0;
@@ -62,7 +64,7 @@ namespace NtApiDotNet.Utilities.Security
                 j = (j + s[i]) & 0xFF;
                 Swap(s, i, j);
                 byte k = s[(s[i] + s[j]) & 0xFF];
-                ret[p + offset] = (byte)(data[p + offset] ^ k);
+                ret[p] ^= k;
                 p++;
             }
             return ret;
