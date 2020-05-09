@@ -44,9 +44,11 @@ namespace NtApiDotNet.Utilities.Security
         /// Encrypt, or decrypt an ARC4 stream.
         /// </summary>
         /// <param name="data">The data to encrypt/decrypt.</param>
-        /// <param name="key">The key.</param>
+        /// <param name="offset">Offset into the data to decrypt.</param>
+        /// <param name="length">Length of data to decrypt.</param>
+        /// <param name="key">The key to decrypt.</param>
         /// <returns>The resulting bytes.</returns>
-        public static byte[] Encrypt(byte[] data, byte[] key)
+        public static byte[] Transform(byte[] data, int offset, int length, byte[] key)
         {
             byte[] s = CreateKeySchedule(key);
             byte[] ret = (byte[])data.Clone();
@@ -54,16 +56,27 @@ namespace NtApiDotNet.Utilities.Security
             int i = 0;
             int j = 0;
             int p = 0;
-            while (p < data.Length)
+            while (p < length)
             {
                 i = (i + 1) & 0xFF;
                 j = (j + s[i]) & 0xFF;
                 Swap(s, i, j);
                 byte k = s[(s[i] + s[j]) & 0xFF];
-                ret[p] = (byte)(data[p] ^ k);
+                ret[p + offset] = (byte)(data[p + offset] ^ k);
                 p++;
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Encrypt, or decrypt an ARC4 stream.
+        /// </summary>
+        /// <param name="data">The data to encrypt/decrypt.</param>
+        /// <param name="key">The key to decrypt.</param>
+        /// <returns>The resulting bytes.</returns>
+        public static byte[] Transform(byte[] data, byte[] key)
+        {
+            return Transform(data, 0, data.Length, key);
         }
     }
 }
