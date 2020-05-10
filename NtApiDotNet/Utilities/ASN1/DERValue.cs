@@ -176,6 +176,15 @@ namespace NtApiDotNet.Utilities.ASN1
             return ret;
         }
 
+        public BitArray ReadChildBitString()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.BIT_STRING))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadBitString();
+        }
+
         public string FormatValue()
         {
             if (Type == DERTagType.Universal)

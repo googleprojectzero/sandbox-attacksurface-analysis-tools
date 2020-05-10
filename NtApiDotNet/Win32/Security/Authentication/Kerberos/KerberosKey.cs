@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -177,6 +179,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             return new KerberosKey(key_encryption, key, name_type, principal, DateTime.Now, version);
+        }
+
+        internal static KerberosKey Parse(DERValue value, string realm, KerberosPrincipalName name)
+        {
+            if (!value.CheckSequence())
+                throw new InvalidDataException();
+            KerberosEncryptionType enc_type = 0;
+            byte[] key = null;
+            foreach (var next in value.Children)
+            {
+                if (next.Type != DERTagType.ContextSpecific)
+                    throw new InvalidDataException();
+                switch (next.Tag)
+                {
+                    case 0:
+                        enc_type = (KerberosEncryptionType)next.ReadChildInteger();
+                        break;
+                    case 1:
+                        key = next.ReadChildOctetString();
+                        break;
+                    default:
+                        throw new InvalidDataException();
+                }
+            }
+
+            if (enc_type == 0 || key == null)
+                throw new InvalidDataException();
+            return new KerberosKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
         }
 
         private static string MakeSalt(string salt, string principal)

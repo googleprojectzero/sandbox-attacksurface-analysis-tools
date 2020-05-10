@@ -9240,3 +9240,29 @@ function Get-KerberosKey {
     }
     $k | Write-Output
 }
+
+<#
+.SYNOPSIS
+Decrypt an Authentication Token.
+.DESCRIPTION
+This cmdlet attempts to decrypt an authentication token. The call will return the decrypted token.
+This is primarily for Kerberos.
+.PARAMETER KeySet
+Specify a key set of keys for decryption.
+.PARAMETER KerberosToken
+The authentication token to decrypt.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationToken
+#>
+function Unprotect-AuthToken {
+    [CmdletBinding(DefaultParameterSetName="Kerberos")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="Kerberos")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationToken]$KerberosToken,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="Kerberos")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeySet]$KeySet
+    )
+    $KerberosToken.Decrypt($KeySet) | Write-Output
+}

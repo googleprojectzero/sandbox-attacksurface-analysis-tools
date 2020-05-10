@@ -39,6 +39,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Encrypted data for the ticket.
         /// </summary>
         public KerberosEncryptedData EncryptedData { get; private set; }
+        /// <summary>
+        /// Get the principal for the ticket.
+        /// </summary>
+        public string Principal => ServerName.GetPrincipal(Realm);
+
+        internal virtual bool Decrypt(KerberosKeySet keyset, RC4KeyUsage key_usage, out KerberosTicket ticket)
+        {
+            ticket = null;
+            if (!EncryptedData.Decrypt(keyset, Realm, ServerName, key_usage, out byte[] decrypted))
+                return false;
+
+            return KerberosTicketDecrypted.Parse(this, decrypted, out ticket);
+        }
 
         internal string Format()
         {
@@ -50,11 +63,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToString();
         }
 
-        internal KerberosTicket()
+        private protected KerberosTicket(
+            int ticket_version,
+            string realm, 
+            KerberosPrincipalName server_name, 
+            KerberosEncryptedData encrypted_data)
         {
-            TicketVersion = 5;
-            Realm = string.Empty;
-            ServerName = new KerberosPrincipalName();
+            TicketVersion = ticket_version;
+            Realm = realm ?? string.Empty;
+            ServerName = server_name ?? new KerberosPrincipalName();
+            EncryptedData = encrypted_data;
+        }
+
+        internal KerberosTicket() 
+            : this(5, null, null, null)
+        {
         }
 
         internal static KerberosTicket Parse(DERValue value)

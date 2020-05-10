@@ -13,8 +13,11 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.Security;
 using NtApiDotNet.Utilities.Text;
+using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -56,6 +59,52 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Cipher Text     :");
             builder.Append(hex);
             return builder.ToString();
+        }
+
+        private bool DecryptRC4WithKey(KerberosKey key, RC4KeyUsage key_usage, out byte[] decrypted)
+        {
+            HMACMD5 hmac = new HMACMD5(key.Key);
+            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
+            hmac = new HMACMD5(key1);
+
+            byte[] checksum = new byte[16];
+            Buffer.BlockCopy(CipherText, 0, checksum, 0, checksum.Length);
+            byte[] key2 = hmac.ComputeHash(checksum);
+
+            byte[] result = ARC4.Transform(CipherText, 16, CipherText.Length - 16, key2);
+            hmac = new HMACMD5(key1);
+            byte[] calculated_checksum = hmac.ComputeHash(result);
+
+            decrypted = new byte[result.Length - 8];
+            Buffer.BlockCopy(result, 8, decrypted, 0, decrypted.Length);
+            return NtObjectUtils.EqualByteArray(checksum, calculated_checksum);
+        }
+
+        private bool DecryptRC4(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, RC4KeyUsage key_usage, out byte[] decrypted)
+        {
+            KerberosKey key = keyset.FindKey(EncryptionType, server_name.NameType, server_name.GetPrincipal(realm), KeyVersion ?? 0);
+            if (key != null)
+            {
+                if (DecryptRC4WithKey(key, key_usage, out decrypted))
+                    return true;
+            }
+            foreach (var next in keyset.GetKeysForEncryption(EncryptionType))
+            {
+                if (DecryptRC4WithKey(key, key_usage, out decrypted))
+                    return true;
+            }
+            decrypted = null;
+            return false;
+        }
+
+        internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, RC4KeyUsage key_usage, out byte[] decrypted)
+        {
+            if (EncryptionType == KerberosEncryptionType.ARCFOUR_HMAC_MD5)
+            {
+                return DecryptRC4(keyset, realm, server_name, key_usage, out decrypted);
+            }
+            decrypted = null;
+            return false;
         }
 
         internal static KerberosEncryptedData Parse(DERValue value)

@@ -49,7 +49,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
             if (ServerName.NameType == KerberosNameType.PRINCIPAL)
             {
-                builder.AppendLine($"Principal: {ServerName.FullName}@{Realm}");
+                builder.AppendLine($"Principal: {ServerName.GetPrincipal(Realm)}");
             }
             else
             {

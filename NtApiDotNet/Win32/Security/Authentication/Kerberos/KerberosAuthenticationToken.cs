@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -56,6 +57,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentException(nameof(data));
             }
             return token;
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Decrypt the Authentication Token using a keyset.
+        /// </summary>
+        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public virtual KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
+        {
+            return this;
         }
         #endregion
 

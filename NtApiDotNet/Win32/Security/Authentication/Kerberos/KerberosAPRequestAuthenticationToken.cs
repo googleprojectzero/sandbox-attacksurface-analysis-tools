@@ -14,7 +14,6 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -45,6 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public class KerberosAPRequestAuthenticationToken : KerberosAuthenticationToken
     {
+        #region Public Properties
         /// <summary>
         /// AP Request Options.
         /// </summary>
@@ -57,14 +57,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Authenticator data.
         /// </summary>
         public KerberosEncryptedData Authenticator { get; private set; }
+        #endregion
 
+        #region Constructors
         private protected KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_AP_REQ)
         {
             Ticket = new KerberosTicket();
             Authenticator = new KerberosEncryptedData();
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Format the Authentication Token.
         /// </summary>
@@ -80,6 +84,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.Append(Authenticator.Format());
             return builder.ToString();
         }
+
+        /// <summary>
+        /// Decrypt the Authentication Token using a keyset.
+        /// </summary>
+        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public override KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
+        {
+            if (Ticket.Decrypt(keyset, RC4KeyUsage.AsRepTgsRepTicket, out KerberosTicket decrypted))
+            {
+                // Decrypted ticket.
+                KerberosAPRequestAuthenticationToken ret = (KerberosAPRequestAuthenticationToken)MemberwiseClone();
+                ret.Ticket = decrypted;
+                return ret;
+            }
+
+            return base.Decrypt(keyset);
+        }
+
+        #endregion
 
         #region Internal Static Methods
         /// <summary>

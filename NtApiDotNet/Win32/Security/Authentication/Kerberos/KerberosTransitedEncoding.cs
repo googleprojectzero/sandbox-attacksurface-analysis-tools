@@ -13,59 +13,52 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
-    /// A Kerberos Principal Name.
+    /// The supported transited encoding types.
     /// </summary>
-    public sealed class KerberosPrincipalName
+    public enum KerberosTransitedEncodingType
     {
         /// <summary>
-        /// The name type.
+        /// None.
         /// </summary>
-        public KerberosNameType NameType { get; private set; }
+        None = 0,
         /// <summary>
-        /// The names for the principal.
+        /// X.500 Compress.
         /// </summary>
-        public IReadOnlyList<string> Names { get; private set; }
+        X500Compress = 1,
+    }
+
+    /// <summary>
+    /// Class to represent a Kerberos Transiting Encoding.
+    /// </summary>
+    public sealed class KerberosTransitedEncoding
+    {
         /// <summary>
-        /// Full name.
+        /// Transited encoding type.
         /// </summary>
-        public string FullName => string.Join("/", Names);
+        public KerberosTransitedEncodingType TransitedType { get; }
 
         /// <summary>
-        /// ToString method.
+        /// Transited encoding data.
         /// </summary>
-        /// <returns>String of the object.</returns>
-        public override string ToString()
+        public byte[] Data { get; }
+
+        private KerberosTransitedEncoding(KerberosTransitedEncodingType type, byte[] data)
         {
-            return $"{NameType} - {FullName}";
+            TransitedType = type;
+            Data = data;
         }
 
-        /// <summary>
-        /// Get principal name with a realm.
-        /// </summary>
-        /// <param name="realm">The realm for the principal.</param>
-        /// <returns>The principal.</returns>
-        public string GetPrincipal(string realm)
+        internal static KerberosTransitedEncoding Parse(DERValue value)
         {
-            return $"{FullName}@{realm}";
-        }
-
-        internal KerberosPrincipalName()
-        {
-            NameType = KerberosNameType.UNKNOWN;
-            Names = new List<string>().AsReadOnly();
-        }
-
-        internal static KerberosPrincipalName Parse(DERValue value)
-        {
-            if (!value.HasChildren())
+            if (!value.CheckSequence())
                 throw new InvalidDataException();
-            KerberosPrincipalName ret = new KerberosPrincipalName();
+            KerberosTransitedEncodingType type = 0;
+            byte[] data = null;
             foreach (var next in value.Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -73,16 +66,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        ret.NameType = (KerberosNameType)next.ReadChildInteger();
+                        type = (KerberosTransitedEncodingType)next.ReadChildInteger();
                         break;
                     case 1:
-                        ret.Names = next.ReadChildStringSequence().AsReadOnly();
+                        data = next.ReadChildOctetString();
                         break;
                     default:
                         throw new InvalidDataException();
                 }
             }
-            return ret;
+
+            if (type == 0 || data == null)
+                throw new InvalidDataException();
+            return new KerberosTransitedEncoding(type, data);
         }
     }
 }
