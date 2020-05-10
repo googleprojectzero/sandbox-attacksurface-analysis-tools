@@ -118,7 +118,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             else if (type == KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
             {
-                if (KerberosAuthorizationDataRestrictionEntry.Parse(data, 
+                if (KerberosAuthorizationDataRestrictionEntry.Parse(data,
                     out KerberosAuthorizationDataRestrictionEntry entry))
                 {
                     return entry;
@@ -126,8 +126,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             else if (type == KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
             {
-                if (KerberosAuthorizationDataEncryptionNegotiation.Parse(data, 
+                if (KerberosAuthorizationDataEncryptionNegotiation.Parse(data,
                     out KerberosAuthorizationDataEncryptionNegotiation entry))
+                {
+                    return entry;
+                }
+            }
+            else if (type == KerberosAuthorizationDataType.AD_WIN2K_PAC)
+            {
+                if (KerberosAuthorizationDataPAC.Parse(data, 
+                    out KerberosAuthorizationDataPAC entry))
                 {
                     return entry;
                 }
