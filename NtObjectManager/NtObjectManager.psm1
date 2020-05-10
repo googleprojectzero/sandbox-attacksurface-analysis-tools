@@ -5508,6 +5508,8 @@ Specify the class name of the decoder.
 Specify a Code DOM provider. Defaults to C#.
 .PARAMETER Options
 Specify optional options for the code generation if Provider is also specified.
+.PARAMETER Pointer
+Specify to always wrap complex types in an unique pointer.
 .INPUTS
 None
 .OUTPUTS
@@ -5529,9 +5531,9 @@ function Format-RpcComplexType {
         [string]$NamespaceName,
         [string]$EncoderName,
         [string]$DecoderName,
-        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
-        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options
+        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options,
+        [switch]$Pointer
     )
 
     PROCESS {
@@ -5540,10 +5542,10 @@ function Format-RpcComplexType {
             "FromServer" { $Server.ComplexTypes }
         }
         if ($null -eq $Provider) {
-            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName) | Write-Output
+            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer) | Write-Output
         }
         else {
-            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Provider, $Options) | Write-Output
+            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer, $Provider, $Options) | Write-Output
         }
     }
 }

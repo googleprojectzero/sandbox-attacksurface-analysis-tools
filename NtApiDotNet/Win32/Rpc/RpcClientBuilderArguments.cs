@@ -67,6 +67,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// Exclude any text in the source code which can change between generations.
         /// </summary>
         ExcludeVariableSourceText = 0x100,
+        /// <summary>
+        /// Wrap complex type decoders with a unique pointer.
+        /// </summary>
+        PointerComplexTypeDecoders = 0x200,
     }
 
     /// <summary>

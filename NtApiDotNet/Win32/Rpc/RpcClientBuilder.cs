@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Rpc
@@ -704,7 +705,7 @@ namespace NtApiDotNet.Win32.Rpc
             return type_count;
         }
 
-        private void GenerateComplexTypesEncoders(string encoder_name, string decoder_name, CodeNamespace ns, MarshalHelperBuilder marshal_helper)
+        private void GenerateComplexTypesEncoders(string encoder_name, string decoder_name, bool wrap_complex_type, CodeNamespace ns, MarshalHelperBuilder marshal_helper)
         {
             CodeTypeDeclaration encoder_type = ns.AddType(encoder_name);
             encoder_type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
@@ -724,7 +725,7 @@ namespace NtApiDotNet.Win32.Rpc
                     continue;
                 }
 
-                if (complex_type.IsConformantStruct())
+                if (complex_type.IsConformantStruct() || wrap_complex_type)
                 {
                     // Conformant structures need to be wrapped in a unique pointer.
                     desc = new RpcTypeDescriptor(desc, RpcPointerType.Unique);
@@ -1047,7 +1048,8 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     decode_name = "Decoder";
                 }
-                GenerateComplexTypesEncoders(encode_name, decode_name, ns, marshal_helper);
+                GenerateComplexTypesEncoders(encode_name, decode_name, 
+                    HasFlag(RpcClientBuilderFlags.PointerComplexTypeDecoders), ns, marshal_helper);
             }
             GenerateClient(name, ns, complex_type_count, marshal_helper);
 
@@ -1152,9 +1154,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
         /// <param name="options">The code generation options, can be null.</param>
         /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
+        /// <param name="pointer_complex_types">True to wrap complex decoders in a unique pointer.</param>
         /// <returns>The source code file.</returns>
-        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types, 
-            string encoder_name, string decoder_name, string namespace_name, CodeDomProvider provider, CodeGeneratorOptions options)
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
+            string encoder_name, string decoder_name, string namespace_name,
+            bool pointer_complex_types, CodeDomProvider provider, CodeGeneratorOptions options)
         {
             RpcClientBuilderArguments args = new RpcClientBuilderArguments
             {
@@ -1163,7 +1167,51 @@ namespace NtApiDotNet.Win32.Rpc
                 NamespaceName = namespace_name,
                 Flags = RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods
             };
+            if (pointer_complex_types)
+            {
+                args.Flags |= RpcClientBuilderFlags.PointerComplexTypeDecoders;
+            }
             return GenerateSourceCode(provider, options, new RpcClientBuilder(complex_types, args).Generate());
+        }
+
+        /// <summary>
+        /// Build a source file for RPC complex types.
+        /// </summary>
+        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
+        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
+        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
+        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
+        /// <param name="options">The code generation options, can be null.</param>
+        /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
+        /// <returns>The source code file.</returns>
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types, 
+            string encoder_name, string decoder_name, string namespace_name, CodeDomProvider provider, CodeGeneratorOptions options)
+        {
+            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, false, provider, options);
+        }
+
+        /// <summary>
+        /// Build a source file for RPC complex types.
+        /// </summary>
+        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
+        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
+        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
+        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
+        /// <param name="pointer_complex_types">True to wrap complex decoders in a unique pointer.</param>
+        /// <returns>The source code file.</returns>
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
+            string encoder_name, string decoder_name, string namespace_name,
+            bool pointer_complex_types)
+        {
+            CodeDomProvider provider = new CSharpCodeProvider();
+            CodeGeneratorOptions options = new CodeGeneratorOptions
+            {
+                IndentString = "    ",
+                BlankLinesBetweenMembers = false,
+                VerbatimOrder = true,
+                BracingStyle = "C"
+            };
+            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, pointer_complex_types, provider, options);
         }
 
         /// <summary>
@@ -1177,15 +1225,7 @@ namespace NtApiDotNet.Win32.Rpc
         public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
             string encoder_name, string decoder_name, string namespace_name)
         {
-            CodeDomProvider provider = new CSharpCodeProvider();
-            CodeGeneratorOptions options = new CodeGeneratorOptions
-            {
-                IndentString = "    ",
-                BlankLinesBetweenMembers = false,
-                VerbatimOrder = true,
-                BracingStyle = "C"
-            };
-            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, provider, options);
+            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, false);
         }
 
         /// <summary>
