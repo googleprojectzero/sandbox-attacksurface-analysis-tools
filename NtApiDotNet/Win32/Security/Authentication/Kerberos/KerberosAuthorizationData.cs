@@ -22,9 +22,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
 #pragma warning disable 1591
     /// <summary>
-    /// Type of Authentication Data.
+    /// Type of Authorization Data.
     /// </summary>
-    public enum KerberosAuthenticationDataType
+    public enum KerberosAuthorizationDataType
     {
         AD_IF_RELEVANT = 1,
         AD_INTENDED_FOR_SERVER = 2,
@@ -65,28 +65,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing Kerberos authentication data.
     /// </summary>
-    public class KerberosAuthenticationData
+    public class KerberosAuthorizationData
     {
         /// <summary>
         /// Type of authentication data.
         /// </summary>
-        public KerberosAuthenticationDataType DataType { get; }
+        public KerberosAuthorizationDataType DataType { get; }
         /// <summary>
         /// Data bytes.
         /// </summary>
         public byte[] Data { get; }
 
-        private protected KerberosAuthenticationData(KerberosAuthenticationDataType type, byte[] data)
+        private protected KerberosAuthorizationData(KerberosAuthorizationDataType type, byte[] data)
         {
             DataType = type;
             Data = data;
         }
 
-        internal static KerberosAuthenticationData Parse(DERValue value)
+        internal static KerberosAuthorizationData Parse(DERValue value)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
-            KerberosAuthenticationDataType type = 0;
+            KerberosAuthorizationDataType type = 0;
             byte[] data = null;
             foreach (var next in value.Children)
             {
@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        type = (KerberosAuthenticationDataType)next.ReadChildInteger();
+                        type = (KerberosAuthorizationDataType)next.ReadChildInteger();
                         break;
                     case 1:
                         data = next.ReadChildOctetString();
@@ -108,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (type == 0 || data == null)
                 throw new InvalidDataException();
 
-            if (type == KerberosAuthenticationDataType.AD_IF_RELEVANT)
+            if (type == KerberosAuthorizationDataType.AD_IF_RELEVANT)
             {
                 DERValue[] values = DERParser.ParseData(data, 0);
                 if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
@@ -116,7 +116,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 return Parse(values[0].Children[0]);
             }
-            else if (type == KerberosAuthenticationDataType.KERB_AD_RESTRICTION_ENTRY)
+            else if (type == KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
             {
                 if (KerberosAuthenticationDataRestrictionEntry.Parse(data, 
                     out KerberosAuthenticationDataRestrictionEntry entry))
@@ -125,14 +125,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
 
-            return new KerberosAuthenticationData(type, data);
+            return new KerberosAuthorizationData(type, data);
         }
 
-        internal static IReadOnlyList<KerberosAuthenticationData> ParseSequence(DERValue value)
+        internal static IReadOnlyList<KerberosAuthorizationData> ParseSequence(DERValue value)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
-            var ret = new List<KerberosAuthenticationData>();
+            var ret = new List<KerberosAuthorizationData>();
             foreach (var next in value.Children)
             {
                 ret.Add(Parse(next));
@@ -150,7 +150,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal void Format(StringBuilder builder)
         {
-            builder.AppendLine($"<Authentication Data - {DataType}>");
+            builder.AppendLine($"<Authorization Data - {DataType}>");
             FormatData(builder);
         }
     }

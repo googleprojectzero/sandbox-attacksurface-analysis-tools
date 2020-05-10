@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent the KERB_AD_RESTRICTION_ENTRY AD type.
     /// </summary>
-    public class KerberosAuthenticationDataRestrictionEntry : KerberosAuthenticationData
+    public class KerberosAuthenticationDataRestrictionEntry : KerberosAuthorizationData
     {
         /// <summary>
         /// Flags.
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public byte[] MachineId { get; }
 
         private protected KerberosAuthenticationDataRestrictionEntry(byte[] data, KerberosRestrictionEntryFlags flags,
-            TokenIntegrityLevel integrity_level, byte[] machine_id) : base(KerberosAuthenticationDataType.KERB_AD_RESTRICTION_ENTRY, data)
+            TokenIntegrityLevel integrity_level, byte[] machine_id) : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY, data)
         {
             Flags = flags;
             IntegrityLevel = integrity_level;

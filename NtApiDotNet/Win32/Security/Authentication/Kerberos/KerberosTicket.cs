@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (!EncryptedData.Decrypt(keyset, Realm, ServerName, key_usage, out byte[] decrypted))
                 return false;
 
-            return KerberosTicketDecrypted.Parse(this, decrypted, out ticket);
+            return KerberosTicketDecrypted.Parse(this, decrypted, keyset, out ticket);
         }
 
         private protected virtual void FormatTicketData(StringBuilder builder)

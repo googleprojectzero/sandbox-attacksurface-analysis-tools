@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Windows.Forms;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -95,9 +96,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosHostAddress> HostAddresses { get; private set; }
         /// <summary>
-        /// List of authentication data.
+        /// List of authorization data.
         /// </summary>
-        public IReadOnlyList<KerberosAuthenticationData> AuthenticationData { get; private set; }
+        public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
 
         private protected override void FormatTicketData(StringBuilder builder)
         {
@@ -139,9 +140,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     builder.AppendLine(addr.ToString());
                 }
             }
-            if (AuthenticationData.Count > 0)
+            if (AuthorizationData.Count > 0)
             {
-                foreach (var ad in AuthenticationData)
+                foreach (var ad in AuthorizationData)
                 {
                     ad.Format(builder);
                 }
@@ -154,7 +155,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, ticket.EncryptedData)
         {
             HostAddresses = new List<KerberosHostAddress>().AsReadOnly();
-            AuthenticationData = new List<KerberosAuthenticationData>().AsReadOnly();
+            AuthorizationData = new List<KerberosAuthorizationData>().AsReadOnly();
         }
 
         private static KerberosTicketFlags ConvertTicketFlags(BitArray flags)
@@ -168,7 +169,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return (KerberosTicketFlags)ret;
         }
 
-        internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, out KerberosTicket ticket)
+        internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicket ticket)
         {
             ticket = null;
             try
@@ -193,20 +194,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             break;
                         case 1:
                             if (!next.HasChildren())
-                                throw new InvalidDataException();
+                                return false;
                             ret.Key = KerberosKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
+                            keyset.Add(ret.Key);
                             break;
                         case 2:
                             ret.ClientRealm = next.ReadChildGeneralString();
                             break;
                         case 3:
                             if (!next.Children[0].CheckSequence())
-                                throw new InvalidDataException();
+                                return false;
                             ret.ClientName = KerberosPrincipalName.Parse(next.Children[0]);
                             break;
                         case 4:
                             if (!next.HasChildren())
-                                throw new InvalidDataException();
+                                return false;
                             ret.TransitedType = KerberosTransitedEncoding.Parse(next.Children[0]);
                             break;
                         case 5:
@@ -223,13 +225,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             break;
                         case 9:
                             if (!next.HasChildren())
-                                throw new InvalidDataException();
+                                return false;
                             ret.HostAddresses = KerberosHostAddress.ParseSequence(next.Children[0]);
                             break;
                         case 10:
                             if (!next.HasChildren())
-                                throw new InvalidDataException();
-                            ret.AuthenticationData = KerberosAuthenticationData.ParseSequence(next.Children[0]);
+                                return false;
+                            ret.AuthorizationData = KerberosAuthorizationData.ParseSequence(next.Children[0]);
                             break;
                         default:
                             return false;

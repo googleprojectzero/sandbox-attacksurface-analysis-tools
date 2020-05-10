@@ -92,14 +92,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
         public override KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
         {
-            if (Ticket.Decrypt(keyset, RC4KeyUsage.AsRepTgsRepTicket, out KerberosTicket decrypted))
+            KerberosEncryptedData authenticator = null;
+
+            KerberosKeySet tmp_keys = new KerberosKeySet(keyset.Keys);
+            if (!Ticket.Decrypt(tmp_keys, RC4KeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
             {
-                // Decrypted ticket.
-                KerberosAPRequestAuthenticationToken ret = (KerberosAPRequestAuthenticationToken)MemberwiseClone();
-                ret.Ticket = decrypted;
-                return ret;
+                ticket = null;
             }
 
+            if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, RC4KeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
+            {
+                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, out authenticator))
+                {
+                    authenticator = null;
+                }
+            }
+
+            if (ticket != null || authenticator != null)
+            {
+                KerberosAPRequestAuthenticationToken ret = (KerberosAPRequestAuthenticationToken)MemberwiseClone();
+                ret.Ticket = ticket ?? ret.Ticket;
+                ret.Authenticator = authenticator ?? ret.Authenticator;
+                return ret;
+            }
             return base.Decrypt(keyset);
         }
 

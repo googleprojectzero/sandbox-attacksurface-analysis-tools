@@ -45,7 +45,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             CipherText = new byte[0];
         }
 
-        internal string Format()
+        private protected KerberosEncryptedData(KerberosEncryptionType type, 
+            int? key_version, byte[] cipher_text)
+        {
+            EncryptionType = type;
+            KeyVersion = key_version;
+            CipherText = cipher_text;
+        }
+
+        internal virtual string Format()
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"Encryption Type : {EncryptionType}");
