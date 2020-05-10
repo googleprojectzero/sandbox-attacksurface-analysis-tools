@@ -17,7 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -98,6 +98,56 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// List of authentication data.
         /// </summary>
         public IReadOnlyList<KerberosAuthenticationData> AuthenticationData { get; private set; }
+
+        private protected override void FormatTicketData(StringBuilder builder)
+        {
+            builder.AppendLine($"Flags           : {Flags}");
+            builder.AppendLine($"Client Name     : {ClientName}");
+            builder.AppendLine($"Client Realm    : {ClientRealm}");
+            if (!string.IsNullOrEmpty(AuthTime))
+            {
+                builder.AppendLine($"Auth Time       : {KerberosUtils.ParseKerberosTime(AuthTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(StartTime))
+            {
+                builder.AppendLine($"Start Time      : {KerberosUtils.ParseKerberosTime(StartTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(EndTime))
+            {
+                builder.AppendLine($"End Time        : {KerberosUtils.ParseKerberosTime(EndTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(RenewTill))
+            {
+                builder.AppendLine($"Renew Till Time : {KerberosUtils.ParseKerberosTime(RenewTill, 0)}");
+            }
+            if (Key != null)
+            {
+                builder.AppendLine("<Session Key>");
+                builder.AppendLine($"Encryption Type : {Key.KeyEncryption}");
+                builder.AppendLine($"Encryption Key  : {NtObjectUtils.ToHexString(Key.Key)}");
+            }
+            if (TransitedType != null && TransitedType.Data.Length > 0)
+            {
+                builder.AppendLine($"<Transited Type - {TransitedType.TransitedType}>");
+                builder.AppendLine($"{NtObjectUtils.ToHexString(TransitedType.Data)}");
+            }
+            if (HostAddresses.Count > 0)
+            {
+                builder.AppendLine("<Host Addresses>");
+                foreach (var addr in HostAddresses)
+                {
+                    builder.AppendLine(addr.ToString());
+                }
+            }
+            if (AuthenticationData.Count > 0)
+            {
+                foreach (var ad in AuthenticationData)
+                {
+                    ad.Format(builder);
+                }
+                builder.AppendLine();
+            }
+        }
 
         private KerberosTicketDecrypted(
             KerberosTicket ticket) 

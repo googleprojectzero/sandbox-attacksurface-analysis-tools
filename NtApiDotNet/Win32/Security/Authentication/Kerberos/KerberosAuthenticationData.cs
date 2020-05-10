@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.Text;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -63,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing Kerberos authentication data.
     /// </summary>
-    public sealed class KerberosAuthenticationData
+    public class KerberosAuthenticationData
     {
         /// <summary>
         /// Type of authentication data.
@@ -74,7 +76,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] Data { get; }
 
-        private KerberosAuthenticationData(KerberosAuthenticationDataType type, byte[] data)
+        private protected KerberosAuthenticationData(KerberosAuthenticationDataType type, byte[] data)
         {
             DataType = type;
             Data = data;
@@ -114,6 +116,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 return Parse(values[0].Children[0]);
             }
+            else if (type == KerberosAuthenticationDataType.KERB_AD_RESTRICTION_ENTRY)
+            {
+                if (KerberosAuthenticationDataRestrictionEntry.Parse(data, 
+                    out KerberosAuthenticationDataRestrictionEntry entry))
+                {
+                    return entry;
+                }
+            }
 
             return new KerberosAuthenticationData(type, data);
         }
@@ -128,6 +138,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ret.Add(Parse(next));
             }
             return ret.AsReadOnly();
+        }
+
+        private protected virtual void FormatData(StringBuilder builder)
+        {
+            HexDumpBuilder hex = new HexDumpBuilder(false, false, true, false, 0);
+            hex.Append(Data);
+            hex.Complete();
+            builder.AppendLine(hex.ToString());
+        }
+
+        internal void Format(StringBuilder builder)
+        {
+            builder.AppendLine($"<Authentication Data - {DataType}>");
+            FormatData(builder);
         }
     }
 }

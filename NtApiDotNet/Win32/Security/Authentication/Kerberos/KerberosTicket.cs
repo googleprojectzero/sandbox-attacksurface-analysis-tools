@@ -44,8 +44,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public string Principal => ServerName.GetPrincipal(Realm);
 
-        internal virtual bool Decrypt(KerberosKeySet keyset, RC4KeyUsage key_usage, out KerberosTicket ticket)
+        internal bool Decrypt(KerberosKeySet keyset, RC4KeyUsage key_usage, out KerberosTicket ticket)
         {
+            if (this is KerberosTicketDecrypted)
+            {
+                ticket = this;
+                return true;
+            }
+
             ticket = null;
             if (!EncryptedData.Decrypt(keyset, Realm, ServerName, key_usage, out byte[] decrypted))
                 return false;
@@ -53,13 +59,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return KerberosTicketDecrypted.Parse(this, decrypted, out ticket);
         }
 
+        private protected virtual void FormatTicketData(StringBuilder builder)
+        {
+            builder.Append(EncryptedData.Format());
+        }
+
         internal string Format()
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"Ticket Version  : {TicketVersion}");
-            builder.AppendLine($"ServerName      : {ServerName}");
+            builder.AppendLine($"Server Name     : {ServerName}");
             builder.AppendLine($"Realm           : {Realm}");
-            builder.Append(EncryptedData.Format());
+            FormatTicketData(builder);
             return builder.ToString();
         }
 

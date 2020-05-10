@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -49,6 +50,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Address bytes.
         /// </summary>
         public byte[] Address { get; }
+
+        /// <summary>
+        /// ToString Method.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        public override string ToString()
+        {
+            switch (AddressType)
+            {
+                case KerberosHostAddressType.IPv4:
+                    if (Address.Length == 4)
+                    {
+                        return $"IPv4: {new IPAddress(Address)}";
+                    }
+                    break;
+                case KerberosHostAddressType.IPv6:
+                    if (Address.Length == 16)
+                    {
+                        return $"IPv6: {new IPAddress(Address)}";
+                    }
+                    break;
+            }
+            return $"{AddressType} - {NtObjectUtils.ToHexString(Address)}";
+        }
 
         private KerberosHostAddress(KerberosHostAddressType type, byte[] address)
         {

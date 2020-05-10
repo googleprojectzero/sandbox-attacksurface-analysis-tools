@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.IO;
 
 namespace NtApiDotNet.Utilities.ASN1
@@ -87,6 +88,13 @@ namespace NtApiDotNet.Utilities.ASN1
                 values.Add(reader.ReadEncodedInt());
             }
             return string.Join(".", values);
+        }
+
+        public static bool CheckValueSequence(this DERValue[] values)
+        {
+            if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
+                return false;
+            return true;
         }
     }
 }
