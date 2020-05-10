@@ -91,18 +91,24 @@ namespace NtApiDotNet.Security.Policy
                         break;
                     case "sd":
                         {
-                            var sd_result = SecurityDescriptor.Parse(value.Data, throw_on_error);
-                            if (!sd_result.IsSuccess)
-                                return sd_result.Cast<CentralAccessRule>();
-                            sd = sd_result.Result;
+                            if (value.Data.Length > 0)
+                            {
+                                var sd_result = SecurityDescriptor.Parse(value.Data, throw_on_error);
+                                if (!sd_result.IsSuccess)
+                                    return sd_result.Cast<CentralAccessRule>();
+                                sd = sd_result.Result;
+                            }
                         }
                         break;
                     case "stagedsd":
                         {
-                            var sd_result = SecurityDescriptor.Parse(value.Data, throw_on_error);
-                            if (!sd_result.IsSuccess)
-                                return sd_result.Cast<CentralAccessRule>();
-                            staged_sd = sd_result.Result;
+                            if (value.Data.Length > 0)
+                            {
+                                var sd_result = SecurityDescriptor.Parse(value.Data, throw_on_error);
+                                if (!sd_result.IsSuccess)
+                                    return sd_result.Cast<CentralAccessRule>();
+                                staged_sd = sd_result.Result;
+                            }
                         }
                         break;
                     case "changeid":
