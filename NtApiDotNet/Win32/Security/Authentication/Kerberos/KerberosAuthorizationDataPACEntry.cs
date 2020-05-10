@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         Credentials = 2,
         ServerChecksum = 6,
         KDCChecksum = 7,
-        ClientName = 0xA,
+        ClientInfo = 0xA,
         ConstrainedDelegation = 0xB,
         UserPrincipalName = 0xC,
         UserClaims = 0xD,

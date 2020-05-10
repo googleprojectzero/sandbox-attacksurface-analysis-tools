@@ -81,7 +81,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     case KerberosAuthorizationDataPACEntryType.UserClaims:
                     case KerberosAuthorizationDataPACEntryType.DeviceClaims:
-                        if (!KerberosAuthorizationDataClaimSet.Parse(entry_type, entry_data, out pac_entry))
+                        if (!KerberosAuthorizationDataPACClaimSet.Parse(entry_type, entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+                    case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+                        if (!KerberosAuthorizationDataPACSignature.Parse(entry_type, entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.ClientInfo:
+                        if (!KerberosAuthorizationDataPACClientInfo.Parse(entry_type, entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.UserPrincipalName:
+                        if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(entry_type, entry_data, out pac_entry))
                             pac_entry = null;
                         break;
                 }

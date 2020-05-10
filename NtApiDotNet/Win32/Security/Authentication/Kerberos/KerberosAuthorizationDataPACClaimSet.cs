@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing a Claims Set in the PAC.
     /// </summary>
-    public class KerberosAuthorizationDataClaimSet : KerberosAuthorizationDataPACEntry
+    public class KerberosAuthorizationDataPACClaimSet : KerberosAuthorizationDataPACEntry
     {
         /// <summary>
         /// List of claims arrays.
@@ -86,7 +86,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        private KerberosAuthorizationDataClaimSet(KerberosAuthorizationDataPACEntryType type, byte[] data, IReadOnlyList<KerberosClaimsArray> claims_array) 
+        private KerberosAuthorizationDataPACClaimSet(KerberosAuthorizationDataPACEntryType type, byte[] data, IReadOnlyList<KerberosClaimsArray> claims_array) 
             : base(type, data)
         {
             ClaimsArray = claims_array;
@@ -112,7 +112,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     claims_array.Add(new KerberosClaimsArray(source, claim.ClaimEntries.GetValue().Select(ConvertToClaim)));
                 }
 
-                entry = new KerberosAuthorizationDataClaimSet(type, data, claims_array.AsReadOnly());
+                entry = new KerberosAuthorizationDataPACClaimSet(type, data, claims_array.AsReadOnly());
                 return true;
             }
             catch
