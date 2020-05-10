@@ -74,7 +74,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 byte[] entry_data = new byte[length];
                 Buffer.BlockCopy(data, (int)offset, entry_data, 0, length);
-                entries.Add(new KerberosAuthorizationDataPACEntry((KerberosAuthorizationDataPACEntryType)type, entry_data));
+
+                KerberosAuthorizationDataPACEntryType entry_type = (KerberosAuthorizationDataPACEntryType)type;
+                KerberosAuthorizationDataPACEntry pac_entry = null;
+                switch (entry_type)
+                {
+                    case KerberosAuthorizationDataPACEntryType.UserClaims:
+                    case KerberosAuthorizationDataPACEntryType.DeviceClaims:
+                        if (!KerberosAuthorizationDataClaimSet.Parse(entry_type, entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                }
+
+                if (pac_entry == null)
+                {
+                    pac_entry = new KerberosAuthorizationDataPACEntry(entry_type, entry_data);
+                }
+
+                entries.Add(pac_entry);
             }
 
             auth_data = new KerberosAuthorizationDataPAC(data, entries.AsReadOnly());
