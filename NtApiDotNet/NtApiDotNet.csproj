@@ -333,6 +333,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketDecrypted.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKeySet.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTransitedEncoding.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\ClaimSetMetadataParser.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\ClaimSetParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\KerbValidationInfoParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\RC4KeyUsage.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPRequestAuthenticationToken.cs" />
