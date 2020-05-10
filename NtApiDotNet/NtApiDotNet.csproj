@@ -322,7 +322,8 @@
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationData.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationDataRestrictionEntry.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataEncryptionNegotiation.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataRestrictionEntry.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticator.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksum.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosHostAddress.cs" />

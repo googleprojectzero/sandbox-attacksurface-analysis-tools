@@ -82,7 +82,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             if (SequenceNumber.HasValue)
             {
-                builder.AppendLine($"Sequence Number : {SequenceNumber}");
+                builder.AppendLine($"Sequence Number : 0x{SequenceNumber:X}");
             }
 
             if (AuthorizationData.Count > 0)

@@ -20,7 +20,7 @@ using System.Text;
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
-    /// Flags for KerberosAuthenticationDataRestrictionEntry
+    /// Flags for KerberosAuthorizationDataRestrictionEntry
     /// </summary>
     public enum KerberosRestrictionEntryFlags
     {
@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent the KERB_AD_RESTRICTION_ENTRY AD type.
     /// </summary>
-    public class KerberosAuthenticationDataRestrictionEntry : KerberosAuthorizationData
+    public class KerberosAuthorizationDataRestrictionEntry : KerberosAuthorizationData
     {
         /// <summary>
         /// Flags.
@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] MachineId { get; }
 
-        private protected KerberosAuthenticationDataRestrictionEntry(byte[] data, KerberosRestrictionEntryFlags flags,
+        private protected KerberosAuthorizationDataRestrictionEntry(byte[] data, KerberosRestrictionEntryFlags flags,
             TokenIntegrityLevel integrity_level, byte[] machine_id) : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY, data)
         {
             Flags = flags;
@@ -67,7 +67,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Machine ID      : {NtObjectUtils.ToHexString(MachineId)}");
         }
 
-        internal static bool Parse(byte[] data, out KerberosAuthenticationDataRestrictionEntry entry)
+        internal static bool Parse(byte[] data, out KerberosAuthorizationDataRestrictionEntry entry)
         {
             entry = null;
             DERValue[] values = DERParser.ParseData(data, 0);
@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             int il = BitConverter.ToInt32(lsap_data, 4);
             byte[] machine_id = new byte[32];
             Buffer.BlockCopy(lsap_data, 8, machine_id, 0, 32);
-            entry = new KerberosAuthenticationDataRestrictionEntry(data, (KerberosRestrictionEntryFlags)flags, (TokenIntegrityLevel)il, machine_id);
+            entry = new KerberosAuthorizationDataRestrictionEntry(data, (KerberosRestrictionEntryFlags)flags, (TokenIntegrityLevel)il, machine_id);
             return true;
         }
     }

@@ -118,8 +118,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             else if (type == KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
             {
-                if (KerberosAuthenticationDataRestrictionEntry.Parse(data, 
-                    out KerberosAuthenticationDataRestrictionEntry entry))
+                if (KerberosAuthorizationDataRestrictionEntry.Parse(data, 
+                    out KerberosAuthorizationDataRestrictionEntry entry))
+                {
+                    return entry;
+                }
+            }
+            else if (type == KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
+            {
+                if (KerberosAuthorizationDataEncryptionNegotiation.Parse(data, 
+                    out KerberosAuthorizationDataEncryptionNegotiation entry))
                 {
                     return entry;
                 }
