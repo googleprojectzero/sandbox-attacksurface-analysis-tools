@@ -14,7 +14,7 @@
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
-    internal enum RC4KeyUsage
+    internal enum KeyUsage
     {
         AsReqPaEncTimestamp = 1,
         AsRepTgsRepTicket = 2,

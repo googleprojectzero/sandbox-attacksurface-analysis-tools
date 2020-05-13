@@ -342,7 +342,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\ClaimSetMetadataParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\ClaimSetParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\KerbValidationInfoParser.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\RC4KeyUsage.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KeyUsage.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPRequestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPReplyAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptedData.cs" />

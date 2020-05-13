@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public string Principal => ServerName.GetPrincipal(Realm);
 
-        internal bool Decrypt(KerberosKeySet keyset, RC4KeyUsage key_usage, out KerberosTicket ticket)
+        internal bool Decrypt(KerberosKeySet keyset, KeyUsage key_usage, out KerberosTicket ticket)
         {
             if (this is KerberosTicketDecrypted)
             {
