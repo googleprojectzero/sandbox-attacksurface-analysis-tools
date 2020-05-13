@@ -12,11 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+
+    /// <summary>
+    /// Compression format for RtlDecompressBuffer.
+    /// </summary>
+    [Flags]
+    public enum RtlCompressionFormat : short
+    {
+        None = 0,
+        Default = 1,
+        LZNT1 = 2,
+        XPRESS = 3,
+        XPRESS_HUFF = 4,
+        Maximum = 0x100,
+        Hiber = 0x200
+    }
+
     public static partial class NtRtl
     {
         [DllImport("ntdll.dll")]
@@ -24,6 +41,46 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern int RtlNtStatusToDosErrorNoTeb(NtStatus status);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGetCompressionWorkSpaceSize(
+          RtlCompressionFormat CompressionFormatAndEngine,
+          out int CompressBufferWorkSpaceSize,
+          out int CompressFragmentWorkSpaceSize
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlCompressBuffer(
+          RtlCompressionFormat CompressionFormatAndEngine,
+          [In] byte[] UncompressedBuffer,
+          int UncompressedBufferSize,
+          [Out] byte[] CompressedBuffer,
+          int CompressedBufferSize,
+          int UncompressedChunkSize,
+          out int FinalCompressedSize,
+          [Out] byte[] WorkSpace
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlDecompressBuffer(
+          RtlCompressionFormat CompressionFormat,
+          [In] byte[] UncompressedBuffer,
+          int UncompressedBufferSize,
+          [Out] byte[] CompressedBuffer,
+          int CompressedBufferSize,
+          out int FinalUncompressedSize
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlDecompressBufferEx(
+          RtlCompressionFormat CompressionFormat,
+          [In] byte[] UncompressedBuffer,
+          int UncompressedBufferSize,
+          [Out] byte[] CompressedBuffer,
+          int CompressedBufferSize,
+          out int FinalUncompressedSize,
+          [Out] byte[] WorkSpace
+        );
     }
 #pragma warning restore 1591
 }

@@ -68,6 +68,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             builder.AppendLine($"<PAC Entry {PACType}>");
             FormatData(builder);
+            builder.AppendLine();
         }
     }
 }

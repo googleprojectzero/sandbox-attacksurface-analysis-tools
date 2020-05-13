@@ -392,6 +392,19 @@ namespace NtApiDotNet
             }
             return true;
         }
+
+        /// <summary>
+        /// Create a SID relative to this one.
+        /// </summary>
+        /// <param name="rids">The list of RIDs.</param>
+        /// <returns>The relative SID.</returns>
+        public Sid CreateRelative(params uint[] rids)
+        {
+            List<uint> new_rids = new List<uint>(SubAuthorities);
+            new_rids.AddRange(rids);
+            return new Sid(Authority, new_rids.ToArray());
+        }
+
         #endregion
 
         #region Static Methods

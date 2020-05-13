@@ -97,6 +97,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(entry_type, entry_data, out pac_entry))
                             pac_entry = null;
                         break;
+                    case KerberosAuthorizationDataPACEntryType.Logon:
+                        if (!KerberosAuthorizationDataPACLogon.Parse(entry_type, entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
                 }
 
                 if (pac_entry == null)

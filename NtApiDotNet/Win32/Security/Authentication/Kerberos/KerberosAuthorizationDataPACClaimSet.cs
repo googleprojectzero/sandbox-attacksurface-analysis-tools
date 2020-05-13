@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
 using System.Collections.Generic;
 using System.Linq;
@@ -92,15 +93,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ClaimsArray = claims_array;
         }
 
+        private static NtResult<byte[]> DecompressBuffer(CLAIM_SET_METADATA set)
+        {
+            RtlCompressionFormat format = (RtlCompressionFormat)set.usCompressionFormat.Value;
+            if (format == RtlCompressionFormat.None)
+                return set.ClaimsSet.GetValue().CreateResult();
+            return NtCompression.DecompressBuffer(format, set.ClaimsSet, set.ulUncompressedClaimsSetSize, false);
+        }
+
         internal static bool Parse(KerberosAuthorizationDataPACEntryType type, byte[] data, out KerberosAuthorizationDataPACEntry entry)
         {
             entry = null;
             try
             {
                 var set = ClaimSetMetadataParser.Decode(new NdrPickledType(data));
-                if (!set.HasValue || set.Value.ClaimsSet == null || set.Value.usCompressionFormat != 0)
+                if (!set.HasValue || set.Value.ClaimsSet == null)
                     return false;
-                var claims = ClaimSetParser.Decode(new NdrPickledType(set.Value.ClaimsSet));
+
+                var claims_buffer = DecompressBuffer(set.Value);
+                if (!claims_buffer.IsSuccess)
+                    return false;
+
+                var claims = ClaimSetParser.Decode(new NdrPickledType(claims_buffer.Result));
                 if (!claims.HasValue || claims.Value.ClaimsArrays == null)
                     return false;
 

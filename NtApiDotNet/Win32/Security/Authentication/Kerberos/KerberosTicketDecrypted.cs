@@ -18,7 +18,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -121,16 +120,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 builder.AppendLine($"Renew Till Time : {KerberosUtils.ParseKerberosTime(RenewTill, 0)}");
             }
+            builder.AppendLine();
             if (Key != null)
             {
                 builder.AppendLine("<Session Key>");
                 builder.AppendLine($"Encryption Type : {Key.KeyEncryption}");
                 builder.AppendLine($"Encryption Key  : {NtObjectUtils.ToHexString(Key.Key)}");
+                builder.AppendLine();
             }
             if (TransitedType != null && TransitedType.Data.Length > 0)
             {
                 builder.AppendLine($"<Transited Type - {TransitedType.TransitedType}>");
                 builder.AppendLine($"{NtObjectUtils.ToHexString(TransitedType.Data)}");
+                builder.AppendLine();
             }
             if (HostAddresses.Count > 0)
             {
@@ -139,6 +141,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     builder.AppendLine(addr.ToString());
                 }
+                builder.AppendLine();
             }
             if (AuthorizationData.Count > 0)
             {
