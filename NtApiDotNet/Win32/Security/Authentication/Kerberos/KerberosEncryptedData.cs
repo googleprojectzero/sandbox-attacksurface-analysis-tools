@@ -98,7 +98,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             foreach (var next in keyset.GetKeysForEncryption(EncryptionType))
             {
-                if (DecryptRC4WithKey(key, key_usage, out decrypted))
+                if (DecryptRC4WithKey(next, key_usage, out decrypted))
                     return true;
             }
             decrypted = null;
