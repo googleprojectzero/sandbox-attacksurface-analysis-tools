@@ -42,9 +42,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
-            builder.AppendLine("<Authenticator>");
+            builder.AppendLine("<Encrypted Part>");
             builder.Append(EncryptedPart.Format());
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Decrypt the Authentication Token using a keyset.
+        /// </summary>
+        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public override KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
+        {
+            KerberosEncryptedData encrypted_part = null;
+            if (EncryptedPart.Decrypt(keyset, string.Empty, new KerberosPrincipalName(), KeyUsage.ApRepEncryptedPart, out byte[] auth_decrypt))
+            {
+                if (!KerberosAPReplyEncryptedPart.Parse(EncryptedPart, auth_decrypt, out encrypted_part))
+                {
+                    encrypted_part = null;
+                }
+            }
+
+            if (encrypted_part != null)
+            {
+                KerberosAPReplyAuthenticationToken ret = (KerberosAPReplyAuthenticationToken)MemberwiseClone();
+                ret.EncryptedPart = encrypted_part;
+                return ret;
+            }
+            return base.Decrypt(keyset);
         }
 
         #region Internal Static Methods

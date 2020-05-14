@@ -12,14 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Utilities.Text;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {

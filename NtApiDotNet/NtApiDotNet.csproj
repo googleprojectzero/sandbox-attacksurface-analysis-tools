@@ -322,6 +322,7 @@
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPReplyEncryptedPart.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACLogon.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACSignature.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACClientInfo.cs" />

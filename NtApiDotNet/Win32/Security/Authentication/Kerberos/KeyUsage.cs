@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         TgsRepEncryptionPartAuthSubkey = 9,
         ApReqAuthChksum = 10,
         ApReqAuthSubKey = 11,
-        ApReqEncryptedPart = 12,
+        ApRepEncryptedPart = 12,
         KrbPriv = 13,
         KrbCred = 14,
         KrbSafe = 15
