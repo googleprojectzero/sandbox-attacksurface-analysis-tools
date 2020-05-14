@@ -14,7 +14,6 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -133,7 +132,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         return false;
                 }
 
-                // TODO: Need to select out the different types of authentication tokens.
                 token = new KerberosAuthenticationToken(data, values, KerberosMessageType.UNKNOWN);
                 return true;
             }
