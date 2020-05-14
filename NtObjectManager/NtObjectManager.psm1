@@ -9249,8 +9249,8 @@ Decrypt an Authentication Token.
 .DESCRIPTION
 This cmdlet attempts to decrypt an authentication token. The call will return the decrypted token.
 This is primarily for Kerberos.
-.PARAMETER KeySet
-Specify a set of keys for decryption.
+.PARAMETER Key
+Specify a keys for decryption.
 .PARAMETER KerberosToken
 The authentication token to decrypt.
 .INPUTS
@@ -9264,7 +9264,7 @@ function Unprotect-AuthToken {
         [Parameter(Position = 0, Mandatory, ParameterSetName="Kerberos")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationToken]$KerberosToken,
         [Parameter(Position = 1, Mandatory, ParameterSetName="Kerberos")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$KeySet
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$Key
     )
-    $KerberosToken.Decrypt($KeySet) | Write-Output
+    $KerberosToken.Decrypt($Key) | Write-Output
 }

@@ -14,13 +14,14 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System.IO;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
     /// Class to represent a Kerberos Checksum.
     /// </summary>
-    public sealed class KerberosChecksum
+    public class KerberosChecksum
     {
         /// <summary>
         /// Type of kerberos checksum.
@@ -31,7 +32,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] Checksum { get; }
 
-        private KerberosChecksum(KerberosChecksumType type, byte[] data)
+        internal virtual void Format(StringBuilder builder)
+        {
+            builder.AppendLine($"Checksum        : {ChecksumType} - {NtObjectUtils.ToHexString(Checksum)}");
+        }
+
+        private protected KerberosChecksum(KerberosChecksumType type, byte[] data)
         {
             ChecksumType = type;
             Checksum = data;
@@ -62,6 +68,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (type == 0 || data == null)
                 throw new InvalidDataException();
+            if (type == KerberosChecksumType.GSSAPI && KerberosChecksumGSSApi.Parse(data, out KerberosChecksum chksum))
+            {
+                return chksum;
+            }
             return new KerberosChecksum(type, data);
         }
     }

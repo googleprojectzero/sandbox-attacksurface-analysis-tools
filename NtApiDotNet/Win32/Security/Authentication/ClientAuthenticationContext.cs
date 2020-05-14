@@ -147,8 +147,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 }
                 else
                 {
+                    SecBufferDesc in_buffer_desc = null;
+                    List<SecBuffer> buffers = new List<SecBuffer>();
+                    if (_channel_binding != null)
+                    {
+                        buffers.Add(list.AddResource(SecBuffer.CreateForChannelBinding(_channel_binding)));
+                        in_buffer_desc = list.AddResource(new SecBufferDesc(buffers.ToArray()));
+                    }
+
                     result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, null, _target,
-                        _req_attributes, 0, _data_rep, null, 0, _context,
+                        _req_attributes, 0, _data_rep, in_buffer_desc, 0, _context,
                         out_buffer_desc, out flags, expiry).CheckResult();
                 }
 

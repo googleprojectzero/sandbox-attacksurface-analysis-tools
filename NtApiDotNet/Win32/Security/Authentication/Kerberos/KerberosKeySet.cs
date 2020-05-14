@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A set of Kerberos Keys.
     /// </summary>
-    public class KerberosKeySet
+    public sealed class KerberosKeySet : IEnumerable<KerberosKey>
     {
         #region Private Members
 
@@ -54,14 +55,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private readonly HashSet<KerberosKey> _keys;
         #endregion
 
-        #region Public Properties
-        /// <summary>
-        /// Return the list of keys.
-        /// </summary>
-        public IEnumerable<KerberosKey> Keys => _keys.AsEnumerable();
-        #endregion
-
         #region Public Methods
+
         /// <summary>
         /// Get keys which match the encryption type.
         /// </summary>
@@ -69,7 +64,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The list of keys which match the encryption type.</returns>
         public IEnumerable<KerberosKey> GetKeysForEncryption(KerberosEncryptionType enc_type)
         {
-            return Keys.Where(k => k.KeyEncryption == enc_type);
+            return _keys.Where(k => k.KeyEncryption == enc_type);
         }
 
         /// <summary>
@@ -102,7 +97,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns></returns>
         public KerberosKey FindKey(KerberosEncryptionType enc_type, KerberosNameType name_type, string principal, int key_version)
         {
-            return Keys.Where(k => k.KeyEncryption == enc_type
+            return _keys.Where(k => k.KeyEncryption == enc_type
                 && k.NameType == name_type
                 && k.Principal.Equals(principal, StringComparison.OrdinalIgnoreCase)
                 && k.Version == (uint)key_version).FirstOrDefault();
@@ -131,6 +126,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static KerberosKeySet ReadKeyTabFile(string path)
         {
             return new KerberosKeySet(KerberosUtils.ReadKeyTabFile(path));
+        }
+
+        IEnumerator<KerberosKey> IEnumerable<KerberosKey>.GetEnumerator()
+        {
+            return _keys.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _keys.GetEnumerator();
         }
 
         #endregion

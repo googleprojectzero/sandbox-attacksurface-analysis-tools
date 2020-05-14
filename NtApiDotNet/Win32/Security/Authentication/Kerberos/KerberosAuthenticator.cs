@@ -72,7 +72,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             if (Checksum != null)
             {
-                builder.AppendLine($"Checksum        : {Checksum.ChecksumType} - {NtObjectUtils.ToHexString(Checksum.Checksum)}");
+                Checksum.Format(builder);
             }
             if (SubKey != null)
             {

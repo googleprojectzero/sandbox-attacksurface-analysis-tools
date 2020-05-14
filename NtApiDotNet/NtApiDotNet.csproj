@@ -334,6 +334,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataRestrictionEntry.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticator.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksum.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksumGSSApi.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosHostAddress.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketDecrypted.cs" />
