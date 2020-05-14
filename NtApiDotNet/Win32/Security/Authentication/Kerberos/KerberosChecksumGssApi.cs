@@ -32,7 +32,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         Replay = 4,
         Sequence = 8,
         Confidentiality = 0x10,
-        Integrity = 0x20
+        Integrity = 0x20,
+        Identity = 0x2000
     }
 #pragma warning restore 1591
 
@@ -78,7 +79,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 hex.Append(KerbCredential);
                 hex.Complete();
                 builder.AppendLine("Kerb Credential :");
-                builder.AppendLine(hex.ToString());
+                builder.Append(hex.ToString());
             }
             if (Extensions != null)
             {
@@ -108,8 +109,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ret.ContextFlags = (KerberosChecksumGSSApiFlags)reader.ReadInt32();
                 if (ret.ContextFlags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
                 {
-                    ret.DelegationOptionIdentifier = reader.ReadInt32();
-                    int cred_length = reader.ReadInt32();
+                    ret.DelegationOptionIdentifier = reader.ReadUInt16();
+                    int cred_length = reader.ReadUInt16();
                     ret.KerbCredential = reader.ReadAllBytes(cred_length);
                 }
                 if (reader.RemainingLength() > 0)
