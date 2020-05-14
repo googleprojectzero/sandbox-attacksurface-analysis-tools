@@ -247,11 +247,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private static byte[] DeriveAesKey(string password, string salt, int iterations, int key_size)
         {
-            // "kerberos" n-folded out to 16 bytes.
-            byte[] folded_key = { 0x6b, 0x65, 0x72, 0x62, 0x65, 0x72, 0x6f, 0x73, 0x7b, 0x9b, 0x5b, 0x2b, 0x93, 0x13, 0x2b, 0x93 };
-
             Rfc2898DeriveBytes pbkdf = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(password), Encoding.UTF8.GetBytes(salt), iterations);
-            return DeriveAesKey(pbkdf.GetBytes(key_size), folded_key);
+            return DeriveAesKey(pbkdf.GetBytes(key_size), NFold.Compute("kerberos", 16));
         }
 
         internal static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)

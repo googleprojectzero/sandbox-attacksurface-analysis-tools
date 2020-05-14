@@ -103,6 +103,7 @@
     <Compile Include="Utilities\Memory\SafeBufferWrapper.cs" />
     <Compile Include="Utilities\SafeBuffers\SafeGuidArrayBuffer.cs" />
     <Compile Include="Utilities\Security\MD4.cs" />
+    <Compile Include="Utilities\Security\NFold.cs" />
     <Compile Include="Utilities\Security\ObjectTypeTree.cs" />
     <Compile Include="Utilities\Security\ARC4.cs" />
     <Compile Include="Utilities\Text\HexDumpBuilder.cs" />
@@ -360,6 +361,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosMessageType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosNameType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\PacDeviceInfoParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PrincipalName.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />

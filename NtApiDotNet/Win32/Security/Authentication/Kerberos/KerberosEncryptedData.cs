@@ -16,8 +16,8 @@ using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Security;
 using NtApiDotNet.Utilities.Text;
 using System;
-using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -93,16 +93,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private const int AES_CHECKSUM_SIZE = 12;
         private const int AES_CONFOUNDER_SIZE = 16;
 
-        private static byte[] _aes_encrypt_ticket = new byte[] { 0xB5, 0xB0, 0x58, 0x2C, 0x14, 0xB6, 0x50, 0x0A, 0xAD, 0x56, 0xAB, 0x55, 0xAA, 0x80, 0x55, 0x6A };
-        private static byte[] _aes_verify_ticket = new byte[] { 0x62, 0xDC, 0x6E, 0x37, 0x1A, 0x63, 0xA8, 0x09, 0x58, 0xAC, 0x56, 0x2B, 0x15, 0x40, 0x4A, 0xC5 };
-        private static byte[] _aes_encrypt_auth = new byte[] { 0xFE, 0x54, 0xAA, 0x55, 0xA5, 0x02, 0x52, 0x2F, 0xBF, 0x5F, 0xAF, 0xD7, 0xEA, 0x81, 0x75, 0xFA };
-        private static byte[] _aes_verify_auth = new byte[] { 0xAB, 0x80, 0xC0, 0x60, 0xAA, 0xAF, 0xAA, 0x2E, 0x6A, 0xB5, 0x5A, 0xAD, 0x55, 0x41, 0x6B, 0x55 };
-
-        private static byte[] _aes_encrypt_ap_rep = new byte[] { 0x05, 0xD7, 0xEC, 0x76, 0xB5, 0x0B, 0x53, 0x33, 0xC1, 0x60, 0xB0, 0x58, 0x2A, 0x81, 0x96, 0x0B };
-        private static byte[] _aes_verify_ap_rep = new byte[] { 0xB3, 0x04, 0x02, 0x81, 0xBA, 0xB8, 0xAB, 0x32, 0x6C, 0xB6, 0x5B, 0x2D, 0x95, 0x41, 0x8B, 0x65 };
-        private static byte[] _aes_encrypt_krb_cred = new byte[] { 0x15, 0xE0, 0x70, 0xB8, 0xD5, 0x1C, 0x53, 0x3B, 0xC5, 0x62, 0xB1, 0x58, 0xAA, 0x81, 0xD6, 0x2B };
-        private static byte[] _aes_verify_krb_cred = new byte[] { 0xC3, 0x0C, 0x86, 0xC3, 0xDA, 0xC9, 0xAB, 0x3A, 0x70, 0xB8, 0x5C, 0x2E, 0x15, 0x41, 0xCB, 0x85 };
-
         private static void SwapEndBlocks(byte[] cipher_text)
         {
             if (cipher_text.Length < AES_BLOCK_SIZE*2)
@@ -134,32 +124,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return block;
         }
 
+        private const byte EncryptionKey = 0xAA;
+        private const byte VerificationKey = 0x55;
+
+        private byte[] DeriveTempKey(KerberosKey key, KeyUsage key_usage, byte key_type)
+        {
+            byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
+            Array.Resize(ref r, 5);
+            r[4] = key_type;
+            return NFold.Compute(r, 16);
+        }
+
         private bool DecryptAESWithKey(KerberosKey key, KeyUsage key_usage, out byte[] decrypted)
         {
-            byte[] derive_enc_key;
-            byte[] derive_mac_key;
-
-            switch (key_usage)
-            {
-                case KeyUsage.AsRepTgsRepTicket:
-                    derive_enc_key = _aes_encrypt_ticket;
-                    derive_mac_key = _aes_verify_ticket;
-                    break;
-                case KeyUsage.ApReqAuthSubKey:
-                    derive_enc_key = _aes_encrypt_auth;
-                    derive_mac_key = _aes_verify_auth;
-                    break;
-                case KeyUsage.ApRepEncryptedPart:
-                    derive_enc_key = _aes_encrypt_ap_rep;
-                    derive_mac_key = _aes_verify_ap_rep;
-                    break;
-                case KeyUsage.KrbCred:
-                    derive_enc_key = _aes_encrypt_krb_cred;
-                    derive_mac_key = _aes_verify_krb_cred;
-                    break;
-                default:
-                    throw new ArgumentException("Unknown key usage type.");
-            }
+            byte[] derive_enc_key = DeriveTempKey(key, key_usage, EncryptionKey);
+            byte[] derive_mac_key = DeriveTempKey(key, key_usage, VerificationKey);
 
             byte[] new_key = KerberosKey.DeriveAesKey(key.Key, derive_enc_key);
 
