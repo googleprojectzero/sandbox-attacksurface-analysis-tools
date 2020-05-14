@@ -16,10 +16,8 @@ using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -287,7 +285,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"User SID         : {User}");
             builder.AppendLine($"Primary Group    : {PrimaryGroup.Name}");
             builder.AppendLine($"Primary Group SID: {PrimaryGroup}");
-            
 
             if (Groups.Count > 0)
             {
@@ -297,8 +294,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     builder.AppendLine($"{g.Sid.Name,-30} - {g.Attributes}");
                 }
             }
-
-            
 
             if (ResourceGroups.Count > 0 || ResourceGroupDomainSid != null)
             {
