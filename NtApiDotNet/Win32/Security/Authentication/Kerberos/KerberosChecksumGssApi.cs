@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.IO;
@@ -60,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// KRB_CRED structure when in delegation.
         /// </summary>
-        public byte[] KerbCredential { get; private set; }
+        public KerberosCredential Credentials { get; private set; }
 
         /// <summary>
         /// Additional extension data.
@@ -72,14 +73,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine("Checksum        : GSSAPI");
             builder.AppendLine($"Channel Binding : {NtObjectUtils.ToHexString(ChannelBinding)}");
             builder.AppendLine($"Context Flags   : {ContextFlags}");
-            if (KerbCredential != null)
+            if (Credentials != null)
             {
                 builder.AppendLine($"Delegate Opt ID : {DelegationOptionIdentifier}");
-                HexDumpBuilder hex = new HexDumpBuilder(false, true, false, false, 0);
-                hex.Append(KerbCredential);
-                hex.Complete();
                 builder.AppendLine("Kerb Credential :");
-                builder.Append(hex.ToString());
+                builder.AppendLine(Credentials.Format());
             }
             if (Extensions != null)
             {
@@ -93,6 +91,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private KerberosChecksumGSSApi(KerberosChecksumType type, byte[] data) 
             : base(type, data)
         {
+        }
+
+        internal void Decrypt(KerberosKeySet keyset)
+        {
+            Credentials = (KerberosCredential)Credentials.Decrypt(keyset);
         }
 
         internal static bool Parse(byte[] data, out KerberosChecksum checksum)
@@ -111,7 +114,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     ret.DelegationOptionIdentifier = reader.ReadUInt16();
                     int cred_length = reader.ReadUInt16();
-                    ret.KerbCredential = reader.ReadAllBytes(cred_length);
+                    byte[] cred = reader.ReadAllBytes(cred_length);
+
+                    DERValue[] values = DERParser.ParseData(cred, 0);
+                    if (!KerberosCredential.TryParse(cred, values, out KerberosCredential cred_token))
+                        return false;
+                    ret.Credentials = cred_token;
                 }
                 if (reader.RemainingLength() > 0)
                 {

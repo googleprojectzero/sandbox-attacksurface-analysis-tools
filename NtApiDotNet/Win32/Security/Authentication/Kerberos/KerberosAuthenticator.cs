@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -102,7 +103,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             AuthenticatorVersion = 5;
         }
 
-        internal static bool Parse(KerberosTicket orig_ticket, KerberosEncryptedData orig_data, byte[] decrypted, out KerberosEncryptedData ticket)
+        internal static bool Parse(KerberosTicket orig_ticket, KerberosEncryptedData orig_data, byte[] decrypted, KerberosKeySet keyset, out KerberosEncryptedData ticket)
         {
             ticket = null;
             try
@@ -137,7 +138,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 3:
                             if (!next.Children[0].CheckSequence())
                                 return false;
-                            ret.Checksum = Kerberos.KerberosChecksum.Parse(next.Children[0]);
+                            ret.Checksum = KerberosChecksum.Parse(next.Children[0]);
                             break;
                         case 4:
                             ret.ClientUSec = next.ReadChildInteger();
@@ -162,6 +163,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             return false;
                     }
                 }
+
+                if (ret.Checksum is KerberosChecksumGSSApi gssapi && gssapi.Credentials != null)
+                {
+                    KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.AsEnumerable() ?? new KerberosKey[0]);
+                    if (ret.SubKey != null)
+                    {
+                        tmp_keyset.Add(ret.SubKey);
+                    }
+
+                    gssapi.Decrypt(tmp_keyset);
+                }
+
                 ticket = ret;
             }
             catch (InvalidDataException)

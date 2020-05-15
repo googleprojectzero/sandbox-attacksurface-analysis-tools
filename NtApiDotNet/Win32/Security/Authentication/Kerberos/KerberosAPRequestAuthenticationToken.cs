@@ -102,7 +102,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, KeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
             {
-                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, out authenticator))
+                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, keyset, out authenticator))
                 {
                     authenticator = null;
                 }
