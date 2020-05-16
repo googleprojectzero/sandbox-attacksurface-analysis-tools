@@ -571,6 +571,17 @@ namespace NtApiDotNet.Win32.Security.Native
           out int CountReturned
         );
 
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaCallAuthenticationPackage(
+              SafeLsaLogonHandle LsaHandle,
+              uint AuthenticationPackage,
+              SafeBuffer ProtocolSubmitBuffer,
+              int SubmitBufferLength,
+              out SafeLsaReturnBufferHandle ProtocolReturnBuffer,
+              out int ReturnBufferLength,
+              out NtStatus ProtocolStatus
+        );
+
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode QueryContextAttributesEx(
           SecHandle phContext,

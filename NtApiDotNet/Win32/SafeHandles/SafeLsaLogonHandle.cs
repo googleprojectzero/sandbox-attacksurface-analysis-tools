@@ -15,9 +15,21 @@
 using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
+    internal struct LsaCallPackageResponse : IDisposable
+    {
+        public NtStatus Status;
+        public SafeLsaReturnBufferHandle Buffer;
+
+        public void Dispose()
+        {
+            ((IDisposable)Buffer)?.Dispose();
+        }
+    }
+
     internal class SafeLsaLogonHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeLsaLogonHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
@@ -41,6 +53,31 @@ namespace NtApiDotNet.Win32.SafeHandles
                 return SecurityNativeMethods.LsaConnectUntrusted(out hlsa).CreateResult(throw_on_error, () => hlsa);
             }
             return hlsa.CreateResult();
+        }
+
+        public NtResult<uint> LookupAuthPackage(string auth_package, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaLookupAuthenticationPackage(
+                    this, new LsaString(auth_package), out uint auth_pkg).CreateResult(throw_on_error, () => auth_pkg);
+        }
+
+        private static LsaCallPackageResponse CreateResponse(NtStatus status, SafeLsaReturnBufferHandle buffer, int length)
+        {
+            if (!(buffer?.IsInvalid ?? true))
+            {
+                buffer?.Initialize((uint)length);
+            }
+            return new LsaCallPackageResponse()
+            {
+                Status = status,
+                Buffer = buffer
+            };
+        }
+
+        public NtResult<LsaCallPackageResponse> CallPackage(uint auth_package, SafeBuffer buffer, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaCallAuthenticationPackage(this, auth_package, buffer, buffer.GetLength(),
+                out SafeLsaReturnBufferHandle ret, out int ret_length, out NtStatus status).CreateResult(throw_on_error, () => CreateResponse(status, ret, ret_length));
         }
     }
 }

@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_AP_REQ)
         {
-            Ticket = new KerberosTicket();
+            Ticket = new KerberosTicket(new byte[0]);
             Authenticator = new KerberosEncryptedData();
         }
         #endregion
@@ -176,7 +176,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 3:
                             if (!next.HasChildren())
                                 return false;
-                            ret.Ticket = KerberosTicket.Parse(next.Children[0]);
+                            ret.Ticket = KerberosTicket.Parse(next.Children[0], next.Data);
                             break;
                         case 4:
                             if (!next.HasChildren())

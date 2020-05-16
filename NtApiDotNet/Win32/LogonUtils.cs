@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Native;
 using NtApiDotNet.Win32.Security.Policy;
 using System;
@@ -150,6 +151,36 @@ namespace NtApiDotNet.Win32
                 }
                 return new NtToken(token);
             }
+        }
+
+        /// <summary>
+        /// Logon user using Kerberos Ticket.
+        /// </summary>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="service_ticket">The service ticket.</param>
+        /// <param name="tgt_ticket">Optional TGT.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtResult<NtToken> LsaLogonTicket(SecurityLogonType type, KerberosTicket service_ticket, KerberosCredential tgt_ticket, bool throw_on_error)
+        {
+            if (service_ticket is null)
+            {
+                throw new ArgumentNullException(nameof(service_ticket));
+            }
+
+            return LsaLogonTicket(type, service_ticket.TicketData, tgt_ticket?.ToArray(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Logon user using Kerberos Ticket.
+        /// </summary>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="service_ticket">The service ticket.</param>
+        /// <param name="tgt_ticket">Optional TGT.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonTicket(SecurityLogonType type, KerberosTicket service_ticket, KerberosCredential tgt_ticket)
+        {
+            return LsaLogonTicket(type, service_ticket, tgt_ticket, true).Result;
         }
 
         /// <summary>
@@ -466,10 +497,10 @@ namespace NtApiDotNet.Win32
                 var hlsa = list.AddResource(SafeLsaLogonHandle.Connect(throw_on_error));
                 if (!hlsa.IsSuccess)
                     return hlsa.Cast<NtToken>();
-                NtStatus status = SecurityNativeMethods.LsaLookupAuthenticationPackage(
-                    hlsa.Result, new LsaString(auth_package), out uint auth_pkg);
-                if (!status.IsSuccess())
-                    return status.CreateResultFromError<NtToken>(throw_on_error);
+
+                var auth_pkg = hlsa.Result.LookupAuthPackage(auth_package, throw_on_error);
+                if (!auth_pkg.IsSuccess)
+                    return auth_pkg.Cast<NtToken>();
 
                 var groups = local_groups == null ? SafeTokenGroupsBuffer.Null 
                     : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
@@ -478,7 +509,7 @@ namespace NtApiDotNet.Win32
                 SecurityNativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
                 QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
                 return SecurityNativeMethods.LsaLogonUser(hlsa.Result, new LsaString(origin_name),
-                    type, auth_pkg, buffer, buffer.GetLength(), groups,
+                    type, auth_pkg.Result, buffer, buffer.GetLength(), groups,
                     tokenSource, out SafeLsaReturnBufferHandle profile,
                     out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
                     quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () =>

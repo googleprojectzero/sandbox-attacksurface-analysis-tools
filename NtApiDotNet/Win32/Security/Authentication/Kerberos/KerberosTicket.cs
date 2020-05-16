@@ -44,6 +44,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public string Principal => ServerName.GetPrincipal(Realm);
 
+        internal byte[] TicketData { get; }
+
         internal bool Decrypt(KerberosKeySet keyset, KeyUsage key_usage, out KerberosTicket ticket)
         {
             if (this is KerberosTicketDecrypted)
@@ -78,20 +80,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             int ticket_version,
             string realm, 
             KerberosPrincipalName server_name, 
-            KerberosEncryptedData encrypted_data)
+            KerberosEncryptedData encrypted_data,
+            byte[] ticket_data)
         {
             TicketVersion = ticket_version;
             Realm = realm ?? string.Empty;
             ServerName = server_name ?? new KerberosPrincipalName();
             EncryptedData = encrypted_data;
+            TicketData = ticket_data;
         }
 
-        internal KerberosTicket() 
-            : this(5, null, null, null)
+        internal KerberosTicket(byte[] ticket_data) 
+            : this(5, null, null, null, ticket_data)
         {
         }
 
-        internal static KerberosTicket Parse(DERValue value)
+        internal static KerberosTicket Parse(DERValue value, byte[] data)
         {
             if (!value.CheckApplication(1) || !value.HasChildren())
                 throw new InvalidDataException();
@@ -99,7 +103,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (!value.Children[0].CheckSequence())
                 throw new InvalidDataException();
 
-            KerberosTicket ret = new KerberosTicket();
+            KerberosTicket ret = new KerberosTicket(data);
             foreach (var next in value.Children[0].Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
