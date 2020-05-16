@@ -9136,7 +9136,7 @@ List of keys to write to the file.
 .PARAMETER Path
 The path to the file to export.
 .INPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 .OUTPUTS
 None
 #>
@@ -9146,7 +9146,7 @@ function Export-KerberosKeyTab {
         [Parameter(Position = 0, Mandatory)]
         [string]$Path,
         [Parameter(Position = 1, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$Key
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key
     )
 
     BEGIN {
@@ -9160,7 +9160,7 @@ function Export-KerberosKeyTab {
     }
 
     END {
-        $key_arr = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$keys
+        $key_arr = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$keys
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr) `
                 | Set-Content -Path $Path -Encoding Byte
     }
@@ -9176,7 +9176,7 @@ The path to the file to import.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 #>
 function Import-KerberosKeyTab {
     [CmdletBinding()]
@@ -9207,7 +9207,7 @@ The salt for the key, if not specified will try and derive from the principal.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 #>
 function Get-KerberosKey {
     [CmdletBinding(DefaultParameterSetName="FromPassword")]
@@ -9239,14 +9239,14 @@ function Get-KerberosKey {
 
     $k = switch($PSCmdlet.ParameterSetName) {
         "FromPassword" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
         }
         "FromKey" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
         }
         "FromBase64Key" {
             $Key = [System.Convert]::FromBase64String($Base64Key)
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
         }
     }
     $k | Write-Output
@@ -9260,20 +9260,20 @@ This cmdlet attempts to decrypt an authentication token. The call will return th
 This is primarily for Kerberos.
 .PARAMETER Key
 Specify a keys for decryption.
-.PARAMETER KerberosToken
+.PARAMETER Token
 The authentication token to decrypt.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationToken
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
 function Unprotect-AuthToken {
-    [CmdletBinding(DefaultParameterSetName="Kerberos")]
+    [CmdletBinding()]
     Param(
-        [Parameter(Position = 0, Mandatory, ParameterSetName="Kerberos")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationToken]$KerberosToken,
-        [Parameter(Position = 1, Mandatory, ParameterSetName="Kerberos")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey[]]$Key
+        [Parameter(Position = 1, Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 1, Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key
     )
-    $KerberosToken.Decrypt($Key) | Write-Output
+    $Token.Decrypt($Key) | Write-Output
 }

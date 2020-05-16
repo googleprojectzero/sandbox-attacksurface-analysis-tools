@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosUtils
     {
-        private static KerberosKey Parse(byte[] data)
+        private static KerberosAuthenticationKey Parse(byte[] data)
         {
             BinaryReader reader = new BinaryReader(new MemoryStream(data));
             int count = ReadUInt16(reader);
@@ -42,11 +42,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 version = ReadUInt32(reader);
             }
-            return new KerberosKey((KerberosEncryptionType)key_type, key, (KerberosNameType)name_type, 
+            return new KerberosAuthenticationKey((KerberosEncryptionType)key_type, key, (KerberosNameType)name_type, 
                 realm, components, new DateTime(1970, 1, 1).AddSeconds(timestamp), version);
         }
 
-        private static byte[] SerializeEntry(KerberosKey entry)
+        private static byte[] SerializeEntry(KerberosAuthenticationKey entry)
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
@@ -165,7 +165,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="stream">The file stream.</param>
         /// <returns>The list of keys.</returns>
         /// <exception cref="ArgumentException">Throw if invalid file.</exception>
-        public static IEnumerable<KerberosKey> ReadKeyTabFile(Stream stream)
+        public static IEnumerable<KerberosAuthenticationKey> ReadKeyTabFile(Stream stream)
         {
             using (var reader = new BinaryReader(stream))
             {
@@ -176,7 +176,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (type != 2)
                     throw new ArgumentException("Invalid KeyTab file, only support version 2.");
 
-                List<KerberosKey> entries = new List<KerberosKey>();
+                List<KerberosAuthenticationKey> entries = new List<KerberosAuthenticationKey>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     int size = ReadInt32(reader);
@@ -202,7 +202,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="path">The file path.</param>
         /// <returns>The list of keys.</returns>
         /// <exception cref="ArgumentException">Throw if invalid file.</exception>
-        public static IEnumerable<KerberosKey> ReadKeyTabFile(string path)
+        public static IEnumerable<KerberosAuthenticationKey> ReadKeyTabFile(string path)
         {
             using (var stream = File.OpenRead(path))
             {
@@ -215,7 +215,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="stream">The file stream.</param>
         /// <param name="keys">List of key entries.</param>
-        public static void WriteKeyTabFile(Stream stream, IEnumerable<KerberosKey> keys)
+        public static void WriteKeyTabFile(Stream stream, IEnumerable<KerberosAuthenticationKey> keys)
         {
             using (var writer = new BinaryWriter(stream))
             {
@@ -235,7 +235,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="path">The file path.</param>
         /// <param name="keys">List of key entries.</param>
-        public static void WriteKeyTabFile(string path, IEnumerable<KerberosKey> keys)
+        public static void WriteKeyTabFile(string path, IEnumerable<KerberosAuthenticationKey> keys)
         {
             using (var stream = File.OpenWrite(path))
             {
@@ -248,7 +248,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="keys">List of key entries.</param>
         /// <returns>The keytab file as bytes.</returns>
-        public static byte[] GenerateKeyTabFile(IEnumerable<KerberosKey> keys)
+        public static byte[] GenerateKeyTabFile(IEnumerable<KerberosAuthenticationKey> keys)
         {
             MemoryStream stm = new MemoryStream();
             WriteKeyTabFile(stm, keys);

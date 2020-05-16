@@ -85,7 +85,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The kerberos session key.
         /// </summary>
-        public KerberosKey Key { get; private set; }
+        public KerberosAuthenticationKey Key { get; private set; }
         /// <summary>
         /// The ticket transited type information.
         /// </summary>
@@ -198,7 +198,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 1:
                             if (!next.HasChildren())
                                 return false;
-                            ret.Key = KerberosKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
+                            ret.Key = KerberosAuthenticationKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
                             keyset.Add(ret.Key);
                             break;
                         case 2:

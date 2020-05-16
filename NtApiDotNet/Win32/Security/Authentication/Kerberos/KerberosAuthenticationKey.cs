@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A single kerberos key.
     /// </summary>
-    public sealed class KerberosKey
+    public sealed class KerberosAuthenticationKey : AuthenticationKey
     {
         private readonly byte[] _key;
 
@@ -73,7 +73,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="components">The name components for the key.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type, 
+        public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type, 
             string realm, string[] components, DateTime timestamp, uint version)
         {
             KeyEncryption = key_encryption;
@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="components">The name components for the key.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
+        public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
             string realm, IEnumerable<string> components, DateTime timestamp, uint version)
         {
             KeyEncryption = key_encryption;
@@ -116,7 +116,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
+        public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
             string principal, DateTime timestamp, uint version)
             : this(key_encryption, key, name_type, GetRealm(principal),
                   GetComponents(principal), timestamp, version)
@@ -132,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        public KerberosKey(KerberosEncryptionType key_encryption, string key, KerberosNameType name_type,
+        public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, string key, KerberosNameType name_type,
             string principal, DateTime timestamp, uint version)
             : this(key_encryption, GetKey(key), name_type, principal, timestamp, version)
         {
@@ -150,7 +150,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="salt">Salt for the key.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
         /// <returns></returns>
-        public static KerberosKey DeriveKey(KerberosEncryptionType key_encryption, string password, 
+        public static KerberosAuthenticationKey DeriveKey(KerberosEncryptionType key_encryption, string password, 
             int iterations, KerberosNameType name_type, string principal, string salt, uint version)
         {
             if (principal is null)
@@ -178,10 +178,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     throw new ArgumentException($"Unsupported key type {key_encryption}", nameof(key_encryption));
             }
 
-            return new KerberosKey(key_encryption, key, name_type, principal, DateTime.Now, version);
+            return new KerberosAuthenticationKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
 
-        internal static KerberosKey Parse(DERValue value, string realm, KerberosPrincipalName name)
+        internal static KerberosAuthenticationKey Parse(DERValue value, string realm, KerberosPrincipalName name)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
@@ -206,7 +206,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (enc_type == 0 || key == null)
                 throw new InvalidDataException();
-            return new KerberosKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
+            return new KerberosAuthenticationKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
         }
 
         private static string MakeSalt(string salt, string principal)

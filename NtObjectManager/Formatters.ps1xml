@@ -2920,9 +2920,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>KerberosKeyTable</Name>
+      <Name>KerberosAuthenticationKeyTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKey</TypeName>
+        <TypeName>NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>

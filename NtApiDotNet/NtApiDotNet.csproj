@@ -322,6 +322,7 @@
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPReplyEncryptedPart.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACDevice.cs" />
@@ -354,7 +355,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTRequestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationToken.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKey.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTGTReplyAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicket.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtils.cs" />

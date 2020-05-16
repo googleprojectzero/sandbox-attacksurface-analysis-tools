@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Subkey.
         /// </summary>
-        public KerberosKey SubKey { get; private set; }
+        public KerberosAuthenticationKey SubKey { get; private set; }
         /// <summary>
         /// Sequence number.
         /// </summary>
@@ -99,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 2:
                             if (!next.HasChildren())
                                 return false;
-                            ret.SubKey = KerberosKey.Parse(next.Children[0], string.Empty, new KerberosPrincipalName());
+                            ret.SubKey = KerberosAuthenticationKey.Parse(next.Children[0], string.Empty, new KerberosPrincipalName());
                             break;
                         case 3:
                             ret.SequenceNumber = next.ReadChildInteger();

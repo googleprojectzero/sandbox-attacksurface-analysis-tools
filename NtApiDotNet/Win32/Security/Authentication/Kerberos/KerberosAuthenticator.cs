@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Subkey.
         /// </summary>
-        public KerberosKey SubKey { get; private set; }
+        public KerberosAuthenticationKey SubKey { get; private set; }
         /// <summary>
         /// Sequence number.
         /// </summary>
@@ -149,7 +149,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 6:
                             if (!next.HasChildren())
                                 return false;
-                            ret.SubKey = KerberosKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
+                            ret.SubKey = KerberosAuthenticationKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
                             break;
                         case 7:
                             ret.SequenceNumber = next.ReadChildInteger();
@@ -166,7 +166,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 if (ret.Checksum is KerberosChecksumGSSApi gssapi && gssapi.Credentials != null)
                 {
-                    KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.AsEnumerable() ?? new KerberosKey[0]);
+                    KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.AsEnumerable() ?? new KerberosAuthenticationKey[0]);
                     if (ret.SubKey != null)
                     {
                         tmp_keyset.Add(ret.SubKey);

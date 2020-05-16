@@ -14,7 +14,9 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -90,11 +92,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="keyset">The set of keys to decrypt the </param>
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
-        public override KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
+        public override AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
         {
             KerberosEncryptedData authenticator = null;
 
-            KerberosKeySet tmp_keys = new KerberosKeySet(keyset);
+            KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
             if (!Ticket.Decrypt(tmp_keys, KeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
             {
                 ticket = null;
@@ -102,7 +104,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, KeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
             {
-                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, keyset, out authenticator))
+                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, tmp_keys, out authenticator))
                 {
                     authenticator = null;
                 }

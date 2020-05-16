@@ -23,13 +23,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A set of Kerberos Keys.
     /// </summary>
-    public sealed class KerberosKeySet : IEnumerable<KerberosKey>
+    public sealed class KerberosKeySet : IEnumerable<KerberosAuthenticationKey>
     {
         #region Private Members
 
-        private class KeyEqualityComparer : IEqualityComparer<KerberosKey>
+        private class KeyEqualityComparer : IEqualityComparer<KerberosAuthenticationKey>
         {
-            public bool Equals(KerberosKey x, KerberosKey y)
+            public bool Equals(KerberosAuthenticationKey x, KerberosAuthenticationKey y)
             {
                 if (x.Version != y.Version)
                     return false;
@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return true;
             }
 
-            public int GetHashCode(KerberosKey obj)
+            public int GetHashCode(KerberosAuthenticationKey obj)
             {
                 return obj.KeyEncryption.GetHashCode() ^ obj.NameType.GetHashCode() 
                     ^ obj.Principal.ToLower().GetHashCode() ^ obj.Version.GetHashCode() 
@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        private readonly HashSet<KerberosKey> _keys;
+        private readonly HashSet<KerberosAuthenticationKey> _keys;
         #endregion
 
         #region Public Methods
@@ -62,7 +62,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="enc_type">The encryption type.</param>
         /// <returns>The list of keys which match the encryption type.</returns>
-        public IEnumerable<KerberosKey> GetKeysForEncryption(KerberosEncryptionType enc_type)
+        public IEnumerable<KerberosAuthenticationKey> GetKeysForEncryption(KerberosEncryptionType enc_type)
         {
             return _keys.Where(k => k.KeyEncryption == enc_type);
         }
@@ -72,7 +72,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="key">The key to add.</param>
         /// <returns>True if the key was added, false if the key already existed.</returns>
-        public bool Add(KerberosKey key)
+        public bool Add(KerberosAuthenticationKey key)
         {
             return _keys.Add(key);
         }
@@ -82,7 +82,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="key">The key to remove.</param>
         /// <returns>True if the key was removed.</returns>
-        public bool Remove(KerberosKey key)
+        public bool Remove(KerberosAuthenticationKey key)
         {
             return _keys.Remove(key);
         }
@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">The principal.</param>
         /// <param name="key_version">The key version.</param>
         /// <returns></returns>
-        public KerberosKey FindKey(KerberosEncryptionType enc_type, KerberosNameType name_type, string principal, int key_version)
+        public KerberosAuthenticationKey FindKey(KerberosEncryptionType enc_type, KerberosNameType name_type, string principal, int key_version)
         {
             return _keys.Where(k => k.KeyEncryption == enc_type
                 && k.NameType == name_type
@@ -128,7 +128,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosKeySet(KerberosUtils.ReadKeyTabFile(path));
         }
 
-        IEnumerator<KerberosKey> IEnumerable<KerberosKey>.GetEnumerator()
+        IEnumerator<KerberosAuthenticationKey> IEnumerable<KerberosAuthenticationKey>.GetEnumerator()
         {
             return _keys.GetEnumerator();
         }
@@ -145,7 +145,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Constructor.
         /// </summary>
         public KerberosKeySet() 
-            : this(new KerberosKey[0])
+            : this(new KerberosAuthenticationKey[0])
         {
         }
 
@@ -153,7 +153,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Constructor.
         /// </summary>
         /// <param name="key">The single kerberos key.</param>
-        public KerberosKeySet(KerberosKey key) : this(new KerberosKey[] { key })
+        public KerberosKeySet(KerberosAuthenticationKey key) : this(new KerberosAuthenticationKey[] { key })
         {
         }
 
@@ -161,9 +161,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Constructor.
         /// </summary>
         /// <param name="keys">A list of kerberos keys.</param>
-        public KerberosKeySet(IEnumerable<KerberosKey> keys)
+        public KerberosKeySet(IEnumerable<KerberosAuthenticationKey> keys)
         {
-            _keys = new HashSet<KerberosKey>(keys, new KeyEqualityComparer());
+            _keys = new HashSet<KerberosAuthenticationKey>(keys, new KeyEqualityComparer());
         }
         #endregion
     }

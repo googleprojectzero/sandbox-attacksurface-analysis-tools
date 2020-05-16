@@ -16,6 +16,7 @@ using NtApiDotNet.Utilities.Text;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -25,6 +26,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
     public class AuthenticationToken
     {
         private readonly byte[] _data;
+
+        /// <summary>
+        /// Decrypt the Authentication Token using a keyset.
+        /// </summary>
+        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public virtual AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
+        {
+            return this;
+        }
 
         /// <summary>
         /// Convert the authentication token to a byte array.

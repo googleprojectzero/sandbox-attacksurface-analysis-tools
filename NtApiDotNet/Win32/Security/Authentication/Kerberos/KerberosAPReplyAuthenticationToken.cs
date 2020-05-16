@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -52,10 +54,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="keyset">The set of keys to decrypt the </param>
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
-        public override KerberosAuthenticationToken Decrypt(KerberosKeySet keyset)
+        public override AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
         {
             KerberosEncryptedData encrypted_part = null;
-            if (EncryptedPart.Decrypt(keyset, string.Empty, new KerberosPrincipalName(), KeyUsage.ApRepEncryptedPart, out byte[] auth_decrypt))
+            KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
+            if (EncryptedPart.Decrypt(tmp_keyset, string.Empty, new KerberosPrincipalName(), KeyUsage.ApRepEncryptedPart, out byte[] auth_decrypt))
             {
                 if (!KerberosAPReplyEncryptedPart.Parse(EncryptedPart, auth_decrypt, out encrypted_part))
                 {
