@@ -76,7 +76,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (Credentials != null)
             {
                 builder.AppendLine($"Delegate Opt ID : {DelegationOptionIdentifier}");
-                builder.AppendLine("Kerb Credential :");
                 builder.AppendLine(Credentials.Format());
             }
             if (Extensions != null)
