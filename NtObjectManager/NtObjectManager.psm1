@@ -6709,7 +6709,7 @@ Create a new authentication client.
 This cmdlet creates a new authentication client.
 .PARAMETER CredHandle
 The credential handle to use.
-.PARAMETER RequestAttributes
+.PARAMETER RequestAttribute
 Request attributes.
 .PARAMETER Target
 Optional SPN target.
@@ -6727,14 +6727,14 @@ function Get-AuthClientContext {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
-        [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttributes = 0,
+        [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
         [string]$Target,
         [byte[]]$ChannelBinding,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-            $RequestAttributes, $Target, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation) | Write-Output
 }
 
 <#
@@ -6744,7 +6744,7 @@ Create a new authentication server.
 This cmdlet creates a new authentication server.
 .PARAMETER CredHandle
 The credential handle to use.
-.PARAMETER RequestAttributes
+.PARAMETER RequestAttribute
 Request attributes.
 .PARAMETER DataRepresentation
 Data representation format.
@@ -6760,13 +6760,13 @@ function Get-AuthServerContext {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
-        [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttributes = 0,
+        [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttribute = 0,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
         [byte[]]$ChannelBinding
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $RequestAttributes, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $ChannelBinding, $DataRepresentation) | Write-Output
 }
 
 <#
