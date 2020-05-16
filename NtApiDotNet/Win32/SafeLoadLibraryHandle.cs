@@ -265,8 +265,6 @@ namespace NtApiDotNet.Win32
         {
             return Magic;
         }
-
-
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -424,13 +422,18 @@ namespace NtApiDotNet.Win32
         /// Name of the forwarder, if used.
         /// </summary>
         public string Forwarder { get; }
+        /// <summary>
+        /// Get the module this was exported from.
+        /// </summary>
+        public string ModulePath { get; }
 
-        internal DllExport(string name, int ordinal, long address, string forwarder)
+        internal DllExport(string name, int ordinal, long address, string forwarder, string module_path)
         {
             Name = name ?? $"#{ordinal}";
             Ordinal = ordinal;
             Address = address;
             Forwarder = forwarder;
+            ModulePath = module_path;
         }
 
         /// <summary>
@@ -457,6 +460,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public IEnumerable<DllImportFunction> Functions { get; }
         /// <summary>
+        /// List of names imported.
+        /// </summary>
+        public IEnumerable<string> Names => Functions.Select(f => f.Name);
+        /// <summary>
         /// Could of functions
         /// </summary>
         public int FunctionCount { get; }
@@ -464,13 +471,18 @@ namespace NtApiDotNet.Win32
         /// True of the imports are delay loaded.
         /// </summary>
         public bool DelayLoaded { get; }
+        /// <summary>
+        /// The path to the executable this import came from.
+        /// </summary>
+        public string ModulePath { get; }
 
-        internal DllImport(string dll_name, bool delay_loaded, List<DllImportFunction> funcs)
+        internal DllImport(string dll_name, bool delay_loaded, List<DllImportFunction> funcs, string module_path)
         {
             DllName = dll_name;
             Functions = funcs.AsReadOnly();
             FunctionCount = funcs.Count;
             DelayLoaded = delay_loaded;
+            ModulePath = module_path;
         }
 
         /// <summary>
@@ -608,6 +620,7 @@ namespace NtApiDotNet.Win32
 
         internal SafeLoadLibraryHandle() : base(true)
         {
+
         }
         #endregion
 
@@ -795,29 +808,12 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get path to loaded module.
         /// </summary>
-        public string FullPath
-        {
-            get
-            {
-                StringBuilder builder = new StringBuilder(260);
-                if (Win32NativeMethods.GetModuleFileName(handle, builder, builder.Capacity) == 0)
-                {
-                    throw new SafeWin32Exception();
-                }
-                return builder.ToString();
-            }
-        }
+        public string FullPath => GetFullPath();
 
         /// <summary>
         /// Get the module name.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return Path.GetFileName(FullPath);
-            }
-        }
+        public string Name => Path.GetFileName(FullPath);
 
         /// <summary>
         /// Whether this library is mapped as an image.
@@ -955,6 +951,8 @@ namespace NtApiDotNet.Win32
                 }
                 return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeLoadLibraryHandle>(false);
             }
+            if (ret.FullPath == string.Empty)
+                ret._full_path = Path.GetFullPath(name);
             return ret.CreateResult();
         }
 
@@ -1076,6 +1074,7 @@ namespace NtApiDotNet.Win32
         private List<DllExport> _exports;
         private List<DllImport> _imports;
         private DllDebugData _debug_data;
+        private string _full_path;
 
         private IntPtr RvaToVA(long rva)
         {
@@ -1192,7 +1191,7 @@ namespace NtApiDotNet.Win32
                         func_va = 0;
                     }
                     _exports.Add(new DllExport(ordinal_to_names.ContainsKey(i) ? ordinal_to_names[i] : null,
-                        i + export_directory.Base, func_va, forwarder));
+                        i + export_directory.Base, func_va, forwarder, FullPath));
                 }
             }
             catch
@@ -1250,7 +1249,7 @@ namespace NtApiDotNet.Win32
                 funcs.Add(ReadImport(dll_name, lookup, iat_func));
             }
 
-            return new DllImport(dll_name, delay_loaded, funcs);
+            return new DllImport(dll_name, delay_loaded, funcs, FullPath);
         }
 
         private void ParseNormalImports(bool is_64bit)
@@ -1425,6 +1424,23 @@ namespace NtApiDotNet.Win32
             _image_entry_point = optional_header.GetAddressOfEntryPoint();
             _is_64bit = optional_header.GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
             _dll_characteristics = optional_header.GetDllCharacteristics();
+        }
+
+        private string GetFullPath()
+        {
+            if (_full_path == null)
+            {
+                StringBuilder builder = new StringBuilder(260);
+                if (Win32NativeMethods.GetModuleFileName(handle, builder, builder.Capacity) == 0)
+                {
+                    _full_path = string.Empty;
+                }
+                else
+                {
+                    _full_path = builder.ToString();
+                }
+            }
+            return _full_path;
         }
         #endregion
 
