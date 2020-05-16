@@ -81,8 +81,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 switch (oid)
                 {
-                    case OIDValues.KERBEROS_OID:
-                    case OIDValues.KERBEROS_USER_TO_USER_OID:
+                    case OIDValues.KERBEROS:
+                    case OIDValues.KERBEROS_USER_TO_USER:
                         if (tok_id[0] == 1)
                         {
                             if (KerberosAPRequestAuthenticationToken.TryParse(data, values, out token))

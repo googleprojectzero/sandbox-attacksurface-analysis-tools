@@ -136,6 +136,15 @@ namespace NtApiDotNet.Utilities.ASN1
             return Children[0].ReadInteger();
         }
 
+        public int ReadChildEnumerated()
+        {
+            if (!HasChildren() || (!Children[0].CheckPrimitive(UniversalTag.ENUMERATED) && !Children[0].CheckPrimitive(UniversalTag.INTEGER)))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadInteger();
+        }
+
         public byte[] ReadChildOctetString()
         {
             if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.OCTET_STRING))
@@ -152,6 +161,15 @@ namespace NtApiDotNet.Utilities.ASN1
                 throw new InvalidDataException();
             }
             return Children[0].ReadGeneralString();
+        }
+
+        public string ReadChildObjID()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.OBJECT_IDENTIFIER))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadObjID();
         }
 
         public string ReadChildGeneralizedTime()

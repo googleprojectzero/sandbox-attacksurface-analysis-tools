@@ -366,7 +366,9 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosNameType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\PacDeviceInfoParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PrincipalName.cs" />
+    <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInitAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateResponseAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />

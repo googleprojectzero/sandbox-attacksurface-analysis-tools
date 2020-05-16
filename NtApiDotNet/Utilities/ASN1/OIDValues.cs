@@ -21,10 +21,33 @@ namespace NtApiDotNet.Utilities.ASN1
     {
         internal const string KERBEROS_NAME = "1.2.840.113554.1.2.2.1";
         internal const string KERBEROS_PRINCIPAL = "1.2.840.113554.1.2.2.2";
-        internal const string KERBEROS_USER_TO_USER_OID = "1.2.840.113554.1.2.2.3";
-        internal const string KERBEROS_OID = "1.2.840.113554.1.2.2";
+        internal const string KERBEROS_USER_TO_USER = "1.2.840.113554.1.2.2.3";
+        internal const string KERBEROS = "1.2.840.113554.1.2.2";
         internal const string MS_KERBEROS = "1.2.840.48018.1.2.2";
         internal const string NTLM_SSP = "1.3.6.1.4.1.311.2.2.10";
         internal const string MS_NEGOX = "1.3.6.1.4.1.311.2.2.30";
+        internal const string SPNEGO = "1.3.6.1.5.5.2";
+
+        public static string ToString(string oid)
+        {
+            switch (oid)
+            {
+                case KERBEROS:
+                case KERBEROS_NAME:
+                    return "Kerberos";
+                case KERBEROS_USER_TO_USER:
+                    return "Kerberos User to User";
+                case MS_KERBEROS:
+                    return "Microsoft Kerberos";
+                case NTLM_SSP:
+                    return "NTLM";
+                case MS_NEGOX:
+                    return "Microsoft Negotiate Extended";
+                case SPNEGO:
+                    return "SPNEGO";
+                default:
+                    return "UNKNOWN OID";
+            }
+        }
     }
 }
