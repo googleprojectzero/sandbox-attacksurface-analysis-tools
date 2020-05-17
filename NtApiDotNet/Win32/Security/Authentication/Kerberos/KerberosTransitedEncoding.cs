@@ -76,7 +76,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
 
-            if (type == 0 || data == null)
+            if (data == null)
                 throw new InvalidDataException();
             return new KerberosTransitedEncoding(type, data);
         }

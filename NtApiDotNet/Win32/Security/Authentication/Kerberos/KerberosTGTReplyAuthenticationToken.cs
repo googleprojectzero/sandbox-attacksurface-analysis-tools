@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -43,6 +45,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
             builder.Append(Ticket.Format());
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Decrypt the Authentication Token using a keyset.
+        /// </summary>
+        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public override AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
+        {
+            KerberosEncryptedData authenticator = null;
+
+            KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
+            if (!Ticket.Decrypt(tmp_keys, KeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
+            {
+                ticket = null;
+            }
+
+            if (ticket != null || authenticator != null)
+            {
+                var ret = (KerberosTGTReplyAuthenticationToken)MemberwiseClone();
+                ret.Ticket = ticket ?? ret.Ticket;
+                return ret;
+            }
+            return base.Decrypt(keyset);
         }
 
         #region Internal Static Methods
