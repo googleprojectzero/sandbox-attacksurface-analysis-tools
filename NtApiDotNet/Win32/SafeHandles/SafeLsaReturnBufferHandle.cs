@@ -14,6 +14,8 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
@@ -42,6 +44,28 @@ namespace NtApiDotNet.Win32.SafeHandles
             get
             {
                 return handle == IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        public SafeLsaReturnBufferHandle Detach()
+        {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try // Needed for constrained region.
+            {
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                var ret = new SafeLsaReturnBufferHandle(handle, true);
+                ret.Initialize(ByteLength);
+                return ret;
+            }
+            finally
+            {
             }
         }
     }

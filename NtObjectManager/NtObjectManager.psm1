@@ -9270,10 +9270,61 @@ NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 function Unprotect-AuthToken {
     [CmdletBinding()]
     Param(
-        [Parameter(Position = 1, Mandatory)]
+        [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key
     )
     $Token.Decrypt($Key) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get Kerberos Ticket.
+.DESCRIPTION
+This cmdlet gets a kerberos Ticket, or multiple tickets.
+.PARAMETER LogonId
+Specify a logon ID to query for tickets.
+.PARAMETER LogonSession
+Specify a logon session to query for tickets.
+.PARAMETER TargetName
+Specify a target name to query for a ticket. If it doesn't exist get a new one.
+.PARAMETER CacheOnly
+Specify to only lookup the TargetName in the cache.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
+#>
+function Get-KerberosTicket {
+    [CmdletBinding(DefaultParameterSetName="CurrentLuid")]
+    Param(
+        [Parameter(Position = 0, ParameterSetName="FromLuid", Mandatory)]
+        [NtApiDotNet.Luid]$LogonId,
+        [Parameter(Position = 0, ParameterSetName="FromLogonSession", ValueFromPipeline, Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.LogonSession[]]$LogonSession,
+        [Parameter(Position = 0, ParameterSetName="FromTarget", Mandatory)]
+        [string]$TargetName,
+        [Parameter(ParameterSetName="FromTarget")]
+        [switch]$CacheOnly
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "CurrentLuid" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
+            }
+            "FromLuid" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
+            }
+            "FromLogonSession" {
+                foreach($l in $LogonSession) {
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+                }
+            }
+            "FromTarget" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($LogonId, $CacheOnly) | Write-Output
+            }
+        }
+    }
 }

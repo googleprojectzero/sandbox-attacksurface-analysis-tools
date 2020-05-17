@@ -340,8 +340,10 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksum.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosChecksumGSSApi.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosCredential.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosExternalTicket.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosHostAddress.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationType.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketCache.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketDecrypted.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKeySet.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTransitedEncoding.cs" />
@@ -365,7 +367,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosMessageType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosNameType.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\PacDeviceInfoParser.cs" />
-    <Compile Include="Win32\Security\Authentication\Kerberos\PrincipalName.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPrincipalName.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInitAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateResponseAuthenticationToken.cs" />

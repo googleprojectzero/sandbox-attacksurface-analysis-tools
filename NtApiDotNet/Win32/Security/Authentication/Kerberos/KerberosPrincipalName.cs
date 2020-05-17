@@ -55,10 +55,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return $"{FullName}@{realm}";
         }
 
-        internal KerberosPrincipalName()
+        internal KerberosPrincipalName() 
+            : this(KerberosNameType.UNKNOWN, new string[0])
         {
-            NameType = KerberosNameType.UNKNOWN;
-            Names = new List<string>().AsReadOnly();
+        }
+
+        internal KerberosPrincipalName(KerberosNameType name_type, 
+            IEnumerable<string> names)
+        {
+            NameType = name_type;
+            Names = new List<string>(names).AsReadOnly();
         }
 
         internal static KerberosPrincipalName Parse(DERValue value)

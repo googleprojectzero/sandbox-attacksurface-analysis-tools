@@ -144,6 +144,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return Encoding.UTF8.GetString(ReadOctets(reader));
         }
 
+        internal static int SwapEndian(this int value)
+        {
+            return BitConverter.ToInt32(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
+        }
+
         internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
         {
             return value.CheckApplication((int)msg);
