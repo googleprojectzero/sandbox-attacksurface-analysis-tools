@@ -735,6 +735,64 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Queue a special user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS5)]
+        public NtStatus QueueSpecialUserApc(IntPtr apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
+        {
+            return NtSystemCalls.NtQueueApcThreadEx(Handle, new IntPtr(1), apc_routine, normal_context, system_argument1, system_argument2).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Queue a special user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <returns>The NT status code.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS5)]
+        public void QueueSpecialUserApc(IntPtr apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
+        {
+            QueueSpecialUserApc(apc_routine, normal_context, system_argument1, system_argument2, true);
+        }
+
+        /// <summary>
+        /// Queue a special user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS5)]
+        public NtStatus QueueSpecialUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
+        {
+            return QueueSpecialUserApc(Marshal.GetFunctionPointerForDelegate(apc_routine), normal_context, system_argument1, system_argument2, throw_on_error);
+        }
+
+        /// <summary>
+        /// Queue a special user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <returns>The NT status code.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS5)]
+        public void QueueSpecialUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
+        {
+            QueueSpecialUserApc(apc_routine, normal_context, system_argument1, system_argument2, true);
+        }
+
+        /// <summary>
         /// Queue a user APC to the thread.
         /// </summary>
         /// <param name="apc_routine">The APC callback pointer.</param>

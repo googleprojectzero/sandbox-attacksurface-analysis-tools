@@ -633,6 +633,15 @@ namespace NtApiDotNet
             IntPtr ApcArgument3);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueueApcThreadEx(
+            SafeKernelObjectHandle ThreadHandle,
+            IntPtr UserApcReserveHandle,
+            IntPtr ApcRoutine,
+            IntPtr ApcArgument1,
+            IntPtr ApcArgument2,
+            IntPtr ApcArgument3);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtGetContextThread(
             SafeKernelObjectHandle ThreadHandle,
             SafeBuffer ThreadContext);
