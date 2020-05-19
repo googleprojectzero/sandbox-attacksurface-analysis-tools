@@ -43,15 +43,15 @@ Get a list of ALPC Ports that can be opened by a specified token.
 .DESCRIPTION
 This cmdlet checks for all ALPC ports on the system and tries to determine if one or more specified tokens can connect to them.
 If no tokens are specified then the current process token is used. This function searches handles for existing ALPC Port servers as you can't directly open the server object and just connecting might show inconsistent results.
-.PARAMETER ProcessIds
+.PARAMETER ProcessId
 Specify a list of process IDs to open for their tokens.
-.PARAMETER ProcessNames
+.PARAMETER ProcessName
 Specify a list of process names to open for their tokens.
-.PARAMETER ProcessCommandLines
+.PARAMETER ProcessCommandLine
 Specify a list of command lines to filter on find for the process tokens.
-.PARAMETER Tokens
+.PARAMETER Token
 Specify a list token objects.
-.PARAMETER Processes
+.PARAMETER Process
 Specify a list process objects to use for their tokens.
 .INPUTS
 None
@@ -68,15 +68,20 @@ Get all ALPC Ports connectable by the process tokens of PIDs 1234 and 5678
 #>
 function Get-AccessibleAlpcPort {
     Param(
-        [Int32[]]$ProcessIds,
-        [string[]]$ProcessNames,
-        [string[]]$ProcessCommandLines,
-        [NtApiDotNet.NtToken[]]$Tokens,
-        [NtApiDotNet.NtProcess[]]$Processes
+        [alias("ProcessIds")]
+        [Int32[]]$ProcessId,
+        [alias("ProcessNames")]
+        [string[]]$ProcessName,
+        [alias("ProcessCommandLines")]
+        [string[]]$ProcessCommandLine,
+        [alias("Tokens")]
+        [NtApiDotNet.NtToken[]]$Token,
+        [alias("Processes")]
+        [NtApiDotNet.NtProcess[]]$Process
     )
     $access = Get-NtAccessMask -AlpcPortAccess Connect -ToGenericAccess
-    Get-AccessibleObject -FromHandles -ProcessIds $ProcessIds -ProcessNames $ProcessNames `
-        -ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -Processes $Processes -TypeFilter "ALPC Port" -AccessRights $access
+    Get-AccessibleObject -FromHandle -ProcessId $ProcessId -ProcessName $ProcessName `
+        -ProcessCommandLine $ProcessCommandLine -Token $Token -Process $Process -TypeFilter "ALPC Port" -AccessRights $access
 }
 
 <#
