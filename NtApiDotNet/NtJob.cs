@@ -376,11 +376,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Set the time limit for a process.
         /// </summary>
-        /// <param name="process_time_limit">The time limit for a process, in 100ns ticks.</param>
+        /// <param name="process_time_limit">The time limit for a process, in 100ns ticks. Set to 0 to clear the timeout.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public NtStatus SetProcessTimeLimit(long process_time_limit, bool throw_on_error)
         {
+            if (process_time_limit == 0)
+            {
+                return SetExtendedLimitInformation(i => {
+                    i.BasicLimitInformation.PerProcessUserTimeLimit = new LargeIntegerStruct();
+                    i.BasicLimitInformation.LimitFlags &= ~JobObjectLimitFlags.ProcessTime;
+                    return i;
+                }, throw_on_error);
+            }
+
             return SetExtendedLimitInformation(i => {
                 i.BasicLimitInformation.PerProcessUserTimeLimit = new LargeIntegerStruct() { QuadPart = process_time_limit };
                 i.BasicLimitInformation.LimitFlags |= JobObjectLimitFlags.ProcessTime;
@@ -391,8 +400,28 @@ namespace NtApiDotNet
         /// <summary>
         /// Set the time limit for a process.
         /// </summary>
-        /// <param name="process_time_limit">The time limit for a process, in 100ns ticks.</param>
+        /// <param name="process_time_limit">The time limit for a process, in 100ns ticks. Set to 0 to clear the timeout.</param>
         public void SetProcessTimeLimit(long process_time_limit)
+        {
+            SetProcessTimeLimit(process_time_limit, true);
+        }
+
+        /// <summary>
+        /// Set the time limit for a process.
+        /// </summary>
+        /// <param name="process_time_limit">The time limit for a process.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetProcessTimeLimit(NtWaitTimeout process_time_limit, bool throw_on_error)
+        {
+            return SetProcessTimeLimit(Math.Abs(process_time_limit?.Timeout?.QuadPart ?? 0), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the time limit for a process.
+        /// </summary>
+        /// <param name="process_time_limit">The time limit for a process.</param>
+        public void SetProcessTimeLimit(NtWaitTimeout process_time_limit)
         {
             SetProcessTimeLimit(process_time_limit, true);
         }
@@ -400,11 +429,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Set the time limit for a job.
         /// </summary>
-        /// <param name="job_time_limit">The time limit for a job, in 100ns ticks.</param>
+        /// <param name="job_time_limit">The time limit for a job, in 100ns ticks. Set to 0 to clear timeout.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public NtStatus SetJobTimeLimit(long job_time_limit, bool throw_on_error)
         {
+            if (job_time_limit == 0)
+            {
+                return SetExtendedLimitInformation(i => {
+                    i.BasicLimitInformation.PerJobUserTimeLimit = new LargeIntegerStruct() { QuadPart = 0 };
+                    i.BasicLimitInformation.LimitFlags &= ~JobObjectLimitFlags.JobTime;
+                    return i;
+                }, throw_on_error);
+            }
+
             return SetExtendedLimitInformation(i => {
                 i.BasicLimitInformation.PerJobUserTimeLimit = new LargeIntegerStruct() { QuadPart = job_time_limit };
                 i.BasicLimitInformation.LimitFlags |= JobObjectLimitFlags.JobTime;
@@ -415,10 +453,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Set the time limit for a job.
         /// </summary>
-        /// <param name="job_time_limit">The time limit for a job, in 100ns ticks.</param>
+        /// <param name="job_time_limit">The time limit for a job, in 100ns ticks. Set to 0 to clear timeout.</param>
         public void SetJobTimeLimit(long job_time_limit)
         {
             SetProcessTimeLimit(job_time_limit, true);
+        }
+
+        /// <summary>
+        /// Set the time limit for a job.
+        /// </summary>
+        /// <param name="job_time_limit">The time limit for a job.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetJobTimeLimit(NtWaitTimeout job_time_limit, bool throw_on_error)
+        {
+            return SetJobMemoryLimit(Math.Abs(job_time_limit?.Timeout?.QuadPart ?? 0), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the time limit for a job.
+        /// </summary>
+        /// <param name="job_time_limit">The time limit for a job.</param>
+        public void SetJobTimeLimit(NtWaitTimeout job_time_limit)
+        {
+            SetJobTimeLimit(job_time_limit, true);
         }
 
         /// <summary>
