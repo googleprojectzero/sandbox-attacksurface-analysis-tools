@@ -79,7 +79,7 @@ namespace TokenViewer
         static void ShowHelp(OptionSet p)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Usage: ObjectList [options] path1 [path2..pathN]");
+            builder.AppendLine("Usage: TokenViewer [options]");
             builder.AppendLine();
             builder.AppendLine("Options:");
             StringWriter writer = new StringWriter();
