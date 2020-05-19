@@ -2288,6 +2288,31 @@ namespace NtApiDotNet
         /// </summary>
         public long SecurityDomain => GetSecurityDomain();
 
+        /// <summary>
+        /// Get the creation time of the process.
+        /// </summary>
+        public DateTime CreateTime => DateTime.FromFileTime(Query<KernelUserTimes>(ProcessInformationClass.ProcessTimes).CreateTime.QuadPart);
+        /// <summary>
+        /// Get the exit time of the process.
+        /// </summary>
+        public DateTime ExitTime => DateTime.FromFileTime(Query<KernelUserTimes>(ProcessInformationClass.ProcessTimes).ExitTime.QuadPart);
+        /// <summary>
+        /// Get the time spent in the kernel.
+        /// </summary>
+        public long KernelTime => Query<KernelUserTimes>(ProcessInformationClass.ProcessTimes).KernelTime.QuadPart;
+        /// <summary>
+        /// Get the time spent in user mode.
+        /// </summary>
+        public long UserTime => Query<KernelUserTimes>(ProcessInformationClass.ProcessTimes).UserTime.QuadPart;
+        /// <summary>
+        /// Get the time spent in the kernel in seconds.
+        /// </summary>
+        public double KernelTimeSeconds => new TimeSpan(KernelTime).TotalSeconds;
+        /// <summary>
+        /// Get the time spent in user mode.
+        /// </summary>
+        public double UserTimeSeconds => new TimeSpan(UserTime).TotalSeconds;
+
         #endregion
 
         #region Static Properties
