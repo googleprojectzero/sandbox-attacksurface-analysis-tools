@@ -280,9 +280,32 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
+        private static AccessMask AdjustProcessAccess(AccessMask granted_access)
+        {
+            if (granted_access.IsAccessGranted(ProcessAccessRights.QueryInformation))
+                granted_access |= ProcessAccessRights.QueryLimitedInformation;
+            if (granted_access.IsAllAccessGranted(ProcessAccessRights.VmWrite | ProcessAccessRights.VmOperation))
+                granted_access |= ProcessAccessRights.QueryLimitedInformation;
+            if (granted_access.IsAccessGranted(ProcessAccessRights.SetInformation))
+                granted_access |= ProcessAccessRights.SetLimitedInformation;
+            return granted_access;
+        }
+
+        private static AccessMask AdjustThreadAccess(AccessMask granted_access)
+        {
+            if (granted_access.IsAccessGranted(ThreadAccessRights.QueryInformation))
+                granted_access |= ThreadAccessRights.QueryLimitedInformation;
+            if (granted_access.IsAccessGranted(ThreadAccessRights.SetInformation))
+                granted_access |= ThreadAccessRights.SetLimitedInformation;
+            if (granted_access.IsAccessGranted(ThreadAccessRights.SuspendResume))
+                granted_access |= ThreadAccessRights.Resume;
+            return granted_access;
+        }
+
         private void CheckAccess(TokenEntry token, ProcessDetails process, ThreadDetails thread, NtType type, AccessMask access_rights, SecurityDescriptor sd)
         {
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
+            granted_access = thread == null ? AdjustProcessAccess(granted_access) : AdjustThreadAccess(granted_access);
             if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(process, thread, granted_access, type.GenericMapping, sd, token.Information);
