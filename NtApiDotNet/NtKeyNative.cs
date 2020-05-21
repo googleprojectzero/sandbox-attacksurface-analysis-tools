@@ -26,6 +26,7 @@ namespace NtApiDotNet
         Exclusive = 0x20,
         Unknown800 = 0x800,
         ReadOnly = 0x2000,
+        DontCheckAccess = 0x8000,
     }
 
     [Flags]
@@ -277,6 +278,20 @@ namespace NtApiDotNet
         public bool TrustedKey => Flags.GetBit(0);
     }
 
+    public enum KeyLoadArgumentType : byte
+    {
+        TrustKeyHandle = 1,
+        EventHandle,
+        TokenHandle
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KeyLoadArgument
+    {
+        public KeyLoadArgumentType ArgumentType;
+        public IntPtr Argument;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -349,9 +364,17 @@ namespace NtApiDotNet
         public static extern NtStatus NtLoadKeyEx([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
           IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
 
-        [DllImport("ntdll.dll", EntryPoint = "NtLoadKeyEx")]
-        public static extern NtStatus NtLoadKeyExNoHandle([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLoadKeyEx([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
             IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, IntPtr KeyHandle, int Unused);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLoadKey3([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
+            [In, MarshalAs(UnmanagedType.LPArray)] KeyLoadArgument[] LoadArguments, int LoadArgumentCount, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLoadKey3([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
+            [In, MarshalAs(UnmanagedType.LPArray)] KeyLoadArgument[] LoadArguments, int LoadArgumentCount, KeyAccessRights DesiredAccess, IntPtr KeyHandle, int Unused);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtUnloadKey2([In] ObjectAttributes KeyObjectAttributes, UnloadKeyFlags Flags);

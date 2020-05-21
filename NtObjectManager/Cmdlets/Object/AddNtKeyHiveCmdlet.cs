@@ -57,6 +57,24 @@ namespace NtObjectManager.Cmdlets.Object
         public LoadKeyFlags LoadFlags { get; set; }
 
         /// <summary>
+        /// <para type="description">Specifes the token to impersonate for loading the hive.</para>
+        /// </summary>
+        [Parameter]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specifes the key that this new hive should trust.</para>
+        /// </summary>
+        [Parameter]
+        public NtKey TrustKey { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specifes an event for the hive load.</para>
+        /// </summary>
+        [Parameter]
+        public NtEvent Event { get; set; }
+
+        /// <summary>
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -102,7 +120,7 @@ namespace NtObjectManager.Cmdlets.Object
                     }
                 }
 
-                return NtKey.LoadKey(name, obj_attributes, LoadFlags, Access);
+                return NtKey.LoadKey(name, obj_attributes, LoadFlags, Access, TrustKey, Event, Token);
             }
         }
 
