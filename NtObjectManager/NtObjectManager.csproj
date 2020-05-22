@@ -140,6 +140,7 @@
     <Compile Include="Cmdlets\Object\SetNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SetNtTokenCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SpecificAccessType.cs" />
     <Compile Include="Cmdlets\Object\StartNtDebugWaitCmdlet.cs" />
     <Compile Include="Cmdlets\Object\CompareNtSidCmdlet.cs" />
