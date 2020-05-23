@@ -758,6 +758,10 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern void RtlDestroyProcessParameters(IntPtr pProcessParameters);
+
+        [DllImport("ntdll.dll")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlTestProtectedAccess(byte request_level, byte target_level);
     }
 
     [Flags]

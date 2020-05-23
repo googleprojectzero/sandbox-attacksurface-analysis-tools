@@ -488,6 +488,17 @@ namespace NtApiDotNet
             return Current.Duplicate();
         }
 
+        /// <summary>
+        /// Test whether a process can access another protected process.
+        /// </summary>
+        /// <param name="current">The current process.</param>
+        /// <param name="target">The target process.</param>
+        /// <returns>True if the process can be accessed.</returns>
+        public static bool TestProtectedAccess(NtProcess current, NtProcess target)
+        {
+            return NtRtl.RtlTestProtectedAccess(current.Protection.Level, target.Protection.Level);
+        }
+
         #endregion
 
         #region Public Methods
@@ -1867,6 +1878,16 @@ namespace NtApiDotNet
         {
             return Query<ProcessSessionInformation>(ProcessInformationClass.ProcessSessionInformation, 
                 default, throw_on_error).Map(s => s.SessionId);
+        }
+
+        /// <summary>
+        /// Test whether the current process can access another protected process.
+        /// </summary>
+        /// <param name="target">The target process.</param>
+        /// <returns>True if the process can be accessed.</returns>
+        public bool TestProtectedAccess(NtProcess target)
+        {
+            return TestProtectedAccess(this, target);
         }
 
         /// <summary>
