@@ -1153,10 +1153,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the Win32 start address for the thread.
         /// </summary>
-        public long Win32StartAddress
-        {
-            get { return Query<IntPtr>(ThreadInformationClass.ThreadQuerySetWin32StartAddress).ToInt64(); }
-        }
+        public long Win32StartAddress => Query<IntPtr>(ThreadInformationClass.ThreadQuerySetWin32StartAddress).ToInt64();
+
+        /// <summary>
+        /// Get the current Instruction Pointer for the thread.
+        /// </summary>
+        public long InstructionPointer => (long)GetContext(ContextFlags.Control).InstructionPointer;
 
         /// <summary>
         /// Get last system call on the thread.
@@ -1194,14 +1196,17 @@ namespace NtApiDotNet
         /// Get the creation time of the thread.
         /// </summary>
         public DateTime CreateTime => DateTime.FromFileTime(Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).CreateTime.QuadPart);
+
         /// <summary>
         /// Get the exit time of the thread (0 if not exited)
         /// </summary>
         public DateTime ExitTime => DateTime.FromFileTime(Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).ExitTime.QuadPart);
+
         /// <summary>
         /// Get the time spent in the kernel.
         /// </summary>
         public long KernelTime => Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).KernelTime.QuadPart;
+
         /// <summary>
         /// Get the time spent in user mode.
         /// </summary>
@@ -1210,13 +1215,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get thread information.
         /// </summary>
-        public NtThreadInformation ThreadInformation
-        {
-            get
-            {
-                return new NtThreadInformation(ProcessName, Query<SystemThreadInformation>(ThreadInformationClass.ThreadSystemThreadInformation));
-            }
-        }
+        public NtThreadInformation ThreadInformation => new NtThreadInformation(ProcessName, Query<SystemThreadInformation>(ThreadInformationClass.ThreadSystemThreadInformation));
 
         /// <summary>
         /// Get thread exit status.
