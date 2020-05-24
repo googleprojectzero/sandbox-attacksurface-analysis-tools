@@ -22,6 +22,7 @@ using System.Security;
 using System.Runtime.InteropServices;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Native;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -266,6 +267,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Logon")]
         public SwitchParameter Logon { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify logon provider.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon")]
+        public Logon32Provider LogonProvider { get; set; }
 
         /// <summary>
         /// <para type="description">Get an Services for User (S4U) logon token.</para>
@@ -579,7 +586,7 @@ namespace NtObjectManager.Cmdlets.Object
                 groups = AdditionalGroups.Select(s => new UserGroup(s,
                     GetAttributes(s)));
             }
-            using (NtToken token = TokenUtils.GetLogonUserToken(user, domain, password, logon_type, groups))
+            using (NtToken token = TokenUtils.GetLogonUserToken(user, domain, password, logon_type, LogonProvider, groups))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {

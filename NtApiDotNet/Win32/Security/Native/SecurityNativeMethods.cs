@@ -36,6 +36,33 @@ namespace NtApiDotNet.Win32.Security.Native
         IntPtr pArgs,
         [MarshalAs(UnmanagedType.Bool)] out bool pbAceApplicable);
 
+    /// <summary>
+    /// Logon32 provider
+    /// </summary>
+    public enum Logon32Provider
+    {
+        /// <summary>
+        /// Default.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Windows NT 3.5.
+        /// </summary>
+        WinNT35 = 1,
+        /// <summary>
+        /// Windows NT 4.0.
+        /// </summary>
+        WinNT40 = 2,
+        /// <summary>
+        /// Windows NT 5.0.
+        /// </summary>
+        WinNT50 = 3,
+        /// <summary>
+        /// Virtual provider.
+        /// </summary>
+        Virtual = 4
+    }
+
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -522,7 +549,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
-            int dwLogonProvider, out SafeKernelObjectHandle phToken);
+            Logon32Provider dwLogonProvider, out SafeKernelObjectHandle phToken);
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool LogonUserExExW(
@@ -530,7 +557,7 @@ namespace NtApiDotNet.Win32.Security.Native
               string lpszDomain,
               string lpszPassword,
               SecurityLogonType dwLogonType,
-              int dwLogonProvider,
+              Logon32Provider dwLogonProvider,
               SafeTokenGroupsBuffer pTokenGroups,
               out SafeKernelObjectHandle phToken,
               [Out] OptionalPointer ppLogonSid,
