@@ -168,6 +168,12 @@ namespace NtApiDotNet
         /// Redirection DLL path. Only supported from 1903.
         /// </summary>
         public string RedirectionDllName { get; set; }
+
+        /// <summary>
+        /// Inheritable handles.
+        /// </summary>
+        public List<NtObject> InheritHandleList { get; }
+
         #endregion
 
         #region Public Methods
@@ -209,6 +215,7 @@ namespace NtApiDotNet
             AdditionalAttributes = new List<ProcessAttribute>();
             ProcessDesiredAccess = ProcessAccessRights.MaximumAllowed;
             ThreadDesiredAccess = ThreadAccessRights.MaximumAllowed;
+            InheritHandleList = new List<NtObject>();
         }
         #endregion
     }

@@ -1288,7 +1288,8 @@ function New-NtProcessConfig {
         [switch]$TerminateOnDispose,
         [switch]$Win32Path,
         [switch]$CaptureAdditionalInformation,
-        [switch]$Secure
+        [switch]$Secure,
+        [NtApiDotNet.NtObject[]]$InheritHandle
     )
 
     if ($Win32Path) {
@@ -1315,6 +1316,9 @@ function New-NtProcessConfig {
     }
     $config.CaptureAdditionalInformation = $CaptureAdditionalInformation
     $config.Secure = $Secure
+    if ($null -ne $InheritHandle) {
+        $config.InheritHandleList.AddRange($InheritHandle)
+    }
 
     return $config
 }

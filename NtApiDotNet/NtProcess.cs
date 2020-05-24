@@ -188,6 +188,11 @@ namespace NtApiDotNet
                     dispose.Add(ProcessAttribute.SecureProcess(trustlet_config));
                 }
 
+                if (config.InheritHandleList.Count > 0)
+                {
+                    dispose.Add(ProcessAttribute.HandleList(config.InheritHandleList.Select(o => o.Handle)));
+                }
+
                 var attr_list = dispose.AddResource(ProcessAttributeList.Create(dispose.OfType<ProcessAttribute>().Concat(config.AdditionalAttributes)));
                 create_info.Data.InitFlags = config.InitFlags;
                 if (config.CaptureAdditionalInformation)

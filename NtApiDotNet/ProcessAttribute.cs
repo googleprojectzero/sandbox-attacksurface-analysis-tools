@@ -127,8 +127,8 @@ namespace NtApiDotNet
 
         public static ProcessAttribute HandleList(IEnumerable<SafeHandle> handles)
         {
-            return new ProcessAttribute(ProcessAttributeNum.HandleList, false, true, false,
-              new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h.ToSafeKernelHandle()))));
+            return new ProcessAttribute(ProcessAttributeNum.HandleList, false, true, false, 
+                handles.Select(h => h.DangerousGetHandle()).ToArray().ToBuffer());
         }
 
         public static ProcessAttribute SecureProcess(NtProcessTrustletConfig trustlet_config)
