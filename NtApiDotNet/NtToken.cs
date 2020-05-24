@@ -2228,6 +2228,20 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread">The thread to open the token for</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">Desired access for token.</param>
+        /// <param name="open_as_self">Open token as self.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtToken OpenEffectiveToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
+        {
+            return OpenEffectiveToken(thread, open_as_self, duplicate, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open the effective token, thread if available or process
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>

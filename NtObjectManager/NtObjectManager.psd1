@@ -133,7 +133,8 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Test-NtTokenGroup', 'Test-NtAccessMask', 'Grant-NtAccessMask',
                'Revoke-NtAccessMask', 'Select-NtSecurityDescriptorAce', 'Write-NtAudit',
                'New-AuthZResourceManager', 'New-AuthZContext', 'Get-AuthZGrantedAccess',
-               'Add-AuthZSid', 'Remove-AuthZSid', 'Set-NtToken'
+               'Add-AuthZSid', 'Remove-AuthZSid', 'Set-NtToken', 'Get-NtTokenDefaultDacl',
+               'Set-NtTokenDefaultDacl'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

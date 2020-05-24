@@ -97,6 +97,7 @@
     <Compile Include="Cmdlets\Object\GetNtSymbolicLinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtSymbolicLinkTargetCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtTokenCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtTokenDefaultDacl.cs" />
     <Compile Include="Cmdlets\Object\GetNtTransactionCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtTransactionManagerCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtWaitTimeoutCmdlet.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtTokenCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SetNtTokenDefaultDacl.cs" />
     <Compile Include="Cmdlets\Object\SpecificAccessType.cs" />
     <Compile Include="Cmdlets\Object\StartNtDebugWaitCmdlet.cs" />
     <Compile Include="Cmdlets\Object\CompareNtSidCmdlet.cs" />
