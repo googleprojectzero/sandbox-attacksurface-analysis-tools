@@ -24,6 +24,7 @@ namespace NtApiDotNet
         None = 0,
         AppKey = 0x10,
         Exclusive = 0x20,
+        DisableResourceManager = 0x100,
         Unknown800 = 0x800,
         ReadOnly = 0x2000,
         DontCheckAccess = 0x8000,
