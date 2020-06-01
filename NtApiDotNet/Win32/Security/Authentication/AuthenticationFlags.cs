@@ -79,7 +79,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         ExtendedError = 0x00004000,
         Stream = 0x00008000,
         Integrity = 0x00010000,
-        Identity = 0x00020000,
+        Identify = 0x00020000,
         NullSession = 0x00040000,
         ManualCredValidation = 0x00080000,
         Reserved1 = 0x00100000,
