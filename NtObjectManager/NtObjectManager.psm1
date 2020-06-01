@@ -1583,6 +1583,8 @@ Show token default DACL.
 Show the default DACL in full rather than a summary.
 .PARAMETER Basic
 Show basic token information, User, Group, Privilege and Integrity.
+.PARAMETER MandatoryPolicy
+Show mandatory integrity policy.
 .OUTPUTS
 System.String
 .EXAMPLE
@@ -1640,7 +1642,9 @@ function Format-NtToken {
         [parameter(ParameterSetName = "Complex")]
         [switch]$DefaultDacl,
         [parameter(ParameterSetName = "Complex")]
-        [switch]$FullDefaultDacl
+        [switch]$FullDefaultDacl,
+        [parameter(ParameterSetName = "Complex")]
+        [switch]$MandatoryPolicy
     )
 
     if ($All) {
@@ -1657,6 +1661,7 @@ function Format-NtToken {
         $PrimaryGroup = $true
         $DefaultDacl = $true
         $DeviceGroup = $true
+        $MandatoryPolicy = $true
     }
     elseif ($Basic) {
         $Group = $true
@@ -1727,6 +1732,12 @@ function Format-NtToken {
         "INTEGRITY LEVEL"
         "---------------"
         Format-ObjectTable $token.IntegrityLevel | Write-Output
+    }
+
+    if ($MandatoryPolicy) {
+        "MANDATORY POLICY"
+        "----------------"
+        Format-ObjectTable $token.MandatoryPolicy | Write-Output
     }
 
     if ($TrustLevel) {
@@ -1822,6 +1833,8 @@ Show token default DACL.
 Show the default DACL in full rather than a summary.
 .PARAMETER Basic
 Show basic token information, User, Group, Privilege and Integrity.
+.PARAMETER MandatoryPolicy
+Show mandatory integrity policy.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1869,7 +1882,9 @@ function Show-NtTokenEffective {
         [parameter(ParameterSetName = "Complex")]
         [switch]$DefaultDacl,
         [parameter(ParameterSetName = "Complex")]
-        [switch]$FullDefaultDacl
+        [switch]$FullDefaultDacl,
+        [parameter(ParameterSetName = "Complex")]
+        [switch]$MandatoryPolicy
     )
 
     Use-NtObject($token = Get-NtToken -Effective) {
@@ -1894,6 +1909,7 @@ function Show-NtTokenEffective {
                 Token              = $token
                 DefaultDacl        = $DefaultDacl
                 FullDefaultDacl    = $FullDefaultDacl
+                MandatoryPolicy    = $MandatoryPolicy
             }
             Format-NtToken @args
         }
