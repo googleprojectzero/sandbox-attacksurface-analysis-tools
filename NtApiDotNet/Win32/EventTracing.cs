@@ -54,6 +54,16 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Query security of an event.
+        /// </summary>
+        /// <param name="guid">The event GUID to query.</param>
+        /// <returns>The event security descriptor.</returns>
+        public static SecurityDescriptor QueryTraceSecurity(Guid guid)
+        {
+            return QueryTraceSecurity(guid, true).Result;
+        }
+
+        /// <summary>
         /// Query the default security for events.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -61,6 +71,118 @@ namespace NtApiDotNet.Win32
         public static NtResult<SecurityDescriptor> QueryDefaultSecurity(bool throw_on_error)
         {
             return QueryTraceSecurity(TraceKnownGuids.DefaultTraceSecurity, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query the default security for events.
+        /// </summary>
+        /// <returns>The default security descriptor.</returns>
+        public static SecurityDescriptor QueryDefaultSecurity()
+        {
+            return QueryDefaultSecurity(true).Result;
+        }
+
+        /// <summary>
+        /// Modify trace security.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="operation">The operation to perform.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ControlTraceSecurity(Guid guid, EventSecurityOperation operation, Sid sid, TraceAccessRights access_mask, bool allow, bool throw_on_error)
+        {
+            using (var buffer = sid.ToSafeBuffer())
+            {
+                return Win32NativeMethods.EventAccessControl(ref guid, operation, buffer, access_mask, allow).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Modify trace security.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="operation">The operation to perform.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        public static void ControlTraceSecurity(Guid guid, EventSecurityOperation operation, Sid sid, TraceAccessRights access_mask, bool allow)
+        {
+            ControlTraceSecurity(guid, operation, sid, access_mask, allow, true);
+        }
+
+        /// <summary>
+        /// Adds DACL ACE for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus AddTraceSecurityDacl(Guid guid, Sid sid, TraceAccessRights access_mask, bool allow, bool throw_on_error)
+        {
+            return ControlTraceSecurity(guid, EventSecurityOperation.AddDacl, sid, access_mask, allow, throw_on_error);
+        }
+
+        /// <summary>
+        /// Adds DACL ACE for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        public static void AddTraceSecurityDacl(Guid guid, Sid sid, TraceAccessRights access_mask, bool allow)
+        {
+            AddTraceSecurityDacl(guid, sid, access_mask, allow, true);
+        }
+
+        /// <summary>
+        /// Clears DACL and adds ACE for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetTraceSecurityDacl(Guid guid, Sid sid, TraceAccessRights access_mask, bool allow, bool throw_on_error)
+        {
+            return ControlTraceSecurity(guid, EventSecurityOperation.SetDacl, sid, access_mask, allow, throw_on_error);
+        }
+
+        /// <summary>
+        /// lears DACL and adds ACE for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="sid">The SID to set.</param>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="allow">True to allow, false to deny.</param>
+        public static void SetTraceSecurityDacl(Guid guid, Sid sid, TraceAccessRights access_mask, bool allow)
+        {
+            SetTraceSecurityDacl(guid, sid, access_mask, allow, true);
+        }
+
+        /// <summary>
+        /// Remove security for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus RemoveTraceSecurity(Guid guid, bool throw_on_error)
+        {
+            return Win32NativeMethods.EventAccessRemove(ref guid).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove security for an event trace.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        public static void RemoveTraceSecurity(Guid guid)
+        {
+            RemoveTraceSecurity(guid, true);
         }
 
         /// <summary>

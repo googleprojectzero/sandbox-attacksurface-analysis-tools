@@ -269,6 +269,14 @@ namespace NtApiDotNet.Win32
         CaptureState = 2,
     }
 
+    public enum EventSecurityOperation
+    {
+        SetDacl,
+        SetSacl,
+        AddDacl,
+        AddSacl
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct PROCESS_INFORMATION
     {
@@ -1039,6 +1047,20 @@ namespace NtApiDotNet.Win32
           ref Guid Guid,
           SafeBuffer Buffer,
           ref int BufferSize
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventAccessControl(
+          ref Guid Guid,
+          EventSecurityOperation Operation,
+          SafeSidBufferHandle Sid,
+          AccessMask Rights,
+          [MarshalAs(UnmanagedType.U1)] bool AllowOrDeny
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventAccessRemove(
+          ref Guid Guid
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
