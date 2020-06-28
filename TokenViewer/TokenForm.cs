@@ -46,11 +46,11 @@ namespace TokenViewer
                 ListViewItem item = new ListViewItem(group.ToString());
                 item.SubItems.Add(flags.ToString());
 
-                if ((flags & GroupAttributes.Enabled) == GroupAttributes.Enabled)
+                if (flags.HasFlag(GroupAttributes.Enabled))
                 {
                     item.BackColor = Color.LightGreen;
                 }
-                else if ((flags & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly)
+                else if (flags.HasFlag(GroupAttributes.UseForDenyOnly))
                 {
                     item.BackColor = Color.LightSalmon;
                 }
@@ -80,13 +80,13 @@ namespace TokenViewer
                 bool enabled = false;
                 string flags = "Disabled";
 
-                if ((priv.Attributes & PrivilegeAttributes.Enabled) == PrivilegeAttributes.Enabled)
+                if (priv.Attributes.HasFlag(PrivilegeAttributes.Enabled))
                 {
                     enabled = true;
                     flags = "Enabled";
                 }
 
-                if ((priv.Attributes & PrivilegeAttributes.EnabledByDefault) == PrivilegeAttributes.EnabledByDefault)
+                if (priv.Attributes.HasFlag(PrivilegeAttributes.EnabledByDefault))
                 {
                     flags = "Default " + flags;
                 }
@@ -167,12 +167,11 @@ namespace TokenViewer
 
             TokenType tokentype = _token.TokenType;
 
-            txtTokenType.Text = _token.TokenType.ToString();
+            txtTokenType.Text = tokentype.ToString();
 
-            if (_token.TokenType== TokenType.Impersonation)
+            if (tokentype == TokenType.Impersonation)
             {
-                SecurityImpersonationLevel implevel = _token.ImpersonationLevel;
-                txtImpLevel.Text = implevel.ToString();
+                txtImpLevel.Text = _token.ImpersonationLevel.ToString();
             }
             else
             {
