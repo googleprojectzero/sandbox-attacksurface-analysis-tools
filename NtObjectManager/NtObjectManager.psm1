@@ -9353,3 +9353,77 @@ function Get-KerberosTicket {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get NDR complex types from memory.
+.DESCRIPTION
+This cmdlet parses NDR complex type information from a location in memory.
+.PARAMETER PicklingInfo
+Specify pointer to the MIDL_TYPE_PICKLING_INFO structure.
+.PARAMETER StubDesc
+Specify pointer to the MIDL_STUB_DESC structure.
+.PARAMETER StublessProxy
+Specify pointer to the MIDL_STUBLESS_PROXY_INFO structure.
+.PARAMETER OffsetTable
+Specify pointer to type offset table.
+.PARAMETER TypeIndex
+Specify list of type index into type offset table.
+.PARAMETER TypeFormat
+Specify list of type format string addresses for the types.
+.PARAMETER TypeOffset
+Specify list of type offsets into the format string for the types.
+.PARAMETER Process
+Specify optional process which contains the types.
+.PARAMETER Module
+Specify optional module base address for the types. If set all pointers
+are relative offsets from the module address.
+.INPUTS
+None
+.OUTPUTS
+NdrComplexTypeReference[]
+#>
+function Get-NdrComplexType {
+    [CmdletBinding(DefaultParameterSetName="FromDecode3")]
+    Param(
+        [Parameter(Mandatory)]
+        [long]$PicklingInfo,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode2")]
+        [Parameter(Mandatory, ParameterSetName = "FromDecode2Offset")]
+        [long]$StubDesc,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode2")]
+        [long[]]$TypeFormat,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode2Offset")]
+        [int[]]$TypeOffset,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode3")]
+        [long]$StublessProxy,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode3")]
+        [long]$OffsetTable,
+        [Parameter(Mandatory, ParameterSetName = "FromDecode3")]
+        [int[]]$TypeIndex,
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [NtApiDotNet.NtProcess]$Process,
+        [NtApiDotNet.Ndr.NdrParserFlags]$Flags = "IgnoreUserMarshal"
+    )
+
+    $base_address = 0
+    if ($null -ne $Module) {
+        $base_address = $Module.DangerousGetHandle().ToInt64()
+    }
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromDecode2" {
+            $type_offset = $TypeFormat | % { $_ + $base_address }
+            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+                $StubDesc+$base_address, $type_offset, $Flags) | Write-Output
+        }
+        "FromDecode2Offset" {
+            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+                $StubDesc+$base_address, $TypeOffset, $Flags) | Write-Output
+        }
+        "FromDecode3" {
+            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+                $StublessProxy+$base_address, $OffsetTable+$base_address, $TypeIndex, $Flags) | Write-Output
+        }
+    }
+}
