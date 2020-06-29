@@ -154,16 +154,136 @@ namespace NtApiDotNet
         {
             return Open(path, root, JobAccessRights.MaximumAllowed);
         }
+
+        /// <summary>
+        /// Create and initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Job object.</returns>
+        public static NtResult<NtJob> CreateSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, bool throw_on_error)
+        {
+            using (var job = Create(null, JobAccessRights.MaximumAllowed, throw_on_error))
+            {
+                if (!job.IsSuccess)
+                    return job;
+                return job.Result.InitializeSilo(root_dir_flags, false).CreateResult(throw_on_error, () => job.Result.Duplicate());
+            }
+        }
+
+        /// <summary>
+        /// Create an initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <returns>The Job object.</returns>
+        public static NtJob CreateSilo(SiloObjectRootDirectoryControlFlags root_dir_flags)
+        {
+            return CreateSilo(root_dir_flags, true).Result;
+        }
+
         #endregion
 
         #region Public Methods
         /// <summary>
         /// Convert Job object into a Silo
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus CreateSilo(bool throw_on_error)
+        {
+            return NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo,
+                SafeHGlobalBuffer.Null, 0).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Convert Job object into a Silo
+        /// </summary>
         public void CreateSilo()
         {
-            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo,
-                SafeHGlobalBuffer.Null, 0).ToNtException();
+            CreateSilo(true);
+        }
+
+        /// <summary>
+        /// Initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus InitializeSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, bool throw_on_error)
+        {
+            NtStatus status = SetLimitFlags(JobObjectLimitFlags.Application, throw_on_error);
+            if (!status.IsSuccess())
+                return status;
+            status = CreateSilo(throw_on_error);
+            if (!status.IsSuccess())
+                return status;
+            status = AssignProcessPseudoHandle(throw_on_error);
+            if (!status.IsSuccess())
+                return status;
+            return SetSiloObjectRootDirectory(root_dir_flags, throw_on_error);
+        }
+
+        /// <summary>
+        /// Initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        public void InitializeSilo(SiloObjectRootDirectoryControlFlags root_dir_flags)
+        {
+            InitializeSilo(root_dir_flags, true);
+        }
+
+        /// <summary>
+        /// Initialize a Silo to a Server Silo.
+        /// </summary>
+        /// <param name="delete_event">Event to signal when silo deleted.</param>
+        /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus InitializeServerSilo(NtEvent delete_event, bool downlevel_container, bool throw_on_error)
+        {
+            ServerSiloInitInformation init = new ServerSiloInitInformation()
+            {
+                DeleteEvent = delete_event?.Handle.DangerousGetHandle() ?? IntPtr.Zero,
+                IsDownlevelContainer = downlevel_container
+            };
+
+            return Set(JobObjectInformationClass.JobObjectServerSiloInitialize, init, throw_on_error);
+        }
+
+        /// <summary>
+        /// Initialize a Silo to a Server Silo.
+        /// </summary>
+        /// <param name="delete_event">Event to signal when silo deleted.</param>
+        /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <returns>The NT status code.</returns>
+        public void InitializeServerSilo(NtEvent delete_event, bool downlevel_container)
+        {
+            InitializeServerSilo(delete_event, downlevel_container, true);
+        }
+
+        /// <summary>
+        /// Create the silo's root object directory.
+        /// </summary>
+        /// <param name="flags">The flags for the creation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetSiloObjectRootDirectory(SiloObjectRootDirectoryControlFlags flags, bool throw_on_error)
+        {
+            SiloObjectRootDirectory root_dir = new SiloObjectRootDirectory
+            {
+                ControlFlags = flags
+            };
+            return Set(JobObjectInformationClass.JobObjectSiloRootDirectory, root_dir, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create the silo's root object directory.
+        /// </summary>
+        /// <param name="flags">The flags for the creation.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetSiloObjectRootDirectory(SiloObjectRootDirectoryControlFlags flags)
+        {
+            SetSiloObjectRootDirectory(flags, true);
         }
 
         /// <summary>
@@ -189,9 +309,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Assign a process to this job object using current Job on Windows 1709+.
         /// </summary>
+        public NtStatus AssignProcessPseudoHandle(bool throw_on_error)
+        {
+            return AssignProcess(NtProcess.FromHandle(new SafeKernelObjectHandle(new IntPtr(-7), false)), throw_on_error);
+        }
+
+        /// <summary>
+        /// Assign a process to this job object using current Job on Windows 1709+.
+        /// </summary>
         public void AssignProcessPseudoHandle()
         {
-            AssignProcess(NtProcess.FromHandle(new SafeKernelObjectHandle(new IntPtr(-7), false)));
+            AssignProcessPseudoHandle(true);
         }
 
         /// <summary>
@@ -530,6 +658,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query Silo Root directory.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The silo root directory.</returns>
+        public NtResult<string> QuerySiloRootDirectory(bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<SiloObjectRootDirectory>(64 * 1024, true))
+            {
+                return QueryInformation(JobObjectInformationClass.JobObjectSiloRootDirectory, 
+                    buffer, out int length).CreateResult(throw_on_error, () => buffer.Result.Path.ToString());
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -741,6 +883,21 @@ namespace NtApiDotNet
         /// Job ID.
         /// </summary>
         public int JobId => Query<JobObjectContainerIdentifierV2>(JobObjectInformationClass.JobObjectContainerId).JobId;
+
+        /// <summary>
+        /// Get the Silo's Root Directory.
+        /// </summary>
+        public string SiloRootDirectory => QuerySiloRootDirectory(true).GetResultOrDefault(string.Empty);
+
+        /// <summary>
+        /// Get Silo basic information.
+        /// </summary>
+        public SiloObjectBasicInformation SiloBasicInformation => Query<SiloObjectBasicInformation>(JobObjectInformationClass.JobObjectSiloBasicInformation);
+
+        /// <summary>
+        /// Get Silo basic information.
+        /// </summary>
+        public ServerSiloBasicInformation ServerSiloBasicInformation => Query<ServerSiloBasicInformation>(JobObjectInformationClass.JobObjectServerSiloBasicInformation);
 
         #endregion
 

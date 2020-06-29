@@ -274,6 +274,88 @@ namespace NtApiDotNet
         public int JobId;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ServerSiloInitInformation
+    {
+        public IntPtr DeleteEvent;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool IsDownlevelContainer;
+    }
+
+    public enum NtProductType
+    {
+        WinNt = 1,
+        LanManNt = 2,
+        Server = 3 
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct SiloUserSharedData
+    {
+        public int ServiceSessionId;
+        public int ActiveConsoleId;
+        public long ConsoleSessionForegroundProcessId;
+        public NtProductType NtProductType;
+        public int SuiteMask;
+        public int SharedUserSessionId;
+        public byte IsMultiSessionSku;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string NtSystemRoot;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public ushort[] UserModeGlobalLogger;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct SiloObjectBasicInformation
+    {
+        public int SiloId;
+        public int SiloParentId;
+        public int NumberOfProcesses;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool IsInServerSilo;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+        public byte[] Reserved;
+    }
+
+    [Flags]
+    public enum SiloObjectRootDirectoryControlFlags
+    {
+        None = 0,
+        ShadowRoot = 1,
+        InitializeRoot = 2,
+        ShadowGlobal = 4
+    }
+
+    [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    public struct SiloObjectRootDirectory
+    {
+        [FieldOffset(0)]
+        public SiloObjectRootDirectoryControlFlags ControlFlags;
+        [FieldOffset(0)]
+        public UnicodeStringOut Path;
+    }
+
+    public enum ServerSiloState
+    {
+        Initing = 0,
+        Started = 1,
+        ShuttingDown = 2,
+        Terminating = 3,
+        Terminated = 4
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ServerSiloBasicInformation
+    {
+        public int ServiceSessionId;
+        public ServerSiloState State;
+        public NtStatus ExitStatus;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool IsDownlevelContainer;
+        public IntPtr ApiSetSchema;
+        public IntPtr HostApiSetSchema;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]

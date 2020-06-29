@@ -65,6 +65,18 @@ namespace NtObjectManager.Cmdlets.Object
         public JobObjectUiLimitFlags UiRestrictionFlags { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create Job as a Silo.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter CreateSilo { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to flags when creating the Silo's root directory. Must be used with -Silo.</para>
+        /// </summary>
+        [Parameter]
+        public SiloObjectRootDirectoryControlFlags SiloRootDirectoryFlags { get; set; }
+
+        /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
         /// <returns>True if objects can be created.</returns>
@@ -94,6 +106,11 @@ namespace NtObjectManager.Cmdlets.Object
                 {
                     job.UiRestrictionFlags = UiRestrictionFlags;
                 }
+                if (CreateSilo)
+                {
+                    job.InitializeSilo(SiloRootDirectoryFlags);
+                }
+
                 return job.Duplicate();
             }
         }
