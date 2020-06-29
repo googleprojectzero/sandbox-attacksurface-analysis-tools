@@ -181,6 +181,66 @@ namespace NtApiDotNet
             return CreateSilo(root_dir_flags, true).Result;
         }
 
+        /// <summary>
+        /// Create and initialize a Server Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="system_root">Path to the system root.</param>
+        /// <param name="delete_event">Event to signal when silo deleted.</param>
+        /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <returns>The Job object.</returns>
+        public static NtResult<NtJob> CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, NtEvent delete_event, bool downlevel_container, bool throw_on_error)
+        {
+            using (var job = CreateSilo(root_dir_flags, throw_on_error))
+            {
+                if (!job.IsSuccess)
+                    return job;
+
+                NtStatus status = job.Result.SetSiloSystemRoot(system_root, throw_on_error);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<NtJob>(throw_on_error);
+
+                var silo_dir = job.Result.QuerySiloRootDirectory(throw_on_error);
+                if (!silo_dir.IsSuccess)
+                    return silo_dir.Cast<NtJob>();
+
+                string device_path = $@"{silo_dir.Result}\Device";
+
+                using (var device_dir = NtDirectory.Open(@"\Device", null, DirectoryAccessRights.MaximumAllowed, throw_on_error))
+                {
+                    if (!device_dir.IsSuccess)
+                        return device_dir.Cast<NtJob>();
+                    using (var obja = new ObjectAttributes(device_path, AttributeFlags.CaseInsensitive | AttributeFlags.Permanent | AttributeFlags.OpenIf))
+                    {
+                        using (var dir = NtDirectory.Create(obja, DirectoryAccessRights.MaximumAllowed, device_dir.Result, throw_on_error))
+                        {
+                            if (!dir.IsSuccess)
+                                return dir.Cast<NtJob>();
+                        }
+                    }
+                }
+
+                status = job.Result.InitializeServerSilo(delete_event, downlevel_container, throw_on_error);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<NtJob>(throw_on_error);
+                return job.Result.Duplicate().CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Create and initialize a Server Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="system_root">Path to the system root.</param>
+        /// <param name="delete_event">Event to signal when silo deleted.</param>
+        /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <returns>The Job object.</returns>
+        public static NtJob CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, NtEvent delete_event, bool downlevel_container)
+        {
+            return CreateServerSilo(root_dir_flags, system_root, delete_event, downlevel_container, true).Result;
+        }
+
         #endregion
 
         #region Public Methods
@@ -239,6 +299,7 @@ namespace NtApiDotNet
         /// <param name="downlevel_container">True if a downlevel container.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
+        /// <remarks>You must have set a system root and added a \Device directory (which shadows the real directory) to the silo object directory.</remarks>
         public NtStatus InitializeServerSilo(NtEvent delete_event, bool downlevel_container, bool throw_on_error)
         {
             ServerSiloInitInformation init = new ServerSiloInitInformation()
@@ -388,6 +449,18 @@ namespace NtApiDotNet
         public void SetLimitFlags(JobObjectLimitFlags flags)
         {
             SetLimitFlags(flags, true);
+        }
+
+        /// <summary>
+        /// Set the Silo system root directory.
+        /// </summary>
+        /// <param name="system_root">The absolute path to the system root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <remarks>The system_root path must start with a capital drive letter and not end with a backslash.</remarks>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetSiloSystemRoot(string system_root, bool throw_on_error)
+        {
+            return Set(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeStringIn(system_root), throw_on_error);
         }
 
         /// <summary>
