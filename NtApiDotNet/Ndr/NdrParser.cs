@@ -20,6 +20,7 @@
 using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.Rpc;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -130,6 +131,10 @@ namespace NtApiDotNet.Ndr
         /// Ignore processing any complex user marshal types.
         /// </summary>
         IgnoreUserMarshal = 1,
+        /// <summary>
+        /// Resolve structure names, required private symbols.
+        /// </summary>
+        ResolveStructureNames = 2,
     }
 
     /// <summary>
@@ -151,6 +156,136 @@ namespace NtApiDotNet.Ndr
                 dispatch_table.DispatchTableCount, type_cache, symbol_resolver, null, parser_flags);
             return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs,
                 server_interface.GetProtSeq(reader).Select(s => new NdrProtocolSequenceEndpoint(s, reader)));
+        }
+
+        private static UserDefinedTypeInformation GetUDTType(TypeInformation type_info)
+        {
+            if (type_info is PointerTypeInformation pointer_type)
+            {
+                return GetUDTType(pointer_type.PointerType);
+            }
+
+            if (type_info is ArrayTypeInformation array_type)
+            {
+                return GetUDTType(array_type.ArrayType);
+            }
+
+            return type_info as UserDefinedTypeInformation;
+        }
+
+        private static NdrComplexTypeReference GetComplexType(NdrBaseTypeReference type_reference)
+        {
+            if(type_reference is NdrPointerTypeReference pointer_type)
+            {
+                return GetComplexType(pointer_type.Type);
+            }
+
+            if (type_reference is NdrBaseArrayTypeReference array_type)
+            {
+                return GetComplexType(array_type.ElementType);
+            }
+
+            return type_reference as NdrComplexTypeReference;
+        }
+
+        private static void UpdateComplexTypes(Dictionary<NdrComplexTypeReference, UserDefinedTypeInformation> complex_types, 
+            TypeInformation type_info, NdrBaseTypeReference type_reference)
+        {
+            var udt = GetUDTType(type_info);
+            var complex = GetComplexType(type_reference);
+            if (udt != null && complex != null && !complex_types.ContainsKey(complex))
+            {
+                complex_types[complex] = udt;
+            }
+        }
+
+        private static void FixupStructureType(HashSet<NdrComplexTypeReference> fixup_set, NdrBaseStructureTypeReference complex_type, UserDefinedTypeInformation udt)
+        {
+            var members = complex_type.Members.ToList();
+            if (members.Count != udt.Members.Count)
+                return;
+            for (int i = 0; i < members.Count; ++i)
+            {
+                members[i].Name = udt.Members[i].Name;
+                var member_udt = GetUDTType(udt.Members[i].Type);
+                var member_complex = GetComplexType(members[i].MemberType);
+                if (member_udt != null && member_complex != null)
+                {
+                    FixupComplexType(fixup_set, member_complex, member_udt);
+                }
+            }
+        }
+
+        private static void FixupUnionType(HashSet<NdrComplexTypeReference> fixup_set, NdrUnionTypeReference union_type, UserDefinedTypeInformation udt)
+        {
+            var members = union_type.Arms.Arms.ToList();
+            if (members.Count != udt.Members.Count)
+                return;
+            for (int i = 0; i < members.Count; ++i)
+            {
+                members[i].Name = udt.Members[i].Name;
+                var member_udt = GetUDTType(udt.Members[i].Type);
+                var member_complex = GetComplexType(members[i].ArmType);
+                if (member_udt != null && member_complex != null)
+                {
+                    FixupComplexType(fixup_set, member_complex, member_udt);
+                }
+            }
+        }
+
+        private static void FixupComplexType(HashSet<NdrComplexTypeReference> fixup_set, NdrComplexTypeReference complex_type, UserDefinedTypeInformation udt)
+        {
+            if (!fixup_set.Add(complex_type))
+                return;
+
+            // Fixup the name to remove compiler generated characters.
+            complex_type.Name = CodeGenUtils.MakeIdentifier(udt.Name);
+            if (udt.Union)
+            {
+                if (complex_type is NdrUnionTypeReference union)
+                {
+                    FixupUnionType(fixup_set, union, udt);
+                }
+            }
+            else
+            {
+                if (complex_type is NdrBaseStructureTypeReference str)
+                {
+                    FixupStructureType(fixup_set, str, udt);
+                }
+            }
+        }
+
+        private static void FixupStructureNames(List<NdrProcedureDefinition> procs, 
+            ISymbolResolver symbol_resolver, NdrParserFlags parser_flags)
+        {
+            if (!parser_flags.HasFlagSet(NdrParserFlags.ResolveStructureNames) || !(symbol_resolver is ISymbolTypeResolver type_resolver))
+                return;
+
+            var complex_types = new Dictionary<NdrComplexTypeReference, UserDefinedTypeInformation>();
+
+            foreach (var proc in procs)
+            {
+                if (!(type_resolver.GetTypeForSymbolByAddress(proc.DispatchFunction) is FunctionTypeInformation func_type))
+                    continue;
+
+                if (func_type.Parameters.Count != proc.Params.Count)
+                    continue;
+
+                for (int i = 0; i < func_type.Parameters.Count; ++i)
+                {
+                    proc.Params[i].Name = func_type.Parameters[i].Name;
+                    UpdateComplexTypes(complex_types, func_type.Parameters[i].ParameterType, proc.Params[i].Type);
+                }
+
+                UpdateComplexTypes(complex_types, func_type.ReturnType, proc.ReturnValue.Type);
+            }
+
+            HashSet<NdrComplexTypeReference> fixup_set = new HashSet<NdrComplexTypeReference>();
+            foreach (var pair in complex_types)
+            {
+                FixupComplexType(fixup_set, pair.Key, pair.Value);
+            }
         }
 
         private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset,
@@ -200,6 +335,9 @@ namespace NtApiDotNet.Ndr
                     }
                 }
             }
+
+            FixupStructureNames(procs, symbol_resolver, parser_flags);
+
             return procs.AsReadOnly();
         }
 

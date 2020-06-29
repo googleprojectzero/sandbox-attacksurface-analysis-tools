@@ -321,6 +321,7 @@
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\Debugger\ISymbolTypeResolver.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
+    <Compile Include="Win32\RpcServerParserFlags.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />

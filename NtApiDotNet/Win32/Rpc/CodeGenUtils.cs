@@ -86,15 +86,6 @@ namespace NtApiDotNet.Win32.Rpc
             }
         }
 
-        private static string FormatCaseLabel(NdrUnionArm arm)
-        {
-            if (arm.CaseValue < 0)
-            {
-                return $"minus_{-arm.CaseValue}";
-            }
-            return arm.CaseValue.ToString();
-        }
-
         private static CodeExpression GetArmCase(this NdrUnionArm arm, NdrSimpleTypeReference ndr_type)
         {
             long ret = arm.CaseValue;
@@ -1007,7 +998,7 @@ namespace NtApiDotNet.Win32.Rpc
                     base_offset = union_type.SwitchIncrement;
                 }
 
-                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{FormatCaseLabel(a)}", a.GetArmCase(selector_type), false, false)));
+                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, a.Name, a.GetArmCase(selector_type), false, false)));
                 if (union_type.Arms.DefaultArm != null)
                 {
                     members.Add(new ComplexTypeMember(union_type.Arms.DefaultArm, base_offset, "Arm_Default", null, true, false));

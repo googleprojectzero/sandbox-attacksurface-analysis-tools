@@ -255,6 +255,26 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of parsed RPC server.</returns>
         public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients, bool ignore_symbols)
         {
+            RpcServerParserFlags flags = RpcServerParserFlags.None;
+            if (parse_clients)
+                flags |= RpcServerParserFlags.ParseClients;
+            if (ignore_symbols)
+                flags |= RpcServerParserFlags.IgnoreSymbols;
+
+            return ParsePeFile(file, dbghelp_path, symbol_path, flags);
+        }
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <param name="flags">Flags for the RPC parser.</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, RpcServerParserFlags flags)
+        {
             List<RpcServer> servers = new List<RpcServer>();
             using (var result = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences, false))
             {
@@ -265,17 +285,21 @@ namespace NtApiDotNet.Win32
 
                 var lib = result.Result;
                 var sections = lib.GetImageSections();
-                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
+                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, flags.HasFlagSet(RpcServerParserFlags.ParseClients)));
                 if (offsets.Any())
                 {
-                    using (var sym_resolver = !ignore_symbols ? SymbolResolver.Create(NtProcess.Current,
+                    using (var sym_resolver = !flags.HasFlagSet(RpcServerParserFlags.IgnoreSymbols) ? SymbolResolver.Create(NtProcess.Current,
                             dbghelp_path, symbol_path) : null)
                     {
+                        NdrParserFlags parser_flags = NdrParserFlags.IgnoreUserMarshal;
+                        if (flags.HasFlagSet(RpcServerParserFlags.ResolveStructureNames))
+                            parser_flags |= NdrParserFlags.ResolveStructureNames;
+
                         foreach (var offset in offsets)
                         {
                             IMemoryReader reader = new CurrentProcessMemoryReader(sections.Select(s => Tuple.Create(s.Data.DangerousGetHandle().ToInt64(), (int)s.Data.ByteLength)));
                             NdrParser parser = new NdrParser(reader, NtProcess.Current,
-                                sym_resolver, NdrParserFlags.IgnoreUserMarshal);
+                                sym_resolver, parser_flags);
                             IntPtr ifspec = lib.DangerousGetHandle() + (int)offset.Offset;
                             var rpc = parser.ReadFromRpcServerInterface(ifspec);
                             servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));

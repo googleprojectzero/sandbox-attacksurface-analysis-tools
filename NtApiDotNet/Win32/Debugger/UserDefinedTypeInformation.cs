@@ -76,7 +76,7 @@ namespace NtApiDotNet.Win32.Debugger
         /// <summary>
         /// The members of the UDT.
         /// </summary>
-        public ICollection<UserDefinedTypeMember> Members { get; }
+        public IReadOnlyList<UserDefinedTypeMember> Members { get; }
 
         /// <summary>
         /// Indicates the UDT is a union.
@@ -84,7 +84,7 @@ namespace NtApiDotNet.Win32.Debugger
         public bool Union { get; }
 
         internal UserDefinedTypeInformation(long size, int type_index, SymbolLoadedModule module, 
-            string name, bool union, ICollection<UserDefinedTypeMember> members)
+            string name, bool union, IReadOnlyList<UserDefinedTypeMember> members)
             : base(SymTagEnum.SymTagUDT, size, type_index, module, name)
         {
             Members = members;

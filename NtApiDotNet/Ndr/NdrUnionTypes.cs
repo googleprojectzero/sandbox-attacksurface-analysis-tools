@@ -30,11 +30,23 @@ namespace NtApiDotNet.Ndr
     {
         public NdrBaseTypeReference ArmType { get; }
         public int CaseValue { get; }
+        public string Name { get; set; }
+
+        private static string FormatCaseLabel(int case_value)
+        {
+            if (case_value < 0)
+            {
+                return $"minus_{case_value}";
+            }
+            return case_value.ToString();
+        }
+
 
         internal NdrUnionArm(NdrParseContext context, BinaryReader reader)
         {
             CaseValue = reader.ReadInt32();
             ArmType = ReadArmType(context, reader);
+            Name = $"Arm_{FormatCaseLabel(CaseValue)}";
         }
 
         internal static NdrBaseTypeReference ReadArmType(NdrParseContext context, BinaryReader reader)
@@ -142,11 +154,10 @@ namespace NtApiDotNet.Ndr
                 builder.Append(context.FormatComment(Correlation.ToString())).AppendLine();
             }
 
-            int index = 0;
             foreach (NdrUnionArm arm in Arms.Arms)
             {
                 builder.Append(' ', indent).AppendFormat("/* case: {0} */", arm.CaseValue).AppendLine();
-                builder.Append(' ', indent).AppendFormat("{0} Member_{1};", arm.ArmType.FormatType(context), index++).AppendLine();
+                builder.Append(' ', indent).AppendFormat("{0} {1};", arm.ArmType.FormatType(context), arm.Name).AppendLine();
             }
 
             if (Arms.DefaultArm != null)

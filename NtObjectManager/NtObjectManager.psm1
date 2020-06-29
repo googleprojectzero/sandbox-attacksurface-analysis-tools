@@ -4371,6 +4371,8 @@ function Get-RpcServer {
         [switch]$ParseClients,
         [parameter(ParameterSetName = "FromDll")]
         [switch]$IgnoreSymbols,
+        [parameter(ParameterSetName = "FromDll")]
+        [switch]$ResolveStructureNames,
         [parameter(Mandatory = $true, ParameterSetName = "FromSerialized")]
         [string]$SerializedPath
     )
@@ -4385,6 +4387,17 @@ function Get-RpcServer {
                 $SymbolPath = $Script:GlobalSymbolPath
             }
         }
+
+        $ParserFlags = [NtApiDotNet.Win32.RpcServerParserFlags]::None
+        if ($ParseClients) {
+            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::ParseClients
+        }
+        if ($IgnoreSymbols) {
+            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::IgnoreSymbols
+        }
+        if ($ResolveStructureNames) {
+            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::ResolveStructureNames
+        }
     }
 
     PROCESS {
@@ -4392,7 +4405,7 @@ function Get-RpcServer {
             if ($PSCmdlet.ParameterSetName -eq "FromDll") {
                 $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
                 Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-                $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients, $IgnoreSymbols)
+                $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParserFlags)
                 if ($AsText) {
                     foreach ($server in $servers) {
                         $text = $server.FormatAsText($RemoveComments)
