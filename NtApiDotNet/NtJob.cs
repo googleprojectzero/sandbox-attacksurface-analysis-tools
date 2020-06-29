@@ -972,6 +972,11 @@ namespace NtApiDotNet
         /// </summary>
         public ServerSiloBasicInformation ServerSiloBasicInformation => Query<ServerSiloBasicInformation>(JobObjectInformationClass.JobObjectServerSiloBasicInformation);
 
+        /// <summary>
+        /// Get Silo user shared data.
+        /// </summary>
+        public SiloUserSharedData SiloUserSharedData => Query<SiloUserSharedData>(JobObjectInformationClass.JobObjectServerSiloUserSharedData);
+
         #endregion
 
         #region Private Members

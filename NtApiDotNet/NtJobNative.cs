@@ -298,7 +298,8 @@ namespace NtApiDotNet
         public NtProductType NtProductType;
         public int SuiteMask;
         public int SharedUserSessionId;
-        public byte IsMultiSessionSku;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool IsMultiSessionSku;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
         public string NtSystemRoot;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
