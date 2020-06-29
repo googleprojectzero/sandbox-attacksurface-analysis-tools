@@ -17,10 +17,37 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Debugger
 {
+    [Flags]
+    enum SYMBOL_INFO_FLAGS
+    {
+        SYMFLAG_VALUEPRESENT = 0x00000001,
+        SYMFLAG_REGISTER = 0x00000008,
+        SYMFLAG_REGREL = 0x00000010,
+        SYMFLAG_FRAMEREL = 0x00000020,
+        SYMFLAG_PARAMETER = 0x00000040,
+        SYMFLAG_LOCAL = 0x00000080,
+        SYMFLAG_CONSTANT = 0x00000100,
+        SYMFLAG_EXPORT = 0x00000200,
+        SYMFLAG_FORWARDER = 0x00000400,
+        SYMFLAG_FUNCTION = 0x00000800,
+        SYMFLAG_VIRTUAL = 0x00001000,
+        SYMFLAG_THUNK = 0x00002000,
+        SYMFLAG_TLSREL = 0x00004000,
+        SYMFLAG_SLOT = 0x00008000,
+        SYMFLAG_ILREL = 0x00010000,
+        SYMFLAG_METADATA = 0x00020000,
+        SYMFLAG_CLR_TOKEN = 0x00040000,
+        SYMFLAG_NULL = 0x00080000,
+        SYMFLAG_FUNC_NO_RETURN = 0x00100000,
+        SYMFLAG_SYNTHETIC_ZEROBASE = 0x00200000,
+        SYMFLAG_PUBLIC_CODE = 0x00400000,
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("Name")]
     class SYMBOL_INFO
     {
@@ -31,7 +58,7 @@ namespace NtApiDotNet.Win32.Debugger
         public int Index;
         public int Size;
         public long ModBase;          // Base Address of module comtaining this symbol
-        public int Flags;
+        public SYMBOL_INFO_FLAGS Flags;
         public long Value;            // Value of symbol, ValuePresent should be 1
         public long Address;          // Address of symbol including base address of module
         public int Register;         // register holding value or pointer to value

@@ -15,37 +15,23 @@
 namespace NtApiDotNet.Win32.Debugger
 {
     /// <summary>
-    /// Enumeration for symbol type information.
+    /// Class for a function parameter.
     /// </summary>
-    public enum SymbolInformationType
+    public sealed class FunctionParameter
     {
         /// <summary>
-        /// None.
+        /// Name of the parameter.
         /// </summary>
-        None = 0,
+        public string Name { get; }
         /// <summary>
-        /// UDT.
+        /// Type of the parameter.
         /// </summary>
-        UserDefinedType,
-        /// <summary>
-        /// Enumerated type.
-        /// </summary>
-        EnumeratedType,
-        /// <summary>
-        /// A base type.
-        /// </summary>
-        BaseType,
-        /// <summary>
-        /// A function type.
-        /// </summary>
-        Function,
-        /// <summary>
-        /// A pointer type.
-        /// </summary>
-        Pointer,
-        /// <summary>
-        /// Undefined.
-        /// </summary>
-        UndefinedType,
+        public TypeInformation ParameterType { get; }
+
+        internal FunctionParameter(string name, TypeInformation parameter_type)
+        {
+            Name = name;
+            ParameterType = parameter_type;
+        }
     }
 }

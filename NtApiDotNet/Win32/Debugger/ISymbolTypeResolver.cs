@@ -51,5 +51,19 @@ namespace NtApiDotNet.Win32.Debugger
         /// <param name="mask">A mask string for the type name. e.g. mod!ABC*</param>
         /// <returns>The list of types.</returns>
         IEnumerable<TypeInformation> QueryTypesByName(IntPtr base_address, string mask);
+
+        /// <summary>
+        /// Get the address of a symbol.
+        /// </summary>
+        /// <param name="name">The name of the symbol, should include the module name, e.g. modulename!MySymbol.</param>
+        /// <returns>The symbol type.</returns>
+        TypeInformation GetTypeForSymbolByName(string name);
+
+        /// <summary>
+        /// Get the address of a symbol.
+        /// </summary>
+        /// <param name="address">The address of the symbol.</param>
+        /// <returns>The symbol type.</returns>
+        TypeInformation GetTypeForSymbolByAddress(IntPtr address);
     }
 }

@@ -71,7 +71,7 @@ namespace NtApiDotNet.Win32
         /// Get the address of a symbol.
         /// </summary>
         /// <param name="name">The name of the symbol, should include the module name, e.g. modulename!MySymbol.</param>
-        /// <returns></returns>
+        /// <returns>The address of the symbol</returns>
         IntPtr GetAddressOfSymbol(string name);
         /// <summary>
         /// Get the symbol name for an address.

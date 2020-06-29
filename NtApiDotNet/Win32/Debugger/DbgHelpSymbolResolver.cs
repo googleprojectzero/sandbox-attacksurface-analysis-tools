@@ -29,6 +29,7 @@ namespace NtApiDotNet.Win32.Debugger
 {
     internal sealed class DbgHelpSymbolResolver : ISymbolResolver, ISymbolTypeResolver, IDisposable
     {
+        #region Private Members
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
         delegate bool SymInitializeW(
             SafeKernelObjectHandle hProcess,
@@ -107,6 +108,15 @@ namespace NtApiDotNet.Win32.Debugger
         );
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymEnumSymbolsW(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            string Mask,
+            PsymEnumeratesymbolsCallback EnumSymbolsCallback,
+            IntPtr UserContext
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
         delegate int SymSetOptions(
             SymOptions SymOptions
         );
@@ -181,6 +191,30 @@ namespace NtApiDotNet.Win32.Debugger
             SafeBuffer Symbol
         );
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymSetContext(
+            SafeKernelObjectHandle hProcess,
+            ref IMAGEHLP_STACK_FRAME StackFrame,
+            IntPtr Context
+        );
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct IMAGEHLP_STACK_FRAME
+        {
+            public long InstructionOffset;
+            public long ReturnOffset;
+            public long FrameOffset;
+            public long StackOffset;
+            public long BackingStoreOffset;
+            public long FuncTableEntry;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+            public long[] Params;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)]
+            public long[] Reserved;
+            public int Virtual;
+            public int Reserved2;
+        }
+
         private readonly SafeLoadLibraryHandle _dbghelp_lib;
         private readonly SymInitializeW _sym_init;
         private readonly SymCleanup _sym_cleanup;
@@ -200,6 +234,9 @@ namespace NtApiDotNet.Win32.Debugger
         private readonly SymGetTypeInfoVar _sym_get_type_info_var;
         private readonly SymGetTypeInfoLong _sym_get_type_info_long;
         private readonly SymFromIndexW _sym_from_index;
+        private readonly SymSetContext _sym_set_context;
+        private readonly SymEnumSymbolsW _sym_enum_symbols;
+        private IEnumerable<SymbolLoadedModule> _loaded_modules;
 
         private void GetFunc<T>(ref T f) where T : Delegate
         {
@@ -211,248 +248,14 @@ namespace NtApiDotNet.Win32.Debugger
             f = _dbghelp_lib.GetFunctionPointer<T>(name);
         }
 
-        static SafeStructureInOutBuffer<SYMBOL_INFO> AllocateSymInfo()
+        private static SafeStructureInOutBuffer<SYMBOL_INFO> AllocateSymInfo()
         {
             return new SafeStructureInOutBuffer<SYMBOL_INFO>(new SYMBOL_INFO(SYMBOL_INFO.MAX_SYM_NAME), SYMBOL_INFO.MAX_SYM_NAME * 2, true);
         }
 
-        static string GetNameFromSymbolInfo(SafeStructureInOutBuffer<SYMBOL_INFO> buffer)
+        private static string GetNameFromSymbolInfo(SafeStructureInOutBuffer<SYMBOL_INFO> buffer)
         {
             return buffer.Data.ReadNulTerminatedUnicodeString();
-        }
-
-        internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path)
-        {
-            Process = process.Duplicate();
-            _dbghelp_lib = SafeLoadLibraryHandle.LoadLibrary(dbghelp_path);
-            GetFunc(ref _sym_init);
-            GetFunc(ref _sym_cleanup);
-            GetFunc(ref _sym_from_name);
-            GetFunc(ref _sym_set_options);
-            GetFunc(ref _sym_enum_modules);
-            GetFunc(ref _sym_from_addr);
-            GetFunc(ref _sym_get_module_info);
-            GetFunc(ref _sym_load_module);
-            GetFunc(ref _sym_refresh_module_list);
-            GetFunc(ref _sym_enum_types);
-            GetFunc(ref _sym_get_type_from_name);
-            GetFunc(ref _sym_enum_types_by_name);
-            GetFunc(ref _sym_get_type_info);
-            GetFunc(ref _sym_get_type_info_dword, "SymGetTypeInfo");
-            GetFunc(ref _sym_get_type_info_ptr, "SymGetTypeInfo");
-            GetFunc(ref _sym_get_type_info_var, "SymGetTypeInfo");
-            GetFunc(ref _sym_get_type_info_long, "SymGetTypeInfo");
-            GetFunc(ref _sym_from_index);
-
-            _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
-
-            if (!_sym_init(Handle, symbol_path, true))
-            {
-                // If SymInitialize failed then we'll have to bootstrap modules manually.
-                if (!_sym_init(Handle, symbol_path, false))
-                {
-                    throw new Win32Exception();
-                }
-                
-                IntPtr[] modules = new IntPtr[1024];
-                if (Win32NativeMethods.EnumProcessModulesEx(Handle, modules, modules.Length * IntPtr.Size, out int return_length,
-                    process.Is64Bit ? EnumProcessModulesFilter.LIST_MODULES_64BIT : EnumProcessModulesFilter.LIST_MODULES_32BIT))
-                {
-                    foreach (IntPtr module in modules.Take(return_length / IntPtr.Size))
-                    {
-                        StringBuilder dllpath = new StringBuilder(260);
-                        if (Win32NativeMethods.GetModuleFileNameEx(Handle, module, dllpath, dllpath.Capacity) > 0)
-                        {
-                            if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(),
-                                Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), GetImageSize(module)) == 0)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"Couldn't load {dllpath}");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private int GetImageSize(IntPtr base_address)
-        {
-            if (!Win32NativeMethods.GetModuleInformation(Handle, base_address, 
-                out MODULEINFO mod_info, Marshal.SizeOf(typeof(MODULEINFO))))
-            {
-                throw new SafeWin32Exception();
-            }
-
-            return mod_info.SizeOfImage;
-        }
-
-        private IMAGEHLP_MODULE64 GetModuleInfo(long base_address)
-        {
-            IMAGEHLP_MODULE64 module = new IMAGEHLP_MODULE64();
-            module.SizeOfStruct = Marshal.SizeOf(module);
-            if (_sym_get_module_info(Handle, base_address, ref module))
-            {
-                return module;
-            }
-            return new IMAGEHLP_MODULE64();
-        }
-
-        private IEnumerable<SymbolLoadedModule> GetLoadedModulesInternal()
-        {
-            List<SymbolLoadedModule> modules = new List<SymbolLoadedModule>();
-
-            if (!_sym_enum_modules(Handle, (s, m, p) =>
-            {
-                modules.Add(new SymbolLoadedModule(s, new IntPtr(m), GetModuleInfo(m).ImageSize, this));
-                return true;
-            }, IntPtr.Zero))
-            {
-                throw new Win32Exception();
-            }
-            return modules.AsReadOnly();
-        }
-
-        private IEnumerable<SymbolLoadedModule> _loaded_modules;
-
-        public IEnumerable<SymbolLoadedModule> GetLoadedModules()
-        {
-            return GetLoadedModules(false);
-        }
-
-        public IEnumerable<SymbolLoadedModule> GetLoadedModules(bool refresh)
-        {
-            if (_loaded_modules == null || refresh)
-            {
-                _loaded_modules = GetLoadedModulesInternal().OrderBy(s => s.BaseAddress.ToInt64());
-            }
-            return _loaded_modules;
-        }
-
-        public SymbolLoadedModule GetModuleForAddress(IntPtr address, bool refresh)
-        {
-            long check_addr = address.ToInt64();
-
-            foreach (SymbolLoadedModule module in GetLoadedModules(refresh))
-            {
-                long base_address = module.BaseAddress.ToInt64();
-                if (check_addr >= base_address && check_addr < base_address + module.ImageSize)
-                {
-                    return module;
-                }
-            }
-
-            return null;
-        }
-
-        public SymbolLoadedModule GetModuleForAddress(IntPtr address)
-        {
-            return GetModuleForAddress(address, false);
-        }
-
-        public string GetModuleRelativeAddress(IntPtr address)
-        {
-            return GetModuleRelativeAddress(address, false);
-        }
-
-        public string GetModuleRelativeAddress(IntPtr address, bool refresh)
-        {
-            SymbolLoadedModule module = GetModuleForAddress(address, refresh);
-            if (module == null)
-            {
-                return $"0x{address.ToInt64():X}";
-            }
-
-            return $"{module.Name}+0x{address.ToInt64() - module.BaseAddress.ToInt64():X}";
-        }
-
-        public IntPtr GetAddressOfSymbol(string name)
-        {
-            using (var sym_info = AllocateSymInfo())
-            {
-                if (!_sym_from_name(Handle, name, sym_info))
-                {
-                    return IntPtr.Zero;
-                }
-                return new IntPtr(sym_info.Result.Address);
-            }
-        }
-
-        public string GetSymbolForAddress(IntPtr address)
-        {
-            return GetSymbolForAddress(address, true);
-        }
-
-        private static string GetSymbolName(string symbol)
-        {
-            int last_index = symbol.LastIndexOf("::");
-            if (last_index >= 0)
-            {
-                symbol = symbol.Substring(last_index + 2);
-            }
-
-            last_index = symbol.LastIndexOf("`");
-            if (last_index >= 0)
-            {
-                symbol = symbol.Substring(last_index + 1);
-            }
-            return symbol;
-        }
-
-        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol, bool return_name_only)
-        {
-            using (var sym_info = AllocateSymInfo())
-            {
-                if (_sym_from_addr(Handle, address.ToInt64(), out long displacement, sym_info))
-                {
-                    string name = GetNameFromSymbolInfo(sym_info);
-                    if (return_name_only)
-                    {
-                        return GetSymbolName(name);
-                    }
-                    string disp_str = string.Empty;
-                    if (displacement < 0)
-                    {
-                        disp_str = $"-0x{Math.Abs(displacement):X}";
-                    }
-                    else if (displacement > 0)
-                    {
-                        disp_str = $"+0x{displacement:X}";
-                    }
-
-                    return $"{name}{disp_str}";
-                }
-                // Perhaps should return module+X?
-                if (generate_fake_symbol && !return_name_only)
-                {
-                    return $"0x{address.ToInt64():X}";
-                }
-                return null;
-            }
-        }
-
-        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
-        {
-            return GetSymbolForAddress(address, generate_fake_symbol, false);
-        }
-
-        public void ReloadModuleList()
-        {
-            if (!_sym_refresh_module_list(Handle))
-            {
-                throw new SafeWin32Exception();
-            }
-        }
-
-        public void LoadModule(string module_path, IntPtr base_address)
-        {
-            if (_sym_load_module(Handle, IntPtr.Zero, module_path,
-                                Path.GetFileNameWithoutExtension(module_path), base_address.ToInt64(), GetImageSize(base_address)) == 0)
-            {
-                int error = Marshal.GetLastWin32Error();
-                if (error != 0)
-                {
-                    throw new SafeWin32Exception(error);
-                }
-            }
         }
 
         private static SafeStructureInOutBuffer<SYMBOL_INFO> MapSymbolInfo(IntPtr symbol_info)
@@ -462,6 +265,21 @@ namespace NtApiDotNet.Win32.Debugger
             var result = ret.Result;
             int total_size = (result.MaxNameLen * 2) + result.SizeOfStruct - 2;
             return new SafeStructureInOutBuffer<SYMBOL_INFO>(symbol_info, total_size, false);
+        }
+
+        private SafeStructureInOutBuffer<SYMBOL_INFO> GetSymbolFromIndex(int type_index, long module_base)
+        {
+            SYMBOL_INFO symbol_info = new SYMBOL_INFO(SYMBOL_INFO.MAX_SYM_NAME);
+            symbol_info.Index = type_index;
+            int total_size = (symbol_info.MaxNameLen * 2) + symbol_info.SizeOfStruct - 2;
+            using (var ret = new SafeStructureInOutBuffer<SYMBOL_INFO>(symbol_info, total_size, false))
+            {
+                if (_sym_from_index(Handle, module_base, type_index, ret))
+                {
+                    return ret.Detach();
+                }
+            }
+            return null;
         }
 
         private SymTagEnum? GetSymbolTag(long module_base, int type_index)
@@ -567,7 +385,7 @@ namespace NtApiDotNet.Win32.Debugger
                 if (CheckTypeTag(module_base, id, SymTagEnum.SymTagData))
                 {
                     long enum_value = 0;
-                    if (_sym_get_type_info_var(Handle, module_base, id, 
+                    if (_sym_get_type_info_var(Handle, module_base, id,
                         IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_VALUE, out object value))
                     {
                         enum_value = Convert.ToInt64(value);
@@ -576,7 +394,7 @@ namespace NtApiDotNet.Win32.Debugger
                     values.Add(new EnumTypeInformationValue(GetSymbolName(module_base, id), enum_value));
                 }
             }
-            return new EnumTypeInformation(length, type_index, 
+            return new EnumTypeInformation(length, type_index,
                 module, name, values.AsReadOnly());
         }
 
@@ -645,7 +463,7 @@ namespace NtApiDotNet.Win32.Debugger
             else
             {
                 return new PointerTypeInformation(length, index, module,
-                        new BaseTypeInformation(0, 0, module, BasicType.Void), is_reference != 0); 
+                        new BaseTypeInformation(0, 0, module, BasicType.Void), is_reference != 0);
             }
             type_cache.AddEntry(module_base, index, pointer);
             return pointer;
@@ -686,8 +504,75 @@ namespace NtApiDotNet.Win32.Debugger
             return CreateType(type_cache, tag, module_base, index, length, module, name);
         }
 
-        private TypeInformation CreateType(TypeInformationCache type_cache, SymTagEnum tag, 
-            long module_base, int index, long size, SymbolLoadedModule module, string name)
+        private bool GetLocalParameterName(List<string> names, IntPtr symbol_info, SymbolLoadedModule module)
+        {
+            using (var sym_info = MapSymbolInfo(symbol_info))
+            {
+                var result = sym_info.Result;
+                if (!result.Flags.HasFlagSet(SYMBOL_INFO_FLAGS.SYMFLAG_PARAMETER))
+                    return true;
+                string name = GetNameFromSymbolInfo(sym_info);
+                if (!names.Exists(s => s == name))
+                {
+                    names.Add(name);
+                }
+            }
+            return true;
+        }
+
+        private List<string> QueryLocalParameterNames(long address, SymbolLoadedModule module)
+        {
+            List<string> ret = new List<string>();
+            if (address == 0)
+                return ret;
+            IMAGEHLP_STACK_FRAME frame = new IMAGEHLP_STACK_FRAME
+            {
+                InstructionOffset = address
+            };
+            if (!_sym_set_context(Handle, ref frame, IntPtr.Zero))
+            {
+                if (Win32Utils.GetLastWin32Error() != Win32Error.SUCCESS)
+                    return ret;
+            }
+            _sym_enum_symbols(Handle, 0, null, (s, z, x) => GetLocalParameterName(ret, s, module), IntPtr.Zero);
+            return ret;
+        }
+
+        private FunctionTypeInformation CreateFunctionType(TypeInformationCache type_cache, long module_base, 
+            int type_index, SymbolLoadedModule module, string name, long address)
+        {
+            List<FunctionParameter> parameters = new List<FunctionParameter>();
+            TypeInformation return_type = null;
+            int[] child_ids = GetChildIds(module_base, type_index);
+            List<string> arg_names = QueryLocalParameterNames(address, module);
+            foreach (int id in child_ids)
+            {
+                if (GetSymbolTag(module_base, id) == SymTagEnum.SymTagFunctionArgType)
+                {
+                    var type_id = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPEID, module_base, id);
+                    if (type_id.HasValue)
+                    {
+                        TypeInformation arg = CreateType(type_cache, module_base, type_id.Value, module);
+                        string arg_name = $"p{parameters.Count}";
+                        if (arg_names.Count > parameters.Count)
+                            arg_name = arg_names[parameters.Count];
+                        parameters.Add(new FunctionParameter(arg_name, arg));
+                    }
+                }
+            }
+
+            int? ret_id = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPE, module_base, type_index);
+            if (ret_id.HasValue)
+            {
+                return_type = CreateType(type_cache, module_base, ret_id.Value, module);
+            }
+
+            return new FunctionTypeInformation(type_index, module, name, return_type, parameters);
+        }
+
+        private TypeInformation CreateType(TypeInformationCache type_cache, SymTagEnum tag,
+            long module_base, int index, long size, SymbolLoadedModule module, string name,
+            long address = 0)
         {
             if (type_cache.HasEntry(module_base, index))
             {
@@ -712,6 +597,9 @@ namespace NtApiDotNet.Win32.Debugger
                 case SymTagEnum.SymTagArrayType:
                     ret = CreateArrayType(type_cache, module_base, index, module);
                     break;
+                case SymTagEnum.SymTagFunction:
+                    ret = CreateFunctionType(type_cache, module_base, index, module, name, address);
+                    break;
                 default:
                     System.Diagnostics.Debug.WriteLine(tag.ToString());
                     ret = new TypeInformation(tag, size, index, module, name);
@@ -722,24 +610,231 @@ namespace NtApiDotNet.Win32.Debugger
             return ret;
         }
 
-        private bool EnumTypes(TypeInformationCache type_cache, Dictionary<long, SymbolLoadedModule> modules, 
+        private bool EnumTypes(TypeInformationCache type_cache, Dictionary<long, SymbolLoadedModule> modules,
             List<TypeInformation> symbols, IntPtr symbol_info)
         {
-            var sym_info = MapSymbolInfo(symbol_info);
-            SymbolLoadedModule loaded_module;
-            var result = sym_info.Result;
-            if (modules.ContainsKey(result.ModBase))
+            using (var sym_info = MapSymbolInfo(symbol_info))
             {
-                loaded_module = modules[result.ModBase];
+                SymbolLoadedModule loaded_module;
+                var result = sym_info.Result;
+                if (modules.ContainsKey(result.ModBase))
+                {
+                    loaded_module = modules[result.ModBase];
+                }
+                else
+                {
+                    loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, this);
+                    modules.Add(result.ModBase, loaded_module);
+                }
+
+                symbols.Add(CreateType(type_cache, result.Tag, result.ModBase, result.TypeIndex, result.Size, loaded_module, GetNameFromSymbolInfo(sym_info)));
+                return true;
             }
-            else
+        }
+
+        private int GetImageSize(IntPtr base_address)
+        {
+            if (!Win32NativeMethods.GetModuleInformation(Handle, base_address,
+                out MODULEINFO mod_info, Marshal.SizeOf(typeof(MODULEINFO))))
             {
-                loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, this);
-                modules.Add(result.ModBase, loaded_module);
+                throw new SafeWin32Exception();
             }
 
-            symbols.Add(CreateType(type_cache, result.Tag, result.ModBase, result.TypeIndex, result.Size, loaded_module, GetNameFromSymbolInfo(sym_info)));
-            return true;
+            return mod_info.SizeOfImage;
+        }
+
+        private IMAGEHLP_MODULE64 GetModuleInfo(long base_address)
+        {
+            IMAGEHLP_MODULE64 module = new IMAGEHLP_MODULE64();
+            module.SizeOfStruct = Marshal.SizeOf(module);
+            if (_sym_get_module_info(Handle, base_address, ref module))
+            {
+                return module;
+            }
+            return new IMAGEHLP_MODULE64();
+        }
+
+        private IEnumerable<SymbolLoadedModule> GetLoadedModulesInternal()
+        {
+            List<SymbolLoadedModule> modules = new List<SymbolLoadedModule>();
+
+            if (!_sym_enum_modules(Handle, (s, m, p) =>
+            {
+                modules.Add(new SymbolLoadedModule(s, new IntPtr(m), GetModuleInfo(m).ImageSize, this));
+                return true;
+            }, IntPtr.Zero))
+            {
+                throw new Win32Exception();
+            }
+            return modules.AsReadOnly();
+        }
+
+        private static string GetSymbolName(string symbol)
+        {
+            int last_index = symbol.LastIndexOf("::");
+            if (last_index >= 0)
+            {
+                symbol = symbol.Substring(last_index + 2);
+            }
+
+            last_index = symbol.LastIndexOf("`");
+            if (last_index >= 0)
+            {
+                symbol = symbol.Substring(last_index + 1);
+            }
+            return symbol;
+        }
+
+        private DataSymbolInformation GetSymbolInfoForAddress(IntPtr address)
+        {
+            using (var sym_info = AllocateSymInfo())
+            {
+                if (_sym_from_addr(Handle, address.ToInt64(), out long displacement, sym_info))
+                {
+                    var result = sym_info.Result;
+
+                    return new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex, 
+                        result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), GetNameFromSymbolInfo(sym_info));
+                }
+
+                return null;
+            }
+        }
+
+        private DataSymbolInformation GetSymbolInfoForName(string name)
+        {
+            using (var sym_info = AllocateSymInfo())
+            {
+                if (!_sym_from_name(Handle, name, sym_info))
+                {
+                    return null;
+                }
+                var result = sym_info.Result;
+                return new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex,
+                    result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), GetNameFromSymbolInfo(sym_info));
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
+        public IEnumerable<SymbolLoadedModule> GetLoadedModules()
+        {
+            return GetLoadedModules(false);
+        }
+
+        public IEnumerable<SymbolLoadedModule> GetLoadedModules(bool refresh)
+        {
+            if (_loaded_modules == null || refresh)
+            {
+                _loaded_modules = GetLoadedModulesInternal().OrderBy(s => s.BaseAddress.ToInt64());
+            }
+            return _loaded_modules;
+        }
+
+        public SymbolLoadedModule GetModuleForAddress(IntPtr address, bool refresh)
+        {
+            long check_addr = address.ToInt64();
+
+            foreach (SymbolLoadedModule module in GetLoadedModules(refresh))
+            {
+                long base_address = module.BaseAddress.ToInt64();
+                if (check_addr >= base_address && check_addr < base_address + module.ImageSize)
+                {
+                    return module;
+                }
+            }
+
+            return null;
+        }
+
+        public SymbolLoadedModule GetModuleForAddress(IntPtr address)
+        {
+            return GetModuleForAddress(address, false);
+        }
+
+        public string GetModuleRelativeAddress(IntPtr address)
+        {
+            return GetModuleRelativeAddress(address, false);
+        }
+
+        public string GetModuleRelativeAddress(IntPtr address, bool refresh)
+        {
+            SymbolLoadedModule module = GetModuleForAddress(address, refresh);
+            if (module == null)
+            {
+                return $"0x{address.ToInt64():X}";
+            }
+
+            return $"{module.Name}+0x{address.ToInt64() - module.BaseAddress.ToInt64():X}";
+        }
+
+        public IntPtr GetAddressOfSymbol(string name)
+        {
+            return new IntPtr(GetSymbolInfoForName(name)?.Address ?? 0);
+        }
+
+        public string GetSymbolForAddress(IntPtr address)
+        {
+            return GetSymbolForAddress(address, true);
+        }
+
+        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol, bool return_name_only)
+        {
+            using (var sym_info = AllocateSymInfo())
+            {
+                if (_sym_from_addr(Handle, address.ToInt64(), out long displacement, sym_info))
+                {
+                    string name = GetNameFromSymbolInfo(sym_info);
+                    if (return_name_only)
+                    {
+                        return GetSymbolName(name);
+                    }
+                    string disp_str = string.Empty;
+                    if (displacement < 0)
+                    {
+                        disp_str = $"-0x{Math.Abs(displacement):X}";
+                    }
+                    else if (displacement > 0)
+                    {
+                        disp_str = $"+0x{displacement:X}";
+                    }
+
+                    return $"{name}{disp_str}";
+                }
+                // Perhaps should return module+X?
+                if (generate_fake_symbol && !return_name_only)
+                {
+                    return $"0x{address.ToInt64():X}";
+                }
+                return null;
+            }
+        }
+
+        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
+        {
+            return GetSymbolForAddress(address, generate_fake_symbol, false);
+        }
+
+        public void ReloadModuleList()
+        {
+            if (!_sym_refresh_module_list(Handle))
+            {
+                throw new SafeWin32Exception();
+            }
+        }
+
+        public void LoadModule(string module_path, IntPtr base_address)
+        {
+            if (_sym_load_module(Handle, IntPtr.Zero, module_path,
+                                Path.GetFileNameWithoutExtension(module_path), base_address.ToInt64(), GetImageSize(base_address)) == 0)
+            {
+                int error = Marshal.GetLastWin32Error();
+                if (error != 0)
+                {
+                    throw new SafeWin32Exception(error);
+                }
+            }
         }
 
         public IEnumerable<string> QueryTypeNames(IntPtr base_address)
@@ -795,9 +890,96 @@ namespace NtApiDotNet.Win32.Debugger
             type_cache.FixupPointerTypes();
             return symbols;
         }
+        #endregion
 
+        #region Internals Members
         internal NtProcess Process { get; }
         internal SafeKernelObjectHandle Handle { get { return Process.Handle; } }
+
+        internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path)
+        {
+            Process = process.Duplicate();
+            _dbghelp_lib = SafeLoadLibraryHandle.LoadLibrary(dbghelp_path);
+            GetFunc(ref _sym_init);
+            GetFunc(ref _sym_cleanup);
+            GetFunc(ref _sym_from_name);
+            GetFunc(ref _sym_set_options);
+            GetFunc(ref _sym_enum_modules);
+            GetFunc(ref _sym_from_addr);
+            GetFunc(ref _sym_get_module_info);
+            GetFunc(ref _sym_load_module);
+            GetFunc(ref _sym_refresh_module_list);
+            GetFunc(ref _sym_enum_types);
+            GetFunc(ref _sym_get_type_from_name);
+            GetFunc(ref _sym_enum_types_by_name);
+            GetFunc(ref _sym_get_type_info);
+            GetFunc(ref _sym_get_type_info_dword, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_ptr, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_var, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_long, "SymGetTypeInfo");
+            GetFunc(ref _sym_from_index);
+            GetFunc(ref _sym_enum_symbols);
+            GetFunc(ref _sym_set_context);
+
+            _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
+
+            if (!_sym_init(Handle, symbol_path, true))
+            {
+                // If SymInitialize failed then we'll have to bootstrap modules manually.
+                if (!_sym_init(Handle, symbol_path, false))
+                {
+                    throw new Win32Exception();
+                }
+
+                IntPtr[] modules = new IntPtr[1024];
+                if (Win32NativeMethods.EnumProcessModulesEx(Handle, modules, modules.Length * IntPtr.Size, out int return_length,
+                    process.Is64Bit ? EnumProcessModulesFilter.LIST_MODULES_64BIT : EnumProcessModulesFilter.LIST_MODULES_32BIT))
+                {
+                    foreach (IntPtr module in modules.Take(return_length / IntPtr.Size))
+                    {
+                        StringBuilder dllpath = new StringBuilder(260);
+                        if (Win32NativeMethods.GetModuleFileNameEx(Handle, module, dllpath, dllpath.Capacity) > 0)
+                        {
+                            if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(),
+                                Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), GetImageSize(module)) == 0)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Couldn't load {dllpath}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public TypeInformation GetTypeForSymbolByName(string name)
+        {
+            var symbol = GetSymbolInfoForName(name);
+            if (symbol == null)
+            {
+                return null;
+            }
+
+            TypeInformationCache type_cache = new TypeInformationCache();
+            var ret = CreateType(type_cache, symbol.Tag, symbol.Module.BaseAddress.ToInt64(), symbol.TypeIndex, symbol.Size, symbol.Module, symbol.Name, symbol.Address);
+            type_cache.FixupPointerTypes();
+            return ret;
+        }
+
+        public TypeInformation GetTypeForSymbolByAddress(IntPtr address)
+        {
+            var symbol = GetSymbolInfoForAddress(address);
+            if (symbol == null)
+            {
+                return null;
+            }
+
+            TypeInformationCache type_cache = new TypeInformationCache();
+            var ret = CreateType(type_cache, symbol.Tag, symbol.Module.BaseAddress.ToInt64(), symbol.TypeIndex, symbol.Size, symbol.Module, symbol.Name, symbol.Address);
+            type_cache.FixupPointerTypes();
+            return ret;
+        }
+
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false; 

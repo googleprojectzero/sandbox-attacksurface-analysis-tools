@@ -293,6 +293,8 @@
     <Compile Include="Win32\Debugger\DbgHelpSymbolResolver.cs" />
     <Compile Include="Win32\Debugger\EnumProcessModulesFilter.cs" />
     <Compile Include="Win32\Debugger\EnumTypeInformation.cs" />
+    <Compile Include="Win32\Debugger\FunctionParameter.cs" />
+    <Compile Include="Win32\Debugger\FunctionTypeInformation.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_MODULE64.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_SYMBOL_TYPE_INFO.cs" />
     <Compile Include="Win32\Debugger\MODULEINFO.cs" />

@@ -39,6 +39,7 @@ namespace NtApiDotNet.Win32.Debugger
         /// Internal type index.
         /// </summary>
         internal int TypeIndex { get; }
+        internal SymTagEnum Tag { get; }
 
         private static SymbolInformationType MapType(SymTagEnum tag)
         {
@@ -50,6 +51,10 @@ namespace NtApiDotNet.Win32.Debugger
                     return SymbolInformationType.EnumeratedType;
                 case SymTagEnum.SymTagBaseType:
                     return SymbolInformationType.BaseType;
+                case SymTagEnum.SymTagFunction:
+                    return SymbolInformationType.Function;
+                case SymTagEnum.SymTagPointerType:
+                    return SymbolInformationType.Pointer;
                 default:
                     return SymbolInformationType.UndefinedType;
             }
@@ -62,6 +67,16 @@ namespace NtApiDotNet.Win32.Debugger
             Module = module;
             TypeIndex = type_index;
             Type = MapType(tag);
+            Tag = tag;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>Returns the symbol name.</returns>
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

@@ -12,40 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Debugger
 {
     /// <summary>
-    /// Enumeration for symbol type information.
+    /// Type information for a function.
     /// </summary>
-    public enum SymbolInformationType
+    public class FunctionTypeInformation : TypeInformation
     {
         /// <summary>
-        /// None.
+        /// Type for the return type.
         /// </summary>
-        None = 0,
+        public TypeInformation ReturnType { get; }
+
         /// <summary>
-        /// UDT.
+        /// List of function parameters.
         /// </summary>
-        UserDefinedType,
-        /// <summary>
-        /// Enumerated type.
-        /// </summary>
-        EnumeratedType,
-        /// <summary>
-        /// A base type.
-        /// </summary>
-        BaseType,
-        /// <summary>
-        /// A function type.
-        /// </summary>
-        Function,
-        /// <summary>
-        /// A pointer type.
-        /// </summary>
-        Pointer,
-        /// <summary>
-        /// Undefined.
-        /// </summary>
-        UndefinedType,
+        public IReadOnlyList<FunctionParameter> Parameters { get; }
+
+        internal FunctionTypeInformation(int type_index, SymbolLoadedModule module, string name, TypeInformation return_type, IEnumerable<FunctionParameter> parameters)
+            : base(SymTagEnum.SymTagFunctionType, 0, type_index, module, name)
+        {
+            ReturnType = return_type;
+            Parameters = new List<FunctionParameter>(parameters).AsReadOnly();
+        }
     }
 }
