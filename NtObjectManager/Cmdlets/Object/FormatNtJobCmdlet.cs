@@ -149,6 +149,7 @@ namespace NtObjectManager.Cmdlets.Object
             var user_data = job.QuerySiloUserSharedData(false);
             if (!user_data.IsSuccess)
                 return;
+            WriteObject("[Silo Shared User Data]");
             WriteObject($"Console ID    : {user_data.Result.ActiveConsoleId}");
             WriteObject($"Foreground PID: {user_data.Result.ConsoleSessionForegroundProcessId}");
             WriteObject($"Service SID   : {user_data.Result.ServiceSessionId}");
