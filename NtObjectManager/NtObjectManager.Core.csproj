@@ -7,7 +7,7 @@
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
     <Product>NtObjectManager</Product>
-    <FileVersion>1.1.27.0</FileVersion>
+    <FileVersion>1.1.28.0</FileVersion>
     <Copyright>Copyright © Google Inc. 2016-2020</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>

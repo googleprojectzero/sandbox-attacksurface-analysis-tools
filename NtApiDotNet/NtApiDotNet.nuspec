@@ -11,27 +11,36 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.27
+1.1.28
 --------
-* Added support for directory change notifications.
-* Added New-NtDesktop, Get-NtDesktop and Get-NtDesktopName.
-* Added New-NtWindowStation, Get-NtWindowStation and Get-NtWindowStationName.
-* Changed Win32 error codes to an enumeration.
-* Added Load/Unload driver.
-* Added properties to NtType to show access masks.
-* Added basic SendInput method.
-* Added token source tab to Token Viewer.
-* Updated for the Job object and New-NtJob.
-* Added NtWindow class a HWND enumeration.
-* Added Get-AccessibleWindowStation command.
-* Added some well known WNF names.
-* Added option to Get-AccessibleService to check file permissions.
-* Added Set-NtProcessJob command.
-* Added Get-AccessibleToken command.
-* Added support for compound ACEs.
-* Added Get/Sid-NtTokenSid and Get/Set-NtTokenGroup.
-* Added Get-AccessibleEventTrace command.
-* Added Get-AccessibleWnf command.
+* Added Import-Win32Module and Get-Win32Module.
+* Added support for Registry Keys in the NtObjectManager provider.
+* Added Get-NtDirectoryEntry.
+* Added Win32 CreateRemoteThread.
+* Added addition Registry Key functions.
+* Added Network Authentication commands.
+* Added Authentication Token formatting commands.
+* Added new filtering features to TokenViewer.
+* Improved cmdlets for getting and setting object information classes.
+* Added Add-NtSection and Remove-NtSection.
+* Added Compare-NtObject.
+* Added Test-NtTokenPrivilege.
+* Added type parsing from PDBs via SymbolResolver.
+* Added a summary format to Format-NtSecurityDescriptor.
+* Added Out-HexDump.
+* Added C# compiler support for .NET Core Support of Get-RpcClient.
+* Updated New-NtSecurityDescriptor and Edit-NtSecurityDescriptor.
+* Basic C++ NDR formatting from irsl@.
+* Added Format-NtJob.
+* Added New-NtSecurityAttribute and Get-NtAceConditionData.
+* Added Device/User Claims to Token Viewer and Format-NtToken.
+* Added many different commands to manipulate Security Descriptors.
+* Added Win32 Security Descriptor commands.
+* Added filtering for accessible path commands.
+* Added Audit support.
+* Added basic AuthZ API support.
+* Added basic ASN.1 DER parsing and Format-ASN1DER command.
+* Added Kerberos Keytab file reading and writing.
 </releaseNotes>
     <copyright>Copyright Google Inc. 2016-2020</copyright>
     <tags>syscalls</tags>
