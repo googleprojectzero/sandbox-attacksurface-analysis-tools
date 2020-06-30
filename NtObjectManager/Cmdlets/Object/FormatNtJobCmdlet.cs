@@ -125,6 +125,40 @@ namespace NtObjectManager.Cmdlets.Object
             WriteObject(string.Empty);
         }
 
+        private void FormatSilo(NtJob job)
+        {
+            var basic_info = job.QuerySiloBasicInformation(false);
+            if (!basic_info.IsSuccess)
+                return;
+            WriteObject("[Silo]");
+            WriteObject($"Silo ID       : {basic_info.Result.SiloId}");
+            WriteObject($"Silo Parent ID: {basic_info.Result.SiloParentId}");
+            WriteObject($"Process Count : {basic_info.Result.NumberOfProcesses}");
+            WriteObject(string.Empty);
+            if (!basic_info.Result.IsInServerSilo)
+                return;
+            var server_info = job.QueryServerSiloBasicInformation(false);
+            if (!server_info.IsSuccess)
+                return;
+            WriteObject("[Server Silo]");
+            WriteObject($"Session ID    : {server_info.Result.ServiceSessionId}");
+            WriteObject($"Exit Status   : {server_info.Result.ExitStatus}");
+            WriteObject($"State         : {server_info.Result.State}");
+            WriteObject($"Downlevel     : {server_info.Result.IsDownlevelContainer}");
+            WriteObject(string.Empty);
+            var user_data = job.QuerySiloUserSharedData(false);
+            if (!user_data.IsSuccess)
+                return;
+            WriteObject($"Console ID    : {user_data.Result.ActiveConsoleId}");
+            WriteObject($"Foreground PID: {user_data.Result.ConsoleSessionForegroundProcessId}");
+            WriteObject($"Service SID   : {user_data.Result.ServiceSessionId}");
+            WriteObject($"User SID      : {user_data.Result.SharedUserSessionId}");
+            WriteObject($"System Root   : {user_data.Result.NtSystemRoot}");
+            WriteObject($"NT Product    : {user_data.Result.NtProductType}");
+            WriteObject($"Multisession  : {user_data.Result.IsMultiSessionSku}");
+            WriteObject(string.Empty);
+        }
+
         private void FormatJob(NtJob job)
         {
             if (Filter.HasFlag(JobFormatFilter.BasicInfo))
@@ -142,6 +176,10 @@ namespace NtObjectManager.Cmdlets.Object
             if (Filter.HasFlag(JobFormatFilter.UILimits))
             {
                 FormatUILimits(job);
+            }
+            if (Filter.HasFlag(JobFormatFilter.Silo))
+            {
+                FormatSilo(job);
             }
         }
 

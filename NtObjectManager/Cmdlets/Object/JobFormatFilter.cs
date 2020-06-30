@@ -39,8 +39,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         UILimits = 8,
         /// <summary>
+        /// Silo information.
+        /// </summary>
+        Silo = 0x10,
+        /// <summary>
         /// Display all formats.
         /// </summary>
-        All = BasicLimits | ProcessList | BasicInfo | UILimits
+        All = BasicLimits | ProcessList | BasicInfo | UILimits | Silo
     }
 }

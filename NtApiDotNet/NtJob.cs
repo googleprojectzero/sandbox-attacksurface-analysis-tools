@@ -739,10 +739,34 @@ namespace NtApiDotNet
         {
             using (var buffer = new SafeStructureInOutBuffer<SiloObjectRootDirectory>(64 * 1024, true))
             {
-                return QueryInformation(JobObjectInformationClass.JobObjectSiloRootDirectory, 
+                return QueryInformation(JobObjectInformationClass.JobObjectSiloRootDirectory,
                     buffer, out int length).CreateResult(throw_on_error, () => buffer.Result.Path.ToString());
             }
         }
+
+        /// <summary>
+        /// Get Silo basic information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Silo Basic Information.</returns>
+        public NtResult<SiloObjectBasicInformation> QuerySiloBasicInformation(bool throw_on_error) 
+            => Query<SiloObjectBasicInformation>(JobObjectInformationClass.JobObjectSiloBasicInformation, default, throw_on_error);
+
+        /// <summary>
+        /// Get Silo basic information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Server Silo Basic Information.</returns>
+        public NtResult<ServerSiloBasicInformation> QueryServerSiloBasicInformation(bool throw_on_error) 
+            => Query<ServerSiloBasicInformation>(JobObjectInformationClass.JobObjectServerSiloBasicInformation, default, throw_on_error);
+
+        /// <summary>
+        /// Get Silo user shared data.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Silo User Shared Data.</returns>
+        public NtResult<SiloUserSharedData> QuerySiloUserSharedData(bool throw_on_error) 
+            => Query<SiloUserSharedData>(JobObjectInformationClass.JobObjectServerSiloUserSharedData, default, throw_on_error);
 
         /// <summary>
         /// Method to query information for this object type.
