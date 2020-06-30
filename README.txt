@@ -46,6 +46,37 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.28
+--------
+* Added Import-Win32Module and Get-Win32Module.
+* Added support for Registry Keys in the NtObjectManager provider.
+* Added Get-NtDirectoryEntry.
+* Added Win32 CreateRemoteThread.
+* Added addition Registry Key functions.
+* Added Network Authentication commands.
+* Added Authentication Token formatting commands.
+* Added new filtering features to TokenViewer.
+* Improved cmdlets for getting and setting object information classes.
+* Added Add-NtSection and Remove-NtSection.
+* Added Compare-NtObject.
+* Added Test-NtTokenPrivilege.
+* Added type parsing from PDBs via SymbolResolver.
+* Added a summary format to Format-NtSecurityDescriptor.
+* Added Out-HexDump.
+* Added C# compiler support for .NET Core Support of Get-RpcClient.
+* Updated New-NtSecurityDescriptor and Edit-NtSecurityDescriptor.
+* Basic C++ NDR formatting from irsl@.
+* Added Format-NtJob.
+* Added New-NtSecurityAttribute and Get-NtAceConditionData.
+* Added Device/User Claims to Token Viewer and Format-NtToken.
+* Added many different commands to manipulate Security Descriptors.
+* Added Win32 Security Descriptor commands.
+* Added filtering for accessible path commands.
+* Added Audit support.
+* Added basic AuthZ API support.
+* Added basic ASN.1 DER parsing and Format-ASN1DER command.
+* Added Kerberos Keytab file reading and writing.
+
 1.1.27
 --------
 * Added support for directory change notifications.
