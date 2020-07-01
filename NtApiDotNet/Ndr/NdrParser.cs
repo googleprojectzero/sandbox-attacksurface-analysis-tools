@@ -278,7 +278,10 @@ namespace NtApiDotNet.Ndr
                     UpdateComplexTypes(complex_types, func_type.Parameters[i].ParameterType, proc.Params[i].Type);
                 }
 
-                UpdateComplexTypes(complex_types, func_type.ReturnType, proc.ReturnValue.Type);
+                if (proc.ReturnValue != null && func_type.ReturnType != null)
+                {
+                    UpdateComplexTypes(complex_types, func_type.ReturnType, proc.ReturnValue.Type);
+                }
             }
 
             HashSet<NdrComplexTypeReference> fixup_set = new HashSet<NdrComplexTypeReference>();
