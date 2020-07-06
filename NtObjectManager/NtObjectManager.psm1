@@ -3211,8 +3211,9 @@ function Get-NtVirtualMemory {
         [switch]$All,
         [parameter(ParameterSetName = "All")]
         [switch]$IncludeFree,
-        [parameter(ParameterSetName = "All")]
         [NtApiDotNet.MemoryType]$Type = "All",
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.MemoryState]$State = "Commit, Reserve",
         [parameter(ParameterSetName = "All")]
         [string]$Name
     )
@@ -3221,11 +3222,14 @@ function Get-NtVirtualMemory {
             $Process.QueryMemoryInformation($Address) | Write-Output
         }
         "All" {
+            if ($IncludeFree) {
+                $State = $State -bor "Free"
+            }
             if ($Name -ne "") {
-                $Process.QueryAllMemoryInformation($IncludeFree, $Type) | Where-Object MappedImageName -eq $Name | Write-Output
+                $Process.QueryAllMemoryInformation($Type, $State) | Where-Object MappedImageName -eq $Name | Write-Output
             }
             else {
-                $Process.QueryAllMemoryInformation($IncludeFree, $Type) | Write-Output
+                $Process.QueryAllMemoryInformation($Type, $State) | Write-Output
             }
         }
     }

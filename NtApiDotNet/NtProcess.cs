@@ -1079,19 +1079,21 @@ namespace NtApiDotNet
         {
             return NtVirtualMemory.QueryMemoryInformation(Handle, base_address);
         }
+
         /// <summary>
         /// Query all memory information regions in process memory.
         /// </summary>
         /// <returns>The list of memory regions.</returns>
-        /// <param name="include_free_regions">True to include free regions of memory.</param>
         /// <param name="type">Specify memory types to filter on.</param>
+        /// <param name="state">Set of flags which indicate the memory states to return.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public IEnumerable<MemoryInformation> QueryAllMemoryInformation(bool include_free_regions, MemoryType type)
+        public IEnumerable<MemoryInformation> QueryAllMemoryInformation(MemoryType type, MemoryState state)
         {
-            IEnumerable<MemoryInformation> mem_infos = NtVirtualMemory.QueryMemoryInformation(Handle);
-            if (!include_free_regions)
+            var mem_infos = NtVirtualMemory.QueryMemoryInformation(Handle);
+
+            if (state != MemoryState.All)
             {
-                mem_infos = mem_infos.Where(m => m.State != MemoryState.Free);
+                mem_infos = mem_infos.Where(m => m.State.HasFlagSet(state));
             }
 
             if (type != MemoryType.All)
@@ -1102,6 +1104,17 @@ namespace NtApiDotNet
             return mem_infos;
         }
 
+        /// <summary>
+        /// Query all memory information regions in process memory.
+        /// </summary>
+        /// <returns>The list of memory regions.</returns>
+        /// <param name="include_free_regions">True to include free regions of memory.</param>
+        /// <param name="type">Specify memory types to filter on.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MemoryInformation> QueryAllMemoryInformation(bool include_free_regions, MemoryType type)
+        {
+            return QueryAllMemoryInformation(type, MemoryState.Commit | MemoryState.Reserve | (include_free_regions ? MemoryState.Free : 0));
+        }
 
         /// <summary>
         /// Query all memory information regions in process memory.
