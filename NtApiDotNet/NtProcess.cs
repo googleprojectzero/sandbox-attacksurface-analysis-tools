@@ -1915,7 +1915,7 @@ namespace NtApiDotNet
         /// Get the environment from the process.
         /// </summary>
         /// <returns>List of environment variables.</returns>
-        public IEnumerable<NtProcessEnvironmentVariable> GetEnvironment()
+        public IReadOnlyList<NtProcessEnvironmentVariable> GetEnvironment()
         {
             var proc_params = GetUserProcessParameters();
             int env_size;
@@ -1931,7 +1931,7 @@ namespace NtApiDotNet
             }
 
             return NtProcessEnvironmentVariable.ParseEnvironmentBlock(
-                ReadMemory(proc_params.Environment.ToInt64(), env_size, true));
+                ReadMemory(proc_params.Environment.ToInt64(), env_size, true)).ToList().AsReadOnly();
         }
 
         /// <summary>

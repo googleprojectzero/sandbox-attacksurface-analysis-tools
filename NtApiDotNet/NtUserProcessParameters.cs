@@ -79,20 +79,6 @@ namespace NtApiDotNet
         public int Length;
     }
 
-    public class NtCurrentDirectory
-    {
-        public int Flags { get; }
-        public uint TimeStamp { get; }
-        public string DosPath { get; }
-
-        internal NtCurrentDirectory(NtProcess process, RtlDriveLetterCurDir curr_dir)
-        {
-            Flags = curr_dir.Flags;
-            TimeStamp = curr_dir.TimeStamp;
-            DosPath = curr_dir.DosPath.ToString(process);
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct RtlUserProcessParameters
     {
