@@ -6128,6 +6128,8 @@ Specify the get list of child windows.
 Specify to get immersive Windows.
 .PARAMETER ThreadId
 Specify the thread ID for the Window.
+.PARAMETER ProcessId
+Specify the process ID for the Window.
 .INPUTS
 None
 .OUTPUTS
@@ -6141,10 +6143,16 @@ function Get-NtWindow {
         [switch]$Immersive,
         [NtApiDotNet.NtWindow]$Parent = [NtApiDotNet.NtWindow]::Null,
         [alias("tid")]
-        [int]$ThreadId
+        [int]$ThreadId,
+        [alias("pid")]
+        [int]$ProcessId
     )
 
-    [NtApiDotNet.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId) | Write-Output
+    $ws = [NtApiDotNet.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId)
+    if ($ProcessId -ne 0) {
+         $ws = $ws | Where-Object ProcessId -eq $ProcessId
+    }
+    $ws | Write-Output
 }
 
 <#
@@ -9441,6 +9449,48 @@ function Get-NdrComplexType {
         "FromDecode3" {
             [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
                 $StublessProxy+$base_address, $OffsetTable+$base_address, $TypeIndex, $Flags) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get user SID for a process.
+.DESCRIPTION
+This cmdlet will get the user SID for a process.
+.PARAMETER Process
+The process object.
+.PARAMETER ProcessId
+The PID of the process.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid
+.EXAMPLE
+Get-NtProcessUser -ProcessId 1234
+Get user SID for process ID 1234.
+.EXAMPLE
+Get-NtProcessUser -Process $p
+Get user SID for process.
+#>
+function Get-NtProcessUser {
+    [CmdletBinding(DefaultParameterSetName = "FromProcessId")]
+    Param(
+        [parameter(ParameterSetName = "FromProcessId", Position = 0, Mandatory)]
+        [alias("pid")]
+        [int]$ProcessId,
+        [parameter(ParameterSetName = "FromProcess", Mandatory)]
+        [NtApiDotNet.NtProcess]$Process
+    )
+    Set-NtTokenPrivilege -Privilege SeDebugPrivilege -WarningAction SilentlyContinue
+    switch ($PSCmdlet.ParameterSetName) {
+        "FromProcessId" {
+            Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId -Access QueryLimitedInformation) {
+                Get-NtProcessUser -Process $p | Write-Output
+            }
+        }
+        "FromProcess" {
+            $Process.User | Write-Output
         }
     }
 }
