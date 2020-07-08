@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -105,8 +106,7 @@ namespace NtApiDotNet
                 return string.Empty;
             }
 
-            return new string(process.ReadMemoryArray<char>(Buffer.ToInt64(),
-                Length / 2));
+            return Encoding.Unicode.GetString(process.ReadMemory(Buffer.ToInt64(), Length, true));
         }
     }
 

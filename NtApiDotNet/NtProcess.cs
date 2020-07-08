@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -1737,6 +1738,7 @@ namespace NtApiDotNet
             {
                 using (var buffer = new SafeStructureInOutBuffer<RtlUserProcessParameters32>())
                 {
+                    buffer.FillBuffer(0);
                     buffer.WriteArray(0, bytes, 0, Math.Min(bytes.Length, buffer.Length));
                     user_params = buffer.Result.Convert();
                 }
@@ -1745,6 +1747,7 @@ namespace NtApiDotNet
             {
                 using (var buffer = new SafeStructureInOutBuffer<RtlUserProcessParameters>())
                 {
+                    buffer.FillBuffer(0);
                     buffer.WriteArray(0, bytes, 0, Math.Min(bytes.Length, buffer.Length));
                     user_params = buffer.Result;
                 }
@@ -1906,6 +1909,29 @@ namespace NtApiDotNet
         public bool TestProtectedAccess(NtProcess target)
         {
             return TestProtectedAccess(this, target);
+        }
+
+        /// <summary>
+        /// Get the environment from the process.
+        /// </summary>
+        /// <returns>List of environment variables.</returns>
+        public IEnumerable<NtProcessEnvironmentVariable> GetEnvironment()
+        {
+            var proc_params = GetUserProcessParameters();
+            int env_size;
+            if (NtObjectUtils.SupportedVersion < SupportedVersion.Windows10_RS5)
+            {
+                var mem_info = QueryMemoryInformation(proc_params.Environment.ToInt64());
+                long curr_size = mem_info.RegionSize - (proc_params.Environment.ToInt64() - mem_info.BaseAddress);
+                env_size = (int)curr_size;
+            }
+            else
+            {
+                env_size = proc_params.EnvironmentSize.ToInt32();
+            }
+
+            return NtProcessEnvironmentVariable.ParseEnvironmentBlock(
+                ReadMemory(proc_params.Environment.ToInt64(), env_size, true));
         }
 
         /// <summary>

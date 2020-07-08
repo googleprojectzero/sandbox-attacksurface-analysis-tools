@@ -63,6 +63,7 @@
     <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
+    <Compile Include="NtProcessEnvironmentVariable.cs" />
     <Compile Include="NtProcessTrustletConfig.cs" />
     <Compile Include="NtUserProcessParameters.cs" />
     <Compile Include="NtWaitNative.cs" />

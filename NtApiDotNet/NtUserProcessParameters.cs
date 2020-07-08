@@ -79,6 +79,20 @@ namespace NtApiDotNet
         public int Length;
     }
 
+    public class NtCurrentDirectory
+    {
+        public int Flags { get; }
+        public uint TimeStamp { get; }
+        public string DosPath { get; }
+
+        internal NtCurrentDirectory(NtProcess process, RtlDriveLetterCurDir curr_dir)
+        {
+            Flags = curr_dir.Flags;
+            TimeStamp = curr_dir.TimeStamp;
+            DosPath = curr_dir.DosPath.ToString(process);
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct RtlUserProcessParameters
     {
@@ -110,7 +124,7 @@ namespace NtApiDotNet
         public UnicodeStringOut ShellInfo;
         public UnicodeStringOut RuntimeData;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x20)]
-        public RtlDriveLetterCurDir[] CurrentDirectores;
+        public RtlDriveLetterCurDir[] CurrentDirectories;
         public IntPtr EnvironmentSize;
         public IntPtr EnvironmentVersion;
         public IntPtr PackageDependencyData;
@@ -151,7 +165,7 @@ namespace NtApiDotNet
                 DesktopName = DesktopName.ToString(process),
                 ShellInfo = ShellInfo.ToString(process),
                 RuntimeData = RuntimeData.ToString(process),
-                //CurrentDirectores = CurrentDirectores.Select(d => d.Convert()).ToArray(),
+                CurrentDirectories = CurrentDirectories,
                 EnvironmentSize = EnvironmentSize,
                 EnvironmentVersion = EnvironmentVersion,
                 PackageDependencyData = PackageDependencyData,
@@ -196,7 +210,7 @@ namespace NtApiDotNet
         public UnicodeStringOut32 ShellInfo;
         public UnicodeStringOut32 RuntimeData;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x20)]
-        public RtlDriveLetterCurDir32[] CurrentDirectores;
+        public RtlDriveLetterCurDir32[] CurrentDirectories;
         public IntPtr32 EnvironmentSize;
         public IntPtr32 EnvironmentVersion;
         public IntPtr32 PackageDependencyData;
@@ -238,7 +252,7 @@ namespace NtApiDotNet
                 DesktopName = DesktopName.Convert(),
                 ShellInfo = ShellInfo.Convert(),
                 RuntimeData = RuntimeData.Convert(),
-                CurrentDirectores = CurrentDirectores.Select(d => d.Convert()).ToArray(),
+                CurrentDirectories = CurrentDirectories.Select(d => d.Convert()).ToArray(),
                 EnvironmentSize = EnvironmentSize.Convert(),
                 EnvironmentVersion = EnvironmentVersion.Convert(),
                 PackageDependencyData = PackageDependencyData.Convert(),
@@ -283,7 +297,7 @@ namespace NtApiDotNet
         public string DesktopName { get; set; }
         public string ShellInfo { get; set; }
         public string RuntimeData { get; set; }
-        public RtlDriveLetterCurDir[] CurrentDirectores { get; }
+        public RtlDriveLetterCurDir[] CurrentDirectories { get; set; }
         public IntPtr EnvironmentSize { get; set; }
         public IntPtr EnvironmentVersion { get; set; }
         public IntPtr PackageDependencyData { get; set; }
