@@ -9482,15 +9482,72 @@ function Get-NtProcessUser {
         [parameter(ParameterSetName = "FromProcess", Mandatory)]
         [NtApiDotNet.NtProcess]$Process
     )
-    Set-NtTokenPrivilege -Privilege SeDebugPrivilege -WarningAction SilentlyContinue
     switch ($PSCmdlet.ParameterSetName) {
         "FromProcessId" {
+            Set-NtTokenPrivilege -Privilege SeDebugPrivilege -WarningAction SilentlyContinue
             Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId -Access QueryLimitedInformation) {
                 Get-NtProcessUser -Process $p | Write-Output
             }
         }
         "FromProcess" {
             $Process.User | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get environment variables from a process.
+.DESCRIPTION
+This cmdlet will get the environment variables from a process.
+.PARAMETER Process
+The process object.
+.PARAMETER ProcessId
+The process ID.
+.PARAMETER Name
+The name of the variable.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtProcessEnvironmentVariable[]
+.EXAMPLE
+Get-NtProcessEnvironment -ProcessId 1234
+Get environment for process 1234.
+.EXAMPLE
+Get-NtProcessEnvironment -Process $p
+Get environment for process.
+.EXAMPLE
+Get-NtProcessEnvironment -ProcessId 1234 -Name "TMP"
+Get environment variable TMP for process 1234.
+#>
+function Get-NtProcessEnvironment {
+    [CmdletBinding(DefaultParameterSetName = "FromProcessId")]
+    Param(
+        [parameter(ParameterSetName = "FromProcessId", Position = 0, Mandatory)]
+        [alias("pid")]
+        [int]$ProcessId,
+        [parameter(ParameterSetName = "FromProcess", Mandatory)]
+        [NtApiDotNet.NtProcess]$Process,
+        [string]$Name
+    )
+    
+    switch ($PSCmdlet.ParameterSetName) {
+        "FromProcessId" {
+            Set-NtTokenPrivilege -Privilege SeDebugPrivilege -WarningAction SilentlyContinue
+            Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId -Access VmRead, QueryLimitedInformation) {
+                if ($Name -ne "") {
+                    $p.GetEnvironmentVariable($Name) | Write-Output
+                } else {
+                    $p.GetEnvironment() | Write-Output
+                }
+            }
+        }
+        "FromProcess" {
+            if ($Name -ne "") {
+                $Process.GetEnvironmentVariable($Name) | Write-Output
+            } else {
+                $Process.GetEnvironment() | Write-Output
+            }
         }
     }
 }
