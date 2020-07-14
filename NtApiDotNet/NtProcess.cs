@@ -1935,6 +1935,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get an environment variable by name.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <returns>The value of the environment variable. Returns null if it doesn't exist.</returns>
+        /// <remarks>Only returns the first variable with a case insensitive name.</remarks>
+        public string GetEnvironmentVariable(string name)
+        {
+            return GetEnvironment().Where(v => v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault().Value;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
