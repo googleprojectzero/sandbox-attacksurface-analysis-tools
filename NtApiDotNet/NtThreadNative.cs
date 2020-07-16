@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Runtime.InteropServices;
 
@@ -497,6 +498,96 @@ namespace NtApiDotNet
             FirstArgument = info.FirstArgument.ToInt64();
             SystemCallNumber = info.SystemCallNumber;
             TickCountSinceSystemCall = info.TickCountSinceSystemCall;
+        }
+    }
+
+    public interface ITeb
+    {
+        IntPtr GetStackBase();
+        IntPtr GetStackLimit();
+        IntPtr GetPeb();
+        Win32Error GetLastWin32Error();
+    }
+
+    public struct PartialTeb : ITeb
+    {
+        public IntPtr ExceptionList;
+        public IntPtr StackBase;
+        public IntPtr StackLimit;
+        public IntPtr SubSystemTib;
+        public IntPtr FiberData;
+        public uint Version;
+        public IntPtr ArbitraryUserPointer;
+        public IntPtr Self;
+        public IntPtr EnvironmentPointer;
+        public ClientIdStruct ClientId;
+        public IntPtr ActiveRpcHandle;
+        public IntPtr ThreadLocalStoragePointer;
+        public IntPtr ProcessEnvironmentBlock;
+        public Win32Error LastErrorValue;
+        public int CountOfOwnedCriticalSections;
+        public IntPtr CsrClientThread;
+        public IntPtr Win32ThreadInfo;
+
+        Win32Error ITeb.GetLastWin32Error()
+        {
+            return LastErrorValue;
+        }
+
+        IntPtr ITeb.GetPeb()
+        {
+            return ProcessEnvironmentBlock;
+        }
+
+        IntPtr ITeb.GetStackBase()
+        {
+            return StackBase;
+        }
+
+        IntPtr ITeb.GetStackLimit()
+        {
+            return StackLimit;
+        }
+    }
+
+    public struct PartialTeb32 : ITeb
+    {
+        public int ExceptionList;
+        public int StackBase;
+        public int StackLimit;
+        public int SubSystemTib;
+        public int FiberData;
+        public uint Version;
+        public int ArbitraryUserPointer;
+        public int Self;
+        public int EnvironmentPointer;
+        public ClientIdStruct ClientId;
+        public int ActiveRpcHandle;
+        public int ThreadLocalStoragePointer;
+        public int ProcessEnvironmentBlock;
+        public Win32Error LastErrorValue;
+        public int CountOfOwnedCriticalSections;
+        public int CsrClientThread;
+        public int Win32ThreadInfo;
+
+        Win32Error ITeb.GetLastWin32Error()
+        {
+            return LastErrorValue;
+        }
+
+        IntPtr ITeb.GetPeb()
+        {
+            return new IntPtr(ProcessEnvironmentBlock);
+        }
+
+        IntPtr ITeb.GetStackBase()
+        {
+            return new IntPtr(StackBase);
+        }
+
+        IntPtr ITeb.GetStackLimit()
+        {
+            return new IntPtr(StackLimit);
         }
     }
 
