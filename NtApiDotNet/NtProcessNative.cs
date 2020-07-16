@@ -792,9 +792,12 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct PartialPeb : IPeb
     {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool InheritedAddressSpace;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool ReadImageFileExecOptions;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool BeingDebugged;
         public PebFlags PebFlags;
         public IntPtr Mutant;
         public IntPtr ImageBaseAddress;
@@ -830,9 +833,12 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct PartialPeb32 : IPeb
     {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool InheritedAddressSpace;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool ReadImageFileExecOptions;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool BeingDebugged;
         public PebFlags PebFlags;
         public int Mutant;
         public int ImageBaseAddress;
