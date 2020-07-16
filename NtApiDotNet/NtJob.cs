@@ -302,13 +302,23 @@ namespace NtApiDotNet
         /// <remarks>You must have set a system root and added a \Device directory (which shadows the real directory) to the silo object directory.</remarks>
         public NtStatus InitializeServerSilo(NtEvent delete_event, bool downlevel_container, bool throw_on_error)
         {
+            IntPtr event_handle = delete_event?.Handle.DangerousGetHandle() ?? IntPtr.Zero;
             ServerSiloInitInformation init = new ServerSiloInitInformation()
             {
-                DeleteEvent = delete_event?.Handle.DangerousGetHandle() ?? IntPtr.Zero,
+                DeleteEvent = event_handle,
                 IsDownlevelContainer = downlevel_container
             };
 
-            return Set(JobObjectInformationClass.JobObjectServerSiloInitialize, init, throw_on_error);
+            var status = Set(JobObjectInformationClass.JobObjectServerSiloInitialize, init, false);
+            if (!status.IsSuccess())
+            {
+                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    return status.ToNtException(throw_on_error);
+                }
+                return Set(JobObjectInformationClass.JobObjectServerSiloInitialize, event_handle, throw_on_error);
+            }
+            return status;
         }
 
         /// <summary>
@@ -757,8 +767,28 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The Server Silo Basic Information.</returns>
-        public NtResult<ServerSiloBasicInformation> QueryServerSiloBasicInformation(bool throw_on_error) 
-            => Query<ServerSiloBasicInformation>(JobObjectInformationClass.JobObjectServerSiloBasicInformation, default, throw_on_error);
+        public NtResult<ServerSiloBasicInformation> QueryServerSiloBasicInformation(bool throw_on_error)
+        {
+            var result = Query<ServerSiloBasicInformation>(JobObjectInformationClass.JobObjectServerSiloBasicInformation, default, false);
+            if (!result.IsSuccess)
+            {
+                if (result.Status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    result.Status.ToNtException();
+                    return result;
+                }
+
+                result = Query<ServerSiloBasicInformation1903>(JobObjectInformationClass.JobObjectServerSiloBasicInformation,
+                    default, throw_on_error).Map(i => new ServerSiloBasicInformation()
+                    {
+                        ServiceSessionId = i.ServiceSessionId,
+                        ExitStatus = i.ExitStatus,
+                        State = i.State
+                    });
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Get Silo user shared data.

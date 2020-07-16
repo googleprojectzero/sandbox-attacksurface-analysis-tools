@@ -346,6 +346,14 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ServerSiloBasicInformation1903
+    {
+        public int ServiceSessionId;
+        public ServerSiloState State;
+        public NtStatus ExitStatus;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct ServerSiloBasicInformation
     {
         public int ServiceSessionId;
