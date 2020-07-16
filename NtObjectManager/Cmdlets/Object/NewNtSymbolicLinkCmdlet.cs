@@ -62,6 +62,12 @@ namespace NtObjectManager.Cmdlets.Object
         public string TargetPath { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create a global symbolic link. You need SeTcbPrivilege for this call to succeed.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Global { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -71,6 +77,15 @@ namespace NtObjectManager.Cmdlets.Object
             if (TargetPath == null)
             {
                 throw new ArgumentNullException("TargetPath");
+            }
+
+            if (Global)
+            {
+                using (var link = NtSymbolicLink.Create(obj_attributes, Access | SymbolicLinkAccessRights.Set, TargetPath))
+                {
+                    link.SetGlobalLink();
+                    return link.Duplicate();
+                }
             }
 
             return NtSymbolicLink.Create(obj_attributes, Access, TargetPath);
