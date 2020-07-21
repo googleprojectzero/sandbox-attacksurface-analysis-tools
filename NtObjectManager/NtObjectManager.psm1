@@ -9530,7 +9530,7 @@ function Get-NtProcessEnvironment {
         [NtApiDotNet.NtProcess]$Process,
         [string]$Name
     )
-    
+
     switch ($PSCmdlet.ParameterSetName) {
         "FromProcessId" {
             Set-NtTokenPrivilege -Privilege SeDebugPrivilege -WarningAction SilentlyContinue
@@ -9550,4 +9550,27 @@ function Get-NtProcessEnvironment {
             }
         }
     }
+}
+
+<#
+.SYNOPSIS
+Split a command line into its component parts.
+.DESCRIPTION
+This cmdlet take a process command line and split it into its component parts.
+.PARAMETER CommandLine
+The command line.
+.INPUTS
+None
+.OUTPUTS
+string[]
+.EXAMPLE
+Split-Win32CommandLine -CommandLine "notepad test.txt"
+Split the command line "notepad test.txt"
+#>
+function Split-Win32CommandLine {
+    Param(
+        [parameter(Position = 0, Mandatory)]
+        [string]$CommandLine
+    )
+    [NtApiDotNet.Win32.Win32Utils]::ParseCommandLine($CommandLine) | Write-Output
 }
