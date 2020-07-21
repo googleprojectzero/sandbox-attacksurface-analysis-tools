@@ -1232,7 +1232,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get thread exit status.
         /// </summary>
-        public NtStatus ExitNtStatus => QueryBasicInformation().ExitStatus;
+        public int ExitStatus => QueryBasicInformation().ExitStatus;
+
+        /// <summary>
+        /// Get thread exit status.
+        /// </summary>
+        public NtStatus ExitNtStatus => (NtStatus)ExitStatus;
         #endregion
     }
 }

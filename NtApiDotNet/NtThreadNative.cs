@@ -107,7 +107,7 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public class ThreadBasicInformation
     {
-        public NtStatus ExitStatus;
+        public int ExitStatus;
         public IntPtr TebBaseAddress;
         public ClientIdStruct ClientId;
         public UIntPtr AffinityMask;
