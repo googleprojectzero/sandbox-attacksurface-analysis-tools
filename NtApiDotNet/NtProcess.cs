@@ -2240,20 +2240,8 @@ namespace NtApiDotNet
         /// </summary>
         public int HardErrorMode
         {
-            get
-            {
-                var result = Query(ProcessInformationClass.ProcessDefaultHardErrorMode, 0, false);
-                if (result.IsSuccess)
-                {
-                    return result.Result;
-                }
-                return 0;
-            }
-
-            set
-            {
-                Set(ProcessInformationClass.ProcessDefaultHardErrorMode, value);
-            }
+            get => Query(ProcessInformationClass.ProcessDefaultHardErrorMode, 0, false).GetResultOrDefault(0);
+            set => Set(ProcessInformationClass.ProcessDefaultHardErrorMode, value);
         }
 
 
