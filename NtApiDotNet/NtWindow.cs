@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,6 +51,84 @@ namespace NtApiDotNet
         public string ClassName => GetClassName(false, false).GetResultOrDefault(string.Empty);
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Send a message to the Window, Unicode.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <returns>The send result.</returns>
+        public IntPtr SendMessage(int message, IntPtr wparam, IntPtr lparam)
+        {
+            return Win32NativeMethods.SendMessageW(Handle, message, wparam, lparam);
+        }
+
+        /// <summary>
+        /// Send a message to the Window, ANSI.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <returns>The send result.</returns>
+        public IntPtr SendMessageAnsi(int message, IntPtr wparam, IntPtr lparam)
+        {
+            return Win32NativeMethods.SendMessageA(Handle, message, wparam, lparam);
+        }
+
+        /// <summary>
+        /// Post a message to the Window, Unicode.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The send result.</returns>
+        public NtStatus PostMessage(int message, IntPtr wparam, IntPtr lparam, bool throw_on_error)
+        {
+            return PrivatePostMessage(Win32NativeMethods.PostMessageW, message, wparam, lparam, throw_on_error);
+        }
+
+        /// <summary>
+        /// Post a message to the Window, Unicode.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <returns>The send result.</returns>
+        public void PostMessage(int message, IntPtr wparam, IntPtr lparam)
+        {
+            PostMessage(message, wparam, lparam, true);
+        }
+
+        /// <summary>
+        /// Send a message to the Window, ANSI.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The send result.</returns>
+        public NtStatus PostMessageAnsi(int message, IntPtr wparam, IntPtr lparam, bool throw_on_error)
+        {
+            return PrivatePostMessage(Win32NativeMethods.PostMessageA, message, wparam, lparam, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a message to the Window, ANSI.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="wparam">The WPARAM.</param>
+        /// <param name="lparam">The LPARAM.</param>
+        /// <returns>The send result.</returns>
+        public void PostMessageAnsi(int message, IntPtr wparam, IntPtr lparam)
+        {
+            PostMessageAnsi(message, wparam, lparam, true);
+        }
+
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -58,6 +137,7 @@ namespace NtApiDotNet
         {
             Handle = handle;
         }
+        #endregion
 
         #region Static Properties
         /// <summary>
@@ -141,6 +221,16 @@ namespace NtApiDotNet
                 return str.ToString().CreateResult();
             }
         }
+
+        private NtStatus PrivatePostMessage(Func<IntPtr, int, IntPtr, IntPtr, bool> func, int message, IntPtr wparam, IntPtr lparam, bool throw_on_error)
+        {
+            if (!func(Handle, message, wparam, lparam))
+            {
+                return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
+            }
+            return NtStatus.STATUS_SUCCESS;
+        }
+
         #endregion
     }
 }
