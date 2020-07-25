@@ -137,6 +137,15 @@ namespace NtApiDotNet
         {
             Handle = handle;
         }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="handle">Window handle.</param>
+        public NtWindow(long handle)
+        {
+            Handle = new IntPtr(handle);
+        }
         #endregion
 
         #region Static Properties
