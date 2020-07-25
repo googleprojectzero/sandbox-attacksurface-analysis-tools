@@ -6157,6 +6157,62 @@ function Get-NtWindow {
 
 <#
 .SYNOPSIS
+Send a message to a Window handle.
+.DESCRIPTION
+This cmdlet sends a message to a window handle.
+.PARAMETER Window
+The Window to send to.
+.PARAMETER Message
+Specify the message to send.
+.PARAMETER WParam
+Specify the WPARAM value.
+.PARAMETER LParam
+Specify the LPARAM value.
+.PARAMETER Wait
+Specify to send the message and wait rather than post.
+.PARAMETER Ansi
+Specify to send the message as ANSI rather than Unicode.
+.INPUTS
+None
+.OUTPUTS
+System.IntPtr
+#>
+function Send-NtWindowMessage {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.NtWindow[]]$Window,
+        [Parameter(Mandatory, Position = 1)]
+        [int]$Message,
+        [Parameter(Position = 2)]
+        [IntPtr]$WParam = [IntPtr]::Zero,
+        [Parameter(Position = 3)]
+        [IntPtr]$LParam = [IntPtr]::Zero,
+        [switch]$Wait,
+        [switch]$Ansi
+    )
+
+    PROCESS {
+        foreach($w in $Window) {
+            if ($Wait) {
+                if ($Ansi) {
+                    $w.SendMessageAnsi($Message, $WParam, $LParam) | Write-Output
+                } else {
+                    $w.SendMessage($Message, $WParam, $LParam) | Write-Output
+                }
+            } else {
+                if ($Ansi) {
+                    $w.PostMessageAnsi($Message, $WParam, $LParam)
+                } else {
+                    $w.PostMessage($Message, $WParam, $LParam)
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Outputs a hex dump for a byte array.
 .DESCRIPTION
 This cmdlet converts a byte array to a hex dump.
