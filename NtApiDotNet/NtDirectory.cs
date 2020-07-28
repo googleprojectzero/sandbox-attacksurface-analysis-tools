@@ -665,10 +665,21 @@ namespace NtApiDotNet
         /// </summary>
         public void Delete()
         {
+            Delete(true);
+        }
+
+        /// <summary>
+        /// Deletes a private namespace. If not a private namespace this does nothing.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Delete(bool throw_on_error)
+        {
             if (_private_namespace)
             {
-                NtSystemCalls.NtDeletePrivateNamespace(Handle).ToNtException();
+                return NtSystemCalls.NtDeletePrivateNamespace(Handle).ToNtException(throw_on_error);
             }
+            return NtStatus.STATUS_SUCCESS;
         }
 
         /// <summary>
