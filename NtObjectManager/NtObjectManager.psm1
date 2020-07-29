@@ -4881,6 +4881,8 @@ The base key to query the values from.
 The name of the value to query. If not specified then returns all values.
 .PARAMETER AsString
 Output the values as strings.
+.PARAMETER AsObject
+Output the values as the data object.
 .INPUTS
 None
 .OUTPUTS
@@ -4905,7 +4907,8 @@ function Get-NtKeyValue {
         [NtApiDotNet.NtKey]$Key,
         [parameter(ParameterSetName = "FromName", Position = 1)]
         [string]$Name,
-        [switch]$AsString
+        [switch]$AsString,
+        [switch]$AsObject
     )
     $values = switch ($PSCmdlet.ParameterSetName) {
         "All" {
@@ -4916,11 +4919,10 @@ function Get-NtKeyValue {
         }
     }
     if ($AsString) {
-        foreach ($v in $values) {
-            $v.ToString() | Write-Output
-        }
-    }
-    else {
+        $values | ForEach-Object { $_.ToString() } | Write-Output
+    } elseif($AsObject) {
+        $values | ForEach-Object { $_.ToObject() } | Write-Output
+    } else {
         $values | Write-Output
     }
 }
