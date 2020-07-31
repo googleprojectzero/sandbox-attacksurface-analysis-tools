@@ -402,13 +402,15 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify list of capability SIDS to add to token. Can specify an SDDL format string or a capability name.</para>
         /// </summary>
         [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
-        public string[] CapabilitySids { get; set; }
+        [Alias("CapabilitySids")]
+        public string[] CapabilitySid { get; set; }
 
         /// <summary>
         /// <para type="description">Specify list of handles to capture with lowbox token.</para>
         /// </summary>
         [Parameter(ParameterSetName = "LowBox")]
-        public NtObject[] Handles { get; set; }
+        [Alias("Handles")]
+        public NtObject[] Handle { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a service account to create.</para>
@@ -647,7 +649,7 @@ namespace NtObjectManager.Cmdlets.Object
 
         private IEnumerable<Sid> GetCapabilitySids()
         {
-            return CapabilitySids == null ? new Sid[0] : CapabilitySids.Select(s =>
+            return CapabilitySid == null ? new Sid[0] : CapabilitySid.Select(s =>
             {
                 if (!s.StartsWith("S-"))
                 {
@@ -682,7 +684,7 @@ namespace NtObjectManager.Cmdlets.Object
             }
 
             return token.CreateLowBoxToken(package_sid, GetCapabilitySids(), 
-                Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed);
+                Handle ?? new NtObject[0], TokenAccessRights.MaximumAllowed);
         }
 
         private NtToken GetFilteredToken(NtToken token)
