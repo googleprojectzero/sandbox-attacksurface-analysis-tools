@@ -31,6 +31,8 @@ namespace NtApiDotNet
         // A dummy system info object to repurpose the query/set methods.
         private class NtSystemInfoObject : NtObjectWithDuplicateAndInfo<NtGeneric, GenericAccessRights, SystemInformationClass, SystemInformationClass>
         {
+            public static int MaxHandleInfoBufferSize = 256 * 1024 * 1024;
+
             public NtSystemInfoObject() : base(SafeKernelObjectHandle.Null)
             {
             }
@@ -41,7 +43,7 @@ namespace NtApiDotNet
                 {
                     case SystemInformationClass.SystemExtendedHandleInformation:
                     case SystemInformationClass.SystemHandleInformation:
-                        return 128 * 1024 * 1024;
+                        return MaxHandleInfoBufferSize;
                 }
 
                 return 16 * 1024 * 1024;
@@ -1097,58 +1099,28 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether the kernel debugger is enabled.
         /// </summary>
-        public static bool KernelDebuggerEnabled
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
-            }
-        }
+        public static bool KernelDebuggerEnabled => GetKernelDebuggerInformation().KernelDebuggerEnabled;
 
         /// <summary>
         /// Get whether the kernel debugger is not present.
         /// </summary>
-        public static bool KernelDebuggerNotPresent
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
-            }
-        }
+        public static bool KernelDebuggerNotPresent => GetKernelDebuggerInformation().KernelDebuggerNotPresent;
 
         /// <summary>
         /// Get current code integrity option settings.
         /// </summary>
-        public static CodeIntegrityOptions CodeIntegrityOptions
-        {
-            get
-            {
-                return Query(SystemInformationClass.SystemCodeIntegrityInformation, 
+        public static CodeIntegrityOptions CodeIntegrityOptions => Query(SystemInformationClass.SystemCodeIntegrityInformation,
                     new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) }).CodeIntegrityOptions;
-            }
-        }
 
         /// <summary>
         /// Get code integrity policy.
         /// </summary>
-        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
-        {
-            get
-            {
-                return Query<SystemCodeIntegrityPolicy>(SystemInformationClass.SystemCodeIntegrityPolicyInformation);
-            }
-        }
+        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy => Query<SystemCodeIntegrityPolicy>(SystemInformationClass.SystemCodeIntegrityPolicyInformation);
 
         /// <summary>
         /// Get code integrity unlock information.
         /// </summary>
-        public static int CodeIntegrityUnlock
-        {
-            get
-            {
-                return Query<int>(SystemInformationClass.SystemCodeIntegrityUnlockInformation);
-            }
-        }
+        public static int CodeIntegrityUnlock => Query<int>(SystemInformationClass.SystemCodeIntegrityUnlockInformation);
 
         /// <summary>
         /// Get all code integrity policies.
@@ -1189,24 +1161,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether secure boot is enabled.
         /// </summary>
-        public static bool SecureBootEnabled
-        {
-            get
-            {
-                return Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
-            }
-        }
+        public static bool SecureBootEnabled => Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
 
         /// <summary>
         /// Get whether system supports secure boot.
         /// </summary>
-        public static bool SecureBootCapable
-        {
-            get
-            {
-                return Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
-            }
-        }
+        public static bool SecureBootCapable => Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
 
         /// <summary>
         /// Extract the secure boot policy.
@@ -1277,6 +1237,14 @@ namespace NtApiDotNet
         /// Get the Isolated User Mode flags.
         /// </summary>
         public static SystemIsolatedUserModeInformationFlags IsolatedUserModeFlags => GetIsolatedUserModeFlags(true).Result;
+        /// <summary>
+        /// Get or set the maximum info buffer size in case you need to increase it.
+        /// </summary>
+        public static int MaxHandleInfoBufferSize
+        {
+            get => NtSystemInfoObject.MaxHandleInfoBufferSize;
+            set => NtSystemInfoObject.MaxHandleInfoBufferSize = value;
+        }
 
         #endregion
     }
