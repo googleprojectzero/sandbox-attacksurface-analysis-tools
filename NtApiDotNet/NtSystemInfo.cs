@@ -37,6 +37,13 @@ namespace NtApiDotNet
 
             protected override int GetMaximumBruteForceLength(SystemInformationClass info_class)
             {
+                switch (info_class)
+                {
+                    case SystemInformationClass.SystemExtendedHandleInformation:
+                    case SystemInformationClass.SystemHandleInformation:
+                        return 128 * 1024 * 1024;
+                }
+
                 return 16 * 1024 * 1024;
             }
 
