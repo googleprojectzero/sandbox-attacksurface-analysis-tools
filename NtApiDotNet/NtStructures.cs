@@ -41,6 +41,16 @@ namespace NtApiDotNet
         {
             return DateTime.FromFileTime(QuadPart);
         }
+
+        internal LargeIntegerStruct ToStruct()
+        {
+            return new LargeIntegerStruct() { QuadPart = QuadPart };
+        }
+
+        internal NtWaitTimeout ToTimeout()
+        {
+            return new NtWaitTimeout(QuadPart);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -63,6 +73,11 @@ namespace NtApiDotNet
             {
                 return DateTime.MinValue;
             }
+        }
+
+        internal NtWaitTimeout ToTimeout()
+        {
+            return new NtWaitTimeout(QuadPart);
         }
     }
 #pragma warning restore 1591

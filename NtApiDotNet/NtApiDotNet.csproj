@@ -61,6 +61,7 @@
     <Compile Include="ClaimSecurityAttribute.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="NtDesktopNative.cs" />
+    <Compile Include="NtMailslotFile.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
     <Compile Include="NtProcessEnvironmentVariable.cs" />

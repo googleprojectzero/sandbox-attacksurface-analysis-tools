@@ -734,6 +734,30 @@ namespace NtApiDotNet
         public NamedPipeEnd NamedPipeEnd;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileMailslotQueryInformation
+    {
+        public int MaximumMessageSize;
+        public int MailslotQuota;
+        public int NextMessageSize;
+        public int MessagesAvailable;
+        public LargeIntegerStruct ReadTimeout;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileMailslotSetInformation
+    {
+        public LargeIntegerStruct ReadTimeout;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileMailslotPeekBuffer
+    {
+        public int ReadDataAvailable;
+        public int NumberOfMessages;
+        public int MessageLength;
+    }
+
     public enum FileInformationClass
     {
         FileDirectoryInformation = 1,

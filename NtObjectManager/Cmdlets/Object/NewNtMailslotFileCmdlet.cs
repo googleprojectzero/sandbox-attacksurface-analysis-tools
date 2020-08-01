@@ -32,7 +32,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtMailslotFile")]
-    [OutputType(typeof(NtFile))]
+    [OutputType(typeof(NtMailslotFile))]
     public class NewNtMailslotFileCmdlet : GetNtFileCmdlet
     {
         /// <summary>

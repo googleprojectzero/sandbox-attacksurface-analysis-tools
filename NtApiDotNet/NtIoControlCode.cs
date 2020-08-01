@@ -270,6 +270,7 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_WRITE = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2046, FileControlMethod.Buffered, FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_TRANSCEIVE = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2047, FileControlMethod.Neither, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_READ_OVFLOW = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2048, FileControlMethod.Buffered, FileControlAccess.Read);
+        public static readonly NtIoControlCode FSCTL_MAILSLOT_PEEK = new NtIoControlCode(FileDeviceType.MAILSLOT, 0, FileControlMethod.Neither, FileControlAccess.Read);
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_CREATE_POINT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 0, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_DELETE_POINTS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 1, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_POINTS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 2, FileControlMethod.Buffered, FileControlAccess.Any);

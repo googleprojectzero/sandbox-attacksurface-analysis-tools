@@ -85,10 +85,12 @@ namespace NtApiDotNet
 
         private static NtFile CreateFileObject(SafeKernelObjectHandle handle, IoStatus io_status)
         {
-            if (GetDeviceType(handle) == FileDeviceType.NAMED_PIPE)
+            switch (GetDeviceType(handle))
             {
-                return new NtNamedPipeFileClient(handle, io_status);
+                case FileDeviceType.NAMED_PIPE:
+                    return new NtNamedPipeFileClient(handle, io_status);
             }
+
             return new NtFile(handle, io_status);
         }
 
@@ -710,17 +712,58 @@ namespace NtApiDotNet
         /// <param name="open_options">Open options for file</param>
         /// <param name="mailslot_quota">Mailslot quota</param>
         /// <param name="maximum_message_size">Maximum message size (0 for any size)</param>
-        /// <param name="default_timeout">Timeout in MS ( &lt;0 is infinite)</param>
+        /// <param name="default_timeout">Read Timeout.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The file instance for the mailslot.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile CreateMailslot(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+        public static NtResult<NtMailslotFile> CreateMailslot(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+            FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
+            NtWaitTimeout default_timeout, bool throw_on_error)
+        {
+            IoStatus io_status = new IoStatus();
+            LargeInteger timeout = default_timeout?.Timeout ?? new LargeInteger(-1);
+            return NtSystemCalls.NtCreateMailslotFile(out SafeKernelObjectHandle handle, desired_access,
+                obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout)
+                .CreateResult(throw_on_error, () => new NtMailslotFile(handle, io_status));
+        }
+
+        /// <summary>
+        /// Create a new named mailslot file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="mailslot_quota">Mailslot quota</param>
+        /// <param name="maximum_message_size">Maximum message size (0 for any size)</param>
+        /// <param name="default_timeout">Read timeout in MS (&lt;0 is infinite)</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The file instance for the mailslot.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtMailslotFile> CreateMailslot(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+            FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
+            long default_timeout, bool throw_on_error)
+        {
+            return CreateMailslot(obj_attributes, desired_access, open_options,
+                maximum_message_size, mailslot_quota, default_timeout >= 0 ? NtWaitTimeout.FromMilliseconds(default_timeout) : null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a new named mailslot file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="mailslot_quota">Mailslot quota</param>
+        /// <param name="maximum_message_size">Maximum message size (0 for any size)</param>
+        /// <param name="default_timeout">Read timeout in MS ( &lt;0 is infinite)</param>
+        /// <returns>The file instance for the mailslot.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtMailslotFile CreateMailslot(ObjectAttributes obj_attributes, FileAccessRights desired_access,
             FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
             long default_timeout)
         {
-            IoStatus io_status = new IoStatus();
-            LargeInteger timeout = default_timeout < 0 ? new LargeInteger(-1) : NtWaitTimeout.FromMilliseconds(default_timeout).ToLargeInteger();
-            NtSystemCalls.NtCreateMailslotFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout);
-            return new NtFile(handle, io_status);
+            return CreateMailslot(obj_attributes, desired_access, open_options, 
+                maximum_message_size, mailslot_quota, default_timeout, true).Result;
         }
 
         /// <summary>
@@ -735,7 +778,7 @@ namespace NtApiDotNet
         /// <param name="default_timeout">Timeout in MS ( &lt;0 is infinite)</param>
         /// <returns>The file instance for the mailslot.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile CreateMailslot(string path, NtObject root, FileAccessRights desired_access,
+        public static NtMailslotFile CreateMailslot(string path, NtObject root, FileAccessRights desired_access,
             FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
             long default_timeout)
         {
