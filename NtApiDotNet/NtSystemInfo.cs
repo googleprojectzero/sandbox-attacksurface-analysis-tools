@@ -31,21 +31,12 @@ namespace NtApiDotNet
         // A dummy system info object to repurpose the query/set methods.
         private class NtSystemInfoObject : NtObjectWithDuplicateAndInfo<NtGeneric, GenericAccessRights, SystemInformationClass, SystemInformationClass>
         {
-            public static int MaxHandleInfoBufferSize = 256 * 1024 * 1024;
-
             public NtSystemInfoObject() : base(SafeKernelObjectHandle.Null)
             {
             }
 
             protected override int GetMaximumBruteForceLength(SystemInformationClass info_class)
             {
-                switch (info_class)
-                {
-                    case SystemInformationClass.SystemExtendedHandleInformation:
-                    case SystemInformationClass.SystemHandleInformation:
-                        return MaxHandleInfoBufferSize;
-                }
-
                 return 16 * 1024 * 1024;
             }
 
@@ -1261,15 +1252,6 @@ namespace NtApiDotNet
         /// Get the Isolated User Mode flags.
         /// </summary>
         public static SystemIsolatedUserModeInformationFlags IsolatedUserModeFlags => GetIsolatedUserModeFlags(true).Result;
-        /// <summary>
-        /// Get or set the maximum info buffer size in case you need to increase it.
-        /// </summary>
-        public static int MaxHandleInfoBufferSize
-        {
-            get => NtSystemInfoObject.MaxHandleInfoBufferSize;
-            set => NtSystemInfoObject.MaxHandleInfoBufferSize = value;
-        }
-
         #endregion
     }
 }
