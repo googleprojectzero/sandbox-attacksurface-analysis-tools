@@ -274,6 +274,14 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct SystemHandleInformationExHeader
+    {
+        public IntPtr NumberOfHandles;
+        public IntPtr Reserved;
+        public SystemHandleTableInfoEntryEx Handles;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct SystemThreadInformation
     {
         public LargeIntegerStruct KernelTime;

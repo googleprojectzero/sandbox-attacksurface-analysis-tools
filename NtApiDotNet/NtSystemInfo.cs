@@ -188,14 +188,38 @@ namespace NtApiDotNet
         /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
-            using (var buffer = QueryBuffer<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
+            int repeat_count = 10;
+
+            while (repeat_count-- > 0)
             {
-                var handle_info = buffer.Result;
-                int handle_count = handle_info.NumberOfHandles.ToInt32();
-                SystemHandleTableInfoEntryEx[] handles = new SystemHandleTableInfoEntryEx[handle_count];
-                buffer.Data.ReadArray(0, handles, 0, handle_count);
-                return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query));
+                int handle_count = 0;
+                using (var buffer = new SafeStructureInOutBuffer<SystemHandleInformationExHeader>())
+                {
+                    var status = _system_info_object.QueryInformation(SystemInformationClass.SystemExtendedHandleInformation, buffer, out int _);
+                    if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                    {
+                        throw new NtException(status);
+                    }
+                    // Get count and add a 10000 handle margin in case it increases.
+                    handle_count = buffer.Result.NumberOfHandles.ToInt32() + 10000;
+                }
+
+                using (var buffer = new SafeStructureInOutBuffer<SystemHandleInformationEx>(handle_count * Marshal.SizeOf(typeof(SystemHandleTableInfoEntryEx)), true))
+                {
+                    var status = _system_info_object.QueryInformation(SystemInformationClass.SystemExtendedHandleInformation, buffer, out int _);
+                    if (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                    {
+                        continue;
+                    }
+                    status.ToNtException();
+                    var handle_info = buffer.Result;
+                    handle_count = handle_info.NumberOfHandles.ToInt32();
+                    SystemHandleTableInfoEntryEx[] handles = new SystemHandleTableInfoEntryEx[handle_count];
+                    buffer.Data.ReadArray(0, handles, 0, handle_count);
+                    return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query));
+                }
             }
+            throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
         }
 
         /// <summary>
