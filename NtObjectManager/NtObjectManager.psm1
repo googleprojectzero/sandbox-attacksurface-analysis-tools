@@ -6299,13 +6299,15 @@ This cmdlet gets the access masks for a type.
 .PARAMETER Type
 The NT type.
 .PARAMETER Read
-Shown only read access.
+Show only read access.
 .PARAMETER Write
-Shown only write access.
+Show only write access.
 .PARAMETER Execute
-Shown only execute access.
+Show only execute access.
 .PARAMETER Mandatory
-Shown only default mandatory access.
+Show only default mandatory access.
+.PARAMETER SpecificOnly
+Show only type specific access.
 .INPUTS
 None
 .OUTPUTS
@@ -6323,7 +6325,8 @@ function Get-NtTypeAccess {
         [Parameter(ParameterSetName = "Execute")]
         [switch]$Execute,
         [Parameter(ParameterSetName = "Mandatory")]
-        [switch]$Mandatory
+        [switch]$Mandatory,
+        [switch]$SpecificOnly
     )
 
     $access = switch ($PSCmdlet.ParameterSetName) {
@@ -6334,7 +6337,11 @@ function Get-NtTypeAccess {
         "Mandatory" { $Type.MandatoryAccessRights }
     }
 
-    $access | Write-Output
+    if ($SpecificOnly) {
+        $access | Where-Object {$_.Mask.HasSpecificAccess} | Write-Output
+    } else {
+        $access | Write-Output
+    }
 }
 
 <#
