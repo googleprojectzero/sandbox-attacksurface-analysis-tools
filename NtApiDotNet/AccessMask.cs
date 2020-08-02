@@ -120,6 +120,11 @@ namespace NtApiDotNet
         public bool HasGenericAccess => (Access & 0xF0000000) != 0;
 
         /// <summary>
+        /// Get whether this access mask hash type specific access rights.
+        /// </summary>
+        public bool HasSpecificAccess => (Access & 0xFFFF) != 0;
+
+        /// <summary>
         /// Get whether the current access mask is granted specific permissions.
         /// </summary>
         /// <param name="mask">The access mask to check</param>
