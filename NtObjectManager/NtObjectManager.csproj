@@ -83,6 +83,7 @@
     <Compile Include="Cmdlets\Object\GetNtJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtKeyChildCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtKeyCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtKeySymbolicLinkTarget.cs" />
     <Compile Include="Cmdlets\Object\GetNtMutantCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtNamedPipeFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtObjectCmdlet.cs" />
