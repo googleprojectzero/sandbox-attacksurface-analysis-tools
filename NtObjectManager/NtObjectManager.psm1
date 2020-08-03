@@ -9639,3 +9639,20 @@ function Split-Win32CommandLine {
     )
     [NtApiDotNet.Win32.Win32Utils]::ParseCommandLine($CommandLine) | Write-Output
 }
+
+<#
+.SYNOPSIS
+Gets the list of loaded hives.
+.DESCRIPTION
+This cmdlet enumerates the list of loaded hives from the Registry.
+.INPUTS
+None
+.OUTPUTS
+NtKeyHive[]
+.EXAMPLE
+Get-NtKeyHiveSplit
+Get the list of loaded hives.
+#>
+function Get-NtKeyHive {
+    [NtApiDotNet.NtKeyUtils]::GetHiveList() | Write-Output
+}

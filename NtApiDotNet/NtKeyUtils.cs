@@ -102,5 +102,25 @@ namespace NtApiDotNet
             }
             return nt_path;
         }
+
+        /// <summary>
+        /// Query list of loaded hives from the Registry.
+        /// </summary>
+        /// <returns>The list of loaded hives.</returns>
+        public static IReadOnlyList<NtKeyHive> GetHiveList()
+        {
+            List<NtKeyHive> hives = new List<NtKeyHive>();
+            using (var key = NtKey.Open(@"\registry\machine\system\currentcontrolset\control\hivelist", null, KeyAccessRights.QueryValue))
+            {
+                foreach (var value in key.QueryValues())
+                {
+                    if (value.Name != "")
+                    {
+                        hives.Add(new NtKeyHive(value.Name, value.ToString()));
+                    }
+                }
+            }
+            return hives.AsReadOnly();
+        }
     }
 }
