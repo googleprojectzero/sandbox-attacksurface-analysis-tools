@@ -2439,6 +2439,8 @@ Specify the access component.
 Specify to try and lookup a known name for the IO control code. If no name found will just return an empty string.
 .PARAMETER All
 Specify to return all known IO control codes with names.
+.PARAMETER Name
+Specify to lookup an IO control code with a name.
 .OUTPUTS
 NtApiDotNet.NtIoControlCode
 System.String
@@ -2472,7 +2474,9 @@ function Get-NtIoControlCode {
         [Parameter(ParameterSetName = "FromCode")]
         [switch]$LookupName,
         [Parameter(ParameterSetName = "FromAll", Mandatory = $true)]
-        [switch]$All
+        [switch]$All,
+        [Parameter(ParameterSetName = "FromName", Mandatory = $true)]
+        [string]$Name
     )
     $result = switch ($PsCmdlet.ParameterSetName) {
         "FromCode" {
@@ -2484,12 +2488,15 @@ function Get-NtIoControlCode {
         "FromAll" {
             [NtApiDotNet.NtWellKnownIoControlCodes]::GetKnownControlCodes()
         }
+        "FromName" {
+            [NtApiDotNet.NtWellKnownIoControlCodes]::GetKnownControlCodeByName($Name)
+        }
     }
 
     if ($LookupName) {
         return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($result)
     }
-    $result
+    $result | Write-Output
 }
 
 <#
