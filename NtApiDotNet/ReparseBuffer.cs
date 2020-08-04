@@ -24,6 +24,7 @@ namespace NtApiDotNet
     /// </summary>
     public enum ReparseTag : uint
     {
+        NONE = 0,
         MOUNT_POINT = 0xA0000003,
         HSM = 0xC0000004,
         DRIVE_EXTENDER = 0x80000005,
