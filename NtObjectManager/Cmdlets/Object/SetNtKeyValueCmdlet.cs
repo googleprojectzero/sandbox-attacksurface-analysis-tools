@@ -15,7 +15,6 @@
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
-using System.Text;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -38,15 +37,6 @@ namespace NtObjectManager.Cmdlets.Object
     [Cmdlet(VerbsCommon.Set, "NtKeyValue")]
     public class SetNtKeyValueCmdlet : PSCmdlet
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SetNtKeyValueCmdlet()
-        {
-            // Default is binary type when using bytes.
-            ValueType = RegistryValueType.Binary;
-        }
-
         /// <summary>
         /// <para type="description">The key to set the value on.</para>
         /// </summary>
@@ -81,6 +71,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify the value type when using bytes.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromBytes")]
+        [Parameter(ParameterSetName = "FromString")]
         public RegistryValueType ValueType { get; set; }
 
         /// <summary>
@@ -121,7 +112,14 @@ namespace NtObjectManager.Cmdlets.Object
             switch (ParameterSetName)
             {
                 case "FromString":
-                    Key.SetValue(Name, String);
+                    if (ValueType == RegistryValueType.None)
+                    {
+                        Key.SetValue(Name, String);
+                    }
+                    else
+                    {
+                        Key.SetValue(Name, ValueType, String);
+                    }
                     break;
                 case "FromExpandString":
                     Key.SetValue(Name, RegistryValueType.ExpandString, ExpandString);
@@ -130,6 +128,10 @@ namespace NtObjectManager.Cmdlets.Object
                     Key.SetValue(Name, MultiString);
                     break;
                 case "FromBytes":
+                    if (ValueType == RegistryValueType.None)
+                    {
+                        ValueType = RegistryValueType.Binary;
+                    }
                     Key.SetValue(Name, ValueType, Bytes);
                     break;
                 case "FromDword":
