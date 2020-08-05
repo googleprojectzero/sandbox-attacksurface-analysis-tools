@@ -253,6 +253,7 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode FSCTL_PIPE_SILO_ARRIVAL = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 18, FileControlMethod.Buffered, FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_PIPE_CREATE_SYMLINK = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 19, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_PIPE_DELETE_SYMLINK = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 20, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_PIPE_QUERY_CLIENT_PROCESS_V2 = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 21, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_READ = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2045, FileControlMethod.Buffered, FileControlAccess.Read);
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_WRITE = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2046, FileControlMethod.Buffered, FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_PIPE_INTERNAL_TRANSCEIVE = new NtIoControlCode(FileDeviceType.NAMED_PIPE, 2047, FileControlMethod.Neither, FileControlAccess.Read | FileControlAccess.Write);
