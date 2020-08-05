@@ -37,11 +37,18 @@ namespace NtObjectManager.Cmdlets.Object
     public class GetNtKeySymbolicLinkTarget : GetNtKeyCmdlet
     {
         /// <summary>
+        /// <para type="description">Specify to pass through the created key.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter FormatWin32Path { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtKeySymbolicLinkTarget()
         {
             AttributesFlags |= AttributeFlags.OpenLink;
+            Access = KeyAccessRights.QueryValue;
         }
 
         /// <summary>
@@ -53,7 +60,8 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (NtKey key = (NtKey)base.CreateObject(obj_attributes))
             {
-                return key.GetSymbolicLinkTarget();
+                string target = key.GetSymbolicLinkTarget();
+                return FormatWin32Path ? NtKeyUtils.NtKeyNameToWin32(target) : target;
             }
         }
     }
