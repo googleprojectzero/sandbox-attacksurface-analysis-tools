@@ -117,6 +117,7 @@
     <Compile Include="Cmdlets\Object\NewNtFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtKeyCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\NewNtKeySymbolicLink.cs" />
     <Compile Include="Cmdlets\Object\NewNtMailslotFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtNamedPipeFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtSecurityAttributeCmdlet.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Cmdlets\Object\GrantNtAccessMaskCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SetNtKeySymbolicLinkTarget.cs" />
     <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtTokenCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtTokenDefaultDacl.cs" />
