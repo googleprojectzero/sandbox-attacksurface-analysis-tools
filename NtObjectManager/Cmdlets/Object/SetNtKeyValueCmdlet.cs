@@ -86,7 +86,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the value as an array of bytes.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromBytes")]
+        [Parameter(Mandatory = true, ParameterSetName = "FromBytes")]
         public byte[] Bytes { get; set; }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace NtObjectManager.Cmdlets.Object
                     Key.SetValue(Name, String);
                     break;
                 case "FromExpandString":
-                    Key.SetValue(Name, RegistryValueType.ExpandString, String);
+                    Key.SetValue(Name, RegistryValueType.ExpandString, ExpandString);
                     break;
                 case "FromMultiString":
                     Key.SetValue(Name, MultiString);
