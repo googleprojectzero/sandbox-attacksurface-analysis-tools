@@ -26,6 +26,10 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Deletes the \Registry\Machine\SOFTWARE\ABC key.</para>
     /// </example>
     /// <example>
+    ///   <code>Remove-NtKey \Registry\Machine\SOFTWARE\ABC -OpenLink</code>
+    ///   <para>Deletes the \Registry\Machine\SOFTWARE\ABC symbolic link key.</para>
+    /// </example>
+    /// <example>
     ///   <code>Remove-NtKey -Path ABC -Root $key</code>
     ///   <para>Deletes the key ABC under root $key.</para>
     /// </example>
@@ -61,6 +65,12 @@ namespace NtObjectManager.Cmdlets.Object
         public INtTransaction Transaction { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify that you want to remove a symbolic link.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public SwitchParameter OpenLink { get; set; }
+
+        /// <summary>
         /// <para type="description">An existing key to delete.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromKey")]
@@ -68,13 +78,18 @@ namespace NtObjectManager.Cmdlets.Object
 
         private ObjectAttributes GetObjectAttributes()
         {
+            AttributeFlags flags = AttributeFlags.CaseInsensitive;
+            if (OpenLink)
+            {
+                flags |= AttributeFlags.OpenLink;
+            }
             if (Win32Path)
             {
-                return new ObjectAttributes(NtKeyUtils.Win32KeyNameToNt(Path), AttributeFlags.CaseInsensitive);
+                return new ObjectAttributes(NtKeyUtils.Win32KeyNameToNt(Path), flags);
             }
             else
             {
-                return new ObjectAttributes(Path, AttributeFlags.CaseInsensitive, Root);
+                return new ObjectAttributes(Path, flags, Root);
             }
         }
 
