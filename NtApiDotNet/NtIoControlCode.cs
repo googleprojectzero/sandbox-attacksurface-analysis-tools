@@ -34,7 +34,9 @@ namespace NtApiDotNet
         /// OUT Direct.
         /// </summary>
         OutDirect = 2,
-        // Neither.
+        /// <summary>
+        /// Neither.
+        /// </summary>
         Neither = 3
     }
 
