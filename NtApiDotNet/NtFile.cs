@@ -3079,7 +3079,20 @@ namespace NtApiDotNet
         /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
         public void SetCachedSigningLevel(int flags, SigningLevel signing_level, IEnumerable<NtFile> files, string catalog_path)
         {
-            NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, files.Select(f => f.Handle), catalog_path);
+            SetCachedSigningLevel(flags, signing_level, files, catalog_path, true);
+        }
+
+        /// <summary>
+        /// Set the cached signing level for a file.
+        /// </summary>
+        /// <param name="flags">Flags to set for the cache.</param>
+        /// <param name="signing_level">The signing level to cache</param>
+        /// <param name="files">Files for signature.</param>
+        /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus SetCachedSigningLevel(int flags, SigningLevel signing_level, IEnumerable<NtFile> files, string catalog_path, bool throw_on_error)
+        {
+            return NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, files.Select(f => f.Handle), catalog_path, throw_on_error);
         }
 
         /// <summary>
