@@ -106,8 +106,9 @@ namespace NtApiDotNet
         /// <summary>
         /// Query list of loaded hives from the Registry.
         /// </summary>
+        /// <param name="convert_file_to_dos">Convert the file path to a DOS path.</param>
         /// <returns>The list of loaded hives.</returns>
-        public static IReadOnlyList<NtKeyHive> GetHiveList()
+        public static IReadOnlyList<NtKeyHive> GetHiveList(bool convert_file_to_dos)
         {
             List<NtKeyHive> hives = new List<NtKeyHive>();
             using (var key = NtKey.Open(@"\registry\machine\system\currentcontrolset\control\hivelist", null, KeyAccessRights.QueryValue))
@@ -116,11 +117,26 @@ namespace NtApiDotNet
                 {
                     if (value.Name != "")
                     {
-                        hives.Add(new NtKeyHive(value.Name, value.ToString()));
+                        string file_path = value.ToString();
+                        if (convert_file_to_dos)
+                        {
+                            file_path = NtFileUtils.NtFileNameToDos(file_path);
+                        }
+
+                        hives.Add(new NtKeyHive(value.Name, file_path));
                     }
                 }
             }
             return hives.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Query list of loaded hives from the Registry.
+        /// </summary>
+        /// <returns>The list of loaded hives.</returns>
+        public static IReadOnlyList<NtKeyHive> GetHiveList()
+        {
+            return GetHiveList(false);
         }
     }
 }

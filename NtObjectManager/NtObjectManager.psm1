@@ -9652,6 +9652,8 @@ function Split-Win32CommandLine {
 Gets the list of loaded hives.
 .DESCRIPTION
 This cmdlet enumerates the list of loaded hives from the Registry.
+.PARAMETER FormatWin32File
+Format the file path to a Win32 string if possible.
 .INPUTS
 None
 .OUTPUTS
@@ -9661,5 +9663,8 @@ Get-NtKeyHiveSplit
 Get the list of loaded hives.
 #>
 function Get-NtKeyHive {
-    [NtApiDotNet.NtKeyUtils]::GetHiveList() | Write-Output
+    Param(
+        [switch]$FormatWin32File
+    )
+    [NtApiDotNet.NtKeyUtils]::GetHiveList($FormatWin32File) | Write-Output
 }
