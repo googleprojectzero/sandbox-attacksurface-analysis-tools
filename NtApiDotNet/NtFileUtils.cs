@@ -267,5 +267,48 @@ namespace NtApiDotNet
         {
             return SplitAddressToPages(buffer.DangerousGetHandle().ToInt64(), buffer.GetLength());
         }
+
+        /// <summary>
+        /// Attempt to convert an NT device filename to a DOS filename.
+        /// </summary>
+        /// <param name="filename">The filename to convert.</param>
+        /// <returns>The converted string. Returns a path prefixed with GLOBALROOT if it doesn't understand the format.</returns>
+        public static string NtFileNameToDos(string filename)
+        {
+            if (!filename.StartsWith(@"\"))
+            {
+                return filename;
+            }
+
+            if (filename.StartsWith(@"\??\UNC\", StringComparison.OrdinalIgnoreCase))
+            {
+                return @"\\" + filename.Substring(8);
+            }
+            else if (filename.StartsWith(@"\??\"))
+            {
+                return @"\\." + filename.Substring(3);
+            }
+            else if (filename.StartsWith(@"\Device\"))
+            {
+                for (char drive = 'A'; drive <= 'Z'; drive++)
+                {
+                    using (var link = NtSymbolicLink.Open($@"\??\{drive}:", null, SymbolicLinkAccessRights.Query, false))
+                    {
+                        if (!link.IsSuccess)
+                            continue;
+                        var target = link.Result.GetTarget(false);
+                        if (!target.IsSuccess || target.Result.Length == 0)
+                            continue;
+                        if (filename.StartsWith($@"{target.Result}\"))
+                        {
+                            return $"{drive}:" + filename.Substring(target.Result.Length);
+                        }
+                    }
+                }
+            }
+
+            return @"\\.\GLOBALROOT" + filename;
+        }
+
     }
 }
