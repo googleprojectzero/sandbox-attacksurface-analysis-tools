@@ -75,6 +75,12 @@ namespace NtObjectManager.Cmdlets.Object
         public NtEvent Event { get; set; }
 
         /// <summary>
+        /// <para type="description">Specifes to not open the root key when loading a normal hive.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter NoOpen { get; set; }
+
+        /// <summary>
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -101,7 +107,7 @@ namespace NtObjectManager.Cmdlets.Object
 
             using (ObjectAttributes name = new ObjectAttributes(key_path, AttributeFlags.CaseInsensitive))
             {
-                if ((LoadFlags & LoadKeyFlags.AppKey) == 0)
+                if (!LoadFlags.HasFlag(LoadKeyFlags.AppKey))
                 {
                     using (NtToken token = NtToken.OpenProcessToken())
                     {
@@ -120,6 +126,11 @@ namespace NtObjectManager.Cmdlets.Object
                     }
                 }
 
+                if (NoOpen)
+                {
+                    NtKey.LoadKeyNoOpen(name, obj_attributes, LoadFlags, TrustKey, Event, Token);
+                    return null;
+                }
                 return NtKey.LoadKey(name, obj_attributes, LoadFlags, Access, TrustKey, Event, Token);
             }
         }

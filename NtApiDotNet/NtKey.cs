@@ -104,24 +104,26 @@ namespace NtApiDotNet
         public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
             LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event, bool throw_on_error)
         {
-            if ((flags & LoadKeyFlags.AppKey) != 0)
-            {
-                return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
-                    trust_key.GetHandle().DangerousGetHandle(), key_event.GetHandle().DangerousGetHandle(), 
-                    desired_access, out SafeKernelObjectHandle key_handle, 0)
-                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey, false));
-            }
-            else
-            {
-                var result = NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
-                    trust_key.GetHandle().DangerousGetHandle(), key_event.GetHandle().DangerousGetHandle(),
-                    0, IntPtr.Zero, 0).CreateResult<NtKey>(throw_on_error, () => null);
-                if (!result.IsSuccess)
-                {
-                    return result;
-                }
+            return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, trust_key, key_event, false, throw_on_error);
+        }
 
-                return Open(key_obj_attr, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
+        /// <summary>
+        /// Load a new hive and do not open the root key.
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="trust_key">Key that this hive will be trusted for.</param>
+        /// <param name="key_event">Event handle for key load.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus LoadKeyNoOpen(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, NtKey trust_key, NtEvent key_event, bool throw_on_error)
+        {
+            using (var result = LoadKey(key_obj_attr, file_obj_attr, flags, 
+                KeyAccessRights.MaximumAllowed, trust_key, key_event, true, throw_on_error))
+            {
+                return result.Status;
             }
         }
 
@@ -139,6 +141,20 @@ namespace NtApiDotNet
             LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event)
         {
             return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, trust_key, key_event, true).Result;
+        }
+
+        /// <summary>
+        /// Load a new hive and do not open the root key.
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="trust_key">Key that this hive will be trusted for.</param>
+        /// <param name="key_event">Event handle for key load.</param>
+        public static void LoadKeyNoOpen(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, NtKey trust_key, NtEvent key_event)
+        {
+            LoadKeyNoOpen(key_obj_attr, file_obj_attr, flags, trust_key, key_event, true);
         }
 
         /// <summary>
@@ -171,51 +187,27 @@ namespace NtApiDotNet
         public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
             LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event, NtToken token, bool throw_on_error)
         {
-            if (token == null)
-            {
-                return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, trust_key, key_event, throw_on_error);
-            }
+            return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, trust_key, key_event, token, false, throw_on_error);
+        }
 
-            List<KeyLoadArgument> args = new List<KeyLoadArgument>();
-            if (trust_key != null)
+        /// <summary>
+        /// Load a new hive and do not open the root key.
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="token">Token to open the hive files under.</param>
+        /// <param name="trust_key">Key that this hive will be trusted for.</param>
+        /// <param name="key_event">Event handle for key load.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus LoadKeyNoOpen(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, NtKey trust_key, NtEvent key_event, NtToken token, bool throw_on_error)
+        {
+            using (var result = LoadKey(key_obj_attr, file_obj_attr, flags, 
+                KeyAccessRights.MaximumAllowed, trust_key, key_event, token, true, throw_on_error))
             {
-                args.Add(new KeyLoadArgument()
-                {
-                    ArgumentType = KeyLoadArgumentType.TrustKeyHandle,
-                    Argument = trust_key.Handle.DangerousGetHandle()
-                });
-            }
-
-            if (key_event != null)
-            {
-                args.Add(new KeyLoadArgument()
-                {
-                    ArgumentType = KeyLoadArgumentType.EventHandle,
-                    Argument = key_event.Handle.DangerousGetHandle()
-                });
-            }
-            args.Add(new KeyLoadArgument()
-            {
-                ArgumentType = KeyLoadArgumentType.TokenHandle,
-                Argument = token.Handle.DangerousGetHandle()
-            });
-
-            if ((flags & LoadKeyFlags.AppKey) != 0)
-            {
-                return NtSystemCalls.NtLoadKey3(key_obj_attr, file_obj_attr, flags,
-                    args.ToArray(), args.Count, desired_access, out SafeKernelObjectHandle key_handle, 0)
-                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey, false));
-            }
-            else
-            {
-                var result = NtSystemCalls.NtLoadKey3(key_obj_attr, file_obj_attr, flags,
-                    args.ToArray(), args.Count, 0, IntPtr.Zero, 0).CreateResult<NtKey>(throw_on_error, () => null);
-                if (!result.IsSuccess)
-                {
-                    return result;
-                }
-
-                return Open(key_obj_attr, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
+                return result.Status;
             }
         }
 
@@ -234,6 +226,21 @@ namespace NtApiDotNet
             LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event, NtToken token)
         {
             return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, trust_key, key_event, token, true).Result;
+        }
+
+        /// <summary>
+        /// Load a new hive and do not open the root key.
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="token">Token to open the hive files under.</param>
+        /// <param name="trust_key">Key that this hive will be trusted for.</param>
+        /// <param name="key_event">Event handle for key load.</param>
+        public static void LoadKeyNoOpen(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, NtKey trust_key, NtEvent key_event, NtToken token)
+        {
+            LoadKeyNoOpen(key_obj_attr, file_obj_attr, flags, trust_key, key_event, token, true);
         }
 
         /// <summary>
@@ -1704,6 +1711,88 @@ namespace NtApiDotNet
                     buffer.ReadArray((ulong)ret.ClassOffset, class_name, 0, class_name.Length);
                 }
                 return new Tuple<KeyFullInformation, string>(ret, Encoding.Unicode.GetString(class_name));
+            }
+        }
+
+        private static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event, bool no_open, bool throw_on_error)
+        {
+            if (flags.HasFlagSet(LoadKeyFlags.AppKey))
+            {
+                if (no_open)
+                    throw new ArgumentException("Can't create an Application Key without returning a handle.");
+
+                return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
+                    trust_key.GetHandle().DangerousGetHandle(), key_event.GetHandle().DangerousGetHandle(),
+                    desired_access, out SafeKernelObjectHandle key_handle, 0)
+                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey, false));
+            }
+            else
+            {
+                var result = NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
+                    trust_key.GetHandle().DangerousGetHandle(), key_event.GetHandle().DangerousGetHandle(),
+                    0, IntPtr.Zero, 0).CreateResult<NtKey>(throw_on_error, () => null);
+                if (!result.IsSuccess || no_open)
+                {
+                    return result;
+                }
+
+                return Open(key_obj_attr, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
+            }
+        }
+
+        private static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
+            LoadKeyFlags flags, KeyAccessRights desired_access, NtKey trust_key, NtEvent key_event, NtToken token, bool no_open, bool throw_on_error)
+        {
+            if (token == null)
+            {
+                return LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, 
+                    trust_key, key_event, no_open, throw_on_error);
+            }
+
+            List<KeyLoadArgument> args = new List<KeyLoadArgument>();
+            if (trust_key != null)
+            {
+                args.Add(new KeyLoadArgument()
+                {
+                    ArgumentType = KeyLoadArgumentType.TrustKeyHandle,
+                    Argument = trust_key.Handle.DangerousGetHandle()
+                });
+            }
+
+            if (key_event != null)
+            {
+                args.Add(new KeyLoadArgument()
+                {
+                    ArgumentType = KeyLoadArgumentType.EventHandle,
+                    Argument = key_event.Handle.DangerousGetHandle()
+                });
+            }
+            args.Add(new KeyLoadArgument()
+            {
+                ArgumentType = KeyLoadArgumentType.TokenHandle,
+                Argument = token.Handle.DangerousGetHandle()
+            });
+
+            if (flags.HasFlagSet(LoadKeyFlags.AppKey))
+            {
+                if (no_open)
+                    throw new ArgumentException("Can't create an Application Key without returning a handle.");
+
+                return NtSystemCalls.NtLoadKey3(key_obj_attr, file_obj_attr, flags,
+                    args.ToArray(), args.Count, desired_access, out SafeKernelObjectHandle key_handle, 0)
+                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey, false));
+            }
+            else
+            {
+                var result = NtSystemCalls.NtLoadKey3(key_obj_attr, file_obj_attr, flags,
+                    args.ToArray(), args.Count, 0, IntPtr.Zero, 0).CreateResult<NtKey>(throw_on_error, () => null);
+                if (!result.IsSuccess || no_open)
+                {
+                    return result;
+                }
+
+                return Open(key_obj_attr, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
             }
         }
 
