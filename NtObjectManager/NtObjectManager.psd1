@@ -90,7 +90,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtTokenId', 'Get-AuthCredential', 'Export-AuthToken', 'Import-AuthToken', 'Get-MD4Hash',
           'Format-ASN1DER', 'Import-KerberosKeyTab', 'Export-KerberosKeyTab', 'New-KerberosKey', 'Get-KerberosKey',
           'Unprotect-AuthToken', 'Get-KerberosTicket', 'Get-NdrComplexType', 'Get-NtProcessUser',
-          'Get-NtProcessEnvironment', 'Split-Win32CommandLine', 'Send-NtWindowMessage', 'Get-NtKeyHive'
+          'Get-NtProcessEnvironment', 'Split-Win32CommandLine', 'Send-NtWindowMessage', 'Get-NtKeyHive',
+          'Backup-NtKey', 'Restore-NtKey'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

@@ -6238,9 +6238,9 @@ Hide repeating 16 byte patterns.
 .PARAMETER Buffer
 Show the contents of a safe buffer.
 .PARAMETER Offset
-Specify start offset into the safe buffer.
+Specify start offset into the safe buffer or the file.
 .PARAMETER Length
-Specify length of safe buffer.
+Specify length of safe buffer or the file.
 .PARAMETER BaseAddress
 Specify base address for the display when ShowAddress is enabled.
 .INPUTS
@@ -6253,11 +6253,15 @@ function Out-HexDump {
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromBytes")]
         [byte[]]$Bytes,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [string]$Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
         [System.Runtime.InteropServices.SafeBuffer]$Buffer,
         [Parameter(ParameterSetName = "FromBuffer")]
+        [Parameter(ParameterSetName = "FromFile")]
         [int64]$Offset = 0,
         [Parameter(ParameterSetName = "FromBuffer")]
+        [Parameter(ParameterSetName = "FromFile")]
         [int64]$Length = 0,
         [Parameter(ParameterSetName = "FromBytes")]
         [int64]$BaseAddress = 0,
@@ -6281,6 +6285,9 @@ function Out-HexDump {
             "FromBuffer" {
                 $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
             }
+            "FromFile" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
+            }
         }
     }
 
@@ -6288,6 +6295,14 @@ function Out-HexDump {
         switch ($PsCmdlet.ParameterSetName) {
             "FromBytes" {
                 $builder.Append($Bytes)
+            }
+            "FromFile" {
+                $Path = Resolve-Path $Path -ErrorAction Stop
+                $ba = [System.IO.File]::ReadAllBytes($Path)
+                if ($Length -eq 0) {
+                    $Length = $ba.Length - $Offset
+                }
+                $builder.Append($ba, [int]$Offset, [int]$Length)
             }
         }
     }
@@ -9661,10 +9676,123 @@ NtKeyHive[]
 .EXAMPLE
 Get-NtKeyHiveSplit
 Get the list of loaded hives.
+.EXAMPLE
+Get-NtKeyHiveSplit -FormatWin32File
+Get the list of loaded hives with the file path in Win32 format.
 #>
 function Get-NtKeyHive {
     Param(
         [switch]$FormatWin32File
     )
     [NtApiDotNet.NtKeyUtils]::GetHiveList($FormatWin32File) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Backup a key to a file.
+.DESCRIPTION
+This cmdlet back ups a key to a file.
+.PARAMETER Path
+The path to the file to backup to.
+.PARAMETER Win32Path
+The path is a Win32 path.
+.PARAMETER File
+Specify the file to write to.
+.PARAMETER Key
+The key to backup.
+.PARAMETER Flags
+Flags for the backup operation.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Backup-NtKey -Key $key -Path \??\c:\backup.hiv
+Backup the key to c:\backup.hiv
+.EXAMPLE
+Backup-NtKey -Key $key -Path backup.hiv -Win32Path
+Backup the key to backup.hiv in the current directory.
+.EXAMPLE
+Backup-NtKey -Key $key -File $file
+Backup the key to a file object.
+#>
+function Backup-NtKey {
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    Param(
+        [parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.NtKey]$Key,
+        [NtApiDotNet.SaveKeyFlags]$Flags,
+        [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [parameter(Position = 1, Mandatory, ParameterSetName="FromFile")]
+        [NtApiDotNet.NtFile]$File
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromFile" {
+            $Key.Save($File, $Flags)
+        }
+        "FromPath" {
+            if ($Win32Path) {
+                $Path = Get-NtFilePath -FullName $Path
+            }
+            $Key.Save($Path, $Flags)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Restore a key from a file.
+.DESCRIPTION
+This cmdlet restores a key from a file.
+.PARAMETER Path
+The path to the file to restore from.
+.PARAMETER Win32Path
+The path is a Win32 path.
+.PARAMETER File
+Specify the file to read from.
+.PARAMETER Key
+The key to restore.
+.PARAMETER Flags
+Flags for the restore operation.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Restore-NtKey -Key $key -Path \??\c:\backup.hiv
+Restore the key from c:\backup.hiv
+.EXAMPLE
+Restore-NtKey -Key $key -Path backup.hiv -Win32Path
+Restore the key from backup.hiv in the current directory.
+.EXAMPLE
+Restore-NtKey -Key $key -File $file
+Restore the key from a file object.
+#>
+function Restore-NtKey {
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    Param(
+        [parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.NtKey]$Key,
+        [NtApiDotNet.RestoreKeyFlags]$Flags,
+        [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [parameter(Position = 1, Mandatory, ParameterSetName="FromFile")]
+        [NtApiDotNet.NtFile]$File
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromFile" {
+            $Key.Restore($File, $Flags)
+        }
+        "FromPath" {
+            if ($Win32Path) {
+                $Path = Get-NtFilePath -FullName $Path
+            }
+            $Key.Restore($Path, $Flags)
+        }
+    }
 }
