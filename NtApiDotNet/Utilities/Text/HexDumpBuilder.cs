@@ -168,18 +168,29 @@ namespace NtApiDotNet.Utilities.Text
         /// Append an array of bytes to the hex dump.
         /// </summary>
         /// <param name="ba">The byte array.</param>
-        public void Append(byte[] ba)
+        /// <param name="length">The length of the bytes to append from the array.</param>
+        /// <param name="offset">The start offset in the bytes to append.</param>
+        public void Append(byte[] ba, int offset, int length)
         {
             if (!_can_write)
                 throw new InvalidOperationException();
             long curr_pos = _data.Position;
             _data.Position = _data.Length;
-            _data.Write(ba, 0, ba.Length);
+            _data.Write(ba, offset, length);
             _data.Position = curr_pos;
             if (GetDataLeft() >= CHUNK_LIMIT)
             {
                 AppendChunks();
             }
+        }
+
+        /// <summary>
+        /// Append an array of bytes to the hex dump.
+        /// </summary>
+        /// <param name="ba">The byte array.</param>
+        public void Append(byte[] ba)
+        {
+            Append(ba, 0, ba.Length);
         }
 
         /// <summary>
