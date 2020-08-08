@@ -9721,7 +9721,7 @@ function Backup-NtKey {
     Param(
         [parameter(Position = 0, Mandatory)]
         [NtApiDotNet.NtKey]$Key,
-        [NtApiDotNet.SaveKeyFlags]$Flags,
+        [NtApiDotNet.SaveKeyFlags]$Flags = "StandardFormat",
         [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
@@ -9776,7 +9776,7 @@ function Restore-NtKey {
     Param(
         [parameter(Position = 0, Mandatory)]
         [NtApiDotNet.NtKey]$Key,
-        [NtApiDotNet.RestoreKeyFlags]$Flags,
+        [NtApiDotNet.RestoreKeyFlags]$Flags = "None",
         [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
