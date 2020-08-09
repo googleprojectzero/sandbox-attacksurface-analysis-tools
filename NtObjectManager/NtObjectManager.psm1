@@ -6286,7 +6286,7 @@ function Out-HexDump {
                 $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
             }
             "FromFile" {
-                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $Offset);
             }
         }
     }
@@ -6298,11 +6298,7 @@ function Out-HexDump {
             }
             "FromFile" {
                 $Path = Resolve-Path $Path -ErrorAction Stop
-                $ba = [System.IO.File]::ReadAllBytes($Path)
-                if ($Length -eq 0) {
-                    $Length = $ba.Length - $Offset
-                }
-                $builder.Append($ba, [int]$Offset, [int]$Length)
+                $builder.AppendFile($Path, $Offset, $Length)
             }
         }
     }

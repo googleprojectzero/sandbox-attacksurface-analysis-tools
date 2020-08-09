@@ -194,6 +194,46 @@ namespace NtApiDotNet.Utilities.Text
         }
 
         /// <summary>
+        /// Append a file or part of a file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="length">The length of the file to append. If 0 will append all remaining data.</param>
+        /// <param name="offset">The start offset in the file to append.</param>
+        public void AppendFile(string path, long offset, long length)
+        {
+            using (var fs = File.OpenRead(path))
+            {
+                fs.Position = offset;
+                long remaining = length;
+                if (remaining == 0)
+                {
+                    remaining = fs.Length - offset;
+                }
+
+                byte[] chunk = new byte[64 * 1024];
+                while (remaining > 0)
+                {
+                    int read_length = fs.Read(chunk, 0, (int)Math.Min(chunk.Length, remaining));
+                    if (read_length == 0)
+                    {
+                        break;
+                    }
+                    Append(chunk, 0, read_length);
+                    remaining -= read_length;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Append a file or part of a file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        public void AppendFile(string path)
+        {
+            AppendFile(path, 0, 0);
+        }
+
+        /// <summary>
         /// Complete the hex dump string.
         /// </summary>
         public void Complete()
@@ -238,7 +278,6 @@ namespace NtApiDotNet.Utilities.Text
             : this(new UnmanagedMemoryStream(buffer, offset, length == 0 ? (long)buffer.ByteLength : length), 
                   print_header, print_address, print_ascii, hide_repeating, buffer.DangerousGetHandle().ToInt64())
         {
-            _address_offset = buffer.DangerousGetHandle().ToInt64();
         }
 
         /// <summary>
