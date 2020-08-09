@@ -376,7 +376,7 @@ namespace NtObjectManager.Provider
             }
         }
 
-        private void GetChildItemsRecursive(string relative_path, bool recurse)
+        private void GetChildItemsRecursive(string relative_path, bool recurse, uint depth)
         {
             try
             {
@@ -397,11 +397,11 @@ namespace NtObjectManager.Provider
                         }
                     }
 
-                    if (recurse && dirs.Count > 0)
+                    if (recurse && dirs.Count > 0 && depth > 0)
                     {
                         foreach (string new_dir in dirs)
                         {
-                            GetChildItemsRecursive(new_dir, recurse);
+                            GetChildItemsRecursive(new_dir, recurse, depth != uint.MaxValue ? depth -1 : uint.MaxValue);
                         }
                     }
                 }
@@ -420,7 +420,8 @@ namespace NtObjectManager.Provider
         /// </summary>
         /// <param name="path">The drive path.</param>
         /// <param name="recurse">True if the path should be enumerated recursively.</param>
-        protected override void GetChildItems(string path, bool recurse)
+        /// <param name="depth">Depth of the recursion.</param>
+        protected override void GetChildItems(string path, bool recurse, uint depth)
         {
             if (GetDrive() == null)
             {
@@ -429,7 +430,7 @@ namespace NtObjectManager.Provider
 
             string relative_path = GetRelativePath(PSPathToNT(path));
 
-            GetChildItemsRecursive(relative_path, recurse);
+            GetChildItemsRecursive(relative_path, recurse, depth);
         }
 
         /// <summary>
