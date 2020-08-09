@@ -23,6 +23,8 @@ namespace NtObjectManager.Provider
     public sealed class NtKeyEntry : NtDirectoryEntry
     {
         private List<NtKeyValue> _values;
+        private KeyControlFlags _control_flags;
+        private KeyVirtualizationFlags _virtualization_flags;
         private readonly bool _open_for_backup;
 
         private protected override void PopulateKeyData(NtKey key)
@@ -32,6 +34,8 @@ namespace NtObjectManager.Provider
             {
                 _values = new List<NtKeyValue>(key.QueryValues());
             }
+            _control_flags = key.ControlFlags;
+            _virtualization_flags = key.VirtualizationFlags;
         }
 
         /// <summary>
@@ -85,6 +89,38 @@ namespace NtObjectManager.Provider
                     PopulateData();
                 }
                 return _values.Count;
+            }
+        }
+
+        /// <summary>
+        /// Get Key Control Flags.
+        /// </summary>
+        public KeyControlFlags ControlFlags
+        {
+            get
+            {
+                if (_values == null)
+                {
+                    _values = new List<NtKeyValue>();
+                    PopulateData();
+                }
+                return _control_flags;
+            }
+        }
+
+        /// <summary>
+        /// Get Key Virtualization Flags.
+        /// </summary>
+        public KeyVirtualizationFlags VirtualizationFlags
+        {
+            get
+            {
+                if (_values == null)
+                {
+                    _values = new List<NtKeyValue>();
+                    PopulateData();
+                }
+                return _virtualization_flags;
             }
         }
     }
