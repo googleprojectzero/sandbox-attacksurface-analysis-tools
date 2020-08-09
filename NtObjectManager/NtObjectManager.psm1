@@ -9792,3 +9792,91 @@ function Restore-NtKey {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Enables virtualization on a Access Token or Process.
+.DESCRIPTION
+This cmdlet enables virtualization on an Access Token or Process.
+.PARAMETER Token
+Specify the token to modify.
+.PARAMETER Process
+Specify the process to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Enable-NtTokenVirtualization
+Enable virtualization on the current primary token.
+.EXAMPLE
+Enable-NtTokenVirtualization -Token $token
+Enable virtualization on a specific token.
+.EXAMPLE
+Enable-NtTokenVirtualization -Process $proc
+Enable virtualization on a specific process.
+#>
+function Enable-NtTokenVirtualization {
+    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromToken")]
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(Position = 0, ParameterSetName="FromProcess")]
+        [NtApiDotNet.NtProcess]$Process
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromProcess" {
+            if ($null -EQ $Process) {
+                $Process = Get-NtProcess -Current
+            }
+            $Process.VirtualizationEnabled = $true
+        }
+        "FromToken" {
+            $Token.VirtualizationEnabled = $true
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Disables virtualization on a Access Token or Process.
+.DESCRIPTION
+This cmdlet disables virtualization on an Access Token or Process.
+.PARAMETER Token
+Specify the token to modify.
+.PARAMETER Process
+Specify the process to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Disable-NtTokenVirtualization
+Disable virtualization on the current primary token.
+.EXAMPLE
+Disable-NtTokenVirtualization -Token $token
+Disable virtualization on a specific token.
+.EXAMPLE
+Disable-NtTokenVirtualization -Process $proc
+Disable virtualization on a specific process.
+#>
+function Disable-NtTokenVirtualization {
+    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromToken")]
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(Position = 0, ParameterSetName="FromProcess")]
+        [NtApiDotNet.NtProcess]$Process
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromProcess" {
+            if ($null -EQ $Process) {
+                $Process = Get-NtProcess -Current
+            }
+            $Process.VirtualizationEnabled = $false
+        }
+        "FromToken" {
+            $Token.VirtualizationEnabled = $false
+        }
+    }
+}
