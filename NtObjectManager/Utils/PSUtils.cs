@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Management.Automation;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -51,7 +53,10 @@ namespace NtObjectManager.Utils
         UTF7
     }
 
-    internal static class PSUtils
+    /// <summary>
+    /// Some utility functions for PowerShell.
+    /// </summary>
+    public static class PSUtils
     {
         internal static T InvokeWithArg<T>(this ScriptBlock script_block, T default_value, params object[] args) 
         {
@@ -155,6 +160,68 @@ namespace NtObjectManager.Utils
         internal static bool HasGlobChars(string s)
         {
             return s.Contains("*") || s.Contains("?");
+        }
+
+        private static string ResolveRelativePath(SessionState state, string path, RtlPathType path_type)
+        {
+            var current_path = state.Path.CurrentFileSystemLocation;
+            if (!current_path.Provider.Name.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Can't make a relative Win32 path when not in a file system drive.");
+            }
+
+            switch (path_type)
+            {
+                case RtlPathType.Relative:
+                    return Path.Combine(current_path.Path, path);
+                case RtlPathType.Rooted:
+                    return $"{current_path.Drive.Name}:{path}";
+                case RtlPathType.DriveRelative:
+                    if (path.Substring(0, 1).Equals(current_path.Drive.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Path.Combine(current_path.Path, path.Substring(2));
+                    }
+                    break;
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// Resolve a Win32 path using current PS session state.
+        /// </summary>
+        /// <param name="state">The session state.</param>
+        /// <param name="path">The path to resolve.</param>
+        /// <returns>The resolved Win32 path.</returns>
+        public static string ResolveWin32Path(SessionState state, string path)
+        {
+            var path_type = NtFileUtils.GetDosPathType(path);
+            if (path_type == RtlPathType.Rooted && path.StartsWith(@"\??"))
+            {
+                path_type = RtlPathType.LocalDevice;
+            }
+            switch (path_type)
+            {
+                case RtlPathType.Relative:
+                case RtlPathType.DriveRelative:
+                case RtlPathType.Rooted:
+                    path = ResolveRelativePath(state, path, path_type);
+                    break;
+            }
+
+            return NtFileUtils.DosFileNameToNt(path);
+        }
+
+        internal static string ResolvePath(SessionState state, string path, bool win32_path)
+        {
+            if (win32_path)
+            {
+                return ResolveWin32Path(state, path);
+            }
+            else
+            {
+                return path;
+            }
         }
     }
 }

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -63,7 +64,7 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 if (LinkRoot == null && Win32Path)
                 {
-                    LinkPath = ResolveWin32Path(SessionState, LinkPath);
+                    LinkPath = PSUtils.ResolveWin32Path(SessionState, LinkPath);
                 }
                 file.CreateHardlink(LinkPath, LinkRoot, ReplaceIfExists, true);
             }

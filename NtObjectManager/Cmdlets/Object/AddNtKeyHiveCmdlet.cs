@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -88,7 +89,7 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (Win32Path)
             {
-                return NtFileUtils.DosFileNameToNt(Path);
+                return PSUtils.ResolveWin32Path(SessionState, Path);
             }
             else
             {

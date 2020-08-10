@@ -22,7 +22,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// Common base cmdlet for commands which look at accessible resources.
     /// </summary>
-    public abstract class CommonAccessBaseCmdlet : Cmdlet
+    public abstract class CommonAccessBaseCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a list of process IDs to open for their tokens.</para>

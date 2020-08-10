@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System.Collections.Generic;
 using System.Management.Automation;
 
@@ -251,7 +252,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <returns>The native path.</returns>
         protected override string ConvertWin32Path(string win32_path)
         {
-            return NtFileUtils.DosFileNameToNt(win32_path);
+            return PSUtils.ResolveWin32Path(SessionState, win32_path);
         }
 
         private bool _open_for_backup;

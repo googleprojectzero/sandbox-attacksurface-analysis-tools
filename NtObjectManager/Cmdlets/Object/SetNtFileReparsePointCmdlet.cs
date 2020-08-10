@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;
 
@@ -132,7 +133,7 @@ namespace NtObjectManager.Cmdlets.Object
 
             if (ParameterSetName != "ReparseBuffer")
             {
-                string target_path = Relative ? TargetPath : ResolvePath(SessionState, TargetPath, Win32Path);
+                string target_path = Relative ? TargetPath : PSUtils.ResolvePath(SessionState, TargetPath, Win32Path);
                 switch (ParameterSetName)
                 {
                     case "MountPoint":
