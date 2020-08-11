@@ -3957,6 +3957,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the normalized filename with the volume path.
+        /// </summary>
+        public string NormalizedFileName
+        {
+            get
+            {
+                return TryGetName(FileInformationClass.FileNormalizedNameInformation);
+            }
+        }
+
+        /// <summary>
         /// Get the associated short filename
         /// </summary>
         public string FileShortName
