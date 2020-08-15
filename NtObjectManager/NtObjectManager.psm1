@@ -9880,3 +9880,100 @@ function Disable-NtTokenVirtualization {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Write bytes to a file.
+.DESCRIPTION
+This cmdlet writes bytes to a file optionally specifying the offset.
+.PARAMETER File
+Specify the file to write to.
+.PARAMETER Bytes
+Specify the bytes to write.
+.PARAMETER Offset
+Specify the offset in the file to write to.
+.PARAMETER PassThru
+Specify to the return the length written.
+.INPUTS
+None
+.OUTPUTS
+int
+.EXAMPLE
+Write-NtFile -File $f -Bytes @(0, 1, 2, 3)
+Write to a file at the current offset.
+.EXAMPLE
+Write-NtFile -File $f -Bytes @(0, 1, 2, 3) -Offset 1234
+Write to a file at offset 1234.
+.EXAMPLE
+$count = Write-NtFile -File $f -Bytes @(0, 1, 2, 3) -PassThru
+Write to a file and return the number of bytes written.
+#>
+function Write-NtFile {
+    [CmdletBinding(DefaultParameterSetName = "NoOffset")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1)]
+        [byte[]]$Bytes,
+        [parameter(Position = 2, ParameterSetName="UseOffset")]
+        [int64]$Offset,
+        [switch]$PassThru
+    )
+    $result = switch($PSCmdlet.ParameterSetName) {
+        "NoOffset" {
+            $File.Write($Bytes)
+        }
+        "UseOffset" {
+            $File.Write($Bytes, $Offset)
+        }
+    }
+
+    if ($PassThru) {
+        $result | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Read bytes from a file.
+.DESCRIPTION
+This cmdlet writes byte to a file optionally specifying the offset.
+.PARAMETER File
+Specify the file to read from.
+.PARAMETER Length
+Specify the number of bytes to read.
+.PARAMETER Offset
+Specify the offset in the file to read from.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Read-NtFile -File $f -Length 8
+Read 8 bytes from a file at the current offset.
+.EXAMPLE
+Read-NtFile -File $f -Length 8 -Offset 1234
+Read 8 bytes from a file at offset 1234.
+#>
+function Read-NtFile {
+    [CmdletBinding(DefaultParameterSetName = "NoOffset")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1)]
+        [int]$Length,
+        [parameter(Position = 2, ParameterSetName="UseOffset")]
+        [int64]$Offset
+    )
+
+    $result = switch($PSCmdlet.ParameterSetName) {
+        "NoOffset" {
+            $File.Read($Length)
+        }
+        "UseOffset" {
+            $File.Read($Length, $Offset)
+        }
+    }
+
+    Write-Output $result 
+}
