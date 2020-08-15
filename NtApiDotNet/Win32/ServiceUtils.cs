@@ -158,7 +158,10 @@ namespace NtApiDotNet.Win32
     public enum ServiceType
     {
         KernelDriver = 0x00000001,
-        SystemDriver = 0x00000002,
+        FileSystemDriver = 0x00000002,
+        Adapter = 0x00000004,
+        RecognizerDriver = 0x00000008,
+        Driver = KernelDriver | FileSystemDriver | Adapter | RecognizerDriver,
         Win32OwnProcess = 0x00000010,
         Win32ShareProcess = 0x00000020,
         Win32 = Win32OwnProcess | Win32ShareProcess,
@@ -666,7 +669,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The flags for kernel driver types.</returns>
         public static ServiceType GetDriverTypes()
         {
-            return ServiceType.KernelDriver | ServiceType.SystemDriver;
+            return ServiceType.Driver;
         }
 
         /// <summary>
