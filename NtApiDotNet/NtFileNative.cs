@@ -82,6 +82,15 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetVolumeInformationFile(
+            SafeKernelObjectHandle FileHandle,
+            [Out] IoStatus IoStatusBlock,
+            SafeBuffer FsInformation,
+            int Length,
+            FsInformationClass FsInformationClass
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryInformationFile(
             SafeKernelObjectHandle FileHandle,
             [Out] IoStatus IoStatusBlock,
@@ -280,6 +289,29 @@ namespace NtApiDotNet
             DirectoryChangeNotifyFilter CompletionFilter,
             bool WatchTree,
             DirectoryNotifyInformationClass DirectoryNotifyInformationClass
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetQuotaInformationFile(
+          SafeKernelObjectHandle FileHandle,
+          IoStatus IoStatusBlock,
+          SafeBuffer Buffer,
+          int Length
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryQuotaInformationFile(
+          SafeKernelObjectHandle FileHandle,
+          IoStatus IoStatusBlock,
+          SafeBuffer Buffer,
+          int Length,
+          [MarshalAs(UnmanagedType.U1)]
+          bool ReturnSingleEntry,
+          SafeBuffer SidList,
+          int SidListLength,
+          SafeBuffer StartSid,
+          [MarshalAs(UnmanagedType.U1)]
+          bool RestartScan
         );
     }
 
@@ -1569,6 +1601,26 @@ namespace NtApiDotNet
     {
         DirectoryNotifyInformation = 1,
         DirectoryNotifyExtendedInformation = 2
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
+    public struct FileGetQuotaInformation
+    {
+        public int NextEntryOffset;
+        public int SidLength;
+        public int Sid;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
+    public struct FileQuotaInformation
+    {
+        public int NextEntryOffset;
+        public int SidLength;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct QuotaUsed;
+        public LargeIntegerStruct QuotaThreshold;
+        public LargeIntegerStruct QuotaLimit;
+        public int Sid;
     }
 
 #pragma warning restore 1591
