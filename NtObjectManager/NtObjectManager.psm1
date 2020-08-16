@@ -9977,3 +9977,134 @@ function Read-NtFile {
 
     Write-Output $result 
 }
+
+<#
+.SYNOPSIS
+Open a filter communications port.
+.DESCRIPTION
+This cmdlet opens a filter communication port by name.
+.PARAMETER Path
+Specify the path to the filter communication port.
+.PARAMETER SyncHandle
+Specify to make the handle synchronous.
+.PARAMETER Context
+Specify optional context buffer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Filter.FilterCommunicationPort
+.EXAMPLE
+Get-FilterCommunicationPort -Path "\FilterDriver"
+Open the filter communication port named \FilterDriver.
+#>
+function Get-FilterCommunicationPort {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Path,
+        [switch]$SyncHandle,
+        [byte[]]$Context = $null
+    )
+
+    [NtApiDotNet.Win32.Filter.FilterCommunicationPort]::Open($Path, $SyncHandle, $Context) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get list of filter drivers loaded on the system.
+.DESCRIPTION
+This cmdlet enumerates the list of filter drivers loaded on the system.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Filter.FilterDriver[]
+.EXAMPLE
+Get-FilterDriver
+Get list of filter drivers.
+#>
+function Get-FilterDriver {
+    [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDrivers() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get list of filter driver instances on the system.
+.DESCRIPTION
+This cmdlet enumerates the list of filter driver instances for a specified filter driver.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Filter.FilterInstance[]
+.EXAMPLE
+Get-FilterDriverInstance 
+Get list of filter driver instances for all filter drivers.
+.EXAMPLE
+Get-FilterDriverInstance -FilterName "luafv"
+Get list of filter driver instances for the "luafv" driver.
+#>
+function Get-FilterDriverInstance {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
+        [string]$FilterName
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances() | Write-Output
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances($FilterName) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get list of filter driver instances on the system.
+.DESCRIPTION
+This cmdlet enumerates the list of filter driver instances for a specified filter driver.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Filter.FilterVolume[]
+.EXAMPLE
+Get-FilterDriverVolume 
+Get list of filter driver volumes.
+#>
+function Get-FilterDriverVolume {
+    [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumes() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get list of filter driver volume instances on the system.
+.DESCRIPTION
+This cmdlet enumerates the list of filter driver volume instances for a specified filter driver.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Filter.FilterInstance[]
+.EXAMPLE
+Get-FilterDriverVolumeInstance 
+Get list of filter driver instances for all filter driver volumes.
+.EXAMPLE
+Get-FilterDriverInstance -VolumeName "C:\"
+Get list of filter driver volume instances for the C: drive.
+#>
+function Get-FilterDriverVolumeInstance {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
+        [string]$VolumeName
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances() | Write-Output
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances($VolumeName) | Write-Output
+        }
+    }
+}

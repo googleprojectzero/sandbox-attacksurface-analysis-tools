@@ -391,7 +391,7 @@ namespace NtApiDotNet.Win32.Filter
         internal static extern NtStatus FilterConnectCommunicationPort(
           string lpPortName,
           FilterConnectFlags dwOptions,
-          IntPtr lpContext,
+          byte[] lpContext,
           short wSizeOfContext,
           SECURITY_ATTRIBUTES lpSecurityAttributes,
           out SafeKernelObjectHandle hPort

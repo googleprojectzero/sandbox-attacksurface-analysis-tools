@@ -35,14 +35,13 @@ namespace NtApiDotNet.Win32.Filter
         /// </summary>
         /// <param name="port_name">The port name, e.g. \FilterName</param>
         /// <param name="sync_handle">Make the handle synchronous.</param>
-        /// <param name="context">Optional context pointer.</param>
-        /// <param name="size_of_context">Size of the context.</param>
+        /// <param name="context">Optional context data.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The filter communications port.</returns>
-        public static NtResult<FilterCommunicationPort> Open(string port_name, bool sync_handle, IntPtr context, short size_of_context, bool throw_on_error)
+        public static NtResult<FilterCommunicationPort> Open(string port_name, bool sync_handle, byte[] context, bool throw_on_error)
         {
             return FilterManagerNativeMethods.FilterConnectCommunicationPort(port_name, sync_handle ? FilterConnectFlags.FLT_PORT_FLAG_SYNC_HANDLE : 0,
-                context, size_of_context, null, out SafeKernelObjectHandle handle).CreateResult(throw_on_error, () => new FilterCommunicationPort(handle));
+                context, (short)(context?.Length ?? 0), null, out SafeKernelObjectHandle handle).CreateResult(throw_on_error, () => new FilterCommunicationPort(handle));
         }
 
         /// <summary>
@@ -50,12 +49,11 @@ namespace NtApiDotNet.Win32.Filter
         /// </summary>
         /// <param name="port_name">The port name, e.g. \FilterName</param>
         /// <param name="sync_handle">Make the handle synchronous.</param>
-        /// <param name="context">Optional context pointer.</param>
-        /// <param name="size_of_context">Size of the context.</param>
+        /// <param name="context">Optional context data.</param>
         /// <returns>The filter communications port.</returns>
-        public static FilterCommunicationPort Open(string port_name, bool sync_handle, IntPtr context, short size_of_context)
+        public static FilterCommunicationPort Open(string port_name, bool sync_handle, byte[] context)
         {
-            return Open(port_name, sync_handle, context, size_of_context, true).Result;
+            return Open(port_name, sync_handle, context, true).Result;
         }
 
         /// <summary>
@@ -65,7 +63,7 @@ namespace NtApiDotNet.Win32.Filter
         /// <returns>The filter communications port.</returns>
         public static FilterCommunicationPort Open(string port_name)
         {
-            return Open(port_name, false, IntPtr.Zero, 0);
+            return Open(port_name, false, null);
         }
         #endregion
 

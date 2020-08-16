@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -50,6 +51,15 @@ namespace NtApiDotNet.Win32.Filter
         }
 
         /// <summary>
+        /// Enumerate the list of filter driver instances for all filter drivers.
+        /// </summary>
+        /// <returns>The list of filter driver instances.</returns>
+        public static IEnumerable<FilterInstance> GetFilterDriverInstances()
+        {
+            return GetFilterDrivers().SelectMany(d => GetFilterDriverInstances(d.Name));
+        }
+
+        /// <summary>
         /// Enumerate the list of filter drivers attached to a volume.
         /// </summary>
         /// <param name="volume_name">The name of volume, e.g. C:\</param>
@@ -60,6 +70,15 @@ namespace NtApiDotNet.Win32.Filter
                 (h, b) => FilterManagerNativeMethods.FilterVolumeInstanceFindNext(h, INSTANCE_INFORMATION_CLASS.InstanceFullInformation, b, b.GetLength(), out _),
                 FilterManagerNativeMethods.FilterVolumeInstanceFindClose, (SafeStructureInOutBuffer<FILTER_INSTANCE_FULL_INFORMATION> b) => b.Result.NextEntryOffset,
                 (SafeStructureInOutBuffer<FILTER_INSTANCE_FULL_INFORMATION> b) => new FilterInstance(b));
+        }
+
+        /// <summary>
+        /// Enumerate the list of filter drivers attached for all volumes.
+        /// </summary>
+        /// <returns>The list of filter volume instances.</returns>
+        public static IEnumerable<FilterInstance> GetFilterVolumeInstances()
+        {
+            return GetFilterVolumes().SelectMany(v => GetFilterVolumeInstances(v.FilterVolumeName));
         }
 
         /// <summary>
@@ -176,6 +195,17 @@ namespace NtApiDotNet.Win32.Filter
         {
             Detach(filter_name, volume_name, null);
         }
+
+        #region Internal Members
+        internal static long ParseAltitude(string altitude)
+        {
+            if (long.TryParse(altitude, out long l))
+            {
+                return l;
+            }
+            return 0;
+        }
+        #endregion
 
         #region Private Members
 

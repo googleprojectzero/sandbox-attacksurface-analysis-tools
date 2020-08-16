@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Filter
         /// <summary>
         /// Altitude of the filter driver.
         /// </summary>
-        public string Altitude { get; }
+        public long Altitude { get; }
 
         internal FilterDriver(SafeStructureInOutBuffer<FILTER_AGGREGATE_STANDARD_INFORMATION> buffer)
         {
@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Filter
             {
                 Flags = result.LegacyFilter.Flags;
                 Name = buffer.ReadUnicodeString(result.LegacyFilter.FilterNameBufferOffset, result.LegacyFilter.FilterNameLength / 2);
-                Altitude = buffer.ReadUnicodeString(result.LegacyFilter.FilterAltitudeBufferOffset, result.LegacyFilter.FilterAltitudeLength / 2);
+                Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.LegacyFilter.FilterAltitudeBufferOffset, result.LegacyFilter.FilterAltitudeLength / 2));
             }
             else
             {
@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Filter
                 FrameID = result.MiniFilter.FrameID;
                 NumberOfInstances = result.MiniFilter.NumberOfInstances;
                 Name = buffer.ReadUnicodeString(result.MiniFilter.FilterNameBufferOffset, result.MiniFilter.FilterNameLength / 2);
-                Altitude = buffer.ReadUnicodeString(result.MiniFilter.FilterAltitudeBufferOffset, result.MiniFilter.FilterAltitudeLength / 2);
+                Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.MiniFilter.FilterAltitudeBufferOffset, result.MiniFilter.FilterAltitudeLength / 2));
             }
         }
     }

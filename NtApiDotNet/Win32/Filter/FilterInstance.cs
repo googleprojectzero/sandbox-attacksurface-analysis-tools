@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Filter
         /// <summary>
         /// The altitude of the instance.
         /// </summary>
-        public string Altitude { get; }
+        public long Altitude { get; }
         /// <summary>
         /// The volume name.
         /// </summary>
@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32.Filter
         {
             var result = buffer.Result;
             Name = buffer.ReadUnicodeString(result.InstanceNameBufferOffset, result.InstanceNameLength / 2);
-            Altitude = buffer.ReadUnicodeString(result.AltitudeBufferOffset, result.AltitudeLength / 2);
+            Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.AltitudeBufferOffset, result.AltitudeLength / 2));
             VolumeName = buffer.ReadUnicodeString(result.VolumeNameBufferOffset, result.VolumeNameLength / 2);
             FilterName = buffer.ReadUnicodeString(result.FilterNameBufferOffset, result.FilterNameLength / 2);
         }
