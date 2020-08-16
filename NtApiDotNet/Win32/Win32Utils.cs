@@ -292,6 +292,10 @@ namespace NtApiDotNet.Win32
             return GetLastWin32Error();
         }
 
+        internal static NtStatus ToHresult(this Win32Error error)
+        {
+            return NtObjectUtils.BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, NtStatusFacility.FACILITY_NTWIN32, (int)error);
+        }
 
         /// <summary>
         /// Open a file with the Win32 CreateFile API.
