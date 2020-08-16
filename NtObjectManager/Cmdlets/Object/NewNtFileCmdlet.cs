@@ -84,6 +84,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter Directory { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify initial allocation size.</para>
+        /// </summary>
+        [Parameter]
+        public long? AllocationSize { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -93,7 +99,8 @@ namespace NtObjectManager.Cmdlets.Object
             using (Transaction?.Enable())
             {
                 return NtFile.Create(obj_attributes, Access, Attributes,
-                    ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), Disposition, EaBuffer);
+                    ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), 
+                    Disposition, EaBuffer, AllocationSize);
             }
         }
 
