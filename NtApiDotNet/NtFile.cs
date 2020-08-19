@@ -1078,6 +1078,64 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Query attributes of a file.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The file attributes.</returns>
+        public static NtResult<FileInformation> QueryAttributes(ObjectAttributes object_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtQueryFullAttributesFile(object_attributes, 
+                out FileNetworkOpenInformation open_info).CreateResult(throw_on_error, () => new FileInformation(open_info));
+        }
+
+        /// <summary>
+        /// Query attributes of a file.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes.</param>
+        /// <returns>The file attributes.</returns>
+        public static FileInformation QueryAttributes(ObjectAttributes object_attributes)
+        {
+            return QueryAttributes(object_attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Query attributes of a file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="root">The root directory to parse from.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The file attributes.</returns>
+        public static NtResult<FileInformation> QueryAttributes(string path, NtObject root, bool throw_on_error)
+        {
+            using (var obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                return QueryAttributes(obja, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Query attributes of a file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="root">The root directory to parse from.</param>
+        /// <returns>The file attributes.</returns>
+        public static FileInformation QueryAttributes(string path, NtObject root)
+        {
+            return QueryAttributes(path, root, true).Result;
+        }
+
+        /// <summary>
+        /// Query attributes of a file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>The file attributes.</returns>
+        public static FileInformation QueryAttributes(string path)
+        {
+            return QueryAttributes(path, null);
+        }
+
         #endregion
 
         #region Public Methods
@@ -3619,6 +3677,31 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set the file attributes.
+        /// </summary>
+        /// <param name="file_attributes">The file attributes to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetFileAttributes(FileAttributes file_attributes, bool throw_on_error)
+        {
+            var basic_info = new FileBasicInformation() { FileAttributes = file_attributes };
+            return Set(FileInformationClass.FileBasicInformation, basic_info, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the file position.
+        /// </summary>
+        /// <param name="position">The file position to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetFilePosition(long position, bool throw_on_error)
+        {
+            var position_struct = new FilePositionInformation();
+            position_struct.CurrentByteOffset.QuadPart = position;
+            return Set(FileInformationClass.FilePositionInformation, position_struct, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -3677,15 +3760,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public FileAttributes FileAttributes
         {
-            get
-            {
-                return GetFileAttributes(true).Result;
-            }
-            set
-            {
-                var basic_info = new FileBasicInformation() { FileAttributes = value };
-                Set(FileInformationClass.FileBasicInformation, basic_info);
-            }
+            get => GetFileAttributes(true).Result;
+            set => SetFileAttributes(value, true);
         }
 
         /// <summary>
@@ -3707,13 +3783,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether this file repsents a reparse point.
         /// </summary>
-        public bool IsReparsePoint
-        {
-            get
-            {
-                return GetFileAttributes(false).GetResultOrDefault(FileAttributes.None).HasFlagSet(FileAttributes.ReparsePoint);
-            }
-        }
+        public bool IsReparsePoint => GetFileAttributes(false).GetResultOrDefault(FileAttributes.None).HasFlagSet(FileAttributes.ReparsePoint);
 
         /// <summary>
         /// The result of opening the file, whether it was created, overwritten etc.
@@ -3725,18 +3795,8 @@ namespace NtApiDotNet
         /// </summary>
         public long Position
         {
-            get
-            {
-                return Query<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
-            }
-
-            set
-            {
-                var position = new FilePositionInformation();
-                position.CurrentByteOffset.QuadPart = value;
-
-                Set(FileInformationClass.FilePositionInformation, position);
-            }
+            get => Query<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
+            set => SetFilePosition(value, true);
         }
 
         /// <summary>
@@ -3744,16 +3804,14 @@ namespace NtApiDotNet
         /// </summary>
         public long Length
         {
-            get
-            {
-                return Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
-            }
-
-            set
-            {
-                SetEndOfFile(value);
-            }
+            get => Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
+            set => SetEndOfFile(value);
         }
+
+        /// <summary>
+        /// Get the file's allocation size.
+        /// </summary>
+        public long AllocationSize => Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).AllocationSize.QuadPart;
 
         /// <summary>
         /// Get the Win32 path name for the file.
@@ -3794,25 +3852,13 @@ namespace NtApiDotNet
         /// Get the low-level device type of the file.
         /// </summary>
         /// <returns>The file device type.</returns>
-        public FileDeviceType DeviceType
-        {
-            get
-            {
-                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
-            }
-        }
+        public FileDeviceType DeviceType => QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
 
         /// <summary>
         /// Get the low-level device characteristics of the file.
         /// </summary>
         /// <returns>The file device characteristics.</returns>
-        public FileDeviceCharacteristics Characteristics
-        {
-            get
-            {
-                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
-            }
-        }
+        public FileDeviceCharacteristics Characteristics => QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
 
         /// <summary>
         /// Get filesystem and volume information.
@@ -3857,13 +3903,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Gets whether the file is on a remote file system.
         /// </summary>
-        public bool IsRemote
-        {
-            get
-            {
-                return Query<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
-            }
-        }
+        public bool IsRemote => Query<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
 
         /// <summary>
         /// Get or set whether this file/directory is case sensitive.
@@ -3872,7 +3912,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (CaseSensitiveFlags & FileCaseSensitiveFlags.CaseSensitiveDir) != 0;
+                return CaseSensitiveFlags.HasFlagSet(FileCaseSensitiveFlags.CaseSensitiveDir);
             }
 
             set
@@ -3926,13 +3966,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the file mode.
         /// </summary>
-        public FileOpenOptions Mode
-        {
-            get
-            {
-                return (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
-            }
-        }
+        public FileOpenOptions Mode => (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
 
         /// <summary>
         /// Get file access information.
@@ -3948,38 +3982,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the filename with the volume path.
         /// </summary>
-        public string FileName
-        {
-            get
-            {
-                return TryGetName(FileInformationClass.FileNameInformation);
-            }
-        }
+        public string FileName => TryGetName(FileInformationClass.FileNameInformation);
 
         /// <summary>
         /// Get the normalized filename with the volume path.
         /// </summary>
-        public string NormalizedFileName
-        {
-            get
-            {
-                return TryGetName(FileInformationClass.FileNormalizedNameInformation);
-            }
-        }
+        public string NormalizedFileName => TryGetName(FileInformationClass.FileNormalizedNameInformation);
 
         /// <summary>
         /// Get the associated short filename
         /// </summary>
         public string FileShortName
         {
-            get
-            {
-                return TryGetName(FileInformationClass.FileAlternateNameInformation);
-            }
-            set
-            {
-                SetName(FileInformationClass.FileShortNameInformation, value);
-            }
+            get => TryGetName(FileInformationClass.FileAlternateNameInformation);
+            set => SetName(FileInformationClass.FileShortNameInformation, value);
         }
 
         /// <summary>
@@ -4006,14 +4022,8 @@ namespace NtApiDotNet
         /// </summary>
         public StorageReserveId StorageReserveId
         {
-            get
-            {
-                return Query<FileStorageReserveIdInformation>(FileInformationClass.FileStorageReserveIdInformation).StorageReserveId;
-            }
-            set
-            {
-                Set(FileInformationClass.FileStorageReserveIdInformation, new FileStorageReserveIdInformation() { StorageReserveId = value });
-            }
+            get => Query<FileStorageReserveIdInformation>(FileInformationClass.FileStorageReserveIdInformation).StorageReserveId;
+            set => Set(FileInformationClass.FileStorageReserveIdInformation, new FileStorageReserveIdInformation() { StorageReserveId = value });
         }
 
         /// <summary>

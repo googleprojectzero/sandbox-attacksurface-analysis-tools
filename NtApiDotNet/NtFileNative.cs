@@ -261,7 +261,7 @@ namespace NtApiDotNet
             UnicodeString SpareInstancePath, uint Flags);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCancelSynchronousIoFile(SafeKernelObjectHandle ThreadHandle, 
+        public static extern NtStatus NtCancelSynchronousIoFile(SafeKernelObjectHandle ThreadHandle,
             [In] SafeIoStatusBuffer IoRequestToCancel, [Out] IoStatus IoStatusBlock);
 
         [DllImport("ntdll.dll")]
@@ -312,6 +312,18 @@ namespace NtApiDotNet
           SafeBuffer StartSid,
           [MarshalAs(UnmanagedType.U1)]
           bool RestartScan
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryAttributesFile(
+          [In] ObjectAttributes ObjectAttributes,
+          out FileBasicInformation FileInformation
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryFullAttributesFile(
+            [In] ObjectAttributes ObjectAttributes,
+            out FileNetworkOpenInformation FileInformation
         );
     }
 
@@ -528,6 +540,18 @@ namespace NtApiDotNet
         public int NumberOfLinks;
         [MarshalAs(UnmanagedType.U1)] public bool DeletePending;
         [MarshalAs(UnmanagedType.U1)] public bool Directory;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileNetworkOpenInformation
+    {
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct AllocationSize;
+        public LargeIntegerStruct EndOfFile;
+        public FileAttributes FileAttributes;
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
@@ -1174,49 +1198,98 @@ namespace NtApiDotNet
         DirectoriesOnly = 2,
     }
 
-    public class FileDirectoryEntry
+    /// <summary>
+    /// Class representing file information.
+    /// </summary>
+    public class FileInformation
     {
-        public int FileIndex { get; }
+        /// <summary>
+        /// Time of creation.
+        /// </summary>
         public DateTime CreationTime { get; }
+        /// <summary>
+        /// Time of last access.
+        /// </summary>
         public DateTime LastAccessTime { get; }
+        /// <summary>
+        /// Time of last write.
+        /// </summary>
         public DateTime LastWriteTime { get; }
+        /// <summary>
+        /// Time of change.
+        /// </summary>
         public DateTime ChangeTime { get; }
+        /// <summary>
+        /// Length of the file.
+        /// </summary>
         public long EndOfFile { get; }
+        /// <summary>
+        /// Allocation size.
+        /// </summary>
         public long AllocationSize { get; }
+        /// <summary>
+        /// File attributes.
+        /// </summary>
         public FileAttributes Attributes { get; }
-        public string FileName { get; }
 
-        public bool HasAttributes(FileAttributes attributes)
-        {
-            return (Attributes & attributes) != 0;
-        }
+        /// <summary>
+        /// Has the file got a set of attributes set.
+        /// </summary>
+        /// <param name="attributes">The attributes to check.</param>
+        /// <returns>True if it has the attributes.</returns>
+        public bool HasAttributes(FileAttributes attributes) => Attributes.HasFlagSet(attributes);
 
-        public bool IsDirectory
-        {
-            get
-            {
-                return HasAttributes(FileAttributes.Directory);
-            }
-        }
+        /// <summary>
+        /// Is the file a directory.
+        /// </summary>
+        public bool IsDirectory => HasAttributes(FileAttributes.Directory);
 
-        public bool IsReparsePoint
-        {
-            get
-            {
-                return HasAttributes(FileAttributes.ReparsePoint);
-            }
-        }
+        /// <summary>
+        /// Is the file a reparse point.
+        /// </summary>
+        public bool IsReparsePoint => HasAttributes(FileAttributes.ReparsePoint);
 
-        internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name)
+        internal FileInformation(FileDirectoryInformation dir_info)
         {
-            FileIndex = dir_info.FileIndex;
-            CreationTime = DateTime.FromFileTime(dir_info.CreationTime.QuadPart);
-            LastAccessTime = DateTime.FromFileTime(dir_info.LastAccessTime.QuadPart);
-            LastWriteTime = DateTime.FromFileTime(dir_info.LastWriteTime.QuadPart);
-            ChangeTime = DateTime.FromFileTime(dir_info.ChangeTime.QuadPart);
+            CreationTime = dir_info.CreationTime.ToDateTime();
+            LastAccessTime = dir_info.LastAccessTime.ToDateTime();
+            LastWriteTime = dir_info.LastWriteTime.ToDateTime();
+            ChangeTime = dir_info.ChangeTime.ToDateTime();
             EndOfFile = dir_info.EndOfFile.QuadPart;
             AllocationSize = dir_info.AllocationSize.QuadPart;
             Attributes = dir_info.FileAttributes;
+        }
+
+        internal FileInformation(FileNetworkOpenInformation open_info)
+        {
+            CreationTime = open_info.CreationTime.ToDateTime();
+            LastAccessTime = open_info.LastAccessTime.ToDateTime();
+            LastWriteTime = open_info.LastWriteTime.ToDateTime();
+            ChangeTime = open_info.ChangeTime.ToDateTime();
+            EndOfFile = open_info.EndOfFile.QuadPart;
+            AllocationSize = open_info.AllocationSize.QuadPart;
+            Attributes = open_info.FileAttributes;
+        }
+    }
+
+    /// <summary>
+    /// Class to represent a directory entry.
+    /// </summary>
+    public sealed class FileDirectoryEntry : FileInformation
+    {
+        /// <summary>
+        /// Index of the file.
+        /// </summary>
+        public int FileIndex { get; }
+        /// <summary>
+        /// File name.
+        /// </summary>
+        public string FileName { get; }
+
+        internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name) 
+            : base(dir_info)
+        {
+            FileIndex = dir_info.FileIndex;
             FileName = file_name;
         }
     }
