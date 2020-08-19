@@ -1716,7 +1716,18 @@ namespace NtApiDotNet
         /// <param name="reparse">The reparse point data.</param>
         public void SetReparsePoint(ReparseBuffer reparse)
         {
-            SetReparsePoint(reparse.ToByteArray());
+            SetReparsePoint(reparse, true);
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetReparsePoint(ReparseBuffer reparse, bool throw_on_error)
+        {
+            return SetReparsePoint(reparse.ToByteArray(), throw_on_error);
         }
 
         /// <summary>
@@ -1725,9 +1736,37 @@ namespace NtApiDotNet
         /// <param name="reparse">The reparse point data as a byte array.</param>
         public void SetReparsePoint(byte[] reparse)
         {
+            SetReparsePoint(reparse, true);
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point as a raw byte array.
+        /// </summary>
+        /// <param name="reparse">The reparse point data as a byte array.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetReparsePoint(byte[] reparse, bool throw_on_error)
+        {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse))
             {
-                FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT, buffer, null);
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT, buffer, null, throw_on_error).Status;
+            }
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>
+        /// <param name="flags">Flags for the reparse buffer.</param>
+        /// <param name="existing_tag">Existing tag to check against. If no check required use 0.</param>
+        /// <param name="existing_guid">Existing Guid to check against. If no check requested use empty GUID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetReparsePointEx(ReparseBuffer reparse, ReparseBufferExFlags flags, ReparseTag existing_tag, Guid existing_guid, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray(flags, existing_tag, existing_guid)))
+            {
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT_EX, buffer, null, throw_on_error).Status;
             }
         }
 
@@ -1740,10 +1779,7 @@ namespace NtApiDotNet
         /// <param name="existing_guid">Existing Guid to check against. If no check requested use empty GUID.</param>
         public void SetReparsePointEx(ReparseBuffer reparse, ReparseBufferExFlags flags, ReparseTag existing_tag, Guid existing_guid)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray(flags, existing_tag, existing_guid)))
-            {
-                FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT_EX, buffer, null);
-            }
+            SetReparsePointEx(reparse, flags, existing_tag, existing_guid, true);
         }
 
         /// <summary>
@@ -1772,7 +1808,7 @@ namespace NtApiDotNet
         /// <param name="print_name">The print name to display (can be null).</param>
         public void SetMountPoint(string substitute_name, string print_name)
         {
-            SetReparsePoint(new MountPointReparseBuffer(substitute_name, print_name));
+            SetMountPoint(substitute_name, print_name, true);
         }
 
         /// <summary>
@@ -1783,19 +1819,42 @@ namespace NtApiDotNet
         /// <param name="flags">Additional flags for the symlink.</param>
         public void SetSymlink(string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
         {
-            SetReparsePoint(new SymlinkReparseBuffer(substitute_name, print_name, flags));
+            SetSymlink(substitute_name, print_name, flags, true);
+        }
+
+        /// <summary>
+        /// Set a mount point on the current file object.
+        /// </summary>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display (can be null).</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetMountPoint(string substitute_name, string print_name, bool throw_on_error)
+        {
+            return SetReparsePoint(new MountPointReparseBuffer(substitute_name, print_name), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a symlink on the current file object.
+        /// </summary>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display.</param>
+        /// <param name="flags">Additional flags for the symlink.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetSymlink(string substitute_name, string print_name, SymlinkReparseBufferFlags flags, bool throw_on_error)
+        {
+            return SetReparsePoint(new SymlinkReparseBuffer(substitute_name, print_name, flags), throw_on_error);
         }
 
         /// <summary>
         /// Get the reparse point buffer for the file.
         /// </summary>
-        /// <param name="opaque_buffer">If the reparse tag isn't known 
-        /// return an opaque buffer, otherwise a generic buffer</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The reparse point buffer.</returns>
-        [Obsolete("opaque_buffer parameter no longer has any effect, use parameter-less version")]
-        public ReparseBuffer GetReparsePoint(bool opaque_buffer)
+        public NtResult<ReparseBuffer> GetReparsePoint(bool throw_on_error)
         {
-            return GetReparsePoint();
+            return GetReparsePointRaw(throw_on_error).Map(ba => ReparseBuffer.FromByteArray(ba));
         }
 
         /// <summary>
@@ -1810,13 +1869,42 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the reparse point buffer for the file as a raw buffer.
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The reparse point buffer.</returns>
-        public byte[] GetReparsePointRaw()
+        public NtResult<byte[]> GetReparsePointRaw(bool throw_on_error)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
-                int res = FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
-                return buffer.ReadBytes(res);
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, 
+                    null, buffer, throw_on_error).Map(i => buffer.ReadBytes(i));
+            }
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file as a raw buffer.
+        /// </summary>
+        /// <returns>The reparse point buffer.</returns>
+        public byte[] GetReparsePointRaw()
+        {
+            return GetReparsePointRaw(true).Result;
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer
+        /// </summary>
+        /// <returns>The original reparse buffer.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtResult<ReparseBuffer> DeleteReparsePoint(bool throw_on_error)
+        {
+            var reparse = GetReparsePoint(throw_on_error);
+            if (!reparse.IsSuccess)
+                return reparse;
+
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(
+                new OpaqueReparseBuffer(reparse.Result.Tag, new byte[0]).ToByteArray()))
+            {
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null, throw_on_error)
+                    .Map(i => reparse.Result);
             }
         }
 
@@ -1826,13 +1914,7 @@ namespace NtApiDotNet
         /// <returns>The original reparse buffer.</returns>
         public ReparseBuffer DeleteReparsePoint()
         {
-            ReparseBuffer reparse = GetReparsePoint();
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(
-                new OpaqueReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
-            {
-                FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null);
-            }
-            return reparse;
+            return DeleteReparsePoint(true).Result;
         }
 
         /// <summary>
