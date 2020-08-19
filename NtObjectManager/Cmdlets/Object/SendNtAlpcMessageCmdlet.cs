@@ -100,8 +100,13 @@ namespace NtObjectManager.Cmdlets.Object
             NtWaitTimeout timeout = TimeoutMs.HasValue
                 ? NtWaitTimeout.FromMilliseconds(TimeoutMs.Value) : NtWaitTimeout.Infinite;
             var recv_message = CreateReceiveMessage();
-            Port.SendReceive(Flags, msg, SendAttributes, recv_message, recv_message != null ? ReceiveAttributes : null, timeout);
+            if (!Port.SendReceive(Flags, msg, SendAttributes, recv_message, recv_message != null ? ReceiveAttributes : null, timeout))
+            {
+                WriteWarning("SendReceive timed out.");
+                return null;
+            }
             return recv_message;
+            
         }
 
         /// <summary>

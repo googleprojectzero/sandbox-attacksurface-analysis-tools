@@ -142,10 +142,12 @@ namespace NtApiDotNet
         /// <param name="receive_message">The message to receive. Optional.</param>
         /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
         /// <param name="timeout">Time out for the send/receive.</param>
-        public void SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
+        /// <returns>True if completed successfully, false if timed out.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public bool SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
             AlpcMessage receive_message, AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout)
         {
-            SendReceive(flags, send_message, send_attributes, receive_message, receive_attributes, timeout, true);
+            return SendReceive(flags, send_message, send_attributes, receive_message, receive_attributes, timeout, true) != NtStatus.STATUS_TIMEOUT;
         }
 
         /// <summary>
@@ -172,10 +174,12 @@ namespace NtApiDotNet
         /// <param name="send_attributes">The attributes to send with the message. Optional.</param>
         /// <param name="timeout">Time out for the send/receive.</param>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public void Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
+        /// <returns>True if completed successfully, false if timed out.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public bool Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
                             NtWaitTimeout timeout)
         {
-            Send(flags, send_message, send_attributes, timeout, true);
+            return Send(flags, send_message, send_attributes, timeout, true) != NtStatus.STATUS_TIMEOUT;
         }
 
         /// <summary>
@@ -204,7 +208,7 @@ namespace NtApiDotNet
         {
             var msg = new AlpcMessageRaw(receive_length);
             return SendReceive(flags, null, null, msg, receive_attributes, 
-                timeout, false).CreateResult(throw_on_error, () => msg);
+                timeout, false).CreateResult(throw_on_error, s => s != NtStatus.STATUS_TIMEOUT ? msg : null);
         }
 
         /// <summary>
