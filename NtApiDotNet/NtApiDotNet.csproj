@@ -61,6 +61,8 @@
     <Compile Include="ClaimSecurityAttribute.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="NtDesktopNative.cs" />
+    <Compile Include="NtFilterConnectionPort.cs" />
+    <Compile Include="NtFilterConnectionPortNative.cs" />
     <Compile Include="NtKeyHive.cs" />
     <Compile Include="NtMailslotFile.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
