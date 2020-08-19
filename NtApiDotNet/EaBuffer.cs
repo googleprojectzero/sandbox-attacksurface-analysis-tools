@@ -165,8 +165,7 @@ namespace NtApiDotNet
             _buffers = new List<EaBufferEntry>();
             while (!finished)
             {
-                EaBufferEntry entry;
-                finished = DeserializeEntry(reader, out entry);
+                finished = DeserializeEntry(reader, out EaBufferEntry entry);
                 _buffers.Add(entry);
             }
         }
@@ -180,7 +179,7 @@ namespace NtApiDotNet
         {
         }
 
-        private List<EaBufferEntry> _buffers;
+        private readonly List<EaBufferEntry> _buffers;
 
         private bool DeserializeEntry(BinaryReader reader, out EaBufferEntry entry)
         {
