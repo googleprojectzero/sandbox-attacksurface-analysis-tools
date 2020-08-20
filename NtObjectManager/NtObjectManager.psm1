@@ -2967,6 +2967,15 @@ Get the security descriptors from an array of objects.
 .EXAMPLE
 Get-NtSecurityDescriptor -Process $process -Address 0x12345678
 Get the security descriptor from another process at address 0x12345678.
+.EXAMPLE
+Get-NtSecurityDescriptor -NamedPipeDefault
+Get the default security descriptor for a named pipe.
+.EXAMPLE
+Get-NtSecurityDescriptor -ProcessId 1234
+Get the security descriptor for Process ID 1234.
+.EXAMPLE
+Get-NtSecurityDescriptor -ThreadId 5678
+Get the security descriptor for Thread ID 5678.
 #>
 function Get-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
