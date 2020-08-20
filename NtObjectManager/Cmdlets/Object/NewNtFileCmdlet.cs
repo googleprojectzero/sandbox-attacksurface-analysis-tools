@@ -98,9 +98,13 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (Transaction?.Enable())
             {
+                FileOpenOptions opts = Options;
+                if (ObjectId)
+                    opts |= FileOpenOptions.OpenByFileId;
+                if (Directory)
+                    opts |= FileOpenOptions.DirectoryFile;
                 return NtFile.Create(obj_attributes, Access, Attributes,
-                    ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), 
-                    Disposition, EaBuffer, AllocationSize);
+                    ShareMode, opts, Disposition, EaBuffer, AllocationSize);
             }
         }
 

@@ -223,6 +223,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create an Object Attributes structure with a raw name. Useful for Object ID handling.
+        /// </summary>
+        /// <param name="object_name">The name of the object in raw bytes.</param>
+        /// <param name="attributes">The object attribute flags.</param>
+        /// <param name="root">An optional root handle, Will duplicate the handle.</param>
+        /// <param name="sqos">An optional security quality of service.</param>
+        /// <param name="security_descriptor">An optional security descriptor.</param>
+        /// <returns>The created object attributes.</returns>
+        public static ObjectAttributes CreateWithRawName(byte[] object_name, AttributeFlags attributes, NtObject root,
+            SecurityQualityOfService sqos, SecurityDescriptor security_descriptor)
+        {
+            return new ObjectAttributes(object_name, attributes, root?.GetHandle(), sqos, security_descriptor);
+        }
+
+        /// <summary>
         /// Dispose
         /// </summary>
         public void Dispose()

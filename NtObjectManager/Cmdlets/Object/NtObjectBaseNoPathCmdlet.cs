@@ -74,6 +74,22 @@ namespace NtObjectManager.Cmdlets.Object
         protected abstract object CreateObject(ObjectAttributes obj_attributes);
 
         /// <summary>
+        /// Indicates that the path is raw and should be passed through Base64 decode.
+        /// </summary>
+        protected virtual bool IsRawPath { get; }
+
+        private ObjectAttributes CreateAttributes(string path, AttributeFlags attributes, NtObject root,
+            SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
+        {
+            if (IsRawPath)
+            {
+                return ObjectAttributes.CreateWithRawName(Convert.FromBase64String(path), attributes, 
+                    root, security_quality_of_service, security_descriptor);
+            }
+            return new ObjectAttributes(path, attributes, root, security_quality_of_service, security_descriptor);
+        }
+
+        /// <summary>
         /// Create object from components.
         /// </summary>
         /// <param name="path">The path to the object.</param>
@@ -89,7 +105,8 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 attributes |= AttributeFlags.Inherit;
             }
-            using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, 
+
+            using (var obja = CreateAttributes(path, attributes, root, 
                 security_quality_of_service, security_descriptor))
             {
                 return CreateObject(obja);

@@ -61,6 +61,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter DeviceGuid { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the path is an object ID, in string format (e.g. 12345678).</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ObjectId { get; set; }
+
+        /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
         /// <returns>True if objects can be created.</returns>
@@ -112,9 +118,18 @@ namespace NtObjectManager.Cmdlets.Object
                 }
                 return NtFileUtils.DosFileNameToNt(path);
             }
+            else if (ObjectId)
+            {
+                return Convert.ToBase64String(BitConverter.GetBytes(long.Parse(Path)));
+            }
 
             return PSUtils.ResolvePath(SessionState, Path, Win32Path);
         }
+
+        /// <summary>
+        /// Indicates that the path is raw and should be passed through Base64 decode.
+        /// </summary>
+        protected override bool IsRawPath => ObjectId;
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -125,7 +140,10 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (Transaction?.Enable())
             {
-                return NtFile.Open(obj_attributes, Access, ShareMode, Options);
+                FileOpenOptions opts = Options;
+                if (ObjectId)
+                    opts |= FileOpenOptions.OpenByFileId;
+                return NtFile.Open(obj_attributes, Access, ShareMode, opts);
             }
         }
     }
