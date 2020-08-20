@@ -670,6 +670,12 @@ namespace NtApiDotNet
         public ProcessHandleTableEntryInfo Handles;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ProcessRevokeFileHandlesInformation
+    {
+        public UnicodeString TargetDevicePath;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
