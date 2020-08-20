@@ -1252,6 +1252,16 @@ namespace NtApiDotNet
         /// Get the Isolated User Mode flags.
         /// </summary>
         public static SystemIsolatedUserModeInformationFlags IsolatedUserModeFlags => GetIsolatedUserModeFlags(true).Result;
+        /// <summary>
+        /// Get the NT product type.
+        /// </summary>
+        /// <returns></returns>
+        public static NtProductType GetProductType()
+        {
+            if (!NtRtl.RtlGetNtProductType(out NtProductType result))
+                throw new ArgumentException("Invalid product type.");
+            return result;
+        }
         #endregion
     }
 }

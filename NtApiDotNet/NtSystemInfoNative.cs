@@ -106,6 +106,10 @@ namespace NtApiDotNet
           int SystemInformationLength,
           out int ReturnLength
         );
+
+        [DllImport("ntdll.dll")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlGetNtProductType(out NtProductType NtProductType);
     }
 
     [Flags]
