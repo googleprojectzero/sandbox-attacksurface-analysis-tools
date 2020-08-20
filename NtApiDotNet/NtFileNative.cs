@@ -1696,5 +1696,12 @@ namespace NtApiDotNet
         public int Sid;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileReparsePointInformation
+    {
+        public long FileReferenceNumber;
+        public ReparseTag Tag;
+    }
+
 #pragma warning restore 1591
 }

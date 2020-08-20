@@ -3784,6 +3784,37 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query all reparse points from a volume.
+        /// </summary>
+        /// <returns>The list of reparse points.</returns>
+        /// <remarks>You'll need to open the reparse database, which is typically \$Extend\$Reparse:$R:$INDEX_ALLOCATION on the volume.</remarks>
+        public IEnumerable<FileReparsePointInformation> QueryReparsePoints()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileReparsePointInformation>())
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
+                        FileInformationClass.FileReparsePointInformation, true, null, true));
+
+                    while (status.IsSuccess())
+                    {
+                        yield return buffer.Result;
+                        result.Reset();
+                        status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
+                            result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileReparsePointInformation, true, null, false));
+                    }
+
+                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
+                    {
+                        status.ToNtException();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
