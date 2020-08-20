@@ -2939,6 +2939,8 @@ Specify an object path to get the security descriptor from.
 Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
 .PARAMETER Root
 Specify a root object for Path.
+.PARAMETER NamedPipeDefault
+ Specify to get the default security descriptor for a named pipe.
 .INPUTS
 NtApiDotNet.NtObject[]
 .OUTPUTS
@@ -2992,6 +2994,8 @@ function Get-NtSecurityDescriptor {
         [parameter(Mandatory, ParameterSetName = "FromTid")]
         [alias("tid")]
         [int]$ThreadId,
+        [parameter(Mandatory, ParameterSetName = "FromNp")]
+        [switch]$NamedPipeDefault,
         [switch]$ToSddl
     )
     PROCESS {
@@ -3019,6 +3023,10 @@ function Get-NtSecurityDescriptor {
                 Use-NtObject($obj = Get-NtThread -ThreadId $ThreadId -Access $mask) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
+            }
+            "FromNp" {
+                $dacl = [NtApiDotNet.NtNamedPipeFile]::GetDefaultNamedPipeAcl();
+                New-NtSecurityDescriptor -Dacl $dacl -Type File
             }
         }
         if ($ToSddl) {
