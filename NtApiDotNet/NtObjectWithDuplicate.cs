@@ -221,6 +221,12 @@ namespace NtApiDotNet
         public A GrantedAccess => GrantedAccessMask.ToSpecificAccess<A>();
 
         /// <summary>
+        /// Get generic granted access for handle.
+        /// </summary>
+        /// <returns>Generic Granted access</returns>
+        public A GrantedAccessGeneric => NtType.UnmapGenericRights(GrantedAccessMask).ToSpecificAccess<A>();
+
+        /// <summary>
         /// Get the maximum permission access for this object based on a token
         /// and it's security descriptor.
         /// </summary>
