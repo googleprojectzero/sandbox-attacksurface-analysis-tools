@@ -903,7 +903,7 @@ namespace NtApiDotNet
         /// Open a file by its object ID
         /// </summary>
         /// <param name="volume">A handle to the volume on which the file resides.</param>
-        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="id">The object ID.</param>
         /// <param name="desired_access">The desired access for the file</param>
         /// <param name="share_access">File share access</param>
         /// <param name="open_options">Open options.</param>
@@ -935,6 +935,44 @@ namespace NtApiDotNet
             FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
         {
             return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume_path">The path to the volume which contains the file.</param>
+        /// <param name="id">The object ID.</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The opened file object</returns>
+        public static NtResult<NtFile> OpenFileById(string volume_path, long id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = ObjectAttributes.CreateWithRawName(NtFileUtils.GetObjectIdPath(volume_path, id),
+                AttributeFlags.CaseInsensitive, null, null, null))
+            {
+                IoStatus iostatus = new IoStatus();
+                return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obja,
+                    iostatus, share_access, open_options | FileOpenOptions.OpenByFileId)
+                    .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
+            }
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume_path">The path to the volume which contains the file.</param>
+        /// <param name="id">The object ID.</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <returns>The opened file object</returns>
+        public static NtFile OpenFileById(string volume_path, long id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            return OpenFileById(volume_path, id, desired_access, share_access, open_options, true).Result;
         }
 
         /// <summary>
