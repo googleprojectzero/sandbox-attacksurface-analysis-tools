@@ -14,8 +14,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -310,5 +312,34 @@ namespace NtApiDotNet
             return @"\\.\GLOBALROOT" + filename;
         }
 
+        /// <summary>
+        /// Build a path for an object ID volume.
+        /// </summary>
+        /// <param name="volume_path">The path to the volume.</param>
+        /// <param name="object_id">The object ID.</param>
+        /// <returns>The bytes for the object ID path.</returns>
+        public static byte[] GetObjectIdPath(string volume_path, byte[] object_id)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            if (!volume_path.EndsWith(@"\"))
+            {
+                volume_path += @"\";
+            }
+            writer.Write(Encoding.Unicode.GetBytes(volume_path));
+            writer.Write(object_id);
+            return stm.ToArray();
+        }
+
+        /// <summary>
+        /// Build a path for an object ID volume.
+        /// </summary>
+        /// <param name="volume_path">The path to the volume.</param>
+        /// <param name="file_reference">The file reference number.</param>
+        /// <returns>The bytes for the object ID path.</returns>
+        public static byte[] GetObjectIdPath(string volume_path, long file_reference)
+        {
+            return GetObjectIdPath(volume_path, BitConverter.GetBytes(file_reference));
+        }
     }
 }
