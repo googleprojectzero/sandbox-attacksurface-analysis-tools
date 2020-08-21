@@ -234,7 +234,7 @@ namespace NtApiDotNet
         public static ObjectAttributes CreateWithRawName(byte[] object_name, AttributeFlags attributes, NtObject root,
             SecurityQualityOfService sqos, SecurityDescriptor security_descriptor)
         {
-            return new ObjectAttributes(object_name, attributes, root?.GetHandle(), sqos, security_descriptor);
+            return new ObjectAttributes(object_name, attributes, root.GetHandle(), sqos, security_descriptor);
         }
 
         /// <summary>
