@@ -99,7 +99,7 @@ namespace NtObjectManager.Cmdlets.Object
             using (Transaction?.Enable())
             {
                 FileOpenOptions opts = Options;
-                if (FileReference)
+                if (FileId)
                     opts |= FileOpenOptions.OpenByFileId;
                 if (Directory)
                     opts |= FileOpenOptions.DirectoryFile;
