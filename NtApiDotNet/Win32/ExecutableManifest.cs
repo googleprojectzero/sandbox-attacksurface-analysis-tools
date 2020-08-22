@@ -30,6 +30,7 @@ namespace NtApiDotNet.Win32
         const string MANIFEST_ASMV1_NS = "urn:schemas-microsoft-com:asm.v1";
         const string MANIFEST_ASMV3_NS = "urn:schemas-microsoft-com:asm.v3";
         const string MANIFEST_WS_NS = "http://schemas.microsoft.com/SMI/2005/WindowsSettings";
+        const string MANIFEST_WS2_NS = "http://schemas.microsoft.com/SMI/2016/WindowsSettings";
 
         enum ResType
         {
@@ -75,6 +76,7 @@ namespace NtApiDotNet.Win32
             nsmgr.AddNamespace("asmv1", MANIFEST_ASMV1_NS);
             nsmgr.AddNamespace("asmv3", MANIFEST_ASMV3_NS);
             nsmgr.AddNamespace("ws", MANIFEST_WS_NS);
+            nsmgr.AddNamespace("ws2", MANIFEST_WS2_NS);
 
             return nsmgr;
         }
@@ -126,6 +128,21 @@ namespace NtApiDotNet.Win32
             return ret;
         }
 
+        private static bool GetLongPathAware(XmlDocument doc)
+        {
+            bool ret = false;
+            XmlNode node = GetNode(doc, "/asmv1:assembly/asmv3:application/asmv3:windowsSettings/ws2:longPathAware");
+
+            if (node != null)
+            {
+                if (!bool.TryParse(node.InnerText.Trim(), out ret))
+                {
+                    ret = false;
+                }
+            }
+            return ret;
+        }
+
         private static XmlDocument LoadDocument(MemoryStream stm)
         {
             XmlDocument doc = new XmlDocument();
@@ -165,11 +182,14 @@ namespace NtApiDotNet.Win32
                 UiAccess = GetUiAccess(doc);
                 AutoElevate = GetAutoElevate(doc);
                 ExecutionLevel = GetExecutionLevel(doc);
-                       
-                XmlWriterSettings settings = new XmlWriterSettings();
-                settings.Indent = true;
-                settings.OmitXmlDeclaration = true;
-                settings.NewLineOnAttributes = true;
+                LongPathAware = GetLongPathAware(doc);
+
+                XmlWriterSettings settings = new XmlWriterSettings
+                {
+                    Indent = true,
+                    OmitXmlDeclaration = true,
+                    NewLineOnAttributes = true
+                };
                 StringWriter string_writer = new StringWriter();
                 XmlWriter writer = XmlWriter.Create(string_writer, settings);
                 doc.Save(writer);
@@ -222,6 +242,11 @@ namespace NtApiDotNet.Win32
         /// The manifest XML.
         /// </summary>
         public string ManifestXml { get; }
+
+        /// <summary>
+        /// True if the manifest indicates long path awareness.
+        /// </summary>
+        public bool LongPathAware { get; }
 
         /// <summary>
         /// Get the manifests from a file.
