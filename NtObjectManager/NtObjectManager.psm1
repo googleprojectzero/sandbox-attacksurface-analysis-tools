@@ -1204,8 +1204,12 @@ function Get-NtFilePath {
                 $p = Resolve-Path -LiteralPath $FullName
             }
         }
-        $p = [NtObjectManager.Utils.PSUtils]::ResolveWin32Path($PSCmdlet.SessionState, $p)
-        Write-Output $p
+        try {
+            $p = [NtObjectManager.Utils.PSUtils]::ResolveWin32Path($PSCmdlet.SessionState, $p)
+            Write-Output $p
+        } catch {
+            Write-Error $_
+        }
     }
 }
 
