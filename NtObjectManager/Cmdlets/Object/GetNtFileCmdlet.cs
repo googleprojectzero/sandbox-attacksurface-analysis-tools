@@ -61,10 +61,10 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter DeviceGuid { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the path is a file id, in string format (e.g. 12345678).</para>
+        /// <para type="description">Specify the path is a file id, in string format (e.g. 12345678) or a GUID object id.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter FileId { get; set; }
+        public SwitchParameter OpenById { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -118,9 +118,19 @@ namespace NtObjectManager.Cmdlets.Object
                 }
                 return NtFileUtils.DosFileNameToNt(path);
             }
-            else if (FileId)
+            else if (OpenById)
             {
-                return Convert.ToBase64String(BitConverter.GetBytes(long.Parse(Path)));
+                byte[] data;
+                if (Guid.TryParse(Path, out Guid object_id))
+                {
+                    data = object_id.ToByteArray();
+                }
+                else
+                {
+                    data = BitConverter.GetBytes(long.Parse(Path));
+                }
+                
+                return Convert.ToBase64String(data);
             }
 
             return PSUtils.ResolvePath(SessionState, Path, Win32Path);
@@ -129,7 +139,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// Indicates that the path is raw and should be passed through Base64 decode.
         /// </summary>
-        protected override bool IsRawPath => FileId;
+        protected override bool IsRawPath => OpenById;
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -141,7 +151,7 @@ namespace NtObjectManager.Cmdlets.Object
             using (Transaction?.Enable())
             {
                 FileOpenOptions opts = Options;
-                if (FileId)
+                if (OpenById)
                     opts |= FileOpenOptions.OpenByFileId;
                 return NtFile.Open(obj_attributes, Access, ShareMode, opts);
             }

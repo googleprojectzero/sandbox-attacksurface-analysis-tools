@@ -313,12 +313,12 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Build a path for an object ID volume.
+        /// Build a path for an open by ID file.
         /// </summary>
         /// <param name="volume_path">The path to the volume.</param>
-        /// <param name="object_id">The object ID.</param>
-        /// <returns>The bytes for the object ID path.</returns>
-        public static byte[] GetObjectIdPath(string volume_path, byte[] object_id)
+        /// <param name="id">The ID.</param>
+        /// <returns>The bytes for the ID path.</returns>
+        public static byte[] GetOpenByIdPath(string volume_path, byte[] id)
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
@@ -327,19 +327,30 @@ namespace NtApiDotNet
                 volume_path += @"\";
             }
             writer.Write(Encoding.Unicode.GetBytes(volume_path));
-            writer.Write(object_id);
+            writer.Write(id);
             return stm.ToArray();
+        }
+
+        /// <summary>
+        /// Build a path for a file ID volume.
+        /// </summary>
+        /// <param name="volume_path">The path to the volume.</param>
+        /// <param name="file_reference">The file reference number.</param>
+        /// <returns>The bytes for the file ID path.</returns>
+        public static byte[] GetFileIdPath(string volume_path, long file_reference)
+        {
+            return GetOpenByIdPath(volume_path, BitConverter.GetBytes(file_reference));
         }
 
         /// <summary>
         /// Build a path for an object ID volume.
         /// </summary>
         /// <param name="volume_path">The path to the volume.</param>
-        /// <param name="file_reference">The file reference number.</param>
-        /// <returns>The bytes for the object ID path.</returns>
-        public static byte[] GetObjectIdPath(string volume_path, long file_reference)
+        /// <param name="object_id">The file object ID.</param>
+        /// <returns>The bytes for the file ID path.</returns>
+        public static byte[] GetObjectIdPath(string volume_path, Guid object_id)
         {
-            return GetObjectIdPath(volume_path, BitConverter.GetBytes(file_reference));
+            return GetOpenByIdPath(volume_path, object_id.ToByteArray());
         }
     }
 }
