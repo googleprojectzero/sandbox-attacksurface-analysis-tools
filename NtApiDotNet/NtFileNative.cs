@@ -814,6 +814,30 @@ namespace NtApiDotNet
         public int MessageLength;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileObjectIdInformation
+    {
+        public long FileReference;
+        public Guid ObjectId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 48)]
+        public byte[] ExtendedInfo;
+        public Guid BirthVolumeId => new Guid(ExtendedInfo.Slice(0, 16));
+        public Guid BirthObjectId => new Guid(ExtendedInfo.Slice(16, 16));
+        public Guid DomainId => new Guid(ExtendedInfo.Slice(32, 16));
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileObjectIdBuffer
+    {
+        public Guid ObjectId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 48)]
+        public byte[] ExtendedInfo;
+
+        public Guid BirthVolumeId => new Guid(ExtendedInfo.Slice(0, 16));
+        public Guid BirthObjectId => new Guid(ExtendedInfo.Slice(16, 16));
+        public Guid DomainId => new Guid(ExtendedInfo.Slice(32, 16));
+    }
+
     public enum FileInformationClass
     {
         FileDirectoryInformation = 1,

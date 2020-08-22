@@ -406,6 +406,32 @@ namespace NtApiDotNet
             return ns.AsReadOnly();
         }
 
+        private IEnumerable<T> QueryFixedDirectoryEntries<T>(FileInformationClass info_class) where T : struct
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
+                        info_class, true, null, true));
+
+                    while (status.IsSuccess())
+                    {
+                        yield return buffer.Result;
+                        result.Reset();
+                        status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
+                            result.IoStatusBuffer, buffer, buffer.Length, info_class, true, null, false));
+                    }
+
+                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
+                    {
+                        status.ToNtException();
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -3828,28 +3854,136 @@ namespace NtApiDotNet
         /// <remarks>You'll need to open the reparse database, which is typically \$Extend\$Reparse:$R:$INDEX_ALLOCATION on the volume.</remarks>
         public IEnumerable<FileReparsePointInformation> QueryReparsePoints()
         {
-            using (var buffer = new SafeStructureInOutBuffer<FileReparsePointInformation>())
+            return QueryFixedDirectoryEntries<FileReparsePointInformation>(FileInformationClass.FileReparsePointInformation);
+        }
+
+        /// <summary>
+        /// Query all object ids from a volume.
+        /// </summary>
+        /// <returns>The list of object ids.</returns>
+        /// <remarks>You need to open the object ID database, which is typically \$Extend\$ObjId:$O:$INDEX_ALLOCATION on the volume.</remarks>
+        public IEnumerable<FileObjectIdInformation> QueryObjectIds()
+        {
+            return QueryFixedDirectoryEntries<FileObjectIdInformation>(FileInformationClass.FileObjectIdInformation);
+        }
+
+        /// <summary>
+        /// Get the Object ID buffer for a file.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The object ID buffer.</returns>
+        public NtResult<FileObjectIdBuffer> GetObjectId(bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileObjectIdBuffer>())
             {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
-                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
-                        FileInformationClass.FileReparsePointInformation, true, null, true));
-
-                    while (status.IsSuccess())
-                    {
-                        yield return buffer.Result;
-                        result.Reset();
-                        status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
-                            result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileReparsePointInformation, true, null, false));
-                    }
-
-                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
-                    {
-                        status.ToNtException();
-                    }
-                }
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_GET_OBJECT_ID,
+                    null, buffer, throw_on_error)
+                    .Map(i => i == buffer.Length ? buffer.Result : throw new ArgumentException("Invalid length returned."));
             }
+        }
+
+        /// <summary>
+        /// Get the Object ID create for a file.
+        /// </summary>
+        /// <returns>The object ID buffer.</returns>
+        public FileObjectIdBuffer GetObjectId()
+        {
+            return GetObjectId(true).Result;
+        }
+
+        /// <summary>
+        /// Get the Object ID buffer for a file.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The object ID buffer.</returns>
+        public NtResult<FileObjectIdBuffer> CreateOrGetObjectId(bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileObjectIdBuffer>())
+            {
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_CREATE_OR_GET_OBJECT_ID,
+                    null, buffer, throw_on_error)
+                    .Map(i => i == buffer.Length ? buffer.Result : throw new ArgumentException("Invalid length returned."));
+            }
+        }
+
+        /// <summary>
+        /// Get or create the Object ID for a file.
+        /// </summary>
+        /// <returns>The object ID buffer.</returns>
+        public FileObjectIdBuffer CreateOrGetObjectId()
+        {
+            return CreateOrGetObjectId(true).Result;
+        }
+
+        /// <summary>
+        /// Set Object ID and extended information.
+        /// </summary>
+        /// <param name="object_id">The Object ID buffer.</param>
+        /// <param name="extended_only">Only set the extended information.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetObjectId(FileObjectIdBuffer object_id, bool extended_only, bool throw_on_error)
+        {
+            if (object_id.ExtendedInfo?.Length != 48)
+            {
+                throw new ArgumentException("Extended info needs to be 48 bytes in length.");
+            }
+
+            using (var buffer = object_id.ToBuffer())
+            {
+                return FsControl(extended_only ? NtWellKnownIoControlCodes.FSCTL_SET_OBJECT_ID_EXTENDED : NtWellKnownIoControlCodes.FSCTL_SET_OBJECT_ID, 
+                    buffer, null, throw_on_error).Status;
+            }
+        }
+
+        /// <summary>
+        /// Set Object ID and extended information.
+        /// </summary>
+        /// <param name="object_id">The Object ID buffer.</param>
+        /// <param name="extended_only">Only set the extended information.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetObjectId(FileObjectIdBuffer object_id, bool extended_only)
+        {
+            SetObjectId(object_id, extended_only, true);
+        }
+
+        /// <summary>
+        /// Set Object ID and extended information.
+        /// </summary>
+        /// <param name="object_id">The Object ID GUID.</param>
+        /// <param name="extended_info">Extended info buffer, needs to be 48 bytes in size.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetObjectId(Guid object_id, byte[] extended_info)
+        {
+            SetObjectId(new FileObjectIdBuffer() { ObjectId = object_id, ExtendedInfo = extended_info }, false);
+        }
+
+        /// <summary>
+        /// Set only Object ID extended information.
+        /// </summary>>
+        /// <param name="extended_info">Extended info buffer, needs to be 48 bytes in size.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetObjectId(byte[] extended_info)
+        {
+            SetObjectId(new FileObjectIdBuffer() { ExtendedInfo = extended_info }, true);
+        }
+
+        /// <summary>
+        /// Delete the Object ID for a file.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus DeleteObjectId(bool throw_on_error)
+        {
+            return FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_OBJECT_ID, null, null, throw_on_error).Status;
+        }
+
+        /// <summary>
+        /// Delete the Object ID for a file.
+        /// </summary>
+        public void DeleteObjectId()
+        {
+            DeleteObjectId(true);
         }
 
         /// <summary>
@@ -3895,14 +4029,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The object ID as a number.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public long FileIdValue
-        {
-            get
-            {
-                var internal_info = Query<FileInternalInformation>(FileInformationClass.FileInternalInformation);
-                return internal_info.IndexNumber.QuadPart;
-            }
-        }
+        public long FileIdValue => Query<FileInternalInformation>(FileInformationClass.FileInternalInformation).IndexNumber.QuadPart;
 
         /// <summary>
         /// Get or set the attributes of a file.

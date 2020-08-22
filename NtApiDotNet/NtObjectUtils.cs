@@ -818,5 +818,10 @@ namespace NtApiDotNet
                 return 0;
             return a.Aggregate((v, c) => (byte)(v ^ c));
         }
+
+        internal static T[] Slice<T>(this T[] arr, int offset, int count)
+        {
+            return new ArraySegment<T>(arr, offset, count).ToArray();
+        }
     }
 }
