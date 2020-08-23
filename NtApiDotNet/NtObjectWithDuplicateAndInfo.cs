@@ -136,6 +136,31 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query an enumerated value from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of enum to return.</typeparam>
+        /// <typeparam name="U">The base type for the enumeration.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T QueryEnum<T, U>(Q info_class) where T : Enum where U : new ()
+        {
+            return (T)(object)Query<U>(info_class);
+        }
+
+        /// <summary>
+        /// Query an enumerated value from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of enum to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T QueryEnum<T>(Q info_class) where T : Enum
+        {
+            return QueryEnum<T, int> (info_class);
+        }
+
+        /// <summary>
         /// Query a variable buffer from the object.
         /// </summary>
         /// <typeparam name="T">The type of structure to return.</typeparam>

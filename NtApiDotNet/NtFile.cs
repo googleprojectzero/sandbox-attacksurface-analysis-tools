@@ -4273,18 +4273,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the file mode.
         /// </summary>
-        public FileOpenOptions Mode => (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
+        public FileOpenOptions Mode => QueryEnum<FileOpenOptions>(FileInformationClass.FileModeInformation);
 
         /// <summary>
         /// Get file access information.
         /// </summary>
-        public AccessMask Access
-        {
-            get
-            {
-                return Query<AccessMask>(FileInformationClass.FileAccessInformation);
-            }
-        }
+        public AccessMask Access => Query<AccessMask>(FileInformationClass.FileAccessInformation);
 
         /// <summary>
         /// Get the filename with the volume path.
