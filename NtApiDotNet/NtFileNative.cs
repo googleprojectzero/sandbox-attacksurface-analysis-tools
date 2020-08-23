@@ -1545,7 +1545,7 @@ namespace NtApiDotNet
         public DateTime CreationTime { get; }
         public uint SerialNumber { get; }
         public string Label { get; }
-        bool SupportsObjects { get; }
+        public bool SupportsObjects { get; }
 
         internal FileSystemVolumeInformation(SafeStructureInOutBuffer<FileFsAttributeInformation> attr_info,
             SafeStructureInOutBuffer<FileFsVolumeInformation> vol_info)
