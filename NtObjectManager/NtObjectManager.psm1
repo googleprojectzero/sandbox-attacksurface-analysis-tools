@@ -2445,6 +2445,8 @@ Specify to try and lookup a known name for the IO control code. If no name found
 Specify to return all known IO control codes with names.
 .PARAMETER Name
 Specify to lookup an IO control code with a name.
+.PARAMETER AsInt
+When looking up by name return the control code as an integer.
 .OUTPUTS
 NtApiDotNet.NtIoControlCode
 System.String
@@ -2460,6 +2462,12 @@ Get the IO control code structure from component parts.
 .EXAMPLE
 Get-NtIoControlCode -DeviceType NAMED_PIPE -Function 10 -Method Buffered -Access Any -LookupName
 Get the IO control code structure from component parts and lookup its name (if known).
+.EXAMPLE
+Get-NtIoControlCode -Name "FSCTL_GET_REPARSE_POINT"
+Get the IO control code structure from a known name.
+.EXAMPLE
+Get-NtIoControlCode -Name "FSCTL_GET_REPARSE_POINT" -AsInt
+Get the IO control code structure from a known name as output an integer.
 #>
 function Get-NtIoControlCode {
     [CmdletBinding(DefaultParameterSetName = "FromCode")]
@@ -2480,7 +2488,9 @@ function Get-NtIoControlCode {
         [Parameter(ParameterSetName = "FromAll", Mandatory = $true)]
         [switch]$All,
         [Parameter(ParameterSetName = "FromName", Mandatory = $true)]
-        [string]$Name
+        [string]$Name,
+        [Parameter(ParameterSetName = "FromName")]
+        [switch]$AsInt
     )
     $result = switch ($PsCmdlet.ParameterSetName) {
         "FromCode" {
@@ -2500,7 +2510,12 @@ function Get-NtIoControlCode {
     if ($LookupName) {
         return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($result)
     }
-    $result | Write-Output
+
+    if ($AsInt) {
+        $result.ToInt32() | Write-Output
+    } else {
+        $result | Write-Output
+    }
 }
 
 <#
