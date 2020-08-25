@@ -362,6 +362,11 @@ namespace NtApiDotNet
             return Query(FileInformationClass.FileBasicInformation, new FileBasicInformation(), throw_on_error);
         }
 
+        private NtStatus SetBasicInformation(FileBasicInformation basic_info, bool throw_on_error)
+        {
+            return Set(FileInformationClass.FileBasicInformation, basic_info, throw_on_error);
+        }
+
         private IEnumerable<DirectoryChangeNotification> ReadNotifications(SafeHGlobalBuffer buffer, IoStatus status)
         {
             List<DirectoryChangeNotification> ns = new List<DirectoryChangeNotification>();
@@ -3846,8 +3851,7 @@ namespace NtApiDotNet
         /// <returns>The file attributes.</returns>
         public NtResult<FileAttributes> GetFileAttributes(bool throw_on_error)
         {
-            return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation, 
-                default, throw_on_error).Map(b => b.FileAttributes);
+            return QueryBasicInformation(throw_on_error).Map(b => b.FileAttributes);
         }
 
         /// <summary>
@@ -3858,8 +3862,95 @@ namespace NtApiDotNet
         /// <returns>The NT status code.</returns>
         public NtStatus SetFileAttributes(FileAttributes file_attributes, bool throw_on_error)
         {
-            var basic_info = new FileBasicInformation() { FileAttributes = file_attributes };
-            return Set(FileInformationClass.FileBasicInformation, basic_info, throw_on_error);
+            return SetBasicInformation(new FileBasicInformation() { FileAttributes = file_attributes }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the creation time.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The creation time.</returns>
+        public NtResult<DateTime> GetCreationTime(bool throw_on_error)
+        {
+            return QueryBasicInformation(throw_on_error).Map(b => b.CreationTime.ToDateTime());
+        }
+
+        /// <summary>
+        /// Get the last write time.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The last write time.</returns>
+        public NtResult<DateTime> GetLastWriteTime(bool throw_on_error)
+        {
+            return QueryBasicInformation(throw_on_error).Map(b => b.LastWriteTime.ToDateTime());
+        }
+
+        /// <summary>
+        /// Get the change time time.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The change time.</returns>
+        public NtResult<DateTime> GetChangeTime(bool throw_on_error)
+        {
+            return QueryBasicInformation(throw_on_error).Map(b => b.ChangeTime.ToDateTime());
+        }
+
+        /// <summary>
+        /// Get the last access time.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The last access time time.</returns>
+        public NtResult<DateTime> GetLastAccessTime(bool throw_on_error)
+        {
+            return QueryBasicInformation(throw_on_error).Map(b => b.LastAccessTime.ToDateTime());
+        }
+
+        /// <summary>
+        /// Set the file's creation time.
+        /// </summary>
+        /// <param name="time">The time to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetCreationTime(DateTime time, bool throw_on_error)
+        {
+            return SetBasicInformation(new FileBasicInformation() 
+                { CreationTime = time.ToLargeIntegerStruct() }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the file's last access time.
+        /// </summary>
+        /// <param name="time">The time to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetLastAccessTime(DateTime time, bool throw_on_error)
+        {
+            return SetBasicInformation(new FileBasicInformation()
+            { LastAccessTime = time.ToLargeIntegerStruct() }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the file's last write time.
+        /// </summary>
+        /// <param name="time">The time to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetLastWriteTime(DateTime time, bool throw_on_error)
+        {
+            return SetBasicInformation(new FileBasicInformation()
+                { LastWriteTime = time.ToLargeIntegerStruct() }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the file's change time.
+        /// </summary>
+        /// <param name="time">The time to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetChangeTime(DateTime time, bool throw_on_error)
+        {
+            return SetBasicInformation(new FileBasicInformation()
+            { ChangeTime = time.ToLargeIntegerStruct() }, throw_on_error);
         }
 
         /// <summary>
@@ -4069,6 +4160,42 @@ namespace NtApiDotNet
         {
             get => GetFileAttributes(true).Result;
             set => SetFileAttributes(value, true);
+        }
+
+        /// <summary>
+        /// Get or set the creation time.
+        /// </summary>
+        public DateTime FileCreationTime
+        {
+            get => GetCreationTime(true).Result;
+            set => SetCreationTime(value, true);
+        }
+
+        /// <summary>
+        /// Get or set the last access time.
+        /// </summary>
+        public DateTime LastAccessTime
+        {
+            get => GetLastAccessTime(true).Result;
+            set => SetLastAccessTime(value, true);
+        }
+
+        /// <summary>
+        /// Get or set the last write time.
+        /// </summary>
+        public DateTime LastWriteTime
+        {
+            get => GetLastWriteTime(true).Result;
+            set => SetLastWriteTime(value, true);
+        }
+
+        /// <summary>
+        /// Get or set the change time.
+        /// </summary>
+        public DateTime ChangeTime
+        {
+            get => GetChangeTime(true).Result;
+            set => SetChangeTime(value, true);
         }
 
         /// <summary>

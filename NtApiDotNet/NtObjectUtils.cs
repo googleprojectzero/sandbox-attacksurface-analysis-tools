@@ -823,5 +823,10 @@ namespace NtApiDotNet
         {
             return new ArraySegment<T>(arr, offset, count).ToArray();
         }
+
+        internal static LargeIntegerStruct ToLargeIntegerStruct(this DateTime time)
+        {
+            return new LargeIntegerStruct() { QuadPart = time.ToFileTime() };
+        }
     }
 }
