@@ -838,6 +838,13 @@ namespace NtApiDotNet
         public Guid DomainId => new Guid(ExtendedInfo.Slice(32, 16));
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileSetSparseBuffer
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool SetSparse;
+    }
+
     public enum FileInformationClass
     {
         FileDirectoryInformation = 1,

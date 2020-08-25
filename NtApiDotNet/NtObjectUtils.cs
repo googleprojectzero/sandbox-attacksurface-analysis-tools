@@ -826,6 +826,8 @@ namespace NtApiDotNet
 
         internal static LargeIntegerStruct ToLargeIntegerStruct(this DateTime time)
         {
+            if (time == DateTime.MinValue)
+                return new LargeIntegerStruct();
             return new LargeIntegerStruct() { QuadPart = time.ToFileTime() };
         }
     }

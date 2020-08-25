@@ -3950,7 +3950,7 @@ namespace NtApiDotNet
         public NtStatus SetChangeTime(DateTime time, bool throw_on_error)
         {
             return SetBasicInformation(new FileBasicInformation()
-            { ChangeTime = time.ToLargeIntegerStruct() }, throw_on_error);
+                { ChangeTime = time.ToLargeIntegerStruct() }, throw_on_error);
         }
 
         /// <summary>
@@ -3964,6 +3964,17 @@ namespace NtApiDotNet
             var position_struct = new FilePositionInformation();
             position_struct.CurrentByteOffset.QuadPart = position;
             return Set(FileInformationClass.FilePositionInformation, position_struct, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get file information.
+        /// </summary>
+        /// <param name="throw_on_error"></param>
+        /// <returns></returns>
+        public NtResult<FileInformation> GetFileInformation(bool throw_on_error)
+        {
+            return Query<FileNetworkOpenInformation>(FileInformationClass.FileNetworkOpenInformation, 
+                default, throw_on_error).Map(n => new FileInformation(n));
         }
 
         /// <summary>
@@ -4106,6 +4117,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Make the file sparse.
+        /// </summary>
+        /// <param name="sparse">True to make the file sparse.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetSparse(bool sparse, bool throw_on_error)
+        {
+            using (var buffer = new FileSetSparseBuffer() { SetSparse = sparse }.ToBuffer())
+            {
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_SET_SPARSE, buffer, null, throw_on_error).Status;
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -4196,6 +4221,20 @@ namespace NtApiDotNet
         {
             get => GetChangeTime(true).Result;
             set => SetChangeTime(value, true);
+        }
+
+        /// <summary>
+        /// Get file information, which is times, attributes and sizes.
+        /// </summary>
+        public FileInformation FileInformation => GetFileInformation(true).Result;
+
+        /// <summary>
+        /// Get or set the file as sparse.
+        /// </summary>
+        public bool Sparse
+        {
+            get => FileAttributes.HasFlagSet(FileAttributes.SparseFile);
+            set => SetSparse(value, true);
         }
 
         /// <summary>
