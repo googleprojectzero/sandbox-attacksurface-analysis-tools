@@ -10144,3 +10144,71 @@ function Get-FilterDriverVolumeInstance {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the attributes for a file.
+.DESCRIPTION
+This cmdlet gets the attributes from a file.
+.PARAMETER File
+The file to get the attributes from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.FileAttributes
+.EXAMPLE
+Get-NtFileAttribute -File $f
+Get the file attributes for the file.
+#>
+function Get-NtFileAttribute {
+    [CmdletBinding(DefaultParameterSetName = "FromFile")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [NtApiDotNet.NtFile]$File
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromFile" {
+            $File.FileAttributes | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set the attributes for a file.
+.DESCRIPTION
+This cmdlet sets the attributes on a file.
+.PARAMETER File
+The file to set the attributes on.
+.PARAMETER FileAttribute
+The attributes to set.
+.PARAMETER PassThru
+Return the newly set attribute value.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.FileAttributes
+.EXAMPLE
+Get-NtFileAttribute -File $f
+Get the file attributes for the file.
+#>
+function Set-NtFileAttribute {
+    [CmdletBinding(DefaultParameterSetName = "FromFile")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1, ParameterSetName = "FromFile")]
+        [NtApiDotNet.FileAttributes]$FileAttribute,
+        [switch]$PassThru
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromFile" {
+            $File.FileAttributes = $FileAttribute
+            if ($PassThru) {
+                $File.FileAttributes | Write-Output
+            }
+        }
+    }
+}
