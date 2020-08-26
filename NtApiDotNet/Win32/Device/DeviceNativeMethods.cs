@@ -14,6 +14,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Device
 {
@@ -93,6 +94,147 @@ namespace NtApiDotNet.Win32.Device
         Interface = 1,
     }
 
+    internal enum CmDeviceProperty
+    {
+        DEVICEDESC = 0x01,
+        HARDWAREID = 0x02,
+        COMPATIBLEIDS = 0x03,
+        UNUSED0 = 0x04,
+        SERVICE = 0x05,
+        UNUSED1 = 0x06,
+        UNUSED2 = 0x07,
+        CLASS = 0x08,
+        CLASSGUID = 0x09,
+        DRIVER = 0x0A,
+        CONFIGFLAGS = 0x0B,
+        MFG = 0x0C,
+        FRIENDLYNAME = 0x0D,
+        LOCATION_INFORMATION = 0x0E,
+        PHYSICAL_DEVICE_OBJECT_NAME = 0x0F,
+        CAPABILITIES = 0x10,
+        UI_NUMBER = 0x11,
+        UPPERFILTERS = 0x12,
+        LOWERFILTERS = 0x13,
+        BUSTYPEGUID = 0x14,
+        LEGACYBUSTYPE = 0x15,
+        BUSNUMBER = 0x16,
+        ENUMERATOR_NAME = 0x17,
+        SECURITY = 0x18,
+        SECURITY_SDS = 0x19,
+        DEVTYPE = 0x1A,
+        EXCLUSIVE = 0x1B,
+        CHARACTERISTICS = 0x1C,
+        ADDRESS = 0x1D,
+        UI_NUMBER_DESC_FORMAT = 0x1E,
+        DEVICE_POWER_DATA = 0x1F,
+        REMOVAL_POLICY = 0x20,
+        REMOVAL_POLICY_HW_DEFAULT = 0x21,
+        REMOVAL_POLICY_OVERRIDE = 0x22,
+        INSTALL_STATE = 0x23,
+        LOCATION_PATHS = 0x24,
+        BASE_CONTAINERID = 0x25,
+    }
+
+    /// <summary>
+    /// Device property types.
+    /// </summary>
+    public enum DEVPROPTYPE
+    {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        EMPTY = 0x00000000, // nothing, no property data
+        NULL = 0x00000001, // null property data
+        SBYTE = 0x00000002, // 8-bit signed int (SBYTE)
+        BYTE = 0x00000003, // 8-bit unsigned int (BYTE)
+        INT16 = 0x00000004, // 16-bit signed int (SHORT)
+        UINT16 = 0x00000005, // 16-bit unsigned int (USHORT)
+        INT32 = 0x00000006, // 32-bit signed int (LONG)
+        UINT32 = 0x00000007, // 32-bit unsigned int (ULONG)
+        INT64 = 0x00000008, // 64-bit signed int (LONG64)
+        UINT64 = 0x00000009, // 64-bit unsigned int (ULONG64)
+        FLOAT = 0x0000000A, // 32-bit floating-point (FLOAT)
+        DOUBLE = 0x0000000B, // 64-bit floating-point (DOUBLE)
+        DECIMAL = 0x0000000C, // 128-bit data (DECIMAL)
+        GUID = 0x0000000D, // 128-bit unique identifier (GUID)
+        CURRENCY = 0x0000000E, // 64 bit signed int currency value (CURRENCY)
+        DATE = 0x0000000F, // date (DATE)
+        FILETIME = 0x00000010, // file time (FILETIME)
+        BOOLEAN = 0x00000011, // 8-bit boolean (DEVPROP_BOOLEAN)
+        STRING = 0x00000012, // null-terminated string
+        STRING_LIST = (STRING | LIST), // multi-sz string list
+        SECURITY_DESCRIPTOR = 0x00000013, // self-relative binary SECURITY_DESCRIPTOR
+        SECURITY_DESCRIPTOR_STRING = 0x00000014, // security descriptor string (SDDL format)
+        DEVPROPKEY = 0x00000015, // device property key (DEVPROPKEY)
+        DEVPROPTYPE = 0x00000016, // device property type (DEVPROPTYPE)
+        BINARY   =   (BYTE|ARRAY), // custom binary data
+        ERROR = 0x00000017, // 32-bit Win32 system error code
+        NTSTATUS = 0x00000018, // 32-bit NTSTATUS code
+        STRING_INDIRECT = 0x00000019, // string resource (@[path\]<dllname>,-<strId>)
+        ARRAY = 0x00001000,  // array of fixed-sized data elements
+        LIST = 0x00002000,  // list of variable-sized data elements
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DEVPROPKEY
+    {
+        public Guid fmtid;
+        public int pid;
+
+        public DEVPROPKEY(uint l, ushort w1, ushort w2, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8, int pid_value)
+        {
+            fmtid = new Guid(l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8);
+            pid = pid_value;
+        }
+
+        public Tuple<Guid, int> ToTuple()
+        {
+            return Tuple.Create(fmtid, pid);
+        }
+    };
+
+    internal static class DevicePropertyKeys
+    {
+        public static DEVPROPKEY DEVPKEY_DeviceClass_Name = new DEVPROPKEY(0x259abffc, 0x50a7, 0x47ce, 0xaf, 0x8, 0x68, 0xc9, 0xa7, 0xd7, 0x33, 0x66, 2);      // DEVPROP_TYPE_STRING
+        public static DEVPROPKEY DEVPKEY_DeviceClass_ClassName = new DEVPROPKEY(0x259abffc, 0x50a7, 0x47ce, 0xaf, 0x8, 0x68, 0xc9, 0xa7, 0xd7, 0x33, 0x66, 3);
+        public static DEVPROPKEY DEVPKEY_DeviceInterface_ClassGuid = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 4);
+        public static DEVPROPKEY DEVPKEY_DeviceClass_Security = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 25);
+        public static DEVPROPKEY DEVPKEY_DeviceClass_DevType = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 27);    // DEVPROP_TYPE_UINT32
+        public static DEVPROPKEY DEVPKEY_DeviceClass_Exclusive = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 28);    // DEVPROP_TYPE_BOOLEAN
+        public static DEVPROPKEY DEVPKEY_DeviceClass_Characteristics = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 29);    // DEVPROP_TYPE_UINT32
+        public static DEVPROPKEY DEVPKEY_DeviceInterface_FriendlyName = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 2);     // DEVPROP_TYPE_STRING
+        public static DEVPROPKEY DEVPKEY_DeviceInterface_Enabled = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 3);     // DEVPROP_TYPE_BOOLEAN
+        public static DEVPROPKEY DEVPKEY_Device_ClassGuid = new DEVPROPKEY(0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 10);
+        public static DEVPROPKEY DEVPKEY_Device_Security = new DEVPROPKEY(0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 25);    // DEVPROP_TYPE_SECURITY_DESCRIPTOR
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SP_DEVINFO_DATA
+    {
+        public int cbSize;
+        public Guid ClassGuid;
+        public int DevInst;
+        public IntPtr Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct SP_DEVICE_INTERFACE_DATA
+    {
+        public int cbSize;
+        public Guid InterfaceClassGuid;
+        public int Flags;
+        public IntPtr Reserved;
+    }
+
+    [Flags]
+    internal enum DiGetClassFlags
+    {
+        DEFAULT = 0x00000001,
+        PRESENT = 0x00000002,
+        ALLCLASSES = 0x00000004,
+        PROFILE = 0x00000008,
+        DEVICEINTERFACE = 0x00000010,
+    }
+
     internal static class DeviceNativeMethods
     {
         [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
@@ -105,5 +247,172 @@ namespace NtApiDotNet.Win32.Device
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
         internal static extern CrError CM_Enumerate_Classes(int ulClassIndex, ref Guid ClassGuid, CmEnumerateClassesFlags ulFlags);
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_Registry_PropertyW(
+          in Guid ClassGuid,
+          CmDeviceProperty ulProperty,
+          out RegistryValueType pulRegDataType,
+          SafeBuffer Buffer,
+          ref int pulLength,
+          int ulFlags,
+          IntPtr hMachine
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_Registry_PropertyW(
+          in Guid ClassGuid,
+          CmDeviceProperty ulProperty,
+          out RegistryValueType pulRegDataType,
+          out int Buffer,
+          ref int pulLength,
+          int ulFlags,
+          IntPtr hMachine
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error CM_MapCrToWin32Err(
+            CrError CmReturnCode,
+            Win32Error DefaultError
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_PropertyW(
+          in Guid ClassGUID,
+          in DEVPROPKEY PropertyKey,
+          out DEVPROPTYPE PropertyType,
+          SafeBuffer PropertyBuffer,
+          ref int PropertyBufferSize,
+          CmEnumerateClassesFlags ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_PropertyW(
+          in Guid ClassGUID,
+          in DEVPROPKEY PropertyKey,
+          out DEVPROPTYPE PropertyType,
+          out int PropertyBuffer,
+          ref int PropertyBufferSize,
+          CmEnumerateClassesFlags ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_PropertyW(
+          in Guid ClassGUID,
+          in DEVPROPKEY PropertyKey,
+          out DEVPROPTYPE PropertyType,
+          out Guid PropertyBuffer,
+          ref int PropertyBufferSize,
+          CmEnumerateClassesFlags ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Class_Property_Keys(
+            in Guid ClassGUID,
+            [Out] DEVPROPKEY[] PropertyKeyArray,
+            ref int PropertyKeyCount,
+            CmEnumerateClassesFlags ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_DevNode_Property_Keys(
+          int dnDevInst,
+            [Out] DEVPROPKEY[] PropertyKeyArray,
+            ref int PropertyKeyCount,
+            int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_DevNode_PropertyW(
+          int dnDevInst,
+          in DEVPROPKEY PropertyKey,
+          out DEVPROPTYPE PropertyType,
+          SafeBuffer PropertyBuffer,
+          ref int PropertyBufferSize,
+          int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Locate_DevNodeW(
+              out int pdnDevInst,
+              string pDeviceID,
+              int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Child(
+            out int pdnDevInst,
+            int dnDevInst,
+            int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Sibling(
+            out int pdnDevInst,
+            int dnDevInst,
+            int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_ID_Size(
+          out int pulLen,
+          int dnDevInst,
+          int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_IDW(
+          int dnDevInst,
+          [Out] StringBuilder Buffer,
+          int BufferLen,
+          int ulFlags
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeDeviceInfoSetHandle SetupDiCreateDeviceInfoList(
+          OptionalGuid ClassGuid,
+          IntPtr hwndParent
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetupDiDestroyDeviceInfoList(
+            IntPtr DeviceInfoSet
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetupDiEnumDeviceInfo(
+          SafeDeviceInfoSetHandle DeviceInfoSet,
+          int MemberIndex,
+          out SP_DEVINFO_DATA DeviceInfoData
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeDeviceInfoSetHandle SetupDiGetClassDevsW(
+          OptionalGuid ClassGuid,
+          string Enumerator,
+          IntPtr hwndParent,
+          DiGetClassFlags Flags
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetupDiGetDeviceInstanceIdW(
+          SafeDeviceInfoSetHandle DeviceInfoSet,
+          in SP_DEVINFO_DATA DeviceInfoData,
+          [Out] StringBuilder DeviceInstanceId,
+          int DeviceInstanceIdSize,
+          out int RequiredSize
+        );
+
+        [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetupDiOpenDeviceInterfaceW(
+              SafeDeviceInfoSetHandle DeviceInfoSet,
+              string DevicePath,
+              int OpenFlags,
+              out SP_DEVICE_INTERFACE_DATA DeviceInterfaceData
+        );
     }
 }
