@@ -94,7 +94,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Backup-NtKey', 'Restore-NtKey', 'Enable-NtTokenVirtualization', 'Disable-NtTokenVirtualization',
           'Read-NtFile', 'Write-NtFile', 'Get-FilterCommunicationPort', 'Get-FilterDriver', 
           'Get-FilterDriverInstance', 'Get-FilterDriverVolume', 'Get-FilterDriverVolumeInstance',
-          'Get-NtFileAttribute', 'Set-NtFileAttribute'
+          'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileSharingProcess'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

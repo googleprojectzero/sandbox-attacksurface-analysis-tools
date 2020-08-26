@@ -10212,3 +10212,55 @@ function Set-NtFileAttribute {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the list of processes which are sharing this file.
+.DESCRIPTION
+This cmdlet gets the list of processes which are sharing this file.
+.PARAMETER File
+The file to get the listing of sharing processes.
+.PARAMETER Path
+The path to the file to get the list of sharing processes.
+.PARAMETER Win32Path
+Specify to Path as a Win32 path.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtProcessInformation
+.EXAMPLE
+Get-NtFileSharingProcess -File $f
+Get the sharing processes for the file.
+.EXAMPLE
+Get-NtFileSharingProcess -Path "\??\C:\windows\system32\kernel32.dll"
+Get the sharing processes for kernel32.dll.
+.EXAMPLE
+Get-NtFileSharingProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path
+Get the sharing processes for kernel32.dll.
+#>
+function Get-NtFileSharingProcess {
+    [CmdletBinding(DefaultParameterSetName="FromPath")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromFile")]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [switch]$Win32Path
+    )
+
+    try {
+        $pids = switch($PSCmdlet.ParameterSetName) {
+            "FromFile" {
+                $File.GetUsingProcessIds() | Write-Output
+            }
+            "FromPath" {
+                Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access ReadAttributes) {
+                    $f.GetUsingProcessIds() | Write-Output
+                }
+            }
+        }
+        Get-NtProcess -InfoOnly | Where-Object {$_.ProcessId -in $pids} | Write-Output
+    } catch {
+        Write-Error $_
+    }
+}
