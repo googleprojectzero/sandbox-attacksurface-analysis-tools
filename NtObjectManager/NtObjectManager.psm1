@@ -10229,16 +10229,16 @@ None
 .OUTPUTS
 NtApiDotNet.NtProcessInformation
 .EXAMPLE
-Get-NtFileSharingProcess -File $f
+Get-NtFileShareProcess -File $f
 Get the sharing processes for the file.
 .EXAMPLE
-Get-NtFileSharingProcess -Path "\??\C:\windows\system32\kernel32.dll"
+Get-NtFileShareProcess -Path "\??\C:\windows\system32\kernel32.dll"
 Get the sharing processes for kernel32.dll.
 .EXAMPLE
-Get-NtFileSharingProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path
+Get-NtFileShareProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path
 Get the sharing processes for kernel32.dll.
 #>
-function Get-NtFileSharingProcess {
+function Get-NtFileShareProcess {
     [CmdletBinding(DefaultParameterSetName="FromPath")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromFile")]
