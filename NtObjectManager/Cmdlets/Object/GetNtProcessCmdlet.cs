@@ -91,7 +91,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtProcess", DefaultParameterSetName = "all")]
-    [OutputType(typeof(NtProcess))]
+    [OutputType(typeof(NtProcess), typeof(NtProcessInformation))]
     public class GetNtProcessCmdlet : PSCmdlet
     {
         /// <summary>
