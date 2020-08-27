@@ -118,7 +118,11 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor), true);
+            var obj = CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor);
+            if (obj != null)
+            {
+                WriteObject(obj, true);
+            }
         }
 
         #region IDisposable Support
