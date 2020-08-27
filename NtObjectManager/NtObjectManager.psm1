@@ -1176,6 +1176,8 @@ This cmdlet gets the full NT path for a specified DOS path.
 The DOS path to convert to NT.
 .PARAMETER Resolve
 Resolve relative paths to the current PS directory.
+.PARAMETER DeviceGuid
+Get native path from a Device Interface GUID.
 .INPUTS
 string[] List of paths to convert.
 .OUTPUTS
@@ -1188,27 +1190,36 @@ Get-ChildItem c:\windows | Get-NtFilePath
 Get list of NT file paths from the pipeline.
 #>
 function Get-NtFilePath {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromPath")]
     Param(
         [alias("Path")]
-        [parameter(Mandatory = $true, Position = 0, ValueFromPipeline, valueFromPipelineByPropertyName)]
+        [parameter(Mandatory = $true, Position = 0, ValueFromPipeline, valueFromPipelineByPropertyName, ParameterSetName="FromPath")]
         [string]$FullName,
-        [switch]$Resolve
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Resolve,
+        [parameter(Mandatory = $true, ParameterSetName="FromGuid")]
+        [guid[]]$DeviceGuid
     )
 
     PROCESS {
-        $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
-        $p = $FullName
-        if ($Resolve) {
-            if ($type -eq "Relative" -or $type -eq "Rooted") {
-                $p = Resolve-Path -LiteralPath $FullName
+        if ($PSCmdlet.ParameterSetName -eq "FromPath") {
+            $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
+            $p = $FullName
+            if ($Resolve) {
+                if ($type -eq "Relative" -or $type -eq "Rooted") {
+                    $p = Resolve-Path -LiteralPath $FullName
+                }
             }
-        }
-        try {
-            $p = [NtObjectManager.Utils.PSUtils]::ResolveWin32Path($PSCmdlet.SessionState, $p)
-            Write-Output $p
-        } catch {
-            Write-Error $_
+            try {
+                $p = [NtObjectManager.Utils.PSUtils]::ResolveWin32Path($PSCmdlet.SessionState, $p)
+                Write-Output $p
+            } catch {
+                Write-Error $_
+            }
+        } elseif ($PSCmdlet.ParameterSetName -eq "FromGuid") {
+            foreach($g in $DeviceGuid) {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceList($g) | Get-NtFilePath | Write-Output
+            }
         }
     }
 }
