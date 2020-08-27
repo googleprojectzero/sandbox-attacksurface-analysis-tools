@@ -35,10 +35,6 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public Guid Class { get; }
         /// <summary>
-        /// The list of interfaces.
-        /// </summary>
-        public IReadOnlyList<DeviceInterfaceClass> Interfaces { get; }
-        /// <summary>
         /// The security descriptor for the device (if available).
         /// </summary>
         public SecurityDescriptor SecurityDescriptor { get; }
