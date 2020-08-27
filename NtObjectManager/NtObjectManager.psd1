@@ -64,7 +64,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Start-NtFileOplock', 'Format-RpcServer', 'Get-NtProcessMitigationPolicy',
           'Set-NtProcessMitigationPolicy', 'Format-NtSecurityDescriptor', 'Get-AppContainerProfile', 'New-AppContainerProfile',
           'Get-RpcClient', 'Format-RpcClient', 'Set-RpcServer', 'Connect-RpcClient', 'New-RpcContextHandle', 'Format-RpcComplexType',
-          'Get-Win32File', 'Close-NtObject', 'Start-AccessibleScheduledTask', 'Get-NtEaBuffer', 'Set-NtEaBuffer',
+          'Get-Win32File', 'Close-NtObject', 'Start-AccessibleScheduledTask', 'Get-NtFileEa', 'Set-NtFileEa',
           'Suspend-NtProcess', 'Resume-NtProcess', 'Stop-NtProcess', 'Suspend-NtThread', 'Resume-NtThread', 'Stop-NtThread',
           'Format-NtToken', 'Remove-NtTokenPrivilege', 'Get-NtTokenPrivilege', 'Get-NtLocallyUniqueId', 'Get-NtTokenGroup',
           'Get-NtTokenSid', 'Set-NtTokenSid', 'Set-NtTokenGroup', 'Get-NtDesktopName', 'Get-NtWindowStationName',
@@ -95,7 +95,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Read-NtFile', 'Write-NtFile', 'Get-FilterCommunicationPort', 'Get-FilterDriver', 
           'Get-FilterDriverInstance', 'Get-FilterDriverVolume', 'Get-FilterDriverVolumeInstance',
           'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileShareProcess',
-          'Get-PnpDeviceSecurityDescriptor'
+          'Get-PnpDeviceSecurityDescriptor', 'Add-NtEaBuffer', 'Remove-NtFileEa'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -143,7 +143,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Set-NtTokenDefaultDacl', 'Get-NtKeySymbolicLinkTarget', 'New-NtKeySymbolicLink'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

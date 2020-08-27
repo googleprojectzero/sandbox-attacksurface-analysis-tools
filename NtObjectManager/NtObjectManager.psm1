@@ -1393,6 +1393,63 @@ function New-NtEaBuffer {
 
 <#
 .SYNOPSIS
+Add an entry to an existing EA buffer.
+.DESCRIPTION
+This cmdlet adds a new extended attributes entry to a buffer.
+.PARAMETER Buffer
+The EA buffer to add to.
+.PARAMETER Byte
+The bytes to add.
+.PARAMETER Byte
+The bytes to add.
+.PARAMETER Byte
+The bytes to add.
+.PARAMETER Byte
+The bytes to add.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Add-NtEaBuffer -Buffer $ea -Name "ABC" -Byte @(0, 1, 2, 3)
+Add an entry with name ABC and a set of bytes.
+.EXAMPLE
+Add-NtEaBuffer -Buffer $ea -Name "ABC" -String "Hello"
+Add an entry with name ABC and a string.
+.EXAMPLE
+Add-NtEaBuffer -Buffer $ea -Name "ABC" -Int 1234
+Add an entry with name ABC and an integer.
+#>
+function Add-NtEaBuffer {
+    [CmdletBinding(DefaultParameterSetName="FromString")]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Eabuffer]$EaBuffer,
+        [Parameter(Mandatory, Position = 1)]
+        [string]$Name,
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromString")]
+        [string]$String,
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromBytes")]
+        [byte[]]$Byte,
+        [Parameter(Mandatory, ParameterSetName="FromInt")]
+        [int]$Int,
+        [NtApiDotNet.EaBufferEntryFlags]$Flags = 0
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromString" {
+            $EaBuffer.AddEntry($Name, $String, $Flags)
+        }
+        "FromBytes" {
+            $EaBuffer.AddEntry($Name, $Byte, $Flags)
+        }
+        "FromInt" {
+            $EaBuffer.AddEntry($Name, $Int, $Flags)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Create a new image section based on an existing file.
 .DESCRIPTION
 This cmdlet creates an image section based on an existing file.
@@ -5815,7 +5872,7 @@ None
 .OUTPUTS
 NtApiDotNet.EaBuffer
 #>
-function Get-NtEaBuffer {
+function Get-NtFileEa {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromPath")]
@@ -5823,10 +5880,11 @@ function Get-NtEaBuffer {
         [Parameter(ParameterSetName = "FromPath")]
         [switch]$Win32Path,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromFile")]
-        [NtApiDotNet.NtFile]$File
+        [NtApiDotNet.NtFile]$File,
+        [switch]$AsEntries
     )
 
-    switch ($PsCmdlet.ParameterSetName) {
+    $ea = switch ($PsCmdlet.ParameterSetName) {
         "FromFile" {
             $File.GetEa()
         }
@@ -5836,7 +5894,15 @@ function Get-NtEaBuffer {
             }
         }
     }
+    if ($AsEntries) {
+        $ea.Entries | Write-Output
+    } else {
+        $ea | Write-Output
+    }
 }
+
+# Legacy name, remove eventually.
+Set-Alias -Name "Get-NtEaBuffer" -Value "Get-NtFileEa"
 
 <#
 .SYNOPSIS
@@ -5856,7 +5922,7 @@ None
 .OUTPUTS
 None
 #>
-function Set-NtEaBuffer {
+function Set-NtFileEa {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromPath")]
@@ -5876,6 +5942,50 @@ function Set-NtEaBuffer {
         "FromPath" {
             Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access WriteEa) {
                 $f.SetEa($EaBuffer)
+            }
+        }
+    }
+}
+
+# Legacy name, remove eventually.
+Set-Alias -Name "Set-NtEaBuffer" -Value "Set-NtFileEa"
+
+<#
+.SYNOPSIS
+Remove an EA buffer on a file.
+.DESCRIPTION
+This cmdlet removes an Extended Attribute buffer on a file by path or a NtFile object.
+.PARAMETER Path
+NT path to file.
+.PARAMETER Win32Path
+Specify Path is a Win32 path.
+.PARAMETER Name
+Specify the name of the buffer to remove.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtFileEa {
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    Param(
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromPath")]
+        [string]$Path,
+        [Parameter(ParameterSetName = "FromPath")]
+        [switch]$Win32Path,
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromFile")]
+        [NtApiDotNet.NtFile]$File,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$Name
+    )
+
+    switch ($PsCmdlet.ParameterSetName) {
+        "FromFile" {
+            $File.RemoveEa($Name)
+        }
+        "FromPath" {
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access WriteEa) {
+                $f.RemoveEa($Name)
             }
         }
     }
