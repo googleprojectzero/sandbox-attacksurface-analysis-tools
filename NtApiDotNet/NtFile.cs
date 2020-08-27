@@ -1989,6 +1989,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Delete the reparse point buffer
         /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        /// <returns>The NT status code.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus DeleteReparsePoint(ReparseTag tag, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(
+                new OpaqueReparseBuffer(tag, new byte[0]).ToByteArray()))
+            {
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null, throw_on_error).Status;
+            }
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer
+        /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        public void DeleteReparsePoint(ReparseTag tag)
+        {
+            DeleteReparsePoint(tag, true);
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer
+        /// </summary>
         /// <returns>The original reparse buffer.</returns>
         /// <param name="throw_on_error">True to throw on error.</param>
         public NtResult<ReparseBuffer> DeleteReparsePoint(bool throw_on_error)
@@ -1997,12 +2021,8 @@ namespace NtApiDotNet
             if (!reparse.IsSuccess)
                 return reparse;
 
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(
-                new OpaqueReparseBuffer(reparse.Result.Tag, new byte[0]).ToByteArray()))
-            {
-                return FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null, throw_on_error)
-                    .Map(i => reparse.Result);
-            }
+            return DeleteReparsePoint(reparse.Result.Tag, false)
+                .CreateResult(throw_on_error, () => reparse.Result);
         }
 
         /// <summary>

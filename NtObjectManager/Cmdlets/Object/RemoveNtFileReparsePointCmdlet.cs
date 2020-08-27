@@ -46,6 +46,12 @@ namespace NtObjectManager.Cmdlets.Object
     public class RemoveNtFileReparsePointCmdlet : GetNtFileCmdlet
     {
         /// <summary>
+        /// <para type="description">Specify an existing reparse tag to delete. Default is to query for the existing reparse tag.</para>
+        /// </summary>
+        [Parameter]
+        public ReparseTag ReparseTag { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public RemoveNtFileReparsePointCmdlet()
@@ -64,7 +70,10 @@ namespace NtObjectManager.Cmdlets.Object
 
             using (NtFile file = (NtFile)base.CreateObject(obj_attributes))
             {
-                return file.DeleteReparsePoint();
+                if (ReparseTag == ReparseTag.NONE)
+                    return file.DeleteReparsePoint();
+                file.DeleteReparsePoint(ReparseTag);
+                return null;
             }
         }
     }
