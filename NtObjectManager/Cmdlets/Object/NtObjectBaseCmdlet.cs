@@ -57,7 +57,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter]
         public SwitchParameter CreateDirectories { get; set; }
-        
+
         /// <summary>
         /// Base constructor.
         /// </summary>
@@ -175,6 +175,9 @@ namespace NtObjectManager.Cmdlets.Object
 
         private IEnumerable<NtObject> CreateDirectoriesAndObject()
         {
+            if (Close)
+                throw new ArgumentException("Can't use CreateDirectories and Close at the same time");
+
             DisposableList<NtObject> objects = new DisposableList<NtObject>();
             string[] path_parts = ResolvePath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
             StringBuilder builder = new StringBuilder();
@@ -226,7 +229,7 @@ namespace NtObjectManager.Cmdlets.Object
             VerifyParameters();
             try
             {
-                WriteObject(CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor), true);
+                WriteToOutput(CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor));
             }
             catch (NtException ex)
             {

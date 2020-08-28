@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;
 
@@ -57,6 +58,19 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter]
         public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+        /// <summary>
+        /// <para type="description">Close the object immediately and don't pass to the output. This is useful to create permanent objects
+        /// without needing to close the handle manually.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Close { get; set; }
+
+        /// <summary>
+        /// <para type="description">Invoke a script block on the created object before writing it to the output.</para>
+        /// </summary>
+        [Parameter]
+        public ScriptBlock ScriptBlock { get; set; }
 
         /// <summary>
         /// Base constructor.
@@ -118,10 +132,26 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            var obj = CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor);
+            WriteToOutput(CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor));
+        }
+
+        private protected void WriteToOutput(object obj)
+        {
             if (obj != null)
             {
-                WriteObject(obj, true);
+                if (ScriptBlock != null)
+                {
+                    WriteObject(PSUtils.InvokeWithArg(ScriptBlock, obj), true);
+                }
+
+                if (Close && obj is IDisposable disp)
+                {
+                    disp.Dispose();
+                }
+                else
+                {
+                    WriteObject(obj, true);
+                }
             }
         }
 
