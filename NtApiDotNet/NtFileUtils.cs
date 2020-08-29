@@ -30,6 +30,34 @@ namespace NtApiDotNet
         /// Convert a DOS filename to an absolute NT filename
         /// </summary>
         /// <param name="filename">The filename, can be relative</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT filename</returns>
+        public static NtResult<string> DosFileNameToNt(string filename, bool throw_on_error)
+        {
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
+            UnicodeStringOut nt_name = new UnicodeStringOut();
+            try
+            {
+                return NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, 
+                    out IntPtr short_path, null).CreateResult(throw_on_error, () => nt_name.ToString());
+            }
+            finally
+            {
+                if (nt_name.Buffer != IntPtr.Zero)
+                {
+                    NtRtl.RtlFreeUnicodeString(ref nt_name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Convert a DOS filename to an absolute NT filename
+        /// </summary>
+        /// <param name="filename">The filename, can be relative</param>
         /// <returns>The NT filename</returns>
         public static string DosFileNameToNt(string filename)
         {
@@ -66,9 +94,14 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert a DOS filename to an NT filename and get as an ObjectAttributes structure
         /// </summary>
-        /// <param name="filename">The filename</param>
+        /// <param name="filename">The DOS filename.</param>
+        /// <param name="attributes">The object attribute flags.</param>
+        /// <param name="sqos">An optional security quality of service.</param>
+        /// <param name="security_descriptor">An optional security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The object attributes</returns>
-        public static ObjectAttributes DosFileNameToObjectAttributes(string filename)
+        public static NtResult<ObjectAttributes> DosFileNameToObjectAttributes(string filename, AttributeFlags attributes, 
+            SecurityQualityOfService sqos, SecurityDescriptor security_descriptor, bool throw_on_error)
         {
             if (filename == null)
             {
@@ -79,16 +112,25 @@ namespace NtApiDotNet
             RtlRelativeName relative_name = new RtlRelativeName();
             try
             {
-                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out IntPtr short_path, relative_name).ToNtException();
+                NtStatus status = NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, 
+                    out IntPtr short_path, relative_name);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<ObjectAttributes>(throw_on_error);
+                string final_name;
+                SafeKernelObjectHandle root = SafeKernelObjectHandle.Null;
+
                 if (relative_name.RelativeName.Buffer != IntPtr.Zero)
                 {
-                    return new ObjectAttributes(relative_name.RelativeName.ToString(), AttributeFlags.CaseInsensitive,
-                        new SafeKernelObjectHandle(relative_name.ContainingDirectory, false), null, null);
+                    final_name = relative_name.RelativeName.ToString();
+                    root = new SafeKernelObjectHandle(relative_name.ContainingDirectory, false);
                 }
                 else
                 {
-                    return new ObjectAttributes(nt_name.ToString(), AttributeFlags.CaseInsensitive);
+                    final_name = nt_name.ToString();
                 }
+
+                return status.CreateResult(false, () =>
+                        new ObjectAttributes(final_name, attributes, root, sqos, security_descriptor));
             }
             finally
             {
@@ -102,6 +144,30 @@ namespace NtApiDotNet
                     NtRtl.RtlReleaseRelativeName(relative_name);
                 }
             }
+        }
+
+        /// <summary>
+        /// Convert a DOS filename to an NT filename and get as an ObjectAttributes structure
+        /// </summary>
+        /// <param name="filename">The DOS filename.</param>
+        /// <param name="attributes">The object attribute flags.</param>
+        /// <param name="sqos">An optional security quality of service.</param>
+        /// <param name="security_descriptor">An optional security descriptor.</param>
+        /// <returns>The object attributes</returns>
+        public static ObjectAttributes DosFileNameToObjectAttributes(string filename, AttributeFlags attributes,
+            SecurityQualityOfService sqos, SecurityDescriptor security_descriptor)
+        {
+            return DosFileNameToObjectAttributes(filename, attributes, sqos, security_descriptor, true).Result;
+        }
+
+        /// <summary>
+        /// Convert a DOS filename to an NT filename and get as an ObjectAttributes structure
+        /// </summary>
+        /// <param name="filename">The filename</param>
+        /// <returns>The object attributes</returns>
+        public static ObjectAttributes DosFileNameToObjectAttributes(string filename)
+        {
+            return DosFileNameToObjectAttributes(filename, AttributeFlags.CaseInsensitive, null, null);
         }
 
         /// <summary>
