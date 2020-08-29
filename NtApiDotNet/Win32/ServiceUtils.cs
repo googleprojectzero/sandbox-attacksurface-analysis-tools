@@ -274,10 +274,10 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceStartType
     {
-        BootStart = 0,
-        SystemStart = 1,
-        AutoStart = 2,
-        DemandStart = 3,
+        Boot = 0,
+        System = 1,
+        Auto = 2,
+        Demand = 3,
         Disabled = 4,
     }
 
