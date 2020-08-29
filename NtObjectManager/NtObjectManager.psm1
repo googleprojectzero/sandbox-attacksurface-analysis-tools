@@ -10423,3 +10423,48 @@ function Get-PnpDeviceSecurityDescriptor {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the device setup classes.
+.DESCRIPTION
+This cmdlet gets device setup classes, either all installed or from a GUID/Name.
+.PARAMETER Name
+The name of the setup class.
+.PARAMETER Class
+The GUID of the setup class.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceSetupClass
+.EXAMPLE
+Get-DeviceSetupClass
+Get all device setup classes.
+.EXAMPLE
+Get-DeviceSetupClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get the device setup class for the specified GUID.
+.EXAMPLE
+Get-DeviceSetupClass -Name 'USB'
+Get the device setup class for the USB class.
+#>
+function Get-DeviceSetupClass {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
+        [string]$Name,
+        [parameter(Mandatory, ParameterSetName = "FromClass")]
+        [guid]$Class
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Write-Output
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Where-Object Name -eq $Name | Write-Output
+        }
+        "FromClass" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
+        }
+    }
+}

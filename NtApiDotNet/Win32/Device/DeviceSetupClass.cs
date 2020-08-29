@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Device
 {
@@ -23,13 +22,13 @@ namespace NtApiDotNet.Win32.Device
     public sealed class DeviceSetupClass
     {
         /// <summary>
-        /// The name of the device.
+        /// The friendly name of the device.
         /// </summary>
-        public string Name { get; }
+        public string FriendlyName { get; }
         /// <summary>
         /// The name of the device class.
         /// </summary>
-        public string ClassName { get; }
+        public string Name { get; }
         /// <summary>
         /// The device class installer Guid.
         /// </summary>
@@ -50,8 +49,8 @@ namespace NtApiDotNet.Win32.Device
         internal DeviceSetupClass(Guid class_guid)
         {
             Class = class_guid;
-            Name = DeviceUtils.GetClassString(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_Name, false).GetResultOrDefault(class_guid.ToString());
-            ClassName = DeviceUtils.GetClassString(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_ClassName, false).GetResultOrDefault(class_guid.ToString());
+            FriendlyName = DeviceUtils.GetClassString(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_Name, false).GetResultOrDefault(class_guid.ToString());
+            Name = DeviceUtils.GetClassString(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_ClassName, false).GetResultOrDefault(class_guid.ToString());
             DeviceType = (FileDeviceType)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_DevType, false).GetResultOrDefault(0);
             Characteristics = (FileDeviceCharacteristics)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_Characteristics, false).GetResultOrDefault(0);
             SecurityDescriptor = DeviceUtils.GetDeviceSecurityDescriptor(class_guid, false).GetResultOrDefault();

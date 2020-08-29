@@ -88,7 +88,7 @@ namespace NtApiDotNet.Win32.Device
         INVALID_STRUCTURE_SIZE = 0x0000003B,
     }
 
-    internal enum CmEnumerateClassesFlags
+    internal enum CmClassType
     {
         Installer = 0,
         Interface = 1,
@@ -235,6 +235,12 @@ namespace NtApiDotNet.Win32.Device
         DEVICEINTERFACE = 0x00000010,
     }
 
+    internal enum CmRegDisposition
+    {
+        OpenAlways = 0x00000000,
+        OpenExisting = 0x00000001
+    }
+
     internal static class DeviceNativeMethods
     {
         [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
@@ -246,7 +252,7 @@ namespace NtApiDotNet.Win32.Device
             string pDeviceID, CmGetDeviceInterfaceListFlags ulFlags);
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
-        internal static extern CrError CM_Enumerate_Classes(int ulClassIndex, ref Guid ClassGuid, CmEnumerateClassesFlags ulFlags);
+        internal static extern CrError CM_Enumerate_Classes(int ulClassIndex, ref Guid ClassGuid, CmClassType ulFlags);
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
         internal static extern CrError CM_Get_Class_Registry_PropertyW(
@@ -283,7 +289,7 @@ namespace NtApiDotNet.Win32.Device
           out DEVPROPTYPE PropertyType,
           SafeBuffer PropertyBuffer,
           ref int PropertyBufferSize,
-          CmEnumerateClassesFlags ulFlags
+          CmClassType ulFlags
         );
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
@@ -293,7 +299,7 @@ namespace NtApiDotNet.Win32.Device
           out DEVPROPTYPE PropertyType,
           out int PropertyBuffer,
           ref int PropertyBufferSize,
-          CmEnumerateClassesFlags ulFlags
+          CmClassType ulFlags
         );
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
@@ -303,7 +309,7 @@ namespace NtApiDotNet.Win32.Device
           out DEVPROPTYPE PropertyType,
           out Guid PropertyBuffer,
           ref int PropertyBufferSize,
-          CmEnumerateClassesFlags ulFlags
+          CmClassType ulFlags
         );
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
@@ -311,7 +317,7 @@ namespace NtApiDotNet.Win32.Device
             in Guid ClassGUID,
             [Out] DEVPROPKEY[] PropertyKeyArray,
             ref int PropertyKeyCount,
-            CmEnumerateClassesFlags ulFlags
+            CmClassType ulFlags
         );
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
@@ -413,6 +419,16 @@ namespace NtApiDotNet.Win32.Device
               string DevicePath,
               int OpenFlags,
               out SP_DEVICE_INTERFACE_DATA DeviceInterfaceData
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Open_Class_KeyW(
+          in Guid ClassGuid,
+          string pszClassName,
+          KeyAccessRights samDesired,
+          CmRegDisposition Disposition,
+          out SafeKernelObjectHandle phkClass,
+          CmClassType ulFlags
         );
     }
 }

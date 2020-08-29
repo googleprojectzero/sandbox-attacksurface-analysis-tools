@@ -74,7 +74,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The list of installer class GUIDs.</returns>
         public static IEnumerable<Guid> EnumerateInstallerClasses()
         {
-            return EnumerateClasses(CmEnumerateClassesFlags.Installer);
+            return EnumerateClasses(CmClassType.Installer);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The list of interface class GUIDs.</returns>
         public static IEnumerable<Guid> EnumerateInterfaceClasses()
         {
-            return EnumerateClasses(CmEnumerateClassesFlags.Interface);
+            return EnumerateClasses(CmClassType.Interface);
         }
 
         /// <summary>
@@ -114,16 +114,31 @@ namespace NtApiDotNet.Win32.Device
         /// Get list of registered device classes.
         /// </summary>
         /// <returns>The list of device classes.</returns>
-        public static IReadOnlyList<DeviceSetupClass> GetDeviceClasses()
+        public static IReadOnlyList<DeviceSetupClass> GetDeviceSetupClasses()
         {
-            return EnumerateInstallerClasses().Select(c => new DeviceSetupClass(c)).ToList().AsReadOnly();
+            //return EnumerateInstallerClasses().Select(c => new DeviceSetupClass(c)).ToList().AsReadOnly();
+            return EnumerateInstallerClasses().Select(GetDeviceSetupClass).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get a device class by GUID.
+        /// </summary>
+        /// <param name="class_guid">The class GUID.</param>
+        /// <returns>The device class.</returns>
+        public static DeviceSetupClass GetDeviceSetupClass(Guid class_guid)
+        {
+            if (!ClassExists(class_guid, true))
+            {
+                throw new ArgumentException("Unknown device setup class.");
+            }
+            return new DeviceSetupClass(class_guid);
         }
 
         /// <summary>
         /// Get list of registered device interfaces.
         /// </summary>
         /// <returns>The list of device interfaces.</returns>
-        public static IReadOnlyList<DeviceInterfaceClass> GetDeviceInterfaces()
+        public static IReadOnlyList<DeviceInterfaceClass> GetDeviceInterfaceClasses()
         {
             return EnumerateInterfaceClasses().Select(c => new DeviceInterfaceClass(c)).ToList().AsReadOnly();
         }
@@ -213,7 +228,7 @@ namespace NtApiDotNet.Win32.Device
 
         internal static NtResult<string> GetClassString(Guid class_guid, bool interface_guid, DEVPROPKEY key, bool throw_on_error)
         {
-            using (var buffer = GetClassProperty(class_guid, interface_guid ? CmEnumerateClassesFlags.Interface : CmEnumerateClassesFlags.Installer,
+            using (var buffer = GetClassProperty(class_guid, interface_guid ? CmClassType.Interface : CmClassType.Installer,
                     key, out DEVPROPTYPE type, throw_on_error))
             {
                 if (!buffer.IsSuccess)
@@ -228,7 +243,7 @@ namespace NtApiDotNet.Win32.Device
         {
             int length = 4;
             var result = DeviceNativeMethods.CM_Get_Class_PropertyW(class_guid, key, out DEVPROPTYPE type, out int value, ref length,
-                interface_guid ? CmEnumerateClassesFlags.Interface : CmEnumerateClassesFlags.Installer).ToNtStatus();
+                interface_guid ? CmClassType.Interface : CmClassType.Installer).ToNtStatus();
             if (!result.IsSuccess())
                 return result.CreateResultFromError<int>(throw_on_error);
             if (type != DEVPROPTYPE.UINT32)
@@ -240,7 +255,7 @@ namespace NtApiDotNet.Win32.Device
         {
             int length = 16;
             var result = DeviceNativeMethods.CM_Get_Class_PropertyW(class_guid, key, out DEVPROPTYPE type, out Guid value, ref length,
-                interface_guid ? CmEnumerateClassesFlags.Interface : CmEnumerateClassesFlags.Installer).ToNtStatus();
+                interface_guid ? CmClassType.Interface : CmClassType.Installer).ToNtStatus();
             if (!result.IsSuccess())
                 return result.CreateResultFromError<Guid>(throw_on_error);
             if (type != DEVPROPTYPE.GUID)
@@ -253,7 +268,7 @@ namespace NtApiDotNet.Win32.Device
             DEVPROPKEY[] keys = new DEVPROPKEY[1000];
             int length = 100;
             DeviceNativeMethods.CM_Get_Class_Property_Keys(class_guid,
-                keys, ref length, interface_guid ? CmEnumerateClassesFlags.Interface : CmEnumerateClassesFlags.Installer).ToNtStatus().ToNtException();
+                keys, ref length, interface_guid ? CmClassType.Interface : CmClassType.Installer).ToNtStatus().ToNtException();
             Array.Resize(ref keys, length);
             return keys;
         }
@@ -269,6 +284,22 @@ namespace NtApiDotNet.Win32.Device
             return builder.ToString();
         }
 
+        internal static NtResult<NtKey> OpenClassKey(Guid class_guid, bool installer, KeyAccessRights desired_access, CmRegDisposition disposition, bool throw_on_error)
+        {
+            return DeviceNativeMethods.CM_Open_Class_KeyW(class_guid, null, desired_access, disposition,
+                out SafeKernelObjectHandle handle,
+                installer ? CmClassType.Installer : CmClassType.Interface).ToNtStatus().CreateResult(throw_on_error, () => NtKey.FromHandle(handle));
+        }
+
+        internal static bool ClassExists(Guid class_guid, bool installer)
+        {
+            using (var key = OpenClassKey(class_guid, installer, KeyAccessRights.MaximumAllowed, 
+                CmRegDisposition.OpenExisting, false))
+            {
+                return key.IsSuccess;
+            }
+        }
+
         #endregion
 
         #region Private Members
@@ -278,7 +309,7 @@ namespace NtApiDotNet.Win32.Device
             return DeviceNativeMethods.CM_MapCrToWin32Err(error, Win32Error.ERROR_INVALID_PARAMETER).MapDosErrorToStatus();
         }
 
-        private static IEnumerable<Guid> EnumerateClasses(CmEnumerateClassesFlags flags)
+        private static IEnumerable<Guid> EnumerateClasses(CmClassType flags)
         {
             Guid guid = Guid.Empty;
             int index = 0;
@@ -322,7 +353,7 @@ namespace NtApiDotNet.Win32.Device
             }
         }
 
-        private static NtResult<SafeHGlobalBuffer> GetClassProperty(Guid class_guid, CmEnumerateClassesFlags flags, DEVPROPKEY key, out DEVPROPTYPE type, bool throw_on_error)
+        private static NtResult<SafeHGlobalBuffer> GetClassProperty(Guid class_guid, CmClassType flags, DEVPROPKEY key, out DEVPROPTYPE type, bool throw_on_error)
         {
             int length = 0;
             var result = DeviceNativeMethods.CM_Get_Class_PropertyW(class_guid, key, out type, SafeHGlobalBuffer.Null, ref length, flags);
@@ -370,8 +401,6 @@ namespace NtApiDotNet.Win32.Device
             }
             return ret;
         }
-
-
 
         #endregion
     }
