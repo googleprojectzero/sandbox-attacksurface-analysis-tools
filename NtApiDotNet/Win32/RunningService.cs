@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32
             {
                 return new ServiceInformation(Name, null, 
                     new ServiceTriggerInformation[0], ServiceSidType.None,
-                    ServiceLaunchProtectedType.None, new string[0]);
+                    ServiceLaunchProtectedType.None, new string[0], null);
             }
         }
 
@@ -70,6 +70,30 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public ServiceStatus Status { get; }
         /// <summary>
+        /// What controls are accepted by the service.
+        /// </summary>
+        public ServiceControlsAccepted ControlsAccepted { get; }
+        /// <summary>
+        /// The Win32 exit code.
+        /// </summary>
+        public Win32Error Win32ExitCode { get; }
+        /// <summary>
+        /// The service specific exit code, if Win32ExitCode is Win32Error.ERROR_SERVICE_SPECIFIC_ERROR.
+        /// </summary>
+        public int ServiceSpecificExitCode { get; }
+        /// <summary>
+        /// The checkpoint while starting.
+        /// </summary>
+        public int CheckPoint { get; }
+        /// <summary>
+        /// Waiting hint time.
+        /// </summary>
+        public int WaitHint { get; }
+        /// <summary>
+        /// Service flags.
+        /// </summary>
+        public ServiceFlags ServiceFlags { get; }
+        /// <summary>
         /// Process ID of the running service.
         /// </summary>
         public int ProcessId { get; }
@@ -94,9 +118,33 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public IEnumerable<string> RequiredPrivileges => _service_information.Value.RequiredPrivileges;
         /// <summary>
+        /// Service start type.
+        /// </summary>
+        public ServiceStartType StartType => _service_information.Value.StartType;
+        /// <summary>
+        /// Error control.
+        /// </summary>
+        public ServiceErrorControl ErrorControl => _service_information.Value.ErrorControl;
+        /// <summary>
+        /// Load order group.
+        /// </summary>
+        public string LoadOrderGroup => _service_information.Value.LoadOrderGroup;
+        /// <summary>
+        /// Tag ID for load order.
+        /// </summary>
+        public int TagId => _service_information.Value.TagId;
+        /// <summary>
+        /// Dependencies.
+        /// </summary>
+        public IEnumerable<string> Dependencies => _service_information.Value.Dependencies;
+        /// <summary>
         /// The user name this service runs under.
         /// </summary>
         public string UserName { get; }
+        /// <summary>
+        /// Whether the service can be stopped.
+        /// </summary>
+        public bool CanStop => ControlsAccepted.HasFlagSet(ServiceControlsAccepted.Stop);
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -158,9 +206,16 @@ namespace NtApiDotNet.Win32
             ServiceType = status.dwServiceType;
             Status = status.dwCurrentState;
             ProcessId = status.dwProcessId;
+            ControlsAccepted = status.dwControlsAccepted;
+            Win32ExitCode = status.dwWin32ExitCode;
+            ServiceSpecificExitCode = status.dwServiceSpecificExitCode;
+            CheckPoint = status.dwCheckPoint;
+            WaitHint = status.dwWaitHint;
+            ServiceFlags = status.dwServiceFlags;
             ServiceDll = string.Empty;
             ImagePath = string.Empty;
             CommandLine = string.Empty;
+
             using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
             {
                 if (key != null)
@@ -178,8 +233,9 @@ namespace NtApiDotNet.Win32
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
         }
 
-        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process) : this(GetString(process.lpServiceName),
-            GetString(process.lpDisplayName), process.ServiceStatusProcess)
+        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process) 
+            : this(GetString(process.lpServiceName), GetString(process.lpDisplayName), 
+                  process.ServiceStatusProcess)
         {
         }
     }
