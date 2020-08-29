@@ -67,7 +67,7 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter Close { get; set; }
 
         /// <summary>
-        /// <para type="description">Invoke a script block on the created object before writing it to the output.</para>
+        /// <para type="description">Invoke a script block on the created object before writing it to the output. Can be used in combination with the Close to map objects to some value.</para>
         /// </summary>
         [Parameter]
         public ScriptBlock ScriptBlock { get; set; }
@@ -139,18 +139,24 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (obj != null)
             {
-                if (ScriptBlock != null)
+                try
                 {
-                    WriteObject(PSUtils.InvokeWithArg(ScriptBlock, obj), true);
-                }
+                    if (ScriptBlock != null)
+                    {
+                        WriteObject(PSUtils.InvokeWithArg(ScriptBlock, obj), true);
+                    }
 
-                if (Close && obj is IDisposable disp)
-                {
-                    disp.Dispose();
+                    if (!Close)
+                    {
+                        WriteObject(obj, true);
+                    }
                 }
-                else
+                finally
                 {
-                    WriteObject(obj, true);
+                    if (Close)
+                    {
+                        PSUtils.Dispose(obj);
+                    }
                 }
             }
         }

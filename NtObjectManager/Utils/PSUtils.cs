@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Utilities.Text;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -221,6 +222,35 @@ namespace NtObjectManager.Utils
             else
             {
                 return path;
+            }
+        }
+
+        private static void DisposeObject(object obj)
+        {
+            IDisposable disp = obj as IDisposable;
+            if (obj is PSObject psobj)
+            {
+                disp = psobj.BaseObject as IDisposable;
+            }
+
+            if (disp != null)
+            {
+                disp.Dispose();
+            }
+        }
+
+        internal static void Dispose(object input)
+        {
+            if (input is IEnumerable e)
+            {
+                foreach (object obj in e)
+                {
+                    DisposeObject(obj);
+                }
+            }
+            else
+            {
+                DisposeObject(input);
             }
         }
     }

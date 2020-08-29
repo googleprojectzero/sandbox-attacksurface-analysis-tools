@@ -14,7 +14,6 @@
 
 using NtObjectManager.Utils;
 using System;
-using System.Collections;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -55,33 +54,9 @@ namespace NtObjectManager.Cmdlets.Object
             WriteObject(ScriptBlock.InvokeWithArg(InputObject), true);
         }
 
-        private static void DisposeObject(object obj)
-        {
-            IDisposable disp = obj as IDisposable;
-            if (obj is PSObject psobj)
-            {
-                disp = psobj.BaseObject as IDisposable;
-            }
-
-            if (disp != null)
-            {
-                disp.Dispose();
-            }
-        }
-
         void IDisposable.Dispose()
         {
-            if (InputObject is IEnumerable e)
-            {
-                foreach (object obj in e)
-                {
-                    DisposeObject(obj);
-                }
-            }
-            else
-            {
-                DisposeObject(InputObject);
-            }
+            PSUtils.Dispose(InputObject);
         }
     }
 }
