@@ -54,6 +54,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert a DOS filename to an absolute NT filename
+        /// </summary>
+        /// <param name="paths">List of paths to combine before converting.</param>
+        /// <returns>The NT filename</returns>
+        public static string DosFileNameToNt(params string[] paths)
+        {
+            return DosFileNameToNt(Path.Combine(paths));
+        }
+
+        /// <summary>
         /// Convert a DOS filename to an NT filename and get as an ObjectAttributes structure
         /// </summary>
         /// <param name="filename">The filename</param>
