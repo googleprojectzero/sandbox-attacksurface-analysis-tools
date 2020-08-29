@@ -142,44 +142,23 @@ namespace NtApiDotNet
         /// <summary>
         /// Get implemented object type for this NT type.
         /// </summary>
-        public Type ObjectType
-        {
-            get
-            {
-                return _type_factory.ObjectType;
-            }
-        }
+        public Type ObjectType => _type_factory.ObjectType;
 
         /// <summary>
         /// Get the access rights enumerated type for this NT type.
         /// </summary>
-        public Type AccessRightsType
-        {
-            get
-            {
-                return _type_factory.AccessRightsType;
-            }
-        }
+        public Type AccessRightsType => _type_factory.AccessRightsType;
 
         /// <summary>
         /// Get the access rights enumerated type for this NT type if it's a container.
         /// </summary>
         /// <remarks>There's only one known type at the moment which uses this, File.</remarks>
-        public Type ContainerAccessRightsType
-        {
-            get
-            {
-                return _type_factory.ContainerAccessRightsType;
-            }
-        }
+        public Type ContainerAccessRightsType => _type_factory.ContainerAccessRightsType;
 
         /// <summary>
         /// Can this type of open be opened by name
         /// </summary>
-        public bool CanOpen
-        {
-            get { return _type_factory.CanOpen; }
-        }
+        public bool CanOpen => _type_factory.CanOpen;
 
         /// <summary>
         /// Get the valid access rights for this Type.

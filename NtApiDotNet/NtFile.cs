@@ -28,7 +28,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT File object
     /// </summary>
-    [NtType("File"), NtType("Device")]
+    [NtType("File"), NtType("Device"), NtType("Driver", DisableOpen = true)]
     public class NtFile : NtObjectWithDuplicateAndInfo<NtFile, FileAccessRights, FileInformationClass, FileInformationClass>
     {
         #region Constructors

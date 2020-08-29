@@ -23,6 +23,7 @@ namespace NtApiDotNet
     internal sealed class NtTypeAttribute : Attribute
     {
         public string TypeName { get; }
+        public bool DisableOpen { get; set; }
         public NtTypeAttribute(string type_name)
         {
             TypeName = type_name;
@@ -36,7 +37,7 @@ namespace NtApiDotNet
         public Type ObjectType { get; }
         public Type AccessRightsType { get; }
         public Type ContainerAccessRightsType { get; }
-        public bool CanOpen { get; }
+        public bool CanOpen { get; private set; }
         public MandatoryLabelPolicy DefaultMandatoryPolicy { get; }
         public virtual IEnumerable<Enum> GetQueryInfoClass()
         {
@@ -77,7 +78,10 @@ namespace NtApiDotNet
                     System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
                     TypeInfo factory_type = type.GetTypeInfo().GetDeclaredNestedType(FACTORY_TYPE_NAME);
                     System.Diagnostics.Debug.Assert(factory_type != null);
-                    _factories.Add(attr.TypeName, (NtTypeFactory)Activator.CreateInstance(factory_type));
+                    var factory = (NtTypeFactory)Activator.CreateInstance(factory_type);
+                    if (attr.DisableOpen)
+                        factory.CanOpen = false;
+                    _factories.Add(attr.TypeName, factory);
                 }
             }
             return _factories;
