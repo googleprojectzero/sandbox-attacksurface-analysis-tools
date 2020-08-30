@@ -4999,42 +4999,65 @@ None
 .OUTPUTS
 NtKeyValue
 .EXAMPLE
-Get-NtKeyValue $key
+Get-NtKeyValue -Key $key
 Get all values from a key.
 .EXAMPLE
-Get-NtKeyValue $key -AsString
+Get-NtKeyValue -Key $key -AsString
 Get all values from a key as a string.
 .EXAMPLE
-Get-NtKeyValue $key -Name ""
+Get-NtKeyValue -Key $key -Name ""
 Get the default value from a key.
 .EXAMPLE
-Get-NtKeyValue $key -Name MyValue
+Get-NtKeyValue -Key $key -Name MyValue
 Get the MyValue value from a key.
 #>
 function Get-NtKeyValue {
-    [CmdletBinding(DefaultParameterSetName = "All")]
+    [CmdletBinding(DefaultParameterSetName = "FromKeyAll")]
     Param(
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromKeyAll")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromKeyName")]
         [NtApiDotNet.NtKey]$Key,
-        [parameter(ParameterSetName = "FromName", Position = 1)]
+        [parameter(ParameterSetName = "FromKeyName", Mandatory, Position = 1)]
+        [parameter(ParameterSetName = "FromPathName", Mandatory, Position = 1)]
         [string]$Name,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPathAll")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPathName")]
+        [string]$Path,
+        [parameter(ParameterSetName = "FromPathAll")]
+        [parameter(ParameterSetName = "FromPathName")]
+        [switch]$Win32Path,
         [switch]$AsString,
         [switch]$AsObject
     )
-    $values = switch ($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Key.QueryValues()
+
+    try {
+        $values = switch ($PSCmdlet.ParameterSetName) {
+            "FromKeyAll" {
+                $Key.QueryValues()
+            }
+            "FromKeyName" {
+                @($Key.QueryValue($Name))
+            }
+            "FromPathName" {
+                Use-NtObject($k = Get-NtKey -Path $Path -Win32Path:$Win32Path -Access QueryValue) {
+                    @($k.QueryValue($Name))
+                }
+            }
+            "FromPathAll" {
+                Use-NtObject($k = Get-NtKey -Path $Path -Win32Path:$Win32Path -Access QueryValue) {
+                    $k.QueryValues()
+                }
+            }
         }
-        "FromName" {
-            @($Key.QueryValue($Name))
+        if ($AsString) {
+            $values | ForEach-Object { $_.ToString() } | Write-Output
+        } elseif($AsObject) {
+            $values | ForEach-Object { $_.ToObject() } | Write-Output
+        } else {
+            $values | Write-Output
         }
-    }
-    if ($AsString) {
-        $values | ForEach-Object { $_.ToString() } | Write-Output
-    } elseif($AsObject) {
-        $values | ForEach-Object { $_.ToObject() } | Write-Output
-    } else {
-        $values | Write-Output
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -10502,6 +10525,7 @@ function Get-NtDeviceInstance {
         [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
         [guid]$Class,
         [parameter(ParameterSetName = "FromClass")]
+        [parameter(ParameterSetName = "All")]
         [switch]$All,
         [parameter(ParameterSetName = "FromTree")]
         [switch]$Tree
