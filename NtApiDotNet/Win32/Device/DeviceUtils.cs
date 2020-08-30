@@ -112,20 +112,19 @@ namespace NtApiDotNet.Win32.Device
         }
 
         /// <summary>
-        /// Get list of registered device classes.
+        /// Get list of registered device setup classes.
         /// </summary>
-        /// <returns>The list of device classes.</returns>
+        /// <returns>The list of device setup classes.</returns>
         public static IReadOnlyList<DeviceSetupClass> GetDeviceSetupClasses()
         {
-            //return EnumerateInstallerClasses().Select(c => new DeviceSetupClass(c)).ToList().AsReadOnly();
-            return EnumerateInstallerClasses().Select(GetDeviceSetupClass).ToList().AsReadOnly();
+            return EnumerateInstallerClasses().Select(c => new DeviceSetupClass(c)).ToList().AsReadOnly();
         }
 
         /// <summary>
-        /// Get a device class by GUID.
+        /// Get a device setup class by GUID.
         /// </summary>
         /// <param name="class_guid">The class GUID.</param>
-        /// <returns>The device class.</returns>
+        /// <returns>The device setup class.</returns>
         public static DeviceSetupClass GetDeviceSetupClass(Guid class_guid)
         {
             if (!ClassExists(class_guid, true))
@@ -142,6 +141,20 @@ namespace NtApiDotNet.Win32.Device
         public static IReadOnlyList<DeviceInterfaceClass> GetDeviceInterfaceClasses()
         {
             return EnumerateInterfaceClasses().Select(c => new DeviceInterfaceClass(c)).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get a device interface class by GUID.
+        /// </summary>
+        /// <param name="class_guid">The class GUID.</param>
+        /// <returns>The device interface class.</returns>
+        public static DeviceInterfaceClass GetDeviceInterfaceClass(Guid class_guid)
+        {
+            if (!ClassExists(class_guid, false))
+            {
+                throw new ArgumentException("Unknown device installer class.");
+            }
+            return new DeviceInterfaceClass(class_guid);
         }
 
         /// <summary>
@@ -237,7 +250,6 @@ namespace NtApiDotNet.Win32.Device
             }
 
             DEVPROPKEY[] keys = new DEVPROPKEY[count];
-
             if (DeviceNativeMethods.CM_Get_DevNode_Property_Keys(dev_inst, keys, ref count, 0) != CrError.SUCCESS)
             {
                 return new DeviceProperty[0];
@@ -322,12 +334,25 @@ namespace NtApiDotNet.Win32.Device
 
         internal static DEVPROPKEY[] GetDeviceKeys(Guid class_guid, bool interface_guid)
         {
-            DEVPROPKEY[] keys = new DEVPROPKEY[1000];
-            int length = 100;
+            int length = 0;
             DeviceNativeMethods.CM_Get_Class_Property_Keys(class_guid,
-                keys, ref length, interface_guid ? CmClassType.Interface : CmClassType.Installer).ToNtStatus().ToNtException();
-            Array.Resize(ref keys, length);
-            return keys;
+                null, ref length, interface_guid ? CmClassType.Interface : CmClassType.Installer);
+            if (length <= 0)
+                return new DEVPROPKEY[0];
+
+            DEVPROPKEY[] keys = new DEVPROPKEY[length];
+            if (DeviceNativeMethods.CM_Get_Class_Property_Keys(class_guid,
+                keys, ref length, interface_guid ? CmClassType.Interface : CmClassType.Installer) != CrError.SUCCESS)
+            {
+                return new DEVPROPKEY[0];
+            }
+
+            return keys.Take(length).ToArray();
+        }
+
+        internal static DeviceProperty[] GetDeviceProperties(Guid class_guid, bool interface_guid)
+        {
+            return GetDeviceKeys(class_guid, interface_guid).Select(k => GetProperty(class_guid, interface_guid, k)).ToArray();
         }
 
         internal static string GetDeviceNodeId(int devinst)
@@ -372,9 +397,35 @@ namespace NtApiDotNet.Win32.Device
             return ret;
         }
 
+        internal static DeviceProperty GetProperty(Guid class_guid, bool interface_guid, DEVPROPKEY key)
+        {
+            DeviceProperty ret = new DeviceProperty() { Name = DevicePropertyKeys.KeyToName(key), FmtId = key.fmtid, Pid = key.pid, Data = new byte[0] };
+            using (var buffer = GetClassProperty(class_guid, interface_guid ? CmClassType.Interface : CmClassType.Installer,
+                key, out DEVPROPTYPE type, false).GetResultOrDefault())
+            {
+                if (buffer != null)
+                {
+                    ret.Type = type;
+                    ret.Data = buffer.ToArray();
+                }
+            }
+
+            return ret;
+        }
+
         internal static string GetPropertyString(int devinst, DEVPROPKEY key)
         {
             return GetProperty(devinst, key)?.GetString();
+        }
+
+        internal static string[] GetPropertyStringList(int devinst, DEVPROPKEY key)
+        {
+            return GetProperty(devinst, key)?.GetStringList() ?? new string[0];
+        }
+
+        internal static Guid GetPropertyGuid(int devinst, DEVPROPKEY key)
+        {
+            return GetProperty(devinst, key)?.GetGuid() ?? Guid.Empty;
         }
 
         internal static string GetDeviceInfPath(int devinst)
@@ -394,6 +445,14 @@ namespace NtApiDotNet.Win32.Device
             if (prop?.Type == DEVPROPTYPE.STRING)
                 return prop.GetString();
             return GetProperty(devinst, DevicePropertyKeys.DEVPKEY_Device_DeviceDesc)?.GetString() ?? string.Empty;
+        }
+
+        internal static string GetDeviceInterfaceName(Guid class_guid)
+        {
+            DeviceProperty prop = GetProperty(class_guid, true, DevicePropertyKeys.DEVPKEY_DeviceInterfaceClass_Name);
+            if (prop?.Type == DEVPROPTYPE.STRING)
+                return prop.GetString();
+            return GetProperty(class_guid, true, DevicePropertyKeys.DEVPKEY_NAME)?.GetString() ?? string.Empty;
         }
 
         #endregion

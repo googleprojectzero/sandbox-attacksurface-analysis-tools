@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Device
 {
@@ -21,6 +23,13 @@ namespace NtApiDotNet.Win32.Device
     /// </summary>
     public sealed class DeviceSetupClass
     {
+        private readonly Lazy<List<DeviceProperty>> _properties;
+
+        private List<DeviceProperty> GetAllProperties()
+        {
+            return DeviceUtils.GetDeviceProperties(Class, false).ToList();
+        }
+
         /// <summary>
         /// The friendly name of the device.
         /// </summary>
@@ -46,6 +55,15 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public FileDeviceCharacteristics Characteristics { get; }
 
+        /// <summary>
+        /// The list of all device setup properties.
+        /// </summary>
+        /// <returns>The device setup properties.</returns>
+        public IReadOnlyList<DeviceProperty> GetProperties()
+        {
+            return _properties.Value.AsReadOnly();
+        }
+
         internal DeviceSetupClass(Guid class_guid)
         {
             Class = class_guid;
@@ -54,6 +72,7 @@ namespace NtApiDotNet.Win32.Device
             DeviceType = (FileDeviceType)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_DevType, false).GetResultOrDefault(0);
             Characteristics = (FileDeviceCharacteristics)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_Characteristics, false).GetResultOrDefault(0);
             SecurityDescriptor = DeviceUtils.GetDeviceSecurityDescriptor(class_guid, false).GetResultOrDefault();
+            _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
         }
     }
 }

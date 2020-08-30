@@ -54,9 +54,7 @@ namespace NtApiDotNet.Win32.Device
                 case DEVPROPTYPE.STRING:
                     return GetString();
                 case DEVPROPTYPE.GUID:
-                    if (Data.Length != 16)
-                        break;
-                    return new Guid(Data).ToString();
+                    return GetGuid()?.ToString() ?? string.Empty;
                 case DEVPROPTYPE.SECURITY_DESCRIPTOR:
                     return GetSecurityDescriptor()?.ToSddl() ?? string.Empty;
                 case DEVPROPTYPE.UINT16:
@@ -105,6 +103,13 @@ namespace NtApiDotNet.Win32.Device
             if (Type != DEVPROPTYPE.STRING_LIST)
                 return new string[0];
             return Encoding.Unicode.GetString(Data).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        internal Guid? GetGuid()
+        {
+            if (Data.Length != 16)
+                return null;
+            return new Guid(Data);
         }
 
         internal bool IsKey(DEVPROPKEY key)

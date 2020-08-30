@@ -307,7 +307,7 @@ namespace NtApiDotNet.Win32.Device
 
         [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
         internal static extern CrError CM_Get_DevNode_Property_Keys(
-          int dnDevInst,
+            int dnDevInst,
             [Out] DEVPROPKEY[] PropertyKeyArray,
             ref int PropertyKeyCount,
             int ulFlags

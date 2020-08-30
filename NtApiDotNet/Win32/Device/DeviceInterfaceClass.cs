@@ -21,20 +21,23 @@ namespace NtApiDotNet.Win32.Device
     /// <summary>
     /// Class to represent a device interface.
     /// </summary>
-    public class DeviceInterfaceClass
+    public sealed class DeviceInterfaceClass
     {
+        private readonly Lazy<List<DeviceProperty>> _properties;
+
+        private List<DeviceProperty> GetAllProperties()
+        {
+            return DeviceUtils.GetDeviceProperties(Class, true).ToList();
+        }
+
         /// <summary>
-        /// Friendly name of the interface.
+        /// The name of the interface class.
         /// </summary>
-        public string FriendlyName { get; }
+        public string Name { get; }
         /// <summary>
         /// The device interface GUID.
         /// </summary>
         public Guid Class { get; }
-        /// <summary>
-        /// The device class GUID.
-        /// </summary>
-        public Guid DeviceGuid { get; }
         /// <summary>
         /// The list of win32 paths to open the device.
         /// </summary>
@@ -44,19 +47,22 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public IReadOnlyList<string> DevicePaths { get; }
 
+        /// <summary>
+        /// The list of all device interface properties.
+        /// </summary>
+        /// <returns>The device interface properties.</returns>
+        public IReadOnlyList<DeviceProperty> GetProperties()
+        {
+            return _properties.Value.AsReadOnly();
+        }
+
         internal DeviceInterfaceClass(Guid guid)
         {
-            var values = DeviceUtils.GetDeviceKeys(guid, true);
-            foreach (var v in values)
-            {
-                Console.WriteLine("{0} {1}", v.fmtid, v.pid);
-            }
-
             Class = guid;
             Win32Paths = DeviceUtils.GetDeviceInterfaceList(guid).ToList().AsReadOnly();
             DevicePaths = Win32Paths.Select(MapWin32ToDevicePath).ToList().AsReadOnly();
-            FriendlyName = DeviceUtils.GetClassString(guid, true, DevicePropertyKeys.DEVPKEY_DeviceInterface_FriendlyName, false).GetResultOrDefault(string.Empty);
-            DeviceGuid = DeviceUtils.GetClassGuid(guid, true, DevicePropertyKeys.DEVPKEY_Device_ClassGuid, false).GetResultOrDefault();
+            Name = DeviceUtils.GetDeviceInterfaceName(Class) ?? string.Empty;
+            _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
         }
 
         private static string MapWin32ToDevicePath(string path)

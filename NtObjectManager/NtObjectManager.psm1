@@ -10433,6 +10433,41 @@ function Get-DeviceSetupClass {
 
 <#
 .SYNOPSIS
+Get the device interface classes.
+.DESCRIPTION
+This cmdlet gets device interface classes, either all installed or from a GUID.
+.PARAMETER Class
+The GUID of the interface class.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceInterfaceClass
+.EXAMPLE
+Get-DeviceInterfaceClass
+Get all device interface classes.
+.EXAMPLE
+Get-DeviceInterfaceClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get the device interface class for the specified GUID.
+#>
+function Get-DeviceInterfaceClass {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromClass")]
+        [guid]$Class
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClasses() | Write-Output
+        }
+        "FromClass" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClass($Class) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Get the device instance.
 .DESCRIPTION
 This cmdlet gets device instances, either all present or from a GUID/Name.

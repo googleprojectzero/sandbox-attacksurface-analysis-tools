@@ -44,6 +44,11 @@ namespace NtApiDotNet.Win32.Device
         public string Name { get; }
 
         /// <summary>
+        /// The device setup class GUID.
+        /// </summary>
+        public Guid Class { get; }
+
+        /// <summary>
         /// The device instance ID.
         /// </summary>
         public string InstanceId { get; }
@@ -59,12 +64,27 @@ namespace NtApiDotNet.Win32.Device
         public string INFPath { get; }
 
         /// <summary>
+        /// Get the device stack.
+        /// </summary>
+        public IReadOnlyList<string> DeviceStack { get; }
+
+        /// <summary>
         /// The list of all device properties.
         /// </summary>
         /// <returns>The device properties.</returns>
         public IReadOnlyList<DeviceProperty> GetProperties()
         {
             return _properties.Value.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get the setup class for this instance.
+        /// </summary>
+        /// <returns>Returns the setup class.</returns>
+        /// <exception cref="ArgumentException">Thrown if invalid setup GUID.</exception>
+        public DeviceSetupClass GetSetupClass()
+        {
+            return DeviceUtils.GetDeviceSetupClass(Class);
         }
 
         /// <summary>
@@ -79,6 +99,8 @@ namespace NtApiDotNet.Win32.Device
             Name = DeviceUtils.GetDeviceName(devinst);
             PDOName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_PDOName);
             INFPath = DeviceUtils.GetDeviceInfPath(devinst);
+            DeviceStack = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_Stack).ToList().AsReadOnly();
+            Class = DeviceUtils.GetPropertyGuid(devinst, DevicePropertyKeys.DEVPKEY_Device_ClassGuid);
             _sd = new Lazy<SecurityDescriptor>(GetSecurityDescriptor);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
         }
