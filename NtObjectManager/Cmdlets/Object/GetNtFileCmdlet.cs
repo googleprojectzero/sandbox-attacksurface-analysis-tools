@@ -52,6 +52,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
+        [AllowEmptyString]
         public override string Path { get; set; }
 
         /// <summary>
