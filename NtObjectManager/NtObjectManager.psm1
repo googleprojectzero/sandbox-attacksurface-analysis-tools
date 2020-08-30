@@ -10414,19 +10414,21 @@ function Get-DeviceSetupClass {
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
         [string]$Name,
-        [parameter(Mandatory, ParameterSetName = "FromClass")]
+        [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
         [guid]$Class
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Write-Output
-        }
-        "FromName" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Where-Object Name -eq $Name | Write-Output
-        }
-        "FromClass" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Write-Output
+            }
+            "FromName" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Where-Object Name -eq $Name | Write-Output
+            }
+            "FromClass" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
+            }
         }
     }
 }
@@ -10473,18 +10475,18 @@ Get the device instance.
 This cmdlet gets device instances, either all present or from a GUID/Name.
 .PARAMETER Class
 The GUID of the setup class.
-.PARAMETER Present
-Only return present devices.
+.PARAMETER All
+Get all device instances. The default is to only get present instances.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceInstance
 .EXAMPLE
 Get-DeviceInstance
-Get all device instances.
-.EXAMPLE
-Get-DeviceInstance -Present
 Get all present device instances.
+.EXAMPLE
+Get-DeviceInstance -All
+Get all device instances.
 .EXAMPLE
 Get-DeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device instances class for the specified setup class GUID.
@@ -10492,17 +10494,19 @@ Get the device instances class for the specified setup class GUID.
 function Get-DeviceInstance {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [parameter(Mandatory, ParameterSetName = "FromClass")]
+        [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
         [guid]$Class,
-        [switch]$Present
+        [switch]$All
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Present) | Write-Output
-        }
-        "FromClass" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, $Present) | Write-Output
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList(!$All) | Write-Output
+            }
+            "FromClass" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, !$All) | Write-Output
+            }
         }
     }
 }
