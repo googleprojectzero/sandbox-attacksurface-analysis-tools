@@ -10477,6 +10477,8 @@ This cmdlet gets device instances, either all present or from a GUID/Name.
 The GUID of the setup class.
 .PARAMETER All
 Get all device instances. The default is to only get present instances.
+.PARAMETER Tree
+Get all device instances as a tree.
 .INPUTS
 None
 .OUTPUTS
@@ -10490,23 +10492,109 @@ Get all device instances.
 .EXAMPLE
 Get-DeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device instances class for the specified setup class GUID.
+.EXAMPLE
+Get-DeviceInstance -Tree
+Get all device instances in a tree structure.
 #>
 function Get-DeviceInstance {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
         [guid]$Class,
-        [switch]$All
+        [parameter(ParameterSetName = "FromClass")]
+        [switch]$All,
+        [parameter(ParameterSetName = "FromTree")]
+        [switch]$Tree
     )
 
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceList($All) | Write-Output
             }
             "FromClass" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, $All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceList($Class, $All) | Write-Output
+            }
+            "FromTree" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceTree() | Write-Output
             }
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Get device properties.
+.DESCRIPTION
+This cmdlet gets device properties.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceProperty[]
+.EXAMPLE
+Get-DeviceProperty -Device $dev
+Get all properties for a device.
+#>
+function Get-DeviceProperty {
+    [CmdletBinding(DefaultParameterSetName = "FromDevice")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromDevice", ValueFromPipeline)]
+        [NtApiDotNet.Win32.Device.IDevicePropertyProvider]$Device
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromDevice" {
+                $Device.GetProperties() | Write-Output
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get device instance children.
+.DESCRIPTION
+This cmdlet gets device instance children.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceNode[]
+.EXAMPLE
+Get-DeviceInstanceChild -Instance $dev
+Get all children for a device instance
+#>
+function Get-DeviceInstanceChild {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromNode")]
+        [NtApiDotNet.Win32.Device.DeviceInstance]$Device,
+        [switch]$Recurse,
+        [int]$Depth = [int]::MaxValue
+    )
+
+    if ($Recurse -and $Depth -lt 1) {
+        return
+    }
+
+    try
+    {
+        if ($Device -isNot [NtApiDotNet.Win32.Device.DeviceNode]) {
+            $Device = [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceTree($Device.InstanceId)
+        }
+
+        switch($PSCmdlet.ParameterSetName) {
+            "FromNode" {
+                if ($Recurse) {
+                    $recdepth = $Depth - 1
+                    $Device.Children | ForEach-Object { Get-DeviceInstanceChild -Device $_ -Recurse -Depth $recdepth }
+                }
+                $Device.Children | Write-Output
+            }
+        }
+    }
+    catch 
+    {
+        Write-Error $_
     }
 }

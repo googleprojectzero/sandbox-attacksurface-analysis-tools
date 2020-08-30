@@ -17,30 +17,14 @@ using System.Collections.Generic;
 namespace NtApiDotNet.Win32.Device
 {
     /// <summary>
-    /// Node in the a device tree.
+    /// Interface to indicate the device object has properties.
     /// </summary>
-    public sealed class DeviceNode : DeviceInstance
+    public interface IDevicePropertyProvider
     {
-        private readonly List<DeviceNode> _children;
-
         /// <summary>
-        /// List of child nodes.
+        /// The list of all device properties.
         /// </summary>
-        public IReadOnlyList<DeviceNode> Children => _children.AsReadOnly();
-
-        /// <summary>
-        /// Indicates if the node has any children.
-        /// </summary>
-        public bool HasChildren => _children.Count > 0;
-
-        internal void AddRange(IEnumerable<DeviceNode> node)
-        {
-            _children.AddRange(node);
-        }
-
-        internal DeviceNode(int devinst) : base(devinst)
-        {
-            _children = new List<DeviceNode>();
-        }
+        /// <returns>The device properties.</returns>
+        IReadOnlyList<DeviceProperty> GetProperties();
     }
 }

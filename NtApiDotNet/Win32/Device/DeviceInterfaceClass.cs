@@ -21,7 +21,7 @@ namespace NtApiDotNet.Win32.Device
     /// <summary>
     /// Class to represent a device interface.
     /// </summary>
-    public sealed class DeviceInterfaceClass
+    public sealed class DeviceInterfaceClass : IDevicePropertyProvider
     {
         private readonly Lazy<List<DeviceProperty>> _properties;
 

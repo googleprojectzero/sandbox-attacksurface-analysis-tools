@@ -21,7 +21,7 @@ namespace NtApiDotNet.Win32.Device
     /// <summary>
     /// Class to represent a device setup class.
     /// </summary>
-    public sealed class DeviceSetupClass
+    public sealed class DeviceSetupClass : IDevicePropertyProvider
     {
         private readonly Lazy<List<DeviceProperty>> _properties;
 
@@ -71,7 +71,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The list of devices instances.</returns>
         public IReadOnlyList<DeviceInstance> GetInstances(bool all_devices)
         {
-            return DeviceUtils.GetDeviceList(Class, all_devices).ToList().AsReadOnly();
+            return DeviceUtils.GetDeviceInstanceList(Class, all_devices).ToList().AsReadOnly();
         }
 
         /// <summary>

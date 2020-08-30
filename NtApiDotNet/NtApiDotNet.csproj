@@ -324,6 +324,7 @@
     <Compile Include="Win32\Device\DeviceInterfaceClass.cs" />
     <Compile Include="Win32\Device\DeviceNativeMethods.cs" />
     <Compile Include="Win32\Device\DeviceUtils.cs" />
+    <Compile Include="Win32\Device\IDevicePropertyProvider.cs" />
     <Compile Include="Win32\Device\SafeDeviceInfoSetHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceUtils.cs" />
     <Compile Include="Win32\EtwServiceTriggerInformation.cs" />

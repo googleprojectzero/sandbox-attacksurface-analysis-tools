@@ -3142,6 +3142,43 @@
       </TableControl>
     </View>
     <View>
+      <Name>DeviceNode</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.Device.DeviceNode</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>HasChildren</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>InstanceId</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>HasChildren</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>InstanceId</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
       <Name>DeviceInstance</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.Win32.Device.DeviceInstance</TypeName>
@@ -3153,7 +3190,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>PDOName</Label>
+            <Label>InstanceId</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -3164,7 +3201,7 @@
                 <PropertyName>Name</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>PDOName</PropertyName>
+                <PropertyName>InstanceId</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

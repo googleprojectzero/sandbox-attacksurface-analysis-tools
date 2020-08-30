@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Device
     /// <summary>
     /// Class representing a device entry.
     /// </summary>
-    public class DeviceInstance
+    public class DeviceInstance : IDevicePropertyProvider
     {
         private readonly int _devinst;
         private readonly Lazy<List<DeviceProperty>> _properties;
@@ -103,6 +103,8 @@ namespace NtApiDotNet.Win32.Device
             _devinst = devinst;
             InstanceId = DeviceUtils.GetDeviceNodeId(devinst);
             Name = DeviceUtils.GetDeviceName(devinst);
+            if (string.IsNullOrWhiteSpace(Name))
+                Name = InstanceId;
             PDOName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_PDOName);
             INFName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
             if (string.IsNullOrEmpty(INFName))

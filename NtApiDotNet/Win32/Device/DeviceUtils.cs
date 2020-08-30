@@ -162,7 +162,7 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         /// <param name="all_devices">Return all devices including ones which aren't present.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList(bool all_devices)
+        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(bool all_devices)
         {
             DiGetClassFlags flags = DiGetClassFlags.ALLCLASSES;
             if (!all_devices)
@@ -174,9 +174,9 @@ namespace NtApiDotNet.Win32.Device
         /// Get list of present device entries.
         /// </summary>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList()
+        public static IEnumerable<DeviceInstance> GetDeviceInstanceList()
         {
-            return GetDeviceList(true);
+            return GetDeviceInstanceList(true);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace NtApiDotNet.Win32.Device
         /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
         /// <param name="all_devices">Only return present devices.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid, bool all_devices)
+        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(Guid class_guid, bool all_devices)
         {
             DiGetClassFlags flags = !all_devices ? DiGetClassFlags.PRESENT : 0;
             return GetDeviceList(class_guid, null, flags);
@@ -196,16 +196,16 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid)
+        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(Guid class_guid)
         {
-            return GetDeviceList(class_guid, true);
+            return GetDeviceInstanceList(class_guid, true);
         }
 
         /// <summary>
         /// Get device tree.
         /// </summary>
         /// <returns>The device tree's root node.</returns>
-        public static DeviceNode GetDeviceTree()
+        public static DeviceNode GetDeviceInstanceTree()
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
             Dictionary<int, DeviceNode> nodes = new Dictionary<int, DeviceNode>();
@@ -213,20 +213,15 @@ namespace NtApiDotNet.Win32.Device
         }
 
         /// <summary>
-        /// Get the security descriptor from a device ID.
+        /// Get the node from 
         /// </summary>
-        /// <param name="device_id">The device ID, e.g. ROOT\0</param>
-        /// <returns>The security descriptor, null if it can't be found.</returns>
-        public static SecurityDescriptor GetDeviceSecurityDescriptor(string device_id)
+        /// <param name="instance_id">The instance ID to start from.</param>
+        /// <returns>The root device node.</returns>
+        public static DeviceNode GetDeviceInstanceTree(string instance_id)
         {
-            if (DeviceNativeMethods.CM_Locate_DevNodeW(out int devinst, device_id, 0) != CrError.SUCCESS)
-            {
-                return null;
-            }
-            var prop = GetProperty(devinst, DevicePropertyKeys.DEVPKEY_Device_Security);
-            if (prop.Type != DEVPROPTYPE.SECURITY_DESCRIPTOR)
-                return null;
-            return SecurityDescriptor.Parse(prop.Data, NtType.GetTypeByType<NtFile>(), false).GetResultOrDefault();
+            DeviceNativeMethods.CM_Locate_DevNodeW(out int root, instance_id, 0).ToNtStatus().ToNtException();
+            Dictionary<int, DeviceNode> nodes = new Dictionary<int, DeviceNode>();
+            return BuildDeviceTreeNode(root, nodes).First();
         }
 
         #endregion
@@ -467,7 +462,7 @@ namespace NtApiDotNet.Win32.Device
         private static IEnumerable<DeviceInstance> GetDeviceList(OptionalGuid class_guid, string enumerator, DiGetClassFlags flags)
         {
             var devices = new List<DeviceInstance>();
-
+            DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
             using (var p = DeviceNativeMethods.SetupDiGetClassDevsW(class_guid, enumerator, IntPtr.Zero, flags))
             {
                 if (p.IsInvalid)
@@ -477,7 +472,8 @@ namespace NtApiDotNet.Win32.Device
                 SP_DEVINFO_DATA dev_info = new SP_DEVINFO_DATA() { cbSize = size };
                 while (DeviceNativeMethods.SetupDiEnumDeviceInfo(p, index++, ref dev_info))
                 {
-                    devices.Add(new DeviceInstance(dev_info.DevInst));
+                    if (dev_info.DevInst != root)
+                        devices.Add(new DeviceInstance(dev_info.DevInst));
                     dev_info.cbSize = size;
                 }
 
