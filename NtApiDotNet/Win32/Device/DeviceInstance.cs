@@ -87,6 +87,11 @@ namespace NtApiDotNet.Win32.Device
         public uint? SessionId { get; }
 
         /// <summary>
+        /// Indicates if this instance is present.
+        /// </summary>
+        public bool IsPresent { get; }
+
+        /// <summary>
         /// Indicates the name of the SCM service for the driver.
         /// </summary>
         public string Service { get; }
@@ -147,6 +152,7 @@ namespace NtApiDotNet.Win32.Device
 
             DeviceStack = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_Stack).ToList().AsReadOnly();
             Class = DeviceUtils.GetPropertyGuid(devinst, DevicePropertyKeys.DEVPKEY_Device_ClassGuid);
+            IsPresent = DeviceUtils.GetPropertyBoolean(devinst, DevicePropertyKeys.DEVPKEY_Device_IsPresent);
             _sd = new Lazy<SecurityDescriptor>(GetSecurityDescriptor);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
             _service_info = new Lazy<ServiceInformation>(GetServiceInformation);

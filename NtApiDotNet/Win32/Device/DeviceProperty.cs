@@ -119,6 +119,13 @@ namespace NtApiDotNet.Win32.Device
             return BitConverter.ToUInt32(Data, 0);
         }
 
+        internal bool? GetBool()
+        {
+            if (Type != DEVPROPTYPE.BOOLEAN || Data.Length != 1)
+                return null;
+            return Data[0] == 0 ? false : true;
+        }
+
         internal bool IsKey(DEVPROPKEY key)
         {
             return key.fmtid == FmtId && key.pid == Pid;

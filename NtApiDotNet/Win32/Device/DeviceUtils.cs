@@ -428,6 +428,11 @@ namespace NtApiDotNet.Win32.Device
             return GetProperty(devinst, key)?.GetUInt32();
         }
 
+        internal static bool GetPropertyBoolean(int devinst, DEVPROPKEY key)
+        {
+            return GetProperty(devinst, key)?.GetBool() ?? false;
+        }
+
         internal static string GetDeviceInfPath(int devinst)
         {
             string path = GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
