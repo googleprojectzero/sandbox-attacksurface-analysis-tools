@@ -10502,10 +10502,10 @@ function Get-DeviceInstance {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList(!$All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($All) | Write-Output
             }
             "FromClass" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, !$All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, $All) | Write-Output
             }
         }
     }

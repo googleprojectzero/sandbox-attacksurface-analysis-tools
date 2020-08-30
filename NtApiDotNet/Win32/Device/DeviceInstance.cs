@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace NtApiDotNet.Win32.Device
@@ -59,6 +60,11 @@ namespace NtApiDotNet.Win32.Device
         public string PDOName { get; }
 
         /// <summary>
+        /// Get the device INF name.
+        /// </summary>
+        public string INFName { get; }
+
+        /// <summary>
         /// Get the device INF path.
         /// </summary>
         public string INFPath { get; }
@@ -98,7 +104,16 @@ namespace NtApiDotNet.Win32.Device
             InstanceId = DeviceUtils.GetDeviceNodeId(devinst);
             Name = DeviceUtils.GetDeviceName(devinst);
             PDOName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_PDOName);
-            INFPath = DeviceUtils.GetDeviceInfPath(devinst);
+            INFName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
+            if (string.IsNullOrEmpty(INFName))
+            {
+                INFPath = string.Empty;
+            }
+            else
+            {
+                INFPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", INFName);
+            }
+
             DeviceStack = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_Stack).ToList().AsReadOnly();
             Class = DeviceUtils.GetPropertyGuid(devinst, DevicePropertyKeys.DEVPKEY_Device_ClassGuid);
             _sd = new Lazy<SecurityDescriptor>(GetSecurityDescriptor);

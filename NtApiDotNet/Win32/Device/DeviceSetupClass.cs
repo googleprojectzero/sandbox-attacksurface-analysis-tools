@@ -64,6 +64,25 @@ namespace NtApiDotNet.Win32.Device
             return _properties.Value.AsReadOnly();
         }
 
+        /// <summary>
+        /// Get device instances.
+        /// </summary>
+        /// <param name="all_devices">Return all devices.</param>
+        /// <returns>The list of devices instances.</returns>
+        public IReadOnlyList<DeviceInstance> GetInstances(bool all_devices)
+        {
+            return DeviceUtils.GetDeviceList(Class, all_devices).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get device instances.
+        /// </summary>
+        /// <returns>The list of devices instances.</returns>
+        public IReadOnlyList<DeviceInstance> GetInstances()
+        {
+            return GetInstances(false);
+        }
+
         internal DeviceSetupClass(Guid class_guid)
         {
             Class = class_guid;

@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.Device
     {
         #region Public Methods
         /// <summary>
-        /// Get a list of device interfaces from an Inteface GUID.
+        /// Get a list of device interfaces from an Interface GUID.
         /// </summary>
         /// <param name="interface_class_guid">The interface class GUID for the device.</param>
         /// <param name="device_id">Optional device ID.</param>
@@ -160,12 +160,12 @@ namespace NtApiDotNet.Win32.Device
         /// <summary>
         /// Get list of device entries.
         /// </summary>
-        /// <param name="present">Only return present devices.</param>
+        /// <param name="all_devices">Return all devices including ones which aren't present.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList(bool present)
+        public static IEnumerable<DeviceInstance> GetDeviceList(bool all_devices)
         {
             DiGetClassFlags flags = DiGetClassFlags.ALLCLASSES;
-            if (present)
+            if (!all_devices)
                 flags |= DiGetClassFlags.PRESENT;
             return GetDeviceList(null, null, flags);
         }
@@ -183,11 +183,11 @@ namespace NtApiDotNet.Win32.Device
         /// Get list of device entries.
         /// </summary>
         /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
-        /// <param name="present">Only return present devices.</param>
+        /// <param name="all_devices">Only return present devices.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid, bool present)
+        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid, bool all_devices)
         {
-            DiGetClassFlags flags = present ? DiGetClassFlags.PRESENT : 0;
+            DiGetClassFlags flags = !all_devices ? DiGetClassFlags.PRESENT : 0;
             return GetDeviceList(class_guid, null, flags);
         }
 
