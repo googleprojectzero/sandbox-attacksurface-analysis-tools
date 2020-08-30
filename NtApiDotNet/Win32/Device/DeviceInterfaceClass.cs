@@ -68,12 +68,27 @@ namespace NtApiDotNet.Win32.Device
         private static string MapWin32ToDevicePath(string path)
         {
             path = NtFileUtils.DosFileNameToNt(path);
+            string final_component = string.Empty;
+            // Strip off any remaining path.
+            if (path.StartsWith(@"\??\"))
+            {
+                int slash_index = path.IndexOf('\\', 4);
+                if (slash_index >= 0)
+                {
+                    final_component = path.Substring(slash_index);
+                    path = path.Substring(0, slash_index);
+                }
+            }
+
             using (var link = NtSymbolicLink.Open(path, null, SymbolicLinkAccessRights.Query, false))
             {
-                if (!link.IsSuccess)
-                    return path;
-                return link.Result.Target;
+                if (link.IsSuccess)
+                {
+                    path = link.Result.Target;
+                }
             }
+
+            return path + final_component;
         }
     }
 }
