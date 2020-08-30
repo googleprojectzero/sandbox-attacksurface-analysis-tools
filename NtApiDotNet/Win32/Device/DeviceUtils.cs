@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -146,36 +147,45 @@ namespace NtApiDotNet.Win32.Device
         /// <summary>
         /// Get list of device entries.
         /// </summary>
+        /// <param name="present">Only return present devices.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceEntry> GetDeviceList()
+        public static IEnumerable<DeviceInstance> GetDeviceList(bool present)
         {
-            var devices = new List<DeviceEntry>();
-            using (var p = DeviceNativeMethods.SetupDiGetClassDevsW(null, null, IntPtr.Zero, DiGetClassFlags.ALLCLASSES))
-            {
-                if (p.IsInvalid)
-                    Win32Utils.GetLastWin32Error().ToNtException();
-                int index = 0;
-                SP_DEVINFO_DATA dev_info = new SP_DEVINFO_DATA() { cbSize = Marshal.SizeOf(typeof(SP_DEVINFO_DATA)) };
-                while (DeviceNativeMethods.SetupDiEnumDeviceInfo(p, index++, out dev_info))
-                {
-                    DeviceEntry device = new DeviceEntry();
-                    device.DeviceId = GetDeviceNodeId(dev_info.DevInst);
+            DiGetClassFlags flags = DiGetClassFlags.ALLCLASSES;
+            if (present)
+                flags |= DiGetClassFlags.PRESENT;
+            return GetDeviceList(null, null, flags);
+        }
 
-                    DEVPROPKEY[] keys = new DEVPROPKEY[1000];
-                    int count = 1000;
-                    DeviceProperty[] props = new DeviceProperty[0];
-                    if (DeviceNativeMethods.CM_Get_DevNode_Property_Keys(dev_info.DevInst, keys, ref count, 0) == CrError.SUCCESS)
-                    {
-                        Array.Resize(ref keys, count);
-                        props = keys.Select(k => GetProperty(dev_info.DevInst, k)).ToArray();
-                    }
-                    device.SetProperties(props);
-                    devices.Add(device);
-                    dev_info.cbSize = Marshal.SizeOf(typeof(SP_DEVINFO_DATA));
-                }
+        /// <summary>
+        /// Get list of present device entries.
+        /// </summary>
+        /// <returns>The list of device entries.</returns>
+        public static IEnumerable<DeviceInstance> GetDeviceList()
+        {
+            return GetDeviceList(true);
+        }
 
-                return devices.AsReadOnly();
-            }
+        /// <summary>
+        /// Get list of device entries.
+        /// </summary>
+        /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
+        /// <param name="present">Only return present devices.</param>
+        /// <returns>The list of device entries.</returns>
+        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid, bool present)
+        {
+            DiGetClassFlags flags = present ? DiGetClassFlags.PRESENT : 0;
+            return GetDeviceList(class_guid, null, flags);
+        }
+
+        /// <summary>
+        /// Get list of present device entries.
+        /// </summary>
+        /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
+        /// <returns>The list of device entries.</returns>
+        public static IEnumerable<DeviceInstance> GetDeviceList(Guid class_guid)
+        {
+            return GetDeviceList(class_guid, true);
         }
 
         /// <summary>
@@ -186,23 +196,7 @@ namespace NtApiDotNet.Win32.Device
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
             Dictionary<int, DeviceNode> nodes = new Dictionary<int, DeviceNode>();
-
-            var ret = BuildDeviceTreeNode(root, nodes);
-            foreach (var pair in nodes)
-            {
-                pair.Value.DeviceId = GetDeviceNodeId(pair.Key);
-
-                DEVPROPKEY[] keys = new DEVPROPKEY[1000];
-                int count = 1000;
-                DeviceProperty[] props = new DeviceProperty[0];
-                if (DeviceNativeMethods.CM_Get_DevNode_Property_Keys(pair.Key, keys, ref count, 0) == CrError.SUCCESS)
-                {
-                    Array.Resize(ref keys, count);
-                    props = keys.Select(k => GetProperty(pair.Key, k)).ToArray();
-                }
-                pair.Value.SetProperties(props);
-            }
-            return ret.First();
+            return BuildDeviceTreeNode(root, nodes).First();
         }
 
         /// <summary>
@@ -225,6 +219,69 @@ namespace NtApiDotNet.Win32.Device
         #endregion
 
         #region Internal Members
+
+        internal static DeviceProperty[] GetDeviceProperties(string instance_id)
+        {
+            DeviceNativeMethods.CM_Locate_DevNodeW(out int dev_inst, instance_id, 0).ToNtStatus().ToNtException();
+            return GetDeviceProperties(dev_inst);
+        }
+
+        internal static DeviceProperty[] GetDeviceProperties(int dev_inst)
+        {
+            int count = 0;
+            DeviceProperty[] props = new DeviceProperty[0];
+            DeviceNativeMethods.CM_Get_DevNode_Property_Keys(dev_inst, null, ref count, 0);
+            if (count == 0)
+            {
+                return new DeviceProperty[0];
+            }
+
+            DEVPROPKEY[] keys = new DEVPROPKEY[count];
+
+            if (DeviceNativeMethods.CM_Get_DevNode_Property_Keys(dev_inst, keys, ref count, 0) != CrError.SUCCESS)
+            {
+                return new DeviceProperty[0];
+            }
+
+            return keys.Take(count).Select(k => GetProperty(dev_inst, k)).ToArray();
+        }
+
+        internal static IEnumerable<string> GetDeviceIdList(string filter, CmGetIdListFlags flags)
+        {
+            int retry_count = 10;
+            while (retry_count-- > 0)
+            {
+                DeviceNativeMethods.CM_Get_Device_ID_List_SizeW(out int length, filter, flags).ToNtStatus().ToNtException();
+                using (var buffer = new SafeHGlobalBuffer(length * 2))
+                {
+                    var result = DeviceNativeMethods.CM_Get_Device_ID_ListW(filter, buffer, length, flags);
+                    if (result == CrError.BUFFER_SMALL)
+                        continue;
+                    result.ToNtStatus().ToNtException();
+                    return buffer.ReadUnicodeString(length).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+                }
+            }
+            throw new ArgumentException("Couldn't enumerate device ID list.");
+        }
+
+        internal static IEnumerable<string> EnumerateEnumerators()
+        {
+            List<string> ret = new List<string>();
+            StringBuilder builder = new StringBuilder(DeviceNativeMethods.MAX_DEVICE_ID_LEN);
+            int index = 0;
+            int length = DeviceNativeMethods.MAX_DEVICE_ID_LEN;
+            CrError result = DeviceNativeMethods.CM_Enumerate_EnumeratorsW(index++, builder, ref length, 0);
+            while (result != CrError.NO_SUCH_VALUE)
+            {
+                if (result != CrError.SUCCESS)
+                    break;
+                builder.Length = length;
+                ret.Add(builder.ToString().Trim('\0'));
+                length = DeviceNativeMethods.MAX_DEVICE_ID_LEN;
+                result = DeviceNativeMethods.CM_Enumerate_EnumeratorsW(index++, builder, ref length, 0);
+            }
+            return ret;
+        }
 
         internal static NtResult<string> GetClassString(Guid class_guid, bool interface_guid, DEVPROPKEY key, bool throw_on_error)
         {
@@ -300,6 +357,45 @@ namespace NtApiDotNet.Win32.Device
             }
         }
 
+        internal static DeviceProperty GetProperty(int devinst, DEVPROPKEY key)
+        {
+            DeviceProperty ret = new DeviceProperty() { Name = DevicePropertyKeys.KeyToName(key), FmtId = key.fmtid, Pid = key.pid, Data = new byte[0] };
+            using (var buffer = new SafeHGlobalBuffer(2000))
+            {
+                int length = buffer.Length;
+                if (DeviceNativeMethods.CM_Get_DevNode_PropertyW(devinst, key, out DEVPROPTYPE type, buffer, ref length, 0) == CrError.SUCCESS)
+                {
+                    ret.Type = type;
+                    ret.Data = buffer.ReadBytes(length);
+                }
+            }
+            return ret;
+        }
+
+        internal static string GetPropertyString(int devinst, DEVPROPKEY key)
+        {
+            return GetProperty(devinst, key)?.GetString();
+        }
+
+        internal static string GetDeviceInfPath(int devinst)
+        {
+            string path = GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
+            if (string.IsNullOrEmpty(path))
+                return string.Empty;
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", path);
+        }
+
+        internal static string GetDeviceName(int devinst)
+        {
+            DeviceProperty prop = GetProperty(devinst, DevicePropertyKeys.DEVPKEY_Device_FriendlyName);
+            if (prop?.Type == DEVPROPTYPE.STRING)
+                return prop.GetString();
+            prop = GetProperty(devinst, DevicePropertyKeys.DEVPKEY_NAME);
+            if (prop?.Type == DEVPROPTYPE.STRING)
+                return prop.GetString();
+            return GetProperty(devinst, DevicePropertyKeys.DEVPKEY_Device_DeviceDesc)?.GetString() ?? string.Empty;
+        }
+
         #endregion
 
         #region Private Members
@@ -307,6 +403,27 @@ namespace NtApiDotNet.Win32.Device
         private static NtStatus ToNtStatus(this CrError error)
         {
             return DeviceNativeMethods.CM_MapCrToWin32Err(error, Win32Error.ERROR_INVALID_PARAMETER).MapDosErrorToStatus();
+        }
+
+        private static IEnumerable<DeviceInstance> GetDeviceList(OptionalGuid class_guid, string enumerator, DiGetClassFlags flags)
+        {
+            var devices = new List<DeviceInstance>();
+
+            using (var p = DeviceNativeMethods.SetupDiGetClassDevsW(class_guid, enumerator, IntPtr.Zero, flags))
+            {
+                if (p.IsInvalid)
+                    Win32Utils.GetLastWin32Error().ToNtException();
+                int index = 0;
+                int size = Marshal.SizeOf(typeof(SP_DEVINFO_DATA));
+                SP_DEVINFO_DATA dev_info = new SP_DEVINFO_DATA() { cbSize = size };
+                while (DeviceNativeMethods.SetupDiEnumDeviceInfo(p, index++, ref dev_info))
+                {
+                    devices.Add(new DeviceInstance(dev_info.DevInst));
+                    dev_info.cbSize = size;
+                }
+
+                return devices.AsReadOnly();
+            }
         }
 
         private static IEnumerable<Guid> EnumerateClasses(CmClassType flags)
@@ -374,7 +491,7 @@ namespace NtApiDotNet.Win32.Device
             List<DeviceNode> nodes = new List<DeviceNode>();
             while (node != 0)
             {
-                DeviceNode curr_node = new DeviceNode();
+                DeviceNode curr_node = new DeviceNode(node);
                 dict[node] = curr_node;
                 nodes.Add(curr_node);
                 if (DeviceNativeMethods.CM_Get_Child(out int child, node, 0) == CrError.SUCCESS)
@@ -385,21 +502,6 @@ namespace NtApiDotNet.Win32.Device
                     break;
             }
             return nodes;
-        }
-
-        private static DeviceProperty GetProperty(int devinst, DEVPROPKEY key)
-        {
-            DeviceProperty ret = new DeviceProperty() { FmtId = key.fmtid, Pid = key.pid, Data = new byte[0] };
-            using (var buffer = new SafeHGlobalBuffer(2000))
-            {
-                int length = buffer.Length;
-                if (DeviceNativeMethods.CM_Get_DevNode_PropertyW(devinst, key, out DEVPROPTYPE type, buffer, ref length, 0) == CrError.SUCCESS)
-                {
-                    ret.Type = type;
-                    ret.Data = buffer.ReadBytes(length);
-                }
-            }
-            return ret;
         }
 
         #endregion

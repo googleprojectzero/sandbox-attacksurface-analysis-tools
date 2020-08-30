@@ -316,9 +316,10 @@
     <Compile Include="Win32\Debugger\TypeInformationCache.cs" />
     <Compile Include="Win32\Debugger\UdtKind.cs" />
     <Compile Include="Win32\Debugger\UserDefinedTypeInformation.cs" />
-    <Compile Include="Win32\Device\DeviceEntry.cs" />
+    <Compile Include="Win32\Device\DeviceInstance.cs" />
     <Compile Include="Win32\Device\DeviceNode.cs" />
     <Compile Include="Win32\Device\DeviceProperty.cs" />
+    <Compile Include="Win32\Device\DevicePropertyKeys.cs" />
     <Compile Include="Win32\Device\DeviceSetupClass.cs" />
     <Compile Include="Win32\Device\DeviceInterfaceClass.cs" />
     <Compile Include="Win32\Device\DeviceNativeMethods.cs" />

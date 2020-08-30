@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Device
     /// <summary>
     /// Node in the a device tree.
     /// </summary>
-    public sealed class DeviceNode : DeviceEntry
+    public sealed class DeviceNode : DeviceInstance
     {
         private readonly List<DeviceNode> _children;
 
@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Device
             _children.AddRange(node);
         }
 
-        internal DeviceNode()
+        internal DeviceNode(int devinst) : base(devinst)
         {
             _children = new List<DeviceNode>();
         }

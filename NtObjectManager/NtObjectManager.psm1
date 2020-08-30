@@ -10388,44 +10388,6 @@ function Get-NtFileShareProcess {
 
 <#
 .SYNOPSIS
-Get the security descriptor for a PNP device.
-.DESCRIPTION
-This cmdlet gets the security descriptor for a PNP device.
-.PARAMETER InstanceId
-The instance ID to get the security descriptor for.
-.INPUTS
-None
-.OUTPUTS
-NtApiDotNet.SecurityDescriptor
-.EXAMPLE
-Get-PnpDeviceSecurityDescriptor -InstanceId "ROOT\0"
-Get the security descriptor for the instance ROOT\0.
-.EXAMPLE
-Get-PnpDevice | Get-PnpDeviceSecurityDescriptor
-Get any security descriptor for all PNP devices.
-#>
-function Get-PnpDeviceSecurityDescriptor {
-    [CmdletBinding()]
-    Param(
-        [parameter(Mandatory, Position = 0, ValueFromPipelineByPropertyName)]
-        [string]$InstanceId
-    )
-
-    PROCESS {
-        $sd = [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSecurityDescriptor($InstanceId)
-        if ($null -ne $sd) {
-            $props = @{
-                SecurityDescriptor = $sd;
-                InstanceId = $InstanceId;
-            }
-            $obj = New-Object –TypeName PSObject –Property $props
-            Write-Output $obj
-        }
-    }
-}
-
-<#
-.SYNOPSIS
 Get the device setup classes.
 .DESCRIPTION
 This cmdlet gets device setup classes, either all installed or from a GUID/Name.
@@ -10465,6 +10427,47 @@ function Get-DeviceSetupClass {
         }
         "FromClass" {
             [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get the device instance.
+.DESCRIPTION
+This cmdlet gets device instances, either all present or from a GUID/Name.
+.PARAMETER Class
+The GUID of the setup class.
+.PARAMETER Present
+Only return present devices.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceInstance
+.EXAMPLE
+Get-DeviceInstance
+Get all device instances.
+.EXAMPLE
+Get-DeviceInstance -Present
+Get all present device instances.
+.EXAMPLE
+Get-DeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get the device instances class for the specified setup class GUID.
+#>
+function Get-DeviceInstance {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromClass")]
+        [guid]$Class,
+        [switch]$Present
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Present) | Write-Output
+        }
+        "FromClass" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceList($Class, $Present) | Write-Output
         }
     }
 }

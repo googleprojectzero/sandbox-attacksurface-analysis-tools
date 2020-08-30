@@ -175,39 +175,6 @@ namespace NtApiDotNet.Win32.Device
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct DEVPROPKEY
-    {
-        public Guid fmtid;
-        public int pid;
-
-        public DEVPROPKEY(uint l, ushort w1, ushort w2, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8, int pid_value)
-        {
-            fmtid = new Guid(l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8);
-            pid = pid_value;
-        }
-
-        public Tuple<Guid, int> ToTuple()
-        {
-            return Tuple.Create(fmtid, pid);
-        }
-    };
-
-    internal static class DevicePropertyKeys
-    {
-        public static DEVPROPKEY DEVPKEY_DeviceClass_Name = new DEVPROPKEY(0x259abffc, 0x50a7, 0x47ce, 0xaf, 0x8, 0x68, 0xc9, 0xa7, 0xd7, 0x33, 0x66, 2);      // DEVPROP_TYPE_STRING
-        public static DEVPROPKEY DEVPKEY_DeviceClass_ClassName = new DEVPROPKEY(0x259abffc, 0x50a7, 0x47ce, 0xaf, 0x8, 0x68, 0xc9, 0xa7, 0xd7, 0x33, 0x66, 3);
-        public static DEVPROPKEY DEVPKEY_DeviceInterface_ClassGuid = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 4);
-        public static DEVPROPKEY DEVPKEY_DeviceClass_Security = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 25);
-        public static DEVPROPKEY DEVPKEY_DeviceClass_DevType = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 27);    // DEVPROP_TYPE_UINT32
-        public static DEVPROPKEY DEVPKEY_DeviceClass_Exclusive = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 28);    // DEVPROP_TYPE_BOOLEAN
-        public static DEVPROPKEY DEVPKEY_DeviceClass_Characteristics = new DEVPROPKEY(0x4321918b, 0xf69e, 0x470d, 0xa5, 0xde, 0x4d, 0x88, 0xc7, 0x5a, 0xd2, 0x4b, 29);    // DEVPROP_TYPE_UINT32
-        public static DEVPROPKEY DEVPKEY_DeviceInterface_FriendlyName = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 2);     // DEVPROP_TYPE_STRING
-        public static DEVPROPKEY DEVPKEY_DeviceInterface_Enabled = new DEVPROPKEY(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22, 3);     // DEVPROP_TYPE_BOOLEAN
-        public static DEVPROPKEY DEVPKEY_Device_ClassGuid = new DEVPROPKEY(0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 10);
-        public static DEVPROPKEY DEVPKEY_Device_Security = new DEVPROPKEY(0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 25);    // DEVPROP_TYPE_SECURITY_DESCRIPTOR
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct SP_DEVINFO_DATA
     {
         public int cbSize;
@@ -241,8 +208,26 @@ namespace NtApiDotNet.Win32.Device
         OpenExisting = 0x00000001
     }
 
+    [Flags]
+    internal enum CmGetIdListFlags
+    {
+        CM_GETIDLIST_FILTER_NONE                = 0x00000000,
+        CM_GETIDLIST_FILTER_ENUMERATOR          = 0x00000001,
+        CM_GETIDLIST_FILTER_SERVICE             = 0x00000002,
+        CM_GETIDLIST_FILTER_EJECTRELATIONS      = 0x00000004,
+        CM_GETIDLIST_FILTER_REMOVALRELATIONS    = 0x00000008,
+        CM_GETIDLIST_FILTER_POWERRELATIONS      = 0x00000010,
+        CM_GETIDLIST_FILTER_BUSRELATIONS        = 0x00000020,
+        CM_GETIDLIST_DONOTGENERATE              = 0x10000040,
+        CM_GETIDLIST_FILTER_TRANSPORTRELATIONS  = 0x00000080,
+        CM_GETIDLIST_FILTER_PRESENT             = 0x00000100,
+        CM_GETIDLIST_FILTER_CLASS               = 0x00000200,
+    }
+
     internal static class DeviceNativeMethods
     {
+        internal const int MAX_DEVICE_ID_LEN = 200;
+
         [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
         internal static extern CrError CM_Get_Device_Interface_List(ref Guid InterfaceClassGuid, string pDeviceID, 
             [Out] char[] Buffer, int BufferLen, CmGetDeviceInterfaceListFlags ulFlags);
@@ -391,7 +376,7 @@ namespace NtApiDotNet.Win32.Device
         internal static extern bool SetupDiEnumDeviceInfo(
           SafeDeviceInfoSetHandle DeviceInfoSet,
           int MemberIndex,
-          out SP_DEVINFO_DATA DeviceInfoData
+          ref SP_DEVINFO_DATA DeviceInfoData
         );
 
         [DllImport("SetupAPI.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -429,6 +414,35 @@ namespace NtApiDotNet.Win32.Device
           CmRegDisposition Disposition,
           out SafeKernelObjectHandle phkClass,
           CmClassType ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Enumerate_EnumeratorsW(
+          int ulEnumIndex,
+          [Out] StringBuilder Buffer,
+          ref int pulLength,
+          int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_ID_List_SizeW(
+            out int pulLen,
+            string pszFilter,
+            CmGetIdListFlags ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_ID_ListW(
+          string pszFilter,
+          SafeBuffer Buffer,
+          int BufferLen,
+          CmGetIdListFlags ulFlags
+        );
+
+        [DllImport("Propsys.dll", CharSet = CharSet.Unicode)]
+        internal static extern int PSGetNameFromPropertyKey(
+            in DEVPROPKEY propkey,
+            out string ppszCanonicalName
         );
     }
 }

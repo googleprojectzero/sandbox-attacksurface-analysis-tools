@@ -23,6 +23,10 @@ namespace NtApiDotNet.Win32.Device
     public sealed class DeviceProperty
     {
         /// <summary>
+        /// The name of the property, if known.
+        /// </summary>
+        public string Name { get; internal set; }
+        /// <summary>
         /// The FMTID Guid.
         /// </summary>
         public Guid FmtId { get; internal set; }
@@ -39,6 +43,70 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public byte[] Data { get; internal set; }
 
+        /// <summary>
+        /// Format the data according to type.
+        /// </summary>
+        /// <returns>The formatted data.</returns>
+        public string FormatData()
+        {
+            switch (Type)
+            {
+                case DEVPROPTYPE.STRING:
+                    return GetString();
+                case DEVPROPTYPE.GUID:
+                    if (Data.Length != 16)
+                        break;
+                    return new Guid(Data).ToString();
+                case DEVPROPTYPE.SECURITY_DESCRIPTOR:
+                    return GetSecurityDescriptor()?.ToSddl() ?? string.Empty;
+                case DEVPROPTYPE.UINT16:
+                    if (Data.Length != 2)
+                        break;
+                    return $"0x{BitConverter.ToUInt16(Data, 0):X}";
+                case DEVPROPTYPE.UINT32:
+                    if (Data.Length != 4)
+                        break;
+                    return $"0x{BitConverter.ToUInt32(Data, 0):X}";
+                case DEVPROPTYPE.UINT64:
+                    if (Data.Length != 8)
+                        break;
+                    return $"0x{BitConverter.ToUInt64(Data, 0):X}";
+                case DEVPROPTYPE.BOOLEAN:
+                    return Data[0] == 0 ? "False" : "True";
+                case DEVPROPTYPE.STRING_LIST:
+                    return string.Join(", ", GetStringList());
+                case DEVPROPTYPE.FILETIME:
+                    if (Data.Length != 8)
+                        break;
+                    return DateTime.FromFileTime(BitConverter.ToInt64(Data, 0)).ToString();
+                case DEVPROPTYPE.BINARY:
+                    return BitConverter.ToString(Data);
+            }
+            return string.Empty;
+        }
+
+        internal SecurityDescriptor GetSecurityDescriptor()
+        {
+            if (Type != DEVPROPTYPE.SECURITY_DESCRIPTOR)
+                return null;
+            return SecurityDescriptor.Parse(Data, NtType.GetTypeByType<NtFile>(),
+                        false).GetResultOrDefault();
+        }
+
+        internal string GetString()
+        {
+            if (Type != DEVPROPTYPE.STRING)
+                return string.Empty;
+            return Encoding.Unicode.GetString(Data).TrimEnd('\0');
+        }
+
+        internal string[] GetStringList()
+        {
+            if (Type != DEVPROPTYPE.STRING_LIST)
+                return new string[0];
+            return Encoding.Unicode.GetString(Data).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
         internal bool IsKey(DEVPROPKEY key)
         {
             return key.fmtid == FmtId && key.pid == Pid;
@@ -50,33 +118,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The property as a string.</returns>
         public override string ToString()
         {
-            string value = string.Empty;
-            if (Type == DEVPROPTYPE.STRING)
-            {
-                value = Encoding.Unicode.GetString(Data).TrimEnd('\0');
-            }
-            else if (Type == DEVPROPTYPE.GUID && Data.Length == 16)
-            {
-                value = new Guid(Data).ToString();
-            }
-            else if (Type == DEVPROPTYPE.SECURITY_DESCRIPTOR)
-            {
-                value = new SecurityDescriptor(Data, NtType.GetTypeByType<NtFile>()).ToSddl();
-            }
-            else if (Type == DEVPROPTYPE.UINT32)
-            {
-                value = BitConverter.ToUInt32(Data, 0).ToString();
-            }
-            else if (Type == DEVPROPTYPE.BOOLEAN)
-            {
-                value = Data[0] == 0 ? "False" : "True";
-            }
-            else if (Type == DEVPROPTYPE.STRING_LIST)
-            {
-                value = string.Join(", ", Encoding.Unicode.GetString(Data).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries));
-            }
-
-            return $"{FmtId}-{Pid} - {Type} - {value}";
+            return $"{FmtId}-{Pid} - {Type} - {FormatData()}";
         }
     }
 }
