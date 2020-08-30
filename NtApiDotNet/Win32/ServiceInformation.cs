@@ -112,6 +112,12 @@ namespace NtApiDotNet.Win32
                 DisplayName = result.lpDisplayName.GetString();
             }
         }
+
+        internal ServiceInformation(string name) : this(name, null,
+                new ServiceTriggerInformation[0], ServiceSidType.None,
+                ServiceLaunchProtectedType.None, new string[0], null)
+        {
+        }
     }
 #pragma warning restore
 }

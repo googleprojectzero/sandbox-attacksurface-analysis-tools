@@ -423,6 +423,11 @@ namespace NtApiDotNet.Win32.Device
             return GetProperty(devinst, key)?.GetGuid() ?? Guid.Empty;
         }
 
+        internal static uint? GetPropertyUInt32(int devinst, DEVPROPKEY key)
+        {
+            return GetProperty(devinst, key)?.GetUInt32();
+        }
+
         internal static string GetDeviceInfPath(int devinst)
         {
             string path = GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);

@@ -10400,16 +10400,16 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceSetupClass
 .EXAMPLE
-Get-DeviceSetupClass
+Get-NtDeviceSetupClass
 Get all device setup classes.
 .EXAMPLE
-Get-DeviceSetupClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get-NtDeviceSetupClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device setup class for the specified GUID.
 .EXAMPLE
-Get-DeviceSetupClass -Name 'USB'
+Get-NtDeviceSetupClass -Name 'USB'
 Get the device setup class for the USB class.
 #>
-function Get-DeviceSetupClass {
+function Get-NtDeviceSetupClass {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
@@ -10445,13 +10445,13 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceInterfaceClass
 .EXAMPLE
-Get-DeviceInterfaceClass
+Get-NtDeviceInterfaceClass
 Get all device interface classes.
 .EXAMPLE
-Get-DeviceInterfaceClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get-NtDeviceInterfaceClass -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device interface class for the specified GUID.
 #>
-function Get-DeviceInterfaceClass {
+function Get-NtDeviceInterfaceClass {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromClass")]
@@ -10484,19 +10484,19 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceInstance
 .EXAMPLE
-Get-DeviceInstance
+Get-NtDeviceInstance
 Get all present device instances.
 .EXAMPLE
-Get-DeviceInstance -All
+Get-NtDeviceInstance -All
 Get all device instances.
 .EXAMPLE
-Get-DeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get-NtDeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device instances class for the specified setup class GUID.
 .EXAMPLE
-Get-DeviceInstance -Tree
+Get-NtDeviceInstance -Tree
 Get all device instances in a tree structure.
 #>
-function Get-DeviceInstance {
+function Get-NtDeviceInstance {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
@@ -10532,10 +10532,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceProperty[]
 .EXAMPLE
-Get-DeviceProperty -Device $dev
+Get-NtDeviceProperty -Device $dev
 Get all properties for a device.
 #>
-function Get-DeviceProperty {
+function Get-NtDeviceProperty {
     [CmdletBinding(DefaultParameterSetName = "FromDevice")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromDevice", ValueFromPipeline)]
@@ -10561,10 +10561,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceNode[]
 .EXAMPLE
-Get-DeviceInstanceChild -Instance $dev
+Get-NtDeviceInstanceChild -Instance $dev
 Get all children for a device instance
 #>
-function Get-DeviceInstanceChild {
+function Get-NtDeviceInstanceChild {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode")]
@@ -10587,7 +10587,7 @@ function Get-DeviceInstanceChild {
             "FromNode" {
                 if ($Recurse) {
                     $recdepth = $Depth - 1
-                    $Device.Children | ForEach-Object { Get-DeviceInstanceChild -Device $_ -Recurse -Depth $recdepth }
+                    $Device.Children | ForEach-Object { Get-NtDeviceInstanceChild -Device $_ -Recurse -Depth $recdepth }
                 }
                 $Device.Children | Write-Output
             }

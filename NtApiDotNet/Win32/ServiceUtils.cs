@@ -396,28 +396,6 @@ namespace NtApiDotNet.Win32
                 }
 
                 return buf.Read<IntPtr>(0).GetMultiString();
-
-                /*
-                if (str_pointer == IntPtr.Zero)
-                {
-                    return new string[0];
-                }
-
-                SafeHGlobalBuffer str_buffer = new SafeHGlobalBuffer(str_pointer, 8192 - 8, false);
-                ulong offset = 0;
-                List<string> privs = new List<string>();
-                while (offset < str_buffer.ByteLength)
-                {
-                    string s = str_buffer.ReadNulTerminatedUnicodeString(offset);
-                    if (s.Length == 0)
-                    {
-                        break;
-                    }
-                    privs.Add(s);
-                    offset += (ulong)(s.Length + 1) * 2;
-                }
-                return privs.AsReadOnly();
-                */
             }
         }
 
@@ -447,20 +425,20 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static ServiceInformation GetServiceSecurityInformation(SafeServiceHandle scm, string name)
+        private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name, bool throw_on_error)
         {
             using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name,
                 ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
                 if (service.IsInvalid)
                 {
-                    throw new SafeWin32Exception();
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
                 return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
-                    QueryConfig(service, false).GetResultOrDefault());
+                    QueryConfig(service, false).GetResultOrDefault()).CreateResult();
             }
         }
 
@@ -604,19 +582,30 @@ namespace NtApiDotNet.Win32
         /// Get the information about a service.
         /// </summary>
         /// <param name="name">The name of the service.</param>
-        /// <returns>The servicec information.</returns>
-        public static ServiceInformation GetServiceInformation(string name)
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The service information.</returns>
+        public static NtResult<ServiceInformation> GetServiceInformation(string name, bool throw_on_error)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
             {
                 if (scm.IsInvalid)
                 {
-                    throw new SafeWin32Exception();
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return GetServiceSecurityInformation(scm, name);
+                return GetServiceSecurityInformation(scm, name, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Get the information about a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The service information.</returns>
+        public static ServiceInformation GetServiceInformation(string name)
+        {
+            return GetServiceInformation(name, true).Result;
         }
 
         /// <summary>

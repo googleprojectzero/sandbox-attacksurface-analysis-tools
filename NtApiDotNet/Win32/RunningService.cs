@@ -27,16 +27,8 @@ namespace NtApiDotNet.Win32
     {
         private ServiceInformation GetServiceInformation()
         {
-            try
-            {
-                return ServiceUtils.GetServiceInformation(Name);
-            }
-            catch (SafeWin32Exception)
-            {
-                return new ServiceInformation(Name, null, 
-                    new ServiceTriggerInformation[0], ServiceSidType.None,
-                    ServiceLaunchProtectedType.None, new string[0], null);
-            }
+            return ServiceUtils.GetServiceInformation(Name, 
+                false).GetResultOrDefault(new ServiceInformation(Name));
         }
 
         private Lazy<ServiceInformation> _service_information;

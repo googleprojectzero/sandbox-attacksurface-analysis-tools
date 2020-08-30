@@ -27,6 +27,7 @@ namespace NtApiDotNet.Win32.Device
         private readonly int _devinst;
         private readonly Lazy<List<DeviceProperty>> _properties;
         private readonly Lazy<SecurityDescriptor> _sd;
+        private readonly Lazy<ServiceInformation> _service_info;
 
         private SecurityDescriptor GetSecurityDescriptor()
         {
@@ -37,6 +38,12 @@ namespace NtApiDotNet.Win32.Device
         private List<DeviceProperty> GetAllProperties()
         {
             return DeviceUtils.GetDeviceProperties(_devinst).ToList();
+        }
+
+        private ServiceInformation GetServiceInformation()
+        {
+            return ServiceUtils.GetServiceInformation(Service, 
+                false).GetResultOrDefault(new ServiceInformation(Service));
         }
 
         /// <summary>
@@ -75,6 +82,26 @@ namespace NtApiDotNet.Win32.Device
         public IReadOnlyList<string> DeviceStack { get; }
 
         /// <summary>
+        /// Indicates if this is a per-session device. If null then not defined.
+        /// </summary>
+        public uint? SessionId { get; }
+
+        /// <summary>
+        /// Indicates the name of the SCM service for the driver.
+        /// </summary>
+        public string Service { get; }
+
+        /// <summary>
+        /// Get path to the driver.
+        /// </summary>
+        public string DriverPath => _service_info.Value.BinaryPathName ?? string.Empty;
+
+        /// <summary>
+        /// Get driver start type.
+        /// </summary>
+        public ServiceStartType StartType => _service_info.Value.StartType;
+
+        /// <summary>
         /// The list of all device properties.
         /// </summary>
         /// <returns>The device properties.</returns>
@@ -107,6 +134,8 @@ namespace NtApiDotNet.Win32.Device
                 Name = InstanceId;
             PDOName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_PDOName);
             INFName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
+            SessionId = DeviceUtils.GetPropertyUInt32(devinst, DevicePropertyKeys.DEVPKEY_Device_SessionId);
+            Service = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_Service);
             if (string.IsNullOrEmpty(INFName))
             {
                 INFPath = string.Empty;
@@ -120,6 +149,7 @@ namespace NtApiDotNet.Win32.Device
             Class = DeviceUtils.GetPropertyGuid(devinst, DevicePropertyKeys.DEVPKEY_Device_ClassGuid);
             _sd = new Lazy<SecurityDescriptor>(GetSecurityDescriptor);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
+            _service_info = new Lazy<ServiceInformation>(GetServiceInformation);
         }
     }
 }

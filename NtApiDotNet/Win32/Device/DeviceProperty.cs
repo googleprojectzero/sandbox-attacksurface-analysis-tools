@@ -107,9 +107,16 @@ namespace NtApiDotNet.Win32.Device
 
         internal Guid? GetGuid()
         {
-            if (Data.Length != 16)
+            if (Type != DEVPROPTYPE.GUID || Data.Length != 16)
                 return null;
             return new Guid(Data);
+        }
+
+        internal uint? GetUInt32()
+        {
+            if (Type != DEVPROPTYPE.UINT32 || Data.Length != 4)
+                return null;
+            return BitConverter.ToUInt32(Data, 0);
         }
 
         internal bool IsKey(DEVPROPKEY key)
