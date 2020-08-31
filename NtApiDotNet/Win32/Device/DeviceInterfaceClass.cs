@@ -56,12 +56,12 @@ namespace NtApiDotNet.Win32.Device
             return _properties.Value.AsReadOnly();
         }
 
-        internal DeviceInterfaceClass(Guid guid)
+        internal DeviceInterfaceClass(Guid guid, bool all_devices)
         {
             Class = guid;
-            Win32Paths = DeviceUtils.GetDeviceInterfaceList(guid).ToList().AsReadOnly();
+            Win32Paths = DeviceUtils.GetDeviceInterfaceList(guid, null, all_devices).ToList().AsReadOnly();
             DevicePaths = Win32Paths.Select(MapWin32ToDevicePath).ToList().AsReadOnly();
-            Name = DeviceUtils.GetDeviceInterfaceName(Class) ?? string.Empty;
+            Name = DeviceUtils.GetDeviceInterfaceName(Class);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
         }
 

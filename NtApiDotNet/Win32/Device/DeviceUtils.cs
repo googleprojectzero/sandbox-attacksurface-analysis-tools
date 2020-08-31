@@ -137,10 +137,38 @@ namespace NtApiDotNet.Win32.Device
         /// <summary>
         /// Get list of registered device interfaces.
         /// </summary>
+        /// <param name="all_devices">True to return all devices.</param>
+        /// <returns>The list of device interfaces.</returns>
+        public static IReadOnlyList<DeviceInterfaceClass> GetDeviceInterfaceClasses(bool all_devices)
+        {
+            var ret = EnumerateInterfaceClasses().Select(c => new DeviceInterfaceClass(c, all_devices));
+            if (!all_devices)
+                ret = ret.Where(i => i.Win32Paths.Count > 0);
+            return ret.ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get list of registered device interfaces.
+        /// </summary>
         /// <returns>The list of device interfaces.</returns>
         public static IReadOnlyList<DeviceInterfaceClass> GetDeviceInterfaceClasses()
         {
-            return EnumerateInterfaceClasses().Select(c => new DeviceInterfaceClass(c)).ToList().AsReadOnly();
+            return GetDeviceInterfaceClasses(false);
+        }
+
+        /// <summary>
+        /// Get a device interface class by GUID.
+        /// </summary>
+        /// <param name="class_guid">The class GUID.</param>
+        /// <param name="all_devices">True to return all devices.</param>
+        /// <returns>The device interface class.</returns>
+        public static DeviceInterfaceClass GetDeviceInterfaceClass(Guid class_guid, bool all_devices)
+        {
+            if (!ClassExists(class_guid, false))
+            {
+                throw new ArgumentException("Unknown device installer class.");
+            }
+            return new DeviceInterfaceClass(class_guid, all_devices);
         }
 
         /// <summary>
@@ -150,11 +178,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The device interface class.</returns>
         public static DeviceInterfaceClass GetDeviceInterfaceClass(Guid class_guid)
         {
-            if (!ClassExists(class_guid, false))
-            {
-                throw new ArgumentException("Unknown device installer class.");
-            }
-            return new DeviceInterfaceClass(class_guid);
+            return GetDeviceInterfaceClass(class_guid, false);
         }
 
         /// <summary>
@@ -173,7 +197,7 @@ namespace NtApiDotNet.Win32.Device
         /// <summary>
         /// Get list of present device nodes.
         /// </summary>
-        /// <returns>The list of device nodes.</returns>
+        /// <returns>The list of device entries.</returns>
         public static IEnumerable<DeviceNode> GetDeviceNodeList()
         {
             return GetDeviceNodeList(true);
@@ -468,7 +492,10 @@ namespace NtApiDotNet.Win32.Device
             DeviceProperty prop = GetProperty(class_guid, true, DevicePropertyKeys.DEVPKEY_DeviceInterfaceClass_Name);
             if (prop?.Type == DEVPROPTYPE.STRING)
                 return prop.GetString();
-            return GetProperty(class_guid, true, DevicePropertyKeys.DEVPKEY_NAME)?.GetString() ?? string.Empty;
+            prop = GetProperty(class_guid, true, DevicePropertyKeys.DEVPKEY_NAME);
+            if (prop?.Type == DEVPROPTYPE.STRING)
+                return prop.GetString();
+            return DeviceInterfaceClassGuids.GuidToName(class_guid);
         }
 
         #endregion

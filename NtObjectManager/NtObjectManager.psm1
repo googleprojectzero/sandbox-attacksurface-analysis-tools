@@ -10463,6 +10463,8 @@ Get the device interface classes.
 This cmdlet gets device interface classes, either all installed or from a GUID.
 .PARAMETER Class
 The GUID of the interface class.
+.PARAMETER All
+Get all devices including ones not present.
 .INPUTS
 None
 .OUTPUTS
@@ -10478,15 +10480,16 @@ function Get-NtDeviceInterfaceClass {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromClass")]
-        [guid]$Class
+        [guid]$Class,
+        [switch]$All
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClasses() | Write-Output
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClasses($All) | Write-Output
         }
         "FromClass" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClass($Class) | Write-Output
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClass($Class, $All) | Write-Output
         }
     }
 }
