@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NtApiDotNet
@@ -829,6 +830,11 @@ namespace NtApiDotNet
             if (time == DateTime.MinValue)
                 return new LargeIntegerStruct();
             return new LargeIntegerStruct() { QuadPart = time.ToFileTime() };
+        }
+
+        internal static string[] ParseMultiString(byte[] data)
+        {
+            return Encoding.Unicode.GetString(data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
         }
     }
 }

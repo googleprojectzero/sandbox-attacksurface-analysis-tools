@@ -25,12 +25,7 @@ namespace NtApiDotNet
     {
         #region Private Members
 
-        private Lazy<object> _object;
-
-        private static string[] ParseMultiString(byte[] data)
-        {
-            return Encoding.Unicode.GetString(data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
-        }
+        private readonly Lazy<object> _object;
 
         private static object ToObject(RegistryValueType type, byte[] data)
         {
@@ -41,7 +36,7 @@ namespace NtApiDotNet
                 case RegistryValueType.Link:
                     return Encoding.Unicode.GetString(data);
                 case RegistryValueType.MultiString:
-                    return ParseMultiString(data);
+                    return NtObjectUtils.ParseMultiString(data);
                 case RegistryValueType.Dword:
                     return BitConverter.ToUInt32(data, 0);
                 case RegistryValueType.DwordBigEndian:
@@ -101,8 +96,9 @@ namespace NtApiDotNet
                 case RegistryValueType.String:
                 case RegistryValueType.ExpandString:
                 case RegistryValueType.Link:
+                    return Encoding.Unicode.GetString(Data).TrimEnd('\0');
                 case RegistryValueType.MultiString:
-                    return string.Join(", ", ParseMultiString(Data));
+                    return string.Join(", ", NtObjectUtils.ParseMultiString(Data));
                 case RegistryValueType.Dword:
                     return BitConverter.ToUInt32(Data, 0).ToString();
                 case RegistryValueType.DwordBigEndian:
