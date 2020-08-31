@@ -3144,7 +3144,7 @@
     <View>
       <Name>DeviceNode</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceNode</TypeName>
+        <TypeName>NtApiDotNet.Win32.Device.DeviceTreeNode</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3181,7 +3181,7 @@
     <View>
       <Name>DeviceInstance</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceInstance</TypeName>
+        <TypeName>NtApiDotNet.Win32.Device.DeviceNode</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
