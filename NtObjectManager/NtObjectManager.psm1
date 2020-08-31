@@ -10493,33 +10493,35 @@ function Get-NtDeviceInterfaceClass {
 
 <#
 .SYNOPSIS
-Get the device instance.
+Get the device node.
 .DESCRIPTION
-This cmdlet gets device instances, either all present or from a GUID/Name.
+This cmdlet gets device nodes, either all present or from a GUID/Name.
 .PARAMETER Class
 The GUID of the setup class.
 .PARAMETER All
 Get all device instances. The default is to only get present instances.
 .PARAMETER Tree
-Get all device instances as a tree.
+Get all device nodes as a tree.
+.PARAMETER InstanceId
+Get device from instance ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceInstance
+NtApiDotNet.Win32.Device.DeviceNode
 .EXAMPLE
-Get-NtDeviceInstance
+Get-NtDeviceNode
 Get all present device instances.
 .EXAMPLE
-Get-NtDeviceInstance -All
+Get-NtDeviceNode -All
 Get all device instances.
 .EXAMPLE
-Get-NtDeviceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get-NtDeviceNode -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
 Get the device instances class for the specified setup class GUID.
 .EXAMPLE
-Get-NtDeviceInstance -Tree
+Get-NtDeviceNode -Tree
 Get all device instances in a tree structure.
 #>
-function Get-NtDeviceInstance {
+function Get-NtDeviceNode {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromClass", ValueFromPipelineByPropertyName)]
@@ -10527,20 +10529,25 @@ function Get-NtDeviceInstance {
         [parameter(ParameterSetName = "FromClass")]
         [parameter(ParameterSetName = "All")]
         [switch]$All,
-        [parameter(ParameterSetName = "FromTree")]
-        [switch]$Tree
+        [parameter(Mandatory, ParameterSetName = "FromTree")]
+        [switch]$Tree,
+        [parameter(Mandatory, ParameterSetName = "FromInstanceId")]
+        [string]$InstanceId
     )
 
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceList($All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeList($All) | Write-Output
             }
             "FromClass" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceList($Class, $All) | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeList($Class, $All) | Write-Output
             }
             "FromTree" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceTree() | Write-Output
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeTree() | Write-Output
+            }
+            "FromInstanceId" {
+                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
             }
         }
     }
@@ -10580,19 +10587,21 @@ function Get-NtDeviceProperty {
 Get device instance children.
 .DESCRIPTION
 This cmdlet gets device instance children.
+.PARAMETER Node
+The device node to query the children for.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceNode[]
+NtApiDotNet.Win32.Device.DeviceTreeNode[]
 .EXAMPLE
-Get-NtDeviceInstanceChild -Instance $dev
+Get-NtDeviceNodeChild -Node $dev
 Get all children for a device instance
 #>
-function Get-NtDeviceInstanceChild {
+function Get-NtDeviceNodeChild {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode")]
-        [NtApiDotNet.Win32.Device.DeviceInstance]$Device,
+        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
         [switch]$Recurse,
         [int]$Depth = [int]::MaxValue
     )
@@ -10603,17 +10612,17 @@ function Get-NtDeviceInstanceChild {
 
     try
     {
-        if ($Device -isNot [NtApiDotNet.Win32.Device.DeviceNode]) {
-            $Device = [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInstanceTree($Device.InstanceId)
+        if ($Node -isNot [NtApiDotNet.Win32.Device.DeviceTreeNode]) {
+            $Node = [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeTree($Node.InstanceId)
         }
 
         switch($PSCmdlet.ParameterSetName) {
             "FromNode" {
                 if ($Recurse) {
                     $recdepth = $Depth - 1
-                    $Device.Children | ForEach-Object { Get-NtDeviceInstanceChild -Device $_ -Recurse -Depth $recdepth }
+                    $Device.Children | ForEach-Object { Get-NtDeviceNodeChild -Node $_ -Recurse -Depth $recdepth }
                 }
-                $Device.Children | Write-Output
+                $Node.Children | Write-Output
             }
         }
     }

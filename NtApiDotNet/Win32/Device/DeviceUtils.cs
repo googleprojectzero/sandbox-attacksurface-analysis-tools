@@ -158,11 +158,11 @@ namespace NtApiDotNet.Win32.Device
         }
 
         /// <summary>
-        /// Get list of device entries.
+        /// Get list of device nodes.
         /// </summary>
         /// <param name="all_devices">Return all devices including ones which aren't present.</param>
-        /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(bool all_devices)
+        /// <returns>The list of device nodes.</returns>
+        public static IEnumerable<DeviceNode> GetDeviceNodeList(bool all_devices)
         {
             DiGetClassFlags flags = DiGetClassFlags.ALLCLASSES;
             if (!all_devices)
@@ -171,12 +171,12 @@ namespace NtApiDotNet.Win32.Device
         }
 
         /// <summary>
-        /// Get list of present device entries.
+        /// Get list of present device nodes.
         /// </summary>
-        /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceInstanceList()
+        /// <returns>The list of device nodes.</returns>
+        public static IEnumerable<DeviceNode> GetDeviceNodeList()
         {
-            return GetDeviceInstanceList(true);
+            return GetDeviceNodeList(true);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace NtApiDotNet.Win32.Device
         /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
         /// <param name="all_devices">Only return present devices.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(Guid class_guid, bool all_devices)
+        public static IEnumerable<DeviceNode> GetDeviceNodeList(Guid class_guid, bool all_devices)
         {
             DiGetClassFlags flags = !all_devices ? DiGetClassFlags.PRESENT : 0;
             return GetDeviceList(class_guid, null, flags);
@@ -196,19 +196,30 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         /// <param name="class_guid">Specify the Device Setup Class GUID.</param>
         /// <returns>The list of device entries.</returns>
-        public static IEnumerable<DeviceInstance> GetDeviceInstanceList(Guid class_guid)
+        public static IEnumerable<DeviceNode> GetDeviceNodeList(Guid class_guid)
         {
-            return GetDeviceInstanceList(class_guid, true);
+            return GetDeviceNodeList(class_guid, true);
+        }
+
+        /// <summary>
+        /// Get the device node from a device ID.
+        /// </summary>
+        /// <param name="instance_id">The instance ID to lookup..</param>
+        /// <returns>The device node.</returns>
+        public static DeviceNode GetDeviceNode(string instance_id)
+        {
+            DeviceNativeMethods.CM_Locate_DevNodeW(out int root, instance_id, 0).ToNtStatus().ToNtException();
+            return new DeviceNode(root);
         }
 
         /// <summary>
         /// Get device tree.
         /// </summary>
         /// <returns>The device tree's root node.</returns>
-        public static DeviceNode GetDeviceInstanceTree()
+        public static DeviceTreeNode GetDeviceNodeTree()
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
-            Dictionary<int, DeviceNode> nodes = new Dictionary<int, DeviceNode>();
+            Dictionary<int, DeviceTreeNode> nodes = new Dictionary<int, DeviceTreeNode>();
             return BuildDeviceTreeNode(root, nodes).First();
         }
 
@@ -217,10 +228,10 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         /// <param name="instance_id">The instance ID to start from.</param>
         /// <returns>The root device node.</returns>
-        public static DeviceNode GetDeviceInstanceTree(string instance_id)
+        public static DeviceTreeNode GetDeviceNodeTree(string instance_id)
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, instance_id, 0).ToNtStatus().ToNtException();
-            Dictionary<int, DeviceNode> nodes = new Dictionary<int, DeviceNode>();
+            Dictionary<int, DeviceTreeNode> nodes = new Dictionary<int, DeviceTreeNode>();
             return BuildDeviceTreeNode(root, nodes).First();
         }
 
@@ -469,9 +480,9 @@ namespace NtApiDotNet.Win32.Device
             return DeviceNativeMethods.CM_MapCrToWin32Err(error, Win32Error.ERROR_INVALID_PARAMETER).MapDosErrorToStatus();
         }
 
-        private static IEnumerable<DeviceInstance> GetDeviceList(OptionalGuid class_guid, string enumerator, DiGetClassFlags flags)
+        private static IEnumerable<DeviceNode> GetDeviceList(OptionalGuid class_guid, string enumerator, DiGetClassFlags flags)
         {
-            var devices = new List<DeviceInstance>();
+            var devices = new List<DeviceNode>();
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
             using (var p = DeviceNativeMethods.SetupDiGetClassDevsW(class_guid, enumerator, IntPtr.Zero, flags))
             {
@@ -483,7 +494,7 @@ namespace NtApiDotNet.Win32.Device
                 while (DeviceNativeMethods.SetupDiEnumDeviceInfo(p, index++, ref dev_info))
                 {
                     if (dev_info.DevInst != root)
-                        devices.Add(new DeviceInstance(dev_info.DevInst));
+                        devices.Add(new DeviceNode(dev_info.DevInst));
                     dev_info.cbSize = size;
                 }
 
@@ -551,12 +562,12 @@ namespace NtApiDotNet.Win32.Device
             }
         }
 
-        private static IEnumerable<DeviceNode> BuildDeviceTreeNode(int node, Dictionary<int, DeviceNode> dict)
+        private static IEnumerable<DeviceTreeNode> BuildDeviceTreeNode(int node, Dictionary<int, DeviceTreeNode> dict)
         {
-            List<DeviceNode> nodes = new List<DeviceNode>();
+            List<DeviceTreeNode> nodes = new List<DeviceTreeNode>();
             while (node != 0)
             {
-                DeviceNode curr_node = new DeviceNode(node);
+                DeviceTreeNode curr_node = new DeviceTreeNode(node);
                 dict[node] = curr_node;
                 nodes.Add(curr_node);
                 if (DeviceNativeMethods.CM_Get_Child(out int child, node, 0) == CrError.SUCCESS)

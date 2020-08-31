@@ -69,16 +69,16 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         /// <param name="all_devices">Return all devices.</param>
         /// <returns>The list of devices instances.</returns>
-        public IReadOnlyList<DeviceInstance> GetInstances(bool all_devices)
+        public IReadOnlyList<DeviceNode> GetInstances(bool all_devices)
         {
-            return DeviceUtils.GetDeviceInstanceList(Class, all_devices).ToList().AsReadOnly();
+            return DeviceUtils.GetDeviceNodeList(Class, all_devices).ToList().AsReadOnly();
         }
 
         /// <summary>
         /// Get device instances.
         /// </summary>
         /// <returns>The list of devices instances.</returns>
-        public IReadOnlyList<DeviceInstance> GetInstances()
+        public IReadOnlyList<DeviceNode> GetInstances()
         {
             return GetInstances(false);
         }
