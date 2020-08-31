@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Device;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,9 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet.Win32
 {
 #pragma warning disable 1591
+    /// <summary>
+    /// Trigger information for a service.
+    /// </summary>
     public class ServiceTriggerInformation
     {
         public ServiceTriggerType TriggerType { get; }
@@ -47,7 +51,10 @@ namespace NtApiDotNet.Win32
                 case ServiceTriggerType.Custom:
                     return $"[ETW UUID] {SubType:B}";
                 case ServiceTriggerType.DeviceInterfaceArrival:
-                    return $"[Interface Class GUID] {SubType:B}";
+                    string intf_name = DeviceInterfaceClassGuids.GuidToName(SubType);
+                    if (string.IsNullOrEmpty(intf_name))
+                        intf_name = SubType.ToString("B");
+                    return $"[Interface Class GUID] {intf_name}";
                 case ServiceTriggerType.GroupPolicy:
                     {
                         if (SubType == MACHINE_POLICY_PRESENT_GUID)
@@ -97,7 +104,21 @@ namespace NtApiDotNet.Win32
                         return $"[Unknown IP Address Availability] {SubType:B}";
                     }
                 case ServiceTriggerType.CustomSystemStateChange:
-                    return "[CustomSystemStateChange]";
+                    if (SubType == CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID)
+                    {
+                        return "[Custom System State Change Event]";
+                    }
+                    return "[Unknown Custom System State Change]";
+                case ServiceTriggerType.FirewallPortEvent:
+                    if (SubType == FIREWALL_PORT_OPEN_GUID)
+                    {
+                        return "[Firewall Open Port]";
+                    }
+                    else if (SubType == FIREWALL_PORT_CLOSE_GUID)
+                    {
+                        return "[Firewall Close Port]";
+                    }
+                    return $"[Unknown Firewall Port Event] {SubType:B}";
                 default:
                     return $"Unknown Trigger Type: {TriggerType} SubType: {SubType}";
             }
@@ -117,7 +138,6 @@ namespace NtApiDotNet.Win32
             TriggerType = trigger.dwTriggerType;
             Action = trigger.dwAction;
             SubType = trigger.GetSubType();
-            SubTypeDescription = GetSubTypeDescription();
 
             List<ServiceTriggerCustomData> data = new List<ServiceTriggerCustomData>();
             if (trigger.pDataItems != IntPtr.Zero && trigger.cDataItems > 0)
@@ -130,6 +150,7 @@ namespace NtApiDotNet.Win32
                 }
             }
             CustomData = data.AsReadOnly();
+            SubTypeDescription = GetSubTypeDescription();
         }
 
         public override string ToString()

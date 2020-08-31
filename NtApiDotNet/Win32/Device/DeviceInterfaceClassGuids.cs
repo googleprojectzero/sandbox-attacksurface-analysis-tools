@@ -176,6 +176,15 @@ namespace NtApiDotNet.Win32.Device
         = new Guid("302ea3fc-aa5f-47f9-9f7a-c2188bb16302");
         public static readonly Guid GUID_DEVINTERFACE_SURFACE_VIRTUAL_DRIVE 
             = new Guid("2E34D650-5819-42CA-84AE-D30803BAE505");
+        public static readonly Guid GUID_USBSTOR_EHSTOR_CONTROL_INTERFACE
+            = new Guid("4f40006f-b933-4550-b532-2b58cee614d3");
+        public static readonly Guid GUID_BTHPORT_DEVICE_INTERFACE
+            = new Guid("0850302A-B344-4fda-9BE9-90576B8D46F0");
+        public static readonly Guid GUID_HYPERV_VOLUME_CHECKPOINT_DEVICE_INTERFACE
+            = new Guid("35fa2e29-ea23-4236-96ae-3a6ebacba440");
+        public static readonly Guid GUID_HYPERV_SOCKET_DEVICE_INTERFACE
+            = new Guid("999e53d4-3d5c-4c3e-8779-bed06ec056e1");
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
