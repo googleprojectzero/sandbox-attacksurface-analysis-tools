@@ -781,7 +781,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code.</returns>
         public NtStatus SetValue(string value_name, IEnumerable<string> data, bool throw_on_error)
         {
-            string value = string.Join("\0", data) + "\0";
+            string value = string.Join("\0", data) + "\0\0";
 
             return SetValue(value_name, RegistryValueType.MultiString, value, throw_on_error);
         }
