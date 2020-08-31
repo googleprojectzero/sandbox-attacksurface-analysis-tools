@@ -96,7 +96,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-FilterDriverInstance', 'Get-FilterDriverVolume', 'Get-FilterDriverVolumeInstance',
           'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileShareProcess',
           'Add-NtEaBuffer', 'Remove-NtFileEa', 'Get-NtDeviceSetupClass', 'Get-NtDeviceNode',
-          'Get-NtDeviceInterfaceClass', 'Get-NtDeviceProperty', 'Get-NtDeviceNodeChild'
+          'Get-NtDeviceInterfaceClass', 'Get-NtDeviceProperty', 'Get-NtDeviceNodeChild',
+          'Get-NtDeviceInterfaceInstance'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

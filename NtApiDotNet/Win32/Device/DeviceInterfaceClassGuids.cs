@@ -184,6 +184,8 @@ namespace NtApiDotNet.Win32.Device
             = new Guid("35fa2e29-ea23-4236-96ae-3a6ebacba440");
         public static readonly Guid GUID_HYPERV_SOCKET_DEVICE_INTERFACE
             = new Guid("999e53d4-3d5c-4c3e-8779-bed06ec056e1");
+        public static readonly Guid VOLMGR_VOLUME_MANAGER_GUID 
+            = new Guid("53f5630e-b6bf-11d0-94f2-00a0c91efb8b");
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 

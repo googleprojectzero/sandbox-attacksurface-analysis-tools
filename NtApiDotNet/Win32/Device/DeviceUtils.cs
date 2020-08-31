@@ -143,7 +143,7 @@ namespace NtApiDotNet.Win32.Device
         {
             var ret = EnumerateInterfaceClasses().Select(c => new DeviceInterfaceClass(c, all_devices));
             if (!all_devices)
-                ret = ret.Where(i => i.Win32Paths.Count > 0);
+                ret = ret.Where(i => i.Instances.Count > 0);
             return ret.ToList().AsReadOnly();
         }
 
@@ -248,7 +248,7 @@ namespace NtApiDotNet.Win32.Device
         }
 
         /// <summary>
-        /// Get the node from 
+        /// Get the node from a device instance ID.
         /// </summary>
         /// <param name="instance_id">The instance ID to start from.</param>
         /// <returns>The root device node.</returns>
@@ -257,6 +257,31 @@ namespace NtApiDotNet.Win32.Device
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, instance_id, 0).ToNtStatus().ToNtException();
             Dictionary<int, DeviceTreeNode> nodes = new Dictionary<int, DeviceTreeNode>();
             return BuildDeviceTreeNode(root, nodes).First();
+        }
+
+        /// <summary>
+        /// Get all device interface instances.
+        /// </summary>
+        public static IReadOnlyList<DeviceInterfaceInstance> GetDeviceInterfaceInstances()
+        {
+            return GetDeviceInterfaceClasses().SelectMany(c => c.Instances).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get all device interface instances for a given interface class GUID.
+        /// </summary>
+        public static IReadOnlyList<DeviceInterfaceInstance> GetDeviceInterfaceInstances(Guid class_guid)
+        {
+            return GetDeviceInterfaceClass(class_guid).Instances;
+        }
+
+        /// <summary>
+        /// Get an interface instance from the interface instance path.
+        /// </summary>
+        /// <param name="link_path">The path to the interface symbolic link. e.g. \??\SOME$VALUE.</param>
+        public static DeviceInterfaceInstance GetDeviceInterfaceInstance(string link_path)
+        {
+            return new DeviceInterfaceInstance(link_path);
         }
 
         #endregion
@@ -385,6 +410,29 @@ namespace NtApiDotNet.Win32.Device
             return GetDeviceKeys(class_guid, interface_guid).Select(k => GetProperty(class_guid, interface_guid, k)).ToArray();
         }
 
+        internal static DEVPROPKEY[] GetDeviceInterfaceKeys(string interface_instance)
+        {
+            int length = 0;
+            DeviceNativeMethods.CM_Get_Device_Interface_Property_KeysW(interface_instance,
+                null, ref length, 0);
+            if (length <= 0)
+                return new DEVPROPKEY[0];
+
+            DEVPROPKEY[] keys = new DEVPROPKEY[length];
+            if (DeviceNativeMethods.CM_Get_Device_Interface_Property_KeysW(interface_instance,
+                keys, ref length, 0) != CrError.SUCCESS)
+            {
+                return new DEVPROPKEY[0];
+            }
+
+            return keys.Take(length).ToArray();
+        }
+
+        internal static DeviceProperty[] GetInterfaceInstanceProperties(string interface_instance)
+        {
+            return GetDeviceInterfaceKeys(interface_instance).Select(k => GetProperty(interface_instance, k)).ToArray();
+        }
+
         internal static string GetDeviceNodeId(int devinst)
         {
             if (DeviceNativeMethods.CM_Get_Device_ID_Size(out int length, devinst, 0) != CrError.SUCCESS)
@@ -432,6 +480,21 @@ namespace NtApiDotNet.Win32.Device
             DeviceProperty ret = new DeviceProperty() { Name = DevicePropertyKeys.KeyToName(key), FmtId = key.fmtid, Pid = key.pid, Data = new byte[0] };
             using (var buffer = GetClassProperty(class_guid, interface_guid ? CmClassType.Interface : CmClassType.Installer,
                 key, out DEVPROPTYPE type, false).GetResultOrDefault())
+            {
+                if (buffer != null)
+                {
+                    ret.Type = type;
+                    ret.Data = buffer.ToArray();
+                }
+            }
+
+            return ret;
+        }
+
+        internal static DeviceProperty GetProperty(string link_path, DEVPROPKEY key)
+        {
+            DeviceProperty ret = new DeviceProperty() { Name = DevicePropertyKeys.KeyToName(key), FmtId = key.fmtid, Pid = key.pid, Data = new byte[0] };
+            using (var buffer = GetDeviceInterfaceProperty(link_path, key, out DEVPROPTYPE type, false).GetResultOrDefault())
             {
                 if (buffer != null)
                 {
@@ -586,6 +649,22 @@ namespace NtApiDotNet.Win32.Device
             {
                 return DeviceNativeMethods.CM_Get_Class_PropertyW(class_guid, key, out type, buffer, 
                     ref length, flags).ToNtStatus().CreateResult(throw_on_error, () => buffer.Detach());
+            }
+        }
+
+        private static NtResult<SafeHGlobalBuffer> GetDeviceInterfaceProperty(string device_instance, DEVPROPKEY key, out DEVPROPTYPE type, bool throw_on_error)
+        {
+            int length = 0;
+            var result = DeviceNativeMethods.CM_Get_Device_Interface_PropertyW(device_instance, key, out type, SafeHGlobalBuffer.Null, ref length, 0);
+            if (result != CrError.BUFFER_SMALL)
+            {
+                return result.ToNtStatus().CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(length))
+            {
+                return DeviceNativeMethods.CM_Get_Device_Interface_PropertyW(device_instance, key, out type, buffer,
+                    ref length, 0).ToNtStatus().CreateResult(throw_on_error, () => buffer.Detach());
             }
         }
 

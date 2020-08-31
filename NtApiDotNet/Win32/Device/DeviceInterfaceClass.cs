@@ -1,4 +1,4 @@
-﻿//  Copyright 2019 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -34,18 +34,16 @@ namespace NtApiDotNet.Win32.Device
         /// The name of the interface class.
         /// </summary>
         public string Name { get; }
+
         /// <summary>
         /// The device interface GUID.
         /// </summary>
         public Guid Class { get; }
+
         /// <summary>
-        /// The list of win32 paths to open the device.
+        /// The list of device interface instances.
         /// </summary>
-        public IReadOnlyList<string> Win32Paths { get; }
-        /// <summary>
-        /// The list of devices.
-        /// </summary>
-        public IReadOnlyList<string> DevicePaths { get; }
+        public IReadOnlyList<DeviceInterfaceInstance> Instances { get; }
 
         /// <summary>
         /// The list of all device interface properties.
@@ -59,36 +57,10 @@ namespace NtApiDotNet.Win32.Device
         internal DeviceInterfaceClass(Guid guid, bool all_devices)
         {
             Class = guid;
-            Win32Paths = DeviceUtils.GetDeviceInterfaceList(guid, null, all_devices).ToList().AsReadOnly();
-            DevicePaths = Win32Paths.Select(MapWin32ToDevicePath).ToList().AsReadOnly();
+            Instances = DeviceUtils.GetDeviceInterfaceList(guid, null, all_devices)
+                .Select(s => new DeviceInterfaceInstance(s, guid)).ToList().AsReadOnly();
             Name = DeviceUtils.GetDeviceInterfaceName(Class);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
-        }
-
-        private static string MapWin32ToDevicePath(string path)
-        {
-            path = NtFileUtils.DosFileNameToNt(path);
-            string final_component = string.Empty;
-            // Strip off any remaining path.
-            if (path.StartsWith(@"\??\"))
-            {
-                int slash_index = path.IndexOf('\\', 4);
-                if (slash_index >= 0)
-                {
-                    final_component = path.Substring(slash_index);
-                    path = path.Substring(0, slash_index);
-                }
-            }
-
-            using (var link = NtSymbolicLink.Open(path, null, SymbolicLinkAccessRights.Query, false))
-            {
-                if (link.IsSuccess)
-                {
-                    path = link.Result.Target;
-                }
-            }
-
-            return path + final_component;
         }
     }
 }

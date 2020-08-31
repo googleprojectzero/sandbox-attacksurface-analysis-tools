@@ -3223,10 +3223,6 @@
             <Label>Class</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
-          <TableColumnHeader>
-            <Label>DevicePaths</Label>
-            <Alignment>left</Alignment>
-          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
@@ -3237,8 +3233,28 @@
               <TableColumnItem>
                 <PropertyName>Class</PropertyName>
               </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>DeviceInterfaceInstance</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.Device.DeviceInterfaceInstance</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>SymbolicLinkPath</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>DevicePaths</PropertyName>
+                <PropertyName>SymbolicLinkPath</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

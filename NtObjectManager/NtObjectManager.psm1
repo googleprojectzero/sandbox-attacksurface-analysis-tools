@@ -10535,7 +10535,9 @@ function Get-NtDeviceNode {
         [parameter(Mandatory, ParameterSetName = "FromTree")]
         [switch]$Tree,
         [parameter(Mandatory, ParameterSetName = "FromInstanceId")]
-        [string]$InstanceId
+        [string]$InstanceId,
+        [parameter(Mandatory, ParameterSetName = "FromPDOName")]
+        [string]$PDOName
     )
 
     PROCESS {
@@ -10551,6 +10553,9 @@ function Get-NtDeviceNode {
             }
             "FromInstanceId" {
                 [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
+            }
+            "FromPDOName" {
+                Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
             }
         }
     }
@@ -10632,5 +10637,50 @@ function Get-NtDeviceNodeChild {
     catch 
     {
         Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Get the device interface instances.
+.DESCRIPTION
+This cmdlet gets device interface instances either all present, from a GUID or instance name.
+.PARAMETER Class
+The GUID of the interface class.
+.PARAMETER Instance
+The path the instance symbolic link.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceInterfaceInstance[]
+.EXAMPLE
+Get-NtDeviceInterfaceInstance
+Get all device interface instances.
+.EXAMPLE
+Get-NtDeviceInterfaceInstance -Class '6BDD1FC1-810F-11D0-BEC7-08002BE20920'
+Get the device interface instances for the specified GUID.
+.EXAMPLE
+Get-NtDeviceInterfaceInstance -Instance '\\?\HSIDS&1234'
+Get the device interface instances for the instance symbolic link path.
+#>
+function Get-NtDeviceInterfaceInstance {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromClass")]
+        [guid]$Class,
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromInstance")]
+        [string]$Instance
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances() | Write-Output
+        }
+        "FromClass" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances($Class) | Write-Output
+        }
+        "FromInstance" {
+            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstance($Instance) | Write-Output
+        }
     }
 }

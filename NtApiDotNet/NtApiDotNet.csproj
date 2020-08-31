@@ -317,6 +317,7 @@
     <Compile Include="Win32\Debugger\UdtKind.cs" />
     <Compile Include="Win32\Debugger\UserDefinedTypeInformation.cs" />
     <Compile Include="Win32\Device\DeviceInterfaceClassGuids.cs" />
+    <Compile Include="Win32\Device\DeviceInterfaceInstance.cs" />
     <Compile Include="Win32\Device\DeviceNode.cs" />
     <Compile Include="Win32\Device\DeviceTreeNode.cs" />
     <Compile Include="Win32\Device\DeviceProperty.cs" />

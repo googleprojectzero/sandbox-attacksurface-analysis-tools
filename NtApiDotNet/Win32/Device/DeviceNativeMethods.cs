@@ -439,6 +439,24 @@ namespace NtApiDotNet.Win32.Device
           CmGetIdListFlags ulFlags
         );
 
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_Interface_Property_KeysW(
+          string pszDeviceInterface,
+          [Out] DEVPROPKEY[] PropertyKeyArray,
+          ref int PropertyKeyCount,
+          int ulFlags
+        );
+
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Device_Interface_PropertyW(
+          string pszDeviceInterface,
+          in DEVPROPKEY PropertyKey,
+          out DEVPROPTYPE PropertyType,
+          SafeBuffer PropertyBuffer,
+          ref int PropertyBufferSize,
+          int ulFlags
+        );
+
         [DllImport("Propsys.dll", CharSet = CharSet.Unicode)]
         internal static extern int PSGetNameFromPropertyKey(
             in DEVPROPKEY propkey,
