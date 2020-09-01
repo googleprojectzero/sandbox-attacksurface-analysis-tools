@@ -10696,8 +10696,8 @@ Get device stack for a node.
 This cmdlet gets device node's device stack.
 .PARAMETER Node
 The device node to query device stack for.
-.PARAMETER Recurse
-Get all parents recursively.
+.PARAMETER Summary
+Summarize the device stack as a single line.
 .INPUTS
 None
 .OUTPUTS
@@ -10710,12 +10710,17 @@ function Get-NtDeviceNodeStack {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
-        [NtApiDotNet.Win32.Device.DeviceNode]$Node
+        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
+        [switch]$Summary
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromNode" {
-            $Node.DeviceStack | Write-Output
+            if ($Summary) {
+                [string]::Join(", ", $Node.DeviceStack) | Write-Output
+            } else {
+                $Node.DeviceStack | Write-Output
+            }
         }
     }
 }
