@@ -319,6 +319,7 @@
     <Compile Include="Win32\Device\DeviceInterfaceClassGuids.cs" />
     <Compile Include="Win32\Device\DeviceInterfaceInstance.cs" />
     <Compile Include="Win32\Device\DeviceNode.cs" />
+    <Compile Include="Win32\Device\DeviceStackEntry.cs" />
     <Compile Include="Win32\Device\DeviceTreeNode.cs" />
     <Compile Include="Win32\Device\DeviceProperty.cs" />
     <Compile Include="Win32\Device\DevicePropertyKeys.cs" />

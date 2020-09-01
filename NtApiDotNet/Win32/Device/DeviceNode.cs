@@ -28,6 +28,8 @@ namespace NtApiDotNet.Win32.Device
         private readonly Lazy<List<DeviceProperty>> _properties;
         private readonly Lazy<SecurityDescriptor> _sd;
         private readonly Lazy<ServiceInformation> _service_info;
+        private readonly Lazy<IReadOnlyList<DeviceStackEntry>> _device_stack;
+        private readonly Lazy<DeviceNode> _parent;
 
         private SecurityDescriptor GetSecurityDescriptor()
         {
@@ -44,6 +46,76 @@ namespace NtApiDotNet.Win32.Device
         {
             return ServiceUtils.GetServiceInformation(Service, 
                 false).GetResultOrDefault(new ServiceInformation(Service));
+        }
+
+        private DeviceNode GetParent()
+        {
+            if (DeviceNativeMethods.CM_Get_Parent(out int parent, _devinst, 0) != CrError.SUCCESS)
+                return null;
+            return new DeviceNode(parent);
+        }
+
+        private static string GetServiceName(string path)
+        {
+            if (!path.Contains('\\'))
+                return path;
+            return Path.GetFileName(path);
+        }
+
+        private IReadOnlyList<DeviceStackEntry> BuildDeviceStack()
+        {
+            var setup_class = new DeviceSetupClass(Class);
+            var parent = Parent;
+            HashSet<string> upper_filters = new HashSet<string>(UpperFilters.Concat(setup_class.UpperFilters), StringComparer.OrdinalIgnoreCase);
+            HashSet<string> lower_filters = new HashSet<string>(LowerFilters.Concat(setup_class.LowerFilters), StringComparer.OrdinalIgnoreCase);
+            bool found_fdo = false;
+            bool found_pdo = false;
+
+            List<DeviceStackEntry> stack = new List<DeviceStackEntry>();
+            foreach (var driver_path in DeviceStackPaths)
+            {
+                DeviceStackEntryType type = DeviceStackEntryType.Unknown;
+                var name = GetServiceName(driver_path);
+                if (name.Equals(Service, StringComparison.OrdinalIgnoreCase) && !found_fdo)
+                {
+                    type = DeviceStackEntryType.Function;
+                    found_fdo = true;
+                }
+                else if (Parent != null && name.Equals(Parent.Service, StringComparison.OrdinalIgnoreCase) && !found_pdo)
+                {
+                    type = DeviceStackEntryType.Bus;
+                    found_pdo = true;
+                }
+                else if (name.Equals("PnpManager", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Parent == null)
+                    {
+                        type = DeviceStackEntryType.Function;
+                        found_fdo = true;
+                    }
+                    else
+                    {
+                        type = DeviceStackEntryType.Bus;
+                        found_pdo = true;
+                    }
+                }
+                else if (!found_fdo && upper_filters.Contains(name))
+                {
+                    type = DeviceStackEntryType.UpperFilter;
+                }
+                else if (found_fdo && lower_filters.Contains(name))
+                {
+                    type = DeviceStackEntryType.LowerFilter;
+                }
+                else
+                {
+                    type = DeviceStackEntryType.Filter;
+                }
+
+                stack.Add(new DeviceStackEntry(name, driver_path, type));
+            }
+
+            return stack.AsReadOnly();
         }
 
         /// <summary>
@@ -79,7 +151,12 @@ namespace NtApiDotNet.Win32.Device
         /// <summary>
         /// Get the device stack.
         /// </summary>
-        public IReadOnlyList<string> DeviceStack { get; }
+        public IReadOnlyList<DeviceStackEntry> DeviceStack => _device_stack.Value;
+
+        /// <summary>
+        /// The the device stack as a list of driver paths.
+        /// </summary>
+        public IReadOnlyList<string> DeviceStackPaths { get; }
 
         /// <summary>
         /// Indicates if this is a per-session device. If null then not defined.
@@ -110,15 +187,17 @@ namespace NtApiDotNet.Win32.Device
         /// Get the parent device node.
         /// </summary>
         /// <returns>The parent device node. Returns null if reached the root.</returns>
-        public virtual DeviceNode Parent
-        {
-            get
-            {
-                if (DeviceNativeMethods.CM_Get_Parent(out int parent, _devinst, 0) != CrError.SUCCESS)
-                    return null;
-                return new DeviceNode(parent);
-            }
-        }
+        public virtual DeviceNode Parent => _parent.Value;
+
+        /// <summary>
+        /// List of upper filters.
+        /// </summary>
+        public IReadOnlyList<string> UpperFilters { get; }
+
+        /// <summary>
+        /// List of lower filters.
+        /// </summary>
+        public IReadOnlyList<string> LowerFilters { get; }
 
         /// <summary>
         /// The list of all device properties.
@@ -179,7 +258,7 @@ namespace NtApiDotNet.Win32.Device
             PDOName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_PDOName);
             INFName = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_DriverInfPath);
             SessionId = DeviceUtils.GetPropertyUInt32(devinst, DevicePropertyKeys.DEVPKEY_Device_SessionId);
-            Service = DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_Service);
+            Service = GetServiceName(DeviceUtils.GetPropertyString(devinst, DevicePropertyKeys.DEVPKEY_Device_Service));
             if (string.IsNullOrEmpty(INFName))
             {
                 INFPath = string.Empty;
@@ -189,9 +268,13 @@ namespace NtApiDotNet.Win32.Device
                 INFPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", INFName);
             }
 
-            DeviceStack = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_Stack).ToList().AsReadOnly();
+            DeviceStackPaths = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_Stack);
+            _device_stack = new Lazy<IReadOnlyList<DeviceStackEntry>>(() => BuildDeviceStack());
+            _parent = new Lazy<DeviceNode>(GetParent);
             Class = DeviceUtils.GetPropertyGuid(devinst, DevicePropertyKeys.DEVPKEY_Device_ClassGuid);
             IsPresent = DeviceUtils.GetPropertyBoolean(devinst, DevicePropertyKeys.DEVPKEY_Device_IsPresent);
+            UpperFilters = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_UpperFilters);
+            LowerFilters = DeviceUtils.GetPropertyStringList(devinst, DevicePropertyKeys.DEVPKEY_Device_LowerFilters);
             _sd = new Lazy<SecurityDescriptor>(GetSecurityDescriptor);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
             _service_info = new Lazy<ServiceInformation>(GetServiceInformation);

@@ -54,6 +54,14 @@ namespace NtApiDotNet.Win32.Device
         /// The device characteristics.
         /// </summary>
         public FileDeviceCharacteristics Characteristics { get; }
+        /// <summary>
+        /// List of upper filters.
+        /// </summary>
+        public IReadOnlyList<string> UpperFilters { get; }
+        /// <summary>
+        /// List of lower filters.
+        /// </summary>
+        public IReadOnlyList<string> LowerFilters { get; }
 
         /// <summary>
         /// The list of all device setup properties.
@@ -91,6 +99,8 @@ namespace NtApiDotNet.Win32.Device
             DeviceType = (FileDeviceType)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_DevType, false).GetResultOrDefault(0);
             Characteristics = (FileDeviceCharacteristics)DeviceUtils.GetClassInt(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_Characteristics, false).GetResultOrDefault(0);
             SecurityDescriptor = DeviceUtils.GetDeviceSecurityDescriptor(class_guid, false).GetResultOrDefault();
+            UpperFilters = DeviceUtils.GetClassStringList(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_UpperFilters);
+            LowerFilters = DeviceUtils.GetClassStringList(class_guid, false, DevicePropertyKeys.DEVPKEY_DeviceClass_LowerFilters);
             _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
         }
     }

@@ -387,6 +387,18 @@ namespace NtApiDotNet.Win32.Device
             return value.CreateResult();
         }
 
+        internal static NtResult<Guid> GetClassStringList(Guid class_guid, bool interface_guid, DEVPROPKEY key, bool throw_on_error)
+        {
+            int length = 16;
+            var result = DeviceNativeMethods.CM_Get_Class_PropertyW(class_guid, key, out DEVPROPTYPE type, out Guid value, ref length,
+                interface_guid ? CmClassType.Interface : CmClassType.Installer).ToNtStatus();
+            if (!result.IsSuccess())
+                return result.CreateResultFromError<Guid>(throw_on_error);
+            if (type != DEVPROPTYPE.GUID)
+                return NtStatus.STATUS_BAD_KEY.CreateResultFromError<Guid>(throw_on_error);
+            return value.CreateResult();
+        }
+
         internal static DEVPROPKEY[] GetDeviceKeys(Guid class_guid, bool interface_guid)
         {
             int length = 0;
@@ -489,6 +501,14 @@ namespace NtApiDotNet.Win32.Device
             }
 
             return ret;
+        }
+
+        internal static string[] GetClassStringList(Guid class_guid, bool interface_guid, DEVPROPKEY key)
+        {
+            var prop = GetProperty(class_guid, interface_guid, key);
+            if (prop.Type != DEVPROPTYPE.STRING_LIST)
+                return new string[0];
+            return prop.GetStringList();
         }
 
         internal static DeviceProperty GetProperty(string link_path, DEVPROPKEY key)
