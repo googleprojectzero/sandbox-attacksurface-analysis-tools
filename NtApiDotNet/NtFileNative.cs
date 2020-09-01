@@ -1544,6 +1544,34 @@ namespace NtApiDotNet
         public char VolumeLabel;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsFullSizeInformation
+    {
+        public LargeIntegerStruct TotalAllocationUnits;
+        public LargeIntegerStruct CallerAvailableAllocationUnits;
+        public LargeIntegerStruct ActualAvailableAllocationUnits;
+        public uint SectorsPerAllocationUnit;
+        public uint BytesPerSector;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsFullSizeInformationEx
+    {
+        public ulong ActualTotalAllocationUnits;
+        public ulong ActualAvailableAllocationUnits;
+        public ulong ActualPoolUnavailableAllocationUnits;
+        public ulong CallerTotalAllocationUnits;
+        public ulong CallerAvailableAllocationUnits;
+        public ulong CallerPoolUnavailableAllocationUnits;
+        public ulong UsedAllocationUnits;
+        public ulong TotalReservedAllocationUnits;
+        public ulong VolumeStorageReserveAllocationUnits;
+        public ulong AvailableCommittedAllocationUnits;
+        public ulong PoolAvailableAllocationUnits;
+        public uint SectorsPerAllocationUnit;
+        public uint BytesPerSector;
+    }
+
     public sealed class FileSystemVolumeInformation
     {
         public FileSystemAttributes Attributes { get; }
@@ -1553,9 +1581,26 @@ namespace NtApiDotNet
         public uint SerialNumber { get; }
         public string Label { get; }
         public bool SupportsObjects { get; }
+        public ulong ActualTotalAllocationUnits { get; }
+        public ulong ActualAvailableAllocationUnits { get; }
+        public ulong ActualPoolUnavailableAllocationUnits { get; }
+        public ulong CallerTotalAllocationUnits { get; }
+        public ulong CallerAvailableAllocationUnits { get; }
+        public ulong CallerPoolUnavailableAllocationUnits { get; }
+        public ulong UsedAllocationUnits { get; }
+        public ulong TotalReservedAllocationUnits { get; }
+        public ulong VolumeStorageReserveAllocationUnits { get; }
+        public ulong AvailableCommittedAllocationUnits { get; }
+        public ulong PoolAvailableAllocationUnits { get; }
+        public uint SectorsPerAllocationUnit { get; }
+        public uint BytesPerSector { get; }
+        public ulong BytesPerAllocationUnit => SectorsPerAllocationUnit * BytesPerSector;
+        public ulong TotalBytes => ActualTotalAllocationUnits * BytesPerAllocationUnit;
+        public ulong AvailableBytes => ActualAvailableAllocationUnits * BytesPerAllocationUnit;
+        public ulong CallerAvailableBytes => CallerAvailableAllocationUnits * BytesPerAllocationUnit;
 
         internal FileSystemVolumeInformation(SafeStructureInOutBuffer<FileFsAttributeInformation> attr_info,
-            SafeStructureInOutBuffer<FileFsVolumeInformation> vol_info)
+            SafeStructureInOutBuffer<FileFsVolumeInformation> vol_info, FileFsFullSizeInformationEx file_size)
         {
             var attr_info_res = attr_info.Result;
             var vol_info_res = vol_info.Result;
@@ -1567,6 +1612,20 @@ namespace NtApiDotNet
             SerialNumber = vol_info_res.VolumeSerialNumber;
             SupportsObjects = vol_info_res.SupportsObjects;
             Label = vol_info.Data.ReadUnicodeString(vol_info_res.VolumeLabelLength / 2);
+
+            ActualTotalAllocationUnits = file_size.ActualTotalAllocationUnits;
+            ActualAvailableAllocationUnits = file_size.ActualAvailableAllocationUnits;
+            ActualPoolUnavailableAllocationUnits = file_size.ActualPoolUnavailableAllocationUnits;
+            CallerTotalAllocationUnits = file_size.CallerTotalAllocationUnits;
+            CallerAvailableAllocationUnits = file_size.CallerAvailableAllocationUnits;
+            CallerPoolUnavailableAllocationUnits = file_size.CallerPoolUnavailableAllocationUnits;
+            UsedAllocationUnits = file_size.UsedAllocationUnits;
+            TotalReservedAllocationUnits = file_size.TotalReservedAllocationUnits;
+            VolumeStorageReserveAllocationUnits = file_size.VolumeStorageReserveAllocationUnits;
+            AvailableCommittedAllocationUnits = file_size.AvailableCommittedAllocationUnits;
+            PoolAvailableAllocationUnits = file_size.PoolAvailableAllocationUnits;
+            SectorsPerAllocationUnit = file_size.SectorsPerAllocationUnit;
+            BytesPerSector = file_size.BytesPerSector;
         }
     }
 

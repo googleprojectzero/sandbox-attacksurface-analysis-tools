@@ -245,45 +245,56 @@ namespace NtApiDotNet
 
         private T QueryVolumeFixed<T>(FsInformationClass info_class) where T : new()
         {
+            return QueryVolumeFixed<T>(info_class, true).Result;
+        }
+
+        private NtResult<T> QueryVolumeFixed<T>(FsInformationClass info_class, bool throw_on_error) where T : new()
+        {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, buffer,
-                    buffer.Length, info_class).ToNtException();
-                return buffer.Result;
+                return NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, buffer,
+                    buffer.Length, info_class).CreateResult(throw_on_error, () => buffer.Result);
             }
         }
 
-        private SafeStructureInOutBuffer<T> QueryVolume<T>(FsInformationClass info_class) where T : new()
+        private NtResult<SafeStructureInOutBuffer<T>> QueryVolume<T>(FsInformationClass info_class, bool throw_on_error) where T : new()
         {
-            SafeStructureInOutBuffer<T> ret = null;
-            NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
-            try
+            int length = 128;
+            while (true)
             {
-                int length = Marshal.SizeOf(typeof(T)) + 128;
-                while (true)
+                using (var buffer = new SafeStructureInOutBuffer<T>(length, true))
                 {
-                    ret = new SafeStructureInOutBuffer<T>(length, false);
                     IoStatus io_status = new IoStatus();
-                    status = NtSystemCalls.NtQueryVolumeInformationFile(Handle, io_status, ret, ret.Length, info_class);
+                    NtStatus status = NtSystemCalls.NtQueryVolumeInformationFile(Handle, io_status, buffer, buffer.Length, info_class);
                     if (status.IsSuccess())
-                        break;
+                        return status.CreateResult(false, () => buffer.Detach());
 
                     if ((status != NtStatus.STATUS_BUFFER_OVERFLOW) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                        throw new NtException(status);
-                    ret.Close();
-                    length *= 2;
+                        return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
                 }
+                length *= 2;
             }
-            finally
+        }
+
+        private static FileFsFullSizeInformationEx ConvertToSizeEx(FileFsFullSizeInformation size)
+        {
+            return new FileFsFullSizeInformationEx()
             {
-                if (ret != null && !status.IsSuccess())
-                {
-                    ret.Close();
-                    ret = null;
-                }
-            }
-            return ret;
+                BytesPerSector = size.BytesPerSector,
+                SectorsPerAllocationUnit = size.SectorsPerAllocationUnit,
+                ActualAvailableAllocationUnits = size.ActualAvailableAllocationUnits.ToUInt64(),
+                CallerAvailableAllocationUnits = size.CallerAvailableAllocationUnits.ToUInt64(),
+                ActualTotalAllocationUnits = size.TotalAllocationUnits.ToUInt64()
+            };
+        }
+
+        private NtResult<FileFsFullSizeInformationEx> QueryVolumeSize(bool throw_on_error)
+        {
+            var ex_result = QueryVolumeFixed<FileFsFullSizeInformationEx>(FsInformationClass.FileFsFullSizeInformationEx, false);
+            if (ex_result.IsSuccess)
+                return ex_result;
+            return QueryVolumeFixed<FileFsFullSizeInformation>(FsInformationClass.FileFsFullSizeInformation, throw_on_error).Map(ConvertToSizeEx);
         }
 
         private static SafeFileHandle DuplicateAsFile(SafeKernelObjectHandle handle)
@@ -4151,6 +4162,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get filesystem and volume information.
+        /// </summary>
+        public NtResult<FileSystemVolumeInformation> GetVolumeInformation(bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var attr_info = list.AddResource(QueryVolume<FileFsAttributeInformation>(FsInformationClass.FileFsAttributeInformation, throw_on_error));
+                if (!attr_info.IsSuccess)
+                    return attr_info.Cast<FileSystemVolumeInformation>();
+
+                var vol_info = list.AddResource(QueryVolume<FileFsVolumeInformation>(FsInformationClass.FileFsVolumeInformation, throw_on_error));
+                if (!vol_info.IsSuccess)
+                    return vol_info.Cast<FileSystemVolumeInformation>();
+
+                var size_info = QueryVolumeSize(throw_on_error);
+                if (!size_info.IsSuccess)
+                    return size_info.Cast<FileSystemVolumeInformation>();
+
+                return new FileSystemVolumeInformation(attr_info.Result, vol_info.Result, size_info.Result).CreateResult();
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -4356,19 +4390,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get filesystem and volume information.
         /// </summary>
-        public FileSystemVolumeInformation VolumeInformation
-        {
-            get
-            {
-                using (var attr_info = QueryVolume<FileFsAttributeInformation>(FsInformationClass.FileFsAttributeInformation))
-                {
-                    using (var vol_info = QueryVolume<FileFsVolumeInformation>(FsInformationClass.FileFsVolumeInformation))
-                    {
-                        return new FileSystemVolumeInformation(attr_info, vol_info);
-                    }
-                }
-            }
-        }
+        public FileSystemVolumeInformation VolumeInformation => GetVolumeInformation(true).Result;
 
         /// <summary>
         /// Get or set the file's compression format.

@@ -79,6 +79,11 @@ namespace NtApiDotNet
         {
             return new NtWaitTimeout(QuadPart);
         }
+
+        internal ulong ToUInt64()
+        {
+            return (ulong)QuadPart;
+        }
     }
 #pragma warning restore 1591
 }
