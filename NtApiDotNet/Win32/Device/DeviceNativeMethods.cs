@@ -457,6 +457,13 @@ namespace NtApiDotNet.Win32.Device
           int ulFlags
         );
 
+        [DllImport("CfgMgr32.dll", CharSet = CharSet.Unicode)]
+        internal static extern CrError CM_Get_Parent(
+          out int pdnDevInst,
+          int dnDevInst,
+          int ulFlags
+        );
+
         [DllImport("Propsys.dll", CharSet = CharSet.Unicode)]
         internal static extern int PSGetNameFromPropertyKey(
             in DEVPROPKEY propkey,

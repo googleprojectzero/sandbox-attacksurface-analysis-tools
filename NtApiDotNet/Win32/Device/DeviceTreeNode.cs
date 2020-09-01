@@ -22,6 +22,7 @@ namespace NtApiDotNet.Win32.Device
     public sealed class DeviceTreeNode : DeviceNode
     {
         private readonly List<DeviceTreeNode> _children;
+        private readonly DeviceNode _parent;
 
         /// <summary>
         /// List of child nodes.
@@ -33,14 +34,21 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public bool HasChildren => _children.Count > 0;
 
+        /// <summary>
+        /// Get the parent device node.
+        /// </summary>
+        /// <returns>The parent device node. Returns null if reached the root.</returns>
+        public override DeviceNode Parent => _parent ?? base.Parent;
+
         internal void AddRange(IEnumerable<DeviceTreeNode> node)
         {
             _children.AddRange(node);
         }
 
-        internal DeviceTreeNode(int devinst) : base(devinst)
+        internal DeviceTreeNode(int devinst, DeviceNode parent) : base(devinst)
         {
             _children = new List<DeviceTreeNode>();
+            _parent = parent;
         }
     }
 }

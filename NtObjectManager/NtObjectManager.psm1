@@ -10592,23 +10592,33 @@ function Get-NtDeviceProperty {
 
 <#
 .SYNOPSIS
-Get device instance children.
+Get device node children.
 .DESCRIPTION
-This cmdlet gets device instance children.
+This cmdlet gets device node children.
 .PARAMETER Node
 The device node to query the children for.
+.PARAMETER Recurse
+Recursively get child nodes.
+.PARAMETER Depth
+Specify the maximum depth for the recursion.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Device.DeviceTreeNode[]
 .EXAMPLE
 Get-NtDeviceNodeChild -Node $dev
-Get all children for a device instance
+Get all children for a device node
+.EXAMPLE
+Get-NtDeviceNodeChild -Node $dev -Recurse
+Get all children for a device node recursively.
+.EXAMPLE
+Get-NtDeviceNodeChild -Node $dev -Recurse -Depth 2
+Get all children for a device node recursively with max depth of 2.
 #>
 function Get-NtDeviceNodeChild {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [parameter(Mandatory, ParameterSetName = "FromNode")]
+        [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
         [NtApiDotNet.Win32.Device.DeviceNode]$Node,
         [switch]$Recurse,
         [int]$Depth = [int]::MaxValue
@@ -10637,6 +10647,76 @@ function Get-NtDeviceNodeChild {
     catch 
     {
         Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Get device instance parent.
+.DESCRIPTION
+This cmdlet gets device node parent.
+.PARAMETER Node
+The device node to query the parent for.
+.PARAMETER Recurse
+Get all parents recursively.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Device.DeviceNode[]
+.EXAMPLE
+Get-NtDeviceNodeParent -Node $dev
+Get parent for device node.
+.EXAMPLE
+Get-NtDeviceNodeParent -Node $dev -Recurse
+Get all parents for device node.
+#>
+function Get-NtDeviceNodeParent {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
+        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
+        [switch]$Recurse
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromNode" {
+            if ($Recurse) {
+                $Node.GetParentNodes() | Write-Output
+            } else {
+                $Node.Parent | Write-Output
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get device stack for a node.
+.DESCRIPTION
+This cmdlet gets device node's device stack.
+.PARAMETER Node
+The device node to query device stack for.
+.PARAMETER Recurse
+Get all parents recursively.
+.INPUTS
+None
+.OUTPUTS
+string[]
+.EXAMPLE
+Get-NtDeviceNodeStack -Node $dev
+Get device stack for device node.
+#>
+function Get-NtDeviceNodeStack {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
+        [NtApiDotNet.Win32.Device.DeviceNode]$Node
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromNode" {
+            $Node.DeviceStack | Write-Output
+        }
     }
 }
 

@@ -107,6 +107,20 @@ namespace NtApiDotNet.Win32.Device
         public ServiceStartType StartType => _service_info.Value.StartType;
 
         /// <summary>
+        /// Get the parent device node.
+        /// </summary>
+        /// <returns>The parent device node. Returns null if reached the root.</returns>
+        public virtual DeviceNode Parent
+        {
+            get
+            {
+                if (DeviceNativeMethods.CM_Get_Parent(out int parent, _devinst, 0) != CrError.SUCCESS)
+                    return null;
+                return new DeviceNode(parent);
+            }
+        }
+
+        /// <summary>
         /// The list of all device properties.
         /// </summary>
         /// <returns>The device properties.</returns>
@@ -123,6 +137,31 @@ namespace NtApiDotNet.Win32.Device
         public DeviceSetupClass GetSetupClass()
         {
             return DeviceUtils.GetDeviceSetupClass(Class);
+        }
+
+        /// <summary>
+        /// Get list of parent nodes.
+        /// </summary>
+        /// <returns>The list of parent nodes.</returns>
+        public IReadOnlyList<DeviceNode> GetParentNodes()
+        {
+            List<DeviceNode> nodes = new List<DeviceNode>();
+            var curr_node = Parent;
+            while (curr_node != null)
+            {
+                nodes.Add(curr_node);
+                curr_node = curr_node.Parent;
+            }
+            return nodes.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return InstanceId;
         }
 
         /// <summary>

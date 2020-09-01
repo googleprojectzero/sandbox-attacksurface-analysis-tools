@@ -244,7 +244,7 @@ namespace NtApiDotNet.Win32.Device
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, null, 0).ToNtStatus().ToNtException();
             Dictionary<int, DeviceTreeNode> nodes = new Dictionary<int, DeviceTreeNode>();
-            return BuildDeviceTreeNode(root, nodes).First();
+            return BuildDeviceTreeNode(null, root, nodes).First();
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace NtApiDotNet.Win32.Device
         {
             DeviceNativeMethods.CM_Locate_DevNodeW(out int root, instance_id, 0).ToNtStatus().ToNtException();
             Dictionary<int, DeviceTreeNode> nodes = new Dictionary<int, DeviceTreeNode>();
-            return BuildDeviceTreeNode(root, nodes).First();
+            return BuildDeviceTreeNode(null, root, nodes).First();
         }
 
         /// <summary>
@@ -668,17 +668,17 @@ namespace NtApiDotNet.Win32.Device
             }
         }
 
-        private static IEnumerable<DeviceTreeNode> BuildDeviceTreeNode(int node, Dictionary<int, DeviceTreeNode> dict)
+        private static IEnumerable<DeviceTreeNode> BuildDeviceTreeNode(DeviceNode parent, int node, Dictionary<int, DeviceTreeNode> dict)
         {
             List<DeviceTreeNode> nodes = new List<DeviceTreeNode>();
             while (node != 0)
             {
-                DeviceTreeNode curr_node = new DeviceTreeNode(node);
+                DeviceTreeNode curr_node = new DeviceTreeNode(node, parent);
                 dict[node] = curr_node;
                 nodes.Add(curr_node);
                 if (DeviceNativeMethods.CM_Get_Child(out int child, node, 0) == CrError.SUCCESS)
                 {
-                    curr_node.AddRange(BuildDeviceTreeNode(child, dict));
+                    curr_node.AddRange(BuildDeviceTreeNode(curr_node, child, dict));
                 }
                 if (DeviceNativeMethods.CM_Get_Sibling(out node, node, 0) != CrError.SUCCESS)
                     break;
