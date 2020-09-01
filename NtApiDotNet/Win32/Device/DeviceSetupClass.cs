@@ -47,6 +47,10 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public SecurityDescriptor SecurityDescriptor { get; }
         /// <summary>
+        /// Indicates the device setup class has a security descriptor.
+        /// </summary>
+        public bool HasSecurityDescriptor => SecurityDescriptor != null;
+        /// <summary>
         /// The device type.
         /// </summary>
         public FileDeviceType DeviceType { get; }

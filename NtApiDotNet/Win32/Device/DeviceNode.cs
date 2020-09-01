@@ -248,6 +248,11 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public SecurityDescriptor SecurityDescriptor => _sd.Value;
 
+        /// <summary>
+        /// Indicates the device node has a security descriptor.
+        /// </summary>
+        public bool HasSecurityDescriptor => SecurityDescriptor != null;
+
         internal DeviceNode(int devinst)
         {
             _devinst = devinst;
