@@ -102,6 +102,16 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         public long TokenId { get; }
 
+        /// <summary>
+        /// Indicates if the security descriptor has an integrity label.
+        /// </summary>
+        public bool HasMandatoryLabel { get; }
+
+        /// <summary>
+        /// Indicates if the security descriptor has a process trust label.
+        /// </summary>
+        public bool HasProcessTrustLabel { get; }
+
         internal CommonAccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, SecurityDescriptor sd, 
             Type enum_type, bool is_directory, TokenInformation token_info)
@@ -125,6 +135,11 @@ namespace NtObjectManager.Cmdlets.Accessible
             GrantedGenericAccessString = NtSecurity.AccessMaskToString(granted_access, enum_type, generic_mapping, true);
             TokenId = token_info.TokenId.ToInt64();
             IsDirectory = is_directory;
+            if (sd != null)
+            {
+                HasMandatoryLabel = sd.GetMandatoryLabel() != null;
+                HasProcessTrustLabel = sd.ProcessTrustLabel != null;
+            }
         }
     }
 }
