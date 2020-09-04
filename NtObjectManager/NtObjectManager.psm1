@@ -10795,8 +10795,20 @@ NtApiDotNet.FileObjectIdInformation[]
 Get-NtFileItem -File $f
 Enumerate all file items.
 .EXAMPLE
-Read-NtFile -File $f -Length 8 -Offset 1234
-Read 8 bytes from a file at offset 1234.
+Get-NtFileItem -File $f -Pattern *.txt
+Enumerate all files with a TXT extension.
+.EXAMPLE
+Get-NtFileItem -File $f -FileType FilesOnly
+Enumerate only files.
+.EXAMPLE
+Get-NtFileItem -File $f -FileType DirectoriesOnly
+Enumerate only directories.
+.EXAMPLE
+Get-NtFileItem -File $f -ReparsePoint
+Enumerate reparse points.
+.EXAMPLE
+Get-NtFileItem -File $f -ObjectId
+Enumerate object IDs.
 #>
 function Get-NtFileItem {
     [CmdletBinding(DefaultParameterSetName = "FromDirectory")]
@@ -10824,4 +10836,44 @@ function Get-NtFileItem {
             $File.QueryObjectIds() | Write-Output
         }
     }
+}
+
+<#
+.SYNOPSIS
+Get change notification events for a file directory.
+.DESCRIPTION
+This cmdlet gets change notification envents for a file directory.
+.PARAMETER File
+Specify the file directory to get change notification events from.
+.PARAMETER Filter
+Specify what types of events to receive.
+.PARAMETER WatchSubtree
+Specify to watch all directories in a subtree.
+.PARAMETER Timeout
+Specify a timeout to wait if the handle is asynchronous.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.DirectoryChangeNotification[]
+.EXAMPLE
+Get-NtFileChange -File $f
+Get all change notifications for the file directory.
+.EXAMPLE
+Get-NtFileChange -File $f -Filter FileName
+Get only filename change notifications for the file directory.
+.EXAMPLE
+Get-NtFileChange -File $f -WatchSubtree
+Get all change notifications for the file directory and its children.
+#>
+function Get-NtFileChange {
+    [CmdletBinding(DefaultParameterSetName = "FromDirectory")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [NtApiDotNet.DirectoryChangeNotifyFilter]$Filter = "All",
+        [switch]$WatchSubtree,
+        [NtApiDotNet.NtWaitTimeout]$Timeout = (Get-NtWaitTimeout -Infinite)
+    )
+
+    $File.GetChangeNotification($Filter, $WatchSubtree, $Timeout) | Write-Output
 }
