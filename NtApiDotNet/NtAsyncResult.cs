@@ -42,11 +42,11 @@ namespace NtApiDotNet
             get { return _event.GetHandle(); }
         }
 
-        internal NtStatus CompleteCall(NtStatus status)
+        internal NtStatus CompleteCall(NtStatus status, NtWaitTimeout timeout)
         {
             if (status == NtStatus.STATUS_PENDING)
             {
-                if (WaitForComplete())
+                if (WaitForComplete(timeout))
                 {
                     status = _io_status.Result.Status;
                 }
@@ -56,6 +56,11 @@ namespace NtApiDotNet
                 _result = _io_status.Result;
             }
             return status;
+        }
+
+        internal NtStatus CompleteCall(NtStatus status)
+        {
+            return CompleteCall(status, NtWaitTimeout.Infinite);
         }
 
         internal async Task<NtStatus> CompleteCallAsync(NtStatus status, CancellationToken token)
@@ -87,9 +92,10 @@ namespace NtApiDotNet
         /// Wait for the result to complete. This could be waiting on an event
         /// or the file handle.
         /// </summary>
+        /// <param name="timeout">Wait timeout. Will cancel the operation if it times out.</param>
         /// <returns>Returns true if the wait completed successfully.</returns>
         /// <remarks>If true is returned then status and information can be read out.</remarks>
-        internal bool WaitForComplete()
+        internal bool WaitForComplete(NtWaitTimeout timeout)
         {
             if (_result != null)
             {
@@ -99,17 +105,21 @@ namespace NtApiDotNet
             NtStatus status;
             if (_event != null)
             {
-                status = _event.Wait(NtWaitTimeout.Infinite).ToNtException();
+                status = _event.Wait(timeout).ToNtException();
             }
             else
             {
-                status = _object.Wait(NtWaitTimeout.Infinite).ToNtException();
+                status = _object.Wait(timeout).ToNtException();
             }
 
             if (status == NtStatus.STATUS_SUCCESS)
             {
                 _result = _io_status.Result;
                 return true;
+            }
+            else if (status == NtStatus.STATUS_TIMEOUT)
+            {
+                Cancel();
             }
 
             return false;
