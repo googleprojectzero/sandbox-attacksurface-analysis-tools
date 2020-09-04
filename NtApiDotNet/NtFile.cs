@@ -804,7 +804,7 @@ namespace NtApiDotNet
             FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
             long default_timeout)
         {
-            return CreateMailslot(obj_attributes, desired_access, open_options, 
+            return CreateMailslot(obj_attributes, desired_access, open_options,
                 maximum_message_size, mailslot_quota, default_timeout, true).Result;
         }
 
@@ -1042,7 +1042,7 @@ namespace NtApiDotNet
         public static NtResult<NtFile> OpenFileById(string volume_path, long fileid,
             FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            return OpenFileById(null, NtFileUtils.GetFileIdPath(volume_path, fileid), 
+            return OpenFileById(null, NtFileUtils.GetFileIdPath(volume_path, fileid),
                 desired_access, share_access, open_options, throw_on_error);
         }
 
@@ -1194,7 +1194,7 @@ namespace NtApiDotNet
         /// <returns>The file attributes.</returns>
         public static NtResult<FileInformation> QueryAttributes(ObjectAttributes object_attributes, bool throw_on_error)
         {
-            return NtSystemCalls.NtQueryFullAttributesFile(object_attributes, 
+            return NtSystemCalls.NtQueryFullAttributesFile(object_attributes,
                 out FileNetworkOpenInformation open_info).CreateResult(throw_on_error, () => new FileInformation(open_info));
         }
 
@@ -1983,7 +1983,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
-                return FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, 
+                return FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT,
                     null, buffer, throw_on_error).Map(i => buffer.ReadBytes(i));
             }
         }
@@ -3688,9 +3688,11 @@ namespace NtApiDotNet
         /// <param name="completion_filter">The filter of events to watch for.</param>
         /// <param name="watch_subtree">True to watch all sub directories.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="timeout">Wait timeout.</param>
         /// <returns>The list of changes.</returns>
         public NtResult<IEnumerable<DirectoryChangeNotification>> GetChangeNotification(
-            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree,
+            NtWaitTimeout timeout, bool throw_on_error)
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
@@ -3698,10 +3700,38 @@ namespace NtApiDotNet
                 {
                     return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFile(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                        buffer, buffer.Length, completion_filter, watch_subtree))
-                        .CreateResult(throw_on_error, () => ReadNotifications(buffer, result.IoStatusBuffer.Result));
+                        buffer, buffer.Length, completion_filter, watch_subtree), timeout)
+                        .CreateResult(throw_on_error,
+                        s => s == NtStatus.STATUS_SUCCESS ? ReadNotifications(buffer, result.IoStatusBuffer.Result) : new DirectoryChangeNotification[0]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        public NtResult<IEnumerable<DirectoryChangeNotification>> GetChangeNotification(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            return GetChangeNotification(completion_filter, watch_subtree, NtWaitTimeout.Infinite, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <returns>The list of changes.</returns>
+        public IEnumerable<DirectoryChangeNotification> GetChangeNotification(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree,
+            NtWaitTimeout timeout)
+        {
+            return GetChangeNotification(completion_filter, watch_subtree, timeout, true).Result;
         }
 
         /// <summary>
