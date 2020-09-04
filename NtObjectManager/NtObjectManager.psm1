@@ -5959,25 +5959,40 @@ None
 function Set-NtFileEa {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
     Param(
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromPath")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPath")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPathAndName")]
         [string]$Path,
         [Parameter(ParameterSetName = "FromPath")]
+        [Parameter(ParameterSetName = "FromPathAndName")]
         [switch]$Win32Path,
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromFile")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFileAndName")]
         [NtApiDotNet.NtFile]$File,
-        [Parameter(Mandatory = $true, Position = 1)]
-        [NtApiDotNet.EaBuffer]$EaBuffer
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "FromFile")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "FromPath")]
+        [NtApiDotNet.EaBuffer]$EaBuffer,
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "FromPathAndName")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "FromFileAndName")]
+        [string]$Name,
+        [Parameter(Mandatory, Position = 2, ParameterSetName = "FromPathAndName")]
+        [Parameter(Mandatory, Position = 2, ParameterSetName = "FromFileAndName")]
+        [byte[]]$Byte,
+        [Parameter(Position = 3, ParameterSetName = "FromPathAndName")]
+        [Parameter(Position = 3, ParameterSetName = "FromFileAndName")]
+        [NtApiDotNet.EaBufferEntryFlags]$Flags = 0
     )
 
-    switch ($PsCmdlet.ParameterSetName) {
-        "FromFile" {
-            $File.SetEa($EaBuffer)
+    if ($PSCmdlet.ParameterSetName -eq "FromPathAndName" -or $PSCmdlet.ParameterSetName -eq "FromFileAndName") {
+        $EaBuffer = New-NtEaBuffer
+        Add-NtEaBuffer -EaBuffer $EaBuffer -Name $Name -Byte $Byte -Flags $Flags
+    }
+
+    if ($PSCmdlet.ParameterSetName -eq "FromPath" -or $PSCmdlet.ParameterSetName -eq "FromPathAndName") {
+        Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access WriteEa) {
+            $f.SetEa($EaBuffer)
         }
-        "FromPath" {
-            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access WriteEa) {
-                $f.SetEa($EaBuffer)
-            }
-        }
+    } elseif ($PSCmdlet.ParameterSetName -eq "FromFile" -or $PSCmdlet.ParameterSetName -eq "FromFileAndName"){
+        $File.SetEa($EaBuffer)
     }
 }
 
