@@ -10769,3 +10769,59 @@ function Get-NtDeviceInterfaceInstance {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Enumerate file entries for a file.
+.DESCRIPTION
+This cmdlet writes enumerates directory entries from a file.
+.PARAMETER File
+Specify the file directory to enumerate.
+.PARAMETER Pattern
+A file pattern to specify the files to enumerate. e.g. *.txt.
+.PARAMETER FileType
+Specify all files or either files or directories.
+.PARAMETER ReparsePoint
+Enumerate reparse point information.
+.PARAMETER ObjectId
+Enumerate object ID information.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.FileDirectoryEntry[]
+NtApiDotNet.FileReparsePointInformation[]
+NtApiDotNet.FileObjectIdInformation[]
+.EXAMPLE
+Get-NtFileItem -File $f
+Enumerate all file items.
+.EXAMPLE
+Read-NtFile -File $f -Length 8 -Offset 1234
+Read 8 bytes from a file at offset 1234.
+#>
+function Get-NtFileItem {
+    [CmdletBinding(DefaultParameterSetName = "FromDirectory")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(ParameterSetName="FromDirectory")]
+        [string]$Pattern = "*",
+        [parameter(ParameterSetName="FromDirectory")]
+        [NtApiDotNet.FileTypeMask]$FileType = "All",
+        [parameter(ParameterSetName="FromReparsePoint")]
+        [switch]$ReparsePoint,
+        [parameter(ParameterSetName="FromObjectID")]
+        [switch]$ObjectId
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromDirectory" {
+            $File.QueryDirectoryInfo($Pattern, $FileType) | Write-Output
+        }
+        "FromReparsePoint" {
+            $File.QueryReparsePoints() | Write-Output
+        }
+        "FromObjectID" {
+            $File.QueryObjectIds() | Write-Output
+        }
+    }
+}
