@@ -10875,5 +10875,114 @@ function Get-NtFileChange {
         [NtApiDotNet.NtWaitTimeout]$Timeout = (Get-NtWaitTimeout -Infinite)
     )
 
-    $File.GetChangeNotification($Filter, $WatchSubtree, $Timeout) | Write-Output
+    $File.GetChangeNotificationFull($Filter, $WatchSubtree, $Timeout) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Lock a file range.
+.DESCRIPTION
+This cmdlet locks a file range in an open file.
+.PARAMETER File
+Specify the file directory to lock.
+.PARAMETER Offset
+The offset into the file to lock.
+.PARAMETER Length
+The length of the locked region. 
+.PARAMETER All
+Specify to lock the entire file.
+.PARAMETER Wait
+Specify to wait for the lock to be available otherwise fail immediately.
+.PARAMETER Exclusive
+Specify to create an exclusive lock.
+.PARAMETER PassThru
+Specify to return a scoped lock which will unlock when disposed.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.IO.NtFileScopedLock
+.EXAMPLE
+Lock-NtFile -File $f -Offset 0 -Length 256
+Lock the first 256 bytes.
+.EXAMPLE
+Lock-NtFile -File $f -Offset 0 -Length 256 -Wait
+Lock the first 256 bytes and wait if already locked.
+.EXAMPLE
+Lock-NtFile -File $f -All
+Lock the entire file.
+.EXAMPLE
+Lock-NtFile -File $f -All -Exclusive
+Lock the entire file exclusively.
+#>
+function Lock-NtFile {
+    [CmdletBinding(DefaultParameterSetName = "FromOffset")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromOffset")]
+        [int64]$Offset,
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromOffset")]
+        [int64]$Length,
+        [parameter(Mandatory, ParameterSetName="All")]
+        [switch]$All,
+        [switch]$Wait,
+        [switch]$Exclusive,
+        [switch]$PassThru
+    )
+
+    if ($All) {
+        $Offset = 0
+        $Length = $File.Length
+    }
+
+    if ($PassThru) {
+        [NtApiDotNet.Utilities.IO.NtFileScopedLock]::Create($File, $Offset, $Length, !$Wait, $Exclusive) | Write-Output
+    } else {
+        $File.Lock($Offset, $Length, !$Wait, $Exclusive)
+    }
+}
+
+<#
+.SYNOPSIS
+Unlock a file range.
+.DESCRIPTION
+This cmdlet unlocks a file range in an open file.
+.PARAMETER File
+Specify the file directory to unlock.
+.PARAMETER Offset
+The offset into the file to unlock.
+.PARAMETER Length
+The length of the unlocked region. 
+.PARAMETER All
+Specify to unlock the entire file.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Unlock-NtFile -File $f -Offset 0 -Length 256
+Unlock the first 256 bytes.
+.EXAMPLE
+Unlock-NtFile -File $f -All
+Unlock the entire file.
+#>
+function Unlock-NtFile {
+    [CmdletBinding(DefaultParameterSetName = "FromOffset")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromOffset")]
+        [int64]$Offset,
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromOffset")]
+        [int64]$Length,
+        [parameter(Mandatory, ParameterSetName="All")]
+        [switch]$All
+    )
+
+    if ($All) {
+        $Offset = 0
+        $Length = $File.Length
+    }
+
+    $File.Unlock($Offset, $Length)
 }

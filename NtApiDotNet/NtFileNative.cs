@@ -181,7 +181,9 @@ namespace NtApiDotNet
           [In] LargeInteger ByteOffset,
           [In] LargeInteger Length,
           int Key,
+          [MarshalAs(UnmanagedType.U1)]
           bool FailImmediately,
+          [MarshalAs(UnmanagedType.U1)]
           bool ExclusiveLock
         );
 
@@ -236,10 +238,12 @@ namespace NtApiDotNet
           [Out] IoStatus IoStatusBlock,
           [Out] byte[] Buffer,
           int Length,
+          [MarshalAs(UnmanagedType.U1)]
           bool ReturnSingleEntry,
           SafeBuffer EaList,
           int EaListLength,
           [In] OptionalInt32 EaIndex,
+          [MarshalAs(UnmanagedType.U1)]
           bool RestartScan
         );
 
@@ -274,7 +278,7 @@ namespace NtApiDotNet
             SafeBuffer Buffer,
             int BufferSize,
             DirectoryChangeNotifyFilter CompletionFilter,
-            bool WatchTree
+            [MarshalAs(UnmanagedType.U1)] bool WatchTree
         );
 
         [DllImport("ntdll.dll")]
@@ -287,7 +291,7 @@ namespace NtApiDotNet
             SafeBuffer Buffer,
             int BufferSize,
             DirectoryChangeNotifyFilter CompletionFilter,
-            bool WatchTree,
+            [MarshalAs(UnmanagedType.U1)] bool WatchTree,
             DirectoryNotifyInformationClass DirectoryNotifyInformationClass
         );
 
@@ -1317,7 +1321,7 @@ namespace NtApiDotNet
         /// </summary>
         public string FileName { get; }
 
-        internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name) 
+        internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name)
             : base(dir_info)
         {
             FileIndex = dir_info.FileIndex;
@@ -1682,17 +1686,33 @@ namespace NtApiDotNet
         RenamedNewName = 5,
     }
 
+    internal interface IFileNotifyInformation
+    {
+        FileNotificationAction GetAction();
+        int GetFileNameLength();
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
-    public struct FileNotifyInformation
+    public struct FileNotifyInformation : IFileNotifyInformation
     {
         public int NextEntryOffset;
         public FileNotificationAction Action;
         public int FileNameLength;
         public char FileName;
+
+        FileNotificationAction IFileNotifyInformation.GetAction()
+        {
+            return Action;
+        }
+
+        int IFileNotifyInformation.GetFileNameLength()
+        {
+            return FileNameLength;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
-    public struct FileNotifyExtendedInformation
+    public struct FileNotifyExtendedInformation : IFileNotifyInformation
     {
         public int NextEntryOffset;
         public FileNotificationAction Action;
@@ -1708,28 +1728,41 @@ namespace NtApiDotNet
         public LargeIntegerStruct ParentFileId;
         public int FileNameLength;
         public char FileName;
-    }
 
-    public sealed class DirectoryChangeNotification
-    {
-        public FileNotificationAction Action { get; }
-        public string FileName { get; }
-        public string FullPath { get; }
-
-        internal DirectoryChangeNotification(string base_path, SafeStructureInOutBuffer<FileNotifyInformation> buffer)
+        FileNotificationAction IFileNotifyInformation.GetAction()
         {
-            var info = buffer.Result;
-            Action = info.Action;
-            FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
-            FullPath = Path.Combine(base_path, FileName);
+            return Action;
+        }
+
+        int IFileNotifyInformation.GetFileNameLength()
+        {
+            return FileNameLength;
         }
     }
 
-    public sealed class DirectoryChangeNotificationExtended
+    public class DirectoryChangeNotification
     {
         public FileNotificationAction Action { get; }
         public string FileName { get; }
         public string FullPath { get; }
+        public string Win32Path { get; }
+
+        internal DirectoryChangeNotification(string base_path, string win32_path, SafeStructureInOutBuffer<FileNotifyInformation> buffer) 
+            : this(base_path, win32_path, buffer.Result, buffer.Data)
+        {
+        }
+
+        private protected DirectoryChangeNotification(string base_path, string win32_path, IFileNotifyInformation info, SafeHGlobalBuffer buffer)
+        {
+            Action = info.GetAction();
+            FileName = buffer.ReadUnicodeString(info.GetFileNameLength() / 2);
+            FullPath = Path.Combine(base_path, FileName);
+            Win32Path = Path.Combine(win32_path, FileName);
+        }
+    }
+
+    public sealed class DirectoryChangeNotificationExtended : DirectoryChangeNotification
+    {
         public DateTime CreationTime { get; }
         public DateTime LastModificationTime { get; }
         public DateTime LastChangeTime { get; }
@@ -1741,10 +1774,10 @@ namespace NtApiDotNet
         public long FileId { get; }
         public long ParentFileId { get; }
 
-        internal DirectoryChangeNotificationExtended(string base_path, SafeStructureInOutBuffer<FileNotifyExtendedInformation> buffer)
+        internal DirectoryChangeNotificationExtended(string base_path, string win32_path, SafeStructureInOutBuffer<FileNotifyExtendedInformation> buffer)
+            : base(base_path, win32_path, buffer.Result, buffer.Data)
         {
             var info = buffer.Result;
-            Action = info.Action;
             CreationTime = info.CreationTime.ToDateTime();
             LastModificationTime = info.LastModificationTime.ToDateTime();
             LastChangeTime = info.LastChangeTime.ToDateTime();
@@ -1755,8 +1788,6 @@ namespace NtApiDotNet
             ReparsePointTag = (ReparseTag)info.ReparsePointTag;
             FileId = info.FileId.QuadPart;
             ParentFileId = info.ParentFileId.QuadPart;
-            FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
-            FullPath = Path.Combine(base_path, FileName);
         }
     }
 

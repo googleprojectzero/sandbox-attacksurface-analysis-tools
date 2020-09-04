@@ -100,6 +100,7 @@
     <Compile Include="Utilities\ASN1\DERValue.cs" />
     <Compile Include="Utilities\ASN1\OIDValues.cs" />
     <Compile Include="Utilities\ASN1\UniversalTag.cs" />
+    <Compile Include="Utilities\IO\NtFileScopedLock.cs" />
     <Compile Include="Utilities\Memory\NtCompression.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />

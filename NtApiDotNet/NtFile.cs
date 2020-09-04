@@ -386,11 +386,13 @@ namespace NtApiDotNet
             buffer.Initialize((uint)status.Information32);
 
             int offset = 0;
+            string full_path = FullPath;
+            string win32_path = Win32PathName;
             while (offset < buffer.Length)
             {
                 var info = buffer.GetStructAtOffset<FileNotifyInformation>(offset);
                 var result = info.Result;
-                ns.Add(new DirectoryChangeNotification(FullPath, info));
+                ns.Add(new DirectoryChangeNotification(full_path, win32_path, info));
                 if (result.NextEntryOffset == 0)
                 {
                     break;
@@ -406,13 +408,14 @@ namespace NtApiDotNet
 
             // Change buffer size to reflect what's in the buffer.
             buffer.Initialize((uint)status.Information32);
-
+            string full_path = FullPath;
+            string win32_path = Win32PathName;
             int offset = 0;
             while (offset < buffer.Length)
             {
                 var info = buffer.GetStructAtOffset<FileNotifyExtendedInformation>(offset);
                 var result = info.Result;
-                ns.Add(new DirectoryChangeNotificationExtended(FullPath, info));
+                ns.Add(new DirectoryChangeNotificationExtended(full_path, win32_path, info));
                 if (result.NextEntryOffset == 0)
                 {
                     break;
@@ -3683,6 +3686,40 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get full change notifications. Will pick ex version if available and revert to old format if not.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <returns>The list of changes.</returns>
+        public NtResult<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationFull(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree,
+            NtWaitTimeout timeout, bool throw_on_error)
+        {
+            if (NtObjectUtils.SupportedVersion >= SupportedVersion.Windows10_RS3)
+            {
+                return GetChangeNotificationEx(completion_filter, watch_subtree, 
+                    timeout, throw_on_error).Map(n => n.Cast<DirectoryChangeNotification>());
+            }
+            return GetChangeNotification(completion_filter, watch_subtree, timeout, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get full change notifications. Will pick ex version if available and revert to old format if not.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <returns>The list of changes.</returns>
+        public IEnumerable<DirectoryChangeNotification> GetChangeNotificationFull(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree,
+            NtWaitTimeout timeout)
+        {
+            return GetChangeNotificationFull(completion_filter, watch_subtree, timeout, true).Result;
+        }
+
+        /// <summary>
         /// Get change notifications.
         /// </summary>
         /// <param name="completion_filter">The filter of events to watch for.</param>
@@ -3810,11 +3847,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="completion_filter">The filter of events to watch for.</param>
         /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="timeout">Timeout to wait.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of changes.</returns>
         [SupportedVersion(SupportedVersion.Windows10_RS3)]
         public NtResult<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationEx(
-            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, NtWaitTimeout timeout, bool throw_on_error)
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
@@ -3823,10 +3861,38 @@ namespace NtApiDotNet
                     return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFileEx(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
                         buffer, buffer.Length, completion_filter, watch_subtree, 
-                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation))
-                        .CreateResult(throw_on_error, () => ReadExtendedNotifications(buffer, result.IoStatusBuffer.Result));
+                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation), timeout)
+                        .CreateResult(throw_on_error, s => s == NtStatus.STATUS_SUCCESS ? ReadExtendedNotifications(buffer, result.IoStatusBuffer.Result) : new DirectoryChangeNotificationExtended[0]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Get extended change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public NtResult<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationEx(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            return GetChangeNotificationEx(completion_filter, watch_subtree, NtWaitTimeout.Infinite, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="timeout">Timeout to wait.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public IEnumerable<DirectoryChangeNotificationExtended> GetChangeNotificationEx(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, NtWaitTimeout timeout)
+        {
+            return GetChangeNotificationEx(completion_filter, watch_subtree, timeout, true).Result;
         }
 
         /// <summary>
