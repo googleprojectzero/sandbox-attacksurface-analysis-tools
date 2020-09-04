@@ -2764,7 +2764,7 @@ namespace NtApiDotNet
         /// <returns>The path.</returns>
         public NtResult<string> GetWin32PathName(Win32PathNameFlags flags, bool throw_on_error)
         {
-            return Win32Utils.GetWin32PathName(this, flags, true);
+            return Win32Utils.GetWin32PathName(this, flags, throw_on_error);
         }
 
         /// <summary>
