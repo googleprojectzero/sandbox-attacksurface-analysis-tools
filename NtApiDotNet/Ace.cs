@@ -463,6 +463,26 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether the current access mask is granted specific permissions.
+        /// </summary>
+        /// <param name="mask">The access mask to check</param>
+        /// <returns>True one or more access granted.</returns>
+        public bool IsAccessGranted(AccessMask mask)
+        {
+            return Mask.IsAccessGranted(mask);
+        }
+
+        /// <summary>
+        /// Get whether the current access mask is granted all specific permissions.
+        /// </summary>
+        /// <param name="mask">The access mask to check</param>
+        /// <returns>True access all is granted.</returns>
+        public bool IsAllAccessGranted(AccessMask mask)
+        {
+            return Mask.IsAllAccessGranted(mask);
+        }
+
+        /// <summary>
         /// Compare ACE to another object.
         /// </summary>
         /// <param name="obj">The other object.</param>
