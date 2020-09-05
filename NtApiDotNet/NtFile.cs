@@ -4678,6 +4678,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the granted access as directory rights.
+        /// </summary>
+        public FileDirectoryAccessRights DirectoryGrantedAccess => GrantedAccessMask.ToSpecificAccess<FileDirectoryAccessRights>();
+
         #endregion
     }
 }
