@@ -18,8 +18,8 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// <para type="synopsis">Open a existing NT file object.</para>
-    /// <para type="description">This cmdlet opens a existing NT file object. The absolute path to the object in the NT object manager name space can be specified. 
+    /// <para type="synopsis">Deletes a NT file object.</para>
+    /// <para type="description">This cmdlet deletes a NT file object. The absolute path to the object in the NT object manager name space can be specified. 
     /// It's also possible to open the object relative to an existing object by specified the -Root parameter. To simply calling it's also possible to specify the
     /// path in a Win32 format when using the -Win32Path parameter.</para>
     /// </summary>
@@ -55,16 +55,44 @@ namespace NtObjectManager.Cmdlets.Object
     public class RemoveNtFileCmdlet : GetNtFileCmdlet
     {
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public RemoveNtFileCmdlet()
+        {
+            Access = FileAccessRights.Delete;
+        }
+
+        /// <summary>
         /// <para type="description">Specify whether to delete with POSIX semantics.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter PosixSemantics { get; set; }
+        public SwitchParameter PosixSemantics
+        {
+            get => DispositionFlags.HasFlag(FileDispositionInformationExFlags.PosixSemantics);
+            set
+            {
+                if (value)
+                {
+                    DispositionFlags |= FileDispositionInformationExFlags.PosixSemantics;
+                }
+                else
+                {
+                    DispositionFlags &= ~FileDispositionInformationExFlags.PosixSemantics;
+                }
+            }
+        }
 
         /// <summary>
         /// <para type="description">Specify whether to delete the reparse point or the target.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter DeleteReparsePoint { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify arbitrary flags for the disposition EX setting.</para>
+        /// </summary>
+        [Parameter]
+        public FileDispositionInformationExFlags DispositionFlags { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -75,9 +103,9 @@ namespace NtObjectManager.Cmdlets.Object
             using (var file = NtFile.Open(obj_attributes, FileAccessRights.Delete | Access, ShareMode,
                 Options | (DeleteReparsePoint ? FileOpenOptions.OpenReparsePoint : FileOpenOptions.None)))
             {
-                if (PosixSemantics)
+                if (DispositionFlags != 0)
                 {
-                    file.DeleteEx(FileDispositionInformationExFlags.PosixSemantics | FileDispositionInformationExFlags.Delete);
+                    file.DeleteEx(DispositionFlags | FileDispositionInformationExFlags.Delete);
                 }
                 else
                 {

@@ -506,7 +506,8 @@ namespace NtApiDotNet
         NoDecreaseAvailableSpace = 0x00000020,
         IgnoreReadOnlyAttribute = 0x00000040,
         ForceResizeTargetSR = 0x00000080,
-        ForceResourceSourceSR = 0x00000100,
+        ForceResizeSourceSR = 0x00000100,
+        ForceResizeSR = ForceResizeTargetSR | ForceResizeSourceSR
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

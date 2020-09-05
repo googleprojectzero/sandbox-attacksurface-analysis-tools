@@ -136,6 +136,7 @@
     <Compile Include="Cmdlets\Object\RemoveNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtSecurityDescriptorAceCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtTokenSecurityAttributeCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\RenameNtFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RevokeNtAccessMaskCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SelectNtSecurityDescriptorAceCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SendNtAlpcMessageCmdlet.cs" />
