@@ -30,7 +30,7 @@ namespace NtObjectManager.Provider
     /// Object manager provider.
     /// </summary>
     [CmdletProvider("NtObjectManager", ProviderCapabilities.ExpandWildcards)]
-    public sealed class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider
+    public sealed class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider, IPropertyCmdletProvider
     {
         private static readonly Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
 
@@ -464,31 +464,10 @@ namespace NtObjectManager.Provider
         /// <param name="path">The drive path.</param>
         protected override void GetItem(string path)
         {
-            if (GetDrive() == null)
-            {
+            NtDirectoryEntry entry = GetItemFromPath(path);
+            if (entry == null)
                 return;
-            }
-
-            string relative_path = GetRelativePath(PSPathToNT(path));
-            using (var dir = GetPathDirectory(relative_path, false))
-            {
-                if (!dir.IsSuccess)
-                    return;
-                if (relative_path.Length == 0)
-                {
-                    WriteItemObject(GetDrive().DirectoryRoot.CreateEntry(relative_path, string.Empty, "Directory"),
-                            NTPathToPS(BuildDrivePath(relative_path)), true);
-                }
-                else
-                {
-                    var dir_info = GetEntry(dir.Result, relative_path);
-                    if (dir_info != null)
-                    {
-                        WriteItemObject(GetDrive().DirectoryRoot.CreateEntry(relative_path, dir_info.Name, dir_info.NtTypeName),
-                            NTPathToPS(BuildDrivePath(relative_path)), dir_info.IsDirectory);
-                    }
-                }
-            }
+            WriteItemObject(entry, NTPathToPS(BuildDrivePath(GetRelativePath(PSPathToNT(path)))), entry.IsDirectory);
         }
 
         private void AddMatches(NtObjectContainer root, string base_path, IEnumerable<string> remaining, List<string> matches)
@@ -647,6 +626,77 @@ namespace NtObjectManager.Provider
         ObjectSecurity ISecurityDescriptorCmdletProvider.NewSecurityDescriptorOfType(string type, AccessControlSections includeSections)
         {
             return new GenericObjectSecurity();
+        }
+
+        void IPropertyCmdletProvider.GetProperty(string path, Collection<string> providerSpecificPickList)
+        {
+            NtDirectoryEntry entry = GetItemFromPath(path);
+            if (entry == null)
+                return;
+
+            if (entry is NtKeyEntry key && key.ValueCount > 0)
+            {
+                var patterns = providerSpecificPickList.Select(s => new WildcardPattern(s, WildcardOptions.IgnoreCase)).ToArray();
+
+                foreach (var val in key.Values)
+                {
+                    if (patterns.Length == 0 || patterns.Any(p => p.IsMatch(val.Name)))
+                        WritePropertyObject(val, path);
+                }
+            }
+        }
+
+        object IPropertyCmdletProvider.GetPropertyDynamicParameters(string path, Collection<string> providerSpecificPickList)
+        {
+            return null;
+        }
+
+        void IPropertyCmdletProvider.SetProperty(string path, PSObject propertyValue)
+        {
+            throw new NotImplementedException();
+        }
+
+        object IPropertyCmdletProvider.SetPropertyDynamicParameters(string path, PSObject propertyValue)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IPropertyCmdletProvider.ClearProperty(string path, Collection<string> propertyToClear)
+        {
+            throw new NotImplementedException();
+        }
+
+        object IPropertyCmdletProvider.ClearPropertyDynamicParameters(string path, Collection<string> propertyToClear)
+        {
+            throw new NotImplementedException();
+        }
+
+        private NtDirectoryEntry GetItemFromPath(string path)
+        {
+            if (GetDrive() == null)
+            {
+                return null;
+            }
+
+            string relative_path = GetRelativePath(PSPathToNT(path));
+            using (var dir = GetPathDirectory(relative_path, false))
+            {
+                if (!dir.IsSuccess)
+                    return null;
+                if (relative_path.Length == 0)
+                {
+                    return GetDrive().DirectoryRoot.CreateEntry(relative_path, string.Empty, "Directory");
+                }
+                else
+                {
+                    var dir_info = GetEntry(dir.Result, relative_path);
+                    if (dir_info != null)
+                    {
+                        return GetDrive().DirectoryRoot.CreateEntry(relative_path, dir_info.Name, dir_info.NtTypeName);
+                    }
+                }
+            }
+            return null;
         }
     }
 }
