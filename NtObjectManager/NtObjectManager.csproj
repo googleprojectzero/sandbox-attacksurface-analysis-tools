@@ -79,6 +79,7 @@
     <Compile Include="Cmdlets\Object\GetNtEventCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileReparsePointCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtFileVolumeInformationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtGrantedAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtKeyChildCmdlet.cs" />
@@ -143,6 +144,7 @@
     <Compile Include="Cmdlets\Object\GrantNtAccessMaskCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SetNtFileVolumeInformationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtKeySymbolicLinkTarget.cs" />
     <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtTokenCmdlet.cs" />

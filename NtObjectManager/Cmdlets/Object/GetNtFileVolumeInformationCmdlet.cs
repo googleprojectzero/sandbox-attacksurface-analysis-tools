@@ -1,4 +1,4 @@
-﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
@@ -21,51 +20,46 @@ using System.Runtime.InteropServices;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// <para type="synopsis">Call QueryInformation on the object type.</para>
-    /// <para type="description">This cmdlet queries information from an object handle. You specify the information class by name or number.
+    /// <para type="synopsis">Call QueryVolume on a file.</para>
+    /// <para type="description">This cmdlet queries volume information from an file handle.
     /// </para>
     /// </summary>
     /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass BasicInfo</code>
-    ///   <para>Query the basic info class for the object.</para>
+    ///   <code>Get-NtFileVolumeInformation -File $file -InformationClass FileFsVolumeInformation</code>
+    ///   <para>Query the info class for the object.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass 1</code>
-    ///   <para>Query the info class 1 for the object.</para>
+    ///   <code>Get-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -InitBuffer @(1, 2, 3, 4)</code>
+    ///   <para>Query the info class providing an initial buffer as bytes.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass BasicInfo -InitBuffer @(1, 2, 3, 4)</code>
-    ///   <para>Query the basic info class providing an initial buffer as bytes.</para>
+    ///   <code>Get-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -Length 16</code>
+    ///   <para>Query the info class providing an initial 16 byte buffer.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass BasicInfo -Length 16</code>
-    ///   <para>Query the basic info class providing an initial 16 byte buffer.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass BasicInfo -AsBuffer</code>
-    ///   <para>Query the basic info class and return a safe buffer.</para>
+    ///   <code>Get-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -AsBuffer</code>
+    ///   <para>Query the info class and return a safe buffer.</para>
     /// </example>
     /// /// <example>
-    ///   <code>Get-NtObjectInformation -Object $obj -InformationClass BasicInfo -AsType $type</code>
-    ///   <para>Query the basic info class and a typed value. $type needs to be a blitable .NET type.</para>
+    ///   <code>Get-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -AsType $type</code>
+    ///   <para>Query the info class and a typed value. $type needs to be a blitable .NET type.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtObjectInformation", DefaultParameterSetName = "QueryBytes")]
+    [Cmdlet(VerbsCommon.Get, "NtFileVolumeInformation", DefaultParameterSetName = "QueryBytes")]
     [OutputType(typeof(byte[]))]
     [OutputType(typeof(SafeBufferGeneric))]
-    public sealed class GetNtObjectInfoCmdlet : PSCmdlet
+    public sealed class GetNtFileVolumeInformationCmdlet : PSCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the object to query information from.</para>
+        /// <para type="description">Specify the file to query information from.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
-        public NtObject Object { get; set; }
+        public NtFile File { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the information class to query. Can be a string or an integer.</para>
+        /// <para type="description">Specify the information class to query.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 1)]
-        [ArgumentCompleter(typeof(QueryInfoClassCompleter))]
-        public string InformationClass { get; set; }
+        public FsInformationClass InformationClass { get; set; }
 
         /// <summary>
         /// <para type="description">Return the result as a buffer rather than a byte array.</para>
@@ -109,18 +103,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            INtObjectQueryInformation query_info = (INtObjectQueryInformation)Object;
-            int info_class;
-            if (Object.NtType.QueryInformationClass.ContainsKey(InformationClass))
-            {
-                info_class = Object.NtType.QueryInformationClass[InformationClass];
-            }
-            else if (!int.TryParse(InformationClass, out info_class))
-            {
-                throw new ArgumentException($"Invalid info class {InformationClass}");
-            }
-
-            using (var buffer = query_info.QueryBuffer(info_class, GetInitialBuffer(), true).Result)
+            using (var buffer = File.QueryVolumeBuffer(InformationClass, GetInitialBuffer()))
             {
                 if (AsBuffer)
                 {

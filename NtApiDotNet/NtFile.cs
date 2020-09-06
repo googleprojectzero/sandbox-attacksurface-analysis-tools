@@ -4348,6 +4348,47 @@ namespace NtApiDotNet
         /// <summary>
         /// Query a buffer for a volume.
         /// </summary>
+        /// <param name="info_class">The volume information class.</param>
+        /// <param name="init_buffer">Initialization buffer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The returned type.</returns>
+        public NtResult<SafeHGlobalBuffer> QueryVolumeBuffer(FsInformationClass info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            int length = Math.Max(128, init_buffer?.Length ?? 0);
+            while (true)
+            {
+                using (var buffer = new SafeHGlobalBuffer(length))
+                {
+                    if (init_buffer != null)
+                    {
+                        buffer.WriteBytes(0, init_buffer);
+                    }
+                    IoStatus io_status = new IoStatus();
+                    NtStatus status = QueryVolume(info_class, buffer, false);
+                    if (status.IsSuccess())
+                        return status.CreateResult(throw_on_error, () => buffer.Detach());
+
+                    if ((status != NtStatus.STATUS_BUFFER_OVERFLOW) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
+                        return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+                }
+                length *= 2;
+            }
+        }
+
+        /// <summary>
+        /// Query a buffer for a volume.
+        /// </summary>
+        /// <param name="info_class">The volume information class.</param>
+        /// <param name="init_buffer">Initialization buffer.</param>
+        /// <returns>The returned type.</returns>
+        public SafeHGlobalBuffer QueryVolumeBuffer(FsInformationClass info_class, byte[] init_buffer)
+        {
+            return QueryVolumeBuffer(info_class, init_buffer, true).Result;
+        }
+
+        /// <summary>
+        /// Query a buffer for a volume.
+        /// </summary>
         /// <typeparam name="T">The type to query.</typeparam>
         /// <param name="info_class">The volume information class.</param>
         /// <returns>The returned type.</returns>
