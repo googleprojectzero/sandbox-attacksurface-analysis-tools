@@ -1065,6 +1065,78 @@ namespace NtApiDotNet
         public FileDeviceCharacteristics Characteristics;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("DriverName")]
+    public struct FileFsDriverPathInformation
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool DriverInPath;
+        public int DriverNameLength;
+        public char DriverName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsVolumeFlagsInformation
+    {
+        public int Flags;
+    }
+
+    [Flags]
+    public enum FileSystemControlFlags
+    {
+        QuotaNone = 0x00000000,
+        QuoraTrack = 0x00000001,
+        QuotaEnforce = 0x00000002,
+        QuoteUnknown = 0x00000004,
+        ContentIndexDisabled = 0x00000008,
+        LogQuotaThreshold = 0x00000010,
+        LogQuotaLimit = 0x00000020,
+        LogVolumeThreshold = 0x00000040,
+        LogVolumeLimit = 0x00000080,
+        QuotasIncomplete = 0x00000100,
+        QuotasRebuilding = 0x00000200
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsControlInformation
+    {
+        public LargeIntegerStruct FreeSpaceStartFiltering;
+        public LargeIntegerStruct FreeSpaceThreshold;
+        public LargeIntegerStruct FreeSpaceStopFiltering;
+        public LargeIntegerStruct DefaultQuotaThreshold;
+        public LargeIntegerStruct DefaultQuotaLimit;
+        public FileSystemControlFlags FileSystemControlFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsDataCopyInformation
+    {
+        public int NumberOfCopies;
+    }
+
+    [Flags]
+    public enum FileFsPersistentVolumeInformationFlags : uint
+    {
+        None = 0,
+        ShortNameCreationDisabled = 0x00000001,
+        VolumeScrubeDisabled = 0x00000002,
+        GlobalMetadataNoSeekPenalty = 0x00000004,
+        LocalMetadtaNoSeekPenalty = 0x00000008,
+        NoHeatGathering = 0x00000010,
+        ContainsBackingWIM = 0x00000020,
+        BackedByWIM = 0x00000040,
+        NoWriteAutoTiering = 0x00000080,
+        TxFDisabled = 0x00000100,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileFsPersistentVolumeInformation
+    {
+        public FileFsPersistentVolumeInformationFlags VolumeFlags;
+        public FileFsPersistentVolumeInformationFlags FlagMask;
+        public int Version;
+        public int Reserved;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class IoStatus
     {
@@ -1349,16 +1421,18 @@ namespace NtApiDotNet
 
     public class FileLinkEntry
     {
-        public long ParentFileId { get; private set; }
-        public string FileName { get; private set; }
-        public string FullPath { get; private set; }
+        public long ParentFileId { get; }
+        public string FileName { get; }
+        public string FullPath { get; }
+        public string Win32Path { get; }
 
-        internal FileLinkEntry(SafeStructureInOutBuffer<FileLinkEntryInformation> buffer, string parent_path)
+        internal FileLinkEntry(SafeStructureInOutBuffer<FileLinkEntryInformation> buffer, string parent_path, string win32_parent)
         {
             FileLinkEntryInformation entry = buffer.Result;
             ParentFileId = entry.ParentFileId;
             FileName = buffer.Data.ReadUnicodeString(entry.FileNameLength);
             FullPath = Path.Combine(parent_path, FileName);
+            Win32Path = Path.Combine(win32_parent, FileName);
         }
     }
 

@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public static class Win32Utils
     {
-        static bool IsValidMask(uint mask, uint valid_mask)
+        private static bool IsValidMask(uint mask, uint valid_mask)
         {
             if (mask == 0)
             {
@@ -50,7 +50,7 @@ namespace NtApiDotNet.Win32
             return true;
         }
 
-        static void AddEnumToDictionary(Dictionary<uint, String> access, Type enumType, uint valid_mask)
+        private static void AddEnumToDictionary(Dictionary<uint, String> access, Type enumType, uint valid_mask)
         {
             Regex re = new Regex("([A-Z])");
 
@@ -61,6 +61,24 @@ namespace NtApiDotNet.Win32
                     access.Add(mask, re.Replace(Enum.GetName(enumType, mask), " $1").Trim());
                 }
             }
+        }
+
+        internal static string RemoveDevicePrefix(string win32_path)
+        {
+            if (win32_path.StartsWith(@"\\?\"))
+            {
+                if (win32_path.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
+                {
+                    return win32_path;
+                }
+                else if (win32_path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+                {
+                    return @"\\" + win32_path.Substring(8);
+                }
+
+                return win32_path.Substring(4);
+            }
+            return win32_path;
         }
 
         internal static Dictionary<uint, String> GetMaskDictionary(Type access_type, AccessMask valid_access)

@@ -7371,6 +7371,8 @@ The NT type to get information classes for.
 The object to get information classes for.
 .PARAMETER Set
 Specify to get the set information classes which might differ.
+.PARAMETER Volume
+Specify to get the volume information classes.
 .INPUTS
 None
 .OUTPUTS
@@ -7383,18 +7385,26 @@ function Get-NtObjectInformationClass {
         [NtApiDotNet.NtType]$Type,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromObject")]
         [NtApiDotNet.NtObject]$Object,
-        [switch]$Set
+        [Parameter(ParameterSetName = "FromObject")]
+        [Parameter(ParameterSetName = "FromType")]
+        [switch]$Set,
+        [Parameter(ParameterSetName = "FromVolume")]
+        [switch]$Volume
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromObject") {
-        $Type = $Object.NtType
-    }
+    if ($Volume) {
+        [NtObjectManager.Utils.PSUtils]::GetFsVolumeInfoClass() | Write-Output
+    } else {
+        if ($PSCmdlet.ParameterSetName -eq "FromObject") {
+            $Type = $Object.NtType
+        }
 
-    if ($Set) {
-        $Type.SetInformationClass | Write-Output
-    }
-    else {
-        $Type.QueryInformationClass | Write-Output
+        if ($Set) {
+            $Type.SetInformationClass | Write-Output
+        }
+        else {
+            $Type.QueryInformationClass | Write-Output
+        }
     }
 }
 
@@ -10804,8 +10814,8 @@ Enumerate object ID information.
 None
 .OUTPUTS
 NtApiDotNet.FileDirectoryEntry[]
-NtApiDotNet.FileReparsePointInformation[]
-NtApiDotNet.FileObjectIdInformation[]
+NtApiDotNet.NtFileReparsePoint[]
+NtApiDotNet.NtFileObjectId[]
 .EXAMPLE
 Get-NtFileItem -File $f
 Enumerate all file items.
@@ -11000,4 +11010,39 @@ function Unlock-NtFile {
     }
 
     $File.Unlock($Offset, $Length)
+}
+
+<#
+.SYNOPSIS
+Get linknames to a file.
+.DESCRIPTION
+This cmdlet gets a list of link names to an open file.
+.PARAMETER File
+Specify the file to query.
+.PARAMETER Win32Path
+Specify to return Win32 paths.
+.INPUTS
+None
+.OUTPUTS
+string[]
+.EXAMPLE
+Get-NtFileLink -File $f
+Get all links to the file.
+.EXAMPLE
+Get-NtFileLink -File $f -Win32Path
+Get all links to the file as win32 paths.
+#>
+function Get-NtFileLink {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [switch]$Win32Path
+    )
+
+    $ret = $File.GetHardLinks()
+    if ($Win32Path) {
+        $ret | Select-Object -ExpandProperty Win32Path | Write-Output
+    } else {
+        $ret | Select-Object -ExpandProperty FullPath | Write-Output
+    }
 }

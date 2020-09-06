@@ -253,5 +253,19 @@ namespace NtObjectManager.Utils
                 DisposeObject(input);
             }
         }
+
+        /// <summary>
+        /// Get list of volume info classes.
+        /// </summary>
+        /// <returns>The volume information classes.</returns>
+        public static IEnumerable<KeyValuePair<string, int>> GetFsVolumeInfoClass()
+        {
+            List<KeyValuePair<string, int>> ret = new List<KeyValuePair<string, int>>();
+            foreach (var name in Enum.GetValues(typeof(FsInformationClass)))
+            {
+                ret.Add(new KeyValuePair<string, int>(name.ToString(), (int)name));
+            }
+            return ret.AsReadOnly();
+        }
     }
 }
