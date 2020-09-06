@@ -60,6 +60,7 @@ namespace NtObjectManager.Cmdlets.Object
         public RemoveNtFileCmdlet()
         {
             Access = FileAccessRights.Delete;
+            ShareMode = FileShareMode.Read | FileShareMode.Delete;
         }
 
         /// <summary>

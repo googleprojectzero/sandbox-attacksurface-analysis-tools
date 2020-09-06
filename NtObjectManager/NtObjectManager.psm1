@@ -11046,3 +11046,84 @@ function Get-NtFileLink {
         $ret | Select-Object -ExpandProperty FullPath | Write-Output
     }
 }
+
+
+<#
+.SYNOPSIS
+Sets the disposition on a file.
+.DESCRIPTION
+This cmdlet sets the disposition on a file such as deleting the file.
+.PARAMETER File
+Specify the file to set.
+.PARAMETER Delete
+Specify to mark the file as delete on close.
+.PARAMETER PosixSemantics
+Specify to mark the file as delete on close with POSIX semantics.
+.PARAMETER Flags
+Specify disposition flags.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtFileDisposition -File $f -Delete
+Set the file to delete on close.
+.EXAMPLE
+Set-NtFileDisposition -File $f -Delete:$false
+Clear the file delete on close flag.
+.EXAMPLE
+Set-NtFileDisposition -File $f -Delete -PosixSemantics
+Set the file to delete on close with POSIX semantics.
+.EXAMPLE
+Set-NtFileDisposition -File $f -Flags Delete, IgnoreReadOnlyAttribute
+Set the file delete on close flag and ignore the readonly attribute.
+#>
+function Set-NtFileDisposition {
+    [CmdletBinding(DefaultParameterSetName="FromDelete")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, ParameterSetName="FromDelete")]
+        [switch]$Delete,
+        [parameter(ParameterSetName="FromDelete")]
+        [switch]$PosixSemantics,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromFlags")]
+        [NtApiDotNet.FileDispositionInformationExFlags]$Flags
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromDelete" {
+            if ($PosixSemantics -and $Delete) {
+                $File.SetDispositionEx("Delete, PosixSemantics")
+            } else {
+                $File.SetDisposition($Delete)
+            }
+        }
+        "FromFlags" {
+            $File.SetDispositionEx($Flags)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Gets whether the file is being deleted.
+.DESCRIPTION
+This cmdlet gets whether the file is going to be deleted when closed.
+.PARAMETER File
+Specify the file to query.
+.INPUTS
+None
+.OUTPUTS
+bool
+.EXAMPLE
+Get-NtFileDisposition -File $f
+Get the file to delete on close flag.
+#>
+function Get-NtFileDisposition {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File
+    )
+    $File.DeletePending | Write-Output
+}

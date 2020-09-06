@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
-using NtApiDotNet.Utilities.IO;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
@@ -4586,8 +4585,8 @@ namespace NtApiDotNet
             {
                 if (!_is_directory.HasValue)
                 {
-                    var attr = GetFileAttributes(false).GetResultOrDefault(FileAttributes.None);
-                    _is_directory = attr.HasFlagSet(FileAttributes.Directory);
+                    var info = Query<FileStandardInformation>(FileInformationClass.FileStandardInformation, default, false).GetResultOrDefault();
+                    _is_directory = info.Directory;
                 }
                 return _is_directory.Value;
             }
@@ -4625,6 +4624,16 @@ namespace NtApiDotNet
         /// Get the file's allocation size.
         /// </summary>
         public long AllocationSize => Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).AllocationSize.QuadPart;
+
+        /// <summary>
+        /// Get the number of links.
+        /// </summary>
+        public int NumberOfLinks => Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).NumberOfLinks;
+
+        /// <summary>
+        /// Get whether delete is pending.
+        /// </summary>
+        public bool DeletePending => Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).DeletePending;
 
         /// <summary>
         /// Get the Win32 path name for the file.
