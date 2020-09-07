@@ -122,6 +122,7 @@ namespace NtApiDotNet
                         SafeBuffer output_buffer, CancellationToken token,
                         bool throw_on_error)
         {
+            CheckForSyncMode();
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
                 using (NtAsyncResult result = new NtAsyncResult(this))
@@ -154,12 +155,9 @@ namespace NtApiDotNet
 
         private NtResult<int> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+            return RunFileCallSync(r => func(Handle, r.EventHandle, IntPtr.Zero, IntPtr.Zero, r.IoStatusBuffer,
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer),
-                    GetSafeLength(output_buffer))).CreateResult(throw_on_error, () => result.Information32);
-            }
+                    GetSafeLength(output_buffer)), throw_on_error).Map(s => s.Information32);
         }
 
         private NtResult<byte[]> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
@@ -218,6 +216,8 @@ namespace NtApiDotNet
 
         private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
         {
+            CheckForSyncMode();
+
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
                 using (NtAsyncResult result = new NtAsyncResult(this))
@@ -235,6 +235,8 @@ namespace NtApiDotNet
 
         private NtResult<IoStatus> RunFileCallSync(Func<NtAsyncResult, NtStatus> func, NtWaitTimeout timeout, bool throw_on_error)
         {
+            if (timeout?.Timeout != null)
+                CheckForSyncMode();
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
                 return result.CompleteCall(func(result), timeout)
@@ -2319,12 +2321,9 @@ namespace NtApiDotNet
         {
             FileSegmentElement[] segments = PageListToSegments(pages);
 
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(NtSystemCalls.NtReadFileScatter(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero))
-                    .CreateResult(throw_on_error, () => result.Information32);
-            }
+            return RunFileCallSync(r => NtSystemCalls.NtReadFileScatter(Handle, r.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, r.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero),
+                    throw_on_error).Map(s => s.Information32);
         }
 
         /// <summary>
@@ -2538,12 +2537,9 @@ namespace NtApiDotNet
         /// <returns>The number of bytes written.</returns>
         public NtResult<int> Write(SafeBuffer data, long? position, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, data, data.GetLength(), position.ToLargeInteger(), IntPtr.Zero))
-                    .CreateResult(throw_on_error, () => result.Information32);
-            }
+            return RunFileCallSync(r => NtSystemCalls.NtWriteFile(Handle, r.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, r.IoStatusBuffer, data, data.GetLength(), position.ToLargeInteger(), IntPtr.Zero),
+                    throw_on_error).Map(s => s.Information32);
         }
 
         /// <summary>
@@ -2604,12 +2600,9 @@ namespace NtApiDotNet
         public NtResult<int> WriteGather(IEnumerable<long> pages, int length, long position, bool throw_on_error)
         {
             var segments = PageListToSegments(pages);
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(NtSystemCalls.NtWriteFileGather(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero))
-                    .CreateResult(throw_on_error, () => result.Information32);
-            }
+            return RunFileCallSync(r => NtSystemCalls.NtWriteFileGather(Handle, r.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, r.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero),
+                    throw_on_error).Map(s => s.Information32);
         }
 
         /// <summary>
@@ -2691,12 +2684,9 @@ namespace NtApiDotNet
         /// <returns>The NT status code.</returns>
         public NtStatus Lock(long offset, long size, bool fail_immediately, bool exclusive, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
-                    new LargeInteger(size), 0, fail_immediately, exclusive)).ToNtException(throw_on_error);
-            }
+            return RunFileCallSync(r => NtSystemCalls.NtLockFile(Handle, r.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, r.IoStatusBuffer, new LargeInteger(offset),
+                    new LargeInteger(size), 0, fail_immediately, exclusive), throw_on_error).Status;
         }
 
         /// <summary>
@@ -3855,16 +3845,12 @@ namespace NtApiDotNet
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree,
             NtWaitTimeout timeout, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
+            using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
             {
-                using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
-                {
-                    return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFile(
-                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                        buffer, buffer.Length, completion_filter, watch_subtree), timeout)
-                        .CreateResult(throw_on_error,
-                        s => s == NtStatus.STATUS_SUCCESS ? ReadNotifications(buffer, result.IoStatusBuffer.Result) : new DirectoryChangeNotification[0]);
-                }
+                return RunFileCallSync(r => NtSystemCalls.NtNotifyChangeDirectoryFile(
+                        Handle, r.EventHandle, IntPtr.Zero, IntPtr.Zero, r.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree), timeout, throw_on_error)
+                    .Map((t, s) => t == NtStatus.STATUS_SUCCESS ? ReadNotifications(buffer, s) : new DirectoryChangeNotification[0]);
             }
         }
 
@@ -3978,16 +3964,13 @@ namespace NtApiDotNet
         public NtResult<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationEx(
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, NtWaitTimeout timeout, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
+            using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
             {
-                using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
-                {
-                    return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFileEx(
-                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                        buffer, buffer.Length, completion_filter, watch_subtree, 
-                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation), timeout)
-                        .CreateResult(throw_on_error, s => s == NtStatus.STATUS_SUCCESS ? ReadExtendedNotifications(buffer, result.IoStatusBuffer.Result) : new DirectoryChangeNotificationExtended[0]);
-                }
+                return RunFileCallSync(r => NtSystemCalls.NtNotifyChangeDirectoryFileEx(
+                        Handle, r.EventHandle, IntPtr.Zero, IntPtr.Zero, r.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree,
+                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation), timeout, throw_on_error)
+                    .Map(s => s.Status == NtStatus.STATUS_SUCCESS ? ReadExtendedNotifications(buffer, s) : new DirectoryChangeNotificationExtended[0]);
             }
         }
 
