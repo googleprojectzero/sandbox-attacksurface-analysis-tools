@@ -37,6 +37,7 @@ namespace NtApiDotNet
         {
             _cts = new CancellationTokenSource();
             OpenResult = io_status != null ? (FileOpenResult)io_status.Information.ToInt32() : FileOpenResult.Opened;
+            _sync_mode = new Lazy<bool>(() => Mode.HasFlagSet(FileOpenOptions.SynchronousIoAlert | FileOpenOptions.SynchronousIoNonAlert));
         }
 
         internal NtFile(SafeKernelObjectHandle handle)
@@ -65,6 +66,7 @@ namespace NtApiDotNet
         // Cancellation source for stopping pending IO on close.
         private CancellationTokenSource _cts;
         private bool? _is_directory;
+        private readonly Lazy<bool> _sync_mode;
 
         private const int ChangeNotificationBufferSize = 64 * 1024;
 
@@ -208,6 +210,12 @@ namespace NtApiDotNet
             }
         }
 
+        private void CheckForSyncMode()
+        {
+            if (_sync_mode.Value)
+                throw new ArgumentException("File was opened synchronously. Can't perform asynchronous operations.");
+        }
+
         private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
@@ -223,6 +231,20 @@ namespace NtApiDotNet
                     return status.CreateResult(throw_on_error, () => result.Result);
                 }
             }
+        }
+
+        private NtResult<IoStatus> RunFileCallSync(Func<NtAsyncResult, NtStatus> func, NtWaitTimeout timeout, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                return result.CompleteCall(func(result), timeout)
+                    .CreateResult(throw_on_error, () => result.IoStatusBuffer.Result);
+            }
+        }
+
+        private NtResult<IoStatus> RunFileCallSync(Func<NtAsyncResult, NtStatus> func, bool throw_on_error)
+        {
+            return RunFileCallSync(func, NtWaitTimeout.Infinite, throw_on_error);
         }
 
         private bool VisitFileEntry(string filename, bool directory, Func<NtFile, bool> visitor, FileAccessRights desired_access,
@@ -2232,12 +2254,10 @@ namespace NtApiDotNet
         /// <returns>The length of bytes read into the buffer.</returns>
         public NtResult<int> Read(SafeBuffer buffer, long? position, bool throw_on_error)
         {
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.GetLength(), position.ToLargeInteger(), IntPtr.Zero))
-                    .CreateResult(throw_on_error, () => result.Information32);
-            }
+            return RunFileCallSync(r => NtSystemCalls.NtReadFile(Handle, r.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, r.IoStatusBuffer, buffer, 
+                    buffer.GetLength(), position.ToLargeInteger(), IntPtr.Zero), throw_on_error)
+                    .Map(r => r.Information32);
         }
 
         /// <summary>
@@ -3779,6 +3799,51 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get full change notifications asynchronously. Will pick ex version if available and revert to old format if not.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        public Task<NtResult<IEnumerable<DirectoryChangeNotification>>> GetChangeNotificationFullAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token, bool throw_on_error)
+        {
+            if (NtObjectUtils.SupportedVersion >= SupportedVersion.Windows10_RS3)
+            {
+                return GetChangeNotificationExAsync(completion_filter, watch_subtree, token, 
+                    throw_on_error).MapAsync(s => s.Cast<DirectoryChangeNotification>());
+            }
+            return GetChangeNotificationAsync(completion_filter, watch_subtree, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get full change notifications asynchronously. Will pick ex version if available and revert to old format if not.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        public async Task<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationFullAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token)
+        {
+            var result = await GetChangeNotificationFullAsync(completion_filter, watch_subtree, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Get full change notifications asynchronously. Will pick ex version if available and revert to old format if not.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <returns>The list of changes.</returns>
+        public Task<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationFullAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
+        {
+            return GetChangeNotificationFullAsync(completion_filter, watch_subtree, CancellationToken.None);
+        }
+
+        /// <summary>
         /// Get change notifications.
         /// </summary>
         /// <param name="completion_filter">The filter of events to watch for.</param>
@@ -4024,7 +4089,7 @@ namespace NtApiDotNet
         /// <param name="watch_subtree">True to watch all sub directories.</param>
         /// <returns>The list of changes.</returns>
         [SupportedVersion(SupportedVersion.Windows10_RS3)]
-        public Task<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationAsyncEx(
+        public Task<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationExAsync(
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
         {
             return GetChangeNotificationExAsync(completion_filter, watch_subtree, CancellationToken.None);
