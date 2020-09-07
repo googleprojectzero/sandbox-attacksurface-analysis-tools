@@ -4665,7 +4665,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = new SafeStructureInOutBuffer<int>())
+                using (var buffer = new SafeStructureInOutBuffer<short>())
                 {
                     FsControl(NtWellKnownIoControlCodes.FSCTL_GET_COMPRESSION, SafeHGlobalBuffer.Null, buffer);
                     return (CompressionFormat)buffer.Result;
@@ -4673,7 +4673,7 @@ namespace NtApiDotNet
             }
             set
             {
-                using (var buffer = ((int)value).ToBuffer())
+                using (var buffer = ((short)value).ToBuffer())
                 {
                     FsControl(NtWellKnownIoControlCodes.FSCTL_SET_COMPRESSION, buffer, SafeHGlobalBuffer.Null);
                 }
@@ -4830,6 +4830,11 @@ namespace NtApiDotNet
                 FileAttributes = current_attributes;
             }
         }
+
+        /// <summary>
+        /// Is the file compressed.
+        /// </summary>
+        public bool Compressed => FileAttributes.HasFlagSet(FileAttributes.Compressed);
 
         /// <summary>
         /// Get remote protocol information.
