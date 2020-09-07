@@ -94,6 +94,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Map result to a different type.
+        /// </summary>
+        /// <typeparam name="S">The different type to map to.</typeparam>
+        /// <param name="map_func">A function to map the result.</param>
+        /// <returns>The mapped result.</returns>
+        public NtResult<S> Map<S>(Func<NtStatus, T, S> map_func)
+        {
+            if (IsSuccess)
+            {
+                return new NtResult<S>(Status, map_func(Status, Result));
+            }
+            return new NtResult<S>(Status, default);
+        }
+
+        /// <summary>
         /// Cast result to a different type.
         /// </summary>
         /// <typeparam name="S">The different type to cast to.</typeparam>
