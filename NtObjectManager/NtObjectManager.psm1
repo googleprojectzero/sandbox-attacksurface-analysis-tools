@@ -10811,10 +10811,17 @@ Specify all files or either files or directories.
 Enumerate reparse point information.
 .PARAMETER ObjectId
 Enumerate object ID information.
+.PARAMETER IncludePlaceholder
+Include placeholder directories in output.
+.PARAMETER FileId
+Include file ID in the entries.
+.PARAMETER ShortName
+Include the short name in the output.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.FileDirectoryEntry[]
+NtApiDotNet.FileIdDirectoryEntry[]
 NtApiDotNet.NtFileReparsePoint[]
 NtApiDotNet.NtFileObjectId[]
 .EXAMPLE
@@ -10835,16 +10842,28 @@ Enumerate reparse points.
 .EXAMPLE
 Get-NtFileItem -File $f -ObjectId
 Enumerate object IDs.
+.EXAMPLE
+Get-NtFileItem -File $f -FileId
+Enumerate files with file ID.
+.EXAMPLE
+Get-NtFileItem -File $f -ShortName
+Enumerate files with short name.
 #>
 function Get-NtFileItem {
-    [CmdletBinding(DefaultParameterSetName = "FromDirectory")]
+    [CmdletBinding(DefaultParameterSetName = "Default")]
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.NtFile]$File,
-        [parameter(ParameterSetName="FromDirectory")]
+        [parameter(ParameterSetName="Default")]
         [string]$Pattern = "*",
-        [parameter(ParameterSetName="FromDirectory")]
+        [parameter(ParameterSetName="Default")]
         [NtApiDotNet.FileTypeMask]$FileType = "All",
+        [parameter(ParameterSetName="Default")]
+        [switch]$FileId,
+        [parameter(ParameterSetName="Default")]
+        [switch]$ShortName,
+        [parameter(ParameterSetName="Default")]
+        [switch]$IncludePlaceholder,
         [parameter(ParameterSetName="FromReparsePoint")]
         [switch]$ReparsePoint,
         [parameter(ParameterSetName="FromObjectID")]
@@ -10852,8 +10871,20 @@ function Get-NtFileItem {
     )
 
     switch($PSCmdlet.ParameterSetName) {
-        "FromDirectory" {
-            $File.QueryDirectoryInfo($Pattern, $FileType) | Write-Output
+        "Default" {
+            $flags = "Default"
+            if ($FileId -and $ShortName) {
+                $flags = "FileId, ShortName"
+            } elseif($FileId) {
+                $flags = "FileId"
+            } elseif($ShortName) {
+                $flags = "ShortName"
+            }
+
+            if ($IncludePlaceholder) {
+                $flags += ", Placeholders"
+            }
+            $File.QueryDirectoryInfo($Pattern, $FileType, $flags) | Write-Output
         }
         "FromReparsePoint" {
             $File.QueryReparsePoints() | Write-Output

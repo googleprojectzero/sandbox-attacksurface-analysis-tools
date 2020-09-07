@@ -417,6 +417,70 @@ namespace NtApiDotNet
             }
         }
 
+        private IEnumerable<U> QueryDirectoryInfo<T, U>(FileInformationClass info_class, string file_mask, FileTypeMask type_mask, bool include_placeholders) where T : struct, IFileDirectoryInformation<T, U> where U : FileDirectoryEntry
+        {
+            UnicodeString mask = new UnicodeString(string.IsNullOrEmpty(file_mask) ? "*" : file_mask);
+            // 32k seems to be a reasonable size, too big and some volumes will fail with STATUS_INVALID_PARAMETER.
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(32 * 1024))
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
+                        info_class, false, mask, true));
+
+                    while (status.IsSuccess())
+                    {
+                        var dir_buffer = buffer.GetStructAtOffset<T>(0);
+                        do
+                        {
+                            var dir_info = dir_buffer.Result;
+                            bool valid_entry = false;
+                            switch (type_mask)
+                            {
+                                case FileTypeMask.All:
+                                    valid_entry = true;
+                                    break;
+                                case FileTypeMask.FilesOnly:
+                                    valid_entry = !dir_info.GetAttributes().HasFlagSet(FileAttributes.Directory);
+                                    break;
+                                case FileTypeMask.DirectoriesOnly:
+                                    valid_entry = dir_info.GetAttributes().HasFlagSet(FileAttributes.Directory);
+                                    break;
+                            }
+
+                            if (valid_entry)
+                            {
+                                var entry = dir_info.ToEntry(dir_buffer);
+                                if (include_placeholders || (entry.FileName != "." && entry.FileName != ".."))
+                                {
+                                    yield return entry;
+                                }
+                            }
+
+                            int nextofs = dir_info.GetNextOffset();
+
+                            if (nextofs == 0)
+                            {
+                                break;
+                            }
+                            dir_buffer = dir_buffer.GetStructAtOffset<T>(nextofs);
+                        }
+                        while (true);
+
+                        result.Reset();
+                        status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
+                            result.IoStatusBuffer, buffer, buffer.Length, info_class, false, mask, false));
+                    }
+
+                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
+                    {
+                        status.ToNtException();
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -2098,7 +2162,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Query a directory for files.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The list of directory entries.</returns>
         public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo()
         {
             return QueryDirectoryInfo(null, FileTypeMask.All);
@@ -2109,69 +2173,54 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
         /// <param name="type_mask">Indicate what entries to return.</param>
-        /// <returns></returns>
+        /// <param name="include_flags">Specify what additional data to include in the directory entries.</param>
+        /// <returns>The list of directory entries. You might need to cast the directories to the appropriate types if using include flags.</returns>
+        public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo(string file_mask, FileTypeMask type_mask, DirectoryEntryIncludeFlags include_flags)
+        {
+            bool placeholders = include_flags.HasFlagSet(DirectoryEntryIncludeFlags.Placeholders);
+            include_flags &= ~DirectoryEntryIncludeFlags.Placeholders;
+
+            switch (include_flags)
+            {
+                case DirectoryEntryIncludeFlags.Default:
+                    return QueryDirectoryInfo<FileDirectoryInformation, FileDirectoryEntry>(FileInformationClass.FileDirectoryInformation,
+                    file_mask, type_mask, placeholders);
+                case DirectoryEntryIncludeFlags.FileId:
+                    return QueryDirectoryInfo<FileIdFullDirectoryInformation, FileIdDirectoryEntry>(FileInformationClass.FileIdFullDirectoryInformation,
+                        file_mask, type_mask, placeholders);
+                case DirectoryEntryIncludeFlags.ShortName:
+                    return QueryDirectoryInfo<FileBothDirectoryInformation, FileBothDirectoryEntry>(FileInformationClass.FileBothDirectoryInformation,
+                        file_mask, type_mask, placeholders);
+                case DirectoryEntryIncludeFlags.FileId | DirectoryEntryIncludeFlags.ShortName:
+                    return QueryDirectoryInfo<FileIdBothDirectoryInformation, FileIdBothDirectoryEntry>(FileInformationClass.FileIdBothDirectoryInformation,
+                        file_mask, type_mask, placeholders);
+                default:
+                    throw new ArgumentException("Invalid include flags", nameof(include_flags));
+            }
+        }
+
+        /// <summary>
+        /// Query a directory for files.
+        /// </summary>
+        /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
+        /// <param name="type_mask">Indicate what entries to return.</param>
+        /// <returns>The list of directory entries.</returns>
         public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo(string file_mask, FileTypeMask type_mask)
         {
-            UnicodeString mask = new UnicodeString(string.IsNullOrEmpty(file_mask) ? "*" : file_mask);
-            // 32k seems to be a reasonable size, too big and some volumes will fail with STATUS_INVALID_PARAMETER.
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(32 * 1024))
-            {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
-                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
-                        FileInformationClass.FileDirectoryInformation, false, mask, true));
+            return QueryDirectoryInfo(file_mask, type_mask, DirectoryEntryIncludeFlags.Default);
+        }
 
-                    while (status.IsSuccess())
-                    {
-                        var dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
-                        do
-                        {
-                            FileDirectoryInformation dir_info = dir_buffer.Result;
-                            bool valid_entry = false;
-                            switch (type_mask)
-                            {
-                                case FileTypeMask.All:
-                                    valid_entry = true;
-                                    break;
-                                case FileTypeMask.FilesOnly:
-                                    valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == 0;
-                                    break;
-                                case FileTypeMask.DirectoriesOnly:
-                                    valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
-                                    break;
-                            }
-
-                            string file_name = dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2);
-                            if (file_name == "." || file_name == "..")
-                            {
-                                valid_entry = false;
-                            }
-
-                            if (valid_entry)
-                            {
-                                yield return new FileDirectoryEntry(dir_info, dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2));
-                            }
-
-                            if (dir_info.NextEntryOffset == 0)
-                            {
-                                break;
-                            }
-                            dir_buffer = dir_buffer.GetStructAtOffset<FileDirectoryInformation>(dir_info.NextEntryOffset);
-                        }
-                        while (true);
-
-                        result.Reset();
-                        status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
-                            result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false));
-                    }
-
-                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
-                    {
-                        status.ToNtException();
-                    }
-                }
-            }
+        /// <summary>
+        /// Query a directory for files with file ID.
+        /// </summary>
+        /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
+        /// <param name="type_mask">Indicate what entries to return.</param>
+        /// <param name="with_placeholders">Return placeholder parent and current directory entries.</param>
+        /// <returns>The list of directory entries.</returns>
+        public IEnumerable<FileIdDirectoryEntry> QueryFileIdDirectoryInfo(string file_mask, FileTypeMask type_mask, bool with_placeholders)
+        {
+            return QueryDirectoryInfo<FileIdFullDirectoryInformation, FileIdDirectoryEntry>(FileInformationClass.FileDirectoryInformation,
+                file_mask, type_mask, with_placeholders);
         }
 
         /// <summary>

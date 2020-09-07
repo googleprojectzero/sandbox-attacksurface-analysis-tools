@@ -559,8 +559,15 @@ namespace NtApiDotNet
         public FileAttributes FileAttributes;
     }
 
+    public interface IFileDirectoryInformation<T, U> where T : struct where U : FileDirectoryEntry
+    {
+        int GetNextOffset();
+        U ToEntry(SafeStructureInOutBuffer<T> buffer);
+        FileAttributes GetAttributes();
+    }
+
     [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
-    public struct FileDirectoryInformation
+    public struct FileDirectoryInformation : IFileDirectoryInformation<FileDirectoryInformation, FileDirectoryEntry>
     {
         public int NextEntryOffset;
         public int FileIndex;
@@ -573,6 +580,129 @@ namespace NtApiDotNet
         public FileAttributes FileAttributes;
         public int FileNameLength;
         public ushort FileName; // String
+
+        int IFileDirectoryInformation<FileDirectoryInformation, FileDirectoryEntry>.GetNextOffset()
+        {
+            return NextEntryOffset;
+        }
+
+        FileAttributes IFileDirectoryInformation<FileDirectoryInformation, FileDirectoryEntry>.GetAttributes()
+        {
+            return FileAttributes;
+        }
+
+        FileDirectoryEntry IFileDirectoryInformation<FileDirectoryInformation, FileDirectoryEntry>.ToEntry(SafeStructureInOutBuffer<FileDirectoryInformation> buffer)
+        {
+            string file_name = buffer.Data.ReadUnicodeString(FileNameLength / 2);
+            return new FileDirectoryEntry(this, file_name);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
+    public struct FileBothDirectoryInformation : IFileDirectoryInformation<FileBothDirectoryInformation, FileBothDirectoryEntry>
+    {
+        public int NextEntryOffset;
+        public int FileIndex;
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct EndOfFile;
+        public LargeIntegerStruct AllocationSize;
+        public FileAttributes FileAttributes;
+        public int FileNameLength;
+        public int EaSize;
+        public byte ShortNameLength;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 12)]
+        public string ShortName;
+        public ushort FileName; // String
+
+        int IFileDirectoryInformation<FileBothDirectoryInformation, FileBothDirectoryEntry>.GetNextOffset()
+        {
+            return NextEntryOffset;
+        }
+
+        FileAttributes IFileDirectoryInformation<FileBothDirectoryInformation, FileBothDirectoryEntry>.GetAttributes()
+        {
+            return FileAttributes;
+        }
+
+        FileBothDirectoryEntry IFileDirectoryInformation<FileBothDirectoryInformation, FileBothDirectoryEntry>.ToEntry(SafeStructureInOutBuffer<FileBothDirectoryInformation> buffer)
+        {
+            string file_name = buffer.Data.ReadUnicodeString(FileNameLength / 2);
+            return new FileBothDirectoryEntry(this, file_name);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
+    public struct FileIdBothDirectoryInformation : IFileDirectoryInformation<FileIdBothDirectoryInformation, FileIdBothDirectoryEntry>
+    {
+        public int NextEntryOffset;
+        public int FileIndex;
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct EndOfFile;
+        public LargeIntegerStruct AllocationSize;
+        public FileAttributes FileAttributes;
+        public int FileNameLength;
+        public int EaSize;
+        public byte ShortNameLength;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 12)]
+        public string ShortName;
+        public LargeIntegerStruct FileId;
+        public ushort FileName; // String
+
+        int IFileDirectoryInformation<FileIdBothDirectoryInformation, FileIdBothDirectoryEntry>.GetNextOffset()
+        {
+            return NextEntryOffset;
+        }
+
+        FileAttributes IFileDirectoryInformation<FileIdBothDirectoryInformation, FileIdBothDirectoryEntry>.GetAttributes()
+        {
+            return FileAttributes;
+        }
+
+        FileIdBothDirectoryEntry IFileDirectoryInformation<FileIdBothDirectoryInformation, FileIdBothDirectoryEntry>.ToEntry(SafeStructureInOutBuffer<FileIdBothDirectoryInformation> buffer)
+        {
+            string file_name = buffer.Data.ReadUnicodeString(FileNameLength / 2);
+            return new FileIdBothDirectoryEntry(this, file_name);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    public struct FileIdFullDirectoryInformation : IFileDirectoryInformation<FileIdFullDirectoryInformation, FileIdDirectoryEntry>
+    {
+        public int NextEntryOffset;
+        public int FileIndex;
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct EndOfFile;
+        public LargeIntegerStruct AllocationSize;
+        public FileAttributes FileAttributes;
+        public int FileNameLength;
+        public int EaSize;
+        public LargeIntegerStruct FileId;
+        public ushort FileName; // String
+
+        int IFileDirectoryInformation<FileIdFullDirectoryInformation, FileIdDirectoryEntry>.GetNextOffset()
+        {
+            return NextEntryOffset;
+        }
+
+        FileAttributes IFileDirectoryInformation<FileIdFullDirectoryInformation, FileIdDirectoryEntry>.GetAttributes()
+        {
+            return FileAttributes;
+        }
+
+        FileIdDirectoryEntry IFileDirectoryInformation<FileIdFullDirectoryInformation, FileIdDirectoryEntry>.ToEntry(SafeStructureInOutBuffer<FileIdFullDirectoryInformation> buffer)
+        {
+            string file_name = buffer.Data.ReadUnicodeString(FileNameLength / 2);
+            return new FileIdDirectoryEntry(this, file_name);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1303,7 +1433,16 @@ namespace NtApiDotNet
     {
         All = 0,
         FilesOnly = 1,
-        DirectoriesOnly = 2,
+        DirectoriesOnly = 2
+    }
+
+    [Flags]
+    public enum DirectoryEntryIncludeFlags
+    {
+        Default = 0,
+        FileId = 1,
+        ShortName = 2,
+        Placeholders = 4,
     }
 
     /// <summary>
@@ -1368,6 +1507,39 @@ namespace NtApiDotNet
             Attributes = dir_info.FileAttributes;
         }
 
+        internal FileInformation(FileIdFullDirectoryInformation dir_info)
+        {
+            CreationTime = dir_info.CreationTime.ToDateTime();
+            LastAccessTime = dir_info.LastAccessTime.ToDateTime();
+            LastWriteTime = dir_info.LastWriteTime.ToDateTime();
+            ChangeTime = dir_info.ChangeTime.ToDateTime();
+            EndOfFile = dir_info.EndOfFile.QuadPart;
+            AllocationSize = dir_info.AllocationSize.QuadPart;
+            Attributes = dir_info.FileAttributes;
+        }
+
+        internal FileInformation(FileBothDirectoryInformation dir_info)
+        {
+            CreationTime = dir_info.CreationTime.ToDateTime();
+            LastAccessTime = dir_info.LastAccessTime.ToDateTime();
+            LastWriteTime = dir_info.LastWriteTime.ToDateTime();
+            ChangeTime = dir_info.ChangeTime.ToDateTime();
+            EndOfFile = dir_info.EndOfFile.QuadPart;
+            AllocationSize = dir_info.AllocationSize.QuadPart;
+            Attributes = dir_info.FileAttributes;
+        }
+
+        internal FileInformation(FileIdBothDirectoryInformation dir_info)
+        {
+            CreationTime = dir_info.CreationTime.ToDateTime();
+            LastAccessTime = dir_info.LastAccessTime.ToDateTime();
+            LastWriteTime = dir_info.LastWriteTime.ToDateTime();
+            ChangeTime = dir_info.ChangeTime.ToDateTime();
+            EndOfFile = dir_info.EndOfFile.QuadPart;
+            AllocationSize = dir_info.AllocationSize.QuadPart;
+            Attributes = dir_info.FileAttributes;
+        }
+
         internal FileInformation(FileNetworkOpenInformation open_info)
         {
             CreationTime = open_info.CreationTime.ToDateTime();
@@ -1383,7 +1555,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent a directory entry.
     /// </summary>
-    public sealed class FileDirectoryEntry : FileInformation
+    public class FileDirectoryEntry : FileInformation
     {
         /// <summary>
         /// Index of the file.
@@ -1399,6 +1571,98 @@ namespace NtApiDotNet
         {
             FileIndex = dir_info.FileIndex;
             FileName = file_name;
+        }
+
+        internal FileDirectoryEntry(FileIdFullDirectoryInformation dir_info, string file_name)
+            : base(dir_info)
+        {
+            FileIndex = dir_info.FileIndex;
+            FileName = file_name;
+        }
+
+        internal FileDirectoryEntry(FileBothDirectoryInformation dir_info, string file_name)
+            : base(dir_info)
+        {
+            FileIndex = dir_info.FileIndex;
+            FileName = file_name;
+        }
+
+        internal FileDirectoryEntry(FileIdBothDirectoryInformation dir_info, string file_name)
+            : base(dir_info)
+        {
+            FileIndex = dir_info.FileIndex;
+            FileName = file_name;
+        }
+    }
+
+    /// <summary>
+    /// Class to represent a directory entry with file IDs.
+    /// </summary>
+    public class FileIdDirectoryEntry : FileDirectoryEntry
+    {
+        /// <summary>
+        /// Length of any EA buffer.
+        /// </summary>
+        public int EaSize { get; }
+        /// <summary>
+        /// The file reference number if known.
+        /// </summary>
+        public long FileId { get; }
+
+        internal FileIdDirectoryEntry(FileIdFullDirectoryInformation dir_info, string file_name)
+            : base(dir_info, file_name)
+        {
+            EaSize = dir_info.EaSize;
+            FileId = dir_info.FileId.QuadPart;
+        }
+    }
+
+    /// <summary>
+    /// Class to represent a directory entry with short names.
+    /// </summary>
+    public class FileBothDirectoryEntry : FileDirectoryEntry
+    {
+        /// <summary>
+        /// Length of any EA buffer.
+        /// </summary>
+        public int EaSize { get; }
+        /// <summary>
+        /// The short name of the file.
+        /// </summary>
+        public string ShortName { get; }
+
+        internal FileBothDirectoryEntry(FileBothDirectoryInformation dir_info, string file_name)
+            : base(dir_info, file_name)
+        {
+            EaSize = dir_info.EaSize;
+            ShortName = dir_info.ShortName.Substring(0, dir_info.ShortNameLength / 2);
+        }
+    }
+
+    /// <summary>
+    /// Class to represent a directory entry with short names and file ids.
+    /// </summary>
+    public class FileIdBothDirectoryEntry : FileDirectoryEntry
+    {
+        /// <summary>
+        /// Length of any EA buffer.
+        /// </summary>
+        public int EaSize { get; }
+        /// <summary>
+        /// The short name of the file.
+        /// </summary>
+        public string ShortName { get; }
+        /// <summary>
+        /// The file reference number if known.
+        /// </summary>
+        public long FileId { get; }
+
+        internal FileIdBothDirectoryEntry(FileIdBothDirectoryInformation dir_info, string file_name)
+            : base(dir_info, file_name)
+        {
+            EaSize = dir_info.EaSize;
+            ShortName = dir_info.ShortName.Substring(0, dir_info.ShortNameLength / 2);
+            FileId = dir_info.FileId.QuadPart;
         }
     }
 
