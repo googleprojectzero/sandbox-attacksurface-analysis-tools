@@ -41,7 +41,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
             AccessMask granted_access, SecurityDescriptor sd, TokenInformation token_info) : base(name, "Device",
-                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sd, typeof(FileAccessRights), false, token_info)
+                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sd, typeof(FileAccessRights), true, token_info)
         {
             NamespacePath = namespace_path;
             DeviceType = device_type;
@@ -116,9 +116,16 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleDevice")]
     [OutputType(typeof(CommonAccessCheckResult))]
-    public class GetAccessibleDeviceCmdlet : CommonAccessBaseWithAccessCmdlet<FileAccessRights>
+    public class GetAccessibleDeviceCmdlet : CommonAccessBaseWithAccessCmdlet<FileDirectoryAccessRights>
     {
-        private static NtType _file_type = NtType.GetTypeByType<NtFile>();
+        private static readonly NtType _file_type = NtType.GetTypeByType<NtFile>();
+
+        private class SecurityDescriptorEntry
+        {
+            public FileDeviceType DeviceType;
+            public FileDeviceCharacteristics Characteristics;
+            public SecurityDescriptor SecurityDescriptor;
+        }
 
         /// <summary>
         /// <para type="description">Specify a list of native paths to check. Can refer to object directories to search for device objects or explicit paths.</para>
@@ -168,6 +175,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         [Parameter]
         public FileOpenOptions OpenOptions { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify not to use impersonation for access checks.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter NoImpersonation { get; set; }
+
         private static NtResult<NtFile> OpenUnderImpersonation(TokenEntry token, string path, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
             using (var obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive))
@@ -201,7 +214,6 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-
         private void CheckAccessUnderImpersonation(TokenEntry token, string path, bool namespace_path, 
             AccessMask access_rights, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
@@ -225,7 +237,32 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private void FindDevicesInDirectory(NtDirectory dir, HashSet<string> devices, int current_depth)
+        private SecurityDescriptorEntry GetSecurityDescriptor(string device_path)
+        {
+            using (var file = NtFile.Open(device_path, null, GetMaximumAccess(FileDirectoryAccessRights.ReadControl).ToFileAccessRights(), 
+                FileShareMode.None, FileOpenOptions.OpenForBackupIntent, false))
+            {
+                if (!file.IsSuccess)
+                {
+                    WriteWarning($"Opening {device_path} for ReadControl failed: {file.Status}");
+                    return null;
+                }
+
+                var sd = file.Result.GetSecurityDescriptor(GetMaximumSecurityInformation(file.Result), false);
+                if (!sd.IsSuccess)
+                {
+                    WriteWarning($"Querying {device_path} for security descriptor failed: {sd.Status}");
+                    return null;
+                }
+
+                return new SecurityDescriptorEntry() { 
+                    DeviceType = GetDeviceType(file.Result), 
+                    Characteristics = GetDeviceCharacteristics(file.Result), 
+                    SecurityDescriptor = sd.Result };
+            }
+        }
+
+        private void FindDevicesInDirectory(NtDirectory dir, Dictionary<string, SecurityDescriptorEntry> devices, int current_depth)
         {
             if (Stopping || current_depth <= 0)
             {
@@ -252,7 +289,10 @@ namespace NtObjectManager.Cmdlets.Accessible
                 {
                     if (entry.NtTypeName.Equals("Device", StringComparison.OrdinalIgnoreCase))
                     {
-                        devices.Add(entry.FullPath);
+                        if (!devices.ContainsKey(entry.FullPath))
+                        {
+                            devices.Add(entry.FullPath, GetSecurityDescriptor(entry.FullPath));
+                        }
                     }
                 }
             }
@@ -284,9 +324,29 @@ namespace NtObjectManager.Cmdlets.Accessible
             return CheckMode == DeviceCheckMode.NamespaceOnly || CheckMode == DeviceCheckMode.DeviceAndNamespace;
         }
 
+        private bool _open_for_backup;
+
+        /// <summary>
+        /// Override for begin processing.
+        /// </summary>
+        protected override void BeginProcessing()
+        {
+            using (NtToken process_token = NtToken.OpenProcessToken())
+            {
+                _open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
+
+                if (!_open_for_backup)
+                {
+                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
+                }
+            }
+
+            base.BeginProcessing();
+        }
+
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            HashSet<string> devices = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var devices = new Dictionary<string, SecurityDescriptorEntry>(StringComparer.OrdinalIgnoreCase);
 
             foreach (string path in Path)
             {
@@ -299,7 +359,10 @@ namespace NtObjectManager.Cmdlets.Accessible
                     else
                     {
                         // If failed, it might be an absolute path so just add it.
-                        devices.Add(path);
+                        if (!devices.ContainsKey(path))
+                        {
+                            devices.Add(path, GetSecurityDescriptor(path));
+                        }
                     }
                 }
             }
@@ -312,18 +375,34 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                 foreach (var entry in tokens)
                 {
-                    foreach (string path in devices)
+                    foreach (var pair in devices)
                     {
                         if (CheckDevice())
                         {
-                            CheckAccessUnderImpersonation(entry, path, false, access_rights, OpenOptions, ea_buffer);
+                            if (pair.Value != null)
+                            {
+                                AccessMask granted_access = NtSecurity.GetMaximumAccess(pair.Value.SecurityDescriptor, entry.Token, _file_type.GenericMapping);
+                                if (IsAccessGranted(granted_access, access_rights))
+                                {
+                                    WriteObject(new DeviceAccessCheckResult(pair.Key, false, pair.Value.DeviceType,
+                                        pair.Value.Characteristics, granted_access,
+                                        pair.Value.SecurityDescriptor, entry.Information));
+                                }
+                            }
+                            else
+                            {
+                                if (!NoImpersonation)
+                                {
+                                    CheckAccessUnderImpersonation(entry, pair.Key, false, access_rights, OpenOptions, ea_buffer);
+                                }
+                            }
                         }
 
-                        if (CheckNamespace())
+                        if (CheckNamespace() && !NoImpersonation)
                         {
                             foreach (string namespace_path in namespace_paths)
                             {
-                                CheckAccessUnderImpersonation(entry, path + @"\" + namespace_path, 
+                                CheckAccessUnderImpersonation(entry, pair.Key + @"\" + namespace_path, 
                                     true, access_rights, OpenOptions, ea_buffer);
                             }
                         }
