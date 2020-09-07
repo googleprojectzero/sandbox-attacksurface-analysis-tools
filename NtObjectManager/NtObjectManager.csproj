@@ -142,6 +142,7 @@
     <Compile Include="Cmdlets\Object\SelectNtSecurityDescriptorAceCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SendNtAlpcMessageCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GrantNtAccessMaskCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SendNtFileControlCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileVolumeInformationCmdlet.cs" />

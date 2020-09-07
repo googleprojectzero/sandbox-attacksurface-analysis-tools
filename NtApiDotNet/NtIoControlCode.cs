@@ -71,45 +71,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Type of device
         /// </summary>
-        public FileDeviceType DeviceType
-        {
-            get
-            {
-                return (FileDeviceType)(_control_code >> 16);
-            }
-        }
+        public FileDeviceType DeviceType => (FileDeviceType)(_control_code >> 16);
         /// <summary>
         /// Function number
         /// </summary>
-        public int Function
-        {
-            get
-            {
-                return (_control_code >> 2) & 0xFFF;
-            }
-        }
+        public int Function => (_control_code >> 2) & 0xFFF;
 
         /// <summary>
         /// Buffering method
         /// </summary>
-        public FileControlMethod Method
-        {
-            get
-            {
-                return (FileControlMethod)(_control_code & 3);
-            }
-        }
+        public FileControlMethod Method => (FileControlMethod)(_control_code & 3);
 
         /// <summary>
         /// Access of file handle
         /// </summary>
-        public FileControlAccess Access
-        {
-            get
-            {
-                return (FileControlAccess)((_control_code >> 14) & 3);
-            }
-        }
+        public FileControlAccess Access => (FileControlAccess)((_control_code >> 14) & 3);
+
+        /// <summary>
+        /// Is the function number custom, i.e. has the top bit set.
+        /// </summary>
+        public bool Custom => (Function & 0x800) == 0x800;
 
         /// <summary>
         /// Get a known name associated with this IO control code.
