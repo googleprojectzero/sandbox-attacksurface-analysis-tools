@@ -10923,11 +10923,11 @@ Specify the file directory to get change notification events from.
 Specify what types of events to receive.
 .PARAMETER WatchSubtree
 Specify to watch all directories in a subtree.
-.PARAMETER Timeout
-Specify a timeout to wait if the handle is asynchronous.
+.PARAMETER TimeoutSec
+Specify a timeout in seconds to wait if the handle is asynchronous.
 .PARAMETER Async
 Specify to return an asynchronous task instead of waiting. You can use Wait-AsyncTaskResult
-to get the result.
+to get the result. The handle must be asynchronous.
 .INPUTS
 None
 .OUTPUTS
@@ -10941,6 +10941,9 @@ Get only filename change notifications for the file directory.
 .EXAMPLE
 Get-NtFileChange -File $f -WatchSubtree
 Get all change notifications for the file directory and its children.
+.EXAMPLE
+Get-NtFileChange -File $f -TimeoutSec 10
+Get all change notifications for the file directory, waiting for 10 seconds for a result.
 #>
 function Get-NtFileChange {
     [CmdletBinding(DefaultParameterSetName = "Sync")]
@@ -10950,15 +10953,19 @@ function Get-NtFileChange {
         [NtApiDotNet.DirectoryChangeNotifyFilter]$Filter = "All",
         [switch]$WatchSubtree,
         [parameter(ParameterSetName="Sync")]
-        [NtApiDotNet.NtWaitTimeout]$Timeout = (Get-NtWaitTimeout -Infinite),
+        [int]$TimeoutSec = -1,
         [parameter(Mandatory, ParameterSetName="Async")]
         [switch]$Async
     )
 
     if ($Async) {
-        $File.GetChangeNotificationAsync($Filter, $WatchSubtree) | Write-Output
+        $File.GetChangeNotificationFullAsync($Filter, $WatchSubtree) | Write-Output
     } else {
-        $File.GetChangeNotificationFull($Filter, $WatchSubtree, $Timeout) | Write-Output
+        $timeout = Get-NtWaitTimeout -Infinite
+        if ($TimeoutSec -ge 0) {
+            $timeout = Get-NtWaitTimeout -Second $TimeoutSec
+        }
+        $File.GetChangeNotificationFull($Filter, $WatchSubtree, $timeout) | Write-Output
     }
 }
 

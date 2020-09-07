@@ -3487,7 +3487,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Attributes</Label>
+            <Label>FileAttributes</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -3504,7 +3504,7 @@
                 <PropertyName>FileSize</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>Attributes</PropertyName>
+                <PropertyName>FileAttributes</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
