@@ -2557,6 +2557,7 @@ function Get-NtIoControlCode {
         [switch]$All,
         [Parameter(ParameterSetName = "FromName", Mandatory = $true)]
         [string]$Name,
+        [Parameter(ParameterSetName = "FromParts")]
         [Parameter(ParameterSetName = "FromName")]
         [switch]$AsInt
     )
