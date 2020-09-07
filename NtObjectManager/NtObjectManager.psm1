@@ -5104,10 +5104,12 @@ The file to oplock on.
 The oplock level to start.
 .PARAMETER LeaseLevel
 The oplock lease level to start.
+.PARAMETER Async
+Specify to return an asynchronous task which can be waited on with Wait-AsyncTaskResult.
 .INPUTS
 None
 .OUTPUTS
-None or NtApiDotNet.RequestOplockOutputBuffer if using LeaseLevel.
+None or NtApiDotNet.RequestOplockOutputBuffer if using LeaseLevel. If Async then a Task.
 .EXAMPLE
 Start-NtFileOplock $file -Exclusive
 Start an exclusive oplock.
@@ -5128,20 +5130,35 @@ function Start-NtFileOplock {
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
         [NtApiDotNet.OplockRequestLevel]$Level,
         [parameter(Mandatory, ParameterSetName = "OplockLease")]
-        [NtApiDotNet.OplockLevelCache]$LeaseLevel
+        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [switch]$Async
     )
 
-    switch ($PSCmdlet.ParameterSetName) {
+    $result = switch ($PSCmdlet.ParameterSetName) {
         "OplockExclusive" {
-            $File.OplockExclusive()
+            if ($Async) {
+                $File.OplockExclusiveAsync()
+            } else {
+                $File.OplockExclusive()
+            }
         }
         "OplockLevel" {
-            $File.RequestOplock($Level)
+            if ($Async) {
+                $File.RequestOplockAsync($Level)
+            } else {
+                $File.RequestOplock($Level)
+            }
         }
         "OplockLease" {
-            $File.RequestOplockLease($LeaseLevel)
+            if ($Async) {
+                $File.RequestOplockLeaseAsync($LeaseLevel)
+            } else {
+                $File.RequestOplockLease($LeaseLevel)
+            }
         }
     }
+
+    $result | Write-Output
 }
 
 <#
@@ -10908,6 +10925,9 @@ Specify what types of events to receive.
 Specify to watch all directories in a subtree.
 .PARAMETER Timeout
 Specify a timeout to wait if the handle is asynchronous.
+.PARAMETER Async
+Specify to return an asynchronous task instead of waiting. You can use Wait-AsyncTaskResult
+to get the result.
 .INPUTS
 None
 .OUTPUTS
@@ -10923,16 +10943,23 @@ Get-NtFileChange -File $f -WatchSubtree
 Get all change notifications for the file directory and its children.
 #>
 function Get-NtFileChange {
-    [CmdletBinding(DefaultParameterSetName = "FromDirectory")]
+    [CmdletBinding(DefaultParameterSetName = "Sync")]
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.NtFile]$File,
         [NtApiDotNet.DirectoryChangeNotifyFilter]$Filter = "All",
         [switch]$WatchSubtree,
-        [NtApiDotNet.NtWaitTimeout]$Timeout = (Get-NtWaitTimeout -Infinite)
+        [parameter(ParameterSetName="Sync")]
+        [NtApiDotNet.NtWaitTimeout]$Timeout = (Get-NtWaitTimeout -Infinite),
+        [parameter(Mandatory, ParameterSetName="Async")]
+        [switch]$Async
     )
 
-    $File.GetChangeNotificationFull($Filter, $WatchSubtree, $Timeout) | Write-Output
+    if ($Async) {
+        $File.GetChangeNotificationAsync($Filter, $WatchSubtree) | Write-Output
+    } else {
+        $File.GetChangeNotificationFull($Filter, $WatchSubtree, $Timeout) | Write-Output
+    }
 }
 
 <#
@@ -11158,4 +11185,41 @@ function Get-NtFileDisposition {
         [NtApiDotNet.NtFile]$File
     )
     $File.DeletePending | Write-Output
+}
+
+<#
+.SYNOPSIS
+Waits on an async task and gets the result.
+.DESCRIPTION
+This cmdlet waits on a .net asynchronous task and returns any result.
+.PARAMETER Task
+Specify the asynchronous task to wait on.
+.PARAMETER TimeoutSec
+Specify the timeout in seconds to wait for.
+.INPUTS
+None
+.OUTPUTS
+object
+.EXAMPLE
+Wait-AsyncTaskResult -Task $task
+Wait on the task and result.
+.EXAMPLE
+Wait-AsyncTaskResult -Task $task -TimeoutSec 10
+Wait on the task and result for up to 10 seconds.
+#>
+function Wait-AsyncTaskResult {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [System.Threading.Tasks.Task]$Task,
+        [int]$TimeoutSec = [int]::MaxValue
+    )
+
+    while (-not $Task.Wait(1000)) {
+        $TimeoutSec--
+        if ($TimeoutSec -le 0) {
+            return
+        }
+    }
+
+    $Task.GetAwaiter().GetResult() | Write-Output
 }
