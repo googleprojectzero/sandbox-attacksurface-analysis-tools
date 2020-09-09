@@ -50,6 +50,12 @@ namespace NtObjectManager.Cmdlets.Object
         public override string Path { get; set; }
 
         /// <summary>
+        /// <para type="description">Resolve the final target. This will follow the target if it's still a symbolic link.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Resolve { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -58,6 +64,8 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (NtSymbolicLink link = NtSymbolicLink.Open(obj_attributes, SymbolicLinkAccessRights.Query))
             {
+                if (Resolve)
+                    return NtSymbolicLink.ResolveTarget(link.Target);
                 return link.Target;
             }
         }

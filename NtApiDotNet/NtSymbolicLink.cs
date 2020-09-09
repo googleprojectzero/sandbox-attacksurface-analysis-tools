@@ -182,6 +182,44 @@ namespace NtApiDotNet
             return Open(path, null);
         }
 
+        /// <summary>
+        /// Resolve a symlink name to a final target.
+        /// </summary>
+        /// <param name="symlink_name">The name of the symlink to resolve.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The final target.</returns>
+        /// <remarks>This function will return the last name which returns STATUS_OBJECT_TYPE_MISMATCH. Anything else is an error.</remarks>
+        public static NtResult<string> ResolveTarget(string symlink_name, bool throw_on_error)
+        {
+            int link_count = 15;
+            string target_name = symlink_name;
+
+            while (link_count-- > 0)
+            {
+                using (var link = Open(target_name, null, SymbolicLinkAccessRights.Query, false))
+                {
+                    if (link.Status == NtStatus.STATUS_OBJECT_TYPE_MISMATCH)
+                        return target_name.CreateResult();
+                    if (!link.IsSuccess)
+                        return link.Status.CreateResultFromError<string>(throw_on_error);
+                    target_name = link.Result.Target;
+                }
+            }
+
+            return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<string>(throw_on_error);
+        }
+        /// <summary>
+        /// Resolve a symlink name to a final target.
+        /// </summary>
+        /// <param name="symlink_name">The name of the symlink to resolve.</param>
+        /// <returns>The final target.</returns>
+        /// <remarks>This function will return the last name which returns STATUS_OBJECT_TYPE_MISMATCH. Anything else is an error.</remarks>
+        public static string ResolveTarget(string symlink_name)
+        {
+            return ResolveTarget(symlink_name, true).Result;
+        }
+
+
         #endregion
 
         #region Public Properties
