@@ -10550,6 +10550,8 @@ Get all device instances. The default is to only get present instances.
 Get all device nodes as a tree.
 .PARAMETER InstanceId
 Get device from instance ID.
+.PARAMETER LinkName
+Specify a symbolic link name to resolve the device node.
 .INPUTS
 None
 .OUTPUTS
@@ -10566,6 +10568,12 @@ Get the device instances class for the specified setup class GUID.
 .EXAMPLE
 Get-NtDeviceNode -Tree
 Get all device instances in a tree structure.
+.EXAMPLE
+Get-NtDeviceNode -PDOName \Device\HarddiskVolume3
+Get the device node with a specified PDO.
+.EXAMPLE
+Get-NtDeviceNode -LinkName \??\C: 
+Get the device node with a specified symbolic link.
 #>
 function Get-NtDeviceNode {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -10580,7 +10588,9 @@ function Get-NtDeviceNode {
         [parameter(Mandatory, ParameterSetName = "FromInstanceId")]
         [string]$InstanceId,
         [parameter(Mandatory, ParameterSetName = "FromPDOName")]
-        [string]$PDOName
+        [string]$PDOName,
+        [parameter(ParameterSetName = "FromLinkName")]
+        [string]$LinkName
     )
 
     PROCESS {
@@ -10598,12 +10608,15 @@ function Get-NtDeviceNode {
                 [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
             }
             "FromPDOName" {
+                Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
+            }
+            "FromLinkName" {
                 try { 
-                    $PDOName = Get-NtSymbolicLinkTarget -Path $PDOName -Resolve
+                    $PDOName = Get-NtSymbolicLinkTarget -Path $LinkName -Resolve
+                    Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
                 } catch {
                     Write-Error $_
                 }
-                Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
             }
         }
     }
