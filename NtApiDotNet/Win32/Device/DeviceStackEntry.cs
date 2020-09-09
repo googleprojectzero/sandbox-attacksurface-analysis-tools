@@ -63,6 +63,15 @@ namespace NtApiDotNet.Win32.Device
         /// </summary>
         public DeviceStackEntryType Type { get; }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the driver in the stack.</returns>
+        public override string ToString()
+        {
+            return Driver;
+        }
+
         internal DeviceStackEntry(string driver, string driver_path, DeviceStackEntryType type)
         {
             Driver = driver;
