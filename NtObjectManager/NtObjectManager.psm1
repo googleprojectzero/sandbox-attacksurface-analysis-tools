@@ -11230,3 +11230,29 @@ function Wait-AsyncTaskResult {
 
     $Task.GetAwaiter().GetResult() | Write-Output
 }
+
+<#
+.SYNOPSIS
+Generate a 8dot3 name for a full name.
+.DESCRIPTION
+This cmdlet generates a 8dot3 filename from a full name.
+.PARAMETER Name
+The name to generate from.
+.PARAMETER ExtendedCharacters
+Allow extended characters.
+.INPUTS
+None
+.OUTPUTS
+string generated name.
+.EXAMPLE
+Get-NtFile8dot3Path 0123456789.config
+Generate a 8dot3 name from a full name.
+#>
+function Get-NtFile8dot3Name {
+    Param(
+        [parameter(Mandatory = $true, Position = 0)]
+        [string]$Name,
+        [switch]$ExtendedCharacters
+    )
+    [NtApiDotNet.NtFileUtils]::Generate8dot3Name($Name, $ExtendedCharacters) | Write-Output
+}

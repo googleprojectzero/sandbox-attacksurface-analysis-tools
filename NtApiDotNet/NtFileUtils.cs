@@ -428,5 +428,77 @@ namespace NtApiDotNet
         {
             return GetOpenByIdPath(volume_path, object_id.ToByteArray());
         }
+
+        /// <summary>
+        /// Generate a DOS filename from a full filename.
+        /// </summary>
+        /// <param name="filename">The full filename.</param>
+        /// <param name="allow_extended">True to allow extended characters.</param>
+        /// <param name="iterations">Number of iterations of the algorithm to test.</param>
+        /// <param name="throw_on_error">True throw on error.</param>
+        /// <returns>The DOS filename.</returns>
+        public static NtResult<string> Generate8dot3Name(string filename, bool allow_extended, int iterations, bool throw_on_error)
+        {
+            if (iterations <= 0)
+            {
+                throw new ArgumentException("Invalid iteration count.");
+            }
+
+            GenerateNameContext context = new GenerateNameContext()
+            {
+                NameBuffer = new byte[16],
+                ExtensionBuffer = new byte[8]
+            };
+
+            if (IsLegal8dot3Name(filename))
+            {
+                return filename.ToUpper().CreateResult();
+            }
+
+            NtResult<string> result = default;
+            for (int i = 0; i < iterations; ++i)
+            {
+                using (var name = new UnicodeStringAllocated(24))
+                {
+                    result = NtRtl.RtlGenerate8dot3Name(new UnicodeString(filename),
+                        allow_extended, ref context, name).CreateResult(throw_on_error, () => name.ToString());
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Generate a DOS filename from a full filename.
+        /// </summary>
+        /// <param name="filename">The full filename.</param>
+        /// <param name="allow_extended">True to allow extended characters.</param>
+        /// <param name="iterations">Number of iterations of the algorithm to test.</param>
+        /// <returns>The DOS filename.</returns>
+        public static string Generate8dot3Name(string filename, bool allow_extended, int iterations)
+        {
+            return Generate8dot3Name(filename, allow_extended, iterations, true).Result;
+        }
+
+        /// <summary>
+        /// Generate a DOS filename from a full filename.
+        /// </summary>
+        /// <param name="filename">The full filename.</param>
+        /// <param name="allow_extended">True to allow extended characters.</param>
+        /// <returns>The DOS filename.</returns>
+        public static string Generate8dot3Name(string filename, bool allow_extended)
+        {
+            return Generate8dot3Name(filename, allow_extended, 1);
+        }
+
+        /// <summary>
+        /// Is the filename a legal 8dot3 name.
+        /// </summary>
+        /// <param name="filename">The filename to check.</param>
+        /// <returns>True if it's a legal 8dot3 name.</returns>
+        public static bool IsLegal8dot3Name(string filename)
+        {
+            return NtRtl.RtlIsNameLegalDOS8Dot3(new UnicodeString(filename), 
+                null, out bool _);
+        }
     }
 }

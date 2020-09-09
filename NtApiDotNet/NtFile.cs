@@ -4864,11 +4864,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the associated short filename
         /// </summary>
+        [Obsolete("Use ShortName")]
         public string FileShortName
+        {
+            get => ShortName;
+            set => ShortName = value;
+        }
+
+        /// <summary>
+        /// Get the associated short filename
+        /// </summary>
+        public string ShortName
         {
             get => TryGetName(FileInformationClass.FileAlternateNameInformation);
             set => SetName(FileInformationClass.FileShortNameInformation, value);
         }
+
+        /// <summary>
+        /// Get the normalized name.
+        /// </summary>
+        public string NormalizedName => Path.GetFileName(NormalizedFileName);
 
         /// <summary>
         /// Get the name of the file.

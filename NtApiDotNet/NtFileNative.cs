@@ -331,14 +331,19 @@ namespace NtApiDotNet
         );
     }
 
-    public static partial class NtRtl
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct GenerateNameContext
     {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlWow64EnableFsRedirection(bool Wow64FsEnableRedirection);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlWow64EnableFsRedirectionEx(IntPtr DisableFsRedirection,
-            out IntPtr OldFsRedirectionLevel);
+        public ushort Checksum;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool CheckSumInserted;
+        public byte NameLength;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] NameBuffer;
+        public int ExtensionLength;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public byte[] ExtensionBuffer;
+        public int LastIndexValue;
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 8)]
@@ -408,12 +413,34 @@ namespace NtApiDotNet
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool RtlReleaseRelativeName([In, Out] RtlRelativeName RelativeName);
 
-
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern RtlPathType RtlDetermineDosPathNameType_U(string Path);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDefaultNpAcl(out SafeProcessHeapBuffer NamedPipeAcl);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlWow64EnableFsRedirection(bool Wow64FsEnableRedirection);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlWow64EnableFsRedirectionEx(IntPtr DisableFsRedirection,
+            out IntPtr OldFsRedirectionLevel);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGenerate8dot3Name(
+          [In] UnicodeString Name,
+          [MarshalAs(UnmanagedType.U1)] bool AllowExtendedCharacters,
+          ref GenerateNameContext Context,
+          [In, Out] UnicodeStringAllocated Name8dot3
+        );
+
+        [DllImport("ntdll.dll")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlIsNameLegalDOS8Dot3(
+            UnicodeString Name,
+            AnsiString OemName,
+            out bool NameContainsSpaces
+        );
     }
 
     public enum FileDisposition
@@ -1216,7 +1243,7 @@ namespace NtApiDotNet
         QuotaNone = 0x00000000,
         QuoraTrack = 0x00000001,
         QuotaEnforce = 0x00000002,
-        QuoteUnknown = 0x00000004,
+        Unknown4 = 0x00000004,
         ContentIndexDisabled = 0x00000008,
         LogQuotaThreshold = 0x00000010,
         LogQuotaLimit = 0x00000020,
@@ -2154,6 +2181,29 @@ namespace NtApiDotNet
         public LargeIntegerStruct QuotaThreshold;
         public LargeIntegerStruct QuotaLimit;
         public int Sid;
+    }
+
+    /// <summary>
+    /// Class to represent a file quota entry.
+    /// </summary>
+    public sealed class FileQuotaEntry
+    {
+        public Sid Sid { get; }
+        public DateTime ChangeTime { get; }
+        public long QuotaUsed { get; }
+        public long QuotaThreshold { get; }
+        public long QuotaLimit { get; }
+
+        internal FileQuotaEntry(SafeStructureInOutBuffer<FileQuotaInformation> buffer)
+        {
+            var info = buffer.Result;
+            byte[] sid_data = buffer.Data.ReadBytes(info.SidLength);
+            Sid = new Sid(sid_data);
+            ChangeTime = info.ChangeTime.ToDateTime();
+            QuotaUsed = info.QuotaUsed.QuadPart;
+            QuotaThreshold = info.QuotaThreshold.QuadPart;
+            QuotaLimit = info.QuotaLimit.QuadPart;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
