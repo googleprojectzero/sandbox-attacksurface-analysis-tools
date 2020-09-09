@@ -10598,6 +10598,11 @@ function Get-NtDeviceNode {
                 [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
             }
             "FromPDOName" {
+                try { 
+                    $PDOName = Get-NtSymbolicLinkTarget -Path $PDOName -Resolve
+                } catch {
+                    Write-Error $_
+                }
                 Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
             }
         }
@@ -10744,25 +10749,27 @@ Summarize the device stack as a single line.
 .INPUTS
 None
 .OUTPUTS
-string[]
+NtApiDotNet.Win32.Device.DeviceStackEntry[]
 .EXAMPLE
 Get-NtDeviceNodeStack -Node $dev
 Get device stack for device node.
 #>
 function Get-NtDeviceNodeStack {
-    [CmdletBinding(DefaultParameterSetName = "All")]
+    [CmdletBinding(DefaultParameterSetName = "FromNode")]
     Param(
-        [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
+        [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0, ValueFromPipeline)]
         [NtApiDotNet.Win32.Device.DeviceNode]$Node,
         [switch]$Summary
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "FromNode" {
-            if ($Summary) {
-                [string]::Join(", ", $Node.DeviceStack) | Write-Output
-            } else {
-                $Node.DeviceStack | Write-Output
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromNode" {
+                if ($Summary) {
+                    [string]::Join(", ", $Node.DeviceStack) | Write-Output
+                } else {
+                    $Node.DeviceStack | Write-Output
+                }
             }
         }
     }
