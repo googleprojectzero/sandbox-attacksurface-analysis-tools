@@ -1222,13 +1222,13 @@ namespace NtApiDotNet
         public FileDeviceCharacteristics Characteristics;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("DriverName")]
+    [StructLayout(LayoutKind.Sequential), DataStart("DriverName")]
     public struct FileFsDriverPathInformation
     {
         [MarshalAs(UnmanagedType.U1)]
         public bool DriverInPath;
         public int DriverNameLength;
-        public char DriverName;
+        public short DriverName;
     }
 
     [StructLayout(LayoutKind.Sequential)]

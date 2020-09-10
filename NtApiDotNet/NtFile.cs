@@ -4365,6 +4365,42 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query if the driver is in the device stack for the device.
+        /// </summary>
+        /// <param name="driver_path">The driver path. Can be a plain name of full object manager path, e.g. \Device\Blah.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True indicating driver in path.</returns>
+        public NtResult<bool> DriverInPath(string driver_path, bool throw_on_error)
+        {
+            if (!driver_path.StartsWith(@"\"))
+            {
+                var res = DriverInPath($@"\Driver\{driver_path}", false);
+                if (res.IsSuccess)
+                    return res;
+                return DriverInPath($@"\FileSystem\{driver_path}", throw_on_error);
+            }
+
+            byte[] path = Encoding.Unicode.GetBytes(driver_path);
+            FileFsDriverPathInformation info = new FileFsDriverPathInformation() { DriverNameLength = path.Length };
+            using (var buffer = info.ToBuffer(path.Length, true))
+            {
+                buffer.Data.WriteBytes(path);
+                return QueryVolume(FsInformationClass.FileFsDriverPathInformation, 
+                    buffer, false).CreateResult(throw_on_error, () => buffer.Result.DriverInPath);
+            }
+        }
+
+        /// <summary>
+        /// Query if the driver is in the device stack for the device.
+        /// </summary>
+        /// <param name="driver_path">The driver path.</param>
+        /// <returns>True indicating driver in path.</returns>
+        public bool DriverInPath(string driver_path)
+        {
+            return DriverInPath(driver_path, true).Result;
+        }
+
+        /// <summary>
         /// Get filesystem and volume information.
         /// </summary>
         public NtResult<FileSystemVolumeInformation> GetVolumeInformation(bool throw_on_error)
