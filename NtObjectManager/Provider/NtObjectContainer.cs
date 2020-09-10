@@ -50,6 +50,8 @@ namespace NtObjectManager.Provider
 
         public virtual NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
         {
+            if (typename.Equals("device", StringComparison.OrdinalIgnoreCase))
+                return new NtDeviceDirectoryEntry(_obj, relative_path, name, typename);
             return new NtDirectoryEntry(_obj, relative_path, name, typename);
         }
 

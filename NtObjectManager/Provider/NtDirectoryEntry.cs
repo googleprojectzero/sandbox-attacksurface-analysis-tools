@@ -35,6 +35,11 @@ namespace NtObjectManager.Provider
             _symlink_target = key.GetSymbolicLinkTarget(false).GetResultOrDefault(string.Empty);
         }
 
+        private protected virtual void PopulateDeviceData(NtFile file)
+        {
+            // Do nothing.
+        }
+
         private protected void PopulateData()
         {
             if (!_data_populated)
@@ -65,6 +70,10 @@ namespace NtObjectManager.Provider
                             {
                                 PopulateKeyData(key);
                             }
+                            else if (obj is NtFile file)
+                            {
+                                PopulateDeviceData(file);
+                            }
 
                             _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.NtType.AccessRightsType);
                         }
@@ -90,6 +99,11 @@ namespace NtObjectManager.Provider
         /// Indicates if this entry is a directory.
         /// </summary>
         public bool IsDirectory { get; }
+
+        /// <summary>
+        /// Indicates if this entry is a Device.
+        /// </summary>
+        public bool IsDevice { get; }
 
         /// <summary>
         /// Indicates if this entry is a symbolic link.
@@ -190,6 +204,9 @@ namespace NtObjectManager.Provider
                     break;
                 case "symboliclink":
                     _is_symlink = true;
+                    break;
+                case "device":
+                    IsDevice = true;
                     break;
             }
 

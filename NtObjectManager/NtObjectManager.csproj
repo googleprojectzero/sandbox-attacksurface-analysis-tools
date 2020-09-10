@@ -168,6 +168,7 @@
     <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\NewAuthZResourceManagerCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\RemoveAuthZSidCmdlet.cs" />
+    <Compile Include="Provider\NtDeviceDirectoryEntry.cs" />
     <Compile Include="Utils\BaseTransformAttribute.cs" />
     <Compile Include="Utils\InfoClassCompleter.cs" />
     <Compile Include="Utils\NtTypeArgumentCompleter.cs" />

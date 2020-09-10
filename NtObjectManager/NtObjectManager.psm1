@@ -11294,9 +11294,9 @@ Allow extended characters.
 .INPUTS
 None
 .OUTPUTS
-string generated name.
+string
 .EXAMPLE
-Get-NtFile8dot3Path 0123456789.config
+Get-NtFile8dot3Path -Name 0123456789.config 
 Generate a 8dot3 name from a full name.
 #>
 function Get-NtFile8dot3Name {
@@ -11306,4 +11306,31 @@ function Get-NtFile8dot3Name {
         [switch]$ExtendedCharacters
     )
     [NtApiDotNet.NtFileUtils]::Generate8dot3Name($Name, $ExtendedCharacters) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Tests if a driver is in the device stack of a file.
+.DESCRIPTION
+This cmdlet checks if a driver is in the device stack of a file.
+.PARAMETER File
+The file to check. Works with files or direct device opens.
+.PARAMETER DriverPath
+The object manager path to the driver object. e.g. \Device\volume or just volume.
+.INPUTS
+None
+.OUTPUTS
+Bool
+.EXAMPLE
+Test-NtFileDriverPath -File $f -DriverPath "Ntfs"
+Tests if the Ntfs driver is in the path.
+#>
+function Test-NtFileDriverPath {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory = $true, Position = 1)]
+        [string]$DriverPath
+    )
+    $File.DriverInPath($DriverPath)
 }

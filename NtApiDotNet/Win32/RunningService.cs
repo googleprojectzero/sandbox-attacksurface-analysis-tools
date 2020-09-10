@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32
                 false).GetResultOrDefault(new ServiceInformation(Name));
         }
 
-        private Lazy<ServiceInformation> _service_information;
+        private readonly Lazy<ServiceInformation> _service_information;
 
         /// <summary>
         /// The name of the service.

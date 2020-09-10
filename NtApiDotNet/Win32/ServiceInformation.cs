@@ -77,6 +77,10 @@ namespace NtApiDotNet.Win32
         /// Display name.
         /// </summary>
         public string DisplayName { get; }
+        /// <summary>
+        /// Service start name. For user mode services this is the username, for drivers it's the driver name.
+        /// </summary>
+        public string ServiceStartName { get; }
 
         internal ServiceInformation(string name, SecurityDescriptor sd, 
             IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
@@ -98,6 +102,7 @@ namespace NtApiDotNet.Win32
                     LoadOrderGroup = string.Empty;
                     Dependencies = new string[0];
                     DisplayName = string.Empty;
+                    ServiceStartName = string.Empty;
                     return;
                 }
 
@@ -110,6 +115,7 @@ namespace NtApiDotNet.Win32
                 TagId = result.dwTagId;
                 Dependencies = result.lpLoadOrderGroup.GetMultiString();
                 DisplayName = result.lpDisplayName.GetString();
+                ServiceStartName = result.lpServiceStartName.GetString();
             }
         }
 
