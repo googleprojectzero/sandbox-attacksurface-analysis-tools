@@ -10215,12 +10215,12 @@ Specify optional context buffer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterCommunicationPort
+NtApiDotNet.Win32.Filter.FilterConnectionPort
 .EXAMPLE
-Get-FilterCommunicationPort -Path "\FilterDriver"
+Get-FilterConnectionPort -Path "\FilterDriver"
 Open the filter communication port named \FilterDriver.
 #>
-function Get-FilterCommunicationPort {
+function Get-FilterConnectionPort {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
@@ -10229,7 +10229,38 @@ function Get-FilterCommunicationPort {
         [byte[]]$Context = $null
     )
 
-    [NtApiDotNet.Win32.Filter.FilterCommunicationPort]::Open($Path, $SyncHandle, $Context) | Write-Output
+    [NtApiDotNet.Win32.Filter.FilterConnectionPort]::Open($Path, $SyncHandle, $Context) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Sends a message to a filter connection port.
+.DESCRIPTION
+This cmdlet sends and receives a message on a filter connection port.
+.PARAMETER Port
+Specify the port to send on.
+.PARAMETER Input
+Optional input data.
+.PARAMETER MaximumOutput
+Specify maximum output data.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Send-FilterConnectionPort -Port $port -Input @(1, 2, 3, 4) -MaximumOutput 100
+Send a 4 byte message and receive at most 100 bytes.
+#>
+function Send-FilterConnectionPort {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Filter.FilterConnectionPort]$Port,
+        [byte[]]$Input = $null,
+        [int]$MaximumOutput = 0
+    )
+
+    $Port.SendMessage($Input, $MaximumOutput) | Write-Output -NoEnumerate
 }
 
 <#

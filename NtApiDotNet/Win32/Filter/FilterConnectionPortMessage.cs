@@ -17,7 +17,7 @@ namespace NtApiDotNet.Win32.Filter
     /// <summary>
     /// Class to represent a filter communications port message.
     /// </summary>
-    public class FilterCommunicationPortMessage
+    public class FilterConnectionPortMessage
     {
         /// <summary>
         /// The message ID.
@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Filter
         /// </summary>
         public int ReplyLength { get; }
 
-        internal FilterCommunicationPortMessage(SafeStructureInOutBuffer<FILTER_MESSAGE_HEADER> buffer)
+        internal FilterConnectionPortMessage(SafeStructureInOutBuffer<FILTER_MESSAGE_HEADER> buffer)
         {
             var result = buffer.Result;
             MessageId = result.MessageId;

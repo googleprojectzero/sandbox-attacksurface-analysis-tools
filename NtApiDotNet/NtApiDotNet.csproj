@@ -340,8 +340,8 @@
     <Compile Include="Win32\EventTracing.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\Debugger\ISymbolTypeResolver.cs" />
-    <Compile Include="Win32\Filter\FilterCommunicationPort.cs" />
-    <Compile Include="Win32\Filter\FilterCommunicationPortMessage.cs" />
+    <Compile Include="Win32\Filter\FilterConnectionPort.cs" />
+    <Compile Include="Win32\Filter\FilterConnectionPortMessage.cs" />
     <Compile Include="Win32\Filter\FilterDriver.cs" />
     <Compile Include="Win32\Filter\FilterInstance.cs" />
     <Compile Include="Win32\Filter\FilterManagerNativeMethods.cs" />

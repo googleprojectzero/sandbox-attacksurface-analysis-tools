@@ -20,10 +20,10 @@ namespace NtApiDotNet.Win32.Filter
     /// <summary>
     /// A class to represent filter communication port.
     /// </summary>
-    public class FilterCommunicationPort : NtFile
+    public class FilterConnectionPort : NtFile
     {
         #region Constructors
-        internal FilterCommunicationPort(SafeKernelObjectHandle handle) 
+        internal FilterConnectionPort(SafeKernelObjectHandle handle) 
             : base(handle)
         {
         }
@@ -38,10 +38,10 @@ namespace NtApiDotNet.Win32.Filter
         /// <param name="context">Optional context data.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The filter communications port.</returns>
-        public static NtResult<FilterCommunicationPort> Open(string port_name, bool sync_handle, byte[] context, bool throw_on_error)
+        public static NtResult<FilterConnectionPort> Open(string port_name, bool sync_handle, byte[] context, bool throw_on_error)
         {
             return FilterManagerNativeMethods.FilterConnectCommunicationPort(port_name, sync_handle ? FilterConnectFlags.FLT_PORT_FLAG_SYNC_HANDLE : 0,
-                context, (short)(context?.Length ?? 0), null, out SafeKernelObjectHandle handle).CreateResult(throw_on_error, () => new FilterCommunicationPort(handle));
+                context, (short)(context?.Length ?? 0), null, out SafeKernelObjectHandle handle).CreateResult(throw_on_error, () => new FilterConnectionPort(handle));
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Filter
         /// <param name="sync_handle">Make the handle synchronous.</param>
         /// <param name="context">Optional context data.</param>
         /// <returns>The filter communications port.</returns>
-        public static FilterCommunicationPort Open(string port_name, bool sync_handle, byte[] context)
+        public static FilterConnectionPort Open(string port_name, bool sync_handle, byte[] context)
         {
             return Open(port_name, sync_handle, context, true).Result;
         }
@@ -61,7 +61,7 @@ namespace NtApiDotNet.Win32.Filter
         /// </summary>
         /// <param name="port_name">The port name, e.g. \FilterName</param>
         /// <returns>The filter communications port.</returns>
-        public static FilterCommunicationPort Open(string port_name)
+        public static FilterConnectionPort Open(string port_name)
         {
             return Open(port_name, false, null);
         }
@@ -75,13 +75,13 @@ namespace NtApiDotNet.Win32.Filter
         /// <param name="max_message_size">The maximum message size to receive.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The returned message.</returns>
-        public NtResult<FilterCommunicationPortMessage> GetMessage(int max_message_size, bool throw_on_error)
+        public NtResult<FilterConnectionPortMessage> GetMessage(int max_message_size, bool throw_on_error)
         {
             using (var buffer = new SafeStructureInOutBuffer<FILTER_MESSAGE_HEADER>(max_message_size, true))
             {
                 return FilterManagerNativeMethods.FilterGetMessage(Handle, buffer, 
                     buffer.Length, IntPtr.Zero).CreateResult(throw_on_error, 
-                    () => new FilterCommunicationPortMessage(buffer));
+                    () => new FilterConnectionPortMessage(buffer));
             }
         }
 
@@ -90,7 +90,7 @@ namespace NtApiDotNet.Win32.Filter
         /// </summary>
         /// <param name="max_message_size">The maximum message size to receive.</param>
         /// <returns>The returned message.</returns>
-        public FilterCommunicationPortMessage GetMessage(int max_message_size)
+        public FilterConnectionPortMessage GetMessage(int max_message_size)
         {
             return GetMessage(max_message_size, true).Result;
         }
