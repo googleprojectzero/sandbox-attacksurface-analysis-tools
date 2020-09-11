@@ -59,6 +59,9 @@
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="ClaimSecurityAttribute.cs" />
+    <Compile Include="IO\MountPointManager\MountPointManagerStructs.cs" />
+    <Compile Include="IO\MountPointManager\MountPoint.cs" />
+    <Compile Include="IO\MountPointManager\MountPointManagerUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtFileObjectId.cs" />

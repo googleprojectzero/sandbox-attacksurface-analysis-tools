@@ -5844,7 +5844,7 @@ Close handle 0x1234 in process the current process.
 function Close-NtObject {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromObject")]
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromObject", ValueFromPipeline)]
         [NtApiDotNet.NtObject]$Object,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProcess")]
         [NtApiDotNet.NtProcess]$Process,
@@ -11333,4 +11333,21 @@ function Test-NtFileDriverPath {
         [string]$DriverPath
     )
     $File.DriverInPath($DriverPath)
+}
+
+<#
+.SYNOPSIS
+Get list of mount points.
+.DESCRIPTION
+This cmdlet queries the mount point manager for a list of mount points.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.IO.MountPointManager.MountPoint[]
+.EXAMPLE
+Get-NtMountPoint
+Get list of mount points.
+#>
+function Get-NtMountPoint {
+    [NtApiDotNet.IO.MountPointManager.MountPointManagerUtils]::QueryMountPoints() | Write-Output
 }

@@ -100,7 +100,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtDeviceInterfaceInstance', 'Get-NtDeviceNodeParent', 'Get-NtDeviceNodeStack',
           'Get-NtFileItem', 'Get-NtFileChange', 'Lock-NtFile', 'Unlock-NtFile', 'Get-NtFileLink',
           'Get-NtFileDisposition', 'Set-NtFileDisposition', 'Wait-AsyncTaskResult', 'Get-NtFile8dot3Name',
-          'Send-FilterConnectionPort', 'Test-NtFileDriverPath'
+          'Send-FilterConnectionPort', 'Test-NtFileDriverPath', 'Get-NtMountPoint'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
