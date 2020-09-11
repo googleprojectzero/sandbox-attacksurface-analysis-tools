@@ -87,72 +87,6 @@
       </ListControl>
     </View>
     <View>
-      <Name>NtDeviceDirectoryEntryTable</Name>
-      <ViewSelectedBy>
-        <TypeName>NtObjectManager.Provider.NtDeviceDirectoryEntry</TypeName>
-      </ViewSelectedBy>
-      <TableControl>
-        <TableHeaders>
-          <TableColumnHeader>
-            <Label>Name</Label>
-            <Alignment>left</Alignment>
-          </TableColumnHeader>
-          <TableColumnHeader>
-            <Label>TypeName</Label>
-            <Alignment>left</Alignment>
-          </TableColumnHeader>
-        </TableHeaders>
-        <TableRowEntries>
-          <TableRowEntry>
-            <TableColumnItems>
-              <TableColumnItem>
-                <PropertyName>Name</PropertyName>
-              </TableColumnItem>
-              <TableColumnItem>
-                <PropertyName>TypeName</PropertyName>
-              </TableColumnItem>
-            </TableColumnItems>
-          </TableRowEntry>
-        </TableRowEntries>
-      </TableControl>
-    </View>
-    <View>
-      <Name>NtDeviceDirectoryEntryList</Name>
-      <ViewSelectedBy>
-        <TypeName>NtObjectManager.Provider.NtDeviceDirectoryEntry</TypeName>
-      </ViewSelectedBy>
-      <ListControl>
-        <ListEntries>
-          <ListEntry>
-            <ListItems>
-              <ListItem>
-                <PropertyName>Name</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>TypeName</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>RelativePath</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>DeviceType</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>Characteristics</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaximumGrantedAccess</PropertyName>
-              </ListItem>
-              <ListItem>
-                <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
-                <Label>SecurityDescriptor</Label>
-              </ListItem>
-            </ListItems>
-          </ListEntry>
-        </ListEntries>
-      </ListControl>
-    </View>
-    <View>
       <Name>NtDirectoryEntryTable</Name>
       <ViewSelectedBy>
         <TypeName>NtObjectManager.Provider.NtDirectoryEntry</TypeName>
@@ -181,45 +115,6 @@
           </TableRowEntry>
         </TableRowEntries>
       </TableControl>
-    </View>
-    <View>
-      <Name>NtDirectoryEntryList</Name>
-      <ViewSelectedBy>
-        <TypeName>NtObjectManager.Provider.NtDirectoryEntry</TypeName>
-      </ViewSelectedBy>
-      <ListControl>
-        <ListEntries>
-          <ListEntry>
-            <ListItems>
-              <ListItem>
-                <PropertyName>Name</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>TypeName</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>IsDirectory</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>IsSymbolicLink</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>RelativePath</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>SymbolicLinkTarget</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaximumGrantedAccess</PropertyName>
-              </ListItem>
-              <ListItem>
-                <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
-                <Label>SecurityDescriptor</Label>
-              </ListItem>
-            </ListItems>
-          </ListEntry>
-        </ListEntries>
-      </ListControl>
     </View>
     <View>
       <Name>NtTypeTable</Name>

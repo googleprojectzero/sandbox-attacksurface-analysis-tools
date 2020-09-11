@@ -35,9 +35,16 @@ namespace NtObjectManager.Provider
             _symlink_target = key.GetSymbolicLinkTarget(false).GetResultOrDefault(string.Empty);
         }
 
-        private protected virtual void PopulateDeviceData(NtFile file)
+        private void PopulateDeviceData(NtFile file)
         {
-            // Do nothing.
+            try
+            {
+                _device_type = file.DeviceType;
+                _characteristics = file.Characteristics;
+            }
+            catch (NtException)
+            {
+            }
         }
 
         private protected void PopulateData()
@@ -158,6 +165,41 @@ namespace NtObjectManager.Provider
             {
                 PopulateData();
                 return _maximum_granted_access;
+            }
+        }
+
+        private FileDeviceType? _device_type;
+        private FileDeviceCharacteristics? _characteristics;
+
+        /// <summary>
+        /// The device type.
+        /// </summary>
+        public FileDeviceType DeviceType
+        {
+            get
+            {
+                if (_device_type == null)
+                {
+                    _device_type = FileDeviceType.UNKNOWN;
+                    PopulateData();
+                }
+                return _device_type.Value;
+            }
+        }
+
+        /// <summary>
+        /// The device characteristics.
+        /// </summary>
+        public FileDeviceCharacteristics Characteristics
+        {
+            get
+            {
+                if (_characteristics == null)
+                {
+                    _characteristics = FileDeviceCharacteristics.None;
+                    PopulateData();
+                }
+                return _characteristics.Value;
             }
         }
 
