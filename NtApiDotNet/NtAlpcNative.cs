@@ -54,7 +54,8 @@ namespace NtApiDotNet
         AlpcAdjustCompletionListConcurrencyCountInformation,
         AlpcRegisterCallbackInformation,
         AlpcCompletionListRundownInformation,
-        AlpcWaitForPortReferences
+        AlpcWaitForPortReferences,
+        AlpcServerSessionInformation
     }
 
     public enum AlpcMessageInformationClass
@@ -491,7 +492,7 @@ namespace NtApiDotNet
         public IntPtr CompletionPort;
     }
 
-    // Output structure for server information. You need to specif
+    // Output structure for server information. You need to specify waiting handle.
     public struct AlpcServerInformationOut
     {
         public byte ThreadBlocked;
@@ -534,6 +535,13 @@ namespace NtApiDotNet
     public enum AlpcOpenSenderThreadFlags
     {
         None = 0,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcServerSessionInformation
+    {
+        public int SessionId;
+        public int ProcessId;
     }
 
     public static class NtAlpcNativeMethods

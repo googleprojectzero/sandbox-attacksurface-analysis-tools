@@ -985,6 +985,15 @@ namespace NtApiDotNet
         public long WriteTransferCount { get; }
         public long OtherTransferCount { get; }
 
+        internal NtProcessInformation(int pid, int session_id)
+        {
+            ProcessId = pid;
+            SessionId = session_id;
+            ImagePath = string.Empty;
+            ImageName = string.Empty;
+            Threads = new NtThreadInformation[0];
+        }
+
         internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads, bool full_information)
         {
             ProcessId = process_info.UniqueProcessId.ToInt32();

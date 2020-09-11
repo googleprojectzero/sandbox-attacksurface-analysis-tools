@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -928,6 +929,33 @@ namespace NtApiDotNet
         {
             return Connect(port_object_attributes, null, port_attributes, AlpcMessageFlags.None, null, null,
                     null, null, NtWaitTimeout.Infinite);
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Get the server process information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process information.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_19H1)]
+        public NtResult<NtProcessInformation> GetServerProcess(bool throw_on_error)
+        {
+            return Query<AlpcServerSessionInformation>(AlpcPortInformationClass.AlpcServerSessionInformation, default, throw_on_error).Map(
+                r => NtSystemInfo.GetProcessInformationExtended().FirstOrDefault(p => p.ProcessId == r.ProcessId)
+                ?? new NtProcessInformation(r.ProcessId, r.SessionId));
+        }
+
+        /// <summary>
+        /// Get the server process information.
+        /// </summary>
+        /// <returns>The process information.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_19H1)]
+        public NtProcessInformation GetServerProcess()
+        {
+            return GetServerProcess(true).Result;
         }
 
         #endregion
