@@ -129,9 +129,6 @@ namespace NtApiDotNet
             int data_length = reader.ReadUInt16();
             // Reserved
             reader.ReadUInt16();
-
-            ReparseBuffer buffer = null;
-
             long remaining_length = reader.RemainingLength();
             long expected_length = data_length;
             if (!NtFileUtils.IsReparseTagMicrosoft(tag))
@@ -145,6 +142,8 @@ namespace NtApiDotNet
                 return new OpaqueReparseBuffer(tag, reader.ReadToEnd());
             }
 
+
+            ReparseBuffer buffer;
             switch (tag)
             {
                 case ReparseTag.MOUNT_POINT:
@@ -190,15 +189,14 @@ namespace NtApiDotNet
             int data_length = reader.ReadUInt16();
             // Reserved
             reader.ReadUInt16();
-
-            ReparseBuffer buffer = null;
-
             if (data_length != reader.RemainingLength())
             {
                 // Possibly corrupted. Return an opaque buffer with all the data until the end.
                 return new OpaqueReparseBuffer(tag, reader.ReadToEnd());
             }
 
+
+            ReparseBuffer buffer;
             switch (tag)
             {
                 case ReparseTag.MOUNT_POINT:
