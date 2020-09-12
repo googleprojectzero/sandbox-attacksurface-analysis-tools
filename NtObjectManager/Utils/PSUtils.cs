@@ -163,6 +163,12 @@ namespace NtObjectManager.Utils
             return s.Contains("*") || s.Contains("?");
         }
 
+        private static string Combine(string path1, string path2)
+        {
+            path1 = path1.TrimEnd('\\', '/');
+            return path1 + @"\" + path2;
+        }
+
         private static string ResolveRelativePath(SessionState state, string path, RtlPathType path_type)
         {
             var current_path = state.Path.CurrentFileSystemLocation;
@@ -174,13 +180,13 @@ namespace NtObjectManager.Utils
             switch (path_type)
             {
                 case RtlPathType.Relative:
-                    return Path.Combine(current_path.Path, path);
+                    return Combine(current_path.Path, path);
                 case RtlPathType.Rooted:
                     return $"{current_path.Drive.Name}:{path}";
                 case RtlPathType.DriveRelative:
                     if (path.Substring(0, 1).Equals(current_path.Drive.Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        return Path.Combine(current_path.Path, path.Substring(2));
+                        return Combine(current_path.Path, path.Substring(2));
                     }
                     break;
             }
