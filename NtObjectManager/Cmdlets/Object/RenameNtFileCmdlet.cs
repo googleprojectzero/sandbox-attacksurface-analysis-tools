@@ -13,12 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using NtObjectManager.Utils;
 using System.Management.Automation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -98,8 +94,7 @@ namespace NtObjectManager.Cmdlets.Object
                 access |= FileAccessRights.Delete;
             }
 
-            string target = Win32Path ? GetWin32Path(NewName) : NewName;
-
+            string target = PSUtils.ResolvePath(SessionState, NewName, Win32Path);
             using (var file = NtFile.Open(obj_attributes, access, ShareMode, Options))
             {
                 if (RenameFlags != 0)
