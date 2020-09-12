@@ -10866,9 +10866,9 @@ function Get-NtDeviceInterfaceInstance {
 
 <#
 .SYNOPSIS
-Enumerate file entries for a file.
+Enumerate file entries for a file directory.
 .DESCRIPTION
-This cmdlet writes enumerates directory entries from a file.
+This cmdlet enumerates directory entries from a file directory.
 .PARAMETER File
 Specify the file directory to enumerate.
 .PARAMETER Pattern
@@ -10885,6 +10885,10 @@ Include placeholder directories in output.
 Include file ID in the entries.
 .PARAMETER ShortName
 Include the short name in the output.
+.PARAMETER Path
+Path to open the directory first.
+.PARAMETER Win32Path
+Open a win32 path.
 .INPUTS
 None
 .OUTPUTS
@@ -10895,6 +10899,12 @@ NtApiDotNet.NtFileObjectId[]
 .EXAMPLE
 Get-NtFileItem -File $f
 Enumerate all file items.
+.EXAMPLE
+Get-NtFileItem -Path \??\c:\windows
+Enumerate all file items in c:\windows.
+.EXAMPLE
+Get-NtFileItem -Path c:\windows -Win32Path
+Enumerate all file items in c:\windows.
 .EXAMPLE
 Get-NtFileItem -File $f -Pattern *.txt
 Enumerate all files with a TXT extension.
@@ -10920,17 +10930,28 @@ Enumerate files with short name.
 function Get-NtFileItem {
     [CmdletBinding(DefaultParameterSetName = "Default")]
     Param(
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromReparsePoint")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromObjectID")]
         [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
         [parameter(ParameterSetName="Default")]
+        [parameter(ParameterSetName="FromPath")]
         [string]$Pattern = "*",
         [parameter(ParameterSetName="Default")]
+        [parameter(ParameterSetName="FromPath")]
         [NtApiDotNet.FileTypeMask]$FileType = "All",
         [parameter(ParameterSetName="Default")]
+        [parameter(ParameterSetName="FromPath")]
         [switch]$FileId,
         [parameter(ParameterSetName="Default")]
+        [parameter(ParameterSetName="FromPath")]
         [switch]$ShortName,
         [parameter(ParameterSetName="Default")]
+        [parameter(ParameterSetName="FromPath")]
         [switch]$IncludePlaceholder,
         [parameter(ParameterSetName="FromReparsePoint")]
         [switch]$ReparsePoint,
@@ -10954,11 +10975,68 @@ function Get-NtFileItem {
             }
             $File.QueryDirectoryInfo($Pattern, $FileType, $flags) | Write-Output
         }
+        "FromPath" {
+            Use-NtObject($file = Get-NtFile -Path $Path -Win32Path:$Win32Path `
+                -DirectoryAccess ListDirectory -ShareMode Read -Options DirectoryFile) {
+                if ($file -ne $null) {
+                    Get-NtFileItem -File $file -Pattern $Pattern -FileType $FileType -FileId:$FileId `
+                        -ShortName:$ShortName -IncludePlaceholder:$IncludePlaceholder | Write-Output
+                }
+            }
+        }
         "FromReparsePoint" {
             $File.QueryReparsePoints() | Write-Output
         }
         "FromObjectID" {
             $File.QueryObjectIds() | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Enumerate file streams.
+.DESCRIPTION
+This cmdlet enumerates stream entries from a file.
+.PARAMETER File
+Specify the file to enumerate.
+.PARAMETER Path
+Path to open the file.
+.PARAMETER Win32Path
+Open a win32 path.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.FileStreamEntry[]
+.EXAMPLE
+Get-NtFileStream -File $f
+Enumerate all file streams.
+.EXAMPLE
+Get-NtFileStream -Path "abc.txt" -Win32Path
+Enumerate all file streams in abc.txt.
+#>
+function Get-NtFileStream {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "Default" {
+            $File.GetStreams() | Write-Output
+        }
+        "FromPath" {
+            Use-NtObject($file = Get-NtFile -Path $Path `
+                    -Win32Path:$Win32Path -Access Synchronize) {
+                if ($file -ne $null) {
+                    Get-NtFileStream -File $file | Write-Output
+                }
+            }
         }
     }
 }
@@ -11163,7 +11241,6 @@ function Get-NtFileLink {
         $ret | Select-Object -ExpandProperty FullPath | Write-Output
     }
 }
-
 
 <#
 .SYNOPSIS
