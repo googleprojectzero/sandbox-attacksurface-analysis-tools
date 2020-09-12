@@ -11214,8 +11214,12 @@ Get linknames to a file.
 This cmdlet gets a list of link names to an open file.
 .PARAMETER File
 Specify the file to query.
+.PARAMETER Path
+Specify a path to check.
 .PARAMETER Win32Path
-Specify to return Win32 paths.
+Specify open Win32 path.
+.PARAMETER FormatWin32Path
+Format paths as Win32 paths.
 .INPUTS
 None
 .OUTPUTS
@@ -11224,21 +11228,38 @@ string[]
 Get-NtFileLink -File $f
 Get all links to the file.
 .EXAMPLE
-Get-NtFileLink -File $f -Win32Path
+Get-NtFileLink -Path \SystemRoot\notepad.exe
+Get all links to notepad.exe
+.EXAMPLE
+Get-NtFileLink -File $f -FormatWin32Path
 Get all links to the file as win32 paths.
 #>
 function Get-NtFileLink {
+    [CmdletBinding(DefaultParameterSetName="Default")]
     Param(
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
         [NtApiDotNet.NtFile]$File,
-        [switch]$Win32Path
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [switch]$FormatWin32Path
     )
 
-    $ret = $File.GetHardLinks()
-    if ($Win32Path) {
-        $ret | Select-Object -ExpandProperty Win32Path | Write-Output
-    } else {
-        $ret | Select-Object -ExpandProperty FullPath | Write-Output
+    switch($PSCmdlet.ParameterSetName) {
+        "Default" {
+            $ret = $File.GetHardLinks()
+            if ($FormatWin32Path) {
+                $ret | Select-Object -ExpandProperty Win32Path | Write-Output
+            } else {
+                $ret | Select-Object -ExpandProperty FullPath | Write-Output
+            }
+        }
+        "FromPath" {
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access Synchronize) {
+                Get-NtFileLink -File $f -FormatWin32Path:$FormatWin32Path
+            }
+        }
     }
 }
 
