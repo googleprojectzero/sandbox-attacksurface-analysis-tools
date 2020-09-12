@@ -13,41 +13,45 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// <para type="synopsis">Get the file attributes for a file.</para>
-    /// <para type="description">This cmdlet gets the file attributes for a file.</para>
+    /// <para type="synopsis">Get the list of processes which are sharing this file.</para>
+    /// <para type="description">This cmdlet gets the list of processes which are sharing this file.</para>
     /// </summary>
     /// <example>
-    ///   <code>Get-NtFileAttribute -File $f</code>
-    ///   <para>Get the file attributes for the file.</para>
+    ///   <code>Get-NtFileShareProcess -File $f</code>
+    ///   <para>Get the sharing processes for the file.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtFileAttribute -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the file attributes for the file by path</para>
+    ///   <code>Get-NtFileShareProcess -Path "\??\C:\windows\system32\kernel32.dll"</code>
+    ///   <para>Get the sharing processes for kernel32.dll.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtFileAttribute -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the file attributes for the file by win32 path</para>
+    ///   <code>Get-NtFileShareProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path</code>
+    ///   <para>Get the sharing processes for kernel32.dll.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileAttribute", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(FileAttributes))]
-    public class GetNtFileAttributeCmdlet : BaseNtFilePropertyCmdlet
+    [Cmdlet(VerbsCommon.Get, "NtFileShareProcess", DefaultParameterSetName = "Default")]
+    [OutputType(typeof(NtProcessInformation))]
+    public class GetNtFileShareProcessCmdlet : BaseNtFilePropertyCmdlet
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GetNtFileAttributeCmdlet() 
+        public GetNtFileShareProcessCmdlet()
             : base(FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None)
         {
         }
 
         private protected override void HandleFile(NtFile file)
         {
-            WriteObject(file.FileAttributes);
+            var pids = new HashSet<int>(file.GetUsingProcessIds());
+
+            WriteObject(NtSystemInfo.GetProcessInformationExtended().Where(p => pids.Contains(p.ProcessId)), true);
         }
     }
 }

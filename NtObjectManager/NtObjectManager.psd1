@@ -94,7 +94,6 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Backup-NtKey', 'Restore-NtKey', 'Enable-NtTokenVirtualization', 'Disable-NtTokenVirtualization',
           'Read-NtFile', 'Write-NtFile', 'Get-FilterConnectionPort', 'Get-FilterDriver', 
           'Get-FilterDriverInstance', 'Get-FilterDriverVolume', 'Get-FilterDriverVolumeInstance',
-          'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileShareProcess',
           'Add-NtEaBuffer', 'Remove-NtFileEa', 'Get-NtDeviceSetupClass', 'Get-NtDeviceNode',
           'Get-NtDeviceInterfaceClass', 'Get-NtDeviceProperty', 'Get-NtDeviceNodeChild',
           'Get-NtDeviceInterfaceInstance', 'Get-NtDeviceNodeParent', 'Get-NtDeviceNodeStack',
@@ -148,7 +147,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Add-AuthZSid', 'Remove-AuthZSid', 'Set-NtToken', 'Get-NtTokenDefaultDacl',
                'Set-NtTokenDefaultDacl', 'Get-NtKeySymbolicLinkTarget', 'New-NtKeySymbolicLink',
                'Rename-NtFile', 'Get-NtFileVolumeInformation', 'Set-NtFileVolumeInformation',
-               'Send-NtFileControl'
+               'Send-NtFileControl', 'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileShareProcess'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer'

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -70,8 +71,9 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else
             {
-                using (var obja = new ObjectAttributes(Path, CaseSensitive ? AttributeFlags.None : AttributeFlags.CaseInsensitive,
-                    null))
+
+                using (var obja = new ObjectAttributes(PSUtils.ResolvePath(SessionState, Path, Win32Path),
+                    CaseSensitive ? AttributeFlags.None : AttributeFlags.CaseInsensitive))
                 {
                     using (var file = NtFile.Open(obja, _desired_access, _share_mode, _options))
                     {
