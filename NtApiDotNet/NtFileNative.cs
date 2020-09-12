@@ -1498,6 +1498,10 @@ namespace NtApiDotNet
         /// </summary>
         public long EndOfFile { get; }
         /// <summary>
+        /// Length of the file, alias of EndOfFile.
+        /// </summary>
+        public long FileSize => EndOfFile;
+        /// <summary>
         /// Allocation size.
         /// </summary>
         public long AllocationSize { get; }

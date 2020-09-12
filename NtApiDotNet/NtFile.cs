@@ -4813,7 +4813,6 @@ namespace NtApiDotNet
             }
         }
 
-
         /// <summary>
         /// Gets whether the file is on a remote file system.
         /// </summary>
