@@ -25,21 +25,21 @@ namespace NtObjectManager.Cmdlets.Object
     /// To simplify calling it's also possible to specify the path in a Win32 format when using the -Win32Path parameter.</para>
     /// </summary>
     /// <example>
-    ///   <code>Set-NtFileHardlink -Path \??\C:\ABC\XYZ.TXT -LinkPath \??\C:\TEMP\ABC.TXT</code>
+    ///   <code>New-NtFileHardlink -Path \??\C:\ABC\XYZ.TXT -LinkName \??\C:\TEMP\ABC.TXT</code>
     ///   <para>Create a hardlink for file \??\C:\ABC\XYZ.TXT as \??\C:\XYZ.</para>
     /// </example>
     /// <example>
-    ///   <code>Set-NtFileHardlink -Path C:\ABC\XYZ.TXT -LinkPath C:\TEMP\ABC.TXT -Win32Path</code>
+    ///   <code>New-NtFileHardlink -Path C:\ABC\XYZ.TXT -LinkName C:\TEMP\ABC.TXT -Win32Path -ResolveLinkName</code>
     ///   <para>Create a hardlink for file C:\ABC\XYZ.TXT as C:\TEMP\ABC.TXT.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Set, "NtFileHardlink")]
-    public class SetNtFileHardlinkCmdlet : GetNtFileCmdlet
+    [Cmdlet(VerbsCommon.New, "NtFileHardlink")]
+    public class NewNtFileHardlinkCmdlet : GetNtFileCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the path to the new link.</para>
+        /// <para type="description">Specify the path to the new link. This is passed verbatim to the system call unless ResolveLinkName is used.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 1)]
-        public string LinkPath { get; set; }
+        public string LinkName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a root object if TargetPath is relative.</para>
@@ -54,6 +54,18 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter ReplaceIfExists { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to resolve the link name to a full path using win32 rules.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ResolveLinkName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify arbitrary flags for the link EX setting.</para>
+        /// </summary>
+        [Parameter]
+        public FileRenameInformationExFlags LinkFlags { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -62,11 +74,22 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (NtFile file = (NtFile)base.CreateObject(obj_attributes))
             {
-                if (LinkRoot == null && Win32Path)
+                if (LinkRoot == null && ResolveLinkName)
                 {
-                    LinkPath = PSUtils.ResolveWin32Path(SessionState, LinkPath);
+                    LinkName = PSUtils.ResolveWin32Path(SessionState, LinkName);
                 }
-                file.CreateHardlink(LinkPath, LinkRoot, ReplaceIfExists, true);
+                if (LinkFlags == 0)
+                {
+                    file.CreateHardlink(LinkName, LinkRoot, ReplaceIfExists);
+                }
+                else
+                {
+                    if (ReplaceIfExists)
+                    {
+                        LinkFlags |= FileRenameInformationExFlags.ReplaceIfExists;
+                    }
+                    file.CreateHardlinkEx(LinkName, LinkRoot, LinkFlags);
+                }
             }
 
             return null;

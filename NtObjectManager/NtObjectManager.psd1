@@ -100,7 +100,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtDeviceInterfaceInstance', 'Get-NtDeviceNodeParent', 'Get-NtDeviceNodeStack',
           'Get-NtFileItem', 'Get-NtFileChange', 'Lock-NtFile', 'Unlock-NtFile', 'Get-NtFileLink',
           'Get-NtFileDisposition', 'Set-NtFileDisposition', 'Wait-AsyncTaskResult', 'Get-NtFile8dot3Name',
-          'Send-FilterConnectionPort', 'Test-NtFileDriverPath', 'Get-NtMountPoint', 'Get-NtFileStream'
+          'Send-FilterConnectionPort', 'Test-NtFileDriverPath', 'Get-NtMountPoint', 'Get-NtFileStream',
+          'Get-NtFileCompression', 'Set-NtFileCompression'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -129,7 +130,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Remove-NtDebugProcess', 'Copy-NtObject', 'New-NtResourceManager',
                'Get-NtResourceManager', 'Get-NtTransactionGuid', 'Get-NtEnlistment',
                'New-NtEnlistment', 'Get-RpcServerName', 'Set-RpcServerName',
-               'Set-NtFileHardlink', 'Test-NetworkAccess', 'Get-AccessibleScheduledTask',
+               'New-NtFileHardlink', 'Test-NetworkAccess', 'Get-AccessibleScheduledTask',
                'Compare-RpcServer', 'Select-RpcServer', 'Add-NtTokenSecurityAttribute',
                'Remove-NtTokenSecurityAttribute', 'Get-AccessibleEventTrace',
                'Test-NtTokenImpersonation', 'Get-AccessibleToken', 'Set-NtProcessJob', 

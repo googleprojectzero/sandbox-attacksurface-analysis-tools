@@ -207,7 +207,7 @@ namespace NtObjectManager.Cmdlets.Object
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor));
+                objects.Add((NtObject)CreateObject(ResolvePath(), AttributeFlags, Root, SecurityQualityOfService, SecurityDescriptor));
                 finished = true;
             }
             finally
@@ -229,7 +229,7 @@ namespace NtObjectManager.Cmdlets.Object
             VerifyParameters();
             try
             {
-                WriteToOutput(CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor));
+                WriteToOutput(CreateObject(ResolvePath(), AttributeFlags, Root, SecurityQualityOfService, SecurityDescriptor));
             }
             catch (NtException ex)
             {

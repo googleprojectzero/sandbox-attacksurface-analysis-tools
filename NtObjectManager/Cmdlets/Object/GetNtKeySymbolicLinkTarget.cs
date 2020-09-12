@@ -47,7 +47,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         public GetNtKeySymbolicLinkTarget()
         {
-            AttributesFlags |= AttributeFlags.OpenLink;
+            AttributeFlags |= AttributeFlags.OpenLink;
             Access = KeyAccessRights.QueryValue;
         }
 

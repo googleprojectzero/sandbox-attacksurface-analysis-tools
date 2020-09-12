@@ -33,8 +33,8 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Create a link to a file object with an absolute path.</para>
     /// </example>
     /// <example>
-    ///   <code>Rename-NtFile c:\path\file.exe -Win32Path -NewName c:\newpath\file.exe</code>
-    ///   <para>Rename a file object with an absolute win 32 path.</para>
+    ///   <code>Rename-NtFile c:\path\file.exe -Win32Path -NewName c:\newpath\file.exe -ResolveNewName</code>
+    ///   <para>Rename a file object with an absolute win32 path.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Rename, "NtFile")]
     public class RenameNtFileCmdlet : GetNtFileCmdlet
@@ -60,10 +60,16 @@ namespace NtObjectManager.Cmdlets.Object
         public string NewName { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a root object for the new name.</para>
+        /// <para type="description">Specify a root object for the new name. This is passed verbatim to the system call unless ResolveNewName is used.</para>
         /// </summary>
         [Parameter]
         public NtObject NewNameRoot { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to resolve the new name to a full path based on win32 rules, otherwise it's passed verbatim.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ResolveNewName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify arbitrary flags for the rename EX setting.</para>
@@ -94,7 +100,7 @@ namespace NtObjectManager.Cmdlets.Object
                 access |= FileAccessRights.Delete;
             }
 
-            string target = PSUtils.ResolvePath(SessionState, NewName, Win32Path);
+            string target = ResolveNewName ? PSUtils.ResolveWin32Path(SessionState, NewName) : NewName;
             using (var file = NtFile.Open(obj_attributes, access, ShareMode, Options))
             {
                 if (RenameFlags != 0)

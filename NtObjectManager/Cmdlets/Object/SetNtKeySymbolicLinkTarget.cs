@@ -36,7 +36,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         public SetNtKeySymbolicLinkTarget()
         {
-            AttributesFlags |= AttributeFlags.OpenLink;
+            AttributeFlags |= AttributeFlags.OpenLink;
             Access = KeyAccessRights.SetValue;
         }
 

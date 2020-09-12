@@ -71,7 +71,7 @@ namespace NtObjectManager.Cmdlets.Object
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             string type_name = string.IsNullOrWhiteSpace(TypeName) ? null : TypeName;
-            return NtObject.OpenWithType(type_name, ResolvePath(), Root, AttributesFlags, Access, SecurityQualityOfService);
+            return NtObject.OpenWithType(type_name, ResolvePath(), Root, AttributeFlags, Access, SecurityQualityOfService);
         }
     }
 }

@@ -144,7 +144,7 @@ namespace NtObjectManager.Cmdlets.Object
                         ReparseBuffer = new SymlinkReparseBuffer(target_path, string.IsNullOrEmpty(PrintName)
                             ? target_path : PrintName, Relative ? SymlinkReparseBufferFlags.Relative : SymlinkReparseBufferFlags.None);
                         break;
-                    case "RawBytes":
+                    case "Bytes":
                         ReparseBuffer = ReparseBuffer.FromByteArray(Bytes);
                         break;
                 }

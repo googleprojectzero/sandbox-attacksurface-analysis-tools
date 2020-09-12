@@ -67,6 +67,7 @@
     <Compile Include="Cmdlets\Object\AddNtSecurityDescriptorAceCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtTokenSecurityAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\BaseGetNtChildObjectCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\BaseNtFilePropertyCmdlet.cs" />
     <Compile Include="Cmdlets\Object\ConnectNtAlpcClientCmdlet.cs" />
     <Compile Include="Cmdlets\Object\ConnectNtAlpcServerCmdlet.cs" />
     <Compile Include="Cmdlets\Object\CopyNtObjectCmdlet.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Cmdlets\Object\GetNtDirectoryCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtEnlistmentCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtEventCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtFileAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileVolumeInformationCmdlet.cs" />
@@ -143,7 +145,7 @@
     <Compile Include="Cmdlets\Object\SendNtAlpcMessageCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GrantNtAccessMaskCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SendNtFileControlCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileHardlinkCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\NewNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileVolumeInformationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtKeySymbolicLinkTarget.cs" />

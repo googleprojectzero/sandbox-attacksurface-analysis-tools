@@ -10379,14 +10379,14 @@ Get-NtFileAttribute -File $f
 Get the file attributes for the file.
 #>
 function Get-NtFileAttribute {
-    [CmdletBinding(DefaultParameterSetName = "FromFile")]
+    [CmdletBinding(DefaultParameterSetName = "Default")]
     Param(
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
         [NtApiDotNet.NtFile]$File
     )
 
     switch($PSCmdlet.ParameterSetName) {
-        "FromFile" {
+        "Default" {
             $File.FileAttributes | Write-Output
         }
     }
@@ -10889,6 +10889,8 @@ Include the short name in the output.
 Path to open the directory first.
 .PARAMETER Win32Path
 Open a win32 path.
+.PARAMETER CaseSensitive
+Open the file case sensitively, also does case sensitive pattern matching.
 .INPUTS
 None
 .OUTPUTS
@@ -10953,6 +10955,8 @@ function Get-NtFileItem {
         [parameter(ParameterSetName="Default")]
         [parameter(ParameterSetName="FromPath")]
         [switch]$IncludePlaceholder,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$CaseSensitive,
         [parameter(ParameterSetName="FromReparsePoint")]
         [switch]$ReparsePoint,
         [parameter(ParameterSetName="FromObjectID")]
@@ -10976,8 +10980,12 @@ function Get-NtFileItem {
             $File.QueryDirectoryInfo($Pattern, $FileType, $flags) | Write-Output
         }
         "FromPath" {
+            $attr = "CaseInsensitive"
+            if ($CaseSensitive) {
+                $attr = 0
+            }
             Use-NtObject($file = Get-NtFile -Path $Path -Win32Path:$Win32Path `
-                -DirectoryAccess ListDirectory -ShareMode Read -Options DirectoryFile) {
+                -DirectoryAccess ListDirectory -ShareMode Read -Options DirectoryFile -AttributeFlags $attr) {
                 if ($file -ne $null) {
                     Get-NtFileItem -File $file -Pattern $Pattern -FileType $FileType -FileId:$FileId `
                         -ShortName:$ShortName -IncludePlaceholder:$IncludePlaceholder | Write-Output
@@ -11004,6 +11012,8 @@ Specify the file to enumerate.
 Path to open the file.
 .PARAMETER Win32Path
 Open a win32 path.
+.PARAMETER CaseSensitive
+Open the file case sensitively.
 .INPUTS
 None
 .OUTPUTS
@@ -11023,7 +11033,9 @@ function Get-NtFileStream {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
-        [switch]$Win32Path
+        [switch]$Win32Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$CaseSensitive
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -11031,8 +11043,12 @@ function Get-NtFileStream {
             $File.GetStreams() | Write-Output
         }
         "FromPath" {
+            $attr = "CaseInsensitive"
+            if ($CaseSensitive) {
+                $attr = 0
+            }
             Use-NtObject($file = Get-NtFile -Path $Path `
-                    -Win32Path:$Win32Path -Access Synchronize) {
+                    -Win32Path:$Win32Path -Access Synchronize -AttributeFlags $attr) {
                 if ($file -ne $null) {
                     Get-NtFileStream -File $file | Write-Output
                 }
@@ -11220,6 +11236,8 @@ Specify a path to check.
 Specify open Win32 path.
 .PARAMETER FormatWin32Path
 Format paths as Win32 paths.
+.PARAMETER CaseSensitive
+Open the file case sensitively.
 .INPUTS
 None
 .OUTPUTS
@@ -11243,7 +11261,9 @@ function Get-NtFileLink {
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
         [switch]$Win32Path,
-        [switch]$FormatWin32Path
+        [switch]$FormatWin32Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$CaseSensitive
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -11256,7 +11276,11 @@ function Get-NtFileLink {
             }
         }
         "FromPath" {
-            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access Synchronize) {
+            $attr = "CaseInsensitive"
+            if ($CaseSensitive) {
+                $attr = 0
+            }
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access Synchronize -AttributeFlags $attr) {
                 Get-NtFileLink -File $f -FormatWin32Path:$FormatWin32Path
             }
         }
@@ -11448,4 +11472,123 @@ Get list of mount points.
 #>
 function Get-NtMountPoint {
     [NtApiDotNet.IO.MountPointManager.MountPointManagerUtils]::QueryMountPoints() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get compression status for a file.
+.DESCRIPTION
+This cmdlet gets the compression status for a file.
+.PARAMETER File
+Specify the file to query.
+.PARAMETER Path
+Specify a path to check.
+.PARAMETER Win32Path
+Specify open Win32 path.
+.PARAMETER CaseSensitive
+Open the file case sensitively.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.CompressionFormat
+.EXAMPLE
+Get-NtFileCompression -File $f
+Get compression status for the file.
+.EXAMPLE
+Get-NtFileCompression -Path \SystemRoot\notepad.exe
+Get the compression status of the file by path.
+#>
+function Get-NtFileCompression {
+    [CmdletBinding(DefaultParameterSetName="Default")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$CaseSensitive
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "Default" {
+            $File.CompressionFormat | Write-Output
+        }
+        "FromPath" {
+            $attr = "CaseInsensitive"
+            if ($CaseSensitive) {
+                $attr = 0
+            }
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access Synchronize -AttributeFlags $attr) {
+                $f.CompressionFormat | Write-Output
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set compression status for a file.
+.DESCRIPTION
+This cmdlet sets the compression status for a file.
+.PARAMETER File
+Specify the file to query.
+.PARAMETER Path
+Specify a path to check.
+.PARAMETER Win32Path
+Specify open Win32 path.
+.PARAMETER CaseSensitive
+Open the file case sensitively.
+.PARAMETER Format
+Specify the compression format.
+.PARAMETER PassThru
+Specify to return the set compression format.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.CompressionFormat
+.EXAMPLE
+Set-NtFileCompression -File $f -Format Default
+Sets the compression status for the file using the default algorithm.
+.EXAMPLE
+Get-NtFileCompression -Path \SystemRoot\notepad.exe -Format Default
+Sets the compression status for the file using the default algorithm.
+#>
+function Set-NtFileCompression {
+    [CmdletBinding(DefaultParameterSetName="Default")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [parameter(ParameterSetName="FromPath")]
+        [switch]$CaseSensitive,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.CompressionFormat]$Format,
+        [switch]$PassThru
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "Default" {
+            $File.CompressionFormat = $Format
+            if ($PassThru) {
+                $f.CompressionFormat | Write-Output
+            }
+        }
+        "FromPath" {
+            $attr = "CaseInsensitive"
+            if ($CaseSensitive) {
+                $attr = 0
+            }
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access ReadData, WriteData -AttributeFlags $attr) {
+                $f.CompressionFormat = $Format
+                if ($PassThru) {
+                    $f.CompressionFormat | Write-Output
+                }
+            }
+        }
+    }
 }

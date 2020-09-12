@@ -28,8 +28,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
         /// </summary>
         [Parameter]
-        [Alias("ObjectAttributes")]
-        public AttributeFlags AttributesFlags { get; set; }
+        [Alias("ObjectAttributes", "AttributesFlags")]
+        public AttributeFlags AttributeFlags { get; set; }
 
         /// <summary>
         /// <para type="description">Set to provide an explicit security descriptor to a newly created object.</para>
@@ -77,7 +77,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected NtObjectBaseNoPathCmdlet()
         {
-            AttributesFlags = AttributeFlags.CaseInsensitive;
+            AttributeFlags = AttributeFlags.CaseInsensitive;
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteToOutput(CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor));
+            WriteToOutput(CreateObject(null, AttributeFlags, null, SecurityQualityOfService, SecurityDescriptor));
         }
 
         private protected void WriteToOutput(object obj)
