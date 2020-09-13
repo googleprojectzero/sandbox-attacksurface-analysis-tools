@@ -51,6 +51,18 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "FromPath")]
         public SwitchParameter CaseSensitive { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to open the reparse point.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public SwitchParameter OpenReparsePoint { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to open the path with backup privileges.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public SwitchParameter OpenForBackupIntent { get; set; }
+
         private protected abstract void HandleFile(NtFile file);
 
         private protected BaseNtFilePropertyCmdlet(FileAccessRights desired_access, FileShareMode share_mode, FileOpenOptions options)
@@ -74,7 +86,12 @@ namespace NtObjectManager.Cmdlets.Object
                 using (var obja = new ObjectAttributes(PSUtils.ResolvePath(SessionState, Path, Win32Path),
                     CaseSensitive ? AttributeFlags.None : AttributeFlags.CaseInsensitive))
                 {
-                    using (var file = NtFile.Open(obja, _desired_access, _share_mode, _options))
+                    var opts = _options;
+                    if (OpenReparsePoint)
+                        opts |= FileOpenOptions.OpenReparsePoint;
+                    if (OpenForBackupIntent)
+                        opts |= FileOpenOptions.OpenForBackupIntent;
+                    using (var file = NtFile.Open(obja, _desired_access, _share_mode, opts))
                     {
                         HandleFile(file);
                     }

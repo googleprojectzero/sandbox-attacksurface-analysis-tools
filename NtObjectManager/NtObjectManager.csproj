@@ -81,7 +81,9 @@
     <Compile Include="Cmdlets\Object\GetNtFileAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileCompressionCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtFileIdCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileLinkCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtFileObjectIdCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileShareProcessCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileStreamCmdlet.cs" />
@@ -140,6 +142,7 @@
     <Compile Include="Cmdlets\Object\RemoveKeyCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveKeyHiveCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtFileCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\RemoveNtFileObjectIdCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtSecurityDescriptorAceCmdlet.cs" />
     <Compile Include="Cmdlets\Object\RemoveNtTokenSecurityAttributeCmdlet.cs" />
@@ -152,6 +155,7 @@
     <Compile Include="Cmdlets\Object\NewNtFileHardlinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileCompressionCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\SetNtFileObjectIdCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtFileVolumeInformationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtKeySymbolicLinkTarget.cs" />
