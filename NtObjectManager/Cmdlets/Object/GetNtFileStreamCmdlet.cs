@@ -18,7 +18,7 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// <para type="synopsis">Get named streams to a file.</para>
+    /// <para type="synopsis">Get named streams for a file.</para>
     /// <para type="description">This cmdlet gets a list of the named streams for a file.</para>
     /// </summary>
     /// <example>

@@ -19,7 +19,7 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// <para type="synopsis">Get linknames to a file.</para>
+    /// <para type="synopsis">Get link names for a file.</para>
     /// <para type="description">This cmdlet gets a list of link names to a file.</para>
     /// </summary>
     /// <example>
