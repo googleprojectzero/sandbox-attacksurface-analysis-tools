@@ -3706,7 +3706,7 @@
     <View>
       <Name>GenericReparseBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.OpaqueReparseBuffer</TypeName>
+        <TypeName>NtApiDotNet.GenericReparseBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
