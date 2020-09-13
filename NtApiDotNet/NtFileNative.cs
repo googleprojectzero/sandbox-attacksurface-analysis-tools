@@ -306,14 +306,14 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryQuotaInformationFile(
           SafeKernelObjectHandle FileHandle,
-          IoStatus IoStatusBlock,
+          [In, Out] IoStatus IoStatusBlock,
           SafeBuffer Buffer,
           int Length,
           [MarshalAs(UnmanagedType.U1)]
           bool ReturnSingleEntry,
           SafeBuffer SidList,
           int SidListLength,
-          SafeBuffer StartSid,
+          SafeSidBufferHandle StartSid,
           [MarshalAs(UnmanagedType.U1)]
           bool RestartScan
         );
@@ -2193,10 +2193,20 @@ namespace NtApiDotNet
     public sealed class FileQuotaEntry
     {
         public Sid Sid { get; }
+        public string User => Sid.Name;
         public DateTime ChangeTime { get; }
         public long QuotaUsed { get; }
         public long QuotaThreshold { get; }
         public long QuotaLimit { get; }
+        public double QuotaPercent
+        {
+            get
+            {
+                if (QuotaThreshold <= 0)
+                    return 0.0;
+                return 100.0 * (QuotaUsed / (double)QuotaLimit);
+            }
+        }
 
         internal FileQuotaEntry(SafeStructureInOutBuffer<FileQuotaInformation> buffer)
         {

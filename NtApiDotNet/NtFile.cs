@@ -505,6 +505,88 @@ namespace NtApiDotNet
             }
         }
 
+        private static SafeHGlobalBuffer ConvertSidList(IEnumerable<Sid> sid_list, DisposableList list)
+        {
+            if (sid_list == null || !sid_list.Any())
+            {
+                return SafeHGlobalBuffer.Null;
+            }
+
+            int struct_size = Marshal.SizeOf(typeof(FileGetQuotaInformation)) - 4;
+            List<byte[]> sids = sid_list.Select(s => s.ToArray()).ToList();
+            int total_size = sids.Sum(b => b.Length + struct_size);
+
+            var buffer = list.AddResource(new SafeHGlobalBuffer(total_size));
+            int offset = 0;
+
+            for (int i = 0; i < sids.Count; ++i)
+            {
+                var curr = buffer.GetStructAtOffset<FileGetQuotaInformation>(offset);
+                byte[] sid = sids[i];
+
+                int next_offset = i < sids.Count - 1 ? struct_size + sid.Length : 0;
+                curr.Result = new FileGetQuotaInformation() { NextEntryOffset = next_offset, SidLength = sid.Length };
+                curr.Data.WriteBytes(sid);
+                offset += next_offset;
+            }
+
+            return buffer;
+        }
+
+        private IEnumerable<FileQuotaEntry> QueryQuota(IEnumerable<Sid> sid_list, Sid start_sid)
+        {
+            using (var list = new DisposableList())
+            {
+                var buffer = list.AddResource(new SafeStructureInOutBuffer<FileQuotaInformation>(32 * 1024, false));
+                SafeHGlobalBuffer sid_list_buffer = ConvertSidList(sid_list, list);
+                SafeSidBufferHandle start_sid_buffer = SafeSidBufferHandle.Null;
+                if (start_sid != null)
+                {
+                    start_sid_buffer = start_sid.ToSafeBuffer();
+                }
+
+                IoStatus io_status = new IoStatus();
+                NtStatus status = NtSystemCalls.NtQueryQuotaInformationFile(Handle,
+                        io_status, buffer, buffer.Length, false, sid_list_buffer, sid_list_buffer.Length,
+                        start_sid_buffer, true);
+                while(status.IsSuccess())
+                {
+                    int offset = 0;
+                    while (true)
+                    {
+                        var next_buffer = buffer.GetStructAtOffset<FileQuotaInformation>(offset);
+                        var result = next_buffer.Result;
+
+                        yield return new FileQuotaEntry(next_buffer);
+
+                        if (result.NextEntryOffset == 0)
+                            break;
+                        offset += result.NextEntryOffset;
+                    }
+
+                    if (start_sid != null)
+                    {
+                        break;
+                    }
+
+                    // If a SID list then this will just repeat.
+                    if (sid_list?.Any() ?? false)
+                    {
+                        break;
+                    }
+
+                    status = NtSystemCalls.NtQueryQuotaInformationFile(Handle,
+                        io_status, buffer, buffer.Length, false, sid_list_buffer, sid_list_buffer.Length,
+                        start_sid_buffer, false);
+                }
+
+                if (status != NtStatus.STATUS_NO_MORE_ENTRIES)
+                {
+                    status.ToNtException();
+                }
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -4623,6 +4705,25 @@ namespace NtApiDotNet
         public UsnJournalDataV0 QueryUsnJournalV0()
         {
             return QueryUsnJournalV0(true).Result;
+        }
+
+        /// <summary>
+        /// Query the quota entries for a volume.
+        /// </summary>
+        /// <param name="sid_list">Return quote entries for the specified SIDs.</param>
+        /// <returns>The list of quota entries.</returns>
+        public IEnumerable<FileQuotaEntry> QueryQuota(IEnumerable<Sid> sid_list)
+        {
+            return QueryQuota(sid_list, null);
+        }
+
+        /// <summary>
+        /// Query all quota entries for a volume.
+        /// </summary>
+        /// <returns>The list of quota entries.</returns>
+        public IEnumerable<FileQuotaEntry> QueryQuota()
+        {
+            return QueryQuota(null, null);
         }
 
         /// <summary>

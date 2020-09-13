@@ -3777,5 +3777,49 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>FileQuotaEntry</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.FileQuotaEntry</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>User</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>QuotaUsed</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>QuotaLimit</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>QuotaPercent</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>User</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>QuotaUsed</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>QuotaLimit</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>QuotaPercent</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
