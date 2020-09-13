@@ -71,7 +71,6 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else
             {
-
                 using (var obja = new ObjectAttributes(PSUtils.ResolvePath(SessionState, Path, Win32Path),
                     CaseSensitive ? AttributeFlags.None : AttributeFlags.CaseInsensitive))
                 {
