@@ -11233,3 +11233,51 @@ Get list of mount points.
 function Get-NtMountPoint {
     [NtApiDotNet.IO.MountPointManager.MountPointManagerUtils]::QueryMountPoints() | Write-Output
 }
+
+<#
+.SYNOPSIS
+Create a new reparse tag buffer.
+.DESCRIPTION
+This cmdlet creates a new reparse tag buffer.
+.PARAMETER Tag
+Specify the reparse tag.
+.PARAMETER Guid
+Specify the GUID for a generic reparse buffer.
+.PARAMETER Data
+Specify data for the reparse buffer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotnet.OpaqueReparseBuffer
+NtApiDotNet.GenericReparseBuffer
+.EXAMPLE
+New-NtFileReparseBuffer -Tag AF_UNIX -Data @(1, 2, 3, 4)
+Create a new opaque reparse buffer.
+.EXAMPLE
+New-NtFileReparseBuffer -GenericTag 100 -Data @(1, 2, 3, 4) -Guid '8b049aa1-e380-4808-aeb4-dffd9d01c0de'
+Create a new opaque reparse buffer.
+#>
+function New-NtFileReparseBuffer {
+    [CmdletBinding(DefaultParameterSetName = "OpaqueBuffer")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="OpaqueBuffer")]
+        [NtApiDotNet.ReparseTag]$Tag,
+        [parameter(Mandatory, Position = 0, ParameterSetName="GenericBuffer")]
+        [uint32]$GenericTag,
+        [parameter(Mandatory, ParameterSetName="GenericBuffer")]
+        [guid]$Guid,
+        [parameter(Mandatory, Position = 1, ParameterSetName="OpaqueBuffer")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="GenericBuffer")]
+        [AllowEmptyCollection()]
+        [byte[]]$Data
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "OpaqueBuffer" {
+            [NtApiDotnet.OpaqueReparseBuffer]::new($Tag, $Data) | Write-Output
+        }
+        "GenericBuffer" {
+            [NtApiDotNet.GenericReparseBuffer]::new($GenericTag, $Guid, $Data) | Write-Output
+        }
+    }
+}

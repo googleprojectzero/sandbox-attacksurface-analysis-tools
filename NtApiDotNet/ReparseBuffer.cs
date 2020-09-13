@@ -302,6 +302,18 @@ namespace NtApiDotNet
         /// <param name="tag">The reparse tag.</param>
         /// <param name="guid">The reparse GUID</param>
         /// <param name="data">Additional reparse data.</param>
+        public GenericReparseBuffer(uint tag, Guid guid, byte[] data) : base((ReparseTag)tag)
+        {
+            Data = (byte[])data.Clone();
+            Guid = guid;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        /// <param name="guid">The reparse GUID</param>
+        /// <param name="data">Additional reparse data.</param>
         public GenericReparseBuffer(ReparseTag tag, Guid guid, byte[] data) : base(tag)
         {
             Data = (byte[])data.Clone();
