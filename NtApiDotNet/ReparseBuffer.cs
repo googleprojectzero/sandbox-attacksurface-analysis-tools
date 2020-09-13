@@ -246,6 +246,10 @@ namespace NtApiDotNet
             }
             writer.Write((ushort)buffer.Length);
             writer.Write((ushort)0);
+            if (this is GenericReparseBuffer generic)
+            {
+                writer.Write(generic.Guid.ToByteArray());
+            }
             writer.Write(buffer);
             return stm.ToArray();
         }
@@ -342,7 +346,6 @@ namespace NtApiDotNet
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write(Guid.ToByteArray());
             writer.Write(Data);
             return stm.ToArray();
         }
