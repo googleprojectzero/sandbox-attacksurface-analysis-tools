@@ -341,6 +341,8 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode IOCTL_DISK_REMOVE_DEVICE = new NtIoControlCode(FileDeviceType.DISK, 0x207, FileControlMethod.Buffered, FileControlAccess.Read);
         public static readonly NtIoControlCode IOCTL_DISK_UPDATE_DRIVE_SIZE = new NtIoControlCode(FileDeviceType.DISK, 0x0032, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode IOCTL_SERIAL_LSRMST_INSERT = new NtIoControlCode(FileDeviceType.SERIAL_PORT, 31, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_REDIR_QUERY_PATH = new NtIoControlCode(FileDeviceType.NETWORK_FILE_SYSTEM, 99, FileControlMethod.Neither, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_REDIR_QUERY_PATH_EX = new NtIoControlCode(FileDeviceType.NETWORK_FILE_SYSTEM, 100, FileControlMethod.Neither, FileControlAccess.Any);
 
         private static Dictionary<NtIoControlCode, string> BuildControlCodeToName()
         {
