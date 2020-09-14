@@ -11248,7 +11248,7 @@ Specify data for the reparse buffer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotnet.OpaqueReparseBuffer
+NtApiDotNet.OpaqueReparseBuffer
 NtApiDotNet.GenericReparseBuffer
 .EXAMPLE
 New-NtFileReparseBuffer -Tag AF_UNIX -Data @(1, 2, 3, 4)
@@ -11279,5 +11279,98 @@ function New-NtFileReparseBuffer {
         "GenericBuffer" {
             [NtApiDotNet.GenericReparseBuffer]::new($GenericTag, $Guid, $Data) | Write-Output
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Query the quota on a volume.
+.DESCRIPTION
+This cmdlet queries the quote entries on a volume.
+.PARAMETER Volume
+Specify the name of the volume, e.g. C: or \Device\HarddiskVolumeX
+.PARAMETER Sid
+Specify a list of sids to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.FileQuotaEntry[]
+.EXAMPLE
+Get-NtFileQuota -Volume C:
+Query the quota for the C: volume.
+#>
+function Get-NtFileQuota {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Volume,
+        [NtApiDotNet.Sid[]]$Sid
+    )
+    try {
+        if (!$Volume.StartsWith("\")) {
+            $Volume = "\??\" + $Volume
+        }
+        Use-NtObject($vol = Get-NtFile -Path $Volume `
+            -Access Execute -Share Read, Write) {
+            $vol.QueryQuota($Sid) | Write-Output
+        }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Sets the quota on a volume.
+.DESCRIPTION
+This cmdlet sets the quote entries on a volume.
+.PARAMETER Volume
+Specify the name of the volume, e.g. C: or \Device\HarddiskVolumeX
+.PARAMETER Sid
+Specify the SID to set.
+.PARAMETER Limit
+Specify the quota limit.
+.PARAMETER Threshold
+Specify the quota threshold.
+.PARAMETER Quota
+Specify a list of quota entries.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtFileQuota -Volume C: -Sid "S-1-1-0" -Limit (10*1024*1024) -Threshold (8*1024*1024)
+Set quota for the Everyone group with a limit of 10MiB and threshold of 8MiB.
+.EXAMPLE
+Set-NtFileQuota -Volume C: -Quota $qs
+Set quota for a list of quota entries.
+#>
+function Set-NtFileQuota {
+    [CmdletBinding(DefaultParameterSetName="FromSid")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Volume,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromSid")]
+        [int64]$Limit,
+        [parameter(Mandatory, Position = 3, ParameterSetName="FromSid")]
+        [int64]$Threshold,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromEntry")]
+        [NtApiDotNet.FileQuotaEntry[]]$Quota
+    )
+    try {
+        if (!$Volume.StartsWith("\")) {
+            $Volume = "\??\" + $Volume
+        }
+        Use-NtObject($vol = Get-NtFile -Path $Volume `
+            -Access WriteData -Share Read, Write) {
+            if ($PSCmdlet.ParameterSetName -eq "FromSid") {
+                $vol.SetQuota($Sid, $Threshold, $Limit)
+            } else {
+                $vol.SetQuota($Quota)
+            }
+        }
+    } catch {
+        Write-Error $_
     }
 }

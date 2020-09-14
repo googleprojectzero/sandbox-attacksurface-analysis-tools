@@ -533,6 +533,29 @@ namespace NtApiDotNet
             return buffer;
         }
 
+        private static SafeHGlobalBuffer ConvertQuotaEntries(FileQuotaEntry[] quota_entries, DisposableList list)
+        {
+            int struct_size = Marshal.SizeOf(typeof(FileQuotaInformation)) - 4;
+            List<byte[]> sids = quota_entries.Select(q => q.Sid.ToArray()).ToList();
+            int total_size = sids.Sum(b => b.Length + struct_size);
+
+            var buffer = list.AddResource(new SafeHGlobalBuffer(total_size));
+            int offset = 0;
+
+            for (int i = 0; i < sids.Count; ++i)
+            {
+                var curr = buffer.GetStructAtOffset<FileQuotaInformation>(offset);
+                byte[] sid = sids[i];
+
+                int next_offset = i < sids.Count - 1 ? struct_size + sid.Length : 0;
+                curr.Result = quota_entries[i].ToInfo(next_offset);
+                curr.Data.WriteBytes(sid);
+                offset += next_offset;
+            }
+
+            return buffer;
+        }
+
         private IEnumerable<FileQuotaEntry> QueryQuota(IEnumerable<Sid> sid_list, Sid start_sid)
         {
             using (var list = new DisposableList())
@@ -4724,6 +4747,51 @@ namespace NtApiDotNet
         public IEnumerable<FileQuotaEntry> QueryQuota()
         {
             return QueryQuota(null, null);
+        }
+
+        /// <summary>
+        /// Set quota entries.
+        /// </summary>
+        /// <param name="quota_entries">The quota entries to set.</param>
+        /// <param name="throw_no_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetQuota(IEnumerable<FileQuotaEntry> quota_entries, bool throw_no_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var buffer = ConvertQuotaEntries(quota_entries.ToArray(), list);
+                IoStatus io_status = new IoStatus();
+                return NtSystemCalls.NtSetQuotaInformationFile(Handle, io_status, buffer, buffer.Length).ToNtException(throw_no_error);
+            }
+        }
+
+        /// <summary>
+        /// Set quota entries.
+        /// </summary>
+        /// <param name="quota_entries">The quota entries to set.</param>
+        public void SetQuota(IEnumerable<FileQuotaEntry> quota_entries)
+        {
+            SetQuota(quota_entries, true);
+        }
+
+        /// <summary>
+        /// Set quota entry.
+        /// </summary>
+        /// <param name="quota_entry">The quota entry to set.</param>
+        public void SetQuota(FileQuotaEntry quota_entry)
+        {
+            SetQuota(new FileQuotaEntry[] { quota_entry });
+        }
+
+        /// <summary>
+        /// Set quota entry.
+        /// </summary>
+        /// <param name="sid">The SID for the quota.</param>
+        /// <param name="limit">The quota limit to set.</param>
+        /// <param name="threshold">The quota threshold to set.</param>
+        public void SetQuota(Sid sid, long threshold, long limit)
+        {
+            SetQuota(new FileQuotaEntry(sid, threshold, limit));
         }
 
         /// <summary>
