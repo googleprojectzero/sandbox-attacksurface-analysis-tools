@@ -237,12 +237,16 @@ namespace NtObjectManager.Provider
             TypeName = typename;
             RelativePath = relative_path;
             _root = root;
+            _is_symlink = false;
 
             switch (typename.ToLower())
             {
                 case "directory":
+                    IsDirectory = true;
+                    break;
                 case "key":
                     IsDirectory = true;
+                    _is_symlink = null;
                     break;
                 case "symboliclink":
                     _is_symlink = true;
