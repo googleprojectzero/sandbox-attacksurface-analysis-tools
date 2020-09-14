@@ -216,6 +216,13 @@ namespace NtObjectManager.Provider
             {
                 flags |= AttributeFlags.OpenLink;
             }
+
+            if (_root.FullPath == @"\" && RelativePath.StartsWith(@"??\"))
+            {
+                return NtObject.OpenWithType(TypeName, @"\" + RelativePath, null,
+                    flags, GenericAccessRights.MaximumAllowed, null, throw_on_error);
+            }
+
             return NtObject.OpenWithType(TypeName, RelativePath, _root,
                 flags, GenericAccessRights.MaximumAllowed, null, throw_on_error);
         }

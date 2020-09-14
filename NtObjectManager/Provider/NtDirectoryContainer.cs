@@ -24,6 +24,7 @@ namespace NtObjectManager.Provider
     {
         private readonly NtDirectory _dir;
         private readonly NtKeyContainer _key;
+        private readonly bool _root_dir;
 
         private const string REGISTRY_ROOT = @"REGISTRY";
         private const string REGISTRY_ROOT_DIR = @"REGISTRY\";
@@ -34,6 +35,7 @@ namespace NtObjectManager.Provider
             _dir = dir;
             if (dir.FullPath == @"\")
             {
+                _root_dir = true;
                 _key = new NtKeyContainer();
             }
         }
@@ -79,6 +81,9 @@ namespace NtObjectManager.Provider
             {
                 return _key.Exists(GetRegistryPath(path));
             }
+
+            if (_dir.FullPath == @"\" && path == "??")
+                return true;
 
             return _dir.DirectoryExists(path);
         }
@@ -160,6 +165,9 @@ namespace NtObjectManager.Provider
                 return _key.Open(GetRegistryPath(relative_path), throw_on_error);
             }
 
+            if (_root_dir && relative_path == "??")
+                relative_path = "GLOBAL??";
+
             return NtDirectory.Open(relative_path, _dir, 
                 DirectoryAccessRights.MaximumAllowed, throw_on_error).Map(Create);
         }
@@ -170,6 +178,9 @@ namespace NtObjectManager.Provider
             {
                 return _key.OpenForQuery(GetRegistryPath(relative_path), throw_on_error);
             }
+
+            if (_root_dir && relative_path == "??")
+                relative_path = "GLOBAL??";
 
             return NtDirectory.Open(relative_path, _dir,
                 DirectoryAccessRights.Query, throw_on_error).Map(Create);
