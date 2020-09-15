@@ -62,6 +62,12 @@
     <Compile Include="IO\MountPointManager\MountPointManagerStructs.cs" />
     <Compile Include="IO\MountPointManager\MountPoint.cs" />
     <Compile Include="IO\MountPointManager\MountPointManagerUtils.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalData.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalNativeStructures.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalSourceInfoFlags.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalEntry.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalReasonFlags.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtFileObjectId.cs" />

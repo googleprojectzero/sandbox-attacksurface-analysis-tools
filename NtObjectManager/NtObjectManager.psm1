@@ -11374,3 +11374,39 @@ function Set-NtFileQuota {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Read the USN journal for a volume.
+.DESCRIPTION
+This cmdlet reads the USN journal for a volume.
+.PARAMETER Volume
+Specify the volume to read from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.IO.UsnJournal.UsnJournalEntry[]
+.EXAMPLE
+Read-NtFileUsnJournal -Volume C:
+Read the USN journal for the C: volume.
+#>
+function Read-NtFileUsnJournal {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Volume,
+        [uint64]$StartUsn = 0,
+        [uint64]$EndUsn = [uint64]::MaxValue,
+        [NtApiDotNet.IO.UsnJournal.UsnJournalReasonFlags]$ReasonMask = "All"
+    )
+    try {
+        if (!$Volume.StartsWith("\")) {
+            $Volume = "\??\" + $Volume
+        }
+        Use-NtObject($vol = Get-NtFile -Path $Volume `
+            -Access ReadData -Share Read, Write) {
+            [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournal($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+        }
+    } catch {
+        Write-Error $_
+    }
+}

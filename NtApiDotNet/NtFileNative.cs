@@ -2247,17 +2247,5 @@ namespace NtApiDotNet
         public ReparseTag Tag;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct UsnJournalDataV0
-    {
-        public ulong UsnJournalID;
-        public ulong FirstUsn;
-        public ulong NextUsn;
-        public ulong LowestValidUsn;
-        public ulong MaxUsn;
-        public ulong MaximumSize;
-        public ulong AllocationDelta;
-    }
-
 #pragma warning restore 1591
 }

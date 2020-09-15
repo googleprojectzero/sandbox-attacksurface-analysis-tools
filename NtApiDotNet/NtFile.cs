@@ -4708,29 +4708,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Read USN journal information.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The USN journal information.</returns>
-        public NtResult<UsnJournalDataV0> QueryUsnJournalV0(bool throw_on_error)
-        {
-            using (var buffer = new SafeStructureInOutBuffer<UsnJournalDataV0>())
-            {
-                return FsControl(NtWellKnownIoControlCodes.FSCTL_QUERY_USN_JOURNAL, 
-                    null, buffer, throw_on_error).Map(i => buffer.Result);
-            }
-        }
-
-        /// <summary>
-        /// Read USN journal information.
-        /// </summary>
-        /// <returns>The USN journal information.</returns>
-        public UsnJournalDataV0 QueryUsnJournalV0()
-        {
-            return QueryUsnJournalV0(true).Result;
-        }
-
-        /// <summary>
         /// Query the quota entries for a volume.
         /// </summary>
         /// <param name="sid_list">Return quote entries for the specified SIDs.</param>
