@@ -55,7 +55,7 @@ namespace NtApiDotNet.IO.UsnJournal
         /// <param name="end_usn">Last USN to read, exclusive.</param>
         /// <param name="reason_mask">Mask for what records to read.</param>
         /// <returns>The list of USN journal entries.</returns>
-        public static IEnumerable<UsnJournalEntry> ReadJournal(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask)
+        public static IEnumerable<UsnJournalRecord> ReadJournal(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask)
         {
             return ReadJournal(volume, start_usn, end_usn, reason_mask, false);
         }
@@ -65,7 +65,7 @@ namespace NtApiDotNet.IO.UsnJournal
         /// </summary>
         /// <param name="volume">The volume to read.</param>
         /// <returns>The list of USN journal entries.</returns>
-        public static IEnumerable<UsnJournalEntry> ReadJournal(NtFile volume)
+        public static IEnumerable<UsnJournalRecord> ReadJournal(NtFile volume)
         {
             return ReadJournal(volume, 0, ulong.MaxValue, UsnJournalReasonFlags.All);
         }
@@ -78,7 +78,7 @@ namespace NtApiDotNet.IO.UsnJournal
         /// <param name="end_usn">Last USN to read, exclusive.</param>
         /// <param name="reason_mask">Mask for what records to read.</param>
         /// <returns>The list of USN journal entries.</returns>
-        public static IEnumerable<UsnJournalEntry> ReadJournalUnprivileged(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask)
+        public static IEnumerable<UsnJournalRecord> ReadJournalUnprivileged(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask)
         {
             return ReadJournal(volume, start_usn, end_usn, reason_mask, true);
         }
@@ -88,12 +88,12 @@ namespace NtApiDotNet.IO.UsnJournal
         /// </summary>
         /// <param name="volume">The volume to read.</param>
         /// <returns>The list of USN journal entries.</returns>
-        public static IEnumerable<UsnJournalEntry> ReadJournalUnprivileged(NtFile volume)
+        public static IEnumerable<UsnJournalRecord> ReadJournalUnprivileged(NtFile volume)
         {
             return ReadJournalUnprivileged(volume, 0, ulong.MaxValue, UsnJournalReasonFlags.All);
         }
 
-        private static IEnumerable<UsnJournalEntry> ReadJournal(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask, bool unprivileged)
+        private static IEnumerable<UsnJournalRecord> ReadJournal(NtFile volume, ulong start_usn, ulong end_usn, UsnJournalReasonFlags reason_mask, bool unprivileged)
         {
             if (volume is null)
             {
@@ -127,7 +127,7 @@ namespace NtApiDotNet.IO.UsnJournal
                             var header = buffer.Read<USN_RECORD_COMMON_HEADER>((ulong)offset);
                             if (header.MajorVersion == 2 && header.MinorVersion == 0)
                             {
-                                var entry = new UsnJournalEntry(buffer.GetStructAtOffset<USN_RECORD_V2>(offset), volume, ref_paths);
+                                var entry = new UsnJournalRecord(buffer.GetStructAtOffset<USN_RECORD_V2>(offset), volume, ref_paths);
                                 if (entry.Usn >= end_usn)
                                     break;
                                 yield return entry;

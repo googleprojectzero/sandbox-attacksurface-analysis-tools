@@ -5163,6 +5163,51 @@ function Start-NtFileOplock {
 
 <#
 .SYNOPSIS
+Acknowledges a file oplock break.
+.DESCRIPTION
+This cmdlet acknowledges a file oplock break with a specific level.
+.PARAMETER File
+The file to acknowledge the break on.
+.PARAMETER Level
+The oplock acknowledge level.
+.PARAMETER LeaseLevel
+The oplock lease level to acknowledge.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Confirm-NtFileOplock $file -Level Acknowledge
+Acknowledge an oplock break.
+.EXAMPLE
+Confirm-NtFileOplock $file -LeaseLevel Read
+Acknowledge to a read oplock.
+#>
+function Confirm-NtFileOplock {
+    [CmdletBinding(DefaultParameterSetName = "OplockLevel")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
+        [NtApiDotNet.OplockAcknowledgeLevel]$Level,
+        [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLease")]
+        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [parameter(ParameterSetName = "OplockLease")]
+        [switch]$CompleteOnClose
+    )
+
+    switch ($PSCmdlet.ParameterSetName) {
+        "OplockLevel" {
+            $File.AcknowledgeOplock($Level)
+        }
+        "OplockLease" {
+            $File.AcknowledgeOplockLease($LeaseLevel, $CompleteOnClose)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Get a specified mitigation policy value for a process.
 .DESCRIPTION
 This cmdlet queries for a specific mitigation policy value from a process. The result is an enumeration or a raw value depending on the request.
@@ -11379,13 +11424,21 @@ function Set-NtFileQuota {
 .SYNOPSIS
 Read the USN journal for a volume.
 .DESCRIPTION
-This cmdlet reads the USN journal for a volume.
+This cmdlet reads the USN journal reocrds for a volume.
 .PARAMETER Volume
 Specify the volume to read from.
+.PARAMETER StartUsn
+Specify the first USN to read from.
+.PARAMETER EndUsn
+Specify the last USN to read, exclusive.
+.PARAMETER ReasonMask
+Specify a mask of reason codes to return.
+.PARAMETER Unprivileged
+Specify to use unprivileged reading. This doesn't return filenames you don't have access to.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.IO.UsnJournal.UsnJournalEntry[]
+NtApiDotNet.IO.UsnJournal.UsnJournalRecord[]
 .EXAMPLE
 Read-NtFileUsnJournal -Volume C:
 Read the USN journal for the C: volume.
@@ -11404,12 +11457,15 @@ function Read-NtFileUsnJournal {
             $Volume = "\??\" + $Volume
         }
 
+        $Access = "ReadData"
+
         if ($Unprivileged) {
             $Volume += "\"
+            $Access = "Synchronize"
         }
 
         Use-NtObject($vol = Get-NtFile -Path $Volume `
-            -Access ReadData -Share Read, Write) {
+            -Access $Access -Share Read, Write) {
             if ($Unprivileged) {
                 [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournalUnprivileged($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
             } else {

@@ -3822,9 +3822,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>UsnJournalEntry</Name>
+      <Name>UsnJournalRecord</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.IO.UsnJournal.UsnJournalEntry</TypeName>
+        <TypeName>NtApiDotNet.IO.UsnJournal.UsnJournalRecord</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3833,11 +3833,11 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Reason</Label>
+            <Label>FileName</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>FullPath</Label>
+            <Label>Reason</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -3849,10 +3849,10 @@
                 <FormatString>X016</FormatString>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>Reason</PropertyName>
+                <PropertyName>FileName</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>FullPath</PropertyName>
+                <PropertyName>Reason</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

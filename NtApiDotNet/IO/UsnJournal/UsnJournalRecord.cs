@@ -14,13 +14,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace NtApiDotNet.IO.UsnJournal
 {
     /// <summary>
-    /// Class to represent a USN journal entry.
+    /// Class to represent a USN journal record.
     /// </summary>
-    public sealed class UsnJournalEntry
+    public sealed class UsnJournalRecord
     {
         /// <summary>
         /// Reference number of the file.
@@ -87,7 +88,7 @@ namespace NtApiDotNet.IO.UsnJournal
             return parent_paths[file_id];
         }
 
-        internal UsnJournalEntry(SafeStructureInOutBuffer<USN_RECORD_V2> buffer, NtFile volume, Dictionary<long, Tuple<string, string>> ref_paths)
+        internal UsnJournalRecord(SafeStructureInOutBuffer<USN_RECORD_V2> buffer, NtFile volume, Dictionary<long, Tuple<string, string>> ref_paths)
         {
             var result = buffer.Result;
             FileReferenceNumber = result.FileReferenceNumber;
@@ -118,6 +119,7 @@ namespace NtApiDotNet.IO.UsnJournal
                 var paths = GetFilePath(volume, FileReferenceNumber, ref_paths);
                 FullPath = paths.Item1;
                 Win32Path = paths.Item2;
+                FileName = Path.GetFileName(FullPath);
             }
         }
     }
