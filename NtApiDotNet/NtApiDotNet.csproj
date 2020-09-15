@@ -65,7 +65,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalData.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalNativeStructures.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalSourceInfoFlags.cs" />
-    <Compile Include="IO\UsnJournal\UsnJournalEntry.cs" />
+    <Compile Include="IO\UsnJournal\UsnJournalRecord.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalReasonFlags.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
