@@ -87,7 +87,7 @@ namespace NtApiDotNet.IO.UsnJournal
             return parent_paths[file_id];
         }
 
-        internal UsnJournalEntry(SafeStructureInOutBuffer<USN_RECORD_V2> buffer, NtFile volume, Dictionary<long, Tuple<string, string>> parent_paths)
+        internal UsnJournalEntry(SafeStructureInOutBuffer<USN_RECORD_V2> buffer, NtFile volume, Dictionary<long, Tuple<string, string>> ref_paths)
         {
             var result = buffer.Result;
             FileReferenceNumber = result.FileReferenceNumber;
@@ -98,17 +98,26 @@ namespace NtApiDotNet.IO.UsnJournal
             SourceInfo = result.SourceInfo;
             SecurityId = result.SecurityId;
             FileAttributes = result.FileAttributes;
-            FileName = buffer.ReadUnicodeString(result.FileNameOffset, result.FileNameLength / 2);
-            var paths = GetFilePath(volume, ParentFileReferenceNumber, parent_paths);
-            if (paths.Item1 != string.Empty)
+            if (result.FileNameLength > 0)
             {
-                FullPath = paths.Item1 + @"\" + FileName;
-                Win32Path = paths.Item2 + @"\" + FileName;
+                FileName = buffer.ReadUnicodeString(result.FileNameOffset, result.FileNameLength / 2);
+                var paths = GetFilePath(volume, ParentFileReferenceNumber, ref_paths);
+                if (paths.Item1 != string.Empty)
+                {
+                    FullPath = paths.Item1 + @"\" + FileName;
+                    Win32Path = paths.Item2 + @"\" + FileName;
+                }
+                else
+                {
+                    FullPath = FileName;
+                    Win32Path = FileName;
+                }
             }
             else
             {
-                FullPath = FileName;
-                Win32Path = FileName;
+                var paths = GetFilePath(volume, FileReferenceNumber, ref_paths);
+                FullPath = paths.Item1;
+                Win32Path = paths.Item2;
             }
         }
     }

@@ -11396,15 +11396,25 @@ function Read-NtFileUsnJournal {
         [string]$Volume,
         [uint64]$StartUsn = 0,
         [uint64]$EndUsn = [uint64]::MaxValue,
-        [NtApiDotNet.IO.UsnJournal.UsnJournalReasonFlags]$ReasonMask = "All"
+        [NtApiDotNet.IO.UsnJournal.UsnJournalReasonFlags]$ReasonMask = "All",
+        [switch]$Unprivileged
     )
     try {
         if (!$Volume.StartsWith("\")) {
             $Volume = "\??\" + $Volume
         }
+
+        if ($Unprivileged) {
+            $Volume += "\"
+        }
+
         Use-NtObject($vol = Get-NtFile -Path $Volume `
             -Access ReadData -Share Read, Write) {
-            [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournal($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+            if ($Unprivileged) {
+                [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournalUnprivileged($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+            } else {
+                [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournal($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+            }
         }
     } catch {
         Write-Error $_
