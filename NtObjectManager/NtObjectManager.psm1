@@ -5104,6 +5104,8 @@ The file to oplock on.
 The oplock level to start.
 .PARAMETER LeaseLevel
 The oplock lease level to start.
+.PARAMETER Flags
+Flags for the oplock lease.
 .PARAMETER Async
 Specify to return an asynchronous task which can be waited on with Wait-AsyncTaskResult.
 .INPUTS
@@ -5131,6 +5133,8 @@ function Start-NtFileOplock {
         [NtApiDotNet.OplockRequestLevel]$Level,
         [parameter(Mandatory, ParameterSetName = "OplockLease")]
         [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [parameter(ParameterSetName = "OplockLease")]
+        [NtApiDotNet.RequestOplockInputFlag]$Flags = "Request",
         [switch]$Async
     )
 
@@ -5151,9 +5155,9 @@ function Start-NtFileOplock {
         }
         "OplockLease" {
             if ($Async) {
-                $File.RequestOplockLeaseAsync($LeaseLevel)
+                $File.RequestOplockLeaseAsync($LeaseLevel, $Flags)
             } else {
-                $File.RequestOplockLease($LeaseLevel)
+                $File.RequestOplockLease($LeaseLevel, $Flags)
             }
         }
     }
@@ -5170,8 +5174,8 @@ This cmdlet acknowledges a file oplock break with a specific level.
 The file to acknowledge the break on.
 .PARAMETER Level
 The oplock acknowledge level.
-.PARAMETER LeaseLevel
-The oplock lease level to acknowledge.
+.PARAMETER Lease
+Acknowledge a lease oplock and reduce level to None.
 .INPUTS
 None
 .OUTPUTS
@@ -5191,7 +5195,7 @@ function Confirm-NtFileOplock {
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
         [NtApiDotNet.OplockAcknowledgeLevel]$Level,
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLease")]
-        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [switch]$Lease,
         [parameter(ParameterSetName = "OplockLease")]
         [switch]$CompleteOnClose
     )
@@ -5201,7 +5205,7 @@ function Confirm-NtFileOplock {
             $File.AcknowledgeOplock($Level)
         }
         "OplockLease" {
-            $File.AcknowledgeOplockLease($LeaseLevel, $CompleteOnClose)
+            $File.AcknowledgeOplockLease($CompleteOnClose)
         }
     }
 }
