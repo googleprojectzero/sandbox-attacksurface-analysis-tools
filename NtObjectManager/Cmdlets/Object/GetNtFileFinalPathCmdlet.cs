@@ -44,7 +44,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtFileFinalPath", DefaultParameterSetName = "Default")]
     [OutputType(typeof(string))]
-    public class GetNtFilePathCmdlet : BaseNtFilePropertyCmdlet
+    public class GetNtFileFinalPathCmdlet : BaseNtFilePropertyCmdlet
     {
         /// <summary>
         /// <para type="description">Specify to format the links as Win32 paths.</para>
@@ -61,7 +61,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GetNtFilePathCmdlet()
+        public GetNtFileFinalPathCmdlet()
             : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
         {
         }
