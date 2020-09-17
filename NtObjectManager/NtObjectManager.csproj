@@ -84,6 +84,7 @@
     <Compile Include="Cmdlets\Object\GetNtFileIdCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileLinkCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileObjectIdCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtFilePathCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileReparsePointCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileShareProcessCmdlet.cs" />
     <Compile Include="Cmdlets\Object\GetNtFileStreamCmdlet.cs" />

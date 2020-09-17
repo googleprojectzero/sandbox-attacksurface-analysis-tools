@@ -76,7 +76,7 @@ namespace NtApiDotNet
 
                 FileAttributes = file.Result.FileAttributes;
                 FullPath = file.Result.FullPath;
-                Win32Path = Win32Utils.RemoveDevicePrefix(file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty));
+                Win32Path = file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty);
             }
         }
     }

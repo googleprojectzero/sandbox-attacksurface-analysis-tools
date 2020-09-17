@@ -3616,7 +3616,7 @@ namespace NtApiDotNet
                             if (parent.IsSuccess)
                             {
                                 parent_path = parent.Result.FullPath;
-                                win32_path = Win32Utils.RemoveDevicePrefix(parent.Result.GetWin32PathName(Win32PathNameFlags.None, false).GetResultOrDefault(string.Empty));
+                                win32_path = parent.Result.GetWin32PathName(Win32PathNameFlags.None, false).GetResultOrDefault(string.Empty);
                             }
                         }
 
@@ -4957,7 +4957,7 @@ namespace NtApiDotNet
         /// Get the Win32 path name for the file.
         /// </summary>
         /// <returns>The path, string.Empty on error.</returns>
-        public string Win32PathName => GetWin32PathName(Win32PathNameFlags.None, false).Map(Win32Utils.RemoveDevicePrefix).GetResultOrDefault(string.Empty);
+        public string Win32PathName => GetWin32PathName(Win32PathNameFlags.None, false).GetResultOrDefault(string.Empty);
 
         /// <summary>
         /// Get the low-level device type of the file.

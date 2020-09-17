@@ -63,20 +63,21 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        internal static string RemoveDevicePrefix(string win32_path)
+        private static string RemoveDevicePrefix(string win32_path)
         {
             if (win32_path.StartsWith(@"\\?\"))
             {
-                if (win32_path.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
-                {
-                    return win32_path;
-                }
-                else if (win32_path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+                if (win32_path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
                 {
                     return @"\\" + win32_path.Substring(8);
                 }
-
-                return win32_path.Substring(4);
+                else if (win32_path.Length >= 6)
+                {
+                    if (NtFileUtils.GetDosPathType(win32_path.Substring(4)) == RtlPathType.DriveAbsolute)
+                    {
+                        return win32_path.Substring(4);
+                    }
+                }
             }
             return win32_path;
         }
@@ -235,7 +236,7 @@ namespace NtApiDotNet.Win32
             {
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<string>(throw_on_error);
             }
-            return NtStatus.STATUS_SUCCESS.CreateResult(throw_on_error, () => builder.ToString());
+            return NtStatus.STATUS_SUCCESS.CreateResult(throw_on_error, () => RemoveDevicePrefix(builder.ToString()));
         }
 
         /// <summary>
