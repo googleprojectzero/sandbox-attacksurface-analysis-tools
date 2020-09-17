@@ -355,6 +355,11 @@ namespace NtApiDotNet.Win32.Security
                     return result.Cast<SecurityDescriptor>();
                 }
 
+                if (result.Result.IsInvalid)
+                {
+                    return NtStatus.STATUS_INVALID_SECURITY_DESCR.CreateResultFromError<SecurityDescriptor>(throw_on_error);
+                }
+
                 return SecurityDescriptor.Parse(result.Result, GetNativeType(type), throw_on_error);
             }
         }
@@ -432,6 +437,7 @@ namespace NtApiDotNet.Win32.Security
             switch (type)
             {
                 case SeObjectType.File:
+                case SeObjectType.LMShare:
                     return NtType.GetTypeByType<NtFile>();
                 case SeObjectType.RegistryKey:
                 case SeObjectType.RegistryWow6432Key:
