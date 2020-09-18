@@ -4963,13 +4963,15 @@ namespace NtApiDotNet
         /// Get the low-level device type of the file.
         /// </summary>
         /// <returns>The file device type.</returns>
-        public FileDeviceType DeviceType => QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
+        public FileDeviceType DeviceType => QueryVolumeFixed<FileFsDeviceInformation>(
+            FsInformationClass.FileFsDeviceInformation, false).GetResultOrDefault()?.DeviceType ?? FileDeviceType.UNKNOWN;
 
         /// <summary>
         /// Get the low-level device characteristics of the file.
         /// </summary>
         /// <returns>The file device characteristics.</returns>
-        public FileDeviceCharacteristics Characteristics => QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
+        public FileDeviceCharacteristics Characteristics => QueryVolumeFixed<FileFsDeviceInformation>(
+            FsInformationClass.FileFsDeviceInformation, false).GetResultOrDefault()?.Characteristics ?? FileDeviceCharacteristics.None;
 
         /// <summary>
         /// Get filesystem and volume information.
