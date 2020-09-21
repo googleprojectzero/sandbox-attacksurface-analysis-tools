@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Authorization;
+using NtObjectManager.Utils;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 
@@ -80,7 +81,12 @@ namespace NtObjectManager.Cmdlets.Win32
             switch (ParameterSetName)
             {
                 case "FromName":
-                    sd = Win32Security.GetSecurityInfo(Name, Type, SecurityInformation);
+                    string path = Name;
+                    if (Type == SeObjectType.File)
+                    {
+                        path = PSUtils.ResolveWin32Path(SessionState, Name, false);
+                    }
+                    sd = Win32Security.GetSecurityInfo(path, Type, SecurityInformation);
                     break;
                 case "FromObject":
                     sd = Win32Security.GetSecurityInfo(Object.Handle, Type, SecurityInformation);

@@ -18,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Management.Automation;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -201,6 +202,11 @@ namespace NtObjectManager.Utils
         /// <returns>The resolved Win32 path.</returns>
         public static string ResolveWin32Path(SessionState state, string path)
         {
+            return ResolveWin32Path(state, path, true);
+        }
+
+        internal static string ResolveWin32Path(SessionState state, string path, bool convert_to_nt_path)
+        {
             var path_type = NtFileUtils.GetDosPathType(path);
             if (path_type == RtlPathType.Rooted && path.StartsWith(@"\??"))
             {
@@ -215,7 +221,7 @@ namespace NtObjectManager.Utils
                     break;
             }
 
-            return NtFileUtils.DosFileNameToNt(path);
+            return convert_to_nt_path ? NtFileUtils.DosFileNameToNt(path) : Path.GetFullPath(path);
         }
 
         internal static string ResolvePath(SessionState state, string path, bool win32_path)
