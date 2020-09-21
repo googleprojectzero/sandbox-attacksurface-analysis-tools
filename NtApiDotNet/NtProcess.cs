@@ -1967,6 +1967,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the process command line.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process command line.</returns>
+        public NtResult<string> GetCommandLine(bool throw_on_error)
+        {
+            using (var result = QueryBuffer(ProcessInformationClass.ProcessCommandLineInformation, new UnicodeStringOut(), false))
+            {
+                return result.Map(b => b.ToString());
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -2066,8 +2079,11 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var result = QueryBuffer(ProcessInformationClass.ProcessCommandLineInformation, new UnicodeStringOut(), false))
+                using (var result = GetCommandLine(false))
                 {
+                    if (result.IsSuccess)
+                        return result.Result;
+
                     // This will fail if process is being torn down, just return an empty string.
                     if (result.Status == NtStatus.STATUS_PROCESS_IS_TERMINATING
                         || result.Status == NtStatus.STATUS_PARTIAL_COPY
@@ -2076,7 +2092,7 @@ namespace NtApiDotNet
                         return string.Empty;
                     }
 
-                    return result.GetResultOrThrow().Result.ToString();
+                    throw new NtException(result.Status);
                 }
             }
         }
@@ -2084,7 +2100,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the command line as parsed arguments.
         /// </summary>
-        public string[] CommandLineArguments => Win32Utils.ParseCommandLine(CommandLine);
+        public string[] CommandLineArguments => Win32Utils.ParseCommandLine(GetCommandLine(false).GetResultOrDefault(string.Empty));
 
         /// <summary>
         /// Get process DEP status
