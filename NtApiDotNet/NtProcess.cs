@@ -1975,7 +1975,7 @@ namespace NtApiDotNet
         {
             using (var result = QueryBuffer(ProcessInformationClass.ProcessCommandLineInformation, new UnicodeStringOut(), false))
             {
-                return result.Map(b => b.ToString());
+                return result.Map(b => b.Result.ToString());
             }
         }
 
