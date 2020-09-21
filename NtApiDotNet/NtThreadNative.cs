@@ -698,6 +698,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlertThread(SafeKernelObjectHandle ThreadHandle);
 
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlertThreadByThreadId(IntPtr ThreadId);
+
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlertResumeThread(

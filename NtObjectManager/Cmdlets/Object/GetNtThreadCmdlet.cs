@@ -115,6 +115,19 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a process to enumerate only its threads.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "next", Mandatory = true)]
+        public NtProcess Process { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the previous thread to enumerate the next thread.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "next")]
+        [AllowNull]
+        public NtThread NextThread { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtThreadCmdlet()
@@ -216,6 +229,9 @@ namespace NtObjectManager.Cmdlets.Object
                             WriteObject(NtThread.Open(ThreadId, Access));
                         }
                     }
+                    break;
+                case "next":
+                    WriteObject(NextThread?.GetNextThread(Process, Access) ?? Process.GetFirstThread(Access));
                     break;
             }
         }
