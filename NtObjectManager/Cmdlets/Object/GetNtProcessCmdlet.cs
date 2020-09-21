@@ -146,7 +146,8 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "current"), 
             Parameter(ParameterSetName = "all"), 
             Parameter(ParameterSetName = "service"), 
-            Parameter(ParameterSetName = "pid")]
+            Parameter(ParameterSetName = "pid"),
+            Parameter(ParameterSetName = "next")]
         public ProcessAccessRights Access { get; set; }
 
         /// <summary>
@@ -177,6 +178,13 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter IgnoreDeadProcess { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the previous process to enumerate the next process.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "next")]
+        [AllowNull]
+        public NtProcess NextProcess { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
@@ -200,15 +208,7 @@ namespace NtObjectManager.Cmdlets.Object
 
         private static bool FilterCommandLine(NtProcess proc, string cmdline)
         {
-            try
-            {
-                return proc.CommandLine.ToLower().Contains(cmdline);
-            }
-            catch
-            {
-            }
-
-            return false;
+            return proc.GetCommandLine(false).Map(s => s.ToLower().Contains(cmdline)).GetResultOrDefault();
         }
 
         private static bool ArbitraryFilter(NtProcess proc, ScriptBlock filter)
@@ -327,6 +327,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "service":
                     OpenServiceProcess();
+                    break;
+                case "next":
+                    WriteObject(NextProcess?.GetNextProcess(Access) ?? NtProcess.GetFirstProcess(Access));
                     break;
             }
         }
