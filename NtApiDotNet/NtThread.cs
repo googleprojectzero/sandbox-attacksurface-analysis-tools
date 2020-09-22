@@ -775,6 +775,8 @@ namespace NtApiDotNet
         [SupportedVersion(SupportedVersion.Windows10_RS5)]
         public NtStatus QueueSpecialUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
         {
+            if (ProcessId != NtProcess.Current.ProcessId)
+                throw new ArgumentException("Thread must be in current process to queue a delegate.");
             return QueueSpecialUserApc(Marshal.GetFunctionPointerForDelegate(apc_routine), normal_context, system_argument1, system_argument2, throw_on_error);
         }
 
@@ -833,6 +835,8 @@ namespace NtApiDotNet
         public NtStatus QueueUserApc(ApcCallback apc_routine, IntPtr normal_context,
             IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
         {
+            if (ProcessId != NtProcess.Current.ProcessId)
+                throw new ArgumentException("Thread must be in current process to queue a delegate.");
             return QueueUserApc(Marshal.GetFunctionPointerForDelegate(apc_routine),
                 normal_context, system_argument1, system_argument2, throw_on_error);
         }
@@ -849,7 +853,7 @@ namespace NtApiDotNet
         /// garbage collected.</remarks>
         public void QueueUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
         {
-            QueueUserApc(apc_routine, normal_context, system_argument1, system_argument2);
+            QueueUserApc(apc_routine, normal_context, system_argument1, system_argument2, true);
         }
 
         /// <summary>

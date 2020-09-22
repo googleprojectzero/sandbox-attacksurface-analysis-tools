@@ -65,6 +65,7 @@
     <Compile Include="Cmdlets\Object\AddNtDebugProcessCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtKeyHiveCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtSecurityDescriptorAceCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\AddNtThreadApcCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtTokenSecurityAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\BaseGetNtChildObjectCmdlet.cs" />
     <Compile Include="Cmdlets\Object\BaseNtFilePropertyCmdlet.cs" />
