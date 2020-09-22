@@ -121,7 +121,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the name of a Status Code to retrieve.</para>
         /// </summary>
-        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
+        [Parameter(Mandatory = true, ParameterSetName = "FromName")]
         public string Name { get; set; }
 
         /// <summary>
@@ -148,7 +148,10 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else if (ParameterSetName == "FromName")
             {
-                var status = GetAllStatus().Where(s => s.ToString().Equals(Name, StringComparison.OrdinalIgnoreCase)).First();
+                var result = GetAllStatus().Where(s => s.ToString().Equals(Name, StringComparison.OrdinalIgnoreCase));
+                if (!result.Any())
+                    throw new ArgumentException($"Can't find status with name {Name}");
+                var status = result.First();
                 if (PassStatus)
                 {
                     WriteObject(status);
