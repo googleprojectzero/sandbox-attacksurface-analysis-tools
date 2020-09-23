@@ -41,6 +41,8 @@ namespace NtApiDotNet
                     string current_user = $@"\Registry\User\{token.Result.User.Sid}";
                     dict.Add("HKCU", current_user);
                     dict.Add("HKEY_CURRENT_USER", current_user);
+                    dict.Add(@"HKCU\Software\Classes", $"{current_user}_Classes");
+                    dict.Add(@"HKEY_CURRENT_USER\Software\Classes", $"{current_user}_Classes");
                 }
             }
             dict.Add("HKEY_CLASSES_ROOT", @"\Registry\Machine\Software\Classes");
@@ -60,6 +62,8 @@ namespace NtApiDotNet
         {
             foreach (var pair in _win32_base_keys)
             {
+                if (pair.Key.Contains(@"\"))
+                    continue;
                 if (path.Equals(pair.Key, StringComparison.OrdinalIgnoreCase))
                 {
                     return pair.Value;
