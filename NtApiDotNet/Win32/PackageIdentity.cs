@@ -175,6 +175,27 @@ namespace NtApiDotNet.Win32
 
         private static GetStagedPackageOrigin _get_staged_package_origin = FindDelegate();
 
+        private delegate Win32Error GetPackagePathFunc<T>(T name, ref int length, StringBuilder path);
+
+        private static NtResult<string> GetPackagePath<T>(T name, GetPackagePathFunc<T> func, bool throw_on_error)
+        {
+            int length = 0;
+            var result = func(name, ref length, null);
+            if (result != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+            {
+                return result.CreateResultFromDosError<string>(throw_on_error);
+            }
+
+            var builder = new StringBuilder(length);
+            result = func(name, ref length, builder);
+            if (result != Win32Error.SUCCESS)
+            {
+                return result.CreateResultFromDosError<string>(throw_on_error);
+            }
+
+            return builder.ToString().CreateResult();
+        }
+
         /// <summary>
         /// Create from a package full name.
         /// </summary>
@@ -185,28 +206,18 @@ namespace NtApiDotNet.Win32
         public static NtResult<PackageIdentity> CreateFromFullName(string package_full_name, bool full_information, bool throw_on_error)
         {
             PackageFlags flags = full_information ? PackageFlags.Full : PackageFlags.Basic;
+
+            var staged_path = GetPackagePath(package_full_name, Win32NativeMethods.GetStagedPackagePathByFullName, throw_on_error);
+            if (!staged_path.IsSuccess)
+                return staged_path.Cast<PackageIdentity>();
+
+            Win32Error result = _get_staged_package_origin(package_full_name, out PackageOrigin origin);
+            if (result != Win32Error.SUCCESS)
+            {
+                return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
+            }
+
             int length = 0;
-
-            var result = Win32NativeMethods.GetStagedPackagePathByFullName(package_full_name, ref length, null);
-            if (result != Win32Error.ERROR_INSUFFICIENT_BUFFER)
-            {
-                return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
-            }
-
-            var builder = new StringBuilder(length);
-            result = Win32NativeMethods.GetStagedPackagePathByFullName(package_full_name, ref length, builder);
-            if (result != Win32Error.SUCCESS)
-            {
-                return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
-            }
-
-            result = _get_staged_package_origin(package_full_name, out PackageOrigin origin);
-            if (result != Win32Error.SUCCESS)
-            {
-                return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
-            }
-
-            length = 0;
             result = Win32NativeMethods.PackageIdFromFullName(package_full_name, flags, ref length, SafeHGlobalBuffer.Null);
             if (result != Win32Error.ERROR_INSUFFICIENT_BUFFER)
             {
@@ -221,7 +232,7 @@ namespace NtApiDotNet.Win32
                     return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
                 }
 
-                return new PackageIdentity(package_full_name, buffer.Result, origin, builder.ToString()).CreateResult();
+                return new PackageIdentity(package_full_name, buffer.Result, origin, staged_path.Result).CreateResult();
             }
         }
 
@@ -234,6 +245,32 @@ namespace NtApiDotNet.Win32
         public static PackageIdentity CreateFromFullName(string package_full_name, bool full_information)
         {
             return CreateFromFullName(package_full_name, full_information, true).Result;
+        }
+
+        /// <summary>
+        /// Create from a token.
+        /// </summary>
+        /// <param name="token">The AppContainer token.</param>
+        /// <param name="full_information">Query for full information (needs to be installed for the current user).</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The package identity.</returns>
+        public static NtResult<PackageIdentity> CreateFromToken(NtToken token, bool full_information, bool throw_on_error)
+        {
+            var full_name = GetPackagePath(token.Handle, Win32NativeMethods.GetPackageFullNameFromToken, throw_on_error);
+            if (!full_name.IsSuccess)
+                return full_name.Cast<PackageIdentity>();
+            return CreateFromFullName(full_name.Result, full_information, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create from a token.
+        /// </summary>
+        /// <param name="token">The AppContainer token.</param>
+        /// <param name="full_information">Query for full information (needs to be installed for the current user).</param>
+        /// <returns>The package identity.</returns>
+        public static PackageIdentity CreateFromToken(NtToken token, bool full_information)
+        {
+            return CreateFromToken(token, full_information, true).Result;
         }
     }
 }
