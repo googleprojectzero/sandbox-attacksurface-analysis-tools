@@ -1011,6 +1011,12 @@ namespace NtApiDotNet.Win32
         );
 
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus GetAppContainerRegistryLocation(
+          KeyAccessRights desiredAccess,
+          out SafeKernelObjectHandle phAppContainerKey
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus DeleteAppContainerProfile(
             string pszAppContainerName
         );

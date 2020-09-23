@@ -29,6 +29,7 @@ namespace NtApiDotNet.Win32
         {
             Name = name;
             Sid = sid;
+            _key_path = new Lazy<string>(GetKeyPath);
         }
 
         private AppContainerProfile(string name)
@@ -197,6 +198,26 @@ namespace NtApiDotNet.Win32
             Dispose();
         }
 
+        /// <summary>
+        /// Open the AppContainer key.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened key.</returns>
+        public NtResult<NtKey> OpenKey(KeyAccessRights desired_access, bool throw_on_error)
+        {
+            using (var result = TokenUtils.CreateAppContainerToken(null, Sid, new Sid[0], throw_on_error))
+            {
+                if (!result.IsSuccess)
+                    return result.Cast<NtKey>();
+                using (var imp = result.Result.Impersonate(SecurityImpersonationLevel.Impersonation))
+                {
+                    return Win32NativeMethods.GetAppContainerRegistryLocation(desired_access, out SafeKernelObjectHandle key)
+                        .CreateResult(throw_on_error, () => new NtKey(key, KeyDisposition.OpenedExistingKey, false));
+                }
+            }
+        }
+
         #endregion
 
         #region Public Properties
@@ -212,7 +233,7 @@ namespace NtApiDotNet.Win32
         public Sid Sid { get; }
 
         /// <summary>
-        /// Path to the AppContainer profile.
+        /// Path to the AppContainer profile directory.
         /// </summary>
         public string Path
         {
@@ -230,9 +251,29 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Path to the AppContainer key.
+        /// </summary>
+        public string KeyPath => _key_path.Value;
+
+        /// <summary>
         /// Set to true to delete the profile when closed.
         /// </summary>
         public bool DeleteOnClose { get; set; }
+
+        #endregion
+
+        #region Private Members
+        private readonly Lazy<string> _key_path;
+
+        private string GetKeyPath()
+        {
+            using (var key = OpenKey(KeyAccessRights.MaximumAllowed, false))
+            {
+                if (!key.IsSuccess)
+                    return string.Empty;
+                return key.Result.Win32Path;
+            }
+        }
 
         #endregion
     }
