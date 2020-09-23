@@ -1062,6 +1062,26 @@ namespace NtApiDotNet.Win32
           StringBuilder packageFullName
         );
 
+        [DllImport("kernelbase.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error OpenPackageInfoByFullName(
+            string packageFullName,
+            int reserved,
+            out IntPtr packageInfoReference
+        );
+
+        [DllImport("kernelbase.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error ClosePackageInfo(
+          IntPtr packageInfoReference
+        );
+
+        [DllImport("kernelbase.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetPackageApplicationIds(
+          IntPtr packageInfoReference,
+          ref int bufferLength,
+          [Out] SafeBuffer buffer,
+          out int count
+        );
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error EventAccessQuery(
           ref Guid Guid,

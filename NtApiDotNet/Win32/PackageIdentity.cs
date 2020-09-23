@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -135,11 +137,21 @@ namespace NtApiDotNet.Win32
         public PackageOrigin Origin { get; }
 
         /// <summary>
+        /// Package family name.
+        /// </summary>
+        public string FamilyName { get; }
+
+        /// <summary>
         /// Package install path.
         /// </summary>
         public string Path { get; }
 
-        private PackageIdentity(string package_full_name, PACKAGE_ID package_id, PackageOrigin origin, string path)
+        /// <summary>
+        /// The list of application model IDs.
+        /// </summary>
+        public IEnumerable<string> ApplicationModelIds { get; }
+
+        private PackageIdentity(string package_full_name, PACKAGE_ID package_id, PackageOrigin origin, string path, IEnumerable<string> appids)
         {
             FullName = package_full_name;
             ProcessorArchitecture = (PackageArchitecture)package_id.processorArchitecture;
@@ -150,6 +162,8 @@ namespace NtApiDotNet.Win32
             Version = new Version(package_id.version.Major, package_id.version.Minor, package_id.version.Build, package_id.version.Revision);
             Origin = origin;
             Path = path;
+            FamilyName = $"{Name}_{PublisherId}";
+            ApplicationModelIds = appids ?? new string[0];
         }
 
         /// <summary>
@@ -176,6 +190,41 @@ namespace NtApiDotNet.Win32
         private static GetStagedPackageOrigin _get_staged_package_origin = FindDelegate();
 
         private delegate Win32Error GetPackagePathFunc<T>(T name, ref int length, StringBuilder path);
+
+        private static string[] ReadStrings(SafeBuffer buffer, int count)
+        {
+            IntPtr[] ptrs = new IntPtr[count];
+
+            buffer.ReadArray(0, ptrs, 0, count);
+
+            return ptrs.Select(p => GetString(p)).ToArray();
+        }
+
+        private static NtResult<string[]> GetAppIds(string full_name)
+        {
+            var result = Win32NativeMethods.OpenPackageInfoByFullName(full_name, 0, out IntPtr package_info);
+            if (result != Win32Error.SUCCESS)
+                return result.CreateResultFromDosError<string[]>(false);
+            try
+            {
+                int length = 0;
+                result = Win32NativeMethods.GetPackageApplicationIds(package_info, ref length, SafeHGlobalBuffer.Null, out int count);
+                if (result != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                {
+                    return result.CreateResultFromDosError<string[]>(false);
+                }
+                using (var buffer = new SafeHGlobalBuffer(length))
+                {
+                    return Win32NativeMethods.GetPackageApplicationIds(package_info, ref length, buffer, out count)
+                        .CreateWin32Result(false, () => ReadStrings(buffer, count));
+                }
+            }
+            finally
+            {
+                if (package_info != IntPtr.Zero)
+                    Win32NativeMethods.ClosePackageInfo(package_info);
+            }
+        }
 
         private static NtResult<string> GetPackagePath<T>(T name, GetPackagePathFunc<T> func, bool throw_on_error)
         {
@@ -232,7 +281,8 @@ namespace NtApiDotNet.Win32
                     return result.CreateResultFromDosError<PackageIdentity>(throw_on_error);
                 }
 
-                return new PackageIdentity(package_full_name, buffer.Result, origin, staged_path.Result).CreateResult();
+                return new PackageIdentity(package_full_name, buffer.Result, origin, staged_path.Result, 
+                    GetAppIds(package_full_name).GetResultOrDefault()).CreateResult();
             }
         }
 
