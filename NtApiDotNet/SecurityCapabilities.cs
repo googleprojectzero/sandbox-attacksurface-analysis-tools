@@ -788,6 +788,7 @@ namespace NtApiDotNet
             "microsoftEdgeRemoteDebugging",
             "mixedRealityEnvironmentInternal",
             "mmsTransportSystem",
+            "modifiableApp",
             "multiplaneOverlay",
             "muma",
             "musicLibrary",
