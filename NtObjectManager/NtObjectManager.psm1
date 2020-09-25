@@ -11480,3 +11480,40 @@ function Read-NtFileUsnJournal {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Start an application model application.
+.DESCRIPTION
+This cmdlet starts an application model application from it's application model ID.
+.PARAMETER AppModelId
+Specify the application model ID.
+.PARAMETER Argument
+Specify the argument for the application.
+.PARAMETER PassThru
+Specify to pass through a process object for the application.
+.INPUTS
+None
+.OUTPUTS
+NtProcess
+.EXAMPLE
+Start-AppModelApplication -AppModelId "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"
+Start the Windows calculator.
+#>
+function Start-AppModelApplication {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$AppModelId,
+        [parameter(Position = 1)]
+        [string]$Argument = "",
+        [switch]$PassThru
+    )
+    try {
+        $app_id = [NtApiDotNet.Win32.AppModel.AppModelUtils]::ActivateApplication($AppModelId, $Argument)
+        if ($PassThru) {
+            Get-NtProcess -ProcessId $app_id
+        }
+    } catch {
+        Write-Error $_
+    }
+}
