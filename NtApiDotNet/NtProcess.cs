@@ -1656,6 +1656,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the integrity level for the process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The integerity level.</returns>
+        public NtResult<TokenIntegrityLevel> GetIntegrityLevel(bool throw_on_error)
+        {
+            using (var token = OpenToken(TokenAccessRights.Query, throw_on_error))
+            {
+                return token.Map(t => t.IntegrityLevel);
+            }
+        }
+
+        /// <summary>
         /// Set process fault flags.
         /// </summary>
         /// <param name="flags">The flags to set.</param>
@@ -2197,6 +2210,11 @@ namespace NtApiDotNet
         /// Get the process user.
         /// </summary>
         public Sid User => GetUser();
+
+        /// <summary>
+        /// Get the integrity level of the process.
+        /// </summary>
+        public TokenIntegrityLevel IntegrityLevel => GetIntegrityLevel(true).Result;
 
         /// <summary>
         /// Get process mitigations
