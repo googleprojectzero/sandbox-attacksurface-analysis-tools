@@ -178,6 +178,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter IgnoreDeadProcess { get; set; }
 
         /// <summary>
+        /// <para type="description">Return only the specified number of processes.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "all")]
+        public int First { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the previous process to enumerate the next process.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "next")]
@@ -221,7 +227,8 @@ namespace NtObjectManager.Cmdlets.Object
             if (string.IsNullOrWhiteSpace(Name) 
                 && string.IsNullOrWhiteSpace(CommandLine) 
                 && FilterScript == null
-                && !IgnoreDeadProcess)
+                && !IgnoreDeadProcess
+                && First <= 0)
             {
                 return NtProcess.GetProcesses(Access, FromSystem);
             }
@@ -244,6 +251,10 @@ namespace NtObjectManager.Cmdlets.Object
                 if (IgnoreDeadProcess)
                 {
                     filtered_procs = filtered_procs.Where(p => !p.IsDeleting);
+                }
+                if (First > 0)
+                {
+                    filtered_procs = filtered_procs.Take(First);
                 }
                 return filtered_procs.Select(p => p.Duplicate()).ToArray();
             }

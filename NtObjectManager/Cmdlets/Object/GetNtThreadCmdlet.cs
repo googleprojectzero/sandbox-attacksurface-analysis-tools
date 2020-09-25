@@ -109,6 +109,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter FromSystem { get; set; }
 
         /// <summary>
+        /// <para type="description">Return only the specified number of threads.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "all")]
+        public int First { get; set; }
+
+        /// <summary>
         /// <para type="description">Only get thread information, do not open the objects.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
@@ -197,7 +203,7 @@ namespace NtObjectManager.Cmdlets.Object
                 case "all":
                     {
                         IEnumerable<NtThread> threads = NtThread.GetThreads(Access, FromSystem);
-                        if (FilterScript == null)
+                        if (FilterScript == null && First <= 0)
                         {
                             WriteObject(threads, true);
                         }
@@ -205,7 +211,17 @@ namespace NtObjectManager.Cmdlets.Object
                         {
                             using (var ths = new DisposableList<NtThread>(threads))
                             {
-                                WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray(), true);
+                                threads = ths;
+                                if (FilterScript != null)
+                                {
+                                    threads = threads.Where(t => ArbitraryFilter(t, FilterScript));
+                                }
+                                if (First > 0)
+                                {
+                                    threads = threads.Take(First);
+                                }
+
+                                WriteObject(threads.Select(t => t.Duplicate()).ToArray(), true);
                             }
                         }
                     }
