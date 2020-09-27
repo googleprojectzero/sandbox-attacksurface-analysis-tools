@@ -149,11 +149,11 @@ namespace NtApiDotNet.Ndr
         private readonly NdrParserFlags _parser_flags;
 
         private static NdrRpcServerInterface ReadRpcServerInterface(IMemoryReader reader, RPC_SERVER_INTERFACE server_interface, 
-            NdrTypeCache type_cache, ISymbolResolver symbol_resolver, NdrParserFlags parser_flags)
+            NdrTypeCache type_cache, ISymbolResolver symbol_resolver, NdrParserFlags parser_flags, IntPtr base_address)
         {
             RPC_DISPATCH_TABLE dispatch_table = server_interface.GetDispatchTable(reader);
             var procs = ReadProcs(reader, server_interface.GetServerInfo(reader), 0, 
-                dispatch_table.DispatchTableCount, type_cache, symbol_resolver, null, parser_flags);
+                dispatch_table.DispatchTableCount, type_cache, symbol_resolver, null, parser_flags, base_address);
             return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs,
                 server_interface.GetProtSeq(reader).Select(s => new NdrProtocolSequenceEndpoint(s, reader)));
         }
@@ -292,7 +292,8 @@ namespace NtApiDotNet.Ndr
         }
 
         private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset,
-            int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names, NdrParserFlags parser_flags)
+            int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names, NdrParserFlags parser_flags,
+            IntPtr base_address)
         {
             RPC_SYNTAX_IDENTIFIER transfer_syntax = server_info.GetTransferSyntax(reader);
 
@@ -334,7 +335,8 @@ namespace NtApiDotNet.Ndr
                             name = names[i - start_offset];
                         }
                         procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver,
-                            stub_desc, proc_str + fmt_ofs, type_desc, expr_desc, dispatch_funcs[i], name, parser_flags));
+                            stub_desc, proc_str + fmt_ofs, type_desc, expr_desc, dispatch_funcs[i],
+                            base_address, name, parser_flags));
                     }
                 }
             }
@@ -718,8 +720,21 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public NdrRpcServerInterface ReadFromRpcServerInterface(IntPtr server_interface)
         {
-            return RunWithAccessCatch(() => ReadRpcServerInterface(_reader, 
-                _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver, _parser_flags));
+            return ReadFromRpcServerInterface(server_interface, IntPtr.Zero);
+        }
+
+
+        /// <summary>
+        /// Parse NDR content from an RPC_SERVER_INTERFACE structure in memory.
+        /// </summary>
+        /// <param name="server_interface">Pointer to the RPC_SERVER_INTERFACE.</param>
+        /// <param name="base_address">Base address of the library which contains the interface.</param>
+        /// <returns>The parsed NDR content.</returns>
+        public NdrRpcServerInterface ReadFromRpcServerInterface(IntPtr server_interface, IntPtr base_address)
+        {
+            return RunWithAccessCatch(() => ReadRpcServerInterface(_reader,
+                _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver,
+                _parser_flags, base_address));
         }
 
         /// <summary>
@@ -763,7 +778,8 @@ namespace NtApiDotNet.Ndr
                 throw new NdrParserException("List of names must be same size of the total methods to parse");
             }
             return RunWithAccessCatch(() => ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
-                start_offset, dispatch_count, _type_cache, _symbol_resolver, names, _parser_flags));
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, names, _parser_flags,
+                IntPtr.Zero));
         }
 
         /// <summary>
@@ -776,7 +792,7 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count)
         {
             return RunWithAccessCatch(() => ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
-                start_offset, dispatch_count, _type_cache, _symbol_resolver, null, _parser_flags));
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, null, _parser_flags, IntPtr.Zero));
         }
 
         #endregion

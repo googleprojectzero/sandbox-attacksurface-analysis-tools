@@ -172,6 +172,7 @@ namespace NtApiDotNet.Ndr
         public int StackSize { get; }
         public bool HasAsyncHandle => InterpreterFlags.HasFlag(NdrInterpreterOptFlags.HasAsyncHandle);
         public IntPtr DispatchFunction { get; }
+        public int DispatchOffset { get; }
         public NdrInterpreterOptFlags InterpreterFlags { get; }
 
         internal string FormatProcedure(INdrFormatterInternal context)
@@ -197,7 +198,7 @@ namespace NtApiDotNet.Ndr
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 
             ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, 
             IntPtr proc_desc, IntPtr type_desc, NDR_EXPR_DESC expr_desc, IntPtr dispatch_func,
-            string name, NdrParserFlags parser_flags)
+            IntPtr base_offset, string name, NdrParserFlags parser_flags)
         {
             BinaryReader reader = mem_reader.GetReader(proc_desc);
             NdrFormatCharacter handle_type = (NdrFormatCharacter)reader.ReadByte();
@@ -315,7 +316,12 @@ namespace NtApiDotNet.Ndr
             {
                 ReturnValue = new NdrProcedureParameter(context, reader, "retval");
             }
+
             DispatchFunction = dispatch_func;
+            if (base_offset != IntPtr.Zero)
+            {
+                DispatchOffset = (int)(DispatchFunction.ToInt64() - base_offset.ToInt64());
+            }
         }
     }
 }
