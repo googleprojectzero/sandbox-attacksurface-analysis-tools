@@ -174,6 +174,11 @@ namespace NtApiDotNet
         /// </summary>
         public List<NtObject> InheritHandleList { get; }
 
+        /// <summary>
+        /// Debug object.
+        /// </summary>
+        public NtDebug DebugObject { get; set; }
+
         #endregion
 
         #region Public Methods

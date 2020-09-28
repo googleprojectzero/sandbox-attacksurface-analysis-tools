@@ -83,6 +83,12 @@ namespace NtApiDotNet
               false, true, true, NtObject.DuplicateHandle(parent_process));
         }
 
+        public static ProcessAttribute DebugPort(SafeKernelObjectHandle debug_port)
+        {
+            return new ProcessAttribute(ProcessAttributeNum.DebugPort,
+              false, true, true, NtObject.DuplicateHandle(debug_port));
+        }
+
         public static ProcessAttribute Token(SafeKernelObjectHandle token)
         {
             return new ProcessAttribute(ProcessAttributeNum.Token,

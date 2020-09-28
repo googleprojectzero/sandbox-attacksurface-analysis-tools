@@ -167,6 +167,11 @@ namespace NtApiDotNet
                     dispose.Add(ProcessAttribute.ParentProcess(config.ParentProcess.Handle));
                 }
 
+                if (config.DebugObject != null)
+                {
+                    dispose.Add(ProcessAttribute.DebugPort(config.DebugObject.Handle));
+                }
+
                 if (config.ChildProcessMitigations != ChildProcessMitigationFlags.None)
                 {
                     dispose.Add(ProcessAttribute.ChildProcess(config.ChildProcessMitigations));
