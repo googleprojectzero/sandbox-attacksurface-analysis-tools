@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Win32.Debugger;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -991,6 +992,20 @@ namespace NtApiDotNet.Win32
           string lpUsername,
           string lpDomain,
           string lpPassword,
+          CreateProcessLogonFlags dwLogonFlags,
+          string lpApplicationName,
+          string lpCommandLine,
+          CreateProcessFlags dwCreationFlags,
+          [In] byte[] lpEnvironment,
+          string lpCurrentDirectory,
+          ref STARTUPINFO lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateProcessWithLogonW(
+          string lpUsername,
+          string lpDomain,
+          SecureStringMarshal lpPassword,
           CreateProcessLogonFlags dwLogonFlags,
           string lpApplicationName,
           string lpCommandLine,

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -180,7 +181,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public NtDebug DebugObject { get; set; }
         /// <summary>
-        /// When specified do not fallback to using CreateProcessWithLogon if CreateProcessWithUser fails.
+        /// When specified do not fallback to using CreateProcessWithToken if CreateProcessWithUser fails.
         /// </summary>
         public bool NoTokenFallback { get; set; }
         /// <summary>
@@ -195,6 +196,14 @@ namespace NtApiDotNet.Win32
         /// Specify a service window station and desktop.
         /// </summary>
         public bool ServiceDesktop { get; set; }
+        /// <summary>
+        /// Specify authentication credentials for CreateProcessWithLogon.
+        /// </summary>
+        public UserCredentials Credentials { get; set; }
+        /// <summary>
+        /// Specify logon flags for the Credentials.
+        /// </summary>
+        public CreateProcessLogonFlags LogonFlags { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -259,6 +268,8 @@ namespace NtApiDotNet.Win32
 
         internal STARTUPINFO ToStartupInfo()
         {
+            if (GetAttributeCount() > 0)
+                throw new ArgumentException("API doesn't support process attributes.");
             STARTUPINFO start_info = new STARTUPINFO();
             start_info.cb = Marshal.SizeOf(start_info);
             PopulateStartupInfo(ref start_info);

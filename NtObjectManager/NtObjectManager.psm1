@@ -954,13 +954,17 @@ Specify the protection level when creating a protected process.
 .PARAMETER DebugObject
 Specify a debug object to run the process under. You need to also specify DebugProcess or DebugOnlyThisProcess flags as well.
 .PARAMETER NoTokenFallback
-Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
+Specify to not fallback to using CreateProcessWithToken if CreateProcessAsUser fails.
 .PARAMETER AppContainerProfile
 Specify an app container profile to use.
 .PARAMETER ExtendedFlags
  Specify extended creation flags.
- .PARAMETER JobList
+.PARAMETER JobList
  Specify list of jobs to assign the process to.
+.PARAMETER Credential
+Specify user credentials for CreateProcessWithLogon.
+.PARAMETER LogonFlags
+Specify logon flags for CreateProcessWithLogon.
 .INPUTS
 None
 .OUTPUTS
@@ -993,7 +997,9 @@ function New-Win32ProcessConfig {
         [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
         [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
         [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
-        [NtApiDotNet.NtJob[]]$JobList
+        [NtApiDotNet.NtJob[]]$JobList,
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
+        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -1033,6 +1039,8 @@ function New-Win32ProcessConfig {
     if ($null -ne $JobList) {
         $config.JobList.AddRange($JobList)
     }
+    $config.Credentials = $Credential
+    $config.LogonFlags = $LogonFlags
     return $config
 }
 
@@ -1089,6 +1097,10 @@ Specify the configuration for the new process.
 Specify to wait for the process to exit.
 .PARAMETER WaitTimeout
 Specify the timeout to wait for the process to exit. Defaults to infinite.
+.PARAMETER Credential
+Specify user credentials for CreateProcessWithLogon.
+.PARAMETER LogonFlags
+Specify logon flags for CreateProcessWithLogon.
 .INPUTS
 None
 .OUTPUTS
@@ -1143,6 +1155,10 @@ function New-Win32Process {
         [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.NtJob[]]$JobList,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
         [switch]$Wait,
@@ -1157,7 +1173,7 @@ function New-Win32Process {
             -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
             -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
             -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags `
-            -ChildProcessMitigations $ChildProcessMitigations -JobList $JobList
+            -ChildProcessMitigations $ChildProcessMitigations -JobList $JobList -Credential $Credential -LogonFlags $LogonFlags
     }
 
     $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)

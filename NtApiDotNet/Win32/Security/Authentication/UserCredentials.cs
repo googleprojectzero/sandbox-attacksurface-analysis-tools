@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to hold user credentials.
     /// </summary>
-    public class UserCredentials : AuthenticationCredentials
+    public sealed class UserCredentials : AuthenticationCredentials, IDisposable
     {
         /// <summary>
         /// The user name.
@@ -69,6 +69,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 }
                 Password = s;
             }
+        }
+
+        internal SecureStringMarshal GetPassword()
+        {
+            if (Password != null)
+            {
+                return new SecureStringMarshal(Password);
+            }
+            return new SecureStringMarshal();
         }
 
         /// <summary>
@@ -126,6 +135,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 default:
                     throw new ArgumentException($"Unknown credential type for package {package}");
             }
+        }
+
+        /// <summary>
+        /// Dispose method.
+        /// </summary>
+        public void Dispose()
+        {
+            Password?.Dispose();
         }
     }
 }

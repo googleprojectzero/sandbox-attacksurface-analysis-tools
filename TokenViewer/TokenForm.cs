@@ -577,8 +577,13 @@ namespace TokenViewer
                             }
                             else
                             {
-                                using (Win32Process.CreateProcessWithLogin("abc", "abc", "abc", CreateProcessLogonFlags.NetCredentialsOnly | CreateProcessLogonFlags.WithProfile,
-                                    null, txtCommandLine.Text, CreateProcessFlags.None, @"WinSta0\Default"))
+                                var config = new Win32ProcessConfig
+                                {
+                                    CommandLine = txtCommandLine.Text,
+                                    Desktop = @"WinSta0\Default"
+                                };
+                                using (Win32Process.CreateProcessWithLogon("abc", "abc", "abc", 
+                                    CreateProcessLogonFlags.NetCredentialsOnly | CreateProcessLogonFlags.WithProfile, config))
                                 {
                                 }
                             }

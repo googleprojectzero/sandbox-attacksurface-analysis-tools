@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication;
 using System;
 
 namespace NtApiDotNet.Win32
@@ -95,6 +96,7 @@ namespace NtApiDotNet.Win32
         /// <param name="logon_flags">Logon flags.</param>
         /// <param name="config">The process configuration.</param>
         /// <returns>The created win32 process.</returns>
+        [Obsolete("Use CreateProcessWithLogon")]
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, 
             CreateProcessLogonFlags logon_flags, Win32ProcessConfig config)
         {
@@ -111,6 +113,58 @@ namespace NtApiDotNet.Win32
             return new Win32Process(proc_info, config.TerminateOnDispose);
         }
 
+        /// <summary>
+        /// Create process with a token from a user logon.
+        /// </summary>
+        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="logon_flags">Logon flags.</param>
+        /// <param name="config">The process configuration.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created win32 process.</returns>
+        public static NtResult<Win32Process> CreateProcessWithLogon(UserCredentials credentials,
+            CreateProcessLogonFlags logon_flags, Win32ProcessConfig config, bool throw_on_error)
+        {
+            STARTUPINFO start_info = config.ToStartupInfo();
+            PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
+            using (var password = credentials.GetPassword())
+            {
+                return Win32NativeMethods.CreateProcessWithLogonW(credentials.UserName, credentials.Domain,
+                    password, logon_flags, config.ApplicationName, config.CommandLine, config.CreationFlags,
+                    config.Environment, config.CurrentDirectory, ref start_info,
+                    out proc_info).CreateWin32Result(throw_on_error, () => new Win32Process(proc_info, config.TerminateOnDispose));
+            }
+        }
+
+        /// <summary>
+        /// Create process with a token from a user logon.
+        /// </summary>
+        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="logon_flags">Logon flags.</param>
+        /// <param name="config">The process configuration.</param>
+        /// <returns>The created win32 process.</returns>
+        public static Win32Process CreateProcessWithLogon(UserCredentials credentials,
+            CreateProcessLogonFlags logon_flags, Win32ProcessConfig config)
+        {
+            return CreateProcessWithLogon(credentials, logon_flags, config, true).Result;
+        }
+
+        /// <summary>
+        /// Create process with a token from a user logon.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="logon_flags">Logon flags.</param>
+        /// <param name="config">The process configuration.</param>
+        /// <returns>The created win32 process.</returns>
+        public static Win32Process CreateProcessWithLogon(string username, string domain, string password,
+            CreateProcessLogonFlags logon_flags, Win32ProcessConfig config)
+        {
+            using (var creds = new UserCredentials(username, domain, password))
+            {
+                return CreateProcessWithLogon(creds, logon_flags, config);
+            }
+        }
 
         /// <summary>
         /// Create process with a token from a user logon.
@@ -124,6 +178,7 @@ namespace NtApiDotNet.Win32
         /// <param name="flags">Process creation flags.</param>
         /// <param name="desktop">The desktop name.</param>
         /// <returns>The created win32 process.</returns>
+        [Obsolete("Use CreateProcessWithLogon")]
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, CreateProcessLogonFlags logon_flags,
             string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
@@ -147,6 +202,11 @@ namespace NtApiDotNet.Win32
             if (config.Token != null)
             {
                 return CreateProcessAsUser(config.Token, config);
+            }
+
+            if (config.Credentials != null)
+            {
+                return CreateProcessWithLogon(config.Credentials, config.LogonFlags, config);
             }
 
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
