@@ -133,6 +133,7 @@
     <Compile Include="Cmdlets\Object\NewNtNamedPipeFileCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtSecurityAttributeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtSecurityDescriptorCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\NewNtThreadCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtTokenCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtTransactionCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtWindowStationCmdlet.cs" />

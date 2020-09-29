@@ -11511,7 +11511,7 @@ Specify to pass through a process object for the application.
 .INPUTS
 None
 .OUTPUTS
-NtProcess
+NtApiDotNet.NtProcess
 .EXAMPLE
 Start-AppModelApplication -AppModelId "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"
 Start the Windows calculator.

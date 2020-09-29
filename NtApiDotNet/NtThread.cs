@@ -905,6 +905,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set the thread's context.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="throw_on_error"></param>
+        /// <returns></returns>
+        public NtStatus SetContext(IContext context, bool throw_on_error)
+        {
+        }
+
+        /// <summary>
         /// Get current waiting server information.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
