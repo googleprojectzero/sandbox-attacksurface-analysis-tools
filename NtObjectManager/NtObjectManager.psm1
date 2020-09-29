@@ -11533,3 +11533,56 @@ function Start-AppModelApplication {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Query the context for a thread.
+.DESCRIPTION
+This cmdlet queries the context for a thread.
+.PARAMETER Thread
+Specify the thread to get the context for.
+.PARAMETER ContextFlags
+Specify the parts of the context to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.IContext
+.EXAMPLE
+Get-NtThreadContext -Thread $thread
+Query the thread's context for all state.
+#>
+function Get-NtThreadContext {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtThread]$Thread,
+        [NtApiDotNet.ContextFlags]$ContextFlags = "All"
+    )
+    $Thread.GetContext($ContextFlags)
+}
+
+<#
+.SYNOPSIS
+Set the context for a thread.
+.DESCRIPTION
+This cmdlet sets the context for a thread.
+.PARAMETER Thread
+Specify the thread to set the context for.
+.PARAMETER Context
+Specify the context to set. You must configure the ContextFlags to determine what parts to set.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtThreadContext -Thread $thread -Context $context
+Sets the thread's context.
+#>
+function Set-NtThreadContext {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtThread]$Thread,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.IContext]$Context
+    )
+    $Thread.SetContext($Context)
+}

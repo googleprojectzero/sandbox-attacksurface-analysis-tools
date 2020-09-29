@@ -87,6 +87,30 @@ namespace NtApiDotNet
             }
         }
 
+        private NtStatus SetX86Context(IContext context, bool throw_on_error)
+        {
+            if (context is ContextX86 x86_context)
+            {
+                using (var buffer = x86_context.ToBuffer())
+                {
+                    return NtSystemCalls.NtSetContextThread(Handle, buffer).ToNtException(throw_on_error);
+                }
+            }
+            throw new ArgumentException("Must specify a ContextX86 instance for a x86 process.");
+        }
+
+        private NtStatus SetAmd64Context(IContext context, bool throw_on_error)
+        {
+            if (context is ContextAmd64 amd64_context)
+            {
+                using (var buffer = amd64_context.ToBuffer())
+                {
+                    return NtSystemCalls.NtSetContextThread(Handle, buffer).ToNtException(throw_on_error);
+                }
+            }
+            throw new ArgumentException("Must specify a ContextAmd64 instance for a x64 process.");
+        }
+
         #endregion
 
         #region Constructors
@@ -907,11 +931,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Set the thread's context.
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="throw_on_error"></param>
-        /// <returns></returns>
+        /// <param name="context">The thread context to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
         public NtStatus SetContext(IContext context, bool throw_on_error)
         {
+            var processor = NtSystemInfo.ProcessorInformation.ProcessorArchitecture;
+            if (processor == ProcessorAchitecture.AMD64 && Environment.Is64BitProcess)
+            {
+                return SetAmd64Context(context, throw_on_error);
+            }
+            else if (processor == ProcessorAchitecture.Intel)
+            {
+                return SetX86Context(context, throw_on_error);
+            }
+            throw new InvalidOperationException($"SetContext doesn't support {processor} architecture");
+        }
+
+        /// <summary>
+        /// Set the thread's context.
+        /// </summary>
+        /// <param name="context">The thread context to set.</param>
+        public void SetContext(IContext context)
+        {
+            SetContext(context, true);
         }
 
         /// <summary>
