@@ -101,7 +101,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtFileDisposition', 'Set-NtFileDisposition', 'Wait-AsyncTaskResult', 'Get-NtFile8dot3Name',
           'Send-FilterConnectionPort', 'Test-NtFileDriverPath', 'Get-NtMountPoint', 'New-NtFileReparseBuffer',
           'Get-NtFileQuota', 'Set-NtFileQuota', 'Read-NtFileUsnJournal', 'Confirm-NtFileOplock',
-          'Start-AppModelApplication', 'Get-NtThreadContext', 'Set-NtThreadContext'
+          'Start-AppModelApplication', 'Get-NtThreadContext', 'Set-NtThreadContext', 'Remove-AppContainerProfile'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

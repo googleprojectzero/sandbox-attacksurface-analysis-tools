@@ -5495,6 +5495,46 @@ function New-AppContainerProfile {
 
 <#
 .SYNOPSIS
+Delete an appcontainer profile.
+.DESCRIPTION
+This cmdlet deletes an appcontainer profile for a specified package name or from its profile.
+.PARAMETER Name
+Specify appcontainer name to delete.
+.PARAMETER Profile
+Specify appcontainer profile to delete.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Remove-AppContainerProfile -Name "profile_to_remove"
+Delete an appcontainer profiles by name.
+.EXAMPLE
+Remove-AppContainerProfile -Profile $prof
+Delete an appcontainer profiles from an existing profile.
+#>
+function Remove-AppContainerProfile {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromProfile")]
+        [NtApiDotNet.Win32.AppContainerProfile]$Profile,
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
+        [string]$Name
+    )
+
+    switch ($PSCmdlet.ParameterSetName) {
+        "FromProfile" {
+            $Profile.Delete()
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.AppContainerProfile]::Delete($Name)
+        }
+    }
+}
+
+
+<#
+.SYNOPSIS
 Get a RPC client object based on a parsed RPC server.
 .DESCRIPTION
 This cmdlet creates a new RPC client from a parsed RPC server. The client object contains methods
