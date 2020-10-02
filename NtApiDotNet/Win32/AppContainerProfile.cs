@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.AppModel;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
@@ -25,15 +27,19 @@ namespace NtApiDotNet.Win32
     public sealed class AppContainerProfile : IDisposable
     {
         #region Constructors
-        private AppContainerProfile(string name, Sid sid)
+        private AppContainerProfile(string name, Sid sid, IEnumerable<Sid> capabilities, 
+            string display_name, string description)
         {
             Name = name;
             Sid = sid;
             _key_path = new Lazy<string>(GetKeyPath);
+            Capabilities = (capabilities?.ToList() ?? new List<Sid>()).AsReadOnly();
+            DisplayName = display_name ?? string.Empty;
+            Description = description ?? string.Empty;
         }
 
         private AppContainerProfile(string name)
-            : this(name, TokenUtils.DerivePackageSidFromName(name))
+            : this(name, TokenUtils.DerivePackageSidFromName(name), null, null, null)
         {
         }
         #endregion
@@ -70,7 +76,8 @@ namespace NtApiDotNet.Win32
                     {
                         using (sid)
                         {
-                            return new AppContainerProfile(appcontainer_name, sid.ToSid());
+                            return new AppContainerProfile(appcontainer_name, sid.ToSid(), 
+                                capabilities, display_name, description);
                         }
                     });
             }
@@ -123,7 +130,7 @@ namespace NtApiDotNet.Win32
             {
                 return sid.Cast<AppContainerProfile>();
             }
-            return new AppContainerProfile(appcontainer_name, sid.Result).CreateResult();
+            return new AppContainerProfile(appcontainer_name, sid.Result, null, null, null).CreateResult();
         }
 
         /// <summary>
@@ -136,6 +143,41 @@ namespace NtApiDotNet.Win32
                 string appcontainer_name)
         {
             return new AppContainerProfile(appcontainer_name);
+        }
+
+        /// <summary>
+        /// Opens an AppContainerProfile and checks it exists.
+        /// </summary>
+        /// <param name="appcontainer_name">The name of the AppContainer.</param>
+        /// <param name="throw_on_error">True to throw no error.</param>
+        /// <returns>The opened AppContainer profile.</returns>
+        /// <remarks>This checks for the existence of the profile and also populates the additional information.</remarks>
+        public static NtResult<AppContainerProfile> OpenExisting(
+                string appcontainer_name, bool throw_on_error)
+        {
+            var sid = TokenUtils.DerivePackageSidFromName(appcontainer_name, throw_on_error);
+            if (!sid.IsSuccess)
+                return sid.Cast<AppContainerProfile>();
+
+            var ret = GetAppContainerProfiles(throw_on_error);
+            if (!ret.IsSuccess)
+                return ret.Cast<AppContainerProfile>();
+
+            var profile = ret.Result.FirstOrDefault(p => p.Sid == sid.Result);
+            if (profile == null)
+                return NtStatus.STATUS_NOT_FOUND.CreateResultFromError<AppContainerProfile>(throw_on_error);
+            return profile.CreateResult();
+        }
+
+        /// <summary>
+        /// Opens an AppContainerProfile and checks it exists.
+        /// </summary>
+        /// <param name="appcontainer_name">The name of the AppContainer.</param>
+        /// <returns>The opened AppContainer profile.</returns>
+        /// <remarks>This checks for the existence of the profile and also populates the additional information.</remarks>
+        public static AppContainerProfile OpenExisting(string appcontainer_name)
+        {
+            return OpenExisting(appcontainer_name, true).Result;
         }
 
         /// <summary>
@@ -157,6 +199,49 @@ namespace NtApiDotNet.Win32
         {
             Delete(appcontainer_name, true);
         }
+
+        /// <summary>
+        /// Enumerate all AppContainer profiles.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of appcontainer profiles.</returns>
+        public static NtResult<IEnumerable<AppContainerProfile>> GetAppContainerProfiles(bool throw_on_error)
+        {
+            var error = AppModelNativeMethods.NetworkIsolationEnumAppContainers(NETISO_FLAG.NONE, out int count, out IntPtr acs);
+            if (error != Win32Error.SUCCESS)
+            {
+                return error.CreateResultFromDosError<IEnumerable<AppContainerProfile>>(throw_on_error);
+            }
+            try
+            {
+                var profiles = new Dictionary<Sid, AppContainerProfile>();
+                var array = NtProcess.Current.ReadMemoryArray<INET_FIREWALL_APP_CONTAINER>(acs.ToInt64(), count);
+                foreach (var a in array)
+                {
+                    Sid package_sid = new Sid(a.appContainerSid);
+                    if (profiles.ContainsKey(package_sid))
+                        continue;
+                    profiles.Add(package_sid, new AppContainerProfile(a.appContainerName, package_sid, 
+                        GetCapabilities(package_sid, a.capabilities), a.displayName, a.description));
+                }
+                return profiles.Values.CreateResult().Cast<IEnumerable<AppContainerProfile>>();
+            }
+            finally
+            {
+                if (acs != IntPtr.Zero)
+                    AppModelNativeMethods.NetworkIsolationFreeAppContainers(acs);
+            }
+        }
+
+        /// <summary>
+        /// Enumerate all AppContainer profiles.
+        /// </summary>
+        /// <returns>The list of appcontainer profiles.</returns>
+        public static IEnumerable<AppContainerProfile> GetAppContainerProfiles()
+        {
+            return GetAppContainerProfiles(true).Result;
+        }
+
         #endregion
 
         #region Public Methods
@@ -260,6 +345,21 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public bool DeleteOnClose { get; set; }
 
+        /// <summary>
+        /// Get list of capabilities assigned to this AppContainer profile.
+        /// </summary>
+        public IReadOnlyList<Sid> Capabilities { get; }
+
+        /// <summary>
+        /// The display name for the AppContainer profile.
+        /// </summary>
+        public string DisplayName { get; }
+
+        /// <summary>
+        /// The description for the AppContainer profile.
+        /// </summary>
+        public string Description { get; }
+
         #endregion
 
         #region Private Members
@@ -273,6 +373,17 @@ namespace NtApiDotNet.Win32
                     return string.Empty;
                 return key.Result.Win32Path;
             }
+        }
+
+        private static Sid[] GetCapabilities(Sid package_sid, INET_FIREWALL_AC_CAPABILITIES caps)
+        {
+            Sid package_cap = new Sid(SecurityAuthority.Package, 3).CreateRelative(package_sid.SubAuthorities.Skip(1).ToArray());
+
+            if (caps.count == 0)
+                return new Sid[0];
+
+            return NtProcess.Current.ReadMemoryArray<SidAndAttributes>(caps.capabilities.ToInt64(), 
+                caps.count).Select(s => new Sid(s.Sid)).Where(s => s != package_cap).ToArray();
         }
 
         #endregion

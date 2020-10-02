@@ -1033,6 +1033,7 @@ function New-Win32ProcessConfig {
     $config.NoTokenFallback = $NoTokenFallback
     if ($AppContainerProfile -ne $null) {
         $config.AppContainerSid = $AppContainerProfile.Sid
+        $config.Capabilities.AddRange($AppContainerProfile.Capabilities)
     }
     $config.ExtendedFlags = $ExtendedFlags
     $config.ChildProcessMitigations = $ChildProcessMitigations
@@ -5407,6 +5408,8 @@ Get an appcontainer profile for a specified package name.
 This cmdlet gets an appcontainer profile for a specified package name.
 .PARAMETER Name
 Specify appcontainer name to use for the profile.
+.PARAMETER OpenAlways
+Specify to open the profile even if it doesn't exist.
 .INPUTS
 None
 .OUTPUTS
@@ -5423,17 +5426,25 @@ function Get-AppContainerProfile {
     Param(
         [parameter(ParameterSetName = "All")]
         [switch]$AllUsers,
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName", ValueFromPipelineByPropertyName, ValueFromPipeline)]
-        [string]$Name
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
+        [string]$Name,
+        [parameter(ParameterSetName = "FromName")]
+        [switch]$OpenAlways
     )
 
-    PROCESS {
-        switch ($PSCmdlet.ParameterSetName) {
-            "All" {
-                Get-AppxPackage | Select-Object @{Name = "Name"; Expression = { "$($_.Name)_$($_.PublisherId)" } } | Get-AppContainerProfile
-            }
-            "FromName" {
-                [NtApiDotNet.Win32.AppContainerProfile]::Open($Name) | Write-Output
+    switch ($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.AppContainerProfile]::GetAppContainerProfiles() | Write-Output
+        }
+        "FromName" {
+            if ($OpenAlways) {
+                $prof = [NtApiDotNet.Win32.AppContainerProfile]::OpenExisting($Name, $false)
+                if (!$prof.IsSuccess) {
+                    $prof = [NtApiDotNet.Win32.AppContainerProfile]::Open($Name)
+                }
+                $prof | Write-Output
+            } else {
+                [NtApiDotNet.Win32.AppContainerProfile]::OpenExisting($Name) | Write-Output
             }
         }
     }

@@ -223,10 +223,21 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Add an AppContainer capability by name.
         /// </summary>
-        /// <param name="capability_name"></param>
+        /// <param name="capability_name">The name of the capability.</param>
         public void AddNamedCapability(string capability_name)
         {
             Capabilities.Add(NtSecurity.GetCapabilitySid(capability_name));
+        }
+
+        /// <summary>
+        /// Add an AppContainer capability by name.
+        /// </summary>
+        /// <param name="capability">The capability SID.</param>
+        public void AddCapability(Sid capability)
+        {
+            if (!NtSecurity.IsCapabilitySid(capability))
+                throw new ArgumentException("Must specify a capability SID.", nameof(capability));
+            Capabilities.Add(capability);
         }
 
         /// <summary>

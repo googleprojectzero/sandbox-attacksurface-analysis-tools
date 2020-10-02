@@ -304,6 +304,7 @@
     <Compile Include="UserGroup.cs" />
     <Compile Include="Utilities\Text\BinaryEncoding.cs" />
     <Compile Include="Win32\AppContainerProfile.cs" />
+    <Compile Include="Win32\AppModel\AppModelNativeMethods.cs" />
     <Compile Include="Win32\AppModel\AppModelUtils.cs" />
     <Compile Include="Win32\AppModel\IApplicationActivationManager.cs" />
     <Compile Include="Win32\ConsoleSession.cs" />
