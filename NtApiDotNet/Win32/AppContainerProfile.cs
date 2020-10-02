@@ -104,15 +104,27 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Create a temporary AppContainer profile.
         /// </summary>
+        /// <param name="capabilities">List of capabilities for the AppContainer profile.</param>
+        /// <returns>The created AppContainer profile.</returns>
+        /// <remarks>The profile will be marked to DeleteOnClose. In order to not leak the profile you
+        /// should wait till the process has exited and dispose this profile.</remarks>
+        public static AppContainerProfile CreateTemporary(IEnumerable<Sid> capabilities)
+        {
+            string name = "tmp_" + Guid.NewGuid().ToString("N");
+            var profile = Create(name, capabilities: capabilities);
+            profile.DeleteOnClose = true;
+            return profile;
+        }
+
+        /// <summary>
+        /// Create a temporary AppContainer profile.
+        /// </summary>
         /// <returns>The created AppContainer profile.</returns>
         /// <remarks>The profile will be marked to DeleteOnClose. In order to not leak the profile you
         /// should wait till the process has exited and dispose this profile.</remarks>
         public static AppContainerProfile CreateTemporary()
         {
-            string name = "tmp_" + Guid.NewGuid().ToString("N");
-            var profile = Create(name);
-            profile.DeleteOnClose = true;
-            return profile;
+            return CreateTemporary(null);
         }
 
         /// <summary>

@@ -5486,6 +5486,7 @@ function New-AppContainerProfile {
         [parameter(Position = 2, ParameterSetName = "FromName")]
         [string]$Description = "Description",
         [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromTemp")]
         [NtApiDotNet.Sid[]]$Capabilities,
         [parameter(ParameterSetName = "FromName")]
         [switch]$DeleteOnClose,
@@ -5502,7 +5503,7 @@ function New-AppContainerProfile {
             }
         }
         "FromTemp" {
-            [NtApiDotNet.Win32.AppContainerProfile]::CreateTemporary() | Write-Output
+            [NtApiDotNet.Win32.AppContainerProfile]::CreateTemporary($Capabilities) | Write-Output
         }
     }
 }
