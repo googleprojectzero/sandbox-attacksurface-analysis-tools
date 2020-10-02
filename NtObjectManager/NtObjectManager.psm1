@@ -1923,6 +1923,8 @@ Show the default DACL in full rather than a summary.
 Show basic token information, User, Group, Privilege and Integrity.
 .PARAMETER MandatoryPolicy
 Show mandatory integrity policy.
+.PARAMETER Thread
+Specify a thread to use when capturing the effective token.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1972,10 +1974,11 @@ function Show-NtTokenEffective {
         [parameter(ParameterSetName = "Complex")]
         [switch]$FullDefaultDacl,
         [parameter(ParameterSetName = "Complex")]
-        [switch]$MandatoryPolicy
+        [switch]$MandatoryPolicy,
+        [NtApiDotNet.NtThread]$Thread
     )
 
-    Use-NtObject($token = Get-NtToken -Effective) {
+    Use-NtObject($token = Get-NtToken -Effective -Thread $Thread) {
         if ($PsCmdlet.ParameterSetName -eq "UserOnly") {
             Format-NtToken -Token $token
         }
