@@ -275,6 +275,14 @@ namespace NtObjectManager.Cmdlets.Object
         public Logon32Provider LogonProvider { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to use SeTcbPrivilege for the logon. This might require finding a token to steal.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon")]
+        [Parameter(ParameterSetName = "Service")]
+        [Parameter(ParameterSetName = "S4U")]
+        public SwitchParameter WithTcb { get; set; }
+
+        /// <summary>
         /// <para type="description">Get an Services for User (S4U) logon token.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "S4U")]
@@ -598,32 +606,83 @@ namespace NtObjectManager.Cmdlets.Object
             }
         }
 
+        private ThreadImpersonationContext GetTcbPrivilege()
+        {
+            if (!WithTcb)
+                return null;
+            if (NtToken.EnableEffectivePrivilege(TokenPrivilegeValue.SeTcbPrivilege))
+            {
+                return null;
+            }
+            if (!NtToken.EnableDebugPrivilege())
+            {
+                WriteWarning("Can't enable SeDebugPrivilege. Getting SeTcbPrivilege might not work.");
+            }
+
+            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation).ToDisposableList())
+            {
+                Sid local_system = KnownSids.LocalSystem;
+                foreach (var p in ps)
+                {
+                    using (var result = NtToken.OpenProcessToken(p, TokenAccessRights.Query | TokenAccessRights.Duplicate, false))
+                    {
+                        if (!result.IsSuccess)
+                            continue;
+                        var token = result.Result;
+                        if (token.User.Sid == local_system 
+                            && !token.Flags.HasFlag(TokenFlags.IsFiltered) 
+                            && token.GetPrivilege(TokenPrivilegeValue.SeTcbPrivilege) != null)
+                        {
+                            using (var imp_token = token.DuplicateToken(SecurityImpersonationLevel.Impersonation))
+                            {
+                                if (imp_token.SetPrivilege(TokenPrivilegeValue.SeTcbPrivilege, PrivilegeAttributes.Enabled))
+                                {
+                                    return imp_token.Impersonate();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            WriteWarning("Can't find a suitable SeTcbPrivilege token to borrow.");
+            return null;
+        }
+
         private NtToken GetLogonToken(TokenAccessRights desired_access)
         {
-            return GetLogonToken(desired_access, User, Domain, GetPassword(), LogonType);
+            using (GetTcbPrivilege())
+            {
+                return GetLogonToken(desired_access, User, Domain, GetPassword(), LogonType);
+            }
         }
 
         private NtToken GetS4UToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = LogonUtils.LsaLogonS4U(User, Domain, LogonType, AuthenticationPackage.NEGOSSP_NAME))
+            using (GetTcbPrivilege())
             {
-                if (desired_access == TokenAccessRights.MaximumAllowed)
+                using (NtToken token = LogonUtils.LsaLogonS4U(User, Domain, LogonType, AuthenticationPackage.NEGOSSP_NAME))
                 {
-                    return token.Duplicate();
+                    if (desired_access == TokenAccessRights.MaximumAllowed)
+                    {
+                        return token.Duplicate();
+                    }
+                    return token.Duplicate(desired_access);
                 }
-                return token.Duplicate(desired_access);
             }
         }
 
         private NtToken GetTicketToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = LogonUtils.LsaLogonTicket(LogonType, Ticket, KerbCred))
+            using (GetTcbPrivilege())
             {
-                if (desired_access == TokenAccessRights.MaximumAllowed)
+                using (NtToken token = LogonUtils.LsaLogonTicket(LogonType, Ticket, KerbCred))
                 {
-                    return token.Duplicate();
+                    if (desired_access == TokenAccessRights.MaximumAllowed)
+                    {
+                        return token.Duplicate();
+                    }
+                    return token.Duplicate(desired_access);
                 }
-                return token.Duplicate(desired_access);
             }
         }
 
@@ -711,7 +770,10 @@ namespace NtObjectManager.Cmdlets.Object
                     user = "IUsr";
                     break;
             }
-            return GetLogonToken(desired_access, user, "NT AUTHORITY", null, SecurityLogonType.Service);
+            using (GetTcbPrivilege())
+            {
+                return GetLogonToken(desired_access, user, "NT AUTHORITY", null, SecurityLogonType.Service);
+            }
         }
 
         private NtToken GetSessionToken(TokenAccessRights desired_access, int session_id)
