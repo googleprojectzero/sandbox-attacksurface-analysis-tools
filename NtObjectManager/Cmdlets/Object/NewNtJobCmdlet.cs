@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -42,10 +43,18 @@ namespace NtObjectManager.Cmdlets.Object
     ///   </para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.New, "NtJob")]
+    [Cmdlet(VerbsCommon.New, "NtJob", DefaultParameterSetName = "FromPath")]
     [OutputType(typeof(NtJob))]
     public sealed class NewNtJobCmdlet : NtObjectBaseCmdletWithAccess<JobAccessRights>
     {
+        /// <summary>
+        /// <para type="description">The NT object manager path to the object to use.</para>
+        /// </summary>
+        [Parameter(Position = 0, ParameterSetName = "FromPath"), 
+            Parameter(Position = 0, ParameterSetName = "CreateSilo"), 
+            Parameter(Position = 0, ParameterSetName = "CreateServerSilo")]
+        public override string Path { get => base.Path; set => base.Path = value; }
+
         /// <summary>
         /// <para type="description">Specify a process limit for the job.</para>
         /// </summary>
@@ -67,14 +76,38 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify to create Job as a Silo.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(Mandatory = true, ParameterSetName = "CreateSilo")]
         public SwitchParameter CreateSilo { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify to flags when creating the Silo's root directory. Must be used with -CreateSilo.</para>
+        /// <para type="description">Specify to flags when creating the Silo's root directory.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "CreateSilo"), Parameter(ParameterSetName = "CreateServerSilo")]
         public SiloObjectRootDirectoryControlFlags SiloRootDirectoryFlags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create a server silo. Must be used with -CreateSilo.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "CreateServerSilo")]
+        public SwitchParameter CreateServerSilo { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify system root for the server silo.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "CreateServerSilo")]
+        public string SystemRoot { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify event for when the silo is deleted.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "CreateServerSilo")]
+        public NtEvent DeleteEvent { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify whether silo is a downlevel container.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "CreateServerSilo")]
+        public SwitchParameter DownlevelContainer { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to place a limit on process memory.</para>
@@ -116,7 +149,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            using (var job = NtJob.Create(obj_attributes, Access))
+            using (var job = CreateJob(obj_attributes))
             {
                 if (LimitFlags != 0)
                 {
@@ -129,10 +162,6 @@ namespace NtObjectManager.Cmdlets.Object
                 if (UiRestrictionFlags != 0)
                 {
                     job.UiRestrictionFlags = UiRestrictionFlags;
-                }
-                if (CreateSilo)
-                {
-                    job.InitializeSilo(SiloRootDirectoryFlags);
                 }
                 if (ProcessMemoryLimit > 0)
                 {
@@ -155,6 +184,22 @@ namespace NtObjectManager.Cmdlets.Object
 
                 return job.Duplicate();
             }
+        }
+
+        private NtJob CreateJob(ObjectAttributes obj_attributes)
+        {
+            if (CreateServerSilo)
+            {
+                return NtJob.CreateServerSilo(obj_attributes, Access, SiloRootDirectoryFlags, 
+                    SystemRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.Windows).ToUpper().TrimEnd('\\'), 
+                    DeleteEvent, DownlevelContainer);
+            }
+            else if (CreateSilo)
+            {
+                return NtJob.CreateSilo(obj_attributes, Access, SiloRootDirectoryFlags);
+            }
+
+            return NtJob.Create(obj_attributes, Access);
         }
     }
 }

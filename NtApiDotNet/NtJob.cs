@@ -159,16 +159,43 @@ namespace NtApiDotNet
         /// Create and initialize a Silo,
         /// </summary>
         /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="desired_access">Desired access for the job.</param>
+        /// <param name="object_attributes">Object attributes.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The Job object.</returns>
-        public static NtResult<NtJob> CreateSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, bool throw_on_error)
+        public static NtResult<NtJob> CreateSilo(ObjectAttributes object_attributes, 
+            JobAccessRights desired_access, SiloObjectRootDirectoryControlFlags root_dir_flags, bool throw_on_error)
         {
-            using (var job = Create(null, JobAccessRights.MaximumAllowed, throw_on_error))
+            using (var job = Create(object_attributes, desired_access | JobAccessRights.SetAttributes, throw_on_error))
             {
                 if (!job.IsSuccess)
                     return job;
                 return job.Result.InitializeSilo(root_dir_flags, false).CreateResult(throw_on_error, () => job.Result.Duplicate());
             }
+        }
+
+        /// <summary>
+        /// Create and initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="desired_access">Desired access for the job.</param>
+        /// <param name="object_attributes">Object attributes.</param>
+        /// <returns>The Job object.</returns>
+        public static NtJob CreateSilo(ObjectAttributes object_attributes,
+            JobAccessRights desired_access, SiloObjectRootDirectoryControlFlags root_dir_flags)
+        {
+            return CreateSilo(object_attributes, desired_access, root_dir_flags, true).Result;
+        }
+
+        /// <summary>
+        /// Create and initialize a Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Job object.</returns>
+        public static NtResult<NtJob> CreateSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, bool throw_on_error)
+        {
+            return CreateSilo(null, JobAccessRights.MaximumAllowed, root_dir_flags, throw_on_error);
         }
 
         /// <summary>
@@ -189,10 +216,14 @@ namespace NtApiDotNet
         /// <param name="system_root">Path to the system root.</param>
         /// <param name="delete_event">Event to signal when silo deleted.</param>
         /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <param name="desired_access">Desired access for the job.</param>
+        /// <param name="object_attributes">Object attributes.</param>
         /// <returns>The Job object.</returns>
-        public static NtResult<NtJob> CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, NtEvent delete_event, bool downlevel_container, bool throw_on_error)
+        public static NtResult<NtJob> CreateServerSilo(ObjectAttributes object_attributes,
+            JobAccessRights desired_access, SiloObjectRootDirectoryControlFlags root_dir_flags, 
+            string system_root, NtEvent delete_event, bool downlevel_container, bool throw_on_error)
         {
-            using (var job = CreateSilo(root_dir_flags, throw_on_error))
+            using (var job = CreateSilo(object_attributes, desired_access, root_dir_flags, throw_on_error))
             {
                 if (!job.IsSuccess)
                     return job;
@@ -235,8 +266,41 @@ namespace NtApiDotNet
         /// <param name="system_root">Path to the system root.</param>
         /// <param name="delete_event">Event to signal when silo deleted.</param>
         /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <param name="desired_access">Desired access for the job.</param>
+        /// <param name="object_attributes">Object attributes.</param>
         /// <returns>The Job object.</returns>
-        public static NtJob CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, NtEvent delete_event, bool downlevel_container)
+        public static NtJob CreateServerSilo(ObjectAttributes object_attributes,
+            JobAccessRights desired_access, SiloObjectRootDirectoryControlFlags root_dir_flags,
+            string system_root, NtEvent delete_event, bool downlevel_container)
+        {
+            return CreateServerSilo(object_attributes, desired_access, root_dir_flags,
+                system_root, delete_event, downlevel_container, true).Result;
+        }
+
+        /// <summary>
+        /// Create and initialize a Server Silo,
+        /// </summary>
+        /// <param name="root_dir_flags">Flags for root directory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="system_root">Path to the system root.</param>
+        /// <param name="delete_event">Event to signal when silo deleted.</param>
+        /// <param name="downlevel_container">True if a downlevel container.</param>
+        /// <returns>The Job object.</returns>
+        public static NtResult<NtJob> CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, 
+            NtEvent delete_event, bool downlevel_container, bool throw_on_error)
+        {
+            return CreateServerSilo(null, JobAccessRights.MaximumAllowed, root_dir_flags, system_root, delete_event, downlevel_container, throw_on_error);
+        }
+
+            /// <summary>
+            /// Create and initialize a Server Silo,
+            /// </summary>
+            /// <param name="root_dir_flags">Flags for root directory.</param>
+            /// <param name="system_root">Path to the system root.</param>
+            /// <param name="delete_event">Event to signal when silo deleted.</param>
+            /// <param name="downlevel_container">True if a downlevel container.</param>
+            /// <returns>The Job object.</returns>
+            public static NtJob CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, NtEvent delete_event, bool downlevel_container)
         {
             return CreateServerSilo(root_dir_flags, system_root, delete_event, downlevel_container, true).Result;
         }
