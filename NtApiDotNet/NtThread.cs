@@ -456,6 +456,28 @@ namespace NtApiDotNet
             TestAlert(true);
         }
 
+        /// <summary>
+        /// Attach a silo container to the current thread.
+        /// </summary>
+        /// <param name="silo">The silo to attach. If null then remove any existing silo.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The thread impersonation context.</returns>
+        public static NtResult<ThreadImpersonationContext> AttachContainer(NtJob silo, bool throw_on_error)
+        {
+            return Current.Set(ThreadInformationClass.ThreadAttachContainer, silo?.Handle.DangerousGetHandle() ?? IntPtr.Zero,
+                false).CreateResult(throw_on_error, () => new ThreadImpersonationContext(true));
+        }
+
+        /// <summary>
+        /// Attach a silo container to the current thread.
+        /// </summary>
+        /// <param name="silo">The silo to attach.</param>
+        /// <returns>The thread impersonation context.</returns>
+        public static ThreadImpersonationContext AttachContainer(NtJob silo)
+        {
+            return AttachContainer(silo, true).Result;
+        }
+
         #endregion
 
         #region Static Properties

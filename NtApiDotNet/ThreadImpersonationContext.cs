@@ -21,9 +21,16 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class ThreadImpersonationContext : IDisposable
     {
-        private NtThread _thread;
+        private readonly NtThread _thread;
+        private readonly bool _container;
 
-        internal ThreadImpersonationContext(NtThread thread)
+        internal ThreadImpersonationContext(bool container)
+        {
+            _container = container;
+        }
+
+        internal ThreadImpersonationContext(NtThread thread) 
+            : this(false)
         {
             _thread = thread;
         }
@@ -33,13 +40,15 @@ namespace NtApiDotNet
         /// </summary>
         public void Revert()
         {
-            if (_thread != null)
+            if (_container)
+            {
+            }
+            else if (!_thread.Handle.IsClosed)
             {
                 using (_thread)
                 {
                     _thread.SetImpersonationToken(null, false);
                 }
-                _thread = null;
             }
         }
 
