@@ -11641,3 +11641,47 @@ function Set-NtThreadContext {
     )
     $Thread.SetContext($Context)
 }
+
+<#
+.SYNOPSIS
+Query an app model policy for the a process.
+.DESCRIPTION
+This cmdlet queries the app model policy for a process.
+.PARAMETER Process
+Specify the process to get the app model policy for.
+.PARAMETER Policy
+Specify a specific policy to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.AppModelPolicy_PolicyValue
+.EXAMPLE
+Get-AppModelApplicationPolicy -Process $proc
+Query all app model policies.
+#>
+function Get-AppModelApplicationPolicy {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromPolicy")]
+        [NtApiDotNet.AppModelPolicy_Type[]]$Policy
+    )
+
+    try {
+        Use-NtObject($token = Get-NtToken -Process $proc) {
+            switch($PSCmdlet.ParameterSetName) {
+                "All" {
+                    $token.AppModelPolicyDictionary | Write-Output
+                }
+                "FromPolicy" {
+                    foreach($pol in $Policy) {
+                        $token.GetAppModelPolicy($pol) | Write-Output
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
