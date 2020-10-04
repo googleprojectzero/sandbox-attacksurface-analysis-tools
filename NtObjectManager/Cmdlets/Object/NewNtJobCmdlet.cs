@@ -71,10 +71,34 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter CreateSilo { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify to flags when creating the Silo's root directory. Must be used with -Silo.</para>
+        /// <para type="description">Specify to flags when creating the Silo's root directory. Must be used with -CreateSilo.</para>
         /// </summary>
         [Parameter]
         public SiloObjectRootDirectoryControlFlags SiloRootDirectoryFlags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to place a limit on process memory.</para>
+        /// </summary>
+        [Parameter]
+        public long ProcessMemoryLimit { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to place a limit on job memory.</para>
+        /// </summary>
+        [Parameter]
+        public long JobMemoryLimit { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to place a limit on job user execution time.</para>
+        /// </summary>
+        [Parameter]
+        public NtWaitTimeout ProcessTimeLimit { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to place a limit on job user execution time.</para>
+        /// </summary>
+        [Parameter]
+        public NtWaitTimeout JobTimeLimit { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -100,7 +124,7 @@ namespace NtObjectManager.Cmdlets.Object
                 }
                 if (ActiveProcessLimit > 0)
                 {
-                    job.ActiveProcessLimit = ActiveProcessLimit;
+                    job.ActiveProcess = ActiveProcessLimit;
                 }
                 if (UiRestrictionFlags != 0)
                 {
@@ -109,6 +133,24 @@ namespace NtObjectManager.Cmdlets.Object
                 if (CreateSilo)
                 {
                     job.InitializeSilo(SiloRootDirectoryFlags);
+                }
+                if (ProcessMemoryLimit > 0)
+                {
+                    job.ProcessMemory = ProcessMemoryLimit;
+                }
+                if (JobMemoryLimit > 0)
+                {
+                    job.JobMemory = JobMemoryLimit;
+                }
+
+                if (JobTimeLimit?.Timeout != null)
+                {
+                    job.JobTime = JobTimeLimit.Timeout.QuadPart;
+                }
+
+                if (ProcessTimeLimit?.Timeout != null)
+                {
+                    job.ProcessTime = ProcessTimeLimit.Timeout.QuadPart;
                 }
 
                 return job.Duplicate();

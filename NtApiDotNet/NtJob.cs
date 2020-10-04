@@ -870,7 +870,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Get or set the active process limit.
         /// </summary>
+        [Obsolete("Use ActiveProcess")]
         public int ActiveProcessLimit
+        {
+            get => ActiveProcess;
+            set => ActiveProcess = value;
+        }
+
+        /// <summary>
+        /// Get or set the active process limit.
+        /// </summary>
+        public int ActiveProcess
         {
             get => GetExtendedLimitInfo().BasicLimitInformation.ActiveProcessLimit;
             set => SetActiveProcessLimit(value, true);
