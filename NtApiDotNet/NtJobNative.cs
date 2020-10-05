@@ -324,7 +324,8 @@ namespace NtApiDotNet
         None = 0,
         ShadowRoot = 1,
         InitializeRoot = 2,
-        ShadowGlobal = 4
+        ShadowGlobal = 4,
+        All = ShadowRoot | InitializeRoot | ShadowGlobal
     }
 
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
