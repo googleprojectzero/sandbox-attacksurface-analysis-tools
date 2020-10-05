@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Native;
+using NtObjectManager.Utils;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -614,38 +615,8 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 return null;
             }
-            if (!NtToken.EnableDebugPrivilege())
-            {
-                WriteWarning("Can't enable SeDebugPrivilege. Getting SeTcbPrivilege might not work.");
-            }
 
-            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation).ToDisposableList())
-            {
-                Sid local_system = KnownSids.LocalSystem;
-                foreach (var p in ps)
-                {
-                    using (var result = NtToken.OpenProcessToken(p, TokenAccessRights.Query | TokenAccessRights.Duplicate, false))
-                    {
-                        if (!result.IsSuccess)
-                            continue;
-                        var token = result.Result;
-                        if (token.User.Sid == local_system 
-                            && !token.Flags.HasFlag(TokenFlags.IsFiltered) 
-                            && token.GetPrivilege(TokenPrivilegeValue.SeTcbPrivilege) != null)
-                        {
-                            using (var imp_token = token.DuplicateToken(SecurityImpersonationLevel.Impersonation))
-                            {
-                                if (imp_token.SetPrivilege(TokenPrivilegeValue.SeTcbPrivilege, PrivilegeAttributes.Enabled))
-                                {
-                                    return imp_token.Impersonate();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            WriteWarning("Can't find a suitable SeTcbPrivilege token to borrow.");
-            return null;
+            return PSUtils.ImpersonateSystem();
         }
 
         private NtToken GetLogonToken(TokenAccessRights desired_access)
