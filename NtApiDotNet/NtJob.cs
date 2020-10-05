@@ -170,6 +170,7 @@ namespace NtApiDotNet
             {
                 if (!job.IsSuccess)
                     return job;
+
                 return job.Result.InitializeSilo(root_dir_flags, false).CreateResult(throw_on_error, () => job.Result.Duplicate());
             }
         }
@@ -221,7 +222,8 @@ namespace NtApiDotNet
         /// <returns>The Job object.</returns>
         public static NtResult<NtJob> CreateServerSilo(ObjectAttributes object_attributes,
             JobAccessRights desired_access, SiloObjectRootDirectoryControlFlags root_dir_flags, 
-            string system_root, NtEvent delete_event, bool downlevel_container, bool throw_on_error)
+            string system_root, NtEvent delete_event, bool downlevel_container, 
+            bool throw_on_error)
         {
             using (var job = CreateSilo(object_attributes, desired_access, root_dir_flags, throw_on_error))
             {
@@ -289,7 +291,8 @@ namespace NtApiDotNet
         public static NtResult<NtJob> CreateServerSilo(SiloObjectRootDirectoryControlFlags root_dir_flags, string system_root, 
             NtEvent delete_event, bool downlevel_container, bool throw_on_error)
         {
-            return CreateServerSilo(null, JobAccessRights.MaximumAllowed, root_dir_flags, system_root, delete_event, downlevel_container, throw_on_error);
+            return CreateServerSilo(null, JobAccessRights.MaximumAllowed, root_dir_flags, system_root, 
+                delete_event, downlevel_container, throw_on_error);
         }
 
             /// <summary>
@@ -863,6 +866,26 @@ namespace NtApiDotNet
             => Query<SiloUserSharedData>(JobObjectInformationClass.JobObjectServerSiloUserSharedData, default, throw_on_error);
 
         /// <summary>
+        /// Get whether this job object can be impersonated.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the job object can be impersonated.</returns>
+        public NtResult<bool> QueryThreadImpersonation(bool throw_on_error)
+        {
+            return Query<byte>(JobObjectInformationClass.JobObjectThreadImpersonationInformation, 0, throw_on_error).Map(b => b != 0 ? true : false);
+        }
+
+        /// <summary>
+        /// Enable thread impersonation on this job object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus EnableThreadImpersonation(bool throw_on_error)
+        {
+            return Set(JobObjectInformationClass.JobObjectThreadImpersonationInformation, (byte)1, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -1104,6 +1127,20 @@ namespace NtApiDotNet
         /// Get Silo user shared data.
         /// </summary>
         public SiloUserSharedData SiloUserSharedData => Query<SiloUserSharedData>(JobObjectInformationClass.JobObjectServerSiloUserSharedData);
+
+        /// <summary>
+        /// Get or set the thread impersonation status.
+        /// </summary>
+        public bool ThreadImpersonation
+        {
+            get => QueryThreadImpersonation(true).Result;
+            set
+            {
+                if (!value)
+                    throw new ArgumentException("Can't disable thread impersonation.");
+                EnableThreadImpersonation(true);
+            }
+        }
 
         #endregion
 
