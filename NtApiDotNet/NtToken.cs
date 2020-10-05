@@ -1441,6 +1441,11 @@ namespace NtApiDotNet
         public bool WriteRestricted => Restricted && Flags.HasFlagSet(TokenFlags.WriteRestricted);
 
         /// <summary>
+        /// Get whether token is filtered.
+        /// </summary>
+        public bool Filtered => Flags.HasFlagSet(TokenFlags.IsFiltered);
+
+        /// <summary>
         /// Get whether token is not low.
         /// </summary>
         public bool NotLow => Flags.HasFlagSet(TokenFlags.NotLow);
