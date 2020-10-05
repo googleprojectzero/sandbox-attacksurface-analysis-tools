@@ -11736,3 +11736,120 @@ function Test-NtProcessJob {
     }
     $Process.IsInJob($Job)
 }
+
+function Check-FullTrust {
+    param([xml]$Manifest)
+    if ($Manifest -eq $null) {
+        return $false
+    }
+    $nsmgr = [System.Xml.XmlNamespaceManager]::new($Manifest.NameTable)
+    $nsmgr.AddNamespace("rescap", "http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities")
+    $Manifest.SelectSingleNode("//rescap:Capability[@Name='runFullTrust']", $nsmgr) -ne $null
+}
+
+function Get-AppExtensions {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, ValueFromPipelineByPropertyName)]
+        [xml]$Manifest
+    )
+    PROCESS {
+        if ($Manifest -eq $null) {
+            return
+        }
+        $nsmgr = [System.Xml.XmlNamespaceManager]::new($Manifest.NameTable)
+        $nsmgr.AddNamespace("desktop", "http://schemas.microsoft.com/appx/manifest/desktop/windows10")
+        $nodes = $Manifest.SelectNodes("//desktop:Extension[@Category='windows.fullTrustProcess']", $nsmgr)
+        foreach($node in $nodes) {
+            Write-Output $node.GetAttribute("Executable")
+        }
+    }
+}
+
+function Get-FullTrustApplications {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, ValueFromPipelineByPropertyName)]
+        [xml]$Manifest,
+        [parameter(Mandatory)]
+        [string]$PackageFamilyName
+    )
+    PROCESS {
+        if ($Manifest -eq $null) {
+            return
+        }
+        $nsmgr = [System.Xml.XmlNamespaceManager]::new($Manifest.NameTable)
+        $nsmgr.AddNamespace("app", "http://schemas.microsoft.com/appx/manifest/foundation/windows10")
+        $nodes = $Manifest.SelectNodes("//app:Application[@EntryPoint='Windows.FullTrustApplication']", $nsmgr)
+        foreach($node in $nodes) {
+            $id = $node.GetAttribute("Id")
+            $props = @{
+                ApplicationUserModelId="$PackageFamilyName!$id";
+                Executable=$node.GetAttribute("Executable");
+            }
+
+            Write-Output $(New-Object psobject -Property $props)
+        }
+    }
+}
+
+function Read-DesktopAppxManifest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $Package,
+        [switch]$AllUsers
+    )
+    PROCESS {
+        $Manifest = Get-AppxPackageManifest $Package
+        if (-not $(Check-FullTrust $Manifest)) {
+            return
+        }
+        $install_location = $Package.InstallLocation
+        $profile_dir = ""
+        if (-not $AllUsers) {
+            $profile_dir = "$env:LOCALAPPDATA\Packages\$($Package.PackageFamilyName)"
+        }
+
+        $props = @{
+            Name=$Package.Name;
+            Architecture=$Package.Architecture;
+            Version=$Package.Version;
+            Publisher=$Package.Publisher;
+            PackageFamilyName=$Package.PackageFamilyName;
+            InstallLocation=$install_location;
+            Manifest=Get-AppxPackageManifest $Package;
+            Applications=Get-FullTrustApplications $Manifest $Package.PackageFamilyName;
+            Extensions=Get-AppExtensions $Manifest;
+            VFSFiles=Get-ChildItem -Recurse "$install_location\VFS";
+            HasRegistry=Test-Path "$install_location\registry.dat";
+            ProfileDir=$profile_dir;
+        }
+
+        New-Object psobject -Property $props
+    }
+}
+
+<#
+.SYNOPSIS
+Get a list AppX packages with Desktop Bridge components.
+.DESCRIPTION
+This cmdlet gets a list of installed AppX packages which are either directly full trust applications or 
+have an extension which can be used to run full trust applications.
+.PARAMETER AllUsers
+Specify getting information for all users, needs admin privileges.
+.INPUTS
+None
+.OUTPUTS
+Package results.
+.EXAMPLE
+Get-AppxDesktopBridge
+Get all desktop bridge AppX packages for current user.
+.EXAMPLE
+Get-AppxDesktopBridge -AllUsers
+Get all desktop bridge AppX packages for all users.
+#>
+function Get-AppxDesktopBridge {
+    param([switch]$AllUsers)
+    Get-AppxPackage -AllUsers:$AllUsers -PackageTypeFilter Main | Read-DesktopAppxManifest -AllUsers:$AllUsers
+}
