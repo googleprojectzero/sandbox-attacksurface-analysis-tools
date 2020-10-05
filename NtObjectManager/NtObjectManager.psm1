@@ -11853,3 +11853,33 @@ function Get-AppxDesktopBridge {
     param([switch]$AllUsers)
     Get-AppxPackage -AllUsers:$AllUsers -PackageTypeFilter Main | Read-DesktopAppxManifest -AllUsers:$AllUsers
 }
+
+<#
+.SYNOPSIS
+Terminates a job object.
+.DESCRIPTION
+This cmdlet terminates a job object and all it's processes.
+.PARAMETER Job
+Specify a Job object to terminate.
+.PARAMETER Status
+Specify the NT status code to terminate with.
+.INPUTS
+None
+.OUTPUTS
+Bool
+.EXAMPLE
+Stop-NtJob -Job $job
+Terminate a job with STATUS_SUCCESS code.
+.EXAMPLE
+Stop-NtJob -Job $job -Status STATUS_ACCESS_DENIED
+Terminate a job with STATUS_ACCESS_DENIED code.
+#>
+function Stop-NtJob {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtJob]$Job,
+        [parameter(Position = 1)]
+        [NtApiDotNet.NtStatus]$Status = 0
+    )
+    $Job.Terminate($Status)
+}
