@@ -36,7 +36,7 @@ namespace NtApiDotNet
 
         public static SafeHandleListHandle CreateAndDuplicate(IEnumerable<SafeKernelObjectHandle> handles)
         {
-            return new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h)));
+            return new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h)).ToArray());
         }
 
         public static SafeHandleListHandle CreateAndDuplicate(IEnumerable<NtObject> handles)
