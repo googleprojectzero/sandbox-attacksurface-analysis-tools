@@ -118,6 +118,23 @@ namespace NtApiDotNet.Win32
         public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type, 
             Logon32Provider provider, IEnumerable<UserGroup> groups)
         {
+            return GetLogonUserToken(username, domain, password, logon_type, provider, groups, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="logon_type">The logon token's type.</param>
+        /// <param name="groups">Optional list of additonal groups to add.</param>
+        /// <param name="provider">The Logon provider.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtResult<NtToken> GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type,
+            Logon32Provider provider, IEnumerable<UserGroup> groups, bool throw_on_error)
+        {
             switch (logon_type)
             {
                 case SecurityLogonType.Batch:
@@ -133,11 +150,11 @@ namespace NtApiDotNet.Win32
 
             if (groups != null)
             {
-                return LogonUtils.Logon(username, domain, password, logon_type, provider, groups);
+                return LogonUtils.Logon(username, domain, password, logon_type, provider, groups, throw_on_error);
             }
             else
             {
-                return LogonUtils.Logon(username, domain, password, logon_type, provider);
+                return LogonUtils.Logon(username, domain, password, logon_type, provider, throw_on_error);
             }
         }
 
