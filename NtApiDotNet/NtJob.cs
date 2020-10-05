@@ -666,7 +666,7 @@ namespace NtApiDotNet
             }
 
             return SetExtendedLimitInformation(i => {
-                i.BasicLimitInformation.PerProcessUserTimeLimit = new LargeIntegerStruct() { QuadPart = process_time_limit };
+                i.BasicLimitInformation.PerProcessUserTimeLimit = new LargeIntegerStruct() { QuadPart = Math.Abs(process_time_limit) };
                 i.BasicLimitInformation.LimitFlags |= JobObjectLimitFlags.ProcessTime;
                 return i;
             }, throw_on_error);
@@ -719,7 +719,7 @@ namespace NtApiDotNet
             }
 
             return SetExtendedLimitInformation(i => {
-                i.BasicLimitInformation.PerJobUserTimeLimit = new LargeIntegerStruct() { QuadPart = job_time_limit };
+                i.BasicLimitInformation.PerJobUserTimeLimit = new LargeIntegerStruct() { QuadPart = Math.Abs(job_time_limit) };
                 i.BasicLimitInformation.LimitFlags |= JobObjectLimitFlags.JobTime;
                 return i;
             }, throw_on_error);
@@ -965,7 +965,7 @@ namespace NtApiDotNet
         public long MaximumWorkingSetSize
         {
             get => GetExtendedLimitInfo().BasicLimitInformation.MaximumWorkingSetSize.ToInt64();
-            set => SetWorkingSetSize(MinimumWorkingSetSize, value, true);
+            set => SetWorkingSetSize(MinimumWorkingSetSize, value);
         }
 
         /// <summary>
@@ -974,7 +974,7 @@ namespace NtApiDotNet
         public long ProcessTime
         {
             get => GetExtendedLimitInfo().BasicLimitInformation.PerProcessUserTimeLimit.QuadPart;
-            set => SetProcessTimeLimit(value, true);
+            set => SetProcessTimeLimit(value);
         }
 
         /// <summary>
@@ -983,7 +983,7 @@ namespace NtApiDotNet
         public long JobTime
         {
             get => GetExtendedLimitInfo().BasicLimitInformation.PerJobUserTimeLimit.QuadPart;
-            set => SetJobTimeLimit(value, true);
+            set => SetJobTimeLimit(value);
         }
 
         /// <summary>
