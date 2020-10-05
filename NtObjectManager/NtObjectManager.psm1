@@ -1102,6 +1102,8 @@ Specify the timeout to wait for the process to exit. Defaults to infinite.
 Specify user credentials for CreateProcessWithLogon.
 .PARAMETER LogonFlags
 Specify logon flags for CreateProcessWithLogon.
+.PARAMETER Close
+Specify to close the process and thread handles and not return anything.
 .INPUTS
 None
 .OUTPUTS
@@ -1163,7 +1165,8 @@ function New-Win32Process {
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
         [switch]$Wait,
-        [NtApiDotNet.NtWaitTimeout]$WaitTimeout = [NtApiDotNet.NtWaitTimeout]::Infinite
+        [NtApiDotNet.NtWaitTimeout]$WaitTimeout = [NtApiDotNet.NtWaitTimeout]::Infinite,
+        [switch]$Close
     )
 
     if ($null -eq $Config) {
@@ -1181,7 +1184,11 @@ function New-Win32Process {
     if ($Wait) {
         $p.Process.Wait($WaitTimeout)
     }
-    $p | Write-Output
+    if ($Close) {
+        $p.Dispose()
+    } else {
+        $p | Write-Output
+    }
 }
 
 <#
@@ -11684,4 +11691,48 @@ function Get-AppModelApplicationPolicy {
     } catch {
         Write-Error $_
     }
+}
+
+<#
+.SYNOPSIS
+Checks if the process is in a Job or a specific Job.
+.DESCRIPTION
+This cmdlet checks if a process is in any Job or a specific Job.
+.PARAMETER Process
+Specify the process to check.
+.PARAMETER Job
+Specify a Job object to check. If not specified then will check for any Job.
+.PARAMETER Current
+Specify to check the current process.
+.INPUTS
+None
+.OUTPUTS
+Bool
+.EXAMPLE
+Test-NtProcessJob -Process $proc
+Test if the process is a job.
+.EXAMPLE
+Test-NtProcessJob -Process $proc -Job $job
+Test if the process is in a specific job.
+.EXAMPLE
+Test-NtProcessJob -Current
+Test if the current process is a job.
+.EXAMPLE
+Test-NtProcessJob -Current -Job $job
+Test if the current process is in a specific job.
+#>
+function Test-NtProcessJob {
+    [CmdletBinding(DefaultParameterSetName="FromProcess")]
+    param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromProcess")]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Position = 1)]
+        [NtApiDotNet.NtJob]$Job,
+        [parameter(Mandatory, ParameterSetName="FromCurrent")]
+        [switch]$Current
+    )
+    if ($Current) {
+        $Process = Get-NtProcess -Current
+    }
+    $Process.IsInJob($Job)
 }
