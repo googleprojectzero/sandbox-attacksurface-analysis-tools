@@ -80,6 +80,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter CreateSilo { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to not create a silo root directory.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "CreateSilo")]
+        public SwitchParameter NoSiloRootDirectory { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify to flags when creating the Silo's root directory.</para>
         /// </summary>
         [Parameter(ParameterSetName = "CreateSilo"), Parameter(ParameterSetName = "CreateServerSilo")]
@@ -196,6 +202,16 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else if (CreateSilo)
             {
+                if (NoSiloRootDirectory)
+                {
+                    using (var job = NtJob.Create(obj_attributes, Access | JobAccessRights.SetAttributes))
+                    {
+                        job.SetLimitFlags(JobObjectLimitFlags.Application);
+                        job.CreateSilo();
+                        return job.Duplicate();
+                    }
+                }
+
                 return NtJob.CreateSilo(obj_attributes, Access, SiloRootDirectoryFlags);
             }
 
