@@ -14,6 +14,8 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -277,6 +279,54 @@ namespace NtObjectManager.Utils
                 ret.Add(new KeyValuePair<string, int>(name.ToString(), (int)name));
             }
             return ret.AsReadOnly();
+        }
+
+        private static NtToken GetSystemToken()
+        {
+            NtToken.EnableDebugPrivilege(); 
+            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation).ToDisposableList())
+            {
+                Sid local_system = KnownSids.LocalSystem;
+                foreach (var p in ps)
+                {
+                    using (var result = NtToken.OpenProcessToken(p, TokenAccessRights.Query | TokenAccessRights.Duplicate, false))
+                    {
+                        if (!result.IsSuccess)
+                            continue;
+                        var token = result.Result;
+                        if (token.User.Sid == local_system
+                            && !token.Filtered
+                            && token.GetPrivilege(TokenPrivilegeValue.SeTcbPrivilege) != null
+                            && token.IntegrityLevel == TokenIntegrityLevel.System)
+                        {
+                            using (var imp_token = token.DuplicateToken(SecurityImpersonationLevel.Impersonation))
+                            {
+                                if (imp_token.SetPrivilege(TokenPrivilegeValue.SeTcbPrivilege, PrivilegeAttributes.Enabled))
+                                {
+                                    using (imp_token.Impersonate())
+                                    {
+                                        return LogonUtils.Logon("SYSTEM", "NT AUTHORITY", null, 
+                                            SecurityLogonType.Service, Logon32Provider.Default, false).GetResultOrDefault();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static Lazy<NtToken> _system_token = new Lazy<NtToken>(GetSystemToken);
+
+        internal static ThreadImpersonationContext ImpersonateSystem()
+        {
+            using (var token = _system_token.Value?.DuplicateToken(SecurityImpersonationLevel.Impersonation))
+            {
+                if (token == null)
+                    throw new ArgumentException("Can't impersonate system token.");
+                return token.Impersonate();
+            }
         }
     }
 }
