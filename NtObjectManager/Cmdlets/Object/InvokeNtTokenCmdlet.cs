@@ -35,6 +35,14 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Anonymous</code>
     ///   <para>Open a process while impersonating the anonymous token.</para>
     /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -System</code>
+    ///   <para>Open a process while impersonating a system token. Needs administrator privileges.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Current -ImpersonationLevel Identification </code>
+    ///   <para>Open a process while impersonating a current token at identitification level.</para>
+    /// </example>
     [Cmdlet(VerbsLifecycle.Invoke, "NtToken", DefaultParameterSetName = "FromToken")]
     [OutputType(typeof(object))]
     public sealed class InvokeNtTokenCmdlet : PSCmdlet
@@ -51,6 +59,7 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromToken")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromCurrent")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSystem")]
         public ScriptBlock Script { get; set; }
 
         /// <summary>
@@ -58,6 +67,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
         public SwitchParameter Current { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to impersonate a system Token. Must be an administrator.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromSystem")]
+        public SwitchParameter System { get; set; }
 
         /// <summary>
         /// <para type="description">When the token is duplicated specify the impersonation level to use.</para>
@@ -127,6 +142,13 @@ namespace NtObjectManager.Cmdlets.Object
                 using (var token = GetCurrentToken())
                 {
                     obj = token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+                }
+            }
+            else if (ParameterSetName == "FromSystem")
+            {
+                using (PSUtils.ImpersonateSystem())
+                {
+                    obj = PSUtils.InvokeWithArg(Script, InputObject);
                 }
             }
             else
