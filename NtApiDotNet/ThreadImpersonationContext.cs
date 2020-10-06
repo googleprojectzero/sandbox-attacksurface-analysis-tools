@@ -42,6 +42,7 @@ namespace NtApiDotNet
         {
             if (_container)
             {
+                NtThread.DetachContainer(false);
             }
             else if (!_thread.Handle.IsClosed)
             {

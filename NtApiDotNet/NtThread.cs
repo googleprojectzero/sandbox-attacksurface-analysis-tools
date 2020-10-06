@@ -515,12 +515,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Attach a silo container to the current thread.
         /// </summary>
-        /// <param name="silo">The silo to attach. If null then remove any existing silo.</param>
+        /// <param name="silo">The silo to attach.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The thread impersonation context.</returns>
         public static NtResult<ThreadImpersonationContext> AttachContainer(NtJob silo, bool throw_on_error)
         {
-            return Current.Set(ThreadInformationClass.ThreadAttachContainer, silo?.Handle.DangerousGetHandle() ?? IntPtr.Zero,
+            if (silo is null)
+            {
+                throw new ArgumentNullException(nameof(silo));
+            }
+
+            return Current.Set(ThreadInformationClass.ThreadAttachContainer, silo.Handle.DangerousGetHandle(),
                 false).CreateResult(throw_on_error, () => new ThreadImpersonationContext(true));
         }
 
@@ -534,6 +539,24 @@ namespace NtApiDotNet
             return AttachContainer(silo, true).Result;
         }
 
+        /// <summary>
+        /// Detach container from the current thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus DetachContainer(bool throw_on_error)
+        {
+            return Current.Set(ThreadInformationClass.ThreadAttachContainer, IntPtr.Zero,
+                throw_on_error);
+        }
+
+        /// <summary>
+        /// Detach container from the current thread.
+        /// </summary>
+        public static void DetachContainer()
+        {
+            DetachContainer(true);
+        }
 
         /// <summary>
         /// Get XOR key for the work-on-behalf ticket.
