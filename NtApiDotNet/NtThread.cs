@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -478,6 +479,28 @@ namespace NtApiDotNet
             return AttachContainer(silo, true).Result;
         }
 
+
+        /// <summary>
+        /// Get XOR key for the work-on-behalf ticket.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The XOR key.</returns>
+        public static NtResult<ulong> GetWorkOnBehalfTicketXor(bool throw_on_error)
+        {
+            var result = Current.Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket, default, throw_on_error);
+            if (!result.IsSuccess)
+                return result.Cast<ulong>();
+
+            var ticket = result.Result.Ticket;
+            uint tid = (uint)Current.ThreadId;
+            var time = Current.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes, default, throw_on_error);
+            if (!time.IsSuccess)
+                return time.Cast<ulong>();
+            ticket.ThreadId ^= tid;
+            ticket.ThreadCreationTimeLow ^= time.Result.CreateTime.LowPart;
+            return ticket.WorkOnBehalfTicket.CreateResult();
+        }
+
         #endregion
 
         #region Static Properties
@@ -495,25 +518,14 @@ namespace NtApiDotNet
         /// </summary>
         public static WorkOnBehalfTicket WorkOnBehalfTicket
         {
-            get => new WorkOnBehalfTicket(Current.Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket));
+            get => Current.GetWorkOnBehalfTicket();
             set => SetWorkOnBehalfThread(value);
         }
 
         /// <summary>
         /// Get the work on behalf ticket xor key.
         /// </summary>
-        public static ulong WorkOnBehalfTicketXor
-        {
-            get
-            {
-                var ticket = Current.Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket).Ticket;
-                uint tid = (uint)Current.ThreadId;
-                uint time = Current.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).CreateTime.LowPart;
-                ticket.ThreadId ^= tid;
-                ticket.ThreadCreationTimeLow ^= time;
-                return ticket.WorkOnBehalfTicket;
-            }
-        }
+        public static ulong WorkOnBehalfTicketXor => GetWorkOnBehalfTicketXor(true).Result;
 
         #endregion
 
@@ -1050,6 +1062,51 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the work on behalf ticket for a thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The work on behalf ticket.</returns>
+        public NtResult<WorkOnBehalfTicket> GetWorkOnBehalfTicket(bool throw_on_error)
+        {
+            if (Handle.DangerousGetHandle() == new IntPtr(-2))
+            {
+                return Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket,
+                    default, throw_on_error).Map(t => new WorkOnBehalfTicket(t));
+            }
+            else
+            {
+                var time = Current.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes, default, throw_on_error);
+                if (!time.IsSuccess)
+                    return time.Cast<WorkOnBehalfTicket>();
+
+                var xor_key = GetWorkOnBehalfTicketXor(throw_on_error);
+                if (!xor_key.IsSuccess)
+                    return xor_key.Cast<WorkOnBehalfTicket>();
+
+                return new WorkOnBehalfTicket(ThreadId, (int)time.Result.CreateTime.LowPart, xor_key.Result).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Get the work on behalf ticket for a thread.
+        /// </summary>
+        /// <returns>The work on behalf ticket.</returns>
+        public WorkOnBehalfTicket GetWorkOnBehalfTicket()
+        {
+            return GetWorkOnBehalfTicket(true).Result;
+        }
+
+        /// <summary>
+        /// Get the effective container ID for the thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The effective container ID.</returns>
+        public NtResult<Guid> GetContainerId(bool throw_on_error)
+        {
+            return Query<Guid>(ThreadInformationClass.ThreadContainerId, default, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -1317,6 +1374,12 @@ namespace NtApiDotNet
         /// Get thread exit status.
         /// </summary>
         public NtStatus ExitNtStatus => (NtStatus)ExitStatus;
+
+        /// <summary>
+        /// Get the effective container ID.
+        /// </summary>
+        /// <remarks>Should be called on the current thread psuedo handle.</remarks>
+        public Guid ContainerId => GetContainerId(true).Result;
         #endregion
     }
 }

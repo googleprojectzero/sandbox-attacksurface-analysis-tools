@@ -11883,3 +11883,62 @@ function Stop-NtJob {
     )
     $Job.Terminate($Status)
 }
+
+<#
+.SYNOPSIS
+Gets a work-on-behalf ticket for a thread.
+.DESCRIPTION
+This cmdlet gets the work-on-behalf ticket for a thread. 
+.PARAMETER Thread
+Specify a thread to get the ticket from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.WorkOnBehalfTicket
+.EXAMPLE
+Get-NtThreadWorkOnBehalfTicket
+Get the work-on-behalf ticket for the current thread.
+.EXAMPLE
+Get-NtThreadWorkOnBehalfTicket -Thread $thread
+Get the work-on-behalf ticket for a thread.
+#>
+function Get-NtThreadWorkOnBehalfTicket {
+    param(
+        [parameter(Position = 0)]
+        [NtApiDotNet.NtThread]$Thread
+    )
+    if ($Thread -eq $null) {
+        [NtApiDotNet.NtThread]::WorkOnBehalfTicket
+    } else {
+        $Thread.GetWorkOnBehalfTicket()
+    }
+}
+
+<#
+.SYNOPSIS
+Set a work-on-behalf ticket on the current thread.
+.DESCRIPTION
+This cmdlet gets the work-on-behalf ticket for a thread. 
+.PARAMETER Ticket
+Specify the ticket to set.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtThreadWorkOnBehalfTicket -Ticket $ticket
+Set the work-on-behalf ticket for the current thread.
+#>
+function Set-NtThreadWorkOnBehalfTicket {
+    [CmdletBinding(DefaultParameterSetName = "FromTicket")]
+    param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromTicket")]
+        [NtApiDotNet.WorkOnBehalfTicket]$Ticket,
+        [parameter(Mandatory, ParameterSetName="ClearTicket")]
+        [switch]$Clear
+    )
+    if ($PSCmdlet.ParameterSetName -eq 'ClearTicket') {
+        $Ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
+    }
+    [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $Ticket
+}
