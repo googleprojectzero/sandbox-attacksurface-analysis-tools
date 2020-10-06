@@ -112,6 +112,33 @@ namespace NtApiDotNet
             throw new ArgumentException("Must specify a ContextAmd64 instance for a x64 process.");
         }
 
+        private static NtResult<long> GetThreadCreateTime(int thread_id, bool throw_on_error)
+        {
+            using (var thread = Open(thread_id, ThreadAccessRights.QueryLimitedInformation, false))
+            {
+                if (thread.IsSuccess)
+                {
+                    var times = thread.Result.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes, default, false);
+                    if (times.IsSuccess)
+                    {
+                        return times.Result.CreateTime.QuadPart.CreateResult();
+                    }
+                }
+            }
+
+            var threads = NtSystemInfo.GetThreadInformationExtended(throw_on_error);
+            if (!threads.IsSuccess)
+            {
+                return threads.Cast<long>();
+            }
+            var th = threads.Result.FirstOrDefault(t => t.ThreadId == thread_id);
+            if (th == null)
+            {
+                return NtStatus.STATUS_NOT_FOUND.CreateResultFromError<long>(throw_on_error);
+            }
+            return th.CreateTime.CreateResult();
+        }
+
         #endregion
 
         #region Constructors
@@ -437,6 +464,34 @@ namespace NtApiDotNet
         public static void SetWorkOnBehalfThread(WorkOnBehalfTicket ticket)
         {
             SetWorkOnBehalfThread(ticket, true);
+        }
+
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="thread_id">The thread ID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public static NtStatus SetWorkOnBehalfThread(int thread_id, bool throw_on_error)
+        {
+            var xor_key = GetWorkOnBehalfTicketXor(throw_on_error);
+            if (!xor_key.IsSuccess)
+                return xor_key.Status;
+
+            var create_time = GetThreadCreateTime(thread_id, throw_on_error);
+            if (!create_time.IsSuccess)
+                return create_time.Status;
+
+            return SetWorkOnBehalfThread(new WorkOnBehalfTicket(thread_id, create_time.Result, xor_key.Result), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="thread_id">The thread ID.</param>
+        public static void SetWorkOnBehalfThread(int thread_id)
+        {
+            SetWorkOnBehalfThread(thread_id, true);
         }
 
         /// <summary>

@@ -157,9 +157,10 @@ namespace NtApiDotNet
             Ticket = ticket;
         }
 
-        public WorkOnBehalfTicket(int thread_id, int creation_time_low, ulong xor_key)
+        public WorkOnBehalfTicket(int thread_id, long creation_time, ulong xor_key)
         {
-            RtlWorkOnBehalfTicket ticket = new RtlWorkOnBehalfTicket() { ThreadId = (uint)thread_id, ThreadCreationTimeLow = (uint)creation_time_low };
+            RtlWorkOnBehalfTicket ticket = new RtlWorkOnBehalfTicket() { ThreadId = (uint)thread_id, 
+                ThreadCreationTimeLow = (uint)(creation_time & 0xFFFFFFFF) };
             Ticket = ticket.WorkOnBehalfTicket ^ xor_key;
         }
     }

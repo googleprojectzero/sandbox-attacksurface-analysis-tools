@@ -11935,10 +11935,34 @@ function Set-NtThreadWorkOnBehalfTicket {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromTicket")]
         [NtApiDotNet.WorkOnBehalfTicket]$Ticket,
         [parameter(Mandatory, ParameterSetName="ClearTicket")]
-        [switch]$Clear
+        [switch]$Clear,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromThreadId")]
+        [alias("tid")]
+        [int]$ThreadId
     )
-    if ($PSCmdlet.ParameterSetName -eq 'ClearTicket') {
-        $Ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
+    if ($PSCmdlet.ParameterSetName -eq 'FromThreadId') {
+        [NtApiDotNet.NtThread]::SetWorkOnBehalfThread($ThreadId)
+    } else {
+        if ($PSCmdlet.ParameterSetName -eq 'ClearTicket') {
+            $Ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
+        }
+        [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $Ticket
     }
-    [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $Ticket
+}
+
+<#
+.SYNOPSIS
+Gets the container ID for the current thread.
+.DESCRIPTION
+This cmdlet gets the container ID for the current thread thread.
+.INPUTS
+None
+.OUTPUTS
+Guid
+.EXAMPLE
+Get-NtThreadContainerId
+Get the container ID for the current thread.
+#>
+function Get-NtThreadContainerId {
+    [NtApiDotNet.NtThread]::Current.ContainerId
 }
