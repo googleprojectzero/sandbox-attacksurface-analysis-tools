@@ -153,6 +153,12 @@ namespace NtObjectManager.Cmdlets.Object
             WriteObject($"Silo ID       : {basic_info.Result.SiloId}");
             WriteObject($"Silo Parent ID: {basic_info.Result.SiloParentId}");
             WriteObject($"Process Count : {basic_info.Result.NumberOfProcesses}");
+            string root_dir = job.QuerySiloRootDirectory(false).GetResultOrDefault(string.Empty);
+            if (root_dir.Length > 0)
+            {
+                WriteObject($"Root Directory: {root_dir}");
+            }
+            WriteObject($"Impersonation : {(job.ThreadImpersonation ? "Enabled" : "Disabled")}");
             WriteObject(string.Empty);
             if (!basic_info.Result.IsInServerSilo)
                 return;
