@@ -1813,11 +1813,12 @@ namespace NtApiDotNet
         /// <returns>The list of job objects.</returns>
         public IEnumerable<NtJob> GetAccessibleJobObjects()
         {
+            HashSet<ulong> jobs = new HashSet<ulong>();
             if (!IsInJob())
                 yield break;
             foreach (var h in NtSystemInfo.GetHandles())
             {
-                if (h.ObjectType == "Job")
+                if (h.ObjectType == "Job" && jobs.Add(h.Object))
                 {
                     using (var result = h.GetObject(false).Cast<NtJob>())
                     {
