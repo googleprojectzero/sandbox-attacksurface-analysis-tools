@@ -158,6 +158,8 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 WriteObject($"Root Directory: {root_dir}");
             }
+            WriteObject($"Container ID  : {job.ContainerId}");
+            WriteObject($"Telemetry ID  : {job.ContainerTelemetryId}");
             WriteObject($"Impersonation : {(job.ThreadImpersonation ? "Enabled" : "Disabled")}");
             WriteObject(string.Empty);
             if (!basic_info.Result.IsInServerSilo)
