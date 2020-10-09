@@ -1881,15 +1881,18 @@ function Format-NtToken {
     if ($Information) {
         "TOKEN INFORMATION"
         "-----------------"
-        "Type       : {0}" -f $token.TokenType
+        "Type          : {0}" -f $token.TokenType
         if ($token.TokenType -eq "Impersonation") {
-            "Imp Level  : {0}" -f $token.ImpersonationLevel
+            "Imp Level     : {0}" -f $token.ImpersonationLevel
         }
-        "ID         : {0}" -f $token.Id
-        "Auth ID    : {0}" -f $token.AuthenticationId
-        "Origin ID  : {0}" -f $token.Origin
-        "Modified ID: {0}" -f $token.ModifiedId
-        "Session ID : {0}" -f $token.SessionId
+        "ID            : {0}" -f $token.Id
+        "Auth ID       : {0}" -f $token.AuthenticationId
+        "Origin ID     : {0}" -f $token.Origin
+        "Modified ID   : {0}" -f $token.ModifiedId
+        "Session ID    : {0}" -f $token.SessionId
+        "Elevated      : {0}" -f $token.Elevated
+        "Elevation Type: {0}" -f $token.ElevationType
+        "Flags         : {0}" -f $token.Flags
     }
 }
 
@@ -11811,6 +11814,19 @@ function Read-DesktopAppxManifest {
             $profile_dir = "$env:LOCALAPPDATA\Packages\$($Package.PackageFamilyName)"
         }
 
+        $has_registry = (Test-Path "$install_location\registry.dat") -or `
+            (Test-Path "$install_location\user.dat") -or `
+            (Test-Path "$install_location\userclasses.dat")
+
+        $vfs_files = @{}
+        $vfs_root = "$install_location\VFS"
+        if (Test-Path $vfs_root) {
+            foreach($f in (Get-ChildItem $vfs_root)) {
+                $name = $f.Name
+                $vfs_files[$name] = Get-ChildItem -Recurse "$vfs_root\$name"
+            }
+        }
+
         $props = @{
             Name=$Package.Name;
             Architecture=$Package.Architecture;
@@ -11821,8 +11837,8 @@ function Read-DesktopAppxManifest {
             Manifest=Get-AppxPackageManifest $Package;
             Applications=Get-FullTrustApplications $Manifest $Package.PackageFamilyName;
             Extensions=Get-AppExtensions $Manifest;
-            VFSFiles=Get-ChildItem -Recurse "$install_location\VFS";
-            HasRegistry=Test-Path "$install_location\registry.dat";
+            VFSFiles=$vfs_files;
+            HasRegistry=$has_registry;
             ProfileDir=$profile_dir;
         }
 
