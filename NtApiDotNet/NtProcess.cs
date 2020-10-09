@@ -1999,6 +1999,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the IO counters for the process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The IO counters.</returns>
+        public NtResult<IoCounters> GetIoCounters(bool throw_on_error)
+        {
+            return Query<IoCounters>(ProcessInformationClass.ProcessIoCounters, default, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -2437,6 +2447,11 @@ namespace NtApiDotNet
         /// Get the time spent in user mode.
         /// </summary>
         public double UserTimeSeconds => new TimeSpan(UserTime).TotalSeconds;
+
+        /// <summary>
+        /// Get the process IO counters.
+        /// </summary>
+        public IoCounters IoCounters => GetIoCounters(true).Result;
 
         #endregion
 
