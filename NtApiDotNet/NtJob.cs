@@ -1142,6 +1142,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get whether this Job object is a silo.
+        /// </summary>
+        public bool Silo => Query<SiloObjectBasicInformation>(JobObjectInformationClass.JobObjectSiloBasicInformation, default, false).Status.IsSuccess();
+
         #endregion
 
         #region Private Members
