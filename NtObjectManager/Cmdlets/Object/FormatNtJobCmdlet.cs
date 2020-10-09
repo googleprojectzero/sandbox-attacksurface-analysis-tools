@@ -55,7 +55,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the process to format job information.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromJob")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromJob", ValueFromPipeline = true)]
         public NtJob[] Job { get; set; }
 
         /// <summary>
