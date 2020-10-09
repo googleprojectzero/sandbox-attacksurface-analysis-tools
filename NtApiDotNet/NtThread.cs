@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -110,6 +109,19 @@ namespace NtApiDotNet
                 }
             }
             throw new ArgumentException("Must specify a ContextAmd64 instance for a x64 process.");
+        }
+
+        private static NtResult<WorkOnBehalfTicket> GetTicket(int thread_id, bool throw_on_error)
+        {
+            var xor_key = GetWorkOnBehalfTicketXor(throw_on_error);
+            if (!xor_key.IsSuccess)
+                return xor_key.Cast<WorkOnBehalfTicket>();
+
+            var create_time = GetThreadCreateTime(thread_id, throw_on_error);
+            if (!create_time.IsSuccess)
+                return create_time.Cast<WorkOnBehalfTicket>();
+
+            return new WorkOnBehalfTicket(thread_id, create_time.Result, xor_key.Result).CreateResult();
         }
 
         private static NtResult<long> GetThreadCreateTime(int thread_id, bool throw_on_error)
@@ -432,18 +444,18 @@ namespace NtApiDotNet
         /// <param name="ticket">The ticket to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The status code from the set.</returns>
-        public static NtStatus SetWorkOnBehalfThread(ulong ticket, bool throw_on_error)
+        public static NtStatus SetWorkOnBehalfTicket(ulong ticket, bool throw_on_error)
         {
-            return SetWorkOnBehalfThread(new WorkOnBehalfTicket(ticket), throw_on_error);
+            return SetWorkOnBehalfTicket(new WorkOnBehalfTicket(ticket), throw_on_error);
         }
 
         /// <summary>
         /// Set the work on behalf ticket.
         /// </summary>
         /// <param name="ticket">The ticket to set.</param>
-        public static void SetWorkOnBehalfThread(ulong ticket)
+        public static void SetWorkOnBehalfTicket(ulong ticket)
         {
-            SetWorkOnBehalfThread(ticket, true);
+            SetWorkOnBehalfTicket(ticket, true);
         }
 
         /// <summary>
@@ -452,7 +464,7 @@ namespace NtApiDotNet
         /// <param name="ticket">The ticket to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The status code from the set.</returns>
-        public static NtStatus SetWorkOnBehalfThread(WorkOnBehalfTicket ticket, bool throw_on_error)
+        public static NtStatus SetWorkOnBehalfTicket(WorkOnBehalfTicket ticket, bool throw_on_error)
         {
             return Current.Set(ThreadInformationClass.ThreadWorkOnBehalfTicket, new RtlWorkOnBehalfTicket() { WorkOnBehalfTicket = ticket.Ticket }, throw_on_error);
         }
@@ -461,9 +473,9 @@ namespace NtApiDotNet
         /// Set the work on behalf ticket.
         /// </summary>
         /// <param name="ticket">The ticket to set.</param>
-        public static void SetWorkOnBehalfThread(WorkOnBehalfTicket ticket)
+        public static void SetWorkOnBehalfTicket(WorkOnBehalfTicket ticket)
         {
-            SetWorkOnBehalfThread(ticket, true);
+            SetWorkOnBehalfTicket(ticket, true);
         }
 
         /// <summary>
@@ -472,26 +484,22 @@ namespace NtApiDotNet
         /// <param name="thread_id">The thread ID.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status.</returns>
-        public static NtStatus SetWorkOnBehalfThread(int thread_id, bool throw_on_error)
+        public static NtStatus SetWorkOnBehalfTicket(int thread_id, bool throw_on_error)
         {
-            var xor_key = GetWorkOnBehalfTicketXor(throw_on_error);
-            if (!xor_key.IsSuccess)
-                return xor_key.Status;
+            var ticket = GetTicket(thread_id, throw_on_error);
+            if (!ticket.IsSuccess)
+                return ticket.Status;
 
-            var create_time = GetThreadCreateTime(thread_id, throw_on_error);
-            if (!create_time.IsSuccess)
-                return create_time.Status;
-
-            return SetWorkOnBehalfThread(new WorkOnBehalfTicket(thread_id, create_time.Result, xor_key.Result), throw_on_error);
+            return SetWorkOnBehalfTicket(ticket.Result, throw_on_error);
         }
 
         /// <summary>
         /// Set the work on behalf ticket.
         /// </summary>
         /// <param name="thread_id">The thread ID.</param>
-        public static void SetWorkOnBehalfThread(int thread_id)
+        public static void SetWorkOnBehalfTicket(int thread_id)
         {
-            SetWorkOnBehalfThread(thread_id, true);
+            SetWorkOnBehalfTicket(thread_id, true);
         }
 
         /// <summary>
@@ -597,7 +605,7 @@ namespace NtApiDotNet
         public static WorkOnBehalfTicket WorkOnBehalfTicket
         {
             get => Current.GetWorkOnBehalfTicket();
-            set => SetWorkOnBehalfThread(value);
+            set => SetWorkOnBehalfTicket(value);
         }
 
         /// <summary>
@@ -1153,15 +1161,7 @@ namespace NtApiDotNet
             }
             else
             {
-                var time = Current.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes, default, throw_on_error);
-                if (!time.IsSuccess)
-                    return time.Cast<WorkOnBehalfTicket>();
-
-                var xor_key = GetWorkOnBehalfTicketXor(throw_on_error);
-                if (!xor_key.IsSuccess)
-                    return xor_key.Cast<WorkOnBehalfTicket>();
-
-                return new WorkOnBehalfTicket(ThreadId, (int)time.Result.CreateTime.LowPart, xor_key.Result).CreateResult();
+                return GetTicket(ThreadId, throw_on_error);
             }
         }
 
