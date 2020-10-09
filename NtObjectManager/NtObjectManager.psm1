@@ -11937,6 +11937,8 @@ Set a work-on-behalf ticket on the current thread.
 This cmdlet gets the work-on-behalf ticket for a thread. 
 .PARAMETER Ticket
 Specify the ticket to set.
+.PARAMETER ThreadId
+Specify the thread ID to set.
 .INPUTS
 None
 .OUTPUTS
@@ -11950,20 +11952,33 @@ function Set-NtThreadWorkOnBehalfTicket {
     param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromTicket")]
         [NtApiDotNet.WorkOnBehalfTicket]$Ticket,
-        [parameter(Mandatory, ParameterSetName="ClearTicket")]
-        [switch]$Clear,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromThreadId")]
         [alias("tid")]
         [int]$ThreadId
     )
     if ($PSCmdlet.ParameterSetName -eq 'FromThreadId') {
-        [NtApiDotNet.NtThread]::SetWorkOnBehalfThread($ThreadId)
+        [NtApiDotNet.NtThread]::SetWorkOnBehalfTicket($ThreadId)
     } else {
-        if ($PSCmdlet.ParameterSetName -eq 'ClearTicket') {
-            $Ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
-        }
         [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $Ticket
     }
+}
+
+<#
+.SYNOPSIS
+Clear the work-on-behalf ticket on the current thread.
+.DESCRIPTION
+This cmdlet clears the work-on-behalf ticket for a thread. 
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Clear-NtThreadWorkOnBehalfTicket
+Clear the work-on-behalf ticket for the current thread.
+#>
+function Clear-NtThreadWorkOnBehalfTicket {
+    $ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
+    [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $ticket
 }
 
 <#
@@ -11981,4 +11996,25 @@ Get the container ID for the current thread.
 #>
 function Get-NtThreadContainerId {
     [NtApiDotNet.NtThread]::Current.ContainerId
+}
+
+<#
+.SYNOPSIS
+Attaches a container to impersonate the current thread.
+.DESCRIPTION
+This cmdlet attaches a container for impersonation on the current thread.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.ThreadImpersonationContext
+.EXAMPLE
+$imp = Set-NtThreadContainer -Job $job
+Sets the container for the current thread.
+#>
+function Set-NtThreadContainer {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtJob]$Job
+    )
+    [NtApiDotNet.NtThread]::AttachContainer($Job)
 }
