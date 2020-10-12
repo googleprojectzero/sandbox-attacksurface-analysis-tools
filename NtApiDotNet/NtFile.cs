@@ -3817,7 +3817,18 @@ namespace NtApiDotNet
         [SupportedVersion(SupportedVersion.Windows10_RS4)]
         public void SetDynamicCodeTrust()
         {
-            NtSystemInfo.SetDynamicCodeTrust(Handle).ToNtException();
+            SetDynamicCodeTrust(true);
+        }
+
+        /// <summary>
+        /// Set a file is trusted for dynamic code.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public NtStatus SetDynamicCodeTrust(bool throw_on_error)
+        {
+            return NtSystemInfo.SetDynamicCodeTrust(Handle).ToNtException(throw_on_error);
         }
 
         /// <summary>
