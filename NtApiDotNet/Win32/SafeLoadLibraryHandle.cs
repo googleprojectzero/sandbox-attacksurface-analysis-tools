@@ -929,6 +929,11 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        /// <summary>
+        /// Get image signing level.
+        /// </summary>
+        public SigningLevel ImageSigningLevel => NtVirtualMemory.QueryImageInformation(NtProcess.Current.Handle, DangerousGetHandle().ToInt64()).ImageSigningLevel;
+
         #endregion
 
         #region Static Methods
