@@ -328,5 +328,24 @@ namespace NtObjectManager.Utils
                 return token.Impersonate();
             }
         }
+
+        /// <summary>
+        /// Get the signing level for an image file.
+        /// </summary>
+        /// <param name="path">The path to the image file.</param>
+        /// <returns>The signing level.</returns>
+        public static SigningLevel GetSigningLevel(string path)
+        {
+            using (var file = NtFile.Open(path, null, FileAccessRights.Execute, FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.NonDirectoryFile))
+            {
+                using (var sect = NtSection.CreateImageSection(file))
+                {
+                    using (var map = sect.MapRead())
+                    {
+                        return map.ImageSigningLevel;
+                    }
+                }
+            }
+        }
     }
 }

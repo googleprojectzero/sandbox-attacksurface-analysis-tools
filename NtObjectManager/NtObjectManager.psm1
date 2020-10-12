@@ -12044,3 +12044,109 @@ function Compare-NtSigningLevel {
     )
     [NtApiDotNet.NtSecurity]::CompareSigningLevel($Left, $Right)
 }
+
+<#
+.SYNOPSIS
+Get a range of system information values.
+.DESCRIPTION
+This cmdlet gets a range of system information values.
+.PARAMETER IsolatedUserMode
+Return isolated usermode flags.
+.INPUTS
+None
+.OUTPUTS
+Depends on parameters.
+.EXAMPLE
+Get-NtSystemInformation -IsolatedUserMode
+Get isolated user mode information.
+#>
+function Get-NtSystemInformation {
+    param(
+        [Parameter(Mandatory, ParameterSetName="IsolatedUserMode")]
+        [switch]$IsolatedUserMode,
+        [Parameter(Mandatory, ParameterSetName="ProcessInformation")]
+        [switch]$ProcessInformation
+    )
+    if ($IsolatedUserMode) {
+        [NtApiDotNet.NtSystemInfo]::IsolatedUserModeFlags
+    } elseif ($ProcessInformation) {
+        [NtApiDotNet.NtSystemInfo]::ProcessorInformation
+    }
+}
+
+<#
+.SYNOPSIS
+Gets the signing level for an image file.
+.DESCRIPTION
+This cmdlet gets the signing level for an image file.
+.PARAMETER Path
+Specify the path to the image file.
+.PARAMETER Win32Path
+Specify that the path is a Win32 path.
+.PARAMETER DontResolve
+Specify to not try and resolve the signing level.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SigningLevel
+#>
+function Get-NtSigningLevel {
+    [CmdletBinding(DefaultParameterSetName="FromPath")]
+    param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [switch]$DontResolve
+    )
+
+    try {
+        if ($Win32Path) {
+            $Path = Get-NtFilePath -Path $Path
+        }
+
+        Use-NtObject($sect = New-NtSectionImage -Path $Path) {
+            Use-NtObject($map = $sect.MapRead()) {
+                if ($map.ImageSigningLevel -ne "Unchecked" -or $DontResolve) {
+                    return $map.ImageSigningLevel
+                }
+
+                $script = { 
+                    Set-NtProcessMitigationPolicy -Signature AuditMicrosoftSignedOnly
+                    [NtObjectManager.Utils.PSUtils]::GetSigningLevel($input) | Out-Null
+                }
+
+                $job = Start-Job -ScriptBlock $script -InputObject $Path
+                Wait-Job $job | Out-Null
+
+                return $map.ImageSigningLevel
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Gets a certificate object.
+.DESCRIPTION
+This cmdlet gets a certificate object from a file.
+.PARAMETER Path
+Specify the path to the certificate or file.
+.INPUTS
+None
+.OUTPUTS
+System.Security.Cryptography.X509Certificates.X509Certificate2
+#>
+function Get-X509Certificate {
+    param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path
+    )
+
+    $Path = Resolve-Path -Path $Path
+    if ($null -ne $Path) {
+        [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+    }
+}
