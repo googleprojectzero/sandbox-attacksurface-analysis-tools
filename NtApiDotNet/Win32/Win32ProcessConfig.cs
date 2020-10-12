@@ -305,7 +305,7 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
-            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
+            if (CreationFlags.HasFlagSet(CreateProcessFlags.ProtectedProcess) && ProtectionLevel != ProtectionLevel.None)
             {
                 count++;
             }
@@ -406,7 +406,7 @@ namespace NtApiDotNet.Win32
                 attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
             }
 
-            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0 && ProtectionLevel != ProtectionLevel.None)
+            if (CreationFlags.HasFlagSet(CreateProcessFlags.ProtectedProcess) && ProtectionLevel != ProtectionLevel.None)
             {
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
             }
