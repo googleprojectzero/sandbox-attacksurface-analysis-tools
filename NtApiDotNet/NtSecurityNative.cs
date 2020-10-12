@@ -1038,7 +1038,7 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCompareSigningLevel(
+        public static extern NtStatus NtCompareSigningLevels(
             SigningLevel CurrentLevel, SigningLevel CheckLevel);
     }
 

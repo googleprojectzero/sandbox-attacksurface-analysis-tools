@@ -1315,7 +1315,7 @@ namespace NtApiDotNet
         /// <returns>True if the current level is above or equal to the signing level.</returns>
         public static bool CompareSigningLevel(SigningLevel current_level, SigningLevel signing_level)
         {
-            return NtSystemCalls.NtCompareSigningLevel(current_level, signing_level).IsSuccess();
+            return NtSystemCalls.NtCompareSigningLevels(current_level, signing_level).IsSuccess();
         }
 
         /// <summary>
