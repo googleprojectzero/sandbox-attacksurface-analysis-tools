@@ -2348,12 +2348,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Gets whether the process is currently deleting.
         /// </summary>
-        public bool IsDeleting => ExtendedFlags.HasFlag(ProcessExtendedBasicInformationFlags.IsProcessDeleting);
+        public bool IsDeleting => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsProcessDeleting);
 
         /// <summary>
         /// Gets whether the process is secure.
         /// </summary>
-        public bool Secure => ExtendedFlags.HasFlag(ProcessExtendedBasicInformationFlags.IsSecureProcess);
+        public bool Secure => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsSecureProcess);
+
+        /// <summary>
+        /// Gets whether the process is protected.
+        /// </summary>
+        public bool Protected => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsProtectedProcess);
 
         /// <summary>
         /// Get process protection information.
