@@ -12003,6 +12003,8 @@ function Get-NtThreadContainerId {
 Attaches a container to impersonate the current thread.
 .DESCRIPTION
 This cmdlet attaches a container for impersonation on the current thread.
+.PARAMETER Job
+The job silo to set as the thread's container.
 .INPUTS
 None
 .OUTPUTS
@@ -12017,4 +12019,28 @@ function Set-NtThreadContainer {
         [NtApiDotNet.NtJob]$Job
     )
     [NtApiDotNet.NtThread]::AttachContainer($Job)
+}
+
+<#
+.SYNOPSIS
+Compares two signing levels to see which is higher.
+.DESCRIPTION
+This cmdlet compares two signing levels to see which is higher.
+.PARAMETER
+.INPUTS
+None
+.OUTPUTS
+Bool
+.EXAMPLE
+Compare-NtSigningLevel -Left Windows -Right WindowsTCB
+Compare two signing levels, returns True if the left level is greater or equal to right.
+#>
+function Compare-NtSigningLevel {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.SigningLevel]$Left,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.SigningLevel]$Right
+    )
+    [NtApiDotNet.NtSecurity]::CompareSigningLevel($Left, $Right)
 }
