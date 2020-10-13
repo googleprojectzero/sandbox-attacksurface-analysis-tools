@@ -97,6 +97,36 @@ namespace NtApiDotNet
         );
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct RTL_OSVERSIONINFOEXW
+    {
+        public int dwOSVersionInfoSize;
+        public int dwMajorVersion;
+        public int dwMinorVersion;
+        public int dwBuildNumber;
+        public int dwPlatformId;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szCSDVersion;
+        public ushort wServicePackMajor;
+        public ushort wServicePackMinor;
+        public ushort wSuiteMask;
+        public byte wProductType;
+        public byte wReserved;
+    }
+
+    public struct RtlOSVersionInfo
+    {
+        public int MajorVersion { get; }
+        public int MinorVersion { get; }
+        public int BuildNumber { get; }
+        public int PlatformId { get; }
+        public string CSDVersion { get; }
+        public int ServicePackMajor { get; }
+        public int ServicePackMinor { get; }
+        public int SuiteMask { get; }
+        public int ProductType { get; }
+    }
+
     public static partial class NtRtl
     {
         [DllImport("ntdll.dll")]
@@ -110,6 +140,11 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool RtlGetNtProductType(out NtProductType NtProductType);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGetVersion(
+            ref RTL_OSVERSIONINFOEXW lpVersionInformation
+        );
     }
 
     [Flags]
