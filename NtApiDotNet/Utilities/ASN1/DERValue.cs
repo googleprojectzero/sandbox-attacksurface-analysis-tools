@@ -221,5 +221,12 @@ namespace NtApiDotNet.Utilities.ASN1
             }
             return $"Len: {Data.Length:X}";
         }
+
+        public DERValue? GetChild(int index)
+        {
+            if (!HasChildren() || index >= Children.Length)
+                return null;
+            return Children[index];
+        }
     }
 }
