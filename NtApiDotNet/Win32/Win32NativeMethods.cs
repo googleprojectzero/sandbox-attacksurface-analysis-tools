@@ -563,6 +563,23 @@ namespace NtApiDotNet.Win32
           IntPtr CallbackContext
         );
 
+    internal enum WinCertType : ushort
+    {
+        WIN_CERT_TYPE_X509 = 1,
+        WIN_CERT_TYPE_PKCS_SIGNED_DATA = 2,
+        WIN_CERT_TYPE_RESERVED_1 = 3,
+        WIN_CERT_TYPE_TS_STACK_SIGNED = 4,
+        WIN_CERT_TYPE_ANY = 255,
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("bCertificate")]
+    internal struct WIN_CERTIFICATE
+    {
+        public int dwLength;
+        public ushort wRevision;
+        public WinCertType wCertificateType;   // WIN_CERT_TYPE_xxx
+        public byte bCertificate;
+    }
     internal static class Win32NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -687,6 +704,25 @@ namespace NtApiDotNet.Win32
           IntPtr Base,
           int Rva,
           IntPtr LastRvaSection
+        );
+
+        [DllImport("imagehlp.dll", SetLastError = true)]
+        internal static extern bool ImageEnumerateCertificates(
+            SafeKernelObjectHandle FileHandle,
+            WinCertType TypeFilter,
+            out int CertificateCount,
+            int[] Indices,
+            int IndexCount
+        );
+
+        internal const ushort CERT_SECTION_TYPE_ANY = 255;
+
+        [DllImport("imagehlp.dll", SetLastError = true)]
+        internal static extern bool ImageGetCertificateData(
+          SafeKernelObjectHandle FileHandle,
+          int CertificateIndex,
+          SafeBuffer Certificate,
+          ref int RequiredLength
         );
 
         internal const int GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004;

@@ -3500,7 +3500,7 @@ function Get-EmbeddedAuthenticodeSignature {
         $content_type = [System.Security.Cryptography.X509Certificates.X509ContentType]::Unknown
         try {
             $path = Resolve-Path $FullName
-            $content_type = [System.Security.Cryptography.X509Certificates.X509Certificate2]::GetCertContentType($Path)
+            $content_type = [System.Security.Cryptography.X509Certificates.X509Certificate2]::GetCertContentType($path)
         }
         catch {
             Write-Error $_
@@ -3510,7 +3510,7 @@ function Get-EmbeddedAuthenticodeSignature {
             return
         }
 
-        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($path)
         $ppl = $false
         $pp = $false
         $tcb = $false
@@ -3533,6 +3533,9 @@ function Get-EmbeddedAuthenticodeSignature {
             }
         }
 
+        $native_path = Get-NtFilePath -Path $Path
+        $page_hash = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::ContainsPageHash($native_path)
+
         $props = @{
             Path                  = $Path;
             Certificate           = $cert;
@@ -3544,6 +3547,7 @@ function Get-EmbeddedAuthenticodeSignature {
             Elam                  = $elam;
             Store                 = $store;
             IsolatedUserMode      = $ium;
+            HasPageHash           = $page_hash;
         }
         $obj = New-Object –TypeName PSObject –Prop $props
         Write-Output $obj
