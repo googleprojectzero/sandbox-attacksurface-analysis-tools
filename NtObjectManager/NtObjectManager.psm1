@@ -3533,8 +3533,7 @@ function Get-EmbeddedAuthenticodeSignature {
             }
         }
 
-        $native_path = Get-NtFilePath -Path $Path
-        $page_hash = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::ContainsPageHash($native_path)
+        $page_hash = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::ContainsPageHash($path)
 
         $props = @{
             Path                  = $Path;
@@ -3549,6 +3548,15 @@ function Get-EmbeddedAuthenticodeSignature {
             IsolatedUserMode      = $ium;
             HasPageHash           = $page_hash;
         }
+
+        if ($elam) {
+            $certs = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetElamInformation($path, $false)
+            if ($certs.IsSuccess)
+            {
+                $props["ElamCerts"] = $certs.Result
+            }
+        }
+
         $obj = New-Object –TypeName PSObject –Prop $props
         Write-Output $obj
     }
@@ -4173,6 +4181,56 @@ function Get-NtCachedSigningLevel {
             $f.GetCachedSigningLevelFromEa();
         }
         else {
+            $f.GetCachedSigningLevel()
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set the cached signing level for a file.
+.DESCRIPTION
+This cmdlet sets the cached signing level for a specified file.
+.PARAMETER Path
+The file to set the cached signing level on.
+.PARAMETER Win32Path
+Specify to treat Path as a Win32 path.
+.PARAMETER Flags
+Specify the flags for the cache operation.
+.PARAMETER SigningLevel
+Specify the signing level for the cache operation.
+.PARAMETER AdditionalFiles
+Specify the additional files for the cache operation.
+.PARAMETER CatalogPath
+Specify the catalog path for the cache operation.
+.PARAMETER PassThru
+Specify to return the cached signing level.
+INPUTS
+None
+.OUTPUTS
+NtApiDotNet.CachedSigningLevel
+.EXAMPLE
+Set-NtCachedSigningLevel \??\c:\path\to\file.dll
+Set the cached signing level to \??\c:\path\to\file.dll
+.EXAMPLE
+Set-NtCachedSigningLevel c:\path\to\file.dll -Win32Path
+Set the cached signing level to \??\c:\path\to\file.dll
+#>
+function Set-NtCachedSigningLevel {
+    Param(
+        [parameter(Position = 0, Mandatory)]
+        [string]$Path,
+        [switch]$Win32Path,
+        [int]$Flags = 4,
+        [NtApiDotNet.SigningLevel]$SigningLevel = 0,
+        [NtApiDotnet.NtFile[]]$AdditionalFiles,
+        [string]$CatalogPath,
+        [switch]$PassThru
+    )
+
+    Use-NtObject($f = Get-NtFile $Path -Win32Path:$Win32Path -Access ReadData -ShareMode Read, Delete) {
+        $f.SetCachedSigningLevel($Flags, $SigningLevel, $AdditionalFiles, $CatalogPath)
+        if ($PassThru) {
             $f.GetCachedSigningLevel()
         }
     }

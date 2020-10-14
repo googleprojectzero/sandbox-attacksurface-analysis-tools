@@ -50,6 +50,27 @@ namespace NtApiDotNet
             return ret;
         }
 
+        internal static string ReadNulTerminated(this BinaryReader reader)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            while (true)
+            {
+                char c = reader.ReadChar();
+                if (c == 0)
+                {
+                    break;
+                }
+                builder.Append(c);
+            }
+            return builder.ToString();
+        }
+
+        internal static void WriteNulTerminated(this BinaryWriter writer, string str)
+        {
+            writer.Write(Encoding.Unicode.GetBytes(str + "\0"));
+        }
+
         internal static byte[] ReadToEnd(this BinaryReader reader)
         {
             return reader.ReadBytes(int.MaxValue);

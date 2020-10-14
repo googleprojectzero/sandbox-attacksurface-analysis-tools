@@ -12,8 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authenticode
 {
@@ -60,12 +64,12 @@ namespace NtApiDotNet.Win32.Security.Authenticode
         /// <summary>
         /// Get certificates from a PE file.
         /// </summary>
-        /// <param name="path">The path to the PE file, native path format.</param>
+        /// <param name="path">The path to the PE file.</param>
         /// <param name="throw_on_error">True the throw on error.</param>
         /// <returns>The list of authenticode certificate entries.</returns>
         public static NtResult<IReadOnlyList<AuthenticodeCertificate>> GetCertificates(string path, bool throw_on_error)
         {
-            using (var file = NtFile.Open(path, null, FileAccessRights.ReadData | FileAccessRights.Synchronize,
+            using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(path), null, FileAccessRights.ReadData | FileAccessRights.Synchronize,
                 FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert, throw_on_error))
             {
                 if (!file.IsSuccess)
@@ -95,6 +99,64 @@ namespace NtApiDotNet.Win32.Security.Authenticode
             if (list == null)
                 return false;
             return list.Any(c => c.ContainsPageHash);
+        }
+
+        /// <summary>
+        /// Query ELAM information from a driver's resource section.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The ELAM information if present.</returns>
+        public static NtResult<IReadOnlyList<ElamInformation>> GetElamInformation(string path, bool throw_on_error)
+        {
+            using (var lib = SafeLoadLibraryHandle.LoadLibrary(path, LoadLibraryFlags.LoadLibraryAsDataFile, throw_on_error))
+            {
+                if (!lib.IsSuccess)
+                    return lib.Cast<IReadOnlyList<ElamInformation>>();
+                var ptr =  Win32NativeMethods.FindResource(lib.Result, "MicrosoftElamCertificateInfo", "MSElamCertInfoID");
+                if (ptr == IntPtr.Zero)
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<IReadOnlyList<ElamInformation>>(throw_on_error);
+
+                IntPtr hResource = Win32NativeMethods.LoadResource(lib.Result, ptr);
+                IntPtr buf = Win32NativeMethods.LockResource(hResource);
+                int size = Win32NativeMethods.SizeofResource(lib.Result, ptr);
+
+                if (size <= 0)
+                    return NtStatus.STATUS_INVALID_BUFFER_SIZE.CreateResultFromError<IReadOnlyList<ElamInformation>>(throw_on_error);
+
+                byte[] elam_info = new byte[size];
+
+                Marshal.Copy(buf, elam_info, 0, size);
+                MemoryStream stm = new MemoryStream(elam_info);
+                BinaryReader reader = new BinaryReader(stm, Encoding.Unicode);
+                try
+                {
+                    List<ElamInformation> ret = new List<ElamInformation>();
+                    int count = reader.ReadUInt16();
+                    for (int i = 0; i < count; ++i)
+                    {
+                        string cert_hash = reader.ReadNulTerminated();
+                        HashAlgorithm algorithm = (HashAlgorithm) reader.ReadUInt16();
+                        string[] ekus = reader.ReadNulTerminated().Split(';');
+                        ret.Add(new ElamInformation(cert_hash, algorithm, ekus));
+                    }
+                    return ret.AsReadOnly().CreateResult().Cast<IReadOnlyList<ElamInformation>>();
+                }
+                catch (EndOfStreamException)
+                {
+                    return NtStatus.STATUS_END_OF_FILE.CreateResultFromError<IReadOnlyList<ElamInformation>>(throw_on_error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query ELAM information from a driver's resource section.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>The ELAM information if present.</returns>
+        public static IReadOnlyList<ElamInformation> GetElamInformation(string path)
+        {
+            return GetElamInformation(path, true).Result;
         }
     }
 }

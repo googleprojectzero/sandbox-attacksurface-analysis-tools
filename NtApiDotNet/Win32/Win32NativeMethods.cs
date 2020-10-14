@@ -900,6 +900,9 @@ namespace NtApiDotNet.Win32
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, IntPtr lpName, IntPtr lpType);
 
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, string lpName, string lpType);
+
         [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool CloseServiceHandle(IntPtr hSCObject);
 

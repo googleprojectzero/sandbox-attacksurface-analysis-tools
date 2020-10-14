@@ -1294,7 +1294,7 @@ namespace NtApiDotNet
         {
             IntPtr[] handles = source_files?.Select(f => f.DangerousGetHandle()).ToArray();
             int handles_count = handles == null ? 0 : handles.Length;
-            if (catalog_path != null)
+            if (!string.IsNullOrEmpty(catalog_path))
             {
                 CachedSigningLevelInformation info = new CachedSigningLevelInformation(catalog_path);
                 return NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, 

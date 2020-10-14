@@ -418,6 +418,7 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />
     <Compile Include="Win32\Security\Authenticode\AuthenticodeCertificate.cs" />
     <Compile Include="Win32\Security\Authenticode\AuthenticodeUtils.cs" />
+    <Compile Include="Win32\Security\Authenticode\ElamInformation.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />

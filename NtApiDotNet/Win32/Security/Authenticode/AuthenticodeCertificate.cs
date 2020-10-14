@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authenticode
     /// <summary>
     /// Class to represent a single authenticode certificate entry.
     /// </summary>
-    public class AuthenticodeCertificate
+    public sealed class AuthenticodeCertificate
     {
         private const string SPC_INDIRECT_DATA_OBJID = "1.3.6.1.4.1.311.2.1.4";
         private const string SPC_PE_IMAGE_DATAOBJ = "1.3.6.1.4.1.311.2.1.15";

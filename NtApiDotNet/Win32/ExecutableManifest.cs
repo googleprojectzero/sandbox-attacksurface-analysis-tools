@@ -199,7 +199,7 @@ namespace NtApiDotNet.Win32
             {
                 ParseError = true;
                 ManifestXml = Encoding.UTF8.GetString(stm.ToArray());
-            }            
+            }
         }
 
         /// <summary>

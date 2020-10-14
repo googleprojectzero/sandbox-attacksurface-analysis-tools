@@ -3522,7 +3522,7 @@ namespace NtApiDotNet
         /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
         public void SetCachedSigningLevel(int flags, SigningLevel signing_level, string catalog_path)
         {
-            SetCachedSigningLevel(flags, signing_level, new NtFile[] { this }, catalog_path);
+            SetCachedSigningLevel(flags, signing_level, null, catalog_path);
         }
 
         /// <summary>
@@ -3547,6 +3547,10 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         public NtStatus SetCachedSigningLevel(int flags, SigningLevel signing_level, IEnumerable<NtFile> files, string catalog_path, bool throw_on_error)
         {
+            if (files == null)
+            {
+                files = new NtFile[] { this };
+            }
             return NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, files.Select(f => f.Handle), catalog_path, throw_on_error);
         }
 
