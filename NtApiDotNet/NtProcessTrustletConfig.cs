@@ -14,9 +14,57 @@
 
 using NtApiDotNet.Win32.Security.Authenticode;
 using System;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    internal enum PsTrustletAccessRights : byte
+    {
+        None = 0,
+        Trustlet = 1,
+        Ntos = 2,
+        WriteHandle = 4,
+        ReadHandle = 8,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PS_TRUSTLET_ATTRIBUTE_TYPE 
+    {
+        public int AttributeType;
+
+        public byte Version => (byte)(AttributeType & 0xFF);
+        public byte DataCount => (byte)((AttributeType >> 8) & 0xFF);
+        public byte SemanticType => (byte)((AttributeType >> 16) & 0xFF);
+        public PsTrustletAccessRights AccessRights =>  (PsTrustletAccessRights)((AttributeType >> 24) & 0xFF);
+
+        public static PS_TRUSTLET_ATTRIBUTE_TYPE TrustletType_MailboxKey = new PS_TRUSTLET_ATTRIBUTE_TYPE() { AttributeType = 0x100200 };
+        public static PS_TRUSTLET_ATTRIBUTE_TYPE TrustletType_CollaborationId = new PS_TRUSTLET_ATTRIBUTE_TYPE() { AttributeType = 0x110200 };
+        public static PS_TRUSTLET_ATTRIBUTE_TYPE TrustletType_VmId = new PS_TRUSTLET_ATTRIBUTE_TYPE() { AttributeType = 0x3130200 };
+        public static PS_TRUSTLET_ATTRIBUTE_TYPE TrustletType_TkSessionId = new PS_TRUSTLET_ATTRIBUTE_TYPE() { AttributeType = 0x120400 };
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PS_TRUSTLET_ATTRIBUTE_HEADER
+    {
+        public PS_TRUSTLET_ATTRIBUTE_TYPE AttributeType;
+        public int InstanceNumber;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Data")]
+    internal struct PS_TRUSTLET_ATTRIBUTE_DATA
+    {
+        public PS_TRUSTLET_ATTRIBUTE_HEADER Header;
+        public long Data;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Attributes")]
+    internal struct PS_TRUSTLET_CREATE_ATTRIBUTES
+    {
+        public long TrustletIdentity;
+        public PS_TRUSTLET_ATTRIBUTE_DATA Attributes;
+    }
+
     /// <summary>
     /// Class which represents the configuration for a trustlet.
     /// </summary>
@@ -27,6 +75,27 @@ namespace NtApiDotNet
         /// The ID of the trustlet.
         /// </summary>
         public long Id { get; set; }
+
+        /// <summary>
+        /// The mailbox key. Must be 2 longs.
+        /// </summary>
+        public long[] MailboxKey { get; set; }
+
+        /// <summary>
+        /// The collaboration ID. Must be 2 longs.
+        /// </summary>
+        public long[] CollaborationId { get; set; }
+
+        /// <summary>
+        /// The VM ID. Must be 2 longs.
+        /// </summary>
+        public long[] VmId { get; set; }
+
+        /// <summary>
+        /// The TK sessio ID. Must be 4 longs.
+        /// </summary>
+        public long[] TkSessionId { get; set; }
+
         #endregion
 
         #region Public Methods
@@ -86,7 +155,30 @@ namespace NtApiDotNet
         #region Internal Members
         internal byte[] ToArray()
         {
-            return BitConverter.GetBytes(Id);
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(Id);
+            WriteAttribute(writer, PS_TRUSTLET_ATTRIBUTE_TYPE.TrustletType_CollaborationId, CollaborationId);
+            WriteAttribute(writer, PS_TRUSTLET_ATTRIBUTE_TYPE.TrustletType_VmId, VmId);
+            WriteAttribute(writer, PS_TRUSTLET_ATTRIBUTE_TYPE.TrustletType_MailboxKey, MailboxKey);
+            WriteAttribute(writer, PS_TRUSTLET_ATTRIBUTE_TYPE.TrustletType_TkSessionId, TkSessionId);
+            return stm.ToArray();
+        }
+        #endregion
+
+        #region Private Members
+        private void WriteAttribute(BinaryWriter writer, PS_TRUSTLET_ATTRIBUTE_TYPE type, long[] data)
+        {
+            if (data == null)
+                return;
+            if (data.Length != type.DataCount)
+                throw new ArgumentException("Data length does not match type");
+            writer.Write(type.AttributeType);
+            writer.Write(0);
+            foreach (var l in data)
+            {
+                writer.Write(l);
+            }
         }
         #endregion
     }

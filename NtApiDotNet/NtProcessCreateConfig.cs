@@ -221,6 +221,7 @@ namespace NtApiDotNet
             ProcessDesiredAccess = ProcessAccessRights.MaximumAllowed;
             ThreadDesiredAccess = ThreadAccessRights.MaximumAllowed;
             InheritHandleList = new List<NtObject>();
+            TrustletConfig = new NtProcessTrustletConfig();
         }
         #endregion
     }
