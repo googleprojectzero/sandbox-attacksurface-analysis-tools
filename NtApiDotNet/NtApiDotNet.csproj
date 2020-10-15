@@ -419,6 +419,13 @@
     <Compile Include="Win32\Security\Authenticode\AuthenticodeCertificate.cs" />
     <Compile Include="Win32\Security\Authenticode\AuthenticodeUtils.cs" />
     <Compile Include="Win32\Security\Authenticode\ElamInformation.cs" />
+    <Compile Include="Win32\Security\Authenticode\ImagePolicyEntry.cs" />
+    <Compile Include="Win32\Security\Authenticode\ImagePolicyEntryType.cs" />
+    <Compile Include="Win32\Security\Authenticode\ImagePolicyId.cs" />
+    <Compile Include="Win32\Security\Authenticode\ImagePolicyMetadata.cs" />
+    <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_ENTRY.cs" />
+    <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_ENTRY_UNION.cs" />
+    <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_METADATA.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />

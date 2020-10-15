@@ -3558,7 +3558,10 @@ function Get-EmbeddedAuthenticodeSignature {
         }
 
         if ($ium) {
-            $props["TrustletPolicy"] = [NtApiDotNet.NtProcessTrustletConfig]::CreateFromFile($Path)
+            $policy = [NtApiDotNet.Win32.Security.Authenticode.ImagePolicyMetadata]::CreateFromFile($Path, $false)
+            if ($policy.IsSuccess) {
+                $props["TrustletPolicy"] = $policy.Result
+            }
         }
 
         $obj = New-Object –TypeName PSObject –Prop $props
