@@ -3557,6 +3557,10 @@ function Get-EmbeddedAuthenticodeSignature {
             }
         }
 
+        if ($ium) {
+            $props["TrustletPolicy"] = [NtApiDotNet.NtProcessTrustletConfig]::CreateFromFile($Path)
+        }
+
         $obj = New-Object –TypeName PSObject –Prop $props
         Write-Output $obj
     }

@@ -189,7 +189,8 @@ namespace NtApiDotNet
 
                 if (config.Secure)
                 {
-                    var trustlet_config = config.TrustletConfig ?? NtProcessTrustletConfig.CreateFromFile(image_path);
+                    string win32_path = $@"\\?\GLOBALROOT\{image_path}";
+                    var trustlet_config = config.TrustletConfig ?? NtProcessTrustletConfig.CreateFromFile(win32_path);
                     dispose.Add(ProcessAttribute.SecureProcess(trustlet_config));
                 }
 
