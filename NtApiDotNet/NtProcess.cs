@@ -2395,6 +2395,11 @@ namespace NtApiDotNet
         public bool Protected => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsProtectedProcess);
 
         /// <summary>
+        /// Gets whether the process is a subsystem process.
+        /// </summary>
+        public bool Subsystem => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsSubsystemProcess);
+
+        /// <summary>
         /// Get process protection information.
         /// </summary>
         public PsProtection Protection => Query<PsProtection>(ProcessInformationClass.ProcessProtectionInformation);
