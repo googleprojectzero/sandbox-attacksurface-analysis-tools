@@ -1,10 +1,7 @@
 ﻿using NtApiDotNet;
+using NtApiDotNet.Win32.Security.Authenticode;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -21,25 +18,13 @@ namespace NtObjectManager.Cmdlets.Object
     public class NewNtEnclaveCmdlet : PSCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify to create a VBS enclave.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromVBS")]
-        public SwitchParameter VBS { get; set; }
-
-        /// <summary>
         /// <para type="description">Specify to process to create the enclave in.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromVBS")]
         public NtProcess Process { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the enclave size in bytes.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromVBS")]
-        public long Size { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the VBS enclave enclave size in bytes.</para>
+        /// <para type="description">Specify the VBS enclave flags.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromVBS")]
         public LdrEnclaveVBSFlags VBSFlags { get; set; }
@@ -51,33 +36,28 @@ namespace NtObjectManager.Cmdlets.Object
         public byte[] OwnerId { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the initial image file to load in the enclave.</para>
+        /// <para type="description">Specify the primary image file to load in the enclave.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 2, ParameterSetName = "FromVBS")]
-        public string InitialImageFile { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the number of threads to create in the enclave.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromVBS")]
-        public int ThreadCount { get; set; }
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromVBS")]
+        public string ImageFile { get; set; }
 
         /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
         {
+            var config = AuthenticodeUtils.GetEnclaveConfiguration(ImageFile);
+
             if (Process == null)
             {
                 Process = NtProcess.Current;
             }
-            var enclave = Process.CreateEnclaveVBS(Size, VBSFlags, OwnerId);
+
+            var enclave = Process.CreateEnclaveVBS(config.EnclaveSize, VBSFlags, OwnerId);
             try
             {
-                enclave.LoadModule(InitialImageFile, IntPtr.Zero);
-                if (ThreadCount <= 0)
-                    ThreadCount = 8;
-                enclave.Initialize(ThreadCount);
+                enclave.LoadModule(ImageFile, IntPtr.Zero);
+                enclave.Initialize(config.NumberOfThreads);
                 WriteObject(enclave);
             }
             catch
