@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authenticode;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -399,6 +400,64 @@ namespace NtApiDotNet.Win32
         {
             return Encoding.UTF8.GetString(Name).TrimEnd('\0');
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct IMAGE_LOAD_CONFIG_CODE_INTEGRITY
+    {
+        public ushort Flags;          // Flags to indicate if CI information is available, etc.
+        public ushort Catalog;        // 0xFFFF means not available
+        public int CatalogOffset;
+        public int Reserved;       // Additional bitmask to be defined later
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct IMAGE_LOAD_CONFIG_DIRECTORY
+    {
+        public int Size;
+        public int TimeDateStamp;
+        public ushort MajorVersion;
+        public ushort MinorVersion;
+        public int GlobalFlagsClear;
+        public int GlobalFlagsSet;
+        public int CriticalSectionDefaultTimeout;
+        public IntPtr DeCommitFreeBlockThreshold;
+        public IntPtr DeCommitTotalFreeThreshold;
+        public IntPtr LockPrefixTable;                // VA
+        public IntPtr MaximumAllocationSize;
+        public IntPtr VirtualMemoryThreshold;
+        public IntPtr ProcessAffinityMask;
+        public int ProcessHeapFlags;
+        public ushort CSDVersion;
+        public ushort DependentLoadFlags;
+        public IntPtr EditList;                       // VA
+        public IntPtr SecurityCookie;                 // VA
+        public IntPtr SEHandlerTable;                 // VA
+        public IntPtr SEHandlerCount;
+        public IntPtr GuardCFCheckFunctionPointer;    // VA
+        public IntPtr GuardCFDispatchFunctionPointer; // VA
+        public IntPtr GuardCFFunctionTable;           // VA
+        public IntPtr GuardCFFunctionCount;
+        public int GuardFlags;
+        IMAGE_LOAD_CONFIG_CODE_INTEGRITY CodeIntegrity;
+        public IntPtr GuardAddressTakenIatEntryTable; // VA
+        public IntPtr GuardAddressTakenIatEntryCount;
+        public IntPtr GuardLongJumpTargetTable;       // VA
+        public IntPtr GuardLongJumpTargetCount;
+        public IntPtr DynamicValueRelocTable;         // VA
+        public IntPtr CHPEMetadataPointer;            // VA
+        public IntPtr GuardRFFailureRoutine;          // VA
+        public IntPtr GuardRFFailureRoutineFunctionPointer; // VA
+        public int DynamicValueRelocTableOffset;
+        public ushort DynamicValueRelocTableSection;
+        public ushort Reserved2;
+        public IntPtr GuardRFVerifyStackPointerFunctionPointer; // VA
+        public int HotPatchTableOffset;
+        public int Reserved3;
+        public IntPtr EnclaveConfigurationPointer;     // VA
+        public IntPtr VolatileMetadataPointer;         // VA
+        public IntPtr GuardEHContinuationTable;        // VA
+        public IntPtr GuardEHContinuationCount;
     }
 
     /// <summary>
@@ -934,6 +993,19 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public SigningLevel ImageSigningLevel => NtVirtualMemory.QueryImageInformation(NtProcess.Current.Handle, DangerousGetHandle().ToInt64()).ImageSigningLevel;
 
+        /// <summary>
+        /// Get embedded enclave configuration.
+        /// </summary>
+        public EnclaveConfiguration EnclaveConfiguration
+        {
+            get
+            {
+                if (_enclave_config == null)
+                    _enclave_config = new Lazy<EnclaveConfiguration>(GetEnclaveConfiguration);
+                return _enclave_config.Value;
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -1067,6 +1139,7 @@ namespace NtApiDotNet.Win32
         private const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
         private const ushort IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
         private const ushort IMAGE_DIRECTORY_ENTRY_DEBUG = 6;
+        private const ushort IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG = 10;
         private const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
         private const int IMAGE_DEBUG_TYPE_CODEVIEW = 2;
         private Dictionary<IntPtr, IntPtr> _delayed_imports;
@@ -1079,6 +1152,7 @@ namespace NtApiDotNet.Win32
         private List<DllExport> _exports;
         private List<DllImport> _imports;
         private DllDebugData _debug_data;
+        private Lazy<EnclaveConfiguration> _enclave_config;
         private string _full_path;
 
         private IntPtr RvaToVA(long rva)
@@ -1447,6 +1521,60 @@ namespace NtApiDotNet.Win32
             }
             return _full_path;
         }
+
+        private IMAGE_LOAD_CONFIG_DIRECTORY? GetLoadConfig()
+        {
+            if (!MappedAsImage)
+                return null;
+
+            IntPtr load_config = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage,
+                    IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, out int size);
+            if (load_config == IntPtr.Zero)
+                return null;
+            var buffer = new SafeHGlobalBuffer(load_config, size, false);
+            int struct_size = buffer.Read<int>(0);
+            using (var new_buffer = new SafeStructureInOutBuffer<IMAGE_LOAD_CONFIG_DIRECTORY>(struct_size, false))
+            {
+                new_buffer.WriteBytes(buffer.ReadBytes(struct_size));
+                return new_buffer.Result;
+            }
+        }
+
+        private IEnumerable<EnclaveImport> ReadImports(IMAGE_ENCLAVE_CONFIG config)
+        {
+            List<EnclaveImport> imports = new List<EnclaveImport>();
+            IntPtr import_list = RvaToVA(config.ImportList);
+            for (int i = 0; i < config.NumberOfImports; ++i)
+            {
+                IMAGE_ENCLAVE_IMPORT import = (IMAGE_ENCLAVE_IMPORT)Marshal.PtrToStructure(import_list, typeof(IMAGE_ENCLAVE_IMPORT));
+                if (import.MatchType != ImageEnclaveImportMatchType.None)
+                {
+                    IntPtr name = RvaToVA(import.ImportName);
+                    imports.Add(new EnclaveImport(import, Marshal.PtrToStringAnsi(name)));
+                }
+                import_list += config.ImportEntrySize;
+            }
+            return imports;
+        }
+
+        private EnclaveConfiguration GetEnclaveConfiguration()
+        {
+            try
+            {
+                var enclave_config = GetLoadConfig()?.EnclaveConfigurationPointer ?? IntPtr.Zero;
+                if (enclave_config == IntPtr.Zero)
+                    return null;
+                var config = (IMAGE_ENCLAVE_CONFIG)Marshal.PtrToStructure(enclave_config, typeof(IMAGE_ENCLAVE_CONFIG));
+                List<EnclaveImport> imports = new List<EnclaveImport>();
+                
+                return new EnclaveConfiguration(FullPath, config, ReadImports(config));
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
         #endregion
 
         #region Static Properties

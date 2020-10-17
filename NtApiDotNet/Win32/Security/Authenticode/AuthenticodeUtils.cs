@@ -158,5 +158,34 @@ namespace NtApiDotNet.Win32.Security.Authenticode
         {
             return GetElamInformation(path, true).Result;
         }
+
+        /// <summary>
+        /// Get the VSM enclave configuration.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The VSM enclave configuration.</returns>
+        public static NtResult<EnclaveConfiguration> GetEnclaveConfiguration(string path, bool throw_on_error)
+        {
+            using (var lib = SafeLoadLibraryHandle.LoadLibrary(path, LoadLibraryFlags.DontResolveDllReferences, throw_on_error))
+            {
+                if (!lib.IsSuccess)
+                    return lib.Cast<EnclaveConfiguration>();
+                var ret = lib.Result.EnclaveConfiguration;
+                if (ret == null)
+                    return NtStatus.STATUS_NOT_FOUND.CreateResultFromError<EnclaveConfiguration>(throw_on_error);
+                return ret.CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Get the VSM enclave configuration.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>The VSM enclave configuration.</returns>
+        public static EnclaveConfiguration GetEnclaveConfiguration(string path)
+        {
+            return GetEnclaveConfiguration(path, true).Result;
+        }
     }
 }

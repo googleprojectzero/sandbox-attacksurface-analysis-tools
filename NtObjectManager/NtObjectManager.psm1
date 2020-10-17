@@ -3562,6 +3562,10 @@ function Get-EmbeddedAuthenticodeSignature {
             if ($policy.IsSuccess) {
                 $props["TrustletPolicy"] = $policy.Result
             }
+            $enclave = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetEnclaveConfiguration($path, $false)
+            if ($enclave.IsSuccess) {
+                $props["EnclaveConfig"] = $enclave.Result
+            }
         }
 
         $obj = New-Object –TypeName PSObject –Prop $props

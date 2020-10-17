@@ -4016,5 +4016,57 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>EnclaveConfiguration</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.Security.Authenticode.EnclaveConfiguration</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>EnclaveSize</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>NumberOfThreads</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Debuggable</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>PrimaryImage</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>EnclaveSize</PropertyName>
+                <FormatString>X08</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>NumberOfThreads</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Debuggable</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>PrimaryImage</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
