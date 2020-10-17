@@ -77,6 +77,18 @@ namespace NtApiDotNet
                 basic_info = buffer.Result;
             }
 
+            MemoryRegionInformation region_info = new MemoryRegionInformation();
+            using (var buffer = new SafeStructureInOutBuffer<MemoryRegionInformation>())
+            {
+                NtStatus status = NtSystemCalls.NtQueryVirtualMemory(process,
+                    new IntPtr(base_address), MemoryInformationClass.MemoryRegionInformationEx,
+                    buffer, buffer.LengthIntPtr, out IntPtr ret_length);
+                if (status.IsSuccess())
+                {
+                    region_info = buffer.Result;
+                }
+            }
+
             if (basic_info.Type == MemoryType.Image || basic_info.Type == MemoryType.Mapped)
             {
                 var name = QuerySectionName(process, base_address, false);
@@ -86,7 +98,7 @@ namespace NtApiDotNet
                 }
             }
 
-            return new MemoryInformation(basic_info, mapped_image_path).CreateResult();
+            return new MemoryInformation(basic_info, mapped_image_path, region_info).CreateResult();
         }
 
         /// <summary>

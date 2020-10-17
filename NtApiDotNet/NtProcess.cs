@@ -2011,6 +2011,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a VBS enclave.
+        /// </summary>
+        /// <param name="size">Size of the enclave.</param>
+        /// <param name="flags">Flags for the enclave.</param>
+        /// <param name="owner_id">Owner ID. Must be 32 bytes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created enclave.</returns>
+        public NtResult<NtEnclaveVBS> CreateEnclaveVBS(
+            long size,
+            LdrEnclaveVBSFlags flags,
+            byte[] owner_id,
+            bool throw_on_error)
+        {
+            return NtEnclaveVBS.Create(Handle, size, flags, owner_id, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a VBS enclave.
+        /// </summary>
+        /// <param name="size">Size of the enclave.</param>
+        /// <param name="flags">Flags for the enclave.</param>
+        /// <param name="owner_id">Owner ID. Must be 32 bytes.</param>
+        /// <returns>The created enclave.</returns>
+        public NtEnclaveVBS CreateEnclaveVBS(
+            long size,
+            LdrEnclaveVBSFlags flags,
+            byte[] owner_id)
+        {
+            return CreateEnclaveVBS(size, flags, owner_id, true).Result;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

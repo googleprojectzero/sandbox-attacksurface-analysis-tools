@@ -105,7 +105,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-AppModelApplicationPolicy', 'Test-NtProcessJob', 'Get-AppxDesktopBridge', 'Stop-NtJob',
           'Get-NtThreadWorkOnBehalfTicket', 'Set-NtThreadWorkOnBehalfTicket', 'Get-NtThreadContainerId',
           'Set-NtThreadContainer', 'Clear-NtThreadWorkOnBehalfTicket', 'Compare-NtSigningLevel',
-          'Get-NtSystemInformation', 'Get-NtSigningLevel', 'Get-X509Certificate', 'Set-NtCachedSigningLevel'
+          'Get-NtSystemInformation', 'Get-NtSigningLevel', 'Get-X509Certificate', 'Set-NtCachedSigningLevel',
+          'Invoke-NtEnclave'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -155,7 +156,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Send-NtFileControl', 'Get-NtFileAttribute', 'Set-NtFileAttribute', 'Get-NtFileShareProcess',
                'Get-NtFileCompression', 'Set-NtFileCompression',  'Get-NtFileLink', 'Get-NtFileStream',
                'Get-NtFileObjectId', 'Get-NtFileId', 'Set-NtFileObjectId', 'Remove-NtFileObjectId',
-               'Get-NtFileFinalPath', 'Add-NtThreadApc', 'New-NtThread'
+               'Get-NtFileFinalPath', 'Add-NtThreadApc', 'New-NtThread', 'New-NtEnclave'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer'

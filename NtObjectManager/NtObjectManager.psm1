@@ -12219,3 +12219,30 @@ function Get-X509Certificate {
         [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
     }
 }
+
+<#
+.SYNOPSIS
+Call a method in an enclave.
+.DESCRIPTION
+This cmdlet calls a method in an enclave.
+.PARAMETER Routine
+Specify the enclave routine to call.
+.PARAMETER Parameter
+Specify parameter to pass to the routine.
+.PARAMETER WaitForThread
+Specify to wait for an idle thread before calling.
+.INPUTS
+None
+.OUTPUTS
+int64
+#>
+function Invoke-NtEnclave {
+    param(
+        [Parameter(Position = 0, Mandatory)]
+        [int64]$Routine,
+        [int64]$Parameter = 0,
+        [switch]$WaitForThread
+    )
+
+    [NtApiDotNet.NtEnclave]::Call($Routine, $Parameter, $WaitForThread)
+}

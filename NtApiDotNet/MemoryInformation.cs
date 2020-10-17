@@ -66,7 +66,17 @@ namespace NtApiDotNet
         /// </summary>
         public string Name => Path.GetFileName(MappedImagePath);
 
-        internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path)
+        /// <summary>
+        /// The region type.
+        /// </summary>
+        public MemoryRegionTypeFlags RegionType { get; }
+
+        /// <summary>
+        /// Is this a software enclave.
+        /// </summary>
+        public bool SoftwareEnclave => RegionType.HasFlagSet(MemoryRegionTypeFlags.SoftwareEnclave);
+
+        internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path, MemoryRegionInformation region_info)
         {
             BaseAddress = basic_info.BaseAddress.ToInt64();
             AllocationBase = basic_info.AllocationBase.ToInt64();
@@ -76,6 +86,7 @@ namespace NtApiDotNet
             Protect = basic_info.Protect;
             Type = basic_info.Type;
             MappedImagePath = mapped_image_path ?? string.Empty;
+            RegionType = region_info.RegionType;
         }
     }
 }

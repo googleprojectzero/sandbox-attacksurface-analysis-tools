@@ -160,7 +160,8 @@ namespace NtApiDotNet
         MemoryRegionInformationEx,
         MemoryPrivilegedBasicInformation,
         MemoryEnclaveImageInformation,
-        MemoryBasicInformationCapped
+        MemoryBasicInformationCapped,
+        MemoryPhysicalContiguityInformation,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -206,6 +207,33 @@ namespace NtApiDotNet
         public bool PartialMap => ImageFlags.GetBit(0);
         public bool NotExecutable => ImageFlags.GetBit(1);
         public SigningLevel ImageSigningLevel => (SigningLevel)ImageFlags.GetBits(2, 4);
+    }
+
+    [Flags]
+    public enum MemoryRegionTypeFlags
+    {
+        None = 0,
+        Private = 1,
+        MappedDataFile = 2,
+        MappedImage = 4,
+        MappedPageFile = 8,
+        MappedPhysical = 0x10,
+        DirectMapped = 0x20,
+        SoftwareEnclave = 0x40,
+        PageSize64K = 0x80,
+        PlaceholderReservation = 0x100
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemoryRegionInformation
+    {
+        public IntPtr AllocationBase;
+        public MemoryAllocationProtect AllocationProtect;
+        public MemoryRegionTypeFlags RegionType;
+        public IntPtr RegionSize;
+        public IntPtr CommitSize;
+        public IntPtr PartitionId;
+        public IntPtr NodePreference;
     }
 
 #pragma warning restore 1591

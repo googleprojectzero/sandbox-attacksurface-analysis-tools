@@ -71,6 +71,9 @@
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="NtDesktopNative.cs" />
+    <Compile Include="NtEnclave.cs" />
+    <Compile Include="NtEnclaveNative.cs" />
+    <Compile Include="NtEnclaveVBS.cs" />
     <Compile Include="NtFileObjectId.cs" />
     <Compile Include="NtFilterConnectionPort.cs" />
     <Compile Include="NtFilterConnectionPortNative.cs" />
@@ -120,6 +123,7 @@
     <Compile Include="Utilities\Memory\ProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\ProcessMemoryStream.cs" />
     <Compile Include="Utilities\Memory\SafeBufferWrapper.cs" />
+    <Compile Include="Utilities\SafeBuffers\SafeEnclaveHandle.cs" />
     <Compile Include="Utilities\SafeBuffers\SafeGuidArrayBuffer.cs" />
     <Compile Include="Utilities\Security\MD4.cs" />
     <Compile Include="Utilities\Security\NFold.cs" />

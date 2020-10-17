@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
-    public static class NtLdrNative
+    public static partial class NtLdrNative
     {
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus LdrLoadDll(

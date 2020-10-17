@@ -62,6 +62,7 @@
     <Compile Include="Cmdlets\Accessible\ProcessTokenInformation.cs" />
     <Compile Include="Cmdlets\Accessible\TokenEntry.cs" />
     <Compile Include="Cmdlets\Accessible\TokenInformation.cs" />
+    <Compile Include="Cmdlets\Object\NewNtEnclaveCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtDebugProcessCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtKeyHiveCmdlet.cs" />
     <Compile Include="Cmdlets\Object\AddNtSecurityDescriptorAceCmdlet.cs" />
