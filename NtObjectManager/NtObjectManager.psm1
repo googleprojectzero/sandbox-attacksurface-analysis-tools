@@ -3565,6 +3565,7 @@ function Get-EmbeddedAuthenticodeSignature {
             $enclave = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetEnclaveConfiguration($path, $false)
             if ($enclave.IsSuccess) {
                 $props["EnclaveConfig"] = $enclave.Result
+                $props["EnclavePrimaryImage"] = $enclave.Result.PrimaryImage
             }
         }
 
