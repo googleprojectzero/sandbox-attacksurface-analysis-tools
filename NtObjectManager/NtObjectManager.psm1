@@ -3519,6 +3519,7 @@ function Get-EmbeddedAuthenticodeSignature {
         $elam = $false
         $store = $false
         $ium = $false
+        $enclave = $false
 
         foreach ($eku in $cert.EnhancedKeyUsageList) {
             switch ($eku.ObjectId) {
@@ -3530,6 +3531,7 @@ function Get-EmbeddedAuthenticodeSignature {
                 "1.3.6.1.4.1.311.76.5.1" { $dynamic = $true }
                 "1.3.6.1.4.311.76.3.1" { $store = $true }
                 "1.3.6.1.4.1.311.10.3.37" { $ium = $true }
+                "1.3.6.1.4.1.311.10.3.42" { $enclave = $true }
             }
         }
 
@@ -3547,6 +3549,7 @@ function Get-EmbeddedAuthenticodeSignature {
             Store                 = $store;
             IsolatedUserMode      = $ium;
             HasPageHash           = $page_hash;
+            Enclave               = $enclave;
         }
 
         if ($elam) {
@@ -3562,10 +3565,13 @@ function Get-EmbeddedAuthenticodeSignature {
             if ($policy.IsSuccess) {
                 $props["TrustletPolicy"] = $policy.Result
             }
+        }
+        if ($ium -or $enclave) {
             $enclave = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetEnclaveConfiguration($path, $false)
             if ($enclave.IsSuccess) {
                 $props["EnclaveConfig"] = $enclave.Result
                 $props["EnclavePrimaryImage"] = $enclave.Result.PrimaryImage
+                $props["Enclave"] = $true
             }
         }
 

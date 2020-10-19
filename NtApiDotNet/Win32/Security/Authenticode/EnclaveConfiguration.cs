@@ -116,6 +116,15 @@ namespace NtApiDotNet.Win32.Security.Authenticode
         /// </summary>
         public string Name => Path.GetFileName(ImagePath);
 
+        /// <summary>
+        /// ToString method.
+        /// </summary>
+        /// <returns>The object as a string.</returns>
+        public override string ToString()
+        {
+            return $"{Name} - Primary Image {PrimaryImage}";
+        }
+
         internal EnclaveConfiguration(string path, IMAGE_ENCLAVE_CONFIG config, IEnumerable<EnclaveImport> imports)
         {
             MinimumRequiredConfigSize = config.MinimumRequiredConfigSize;
