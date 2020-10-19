@@ -264,6 +264,7 @@ namespace NtApiDotNet.Win32
         Windows = 1,
         WindowsLight = 2,
         AntimalwareLight = 3,
+        AppLight = 4,
     }
 
     [StructLayout(LayoutKind.Sequential)]
