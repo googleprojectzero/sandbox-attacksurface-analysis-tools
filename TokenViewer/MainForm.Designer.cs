@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.TabPage tabPageServices;
+            System.Windows.Forms.TabPage tabPageUtilities;
             System.Windows.Forms.GroupBox groupBoxAnonymous;
             System.Windows.Forms.GroupBox groupBox2;
             System.Windows.Forms.GroupBox groupBox1;
@@ -58,6 +58,12 @@
             System.Windows.Forms.ColumnHeader columnHeaderProcessRestricted;
             System.Windows.Forms.ColumnHeader columnHeaderProcessAC;
             System.Windows.Forms.ColumnHeader columnHeaderProcessCommandLine;
+            System.Windows.Forms.ColumnHeader columnHeader1;
+            System.Windows.Forms.ColumnHeader columnHeader2;
+            System.Windows.Forms.ColumnHeader columnHeader3;
+            System.Windows.Forms.ColumnHeader columnHeader5;
+            System.Windows.Forms.ColumnHeader columnHeader6;
+            System.Windows.Forms.ColumnHeader columnHeader7;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.btnCreateAnonymous = new System.Windows.Forms.Button();
             this.btnClipboardToken = new System.Windows.Forms.Button();
@@ -117,7 +123,13 @@
             this.contextMenuStripHandles = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemHandlesOpenToken = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHandlesRefresh = new System.Windows.Forms.ToolStripMenuItem();
-            tabPageServices = new System.Windows.Forms.TabPage();
+            this.tabPageServices = new System.Windows.Forms.TabPage();
+            this.listViewServices = new System.Windows.Forms.ListView();
+            this.contextMenuStripServices = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.openServiceTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showServiceSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshServicesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            tabPageUtilities = new System.Windows.Forms.TabPage();
             groupBoxAnonymous = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
             groupBox1 = new System.Windows.Forms.GroupBox();
@@ -146,7 +158,13 @@
             columnHeaderProcessRestricted = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderProcessAC = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderProcessCommandLine = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            tabPageServices.SuspendLayout();
+            columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            tabPageUtilities.SuspendLayout();
             groupBoxAnonymous.SuspendLayout();
             groupBox2.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -162,20 +180,22 @@
             this.tabControlTests.SuspendLayout();
             this.tabPageHandles.SuspendLayout();
             this.contextMenuStripHandles.SuspendLayout();
+            this.tabPageServices.SuspendLayout();
+            this.contextMenuStripServices.SuspendLayout();
             this.SuspendLayout();
             // 
-            // tabPageServices
+            // tabPageUtilities
             // 
-            tabPageServices.Controls.Add(groupBoxAnonymous);
-            tabPageServices.Controls.Add(groupBox2);
-            tabPageServices.Controls.Add(groupBox1);
-            tabPageServices.Location = new System.Drawing.Point(4, 22);
-            tabPageServices.Name = "tabPageServices";
-            tabPageServices.Padding = new System.Windows.Forms.Padding(3);
-            tabPageServices.Size = new System.Drawing.Size(600, 397);
-            tabPageServices.TabIndex = 4;
-            tabPageServices.Text = "Services";
-            tabPageServices.UseVisualStyleBackColor = true;
+            tabPageUtilities.Controls.Add(groupBoxAnonymous);
+            tabPageUtilities.Controls.Add(groupBox2);
+            tabPageUtilities.Controls.Add(groupBox1);
+            tabPageUtilities.Location = new System.Drawing.Point(4, 22);
+            tabPageUtilities.Name = "tabPageUtilities";
+            tabPageUtilities.Padding = new System.Windows.Forms.Padding(3);
+            tabPageUtilities.Size = new System.Drawing.Size(600, 397);
+            tabPageUtilities.TabIndex = 4;
+            tabPageUtilities.Text = "Utilities";
+            tabPageUtilities.UseVisualStyleBackColor = true;
             // 
             // groupBoxAnonymous
             // 
@@ -505,6 +525,7 @@
             // columnHeaderProcessId
             // 
             columnHeaderProcessId.Text = "Process ID";
+            columnHeaderProcessId.Width = 74;
             // 
             // columnHeaderProcessName
             // 
@@ -561,6 +582,10 @@
             // columnHeaderProcessAC
             // 
             columnHeaderProcessAC.Text = "App Container";
+            // 
+            // columnHeaderProcessCommandLine
+            // 
+            columnHeaderProcessCommandLine.Text = "Command Line";
             // 
             // contextMenuStripProcesses
             // 
@@ -631,7 +656,7 @@
             this.showProcessSecurityToolStripMenuItem1,
             this.toolStripMenuItemRefreshThreads});
             this.contextMenuStripThreads.Name = "contextMenuStripProcesses";
-            this.contextMenuStripThreads.Size = new System.Drawing.Size(192, 136);
+            this.contextMenuStripThreads.Size = new System.Drawing.Size(192, 114);
             this.contextMenuStripThreads.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripThreads_Opening);
             // 
             // toolStripMenuItemOpenThreadToken
@@ -824,10 +849,6 @@
             this.listViewProcesses.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
             this.listViewProcesses.DoubleClick += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
             // 
-            // columnHeaderProcessCommandLine
-            // 
-            columnHeaderProcessCommandLine.Text = "Command Line";
-            // 
             // txtFilter
             // 
             this.txtFilter.Location = new System.Drawing.Point(171, 8);
@@ -873,8 +894,9 @@
             this.tabControlTests.Controls.Add(this.tabPageThreads);
             this.tabControlTests.Controls.Add(this.tabPageHandles);
             this.tabControlTests.Controls.Add(this.tabPageSessions);
+            this.tabControlTests.Controls.Add(this.tabPageServices);
             this.tabControlTests.Controls.Add(tabPageGeneral);
-            this.tabControlTests.Controls.Add(tabPageServices);
+            this.tabControlTests.Controls.Add(tabPageUtilities);
             this.tabControlTests.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControlTests.Location = new System.Drawing.Point(0, 0);
             this.tabControlTests.Name = "tabControlTests";
@@ -956,6 +978,95 @@
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
+            // tabPageServices
+            // 
+            this.tabPageServices.Controls.Add(this.listViewServices);
+            this.tabPageServices.Location = new System.Drawing.Point(4, 22);
+            this.tabPageServices.Name = "tabPageServices";
+            this.tabPageServices.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageServices.Size = new System.Drawing.Size(600, 397);
+            this.tabPageServices.TabIndex = 8;
+            this.tabPageServices.Text = "Services";
+            this.tabPageServices.UseVisualStyleBackColor = true;
+            // 
+            // listViewServices
+            // 
+            this.listViewServices.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            columnHeader2,
+            columnHeader3,
+            columnHeader5,
+            columnHeader6,
+            columnHeader7,
+            columnHeader1});
+            this.listViewServices.ContextMenuStrip = this.contextMenuStripServices;
+            this.listViewServices.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listViewServices.FullRowSelect = true;
+            this.listViewServices.HideSelection = false;
+            this.listViewServices.Location = new System.Drawing.Point(3, 3);
+            this.listViewServices.MultiSelect = false;
+            this.listViewServices.Name = "listViewServices";
+            this.listViewServices.Size = new System.Drawing.Size(594, 391);
+            this.listViewServices.TabIndex = 7;
+            this.listViewServices.UseCompatibleStateImageBehavior = false;
+            this.listViewServices.View = System.Windows.Forms.View.Details;
+            this.listViewServices.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
+            this.listViewServices.DoubleClick += new System.EventHandler(this.openServiceTokenToolStripMenuItem_Click);
+            // 
+            // columnHeader1
+            // 
+            columnHeader1.Text = "Process ID";
+            // 
+            // columnHeader2
+            // 
+            columnHeader2.Text = "Name";
+            // 
+            // columnHeader3
+            // 
+            columnHeader3.Text = "User";
+            // 
+            // columnHeader5
+            // 
+            columnHeader5.Text = "Protected";
+            // 
+            // columnHeader6
+            // 
+            columnHeader6.Text = "Sid Type";
+            // 
+            // columnHeader7
+            // 
+            columnHeader7.Text = "Display Name";
+            // 
+            // contextMenuStripServices
+            // 
+            this.contextMenuStripServices.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openServiceTokenToolStripMenuItem,
+            this.refreshServicesToolStripMenuItem,
+            this.showServiceSecurityToolStripMenuItem});
+            this.contextMenuStripServices.Name = "contextMenuStripServices";
+            this.contextMenuStripServices.Size = new System.Drawing.Size(189, 70);
+            // 
+            // openServiceTokenToolStripMenuItem
+            // 
+            this.openServiceTokenToolStripMenuItem.Name = "openServiceTokenToolStripMenuItem";
+            this.openServiceTokenToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.openServiceTokenToolStripMenuItem.Text = "Open Token";
+            this.openServiceTokenToolStripMenuItem.Click += new System.EventHandler(this.openServiceTokenToolStripMenuItem_Click);
+            // 
+            // showServiceSecurityToolStripMenuItem
+            // 
+            this.showServiceSecurityToolStripMenuItem.Name = "showServiceSecurityToolStripMenuItem";
+            this.showServiceSecurityToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.showServiceSecurityToolStripMenuItem.Text = "Show Service Security";
+            this.showServiceSecurityToolStripMenuItem.Click += new System.EventHandler(this.showServiceSecurityToolStripMenuItem_Click);
+            // 
+            // refreshServicesToolStripMenuItem
+            // 
+            this.refreshServicesToolStripMenuItem.Name = "refreshServicesToolStripMenuItem";
+            this.refreshServicesToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
+            this.refreshServicesToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.refreshServicesToolStripMenuItem.Text = "Refresh";
+            this.refreshServicesToolStripMenuItem.Click += new System.EventHandler(this.refreshServicesToolStripMenuItem_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -967,7 +1078,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Token Viewer";
             this.Load += new System.EventHandler(this.MainForm_Load);
-            tabPageServices.ResumeLayout(false);
+            tabPageUtilities.ResumeLayout(false);
             groupBoxAnonymous.ResumeLayout(false);
             groupBox2.ResumeLayout(false);
             groupBox1.ResumeLayout(false);
@@ -987,6 +1098,8 @@
             this.tabControlTests.ResumeLayout(false);
             this.tabPageHandles.ResumeLayout(false);
             this.contextMenuStripHandles.ResumeLayout(false);
+            this.tabPageServices.ResumeLayout(false);
+            this.contextMenuStripServices.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1050,6 +1163,12 @@
         private System.Windows.Forms.CheckBox checkBoxUseUNCPath;
         private System.Windows.Forms.ToolStripMenuItem groupByToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem groupByNoneToolStripMenuItem;
+        private System.Windows.Forms.TabPage tabPageServices;
+        private System.Windows.Forms.ListView listViewServices;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripServices;
+        private System.Windows.Forms.ToolStripMenuItem openServiceTokenToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showServiceSecurityToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem refreshServicesToolStripMenuItem;
     }
 }
 

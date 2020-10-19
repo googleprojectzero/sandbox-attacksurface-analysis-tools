@@ -29,13 +29,38 @@ namespace TokenViewer
     {
         private class TokenGrouping
         {
+            private readonly Func<ProcessTokenEntry, string> _map_to_group;
+
             public string Name { get; }
-            public Func<ProcessTokenEntry, string> MapToGroup { get; }
 
             public TokenGrouping(string name, Func<ProcessTokenEntry, string> map_to_group)
             {
                 Name = name;
-                MapToGroup = map_to_group;
+                _map_to_group = map_to_group;
+            }
+
+            public virtual Func<ProcessTokenEntry, string> CreateMapToGroup()
+            {
+                return _map_to_group;
+            }
+        }
+
+        private class TokenGrouping<T> : TokenGrouping
+        {
+            private readonly Func<T> _init_func;
+            private readonly Func<T, ProcessTokenEntry, string> _map_to_group;
+
+            public TokenGrouping(string name, Func<T> init_func, Func<T, ProcessTokenEntry, string> map_to_group) 
+                : base(name, null)
+            {
+                _init_func = init_func;
+                _map_to_group = map_to_group;
+            }
+
+            public override Func<ProcessTokenEntry, string> CreateMapToGroup()
+            {
+                T state = _init_func();
+                return p => _map_to_group(state, p);
             }
         }
 
@@ -208,12 +233,46 @@ namespace TokenViewer
             }
         }
 
-        private void AddGrouping(string name, Func<ProcessTokenEntry, string> map_to_group)
+        private void RefreshServiceList()
         {
-            TokenGrouping grouping = new TokenGrouping(name, map_to_group);
-            var item = groupByToolStripMenuItem.DropDownItems.Add(name);
+            ClearList(listViewServices);
+            foreach (var service in ServiceUtils.GetRunningServicesWithProcessIds())
+            {
+                using (var result = NtToken.OpenProcessToken(service.ProcessId, false, TokenAccessRights.MaximumAllowed | TokenAccessRights.Query, false))
+                {
+                    if (!result.IsSuccess)
+                        continue;
+
+                    var token = result.Result;
+
+                    ListViewItem item = new ListViewItem(service.Name);
+                    item.SubItems.Add(token.User.ToString());
+                    item.SubItems.Add(service.LaunchProtected.ToString());
+                    item.SubItems.Add(service.SidType.ToString());
+                    item.SubItems.Add(service.DisplayName);
+                    item.SubItems.Add(service.ProcessId.ToString());
+                    item.Tag = new ServiceTokenEntry(service, token);
+                    listViewServices.Items.Add(item);
+                }
+            }
+            ResizeColumns(listViewServices);
+        }
+
+        private void AddGrouping(TokenGrouping grouping)
+        {
+            var item = groupByToolStripMenuItem.DropDownItems.Add(grouping.Name);
             item.Tag = grouping;
             item.Click += groupItemsToolStripMenuItem_Click;
+        }
+
+        private void AddGrouping<T>(string name, Func<T> init_func, Func<T, ProcessTokenEntry, string> map_to_group)
+        {
+            AddGrouping(new TokenGrouping<T>(name, init_func, map_to_group));
+        }
+
+        private void AddGrouping(string name, Func<ProcessTokenEntry, string> map_to_group)
+        {
+            AddGrouping(new TokenGrouping(name, map_to_group));
         }
 
         private static string GetSandboxName(NtToken token)
@@ -272,6 +331,7 @@ namespace TokenViewer
             listViewThreads.ListViewItemSorter = new ListItemComparer(0);
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             listViewHandles.ListViewItemSorter = new ListItemComparer(0);
+            listViewServices.ListViewItemSorter = new ListItemComparer(0);
             AddGrouping("Name", p => p.Name);
             AddGrouping("Session ID", p => $"Session {p.SessionId}");
             AddGrouping("Sandbox", p => GetSandboxName(p.ProcessToken));
@@ -308,7 +368,9 @@ namespace TokenViewer
                     groupBoxServiceAccounts.Visible = false;
                 }
             }
-            
+
+            RefreshServiceList();
+
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Batch);
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Interactive);
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Network);
@@ -737,16 +799,19 @@ namespace TokenViewer
             listView.BeginUpdate();
             Dictionary<string, List<ListViewItem>> groups = new Dictionary<string, List<ListViewItem>>();
             listView.Groups.Clear();
+
+            var map_to_group = grouping?.CreateMapToGroup();
+
             foreach (ListViewItem item in listView.Items)
             {
-                if (grouping == null)
+                if (map_to_group == null)
                 {
                     item.Group = null;
                     continue;
                 }
                 if (item.Tag is ProcessTokenEntry entry)
                 {
-                    string group_name = grouping.MapToGroup(entry);
+                    string group_name = map_to_group(entry);
                     if (!groups.ContainsKey(group_name))
                     {
                         groups.Add(group_name, new List<ListViewItem>());
@@ -803,6 +868,38 @@ namespace TokenViewer
                     showThreadSecurityToolStripMenuItem.Enabled = thread.ThreadSecurity != null;
                 }
             }
+        }
+
+        private void openServiceTokenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in listViewServices.SelectedItems)
+            {
+                if (item.Tag is ServiceTokenEntry entry)
+                {
+                    TokenForm.OpenForm(entry.ProcessToken, entry.Service.Name, true);
+                }
+            }
+        }
+
+        private void showServiceSecurityToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listViewServices.SelectedItems.Count > 0)
+            {
+                if (listViewServices.SelectedItems[0].Tag is ServiceTokenEntry service)
+                {
+                    if (service.Service.SecurityDescriptor != null)
+                    {
+                        var viewer = new SecurityDescriptorViewerForm(service.Service.Name,
+                            service.Service.SecurityDescriptor, ServiceUtils.GetServiceNtType("Service"), false);
+                        viewer.ShowDialog(this);
+                    }
+                }
+            }
+        }
+
+        private void refreshServicesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RefreshServiceList();
         }
     }
 }
