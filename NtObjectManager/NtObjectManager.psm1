@@ -12376,3 +12376,39 @@ function Invoke-NtEnclave {
 
     [NtApiDotNet.NtEnclave]::Call($Routine, $Parameter, $WaitForThread)
 }
+
+<#
+.SYNOPSIS
+Start a Win32 debug console.
+.DESCRIPTION
+This cmdlet starts a Win32 debug console and prints the debug output to the shell.
+.PARAMETER Global
+Capture debug output for session 0.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Start-Win32DebugConsole {
+    param(
+        [switch]$Global
+    )
+
+    try {
+        $session_id = if ($Global) {
+            0
+        } else {
+            (Get-NtProcess -Current).SessionId
+        }
+        Use-NtObject($console = [NtApiDotNet.Win32.Debugger.Win32DebugConsole]::Create($session_id)) {
+            while($true) {
+                $result = $console.Read(1000)
+                if ($null -ne $result.Output) {
+                    Write-Host "[$($result.ProcessId)] - $($result.Output.Trim())"
+                }
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}

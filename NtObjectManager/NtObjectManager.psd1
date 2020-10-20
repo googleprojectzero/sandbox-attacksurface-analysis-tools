@@ -106,7 +106,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtThreadWorkOnBehalfTicket', 'Set-NtThreadWorkOnBehalfTicket', 'Get-NtThreadContainerId',
           'Set-NtThreadContainer', 'Clear-NtThreadWorkOnBehalfTicket', 'Compare-NtSigningLevel',
           'Get-NtSystemInformation', 'Get-NtSigningLevel', 'Get-X509Certificate', 'Set-NtCachedSigningLevel',
-          'Invoke-NtEnclave', 'Add-NtAccountRight', 'Remove-NtAccountRight'
+          'Invoke-NtEnclave', 'Add-NtAccountRight', 'Remove-NtAccountRight', 'Start-Win32DebugConsole'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

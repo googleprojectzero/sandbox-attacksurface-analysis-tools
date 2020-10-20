@@ -157,6 +157,16 @@ namespace NtApiDotNet.Win32.Debugger
         }
 
         /// <summary>
+        /// Create an instance of the Win32 debug console.
+        /// </summary>
+        /// <param name="session_id">The session ID for the console. Set to 0 to capture global output.</param>
+        /// <returns>The Win32 debug console.</returns>
+        public static Win32DebugConsole Create(int session_id)
+        {
+            return Create(session_id, true).Result;
+        }
+
+        /// <summary>
         /// Create an instance of the Win32 debug console for current session.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
