@@ -9503,6 +9503,86 @@ function Get-NtAccountRight {
 
 <#
 .SYNOPSIS
+Add account rights for current system.
+.DESCRIPTION
+This cmdlet adds account rights for the current system to a SID.
+.PARAMETER Sid
+Specify a SID to add the account right for.
+.PARAMETER Privilege
+Specify the privileges to add.
+.PARAMETER Name
+Specify the list of account right names to add.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Add-NtAccountRight -Sid WD -Privilege SeAssignPrimaryTokenPrivilege
+Add everyone group to SeAssignPrimaryTokenPrivilege
+#>
+function Add-NtAccountRight {
+    [CmdletBinding(DefaultParameterSetName = "FromPrivs")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, ParameterSetName = "FromPrivs")]
+        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [parameter(Mandatory, ParameterSetName = "FromString")]
+        [string[]]$Name
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromString" {
+            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $Name)
+        }
+        "FromPrivs" {
+            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $Privilege)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Remove account rights for current system.
+.DESCRIPTION
+This cmdlet removes account rights for the current system from a SID.
+.PARAMETER Sid
+Specify a SID to remove the account right for.
+.PARAMETER Privilege
+Specify the privileges to remove.
+.PARAMETER Name
+Specify the list of account right names to remove.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Remove-NtAccountRight -Sid WD -Privilege SeAssignPrimaryTokenPrivilege
+Remove everyone group from SeAssignPrimaryTokenPrivilege
+#>
+function Remove-NtAccountRight {
+    [CmdletBinding(DefaultParameterSetName = "FromPrivs")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, ParameterSetName = "FromPrivs")]
+        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [parameter(Mandatory, ParameterSetName = "FromString")]
+        [string[]]$Name
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromString" {
+            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $Name)
+        }
+        "FromPrivs" {
+            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $Privilege)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Get SIDs for an account right for current system.
 .DESCRIPTION
 This cmdlet gets SIDs for an account rights for the current system.

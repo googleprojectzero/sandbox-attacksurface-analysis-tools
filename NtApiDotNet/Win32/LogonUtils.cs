@@ -549,6 +549,85 @@ namespace NtApiDotNet.Win32
             return GetAccountRights(AccountRightType.All);
         }
 
+        /// <summary>
+        /// Add account rights to the user.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="account_rights">The list of account rights.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus AddAccountRights(Sid sid, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            return AccountRight.AddAccountRights(null, sid, account_rights, throw_on_error);
+        }
+
+        /// <summary>
+        /// Add account rights to the user.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="account_rights">The list of account rights.</param>
+        /// <returns>The NT status code.</returns>
+        public static void AddAccountRights(Sid sid, IEnumerable<string> account_rights)
+        {
+            AddAccountRights(sid, account_rights, true);
+        }
+
+        /// <summary>
+        /// Add account rights as privileges.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="privileges">The list of account privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus AddAccountRights(Sid sid, TokenPrivilegeValue[] privileges, bool throw_on_error)
+        {
+            return AddAccountRights(sid, privileges.Select(p => p.ToString()), throw_on_error);
+        }
+
+        /// <summary>
+        /// Add account rights as privileges.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="privileges">The list of account privileges.</param>
+        public static void AddAccountRights(Sid sid, params TokenPrivilegeValue[] privileges)
+        {
+            AddAccountRights(sid, privileges, true);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="account_rights">The list of account rights.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus RemoveAccountRights(Sid sid, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            return AccountRight.RemoveAccountRights(null, sid, false, account_rights, throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="privileges">The list of privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus RemoveAccountRights(Sid sid, TokenPrivilegeValue[] privileges, bool throw_on_error)
+        {
+            return RemoveAccountRights(sid, privileges.Select(p => p.ToString()), throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="privileges">The list of account privileges.</param>
+        public static void RemoveAccountRights(Sid sid, params TokenPrivilegeValue[] privileges)
+        {
+            RemoveAccountRights(sid, privileges, true);
+        }
+
         private static NtResult<NtToken> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name, 
             SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {

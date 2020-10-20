@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Policy
     /// <summary>
     /// Class to represent an Account Right assigned to a user.
     /// </summary>
-    public class AccountRight
+    public sealed class AccountRight
     {
         private readonly List<Sid> _cached_sids;
         private readonly Lazy<List<Sid>> _sids;
@@ -114,6 +114,64 @@ namespace NtApiDotNet.Win32.Security.Policy
                     return SecurityNativeMethods.LsaEnumerateAccountRights(policy.Result, sid_buffer,
                         out SafeLsaMemoryBuffer buffer, out int count)
                         .CreateResult(throw_on_error, () => ParseRights(policy.Result, system_name, buffer, count));
+                }
+            }
+        }
+
+        internal static NtStatus AddAccountRights(string system_name, Sid sid, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            if (account_rights is null)
+            {
+                throw new ArgumentNullException(nameof(account_rights));
+            }
+
+            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
+
+            if (!account_rights.Any())
+                return NtStatus.STATUS_SUCCESS;
+
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.LookupNames, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Status;
+                using (var sid_buffer = sid.ToSafeBuffer())
+                {
+                    return SecurityNativeMethods.LsaAddAccountRights(policy.Result, sid_buffer,
+                        rights, rights.Length).ToNtException(throw_on_error);
+                }
+            }
+        }
+
+        internal static NtStatus RemoveAccountRights(string system_name, Sid sid, bool remove_all, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            if (account_rights is null)
+            {
+                throw new ArgumentNullException(nameof(account_rights));
+            }
+
+            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
+
+            if (!account_rights.Any())
+                return NtStatus.STATUS_SUCCESS;
+
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.LookupNames, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Status;
+                using (var sid_buffer = sid.ToSafeBuffer())
+                {
+                    return SecurityNativeMethods.LsaRemoveAccountRights(policy.Result, 
+                        sid_buffer, remove_all, rights, rights.Length).ToNtException(throw_on_error);
                 }
             }
         }
