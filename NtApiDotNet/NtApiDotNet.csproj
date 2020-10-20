@@ -317,6 +317,7 @@
     <Compile Include="Win32\Debugger\BaseTypeInformation.cs" />
     <Compile Include="Win32\Debugger\DataSymbolInformation.cs" />
     <Compile Include="Win32\Debugger\DbgHelpSymbolResolver.cs" />
+    <Compile Include="Win32\Debugger\Win32DebugConsole.cs" />
     <Compile Include="Win32\Debugger\EnumProcessModulesFilter.cs" />
     <Compile Include="Win32\Debugger\EnumTypeInformation.cs" />
     <Compile Include="Win32\Debugger\FunctionParameter.cs" />
@@ -336,6 +337,7 @@
     <Compile Include="Win32\Debugger\TypeInformationCache.cs" />
     <Compile Include="Win32\Debugger\UdtKind.cs" />
     <Compile Include="Win32\Debugger\UserDefinedTypeInformation.cs" />
+    <Compile Include="Win32\Debugger\Win32DebugString.cs" />
     <Compile Include="Win32\Device\DeviceBusTypeGuids.cs" />
     <Compile Include="Win32\Device\DeviceInterfaceClassGuids.cs" />
     <Compile Include="Win32\Device\DeviceInterfaceInstance.cs" />
