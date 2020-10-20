@@ -1863,7 +1863,7 @@ namespace NtApiDotNet
         /// <remarks>This uses NtCreateProcessEx.</remarks>
         public NtResult<NtProcess> Fork(ProcessCreateFlags flags, bool throw_on_error)
         {
-            return CreateProcessEx(null, ProcessAccessRights.MaximumAllowed,
+            return Create(null, ProcessAccessRights.MaximumAllowed,
                 this, flags | ProcessCreateFlags.InheritFromParent, null, null, null, throw_on_error);
         }
 
