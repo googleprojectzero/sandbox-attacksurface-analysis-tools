@@ -1366,23 +1366,62 @@ function New-NtProcessConfig {
 .SYNOPSIS
 Create a new native NT process.
 .DESCRIPTION
-This cmdlet creates a new native NT process.
+This cmdlet creates a new native NT process. This can be via NtCreateUserProcess with a configuration
+or NtCreateProcessEx without configuration.
 .PARAMETER Config
 The configuration for the new process from New-NtProcessConfig.
 .PARAMETER ReturnOnError
 Specify to always return a result even on error.
+.PARAMETER SecurityDescriptor
+Specify security descriptor for the process.
+.PARAMETER Access
+Specify the access to the process object.
+.PARAMETER Parent
+Specify the parent process. Default is current process.
+.PARAMETER Flags
+Specify creation flags.
+.PARAMETER Section
+Specify initial image section.
+.PARAMETER DebugPort
+Specify debug port.
+.PARAMETER Token
+Specify process token.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.NtProcessCreateResult
+NtApiDotNet.NtProcess
 #>
 function New-NtProcess {
+    [CmdletBinding(DefaultParameterSetName="FromCreateEx")]
     Param(
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName="FromConfig")]
         [NtApiDotNet.NtProcessCreateConfig]$Config,
-        [switch]$ReturnOnError
+        [Parameter(ParameterSetName="FromConfig")]
+        [switch]$ReturnOnError,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotnet.ProcessAccessRights]$Access = "MaximumAllowed",
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.NtProcess]$Parent,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.ProcessCreateFlags]$Flags = 0,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.NtSection]$Section,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.NtDebug]$DebugPort,
+        [Parameter(ParameterSetName="FromCreateEx")]
+        [NtApiDotNet.NtToken]$Token
     )
-    [NtApiDotNet.NtProcess]::Create($Config, !$ReturnOnError)
+
+    if ($PSCmdlet.ParameterSetName -eq "FromConfig") {
+        [NtApiDotNet.NtProcess]::Create($Config, !$ReturnOnError)
+    } else {
+        Use-NtObject($obja = New-NtObjectAttributes -SecurityDescriptor $SecurityDescriptor) {
+            [NtApiDotNet.NtProcess]::CreateProcessEx($obja, $Access, $Parent, $Flags, $Section, $DebugPort, $Token)
+        }
+    }
 }
 
 <#

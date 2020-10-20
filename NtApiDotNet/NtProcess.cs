@@ -363,8 +363,8 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new process
         /// </summary>
-        /// <param name="desired_access">Desired access for the new process.</param>
         /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="desired_access">Desired access for the new process.</param>
         /// <param name="parent_process">The parent process</param>
         /// <param name="flags">Creation flags</param>
         /// <param name="section_handle">Handle to the executable image section</param>
@@ -372,7 +372,7 @@ namespace NtApiDotNet
         /// <param name="token">Access token for the new process.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The created process</returns>
-        public static NtResult<NtProcess> CreateProcessEx(ProcessAccessRights desired_access, ObjectAttributes object_attributes,
+        public static NtResult<NtProcess> CreateProcessEx(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
             NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token, bool throw_on_error)
         {
             return NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, desired_access,
@@ -394,7 +394,7 @@ namespace NtApiDotNet
         public static NtProcess CreateProcessEx(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
             NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token)
         {
-            return CreateProcessEx(desired_access, object_attributes, parent_process, flags, section_handle, debug_port, token, true).Result;
+            return CreateProcessEx(object_attributes, desired_access, parent_process, flags, section_handle, debug_port, token, true).Result;
         }
 
         /// <summary>
@@ -1783,7 +1783,7 @@ namespace NtApiDotNet
         /// <remarks>This uses NtCreateProcessEx.</remarks>
         public NtResult<NtProcess> Fork(ProcessCreateFlags flags, bool throw_on_error)
         {
-            return CreateProcessEx(ProcessAccessRights.MaximumAllowed, null,
+            return CreateProcessEx(null, ProcessAccessRights.MaximumAllowed,
                 this, flags | ProcessCreateFlags.InheritFromParent, null, null, null, throw_on_error);
         }
 

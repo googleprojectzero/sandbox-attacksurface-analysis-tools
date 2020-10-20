@@ -55,9 +55,9 @@ namespace EditSection
         }
 
         private IEnumerable<string> GetObjectList(string typename)
-        {            
+        {
             HashSet<string> walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);            
+            HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
