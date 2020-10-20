@@ -195,6 +195,27 @@ namespace NtApiDotNet
             return GetObject(true).Result;
         }
 
+        /// <summary>
+        /// Close the handle in the original process.
+        /// </summary>
+        /// <param name="throw_on_error">True throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>This is not recommended.</remarks>
+        public NtStatus CloseHandle(bool throw_on_error)
+        {
+            return NtObject.CloseHandle(ProcessId, 
+                new IntPtr(Handle), throw_on_error);
+        }
+
+        /// <summary>
+        /// Close the handle in the original process.
+        /// </summary>
+        /// <remarks>This is not recommended.</remarks>
+        public void CloseHandle()
+        {
+            CloseHandle(true);
+        }
+
         private string GetName(NtGeneric obj)
         {
             if (obj == null)
