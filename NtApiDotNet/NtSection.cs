@@ -349,12 +349,44 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Map section Read/Write into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> MapReadWrite(NtProcess process, bool throw_on_error)
+        {
+            return Map(process, MemoryAllocationProtect.ReadWrite, throw_on_error);
+        }
+
+        /// <summary>
+        /// Map section Read Only into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> MapRead(NtProcess process, bool throw_on_error)
+        {
+            return Map(process, MemoryAllocationProtect.ReadOnly, throw_on_error);
+        }
+
+        /// <summary>
         /// Map section Read Only into a current process
         /// </summary>
         /// <returns>The mapped section</returns>
         public NtMappedSection MapRead()
         {
             return Map(NtProcess.Current, MemoryAllocationProtect.ReadOnly);
+        }
+
+        /// <summary>
+        /// Map section Read Only into a current process
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> MapRead(bool throw_on_error)
+        {
+            return Map(NtProcess.Current, MemoryAllocationProtect.ReadOnly, throw_on_error);
         }
 
         /// <summary>
@@ -367,6 +399,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Map section Read/Write into a current process
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> MapReadWrite(bool throw_on_error)
+        {
+            return Map(NtProcess.Current, MemoryAllocationProtect.ReadWrite, throw_on_error);
+        }
+
+        /// <summary>
         /// Map section into a specific process
         /// </summary>
         /// <param name="process">The process to map into</param>
@@ -374,7 +416,19 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection Map(NtProcess process, MemoryAllocationProtect type)
         {
-            return Map(process, type, IntPtr.Zero, IntPtr.Zero);
+            return Map(process, type, true).Result;
+        }
+
+        /// <summary>
+        /// Map section into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="type">The protection of the mapping</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> Map(NtProcess process, MemoryAllocationProtect type, bool throw_on_error)
+        {
+            return Map(process, type, IntPtr.Zero, IntPtr.Zero, throw_on_error);
         }
 
         /// <summary>
@@ -431,9 +485,23 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection Map(NtProcess process, MemoryAllocationProtect type, IntPtr view_size, IntPtr base_address)
         {
+            return Map(process, type, view_size, base_address, true).Result;
+        }
+
+        /// <summary>
+        /// Map section into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="type">The protection of the mapping</param>
+        /// <param name="base_address">Optional base address</param>
+        /// <param name="view_size">Optional view size</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mapped section</returns>
+        public NtResult<NtMappedSection> Map(NtProcess process, MemoryAllocationProtect type, IntPtr view_size, IntPtr base_address, bool throw_on_error)
+        {
             return Map(process, type, view_size, base_address,
                 IntPtr.Zero, IntPtr.Zero,
-                null, SectionInherit.ViewUnmap, AllocationType.None, true).Result;
+                null, SectionInherit.ViewUnmap, AllocationType.None, throw_on_error);
         }
 
         /// <summary>

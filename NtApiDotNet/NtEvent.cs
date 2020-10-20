@@ -44,6 +44,24 @@ namespace NtApiDotNet
         #endregion
 
         #region Static Methods
+
+        /// <summary>
+        /// Create an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <param name="root">The root object for relative path names</param>
+        /// <param name="type">The type of the event</param>
+        /// <param name="initial_state">The initial state of the event</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The event object</returns>
+        public static NtResult<NtEvent> Create(string name, NtObject root, EventType type, bool initial_state, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            {
+                return Create(obja, type, initial_state, EventAccessRights.MaximumAllowed, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create an event object
         /// </summary>
@@ -54,10 +72,7 @@ namespace NtApiDotNet
         /// <returns>The event object</returns>
         public static NtEvent Create(string name, NtObject root, EventType type, bool initial_state)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
-            {
-                return Create(obja, type, initial_state, EventAccessRights.MaximumAllowed);
-            }
+            return Create(name, root, type, initial_state, true).Result;
         }
 
         /// <summary>

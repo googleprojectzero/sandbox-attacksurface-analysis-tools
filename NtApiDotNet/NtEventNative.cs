@@ -35,9 +35,19 @@ namespace NtApiDotNet
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
+
+    /// <summary>
+    /// Type of Event object.
+    /// </summary>
     public enum EventType
     {
+        /// <summary>
+        /// Manual reset event.
+        /// </summary>
         NotificationEvent,
+        /// <summary>
+        /// Automatic reset event.
+        /// </summary>
         SynchronizationEvent
     }
 
