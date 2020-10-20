@@ -372,7 +372,95 @@ namespace NtApiDotNet
         /// <param name="token">Access token for the new process.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
         public static NtResult<NtProcess> CreateProcessEx(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
+            NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token, bool throw_on_error)
+        {
+            return Create(object_attributes, desired_access, parent_process, flags, section_handle, debug_port, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="desired_access">Desired access for the new process.</param>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="parent_process">The parent process</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="debug_port">Debug port for the new process.</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
+        public static NtProcess CreateProcessEx(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
+            NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token)
+        {
+            return CreateProcessEx(object_attributes, desired_access, parent_process, flags, section_handle, debug_port, token, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="parent_process">The parent process</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
+        public static NtProcess CreateProcessEx(NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtToken token)
+        {
+            return CreateProcessEx(null, ProcessAccessRights.MaximumAllowed, parent_process, flags, section_handle, null, token);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="parent_process">The parent process</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
+        public static NtProcess CreateProcessEx(NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle)
+        {
+            return CreateProcessEx(parent_process, flags, section_handle, null);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
+        public static NtProcess CreateProcessEx(NtSection section_handle, NtToken token)
+        {
+            return CreateProcessEx(null, ProcessCreateFlags.None, section_handle, token);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <returns>The created process</returns>
+        [Obsolete("Use Create")]
+        public static NtProcess CreateProcessEx(NtSection section_handle)
+        {
+            return CreateProcessEx(section_handle, null);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="desired_access">Desired access for the new process.</param>
+        /// <param name="parent_process">The parent process</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="debug_port">Debug port for the new process.</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created process</returns>
+        /// <remarks>This uses NtCreateProcessEx rather than NtCreateUserProcess</remarks>
+        public static NtResult<NtProcess> Create(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
             NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token, bool throw_on_error)
         {
             return NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, desired_access,
@@ -391,60 +479,14 @@ namespace NtApiDotNet
         /// <param name="debug_port">Debug port for the new process.</param>
         /// <param name="token">Access token for the new process.</param>
         /// <returns>The created process</returns>
-        public static NtProcess CreateProcessEx(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
+        public static NtProcess Create(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
             NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token)
         {
-            return CreateProcessEx(object_attributes, desired_access, parent_process, flags, section_handle, debug_port, token, true).Result;
+            return Create(object_attributes, desired_access, parent_process, flags, section_handle, debug_port, token, true).Result;
         }
 
         /// <summary>
-        /// Create a new process
-        /// </summary>
-        /// <param name="parent_process">The parent process</param>
-        /// <param name="flags">Creation flags</param>
-        /// <param name="section_handle">Handle to the executable image section</param>
-        /// <param name="token">Access token for the new process.</param>
-        /// <returns>The created process</returns>
-        public static NtProcess CreateProcessEx(NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtToken token)
-        {
-            return CreateProcessEx(null, ProcessAccessRights.MaximumAllowed, parent_process, flags, section_handle, null, token);
-        }
-
-        /// <summary>
-        /// Create a new process
-        /// </summary>
-        /// <param name="parent_process">The parent process</param>
-        /// <param name="flags">Creation flags</param>
-        /// <param name="section_handle">Handle to the executable image section</param>
-        /// <returns>The created process</returns>
-        public static NtProcess CreateProcessEx(NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle)
-        {
-            return CreateProcessEx(parent_process, flags, section_handle, null);
-        }
-
-        /// <summary>
-        /// Create a new process
-        /// </summary>
-        /// <param name="section_handle">Handle to the executable image section</param>
-        /// <param name="token">Access token for the new process.</param>
-        /// <returns>The created process</returns>
-        public static NtProcess CreateProcessEx(NtSection section_handle, NtToken token)
-        {
-            return CreateProcessEx(null, ProcessCreateFlags.None, section_handle, token);
-        }
-
-        /// <summary>
-        /// Create a new process
-        /// </summary>
-        /// <param name="section_handle">Handle to the executable image section</param>
-        /// <returns>The created process</returns>
-        public static NtProcess CreateProcessEx(NtSection section_handle)
-        {
-            return CreateProcessEx(section_handle, null);
-        }
-
-        /// <summary>
-        /// Create a new use new process.
+        /// Create a new user process.
         /// </summary>
         /// <param name="config">The process configuration.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -458,8 +500,10 @@ namespace NtApiDotNet
             return Create(config, image_path, false, throw_on_error);
         }
 
+
+
         /// <summary>
-        /// Create a new use new process.
+        /// Create a new user process.
         /// </summary>
         /// <param name="config">The process configuration.</param>
         /// <returns>The result of the process creation</returns>
@@ -638,12 +682,48 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new process
         /// </summary>
-        /// <param name="Flags">Creation flags</param>
-        /// <param name="SectionHandle">Handle to the executable image section</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
         /// <returns>The created process</returns>
-        public NtProcess CreateProcessEx(ProcessCreateFlags Flags, NtSection SectionHandle)
+        /// <remarks>This uses NtCreateProcessEx rather than NtCreateUserProcess</remarks>
+        public NtProcess Create(ProcessCreateFlags flags, NtSection section_handle)
         {
-            return CreateProcessEx(this, Flags, SectionHandle);
+            return Create(null, ProcessAccessRights.MaximumAllowed, flags, section_handle, null, null);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="desired_access">Desired access for the new process.</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="debug_port">Debug port for the new process.</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created process</returns>
+        /// <remarks>This uses NtCreateProcessEx rather than NtCreateUserProcess</remarks>
+        public NtResult<NtProcess> Create(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
+            ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token, bool throw_on_error)
+        {
+            return Create(object_attributes, desired_access, this, flags, section_handle, debug_port, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="desired_access">Desired access for the new process.</param>
+        /// <param name="flags">Creation flags</param>
+        /// <param name="section_handle">Handle to the executable image section</param>
+        /// <param name="debug_port">Debug port for the new process.</param>
+        /// <param name="token">Access token for the new process.</param>
+        /// <returns>The created process</returns>
+        /// <remarks>This uses NtCreateProcessEx rather than NtCreateUserProcess</remarks>
+        public NtProcess Create(ObjectAttributes object_attributes, ProcessAccessRights desired_access,
+            ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token)
+        {
+            return Create(object_attributes, desired_access, flags, section_handle, debug_port, token, true).Result;
         }
 
         /// <summary>

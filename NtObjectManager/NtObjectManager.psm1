@@ -1419,7 +1419,7 @@ function New-NtProcess {
         [NtApiDotNet.NtProcess]::Create($Config, !$ReturnOnError)
     } else {
         Use-NtObject($obja = New-NtObjectAttributes -SecurityDescriptor $SecurityDescriptor) {
-            [NtApiDotNet.NtProcess]::CreateProcessEx($obja, $Access, $Parent, $Flags, $Section, $DebugPort, $Token)
+            [NtApiDotNet.NtProcess]::Create($obja, $Access, $Parent, $Flags, $Section, $DebugPort, $Token)
         }
     }
 }
