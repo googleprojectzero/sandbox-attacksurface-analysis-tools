@@ -4922,9 +4922,60 @@ function Get-RunningService {
                     $State = "Active"
                 }
 
-                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $ServiceType) | Write-Output
+                Get-Win32Service -State $State -ServiceType $ServiceType
             }
             "FromArgs" {
+                Get-Win32Service -State $State -ServiceType $ServiceType
+            }
+            "FromName" {
+                Get-Win32Service -Name $Name
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Gets a list of win32 services.
+.DESCRIPTION
+This cmdlet gets a list of all win32 services. 
+.PARAMETER State
+Specify the state of the services to get.
+.PARAMETER ServiceType
+Specify to filter the services to specific types only.
+.PARAMETER Name
+Specify names to lookup.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RunningService[]
+.EXAMPLE
+Get-Win32Service
+Get all services.
+.EXAMPLE
+Get-Win32Service -State Active
+Get all active services.
+.EXAMPLE
+Get-Win32Service -State All -ServiceType UserService
+Get all user services.
+#>
+function Get-Win32Service {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.Win32.ServiceState]$State = "All",
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = 0,
+        [parameter(ParameterSetName = "FromName", Position = 0)]
+        [string[]]$Name
+    )
+
+    PROCESS {
+        switch ($PSCmdlet.ParameterSetName) {
+            "All" {
+                if ($ServiceType -eq 0) {
+                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
+                }
                 [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $ServiceType) | Write-Output
             }
             "FromName" {

@@ -338,13 +338,16 @@ namespace NtApiDotNet.Win32
             return ss.AsReadOnly();
         }
 
-        private static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle, string type_name)
-        {
-            byte[] sd = new byte[8192];
-            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, SecurityInformation.Dacl
+        private static SecurityInformation DEFAULT_SECURITY_INFORMATION = SecurityInformation.Dacl
                 | SecurityInformation.Owner
                 | SecurityInformation.Label
-                | SecurityInformation.Group, sd, sd.Length, out _))
+                | SecurityInformation.Group;
+
+        private static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle, 
+            string type_name, SecurityInformation security_information)
+        {
+            byte[] sd = new byte[8192];
+            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information, sd, sd.Length, out _))
             {
                 throw new SafeWin32Exception();
             }
@@ -426,7 +429,8 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name, bool throw_on_error)
+        private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name, 
+            SecurityInformation security_information, bool throw_on_error)
         {
             using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name,
                 ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
@@ -436,7 +440,7 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"),
+                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service", security_information),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
                     QueryConfig(service, false).GetResultOrDefault()).CreateResult();
@@ -569,13 +573,23 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get the security descriptor of the SCM.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The SCM security descriptor.</returns>
         public static SecurityDescriptor GetScmSecurityDescriptor()
+        {
+            return GetScmSecurityDescriptor(DEFAULT_SECURITY_INFORMATION);
+        }
+
+        /// <summary>
+        /// Get the security descriptor of the SCM.
+        /// </summary>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <returns>The SCM security descriptor.</returns>
+        public static SecurityDescriptor GetScmSecurityDescriptor(SecurityInformation security_information)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
             {
-                return GetServiceSecurityDescriptor(scm, "scm");
+                return GetServiceSecurityDescriptor(scm, "scm", security_information);
             }
         }
 
@@ -595,7 +609,7 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return GetServiceSecurityInformation(scm, name, throw_on_error);
+                return GetServiceSecurityInformation(scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
             }
         }
 

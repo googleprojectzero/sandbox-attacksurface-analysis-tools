@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Authorization;
 using NtObjectManager.Utils;
@@ -86,6 +87,18 @@ namespace NtObjectManager.Cmdlets.Win32
                     {
                         path = PSUtils.ResolveWin32Path(SessionState, Name, false);
                     }
+
+                    if (Type == SeObjectType.Service)
+                    {
+                        SecurityInformation &= SecurityInformation.Owner |
+                            SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label;
+                        if (Name == ".")
+                        {
+                            sd = ServiceUtils.GetScmSecurityDescriptor(SecurityInformation);
+                            break;
+                        }
+                    }
+
                     sd = Win32Security.GetSecurityInfo(path, Type, SecurityInformation);
                     break;
                 case "FromObject":
