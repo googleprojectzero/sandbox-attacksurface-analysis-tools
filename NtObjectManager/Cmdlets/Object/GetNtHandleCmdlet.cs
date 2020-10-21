@@ -70,6 +70,13 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter NoQuery { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify that the returned handle entries should force querying for file information from non-filesystem files. 
+        /// This is not the default as it can cause the lookup of filenames and security descriptors to hang.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ForceFileQuery { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify list of object types to filter handles.</para>
         /// </summary>
         [Parameter]
@@ -91,11 +98,11 @@ namespace NtObjectManager.Cmdlets.Object
             IEnumerable<NtHandle> handles;
             if (ParameterSetName == "FromProcess")
             {
-                handles = Process.GetHandles(!NoQuery);
+                handles = Process.GetHandles(!NoQuery, ForceFileQuery, true).Result;
             }
             else
             {
-                handles = NtSystemInfo.GetHandles(ProcessId, !NoQuery);
+                handles = NtSystemInfo.GetHandles(ProcessId, !NoQuery, ForceFileQuery);
             }
 
             if (ObjectTypes != null && ObjectTypes.Length > 0)

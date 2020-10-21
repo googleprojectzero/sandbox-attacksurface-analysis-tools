@@ -130,13 +130,28 @@ namespace NtApiDotNet
                     }
 
                     NtType = obj.Result.NtType;
+                    if (!_force_file_query && obj.Result.NtTypeName == "File")
+                    {
+                        using (var file = obj.Result.ToTypedObject() as NtFile)
+                        {
+                            var device_type = file?.DeviceType ?? FileDeviceType.UNKNOWN;
+                            switch (device_type)
+                            {
+                                case FileDeviceType.DISK:
+                                case FileDeviceType.CD_ROM:
+                                    break;
+                                default:
+                                    return;
+                            }
+                        }
+                    }
                     _name = GetName(obj.Result);
                     _sd = GetSecurityDescriptor(obj.Result);
                 }
             }
         }
 
-        internal NtHandle(SystemHandleTableInfoEntryEx entry, bool allow_query)
+        internal NtHandle(SystemHandleTableInfoEntryEx entry, bool allow_query, bool force_file_query)
         {
             ProcessId = entry.UniqueProcessId.ToInt32();
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -150,9 +165,10 @@ namespace NtApiDotNet
             Object = entry.Object.ToUInt64();
             GrantedAccess = entry.GrantedAccess;
             _allow_query = allow_query;
+            _force_file_query = force_file_query;
         }
 
-        internal NtHandle(int process_id, ProcessHandleTableEntryInfo entry, bool allow_query)
+        internal NtHandle(int process_id, ProcessHandleTableEntryInfo entry, bool allow_query, bool force_file_query)
         {
             ProcessId = process_id;
             NtType = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -160,6 +176,7 @@ namespace NtApiDotNet
             Handle = entry.HandleValue.ToInt32();
             GrantedAccess = entry.GrantedAccess;
             _allow_query = allow_query;
+            _force_file_query = force_file_query;
         }
 
         /// <summary>
@@ -222,6 +239,7 @@ namespace NtApiDotNet
             {
                 return string.Empty;
             }
+
             return obj.FullPath;
         }
 
@@ -249,5 +267,6 @@ namespace NtApiDotNet
         private string _name;
         private SecurityDescriptor _sd;
         private bool _allow_query;
+        private bool _force_file_query;
     }
 }

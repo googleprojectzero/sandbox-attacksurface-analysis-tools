@@ -5123,25 +5123,6 @@ namespace NtApiDotNet
         public string NormalizedName => Path.GetFileName(NormalizedFileName);
 
         /// <summary>
-        /// Get the name of the file.
-        /// </summary>
-        /// <returns>The name of the file.</returns>
-        public override string FullPath
-        {
-            get
-            {
-                if (DeviceType != FileDeviceType.NAMED_PIPE)
-                {
-                    return base.FullPath;
-                }
-                else
-                {
-                    return base.FullPath;
-                }
-            }
-        }
-
-        /// <summary>
         /// Get or set the storage reserve ID.
         /// </summary>
         public StorageReserveId StorageReserveId

@@ -1567,10 +1567,11 @@ namespace NtApiDotNet
         /// Get handles for process.
         /// </summary>
         /// <param name="allow_query">Specify to all name/details to be queried from the handle.</param>
+        /// <param name="force_file_query">Force file query for name/details for non-filesystem handles.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of handles.</returns>
         /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
-        public NtResult<IEnumerable<NtHandle>> GetHandles(bool allow_query, bool throw_on_error)
+        public NtResult<IEnumerable<NtHandle>> GetHandles(bool allow_query, bool force_file_query, bool throw_on_error)
         {
             using (var buffer = QueryBuffer<ProcessHandleSnapshotInformation>(ProcessInformationClass.ProcessHandleInformation, default, throw_on_error))
             {
@@ -1579,8 +1580,20 @@ namespace NtApiDotNet
                 var info = buffer.Result;
                 ProcessHandleTableEntryInfo[] handles = new ProcessHandleTableEntryInfo[info.Result.NumberOfHandles.ToInt32()];
                 info.Data.ReadArray(0, handles, 0, handles.Length);
-                return handles.Select(h => new NtHandle(ProcessId, h, allow_query)).ToArray().CreateResult<IEnumerable<NtHandle>>();
+                return handles.Select(h => new NtHandle(ProcessId, h, allow_query, force_file_query)).ToArray().CreateResult<IEnumerable<NtHandle>>();
             }
+        }
+
+        /// <summary>
+        /// Get handles for process.
+        /// </summary>
+        /// <param name="allow_query">Specify to all name/details to be queried from the handle.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of handles.</returns>
+        /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
+        public NtResult<IEnumerable<NtHandle>> GetHandles(bool allow_query, bool throw_on_error)
+        {
+            return GetHandles(allow_query, false, throw_on_error);
         }
 
         /// <summary>
@@ -1591,7 +1604,7 @@ namespace NtApiDotNet
         /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
         public IEnumerable<NtHandle> GetHandles(bool allow_query)
         {
-            return GetHandles(allow_query, true).Result;
+            return GetHandles(allow_query, false, true).Result;
         }
 
         /// <summary>

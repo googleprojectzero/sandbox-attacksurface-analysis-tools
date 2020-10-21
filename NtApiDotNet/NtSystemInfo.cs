@@ -176,8 +176,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="pid">A process ID to filter on. If -1 will get all handles</param>
         /// <param name="allow_query">True to allow the handles returned to query for certain properties</param>
+        /// <param name="force_file_name">True to force all file names to be queried. Otherwise limits to only DISK files.</param>
         /// <returns>The list of handles</returns>
-        public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
+        /// <remarks>The purpose of force_file_name to disable querying a file handle for its path unless it's on a FS volume.
+        /// This is because some non-file types can be in a locked state which causes the filename lookup to hang.</remarks>
+        public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query, bool force_file_name)
         {
             int repeat_count = 10;
 
@@ -207,10 +210,21 @@ namespace NtApiDotNet
                     handle_count = handle_info.NumberOfHandles.ToInt32();
                     SystemHandleTableInfoEntryEx[] handles = new SystemHandleTableInfoEntryEx[handle_count];
                     buffer.Data.ReadArray(0, handles, 0, handle_count);
-                    return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query));
+                    return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query, force_file_name));
                 }
             }
             throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+        }
+
+        /// <summary>
+        /// Get a list of handles
+        /// </summary>
+        /// <param name="pid">A process ID to filter on. If -1 will get all handles</param>
+        /// <param name="allow_query">True to allow the handles returned to query for certain properties</param>
+        /// <returns>The list of handles</returns>
+        public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
+        {
+            return GetHandles(pid, allow_query, false);
         }
 
         /// <summary>
