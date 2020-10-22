@@ -21,23 +21,41 @@ namespace NtApiDotNet
     [Flags]
     public enum TransactionAccessRights : uint
     {
-        QueryInformation = 1,
-        SetInformation = 2,
-        Enlist = 4,
-        Commit = 8,
+        [SDKName("TRANSACTION_QUERY_INFORMATION")]
+        QueryInformation = 0x01,
+        [SDKName("TRANSACTION_SET_INFORMATION")]
+        SetInformation = 0x02,
+        [SDKName("TRANSACTION_ENLIST")]
+        Enlist = 0x04,
+        [SDKName("TRANSACTION_COMMIT")]
+        Commit = 0x08,
+        [SDKName("TRANSACTION_ROLLBACK")]
         Rollback = 0x10,
+        [SDKName("TRANSACTION_PROPAGATE")]
         Propagate = 0x20,
+        [SDKName("TRANSACTION_RIGHT_RESERVED1")]
         RightReserved1 = 0x40,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

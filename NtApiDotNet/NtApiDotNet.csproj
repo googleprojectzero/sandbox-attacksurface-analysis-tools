@@ -101,6 +101,7 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
+    <Compile Include="SDKNameAttribute.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
     <Compile Include="Security\Policy\CentralAccessPolicy.cs" />
     <Compile Include="Security\Policy\CentralAccessRule.cs" />

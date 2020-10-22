@@ -22,31 +22,56 @@ namespace NtApiDotNet
     public enum ProcessAccessRights : uint
     {
         None = 0,
+        [SDKName("PROCESS_TERMINATE")]
         Terminate = 0x0001,
+        [SDKName("PROCESS_CREATE_THREAD")]
         CreateThread = 0x0002,
+        [SDKName("PROCESS_SET_SESSIONID")]
         SetSessionId = 0x0004,
+        [SDKName("PROCESS_VM_OPERATION")]
         VmOperation = 0x0008,
+        [SDKName("PROCESS_VM_READ")]
         VmRead = 0x0010,
+        [SDKName("PROCESS_VM_WRITE")]
         VmWrite = 0x0020,
+        [SDKName("PROCESS_DUP_HANDLE")]
         DupHandle = 0x0040,
+        [SDKName("PROCESS_CREATE_PROCESS")]
         CreateProcess = 0x0080,
+        [SDKName("PROCESS_SET_QUOTA")]
         SetQuota = 0x0100,
+        [SDKName("PROCESS_SET_INFORMATION")]
         SetInformation = 0x0200,
+        [SDKName("PROCESS_QUERY_INFORMATION")]
         QueryInformation = 0x0400,
+        [SDKName("PROCESS_SUSPEND_RESUME")]
         SuspendResume = 0x0800,
+        [SDKName("PROCESS_QUERY_LIMITED_INFORMATION")]
         QueryLimitedInformation = 0x1000,
+        [SDKName("PROCESS_SET_LIMITED_INFORMATION")]
         SetLimitedInformation = 0x2000,
         AllAccess = 0x1FFFFF,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     };
 

@@ -61,7 +61,10 @@ namespace NtApiDotNet
         /// The generic access this maps to.
         /// </summary>
         public GenericAccessType GenericAccess { get; }
-
+        /// <summary>
+        /// The optional SDK name.
+        /// </summary>
+        public string SDKName { get; }
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -76,6 +79,7 @@ namespace NtApiDotNet
             Mask = mask;
             Value = value;
             GenericAccess = generic_access;
+            SDKName = value.GetSDKName();
         }
     }
 }

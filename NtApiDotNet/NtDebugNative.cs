@@ -21,20 +21,35 @@ namespace NtApiDotNet
     [Flags]
     public enum DebugAccessRights : uint
     {
+        [SDKName("DEBUG_READ_EVENT")]
         ReadEvent = 0x1,
+        [SDKName("DEBUG_PROCESS_ASSIGN")]
         ProcessAssign = 0x2,
+        [SDKName("DEBUG_SET_INFORMATION")]
         SetInformation = 0x4,
+        [SDKName("DEBUG_QUERY_INFORMATION")]
         QueryInformation = 0x8,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

@@ -22,30 +22,54 @@ namespace NtApiDotNet
     [Flags]
     public enum ThreadAccessRights : uint
     {
+        [SDKName("THREAD_TERMINATE")]
         Terminate = 0x0001,
+        [SDKName("THREAD_SUSPEND_RESUME")]
         SuspendResume = 0x0002,
+        [SDKName("THREAD_ALERT")]
         Alert = 0x0004,
+        [SDKName("THREAD_GET_CONTEXT")]
         GetContext = 0x0008,
+        [SDKName("THREAD_SET_CONTEXT")]
         SetContext = 0x0010,
+        [SDKName("THREAD_SET_INFORMATION")]
         SetInformation = 0x0020,
+        [SDKName("THREAD_QUERY_INFORMATION")]
         QueryInformation = 0x0040,
+        [SDKName("THREAD_SET_THREAD_TOKEN")]
         SetThreadToken = 0x0080,
+        [SDKName("THREAD_IMPERSONATE")]
         Impersonate = 0x0100,
+        [SDKName("THREAD_DIRECT_IMPERSONATION")]
         DirectImpersonation = 0x0200,
+        [SDKName("THREAD_SET_LIMITED_INFORMATION")]
         SetLimitedInformation = 0x0400,
+        [SDKName("THREAD_QUERY_LIMITED_INFORMATION")]
         QueryLimitedInformation = 0x0800,
+        [SDKName("THREAD_RESUME")]
         Resume = 0x1000,
         AllAccess = 0x1FFFFF,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

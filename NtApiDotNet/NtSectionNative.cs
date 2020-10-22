@@ -42,22 +42,39 @@ namespace NtApiDotNet
     [Flags]
     public enum SectionAccessRights : uint
     {
+        [SDKName("SECTION_QUERY")]
         Query = 0x0001,
+        [SDKName("SECTION_MAP_WRITE")]
         MapWrite = 0x0002,
+        [SDKName("SECTION_MAP_READ")]
         MapRead = 0x0004,
+        [SDKName("SECTION_MAP_EXECUTE")]
         MapExecute = 0x0008,
+        [SDKName("SECTION_EXTEND_SIZE")]
         ExtendSize = 0x0010,
+        [SDKName("SECTION_MAP_EXECUTE_EXPLICIT")]
         MapExecuteExplicit = 0x0020,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

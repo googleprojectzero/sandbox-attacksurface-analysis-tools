@@ -21,25 +21,45 @@ namespace NtApiDotNet
     [Flags]
     public enum DesktopAccessRights : uint
     {
+        [SDKName("DESKTOP_READOBJECTS")]
         ReadObjects = 0x0001,
+        [SDKName("DESKTOP_CREATEWINDOW")]
         CreateWindow = 0x0002,
+        [SDKName("DESKTOP_CREATEMENU")]
         CreateMenu = 0x0004,
+        [SDKName("DESKTOP_HOOKCONTROL")]
         HookControl = 0x0008,
+        [SDKName("DESKTOP_JOURNALRECORD")]
         JournalRecord = 0x0010,
+        [SDKName("DESKTOP_JOURNALPLAYBACK")]
         JournalPlayback = 0x0020,
+        [SDKName("DESKTOP_ENUMERATE")]
         Enumerate = 0x0040,
+        [SDKName("DESKTOP_WRITEOBJECTS")]
         WriteObjects = 0x0080,
+        [SDKName("DESKTOP_SWITCHDESKTOP")]
         SwitchDesktop = 0x0100,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

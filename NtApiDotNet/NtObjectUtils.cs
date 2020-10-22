@@ -839,5 +839,18 @@ namespace NtApiDotNet
         {
             return Encoding.Unicode.GetString(data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
         }
+
+        internal static T GetEnumAttribute<T>(this Enum value) where T : Attribute
+        {
+            MemberInfo member = value.GetType().GetMember(value.ToString()).FirstOrDefault();
+            if (member == null)
+                return null;
+            return member.GetCustomAttribute<T>();
+        }
+
+        internal static string GetSDKName(this Enum value)
+        {
+            return GetEnumAttribute<SDKNameAttribute>(value)?.Name ?? string.Empty;
+        }
     }
 }

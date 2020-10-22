@@ -1370,25 +1370,45 @@ namespace NtApiDotNet
     public enum FileAccessRights : uint
     {
         None = 0,
+        [SDKName("FILE_READ_DATA")]
         ReadData = 0x0001,
+        [SDKName("FILE_WRITE_DATA")]
         WriteData = 0x0002,
+        [SDKName("FILE_APPEND_DATA")]
         AppendData = 0x0004,
+        [SDKName("FILE_READ_EA")]
         ReadEa = 0x0008,
+        [SDKName("FILE_WRITE_EA")]
         WriteEa = 0x0010,
+        [SDKName("FILE_EXECUTE")]
         Execute = 0x0020,
+        [SDKName("FILE_DELETE_CHILD")]
         DeleteChild = 0x0040,
+        [SDKName("FILE_READ_ATTRIBUTES")]
         ReadAttributes = 0x0080,
+        [SDKName("FILE_WRITE_ATTRIBUTES")]
         WriteAttributes = 0x0100,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
@@ -1396,25 +1416,45 @@ namespace NtApiDotNet
     public enum FileDirectoryAccessRights : uint
     {
         None = 0,
+        [SDKName("FILE_LIST_DIRECTORY")]
         ListDirectory = 0x0001,
+        [SDKName("FILE_ADD_FILE")]
         AddFile = 0x0002,
+        [SDKName("FILE_ADD_SUBDIRECTORY")]
         AddSubDirectory = 0x0004,
+        [SDKName("FILE_READ_EA")]
         ReadEa = 0x0008,
+        [SDKName("FILE_WRITE_EA")]
         WriteEa = 0x0010,
+        [SDKName("FILE_TRAVERSE")]
         Traverse = 0x0020,
+        [SDKName("FILE_DELETE_CHILD")]
         DeleteChild = 0x0040,
+        [SDKName("FILE_READ_ATTRIBUTES")]
         ReadAttributes = 0x0080,
+        [SDKName("FILE_WRITE_ATTRIBUTES")]
         WriteAttributes = 0x0100,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

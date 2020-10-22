@@ -21,23 +21,41 @@ namespace NtApiDotNet
     [Flags]
     public enum ResourceManagerAccessRights : uint
     {
+        [SDKName("RESOURCEMANAGER_QUERY_INFORMATION")]
         QueryInformation = 1,
+        [SDKName("RESOURCEMANAGER_SET_INFORMATION")]
         SetInformation = 2,
+        [SDKName("RESOURCEMANAGER_RECOVER")]
         Recover = 4,
+        [SDKName("RESOURCEMANAGER_ENLIST")]
         Enlist = 8,
+        [SDKName("RESOURCEMANAGER_GET_NOTIFICATION")]
         GetNotification = 0x10,
+        [SDKName("RESOURCEMANAGER_REGISTER_PROTOCOL")]
         RegisterProtocol = 0x20,
+        [SDKName("RESOURCEMANAGER_COMPLETE_PROPAGATION")]
         CompletePropagation = 0x40,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

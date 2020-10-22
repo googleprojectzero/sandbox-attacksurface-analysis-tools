@@ -120,25 +120,45 @@ namespace NtApiDotNet
     [Flags]
     public enum TokenAccessRights : uint
     {
+        [SDKName("TOKEN_ASSIGN_PRIMARY")]
         AssignPrimary = 0x0001,
+        [SDKName("TOKEN_DUPLICATE")]
         Duplicate = 0x0002,
+        [SDKName("TOKEN_IMPERSONATE")]
         Impersonate = 0x0004,
+        [SDKName("TOKEN_QUERY")]
         Query = 0x0008,
+        [SDKName("TOKEN_QUERY_SOURCE")]
         QuerySource = 0x0010,
+        [SDKName("TOKEN_ADJUST_PRIVILEGES")]
         AdjustPrivileges = 0x0020,
+        [SDKName("TOKEN_ADJUST_GROUPS")]
         AdjustGroups = 0x0040,
+        [SDKName("TOKEN_ADJUST_DEFAULT")]
         AdjustDefault = 0x0080,
+        [SDKName("TOKEN_ADJUST_SESSIONID")]
         AdjustSessionId = 0x0100,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

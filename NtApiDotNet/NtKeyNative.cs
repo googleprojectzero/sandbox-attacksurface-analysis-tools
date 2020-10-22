@@ -33,22 +33,39 @@ namespace NtApiDotNet
     [Flags]
     public enum KeyAccessRights : uint
     {
+        [SDKName("KEY_QUERY_VALUE")]
         QueryValue = 0x0001,
+        [SDKName("KEY_SET_VALUE")]
         SetValue = 0x0002,
+        [SDKName("KEY_CREATE_SUB_KEY")]
         CreateSubKey = 0x0004,
+        [SDKName("KEY_ENUMERATE_SUB_KEYS")]
         EnumerateSubKeys = 0x0008,
+        [SDKName("KEY_NOTIFY")]
         Notify = 0x0010,
+        [SDKName("KEY_CREATE_LINK")]
         CreateLink = 0x0020,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
