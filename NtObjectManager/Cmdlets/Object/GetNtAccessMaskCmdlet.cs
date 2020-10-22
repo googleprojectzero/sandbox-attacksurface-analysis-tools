@@ -29,19 +29,19 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Get the Process DupHandle access right as an AccessMask</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtAccessMask -ProcessAccess DupHandle -ToGenericAccess</code>
+    ///   <code>Get-NtAccessMask -ProcessAccess DupHandle -AsGenericAccess</code>
     ///   <para>Get the Process DupHandle access right as a GenericAccess value</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtAccessMask -AccessMask 0xFF -ToSpecificAccess Process</code>
+    ///   <code>Get-NtAccessMask -AccessMask 0xFF -AsTypeAccess Process</code>
     ///   <para>Convert a raw access mask to a process access mask.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtAccessMask -AccessControlEntry $sd.Dacl[0] -ToSpecificAccess Thread</code>
+    ///   <code>Get-NtAccessMask -AccessControlEntry $sd.Dacl[0] -AsTypeAccess Thread</code>
     ///   <para>Get the access mask from a security descriptor ACE and map to thread access.</para>
     /// </example>
     /// <example>
-    ///   <code>$sd.Dacl | Get-NtAccessMask -ToSpecificAccess Thread</code>
+    ///   <code>$sd.Dacl | Get-NtAccessMask -AsTypeAccess Thread</code>
     ///   <para>Get the access mask from a list of security descriptor ACEs and map to thread access.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtAccessMask", DefaultParameterSetName = "FromMask")]
@@ -217,12 +217,14 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Return access as GenericAccess.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter ToGenericAccess { get; set; }
+        [Alias("ToGenericAccess")]
+        public SwitchParameter AsGenericAccess { get; set; }
         /// <summary>
         /// <para type="description">Return access as ManadatoryLabelPolicy.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter ToMandatoryLabelPolicy { get; set; }
+        [Alias("ToMandatoryLabelPolicy")]
+        public SwitchParameter AsMandatoryLabelPolicy { get; set; }
         /// <summary>
         /// <para type="description">Return access as specific access type based on the type enumeration.</para>
         /// </summary>
@@ -231,8 +233,9 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Return access as specific access type based on the NtType object.</para>
         /// </summary>
+        [Alias("ToTypeAccess")]
         [Parameter, ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
-        public NtType ToTypeAccess { get; set; }
+        public NtType AsTypeAccess { get; set; }
         /// <summary>
         /// <para type="description">Specify that any generic rights should be mapped to type specific rights.</para>
         /// </summary>
@@ -306,21 +309,21 @@ namespace NtObjectManager.Cmdlets.Object
                 mask = GenericMapping.Value.GetAllowedMandatoryAccess(mask.ToMandatoryLabelPolicy());
             }
 
-            if (ToGenericAccess)
+            if (AsGenericAccess)
             {
                 WriteObject(mask.ToGenericAccess());
             }
-            else if (ToMandatoryLabelPolicy)
+            else if (AsMandatoryLabelPolicy)
             {
                 WriteObject(mask.ToMandatoryLabelPolicy());
             }
-            else if (ToSpecificAccess == SpecificAccessType.None && ToTypeAccess == null)
+            else if (ToSpecificAccess == SpecificAccessType.None && AsTypeAccess == null)
             {
                 WriteObject(mask);
             }
             else
             {
-                NtType type = ToTypeAccess ?? GetTypeObject(ToSpecificAccess);
+                NtType type = AsTypeAccess ?? GetTypeObject(ToSpecificAccess);
                 WriteObject(mask.ToSpecificAccess(type.AccessRightsType));
             }
         }
