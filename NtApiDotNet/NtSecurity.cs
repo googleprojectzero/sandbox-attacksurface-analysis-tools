@@ -2094,10 +2094,16 @@ namespace NtApiDotNet
         {
             // S-1-5-86-1544737700-199408000-2549878335-3519669259-381336952
             { new Sid(SecurityAuthority.Nt, 86, 1544737700, 199408000, 2549878335, 3519669259, 381336952), "WMI_LOCAL_SERVICE" },
-            // "S-1-5-86-615999462-62705297-2911207457-59056572-3668589837"
+            // S-1-5-86-615999462-62705297-2911207457-59056572-3668589837
             { new Sid(SecurityAuthority.Nt, 86, 615999462, 62705297, 2911207457, 59056572, 3668589837), "WMI_NETWORK_SERVICE" },
-            // "S-1-5-96-0"
+            // S-1-5-96-0
             { new Sid(SecurityAuthority.Nt, 96, 0), @"Font Driver Host\Font Driver Host Group" },
+            // S-1-5-93-0
+            { new Sid(SecurityAuthority.Nt, 93, 0), @"ContainerGroup" },
+            // S-1-5-93-2-1
+            { new Sid(SecurityAuthority.Nt, 93, 2, 1), @"ContainerAdmin" },
+            // S-1-5-93-2-2
+            { new Sid(SecurityAuthority.Nt, 93, 2, 2), @"ContainerUser" },
         };
 
         private static string UpperCaseString(string name)
