@@ -12302,6 +12302,10 @@ Get a range of system information values.
 This cmdlet gets a range of system information values.
 .PARAMETER IsolatedUserMode
 Return isolated usermode flags.
+.PARAMETER ProcessorInformation
+Return processor information.
+.PARAMETER MultiSession
+Return whether this system is a multi-session SKU.
 .INPUTS
 None
 .OUTPUTS
@@ -12314,13 +12318,17 @@ function Get-NtSystemInformation {
     param(
         [Parameter(Mandatory, ParameterSetName="IsolatedUserMode")]
         [switch]$IsolatedUserMode,
-        [Parameter(Mandatory, ParameterSetName="ProcessInformation")]
-        [switch]$ProcessInformation
+        [Parameter(Mandatory, ParameterSetName="ProcessorInformation")]
+        [switch]$ProcessorInformation,
+        [Parameter(Mandatory, ParameterSetName="MultiSession")]
+        [switch]$MultiSession
     )
     if ($IsolatedUserMode) {
         [NtApiDotNet.NtSystemInfo]::IsolatedUserModeFlags
-    } elseif ($ProcessInformation) {
+    } elseif ($ProcessorInformation) {
         [NtApiDotNet.NtSystemInfo]::ProcessorInformation
+    } elseif ($MultiSession) {
+        [NtApiDotNet.NtSystemInfo]::IsMultiSession
     }
 }
 

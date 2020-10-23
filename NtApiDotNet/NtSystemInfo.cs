@@ -1270,12 +1270,26 @@ namespace NtApiDotNet
         /// Get the NT product type.
         /// </summary>
         /// <returns></returns>
-        public static NtProductType GetProductType()
+        public static NtProductType ProductType
         {
-            if (!NtRtl.RtlGetNtProductType(out NtProductType result))
-                throw new ArgumentException("Invalid product type.");
-            return result;
+            get
+            {
+                if (!NtRtl.RtlGetNtProductType(out NtProductType result))
+                    throw new ArgumentException("Invalid product type.");
+                return result;
+            }
         }
+
+        /// <summary>
+        /// Get whether this is a multi-session SKU.
+        /// </summary>
+        /// <returns>True if multi-session.</returns>
+        public static bool IsMultiSession => NtRtl.RtlIsMultiSessionSku();
+        /// <summary>
+        /// Get whether this there are multiple users in a session.
+        /// </summary>
+        /// <returns>True if multi-session.</returns>
+        public static bool IsMultiUsersInSession => NtRtl.RtlIsMultiUsersInSessionSku();
         #endregion
     }
 }

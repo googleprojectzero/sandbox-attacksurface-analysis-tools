@@ -145,6 +145,14 @@ namespace NtApiDotNet
         public static extern NtStatus RtlGetVersion(
             ref RTL_OSVERSIONINFOEXW lpVersionInformation
         );
+
+        [DllImport("ntdll.dll")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlIsMultiSessionSku();
+
+        [DllImport("ntdll.dll")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlIsMultiUsersInSessionSku();
     }
 
     [Flags]
