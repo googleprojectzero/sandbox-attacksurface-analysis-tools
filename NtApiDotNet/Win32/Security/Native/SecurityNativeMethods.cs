@@ -626,6 +626,12 @@ namespace NtApiDotNet.Win32.Security.Native
               out NtStatus ProtocolStatus
         );
 
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaManageSidNameMapping(
+            LSA_SID_NAME_MAPPING_OPERATION_TYPE OperationType,
+            SafeBuffer OperationInput,
+            out LSA_SID_NAME_MAPPING_OPERATION_ERROR OperationOutput
+        );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode QueryContextAttributesEx(

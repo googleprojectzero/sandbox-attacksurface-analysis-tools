@@ -436,6 +436,11 @@
     <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_METADATA.cs" />
     <Compile Include="Win32\Security\Authenticode\EnclaveConfiguration.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
+    <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT.cs" />
+    <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_MULTIPLE_INPUT.cs" />
+    <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ERROR.cs" />
+    <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT.cs" />
+    <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_TYPE.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_ATTR.cs" />

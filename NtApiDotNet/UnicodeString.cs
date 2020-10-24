@@ -135,6 +135,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Structure to use when passing in a unicode string as a sub-structure.
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     public struct UnicodeStringIn
     {
         ushort Length;

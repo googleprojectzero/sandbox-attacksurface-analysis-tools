@@ -580,6 +580,7 @@ namespace NtApiDotNet.Win32
         public WinCertType wCertificateType;   // WIN_CERT_TYPE_xxx
         public byte bCertificate;
     }
+
     internal static class Win32NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
