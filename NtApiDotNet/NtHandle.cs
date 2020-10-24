@@ -92,6 +92,23 @@ namespace NtApiDotNet
         public bool ProtectFromClose => Attributes.HasFlag(AttributeFlags.ProtectClose);
 
         /// <summary>
+        /// Whether the handle has write access.
+        /// </summary>
+        public bool HasWriteAccess => NtType?.HasWritePermission(GrantedAccess) ?? false;
+        /// <summary>
+        /// Whether the handle has read access.
+        /// </summary>
+        public bool HasReadAccess => NtType?.HasReadPermission(GrantedAccess) ?? false;
+        /// <summary>
+        /// Whether the handle has execute access.
+        /// </summary>
+        public bool HasExecuteAccess => NtType?.HasExecutePermission(GrantedAccess) ?? false;
+        /// <summary>
+        /// Whether the handle has full access.
+        /// </summary>
+        public bool HasFullAccess => NtType?.HasFullPermission(GrantedAccess) ?? false;
+
+        /// <summary>
         /// The name of the object (needs to have set query access in constructor)
         /// </summary>
         public string Name
@@ -113,6 +130,28 @@ namespace NtApiDotNet
                 QueryValues();
                 return _sd;
             }
+        }
+
+        /// <summary>
+        /// Indicates if the handle was valid.
+        /// </summary>
+        /// <remarks>This can cause the handle's values to be queried which can take time.</remarks>
+        public bool HandleValid
+        {
+            get
+            {
+                QueryValues();
+                return _handle_valid;
+            }
+        }
+
+        /// <summary>
+        /// Overridden ToString.
+        /// </summary>
+        /// <returns>The handle as a string.</returns>
+        public override string ToString()
+        {
+            return $"PID: {ProcessId} Type: {ObjectType}";
         }
 
         private void QueryValues()
@@ -145,6 +184,7 @@ namespace NtApiDotNet
                             }
                         }
                     }
+                    _handle_valid = true;
                     _name = GetName(obj.Result);
                     _sd = GetSecurityDescriptor(obj.Result);
                 }
@@ -268,5 +308,6 @@ namespace NtApiDotNet
         private SecurityDescriptor _sd;
         private bool _allow_query;
         private bool _force_file_query;
+        private bool _handle_valid;
     }
 }

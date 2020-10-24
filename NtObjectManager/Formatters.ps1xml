@@ -4068,5 +4068,50 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>NtHandleObjectGroup</Name>
+      <ViewSelectedBy>
+        <TypeName>NtObjectManager.Cmdlets.Object.NtHandleObjectGroup</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Count</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ProcessCount</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Object</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Handles</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Count</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ProcessCount</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Object</PropertyName>
+                <FormatString>X016</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Handles</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

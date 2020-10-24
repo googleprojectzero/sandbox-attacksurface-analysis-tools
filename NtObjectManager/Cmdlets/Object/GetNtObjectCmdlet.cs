@@ -32,7 +32,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Get a existing object with an explicit type.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Get-NtObject \BaseNamedObjects&#x0A;$obj = Get-NtObject ABC -Root $root</code>
+    ///   <code>$root = Get-NtDirectory \BaseNamedObjects&#x0A;$obj = Get-NtObject ABC -Root $root</code>
     ///   <para>Get an existing object with a relative path.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>

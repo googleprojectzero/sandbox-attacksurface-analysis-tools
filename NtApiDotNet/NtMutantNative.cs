@@ -70,7 +70,8 @@ namespace NtApiDotNet
         public static extern NtStatus NtReleaseMutant(SafeKernelObjectHandle MutantHandle, out int PreviousState);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryMutant(SafeKernelObjectHandle MutantHandle,
+        public static extern NtStatus NtQueryMutant(
+            SafeKernelObjectHandle MutantHandle,
             MutantInformationClass MutantInformationClass,
             SafeBuffer MutantInformation,
             int MutantInformationLength,

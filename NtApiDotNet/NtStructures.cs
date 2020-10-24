@@ -51,6 +51,11 @@ namespace NtApiDotNet
         {
             return new NtWaitTimeout(QuadPart);
         }
+
+        public override string ToString()
+        {
+            return QuadPart.ToString();
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -83,6 +88,11 @@ namespace NtApiDotNet
         internal ulong ToUInt64()
         {
             return (ulong)QuadPart;
+        }
+
+        public override string ToString()
+        {
+            return QuadPart.ToString();
         }
     }
 #pragma warning restore 1591

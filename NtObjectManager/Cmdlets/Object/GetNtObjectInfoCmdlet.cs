@@ -76,13 +76,21 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Return the result as a type rather than a byte array. Also uses type size for initial sizing.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "Type")]
+        [Parameter(ParameterSetName = "QueryType")]
         public Type AsType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Return the result as a type rather than a byte array. Also uses type size for initial sizing.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "QueryObject")]
+        public SwitchParameter AsObject { get; set; }
 
         /// <summary>
         /// <para type="description">Specify initial value as a byte array.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "QueryBuffer")]
+        [Parameter(ParameterSetName = "QueryType")]
+        [Parameter(ParameterSetName = "QueryBytes")]
         public byte[] InitBuffer { get; set; }
 
         /// <summary>
@@ -120,19 +128,26 @@ namespace NtObjectManager.Cmdlets.Object
                 throw new ArgumentException($"Invalid info class {InformationClass}");
             }
 
-            using (var buffer = query_info.QueryBuffer(info_class, GetInitialBuffer(), true).Result)
+            if (AsObject)
             {
-                if (AsBuffer)
+                WriteObject(query_info.QueryObject(info_class, true).Result);
+            }
+            else
+            {
+                using (var buffer = query_info.QueryBuffer(info_class, GetInitialBuffer(), true).Result)
                 {
-                    WriteObject(buffer.Detach());
-                }
-                else if (AsType != null)
-                {
-                    WriteObject(Marshal.PtrToStructure(buffer.DangerousGetHandle(), AsType));
-                }
-                else
-                {
-                    WriteObject(buffer.ToArray());
+                    if (AsBuffer)
+                    {
+                        WriteObject(buffer.Detach());
+                    }
+                    else if (AsType != null)
+                    {
+                        WriteObject(Marshal.PtrToStructure(buffer.DangerousGetHandle(), AsType));
+                    }
+                    else
+                    {
+                        WriteObject(buffer.ToArray());
+                    }
                 }
             }
         }

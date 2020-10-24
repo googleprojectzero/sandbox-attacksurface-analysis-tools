@@ -26,6 +26,7 @@ namespace NtApiDotNet
     public interface INtObjectQueryInformation
     {
         NtResult<SafeHGlobalBuffer> QueryBuffer(int info_class, byte[] init_buffer, bool throw_on_error);
+        NtResult<object> QueryObject(int info_class, bool throw_on_error);
     }
 
     /// <summary>
@@ -158,6 +159,28 @@ namespace NtApiDotNet
         public T QueryEnum<T>(Q info_class) where T : Enum
         {
             return QueryEnum<T, int> (info_class);
+        }
+
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public virtual NtResult<object> QueryObject(Q info_class, bool throw_on_error)
+        {
+            throw new ArgumentException($"{info_class} is unsupported for query.", nameof(info_class));
+        }
+
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <returns>The information class as an object.</returns>
+        /// <remarks>If the information class doesn't have an explicit object type a raw byte query will be made.</remarks>
+        public virtual object QueryObject(Q info_class)
+        {
+            return QueryObject(info_class, true).Result;
         }
 
         /// <summary>
@@ -540,6 +563,10 @@ namespace NtApiDotNet
         NtResult<SafeHGlobalBuffer> INtObjectQueryInformation.QueryBuffer(int info_class, byte[] init_buffer, bool throw_on_error)
         {
             return QueryRawBuffer((Q)Enum.ToObject(typeof(Q), info_class), init_buffer, throw_on_error);
+        }
+        NtResult<object> INtObjectQueryInformation.QueryObject(int info_class, bool throw_on_error)
+        {
+            return QueryObject((Q)Enum.ToObject(typeof(Q), info_class), throw_on_error);
         }
         #endregion
 
