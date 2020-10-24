@@ -161,7 +161,7 @@ namespace NtApiDotNet
                     ret = ReadMoniker(key.Result, sid);
                 }
             }
-            
+
             if (ret == null)
             {
                 using (var key = NtKey.GetMachineKey(false))
@@ -390,7 +390,7 @@ namespace NtApiDotNet
             AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error)
         {
-            return AccessCheckByType(sd, token, desired_access, principal, 
+            return AccessCheckByType(sd, token, desired_access, principal,
                 generic_mapping, object_types, NtSystemCalls.NtAccessCheckByType, throw_on_error);
         }
 
@@ -427,7 +427,7 @@ namespace NtApiDotNet
             T desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error) where T : Enum
         {
-            return AccessCheck(sd, token, (AccessMask)desired_access, principal, 
+            return AccessCheck(sd, token, (AccessMask)desired_access, principal,
                 generic_mapping, object_types, throw_on_error).Map(r => r.ToSpecificAccess<T>());
         }
 
@@ -443,7 +443,7 @@ namespace NtApiDotNet
         /// <returns>The result of the access check.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static AccessCheckResult<T> AccessCheck<T>(SecurityDescriptor sd, NtToken token,
-            T desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types) 
+            T desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types)
                 where T : Enum
         {
             return AccessCheck(sd, token, desired_access, principal, generic_mapping, object_types, true).Result;
@@ -616,7 +616,7 @@ namespace NtApiDotNet
         /// <returns>The named resource security descriptor. Returns null if can't open the resource.</returns>
         public static SecurityDescriptor FromNamedObject(string name, string type)
         {
-            using (var obj = NtObject.OpenWithType(type, name, null, AttributeFlags.CaseInsensitive, 
+            using (var obj = NtObject.OpenWithType(type, name, null, AttributeFlags.CaseInsensitive,
                 GenericAccessRights.ReadControl, null, false))
             {
                 if (!obj.IsSuccess)
@@ -656,20 +656,20 @@ namespace NtApiDotNet
             bool object_creation,
             AuditEventType audit_type,
             AuditAccessCheckFlags flags,
-            SecurityDescriptor sd, 
+            SecurityDescriptor sd,
             NtToken token,
-            AccessMask desired_access, 
-            Sid principal, 
-            GenericMapping generic_mapping, 
+            AccessMask desired_access,
+            Sid principal,
+            GenericMapping generic_mapping,
             IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error)
         {
             var context = new AuditAccessCheckContext(
-                subsystem_name, handle_id, 
+                subsystem_name, handle_id,
                 object_type_name, object_name, object_creation,
                 audit_type, flags);
             return AccessCheckByType(sd, token, desired_access, principal,
-                generic_mapping, object_types, 
+                generic_mapping, object_types,
                 context.AccessCheckByType, throw_on_error).Map(context.Map);
         }
 
@@ -911,7 +911,7 @@ namespace NtApiDotNet
         /// <returns>True if a capability group sid.</returns>
         public static bool IsCapabilityGroupSid(Sid sid)
         {
-            return sid.Authority.IsAuthority(SecurityAuthority.Nt) && 
+            return sid.Authority.IsAuthority(SecurityAuthority.Nt) &&
                 sid.SubAuthorities.Count == 9 &&
                 sid.SubAuthorities[0] == 32;
         }
@@ -930,7 +930,7 @@ namespace NtApiDotNet
                 return NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
                     cap_group_sid, cap_sid)
-                    .CreateResult(throw_on_error, () 
+                    .CreateResult(throw_on_error, ()
                     => CacheSidName(new Sid(cap_sid), capability_name, SidNameSource.Capability));
             }
         }
@@ -958,7 +958,7 @@ namespace NtApiDotNet
             {
                 return NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
-                    cap_group_sid, cap_sid).CreateResult(throw_on_error, 
+                    cap_group_sid, cap_sid).CreateResult(throw_on_error,
                     () => CacheSidName(new Sid(cap_group_sid), capability_name, SidNameSource.Capability));
             }
         }
@@ -1118,7 +1118,7 @@ namespace NtApiDotNet
         /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
         /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
         /// <returns>True if the conditional expression was a success.</returns>
-        public static bool EvaluateConditionAce(NtToken token, string condition_sddl, 
+        public static bool EvaluateConditionAce(NtToken token, string condition_sddl,
             IEnumerable<ClaimSecurityAttribute> resource_attributes)
         {
             return EvaluateConditionAce(token, condition_sddl, resource_attributes, true).Result;
@@ -1144,7 +1144,7 @@ namespace NtApiDotNet
         /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>True if the conditional expression was a success.</returns>
-        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data, 
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data,
             IEnumerable<ClaimSecurityAttribute> resource_attributes, bool throw_on_error)
         {
             SecurityDescriptor sd = new SecurityDescriptor
@@ -1270,7 +1270,7 @@ namespace NtApiDotNet
         /// <param name="signing_level">The signing level to cache</param>
         /// <param name="source_files">A list of source file for the cache.</param>
         /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
-        public static void SetCachedSigningLevel(SafeKernelObjectHandle handle, 
+        public static void SetCachedSigningLevel(SafeKernelObjectHandle handle,
                                                  int flags, SigningLevel signing_level,
                                                  IEnumerable<SafeKernelObjectHandle> source_files,
                                                  string catalog_path)
@@ -1297,12 +1297,12 @@ namespace NtApiDotNet
             if (!string.IsNullOrEmpty(catalog_path))
             {
                 CachedSigningLevelInformation info = new CachedSigningLevelInformation(catalog_path);
-                return NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, 
+                return NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles,
                     handles_count, handle, info).ToNtException(throw_on_error);
             }
             else
             {
-                return NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, 
+                return NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles,
                     handles_count, handle).ToNtException(throw_on_error);
             }
         }
@@ -1364,7 +1364,7 @@ namespace NtApiDotNet
         /// <returns>The new logon session SID.</returns>
         public static Sid GetLogonSessionSid(Luid session_id)
         {
-            return new Sid(SecurityAuthority.Nt, 5, 
+            return new Sid(SecurityAuthority.Nt, 5,
                 (uint)session_id.HighPart, session_id.LowPart);
         }
 
@@ -1400,7 +1400,7 @@ namespace NtApiDotNet
         /// <return>The NT status result and security descriptor as a buffer.</return>
         public static NtResult<SafeHGlobalBuffer> GetSecurityDescriptor(SafeKernelObjectHandle handle, SecurityInformation security_information, bool throw_on_error)
         {
-            NtStatus status = NtSystemCalls.NtQuerySecurityObject(handle, security_information, SafeHGlobalBuffer.Null, 
+            NtStatus status = NtSystemCalls.NtQuerySecurityObject(handle, security_information, SafeHGlobalBuffer.Null,
                 0, out int return_length);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
@@ -1422,7 +1422,7 @@ namespace NtApiDotNet
         /// <param name="security_information">What parts of the security descriptor to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <return>The NT status result.</return>
-        public static NtStatus SetSecurityDescriptor(SafeKernelObjectHandle handle, SafeBuffer security_desc, 
+        public static NtStatus SetSecurityDescriptor(SafeKernelObjectHandle handle, SafeBuffer security_desc,
             SecurityInformation security_information, bool throw_on_error)
         {
             return NtSystemCalls.NtSetSecurityObject(handle, security_information, security_desc).ToNtException(throw_on_error);
@@ -1497,7 +1497,7 @@ namespace NtApiDotNet
                 mask |= GenericAccessRights.WriteDac;
             if (SecurityInformation.HasFlagSet(SecurityInformation.Sacl))
                 mask |= GenericAccessRights.AccessSystemSecurity;
-            if (SecurityInformation.HasFlagSet(SecurityInformation.Sacl | SecurityInformation.Label | SecurityInformation.Attribute 
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Sacl | SecurityInformation.Label | SecurityInformation.Attribute
                 | SecurityInformation.Scope | SecurityInformation.ProcessTrustLabel | SecurityInformation.AccessFilter))
             {
                 if (SecurityInformation.HasFlagSet(SecurityInformation.ProtectedSacl | SecurityInformation.UnprotectedSacl))
@@ -1713,7 +1713,7 @@ namespace NtApiDotNet
                 // Map mask then unmap back to Generic Rights.
                 access = generic_mapping.UnmapMask(generic_mapping.MapMask(access));
             }
-            else if(!access.HasGenericAccess && generic_mapping.HasAll(access))
+            else if (!access.HasGenericAccess && generic_mapping.HasAll(access))
             {
                 return "Full Access";
             }
@@ -1874,7 +1874,7 @@ namespace NtApiDotNet
             IntPtr handle_id,
             bool generate_on_close)
         {
-            CloseObjectAudit(subsystem_name, handle_id, 
+            CloseObjectAudit(subsystem_name, handle_id,
                 generate_on_close, true);
         }
 
@@ -1909,7 +1909,7 @@ namespace NtApiDotNet
             IntPtr handle_id,
             bool generate_on_close)
         {
-            DeleteObjectAudit(subsystem_name, handle_id, 
+            DeleteObjectAudit(subsystem_name, handle_id,
                 generate_on_close, true);
         }
 
@@ -2059,18 +2059,31 @@ namespace NtApiDotNet
         /// Get GenericMapping for standard access rights.
         /// </summary>
         public static GenericMapping StandardAccessMapping => new GenericMapping()
-                                                                    {
-                                                                        GenericRead = 0x20000,
-                                                                        GenericWrite = 0x10D0000,
-                                                                        GenericExecute = 0x100000,
-                                                                        GenericAll = 0x11F0000,
-                                                                    };
+        {
+            GenericRead = 0x20000,
+            GenericWrite = 0x10D0000,
+            GenericExecute = 0x100000,
+            GenericAll = 0x11F0000,
+        };
         #endregion
 
         #region Internal Members
         internal static Sid CacheSidName(Sid sid, string name, SidNameSource source)
         {
-            _cached_names.TryAdd(sid, new SidName(name, source));
+            _cached_names.GetOrAdd(sid, s =>
+            {
+                if (source == SidNameSource.Capability)
+                {
+                    var cap_sids = GetKnownCapabilitySids();
+                    if (cap_sids.ContainsKey(sid))
+                    {
+                        name = cap_sids[sid];
+                    }
+
+                    name = MakeFakeCapabilityName(name, IsCapabilityGroupSid(sid));
+                }
+                return new SidName(name, source);
+            });
             return sid;
         }
 
