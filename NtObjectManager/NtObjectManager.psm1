@@ -3462,6 +3462,10 @@ The size of the memory to read. This is the maximum, if the memory address is in
 The process to read from, defaults to current process.
 .PARAMETER ReadAll
 Specify to ensure you read all the requested memory from the process.
+.PARAMETER Mapping
+Specify a mapped section object.
+.PARAMETER Offset
+Specify the offset into the mapped section.
 .OUTPUTS
 byte[] - The array of read bytes. The size of the output might be smaller than the requested size.
 .EXAMPLE
@@ -3473,17 +3477,30 @@ Read up to 4096 from $addr in another process.
 .EXAMPLE
 Read-NtVirtualMemory $addr 0x1000 -ReadAll
 Read up to 4096 from $addr, fail if can't read all the bytes.
+.EXAMPLE
+Read-NtVirtualMemory $map -Offset 100 -Size 512
+Read up to 512 bytes from offset 100 into a mapped file.
 #>
 function Read-NtVirtualMemory {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromAddress")]
     param (
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromAddress")]
         [int64]$Address,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromMapping")]
+        [NtApiDotNet.NtMappedSection]$Mapping,
+        [parameter(ParameterSetName="FromMapping")]
+        [int64]$Offset = 0,
         [parameter(Mandatory, Position = 1)]
         [int]$Size,
+        [parameter(ParameterSetName="FromAddress")]
         [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
         [switch]$ReadAll
     )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromMapping") {
+        $Address = $Mapping.BaseAddress + $Offset
+        $Process = $Mapping.Process
+    }
     $Process.ReadMemory($Address, $Size, $ReadAll)
 }
 
@@ -3498,6 +3515,10 @@ The address location to write.
 The data buffer to write.
 .PARAMETER Process
 The process to write to, defaults to current process.
+.PARAMETER Mapping
+Specify a mapped section object.
+.PARAMETER Offset
+Specify the offset into the mapped section.
 .OUTPUTS
 int - The length of bytes successfully written.
 .EXAMPLE
@@ -3506,16 +3527,29 @@ Write 5 bytes to $addr
 .EXAMPLE
 Write-NtVirtualMemory $addr 0, 1, 2, 3, 4 -Process $process
 Write 5 bytes to $addr in another process.
+.EXAMPLE
+Write-NtVirtualMemory $map -Offset 100 -Data 0, 1, 2, 3, 4
+Write 5 bytes to a mapping at offset 100.
 #>
 function Write-NtVirtualMemory {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromAddress")]
     param (
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromAddress")]
         [int64]$Address,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromMapping")]
+        [NtApiDotNet.NtMappedSection]$Mapping,
+        [parameter(ParameterSetName="FromMapping")]
+        [int64]$Offset = 0,
         [parameter(Mandatory, Position = 1)]
         [byte[]]$Data,
+        [parameter(ParameterSetName="FromAddress")]
         [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
     )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromMapping") {
+        $Address = $Mapping.BaseAddress + $Offset
+        $Process = $Mapping.Process
+    }
     $Process.WriteMemory($Address, $Data)
 }
 
