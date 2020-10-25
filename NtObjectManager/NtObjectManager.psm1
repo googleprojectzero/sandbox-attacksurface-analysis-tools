@@ -3407,7 +3407,7 @@ function Get-NtVirtualMemory {
                 $State = $State -bor "Free"
             }
             if ($Name -ne "") {
-                $Process.QueryAllMemoryInformation($Type, $State) | Where-Object MappedImageName -eq $Name | Write-Output
+                $Process.QueryAllMemoryInformation($Type, $State) | Where-Object Name -eq $Name | Write-Output
             }
             else {
                 $Process.QueryAllMemoryInformation($Type, $State) | Write-Output
