@@ -490,9 +490,11 @@ namespace NtApiDotNet.Win32.Security
         {
             using (var sid_buffer = sid.ToSafeBuffer())
             {
-                LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT();
-                input.Sid = sid_buffer.DangerousGetHandle();
-                input.DomainName = new UnicodeStringIn(domain);
+                LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT
+                {
+                    Sid = sid_buffer.DangerousGetHandle(),
+                    DomainName = new UnicodeStringIn(domain)
+                };
                 if (name != null)
                 {
                     input.AccountName = new UnicodeStringIn(name);
@@ -500,8 +502,16 @@ namespace NtApiDotNet.Win32.Security
                 
                 using (var input_buffer = input.ToBuffer())
                 {
-                    return SecurityNativeMethods.LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Add,
-                        input_buffer, out LSA_SID_NAME_MAPPING_OPERATION_ERROR _).ToNtException(throw_on_error);
+                    SafeLsaMemoryBuffer output = null;
+                    try
+                    {
+                        return SecurityNativeMethods.LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Add,
+                            input_buffer, out output).ToNtException(throw_on_error);
+                    }
+                    finally
+                    {
+                        output?.Dispose();
+                    }
                 }
             }
         }
@@ -527,8 +537,10 @@ namespace NtApiDotNet.Win32.Security
         /// <returns>The NT status result.</returns>
         public static NtStatus RemoveSidNameMapping(string domain, string name, bool throw_on_error)
         {
-            LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT();
-            input.DomainName = new UnicodeStringIn(domain);
+            LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT
+            {
+                DomainName = new UnicodeStringIn(domain)
+            };
             if (name != null)
             {
                 input.AccountName = new UnicodeStringIn(name);
@@ -536,8 +548,16 @@ namespace NtApiDotNet.Win32.Security
 
             using (var input_buffer = input.ToBuffer())
             {
-                return SecurityNativeMethods.LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Remove,
-                    input_buffer, out LSA_SID_NAME_MAPPING_OPERATION_ERROR _).ToNtException(throw_on_error);
+                SafeLsaMemoryBuffer output = null;
+                try
+                {
+                    return SecurityNativeMethods.LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Remove,
+                        input_buffer, out output).ToNtException(throw_on_error);
+                }
+                finally
+                {
+                    output?.Dispose();
+                }
             }
         }
 

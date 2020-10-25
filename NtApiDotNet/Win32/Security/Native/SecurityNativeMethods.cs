@@ -630,7 +630,7 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern NtStatus LsaManageSidNameMapping(
             LSA_SID_NAME_MAPPING_OPERATION_TYPE OperationType,
             SafeBuffer OperationInput,
-            out LSA_SID_NAME_MAPPING_OPERATION_ERROR OperationOutput
+            out SafeLsaMemoryBuffer OperationOutput
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
