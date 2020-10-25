@@ -53,13 +53,13 @@ namespace NtObjectManager.Cmdlets.Object
         }
 
         /// <summary>
-        /// The count of the group.
+        /// The mumber of handles in the group.
         /// </summary>
         public long Count { get; }
         /// <summary>
-        /// Number of shared processes.
+        /// Number of processes this kernel object is shared with.
         /// </summary>
-        public int ProcessCount { get; }
+        public int ShareCount { get; }
         /// <summary>
         /// The name of the key.
         /// </summary>
@@ -90,7 +90,7 @@ namespace NtObjectManager.Cmdlets.Object
             Object = group.Key;
             Count = group.Count();
             Handles = group;
-            ProcessCount = group.GroupBy(h => h.ProcessId).Count();
+            ShareCount = group.GroupBy(h => h.ProcessId).Count();
             _get_values = new Lazy<Tuple<string, SecurityDescriptor>>(GetValues);
         }
     }
