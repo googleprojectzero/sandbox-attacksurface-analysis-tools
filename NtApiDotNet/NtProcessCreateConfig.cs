@@ -179,6 +179,25 @@ namespace NtApiDotNet
         /// </summary>
         public NtDebug DebugObject { get; set; }
 
+        /// <summary>
+        /// Toggle inherit handles process create flag.
+        /// </summary>
+        public bool InheritHandles
+        {
+            get => ProcessFlags.HasFlagSet(ProcessCreateFlags.InheritHandles);
+            set
+            {
+                if (value)
+                {
+                    ProcessFlags |= ProcessCreateFlags.InheritHandles;
+                }
+                else
+                {
+                    ProcessFlags &= ~ProcessCreateFlags.InheritHandles;
+                }
+            }
+        }
+
         #endregion
 
         #region Public Methods
