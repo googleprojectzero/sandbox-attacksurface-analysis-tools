@@ -6155,7 +6155,10 @@ function Close-NtObject {
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromCurrentProcess")]
         [IntPtr]$Handle,
         [parameter(Mandatory, ParameterSetName = "FromCurrentProcess")]
-        [switch]$CurrentProcess
+        [parameter(Mandatory, ParameterSetName = "FromCurrentProcessSafe")]
+        [switch]$CurrentProcess,
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCurrentProcessSafe")]
+        [NtApiDotNet.SafeKernelObjectHandle]$SafeHandle
     )
 
     PROCESS {
@@ -6164,6 +6167,7 @@ function Close-NtObject {
             "FromProcess" { [NtApiDotNet.NtObject]::CloseHandle($Process, $Handle) }
             "FromProcessId" { [NtApiDotNet.NtObject]::CloseHandle($ProcessId, $Handle) }
             "FromCurrentProcess" { [NtApiDotNet.NtObject]::CloseHandle($Handle) }
+            "FromCurrentProcessSafe" { [NtApiDotNet.NtObject]::CloseHandle($SafeHandle) }
         }
     }
 }

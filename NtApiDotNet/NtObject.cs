@@ -374,12 +374,21 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="handle">The handle to close.</param>
         /// <returns>The NT status code.</returns>
-        /// <remarks>This ensures the handle can't be 0 before calling NtClose.</remarks>
         public static NtStatus CloseHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
                 return NtStatus.STATUS_INVALID_HANDLE;
             return NtSystemCalls.NtClose(handle);
+        }
+
+        /// <summary>
+        /// Close a handle.
+        /// </summary>
+        /// <param name="handle">The handle to close.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus CloseHandle(SafeKernelObjectHandle handle)
+        {
+            return CloseHandle(handle.DangerousGetHandle());
         }
 
         /// <summary>
