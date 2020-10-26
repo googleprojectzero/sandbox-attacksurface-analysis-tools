@@ -12509,3 +12509,37 @@ function Start-Win32DebugConsole {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Test if a process can be opened.
+.DESCRIPTION
+This cmdlet tests if a process can be opened. You can specify a specific access mask to check
+or request the maximum access.
+.PARAMETER ProcessId
+Specify the process ID to check.
+.PARAMETER Access
+Specify the access to check.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+.EXAMPLE
+Test-NtProcess -ProcessId 1234
+Test if PID 1234 can be opened with maximum access.
+.EXAMPLE
+Test-NtProcess -ProcessId 1234 -Access DupHandle
+Test if PID 1234 can be opened with DupHandle access.
+#>
+function Test-NtProcess {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [int]$ProcessId,
+        [NtApiDotNet.ProcessAccessRights]$Access = "MaximumAllowed"
+    )
+
+    Use-NtObject($proc = [NtApiDotNet.NtProcess]::Open($ProcessId, $Access, $false)) {
+        $proc.IsSuccess
+    }
+}
