@@ -4080,7 +4080,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>ProcessCount</Label>
+            <Label>ShareCount</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
@@ -4099,7 +4099,7 @@
                 <PropertyName>Count</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>ProcessCount</PropertyName>
+                <PropertyName>ShareCount</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Object</PropertyName>

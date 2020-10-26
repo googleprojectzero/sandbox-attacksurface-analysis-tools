@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,6 +62,10 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         public int ShareCount { get; }
         /// <summary>
+        /// The list of unique process IDs.
+        /// </summary>
+        public IEnumerable<int> ProcessIds { get; }
+        /// <summary>
         /// The name of the key.
         /// </summary>
         public ulong Object { get; }
@@ -84,13 +89,37 @@ namespace NtObjectManager.Cmdlets.Object
         /// Does the group have a security descriptor.
         /// </summary>
         public bool HasSecurityDescriptor => SecurityDescriptor != null;
+        /// <summary>
+        /// The intersection of all handle access.
+        /// </summary>
+        public AccessMask AccessIntersection { get; }
+        /// <summary>
+        /// The union of all handle access.
+        /// </summary>
+        public AccessMask AccessUnion { get; }
+
+        private static AccessMask IntersectAccessMask(IEnumerable<IGrouping<int, NtHandle>> pid_group)
+        {
+            AccessMask start_mask = 0xFFFFFFFF;
+            foreach (var group in pid_group)
+            {
+                AccessMask curr_mask = group.Select(h => h.GrantedAccess).Aggregate((a, b) => a | b);
+                start_mask &= curr_mask;
+            }
+            return start_mask;
+        }
 
         internal NtHandleObjectGroup(IGrouping<ulong, NtHandle> group)
         {
             Object = group.Key;
             Count = group.Count();
             Handles = group;
-            ShareCount = group.GroupBy(h => h.ProcessId).Count();
+            var pid_group = group.GroupBy(h => h.ProcessId);
+            var pids = pid_group.Select(g => g.Key).ToList();
+            ProcessIds = pids.AsReadOnly();
+            ShareCount = pids.Count;
+            AccessIntersection = IntersectAccessMask(pid_group);
+            AccessUnion = group.Select(h => h.GrantedAccess).Aggregate((a, b) => a | b);
             _get_values = new Lazy<Tuple<string, SecurityDescriptor>>(GetValues);
         }
     }
@@ -158,7 +187,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify list of object types to filter handles.</para>
         /// </summary>
-        [Parameter]
+        [Parameter, ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         [Alias("ObjectTypes")]
         public string[] ObjectType { get; set; }
 
