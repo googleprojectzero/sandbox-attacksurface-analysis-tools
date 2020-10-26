@@ -12557,29 +12557,3 @@ function Test-NtProcess {
         $proc.IsSuccess
     }
 }
-
-<#
-.SYNOPSIS
-Get a random byte array.
-.DESCRIPTION
-This cmdlet gets a byte array of a specified size with random contents.
-.PARAMETER Count
-Specify the number of bytes to return.
-.INPUTS
-None
-.OUTPUTS
-byte[]
-.EXAMPLE
-Get-RandomByte -Count 100
-Get a random byte array of 100 bytes.
-#>
-function Get-RandomByte {
-    param (
-        [parameter(Mandatory, Position = 0)]
-        [int]$Count
-    )
-    $ba = New-Object byte[] -ArgumentList $Count
-    $rand = New-Object System.Random
-    $rand.NextBytes($ba)
-    Write-Object $ba -NoEnumerate
-}
