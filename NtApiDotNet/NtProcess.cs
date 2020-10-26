@@ -1573,6 +1573,7 @@ namespace NtApiDotNet
         /// <remarks>This queries the handles from the process which does not contain the Object's addres in kernel memory.</remarks>
         public NtResult<IEnumerable<NtHandle>> GetHandles(bool allow_query, bool force_file_query, bool throw_on_error)
         {
+            string path = FullPath;
             using (var buffer = QueryBuffer<ProcessHandleSnapshotInformation>(ProcessInformationClass.ProcessHandleInformation, default, throw_on_error))
             {
                 if (!buffer.IsSuccess)
@@ -1580,7 +1581,7 @@ namespace NtApiDotNet
                 var info = buffer.Result;
                 ProcessHandleTableEntryInfo[] handles = new ProcessHandleTableEntryInfo[info.Result.NumberOfHandles.ToInt32()];
                 info.Data.ReadArray(0, handles, 0, handles.Length);
-                return handles.Select(h => new NtHandle(ProcessId, h, allow_query, force_file_query)).ToArray().CreateResult<IEnumerable<NtHandle>>();
+                return handles.Select(h => new NtHandle(ProcessId, h, allow_query, force_file_query, path)).ToArray().CreateResult<IEnumerable<NtHandle>>();
             }
         }
 

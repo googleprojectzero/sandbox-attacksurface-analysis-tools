@@ -167,6 +167,15 @@ namespace NtApiDotNet
             return ret.CreateResult();
         }
 
+        private static string GetProcessImagePath(int pid, Dictionary<int, string> cache)
+        {
+            if (!cache.ContainsKey(pid))
+            {
+                cache[pid] = GetProcessIdImagePath(pid, false).GetResultOrDefault(string.Empty);
+            }
+            return cache[pid];
+        }
+
         #endregion
 
         #region Static Methods
@@ -183,6 +192,11 @@ namespace NtApiDotNet
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query, bool force_file_name)
         {
             int repeat_count = 10;
+            Dictionary<int, string> image_paths = new Dictionary<int, string>
+            {
+                [0] = "Idle",
+                [4] = "System"
+            };
 
             while (repeat_count-- > 0)
             {
@@ -210,7 +224,9 @@ namespace NtApiDotNet
                     handle_count = handle_info.NumberOfHandles.ToInt32();
                     SystemHandleTableInfoEntryEx[] handles = new SystemHandleTableInfoEntryEx[handle_count];
                     buffer.Data.ReadArray(0, handles, 0, handle_count);
-                    return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query, force_file_name));
+
+                    return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid)
+                        .Select(h => new NtHandle(h, allow_query, force_file_name, GetProcessImagePath(h.UniqueProcessId.ToInt32(), image_paths)));
                 }
             }
             throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);

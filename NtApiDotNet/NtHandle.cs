@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.IO;
 
 namespace NtApiDotNet
 {
@@ -25,6 +26,16 @@ namespace NtApiDotNet
         /// The ID of the process holding the handle
         /// </summary>
         public int ProcessId { get; }
+
+        /// <summary>
+        /// Get the image path for the process which contains this handle.
+        /// </summary>
+        public string ProcessImagePath { get; }
+
+        /// <summary>
+        /// Get name of the process which contains this handle.
+        /// </summary>
+        public string ProcessName => Path.GetFileName(ProcessImagePath);
 
         /// <summary>
         /// The object type index
@@ -191,7 +202,7 @@ namespace NtApiDotNet
             }
         }
 
-        internal NtHandle(SystemHandleTableInfoEntryEx entry, bool allow_query, bool force_file_query)
+        internal NtHandle(SystemHandleTableInfoEntryEx entry, bool allow_query, bool force_file_query, string process_image_path)
         {
             ProcessId = entry.UniqueProcessId.ToInt32();
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -206,9 +217,10 @@ namespace NtApiDotNet
             GrantedAccess = entry.GrantedAccess;
             _allow_query = allow_query;
             _force_file_query = force_file_query;
+            ProcessImagePath = process_image_path;
         }
 
-        internal NtHandle(int process_id, ProcessHandleTableEntryInfo entry, bool allow_query, bool force_file_query)
+        internal NtHandle(int process_id, ProcessHandleTableEntryInfo entry, bool allow_query, bool force_file_query, string process_image_path)
         {
             ProcessId = process_id;
             NtType = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -217,6 +229,7 @@ namespace NtApiDotNet
             GrantedAccess = entry.GrantedAccess;
             _allow_query = allow_query;
             _force_file_query = force_file_query;
+            ProcessImagePath = process_image_path;
         }
 
         /// <summary>
