@@ -135,7 +135,8 @@ namespace NtApiDotNet.Win32.Security.Policy
             if (!account_rights.Any())
                 return NtStatus.STATUS_SUCCESS;
 
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.LookupNames, throw_on_error))
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, 
+                LsaPolicyAccessRights.LookupNames | LsaPolicyAccessRights.CreateAccount, throw_on_error))
             {
                 if (!policy.IsSuccess)
                     return policy.Status;

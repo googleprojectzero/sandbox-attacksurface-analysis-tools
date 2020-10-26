@@ -595,6 +595,28 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Add account rights as privileges.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="logon_type">The list of account logon types.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus AddAccountRights(Sid sid, AccountRightLogonType[] logon_type, bool throw_on_error)
+        {
+            return AddAccountRights(sid, logon_type.Select(p => p.ToString()), throw_on_error);
+        }
+
+        /// <summary>
+        /// Add account rights as privileges.
+        /// </summary>
+        /// <param name="sid">The user SID to add.</param>
+        /// <param name="logon_type">The list of account logon types.</param>
+        public static void AddAccountRights(Sid sid, params AccountRightLogonType[] logon_type)
+        {
+            AddAccountRights(sid, logon_type, true);
+        }
+
+        /// <summary>
         /// Remove account rights from a user.
         /// </summary>
         /// <param name="sid">The user SID to remove.</param>
@@ -604,6 +626,16 @@ namespace NtApiDotNet.Win32
         public static NtStatus RemoveAccountRights(Sid sid, IEnumerable<string> account_rights, bool throw_on_error)
         {
             return AccountRight.RemoveAccountRights(null, sid, false, account_rights, throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="account_rights">The list of account rights.</param>
+        public static void RemoveAccountRights(Sid sid, IEnumerable<string> account_rights)
+        {
+            RemoveAccountRights(sid, account_rights, true);
         }
 
         /// <summary>
@@ -624,6 +656,28 @@ namespace NtApiDotNet.Win32
         /// <param name="sid">The user SID to remove.</param>
         /// <param name="privileges">The list of account privileges.</param>
         public static void RemoveAccountRights(Sid sid, params TokenPrivilegeValue[] privileges)
+        {
+            RemoveAccountRights(sid, privileges, true);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="logon_type">The list of account rights.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus RemoveAccountRights(Sid sid, AccountRightLogonType[] logon_type, bool throw_on_error)
+        {
+            return RemoveAccountRights(sid, logon_type.Select(p => p.ToString()), throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove account rights from a user.
+        /// </summary>
+        /// <param name="sid">The user SID to remove.</param>
+        /// <param name="privileges">The list of account rights.</param>
+        public static void RemoveAccountRights(Sid sid, params AccountRightLogonType[] privileges)
         {
             RemoveAccountRights(sid, privileges, true);
         }
