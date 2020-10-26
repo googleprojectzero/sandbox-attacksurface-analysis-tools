@@ -9601,6 +9601,8 @@ Specify a SID to add the account right for.
 Specify the privileges to add.
 .PARAMETER Name
 Specify the list of account right names to add.
+.PARAMETER LogonType
+Specify the list of logon types to add.
 .INPUTS
 None
 .OUTPUTS
@@ -9617,7 +9619,9 @@ function Add-NtAccountRight {
         [parameter(Mandatory, ParameterSetName = "FromPrivs")]
         [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
         [parameter(Mandatory, ParameterSetName = "FromString")]
-        [string[]]$Name
+        [string[]]$Name,
+        [parameter(Mandatory, ParameterSetName = "FromLogonType")]
+        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -9626,6 +9630,9 @@ function Add-NtAccountRight {
         }
         "FromPrivs" {
             [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $Privilege)
+        }
+        "FromLogonType" {
+            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $LogonType)
         }
     }
 }
@@ -9641,6 +9648,8 @@ Specify a SID to remove the account right for.
 Specify the privileges to remove.
 .PARAMETER Name
 Specify the list of account right names to remove.
+.PARAMETER LogonType
+Specify the list of logon types to remove.
 .INPUTS
 None
 .OUTPUTS
@@ -9657,7 +9666,9 @@ function Remove-NtAccountRight {
         [parameter(Mandatory, ParameterSetName = "FromPrivs")]
         [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
         [parameter(Mandatory, ParameterSetName = "FromString")]
-        [string[]]$Name
+        [string[]]$Name,
+        [parameter(Mandatory, ParameterSetName = "FromLogonType")]
+        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -9666,6 +9677,9 @@ function Remove-NtAccountRight {
         }
         "FromPrivs" {
             [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $Privilege)
+        }
+        "FromLogonType" {
+            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $LogonType)
         }
     }
 }
@@ -12542,4 +12556,30 @@ function Test-NtProcess {
     Use-NtObject($proc = [NtApiDotNet.NtProcess]::Open($ProcessId, $Access, $false)) {
         $proc.IsSuccess
     }
+}
+
+<#
+.SYNOPSIS
+Get a random byte array.
+.DESCRIPTION
+This cmdlet gets a byte array of a specified size with random contents.
+.PARAMETER Count
+Specify the number of bytes to return.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Get-RandomByte -Count 100
+Get a random byte array of 100 bytes.
+#>
+function Get-RandomByte {
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [int]$Count
+    )
+    $ba = New-Object byte[] -ArgumentList $Count
+    $rand = New-Object System.Random
+    $rand.NextBytes($ba)
+    Write-Object $ba -NoEnumerate
 }

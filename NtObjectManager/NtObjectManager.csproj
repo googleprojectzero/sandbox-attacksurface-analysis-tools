@@ -179,6 +179,7 @@
     <Compile Include="Cmdlets\Rpc\CompareRpcServerCmdlet.cs" />
     <Compile Include="Cmdlets\Rpc\CompareRpcServerResult.cs" />
     <Compile Include="Cmdlets\Rpc\SelectRpcServerCmdlet.cs" />
+    <Compile Include="Cmdlets\Utils\GetRandomByteCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\AddAuthZSidCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\GetAuthZGrantedAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
