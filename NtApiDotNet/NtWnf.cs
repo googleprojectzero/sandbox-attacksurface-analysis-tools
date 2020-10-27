@@ -34,7 +34,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 return NtSystemCalls.NtQueryWnfStateNameInformation(ref state_name,
-                    WnfStateNameInformation.NameExist, 
+                    info_class, 
                     IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
             }
         }
@@ -260,16 +260,34 @@ namespace NtApiDotNet
         public ulong StateName { get; }
 
         /// <summary>
+        /// The state name decoded.
+        /// </summary>
+        public ulong DecodedStateName => StateName ^ StateNameKey;
+
+        /// <summary>
         /// Get the associated lifetime for the state name.
         /// </summary>
-        public WnfStateNameLifetime Lifetime
-        {
-            get
-            {
-                ulong decoded_statename = StateName ^ StateNameKey;
-                return (WnfStateNameLifetime)(int)((decoded_statename >> 4) & 3);
-            }
-        }
+        public WnfStateNameLifetime Lifetime => (WnfStateNameLifetime)(int)((DecodedStateName >> 4) & 3);
+
+        /// <summary>
+        /// Version of the WNF state name.
+        /// </summary>
+        public int Version => (int)(DecodedStateName & 0xF);
+
+        /// <summary>
+        /// Data scope of WNF state name.
+        /// </summary>
+        public WnfDataScope DataScope => (WnfDataScope)(int)((DecodedStateName >> 6) & 0xF);
+
+        /// <summary>
+        /// Is WNF state name permanent.
+        /// </summary>
+        public bool IsPermanent => ((DecodedStateName >> 10) & 1) == 1;
+
+        /// <summary>
+        /// Unique identifier of WNF state name,
+        /// </summary>
+        public ulong UniqueId => (DecodedStateName >> 11);
 
         /// <summary>
         /// Get if the state has subscribers.
