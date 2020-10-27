@@ -27,10 +27,10 @@ namespace NtApiDotNet
         {
             Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                { "HKLM", @"\Registry\Machine" },
                 { "HKEY_LOCAL_MACHINE", @"\Registry\Machine" },
-                { "HKU", @"\Registry\User" },
+                { "HKLM", @"\Registry\Machine" },
                 { "HKEY_USERS", @"\Registry\User" },
+                { "HKU", @"\Registry\User" },
                 { "HKEY_CURRENT_CONFIG", @"\Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current" },
                 { "HKCC", @"\Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current" },
             };
@@ -39,10 +39,10 @@ namespace NtApiDotNet
                 if (token.IsSuccess)
                 {
                     string current_user = $@"\Registry\User\{token.Result.User.Sid}";
-                    dict.Add("HKCU", current_user);
                     dict.Add("HKEY_CURRENT_USER", current_user);
-                    dict.Add(@"HKCU\Software\Classes", $"{current_user}_Classes");
+                    dict.Add("HKCU", current_user);
                     dict.Add(@"HKEY_CURRENT_USER\Software\Classes", $"{current_user}_Classes");
+                    dict.Add(@"HKCU\Software\Classes", $"{current_user}_Classes");
                 }
             }
             dict.Add("HKEY_CLASSES_ROOT", @"\Registry\Machine\Software\Classes");
