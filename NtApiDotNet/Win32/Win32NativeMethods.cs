@@ -197,7 +197,7 @@ namespace NtApiDotNet.Win32
         public string pFarmName;
     }
 
-    internal enum SidNameUse
+    public enum SidNameUse
     {
         SidTypeUser = 1,
         SidTypeGroup,
@@ -208,7 +208,8 @@ namespace NtApiDotNet.Win32
         SidTypeInvalid,
         SidTypeUnknown,
         SidTypeComputer,
-        SidTypeLabel
+        SidTypeLabel,
+        SidTypeLogonSession
     }
 
     /// <summary>
