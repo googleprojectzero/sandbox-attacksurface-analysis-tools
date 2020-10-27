@@ -34,14 +34,17 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 return NtSystemCalls.NtQueryWnfStateNameInformation(ref state_name,
-                    info_class, 
-                    IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
+                    info_class, IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
             }
         }
 
+        private static NtType _wnf_type = new NtType("Wnf", NtWnf.GenericMapping,
+                        typeof(WnfAccessRights), typeof(WnfAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp);
+
         private void ReadStateData(NtKeyValue value)
         {
-            _security_descriptor = new SecurityDescriptor(value.Data);
+            _security_descriptor = new SecurityDescriptor(value.Data, _wnf_type);
         }
 
         private void ReadStateData()
@@ -292,13 +295,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get if the state has subscribers.
         /// </summary>
-        public bool SubscribersPresent
-        {
-            get
-            {
-                return Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, true).Result != 0;
-            }
-        }
+        public bool SubscribersPresent => Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, true).Result != 0;
 
         /// <summary>
         /// Get the security descriptor for this object, if known.
