@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.ApiSet;
 using NtApiDotNet.Win32.Security.Authenticode;
 using System;
 using System.Collections.Generic;
@@ -974,6 +975,22 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Return resolved API set imports for the DLL.
+        /// </summary>
+        public IEnumerable<DllImport> ApiSetImports
+        {
+            get
+            {
+                if (_apiset_imports == null)
+                {
+                    ResolveApiSetImports();
+                }
+
+                return _apiset_imports.AsReadOnly();
+            }
+        }
+
+        /// <summary>
         /// Get CodeView Debug Data from DLL.
         /// </summary>
         public DllDebugData DebugData
@@ -1151,6 +1168,7 @@ namespace NtApiDotNet.Win32
         private DllCharacteristics _dll_characteristics;
         private List<DllExport> _exports;
         private List<DllImport> _imports;
+        private List<DllImport> _apiset_imports;
         private DllDebugData _debug_data;
         private Lazy<EnclaveConfiguration> _enclave_config;
         private string _full_path;
@@ -1297,9 +1315,26 @@ namespace NtApiDotNet.Win32
             return new DllImportFunction(dll_name, name, lookup == iat_func ? 0 : iat_func, ordinal);
         }
 
+        private static string ResolveApiSetName(string module_name, string dll_name)
+        {
+            if (!dll_name.StartsWith("api-", StringComparison.OrdinalIgnoreCase) &&
+                !dll_name.StartsWith("ext-", StringComparison.OrdinalIgnoreCase))
+            {
+                return dll_name;
+            }
+
+            var apiset = ApiSetNamespace.Current.GetApiSet(dll_name);
+            if (apiset == null)
+                return dll_name;
+
+            string name = apiset.GetHostModule(module_name);
+            return string.IsNullOrEmpty(name) ? dll_name : name;
+        }
+
         private DllImport ParseSingleImport(int name_rva, int lookup_rva, int iat_rva, bool is_64bit, bool delay_loaded)
         {
             string dll_name = Marshal.PtrToStringAnsi(RvaToVA(name_rva));
+
             List<DllImportFunction> funcs = new List<DllImportFunction>();
             IntPtr lookup_table = RvaToVA(lookup_rva);
             IntPtr iat_table = RvaToVA(iat_rva);
@@ -1389,6 +1424,42 @@ namespace NtApiDotNet.Win32
             bool is_64bit = GetOptionalHeader(GetHeaderPointer(GetBasePointer())).GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
             ParseNormalImports(is_64bit);
             ParseDelayImports(is_64bit);
+        }
+
+        private struct DllImportFunctionEqualityComparer : IEqualityComparer<DllImportFunction>
+        {
+            bool IEqualityComparer<DllImportFunction>.Equals(DllImportFunction x, DllImportFunction y)
+            {
+                return x.Name == y.Name;
+            }
+
+            int IEqualityComparer<DllImportFunction>.GetHashCode(DllImportFunction obj)
+            {
+                return obj.Name.GetHashCode();
+            }
+        }
+
+        private void ResolveApiSetImports()
+        {
+            _apiset_imports = new List<DllImport>();
+            foreach (var group in Imports.GroupBy(i => ResolveApiSetName(Name, i.DllName), StringComparer.OrdinalIgnoreCase))
+            {
+                string dll_name = group.Key;
+                bool delay_loaded = true;
+                IEnumerable<DllImportFunction> funcs = new DllImportFunction[0];
+                foreach (var entry in group)
+                {
+                    delay_loaded &= entry.DelayLoaded;
+                    funcs = funcs.Concat(entry.Functions.Select(f => new DllImportFunction(dll_name, f.Name, f.Address, f.Ordinal)));
+                }
+
+                funcs = funcs.Distinct(new DllImportFunctionEqualityComparer());
+                var funcs_list = funcs.ToList();
+                funcs_list.Sort((a, b) => a.Name.CompareTo(b.Name));
+
+                _apiset_imports.Add(new DllImport(dll_name, delay_loaded, 
+                    funcs_list, FullPath));
+            }
         }
 
         private IntPtr GetHeaderPointer(IntPtr base_ptr)

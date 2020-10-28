@@ -7117,6 +7117,8 @@ Specify the DLL.
 Specify the path to the DLL.
 .PARAMETER DllName
 Specify a name of a DLL to only show imports from.
+.PARAMETER ResolveApiSet
+Specify to resolve API set names to the DLl names.
 .INPUTS
 None
 .OUTPUTS
@@ -7129,18 +7131,23 @@ function Get-Win32ModuleImport {
         [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
         [string]$Path,
-        [string]$DllName
+        [string]$DllName,
+        [switch]$ResolveApiSet
     )
 
     $imports = if ($PsCmdlet.ParameterSetName -eq "FromPath") {
         Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
             if ($null -ne $lib) {
-                Get-Win32ModuleImport -Module $lib
+                Get-Win32ModuleImport -Module $lib -ResolveApiSet:$ResolveApiSet
             }
         }
     }
     else {
-        $Module.Imports
+        if ($ResolveApiSet) {
+            $Module.ApiSetImports
+        } else {
+            $Module.Imports
+        }
     }
 
     if ($DllName -ne "") {
@@ -12555,5 +12562,37 @@ function Test-NtProcess {
 
     Use-NtObject($proc = [NtApiDotNet.NtProcess]::Open($ProcessId, $Access, $false)) {
         $proc.IsSuccess
+    }
+}
+
+<#
+.SYNOPSIS
+Get API set entries
+.DESCRIPTION
+This cmdlet gets API set entries for the current system.
+.PARAMETER Name
+Specify an API set name to lookup.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.ApiSet.ApiSetEntry[]
+.EXAMPLE
+Get-NtApiSet
+Get all API set entries.
+.EXAMPLE
+Get-NtApiSet -Name "api-ms-win-base-util-l1-1-0"
+Get an API set by name.
+#>
+function Get-NtApiSet {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromName") {
+        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.GetApiSet($Name)
+    } else {
+        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.Entries | Write-Output
     }
 }

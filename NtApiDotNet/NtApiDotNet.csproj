@@ -56,6 +56,10 @@
     <Compile Include="AlpcMessage.cs" />
     <Compile Include="AlpcMessageAttributes.cs" />
     <Compile Include="AlpcPortSection.cs" />
+    <Compile Include="ApiSet\ApiSetEntry.cs" />
+    <Compile Include="ApiSet\ApiSetHost.cs" />
+    <Compile Include="ApiSet\ApiSetNamespace.cs" />
+    <Compile Include="ApiSet\ApiSetStructs.cs" />
     <Compile Include="BoundaryDescriptor.cs" />
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
