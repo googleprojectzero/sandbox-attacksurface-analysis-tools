@@ -232,6 +232,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read array from the buffer.
+        /// </summary>
+        /// <typeparam name="T">The type to read.</typeparam>
+        /// <param name="offset">The offset into the buffer.</param>
+        /// <param name="count">The number of elements to read.</param>
+        /// <returns>The read array.</returns>
+        public T[] ReadArray<T>(int offset, int count) where T : struct
+        {
+            T[] ret = new T[count];
+            ReadArray((ulong)offset, ret, 0, count);
+            return ret;
+        }
+
+        /// <summary>
         /// Zero an entire buffer.
         /// </summary>
         public void ZeroBuffer()
