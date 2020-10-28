@@ -809,6 +809,20 @@ namespace NtApiDotNet
         IsLongPathAwareProcess = 0x80,
     }
 
+    [Flags]
+    public enum PebCrossProcessFlags
+    {
+        None = 0,
+        ProcessInJob = 1,
+        ProcessInitializing = 2,
+        ProcessUsingVEH = 4,
+        ProcessUsingVCH = 8,
+        ProcessUsingFTH = 0x10,
+        ProcessPreviouslyThrottled = 0x20,
+        ProcessCurrentlyThrottled = 0x40,
+        ProcessImagesHotPatched = 0x80
+    }
+
     public interface IPeb
     {
         bool GetBeingDebugged();
@@ -816,6 +830,7 @@ namespace NtApiDotNet
         IntPtr GetImageBaseAddress();
         IntPtr GetProcessHeap();
         IntPtr GetProcessParameters();
+        IntPtr GetApiSetMap();
     }
 
     /// <summary>
@@ -837,11 +852,14 @@ namespace NtApiDotNet
         public IntPtr ProcessParameters; // PRTL_USER_PROCESS_PARAMETERS
         public IntPtr SubSystemData;
         public IntPtr ProcessHeap;
-
-        public bool GetBeingDebugged()
-        {
-            return BeingDebugged;
-        }
+        public IntPtr FastPebLock;
+        public IntPtr AtlThunkSListPtr;
+        public IntPtr IFEOKey;
+        public PebCrossProcessFlags CrossProcessFlags;
+        public IntPtr UserSharedInfoPtr;
+        public int SystemReserved;
+        public int AtlThunkSListPtr32;
+        public IntPtr ApiSetMap;
 
         IntPtr IPeb.GetProcessParameters()
         {
@@ -861,6 +879,16 @@ namespace NtApiDotNet
         IntPtr IPeb.GetProcessHeap()
         {
             return ProcessHeap;
+        }
+
+        bool IPeb.GetBeingDebugged()
+        {
+            return BeingDebugged;
+        }
+
+        IntPtr IPeb.GetApiSetMap()
+        {
+            return ApiSetMap;
         }
     }
 
@@ -883,8 +911,21 @@ namespace NtApiDotNet
         public int ProcessParameters; // PRTL_USER_PROCESS_PARAMETERS
         public int SubSystemData;
         public int ProcessHeap;
+        public int FastPebLock;
+        public int AtlThunkSListPtr;
+        public int IFEOKey;
+        public PebCrossProcessFlags CrossProcessFlags;
+        public int UserSharedInfoPtr;
+        public int SystemReserved;
+        public int AtlThunkSListPtr32;
+        public int ApiSetMap;
 
-        public bool GetBeingDebugged()
+        IntPtr IPeb.GetApiSetMap()
+        {
+            return new IntPtr(ApiSetMap);
+        }
+
+        bool IPeb.GetBeingDebugged()
         {
             return BeingDebugged;
         }
