@@ -5141,7 +5141,7 @@ namespace NtApiDotNet
         /// </summary>
         public bool ReadOnly
         {
-            get => !FileAttributes.HasFlagSet(FileAttributes.ReadOnly);
+            get => FileAttributes.HasFlagSet(FileAttributes.ReadOnly);
             set
             {
                 var current_attributes = FileAttributes;
