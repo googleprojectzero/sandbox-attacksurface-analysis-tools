@@ -39,7 +39,8 @@ namespace NtApiDotNet
         Session,
         User,
         Process,
-        Machine
+        Machine,
+        PhysicalMachine
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -86,7 +87,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryWnfStateData(
-             ref ulong StateName,
+             in ulong StateName,
              [In, Optional] WnfTypeId TypeId,
              [Optional] IntPtr ExplicitScope,
              out int ChangeStamp,
@@ -96,7 +97,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtUpdateWnfStateData(
-            ref ulong StateName,
+            in ulong StateName,
             SafeBuffer Buffer,
             int Length,
             [In, Optional] WnfTypeId TypeId,
@@ -107,17 +108,22 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDeleteWnfStateName(
-            ref ulong StateName
+            in ulong StateName
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryWnfStateNameInformation(
-            ref ulong StateName,
+            in ulong StateName,
             WnfStateNameInformation NameInfoClass,
             IntPtr ExplicitScope,
             SafeBuffer InfoBuffer,
             int InfoBufferSize
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteWnfStateData(
+          in ulong StateName,
+          IntPtr ExplicitScope);
     }
 
     public enum WnfAccessRights : uint
