@@ -431,6 +431,8 @@ namespace NtApiDotNet.Win32
 
         private static IEnumerable<RpcOffset> FindRpcServerInterfaces(ImageSection sect, bool return_clients)
         {
+            if (!sect.Characteristics.HasFlagSet(ImageSectionCharacteristics.Read))
+                yield break;
             byte[] rdata = sect.ToArray();
             foreach (int ofs in FindBytes(rdata, NdrNativeUtils.DCE_TransferSyntax.ToByteArray()).Concat(FindBytes(rdata, NdrNativeUtils.NDR64_TransferSyntax.ToByteArray())))
             {

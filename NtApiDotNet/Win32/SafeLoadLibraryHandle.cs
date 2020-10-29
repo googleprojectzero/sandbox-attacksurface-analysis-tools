@@ -22,6 +22,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -156,6 +157,46 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
+    /// Characteristic flags for image section.
+    /// </summary>
+    [Flags]
+    public enum ImageSectionCharacteristics : uint
+    {
+        /// <summary>
+        /// None.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Section is code.
+        /// </summary>
+        Code = 0x00000020,
+        /// <summary>
+        /// Section is initialized data.
+        /// </summary>
+        InitiailizedData = 0x00000040,
+        /// <summary>
+        /// Section is uninitialized data.
+        /// </summary>
+        UninitializedData = 0x00000080,
+        /// <summary>
+        /// Section is shared.
+        /// </summary>
+        Shared = 0x10000000,
+        /// <summary>
+        /// Section is executable.
+        /// </summary>
+        Execute = 0x20000000,
+        /// <summary>
+        /// Section is readable.
+        /// </summary>
+        Read = 0x40000000,
+        /// <summary>
+        /// Section is writable.
+        /// </summary>
+        Write = 0x80000000,
+    }
+
+    /// <summary>
     /// Class which represents a section from a loaded PE file.
     /// </summary>
     public class ImageSection
@@ -172,16 +213,28 @@ namespace NtApiDotNet.Win32
         /// Relative Virtual address of the data from the library base.
         /// </summary>
         public long RelativeVirtualAddress { get; }
+        /// <summary>
+        /// Image section characteristics.
+        /// </summary>
+        public ImageSectionCharacteristics Characteristics { get; }
 
         /// <summary>
         /// Get the data as an array.
         /// </summary>
-        /// <returns>The data as an array.</returns>
+        /// <returns>The data as an array. If can't read the section returns an empty array.</returns>
+        [HandleProcessCorruptedStateExceptions]
         public byte[] ToArray()
         {
-            byte[] ret = new byte[Data.ByteLength];
-            Data.ReadArray(0, ret, 0, ret.Length);
-            return ret;
+            try
+            {
+                byte[] ret = new byte[Data.ByteLength];
+                Data.ReadArray(0, ret, 0, ret.Length);
+                return ret;
+            }
+            catch(AccessViolationException)
+            {
+                return new byte[0];
+            }
         }
 
         internal ImageSection(ImageSectionHeader header, bool mapped_as_image, IntPtr base_ptr)
@@ -191,6 +244,9 @@ namespace NtApiDotNet.Win32
             int data_size = mapped_as_image ? header.VirtualSize : header.SizeOfRawData;
             Data = new SafeHGlobalBuffer(base_ptr + data_offset, data_size, false);
             RelativeVirtualAddress = header.VirtualAddress;
+            Characteristics = (ImageSectionCharacteristics)(uint)header.Characteristics;
+            Characteristics &= ImageSectionCharacteristics.Code | ImageSectionCharacteristics.Execute | ImageSectionCharacteristics.InitiailizedData
+                | ImageSectionCharacteristics.Read | ImageSectionCharacteristics.Shared | ImageSectionCharacteristics.UninitializedData | ImageSectionCharacteristics.Write;
         }
     }
 
@@ -382,6 +438,56 @@ namespace NtApiDotNet.Win32
         public int PointerToRawData;
     }
 
+    internal enum IMAGE_SCN_CHARACTERISTICS : uint
+    {
+        IMAGE_SCN_TYPE_REG = 0x00000000,
+        IMAGE_SCN_TYPE_DSECT = 0x00000001,
+        IMAGE_SCN_TYPE_NOLOAD = 0x00000002,
+        IMAGE_SCN_TYPE_GROUP = 0x00000004,
+        IMAGE_SCN_TYPE_NO_PAD = 0x00000008,
+        IMAGE_SCN_TYPE_COPY = 0x00000010,
+        IMAGE_SCN_CNT_CODE = 0x00000020,
+        IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040,
+        IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080,
+        IMAGE_SCN_LNK_OTHER = 0x00000100,
+        IMAGE_SCN_LNK_INFO = 0x00000200,
+        IMAGE_SCN_TYPE_OVER = 0x00000400,
+        IMAGE_SCN_LNK_REMOVE = 0x00000800,
+        IMAGE_SCN_LNK_COMDAT = 0x00001000,
+        IMAGE_SCN_UNUSED_000020000 = 0x00002000,
+        IMAGE_SCN_MEM_PROTECTED = 0x00004000,
+        IMAGE_SCN_NO_DEFER_SPEC_EXC = 0x00004000,
+        IMAGE_SCN_GPREL = 0x00008000,
+        IMAGE_SCN_MEM_FARDATA = 0x00008000,
+        IMAGE_SCN_MEM_SYSHEAP = 0x00010000,
+        IMAGE_SCN_MEM_PURGEABLE = 0x00020000,
+        IMAGE_SCN_MEM_16BIT = 0x00020000,
+        IMAGE_SCN_MEM_LOCKED = 0x00040000,
+        IMAGE_SCN_MEM_PRELOAD = 0x00080000,
+        IMAGE_SCN_ALIGN_1BYTES = 0x00100000,
+        IMAGE_SCN_ALIGN_2BYTES = 0x00200000,
+        IMAGE_SCN_ALIGN_4BYTES = 0x00300000,
+        IMAGE_SCN_ALIGN_8BYTES = 0x00400000,
+        IMAGE_SCN_ALIGN_16BYTES = 0x00500000,
+        IMAGE_SCN_ALIGN_32BYTES = 0x00600000,
+        IMAGE_SCN_ALIGN_64BYTES = 0x00700000,
+        IMAGE_SCN_ALIGN_128BYTES = 0x00800000,
+        IMAGE_SCN_ALIGN_256BYTES = 0x00900000,
+        IMAGE_SCN_ALIGN_512BYTES = 0x00A00000,
+        IMAGE_SCN_ALIGN_1024BYTES = 0x00B00000,
+        IMAGE_SCN_ALIGN_2048BYTES = 0x00C00000,
+        IMAGE_SCN_ALIGN_4096BYTES = 0x00D00000,
+        IMAGE_SCN_ALIGN_8192BYTES = 0x00E00000,
+        IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000,
+        IMAGE_SCN_MEM_DISCARDABLE = 0x02000000,
+        IMAGE_SCN_MEM_NOT_CACHED = 0x04000000,
+        IMAGE_SCN_MEM_NOT_PAGED = 0x08000000,
+        IMAGE_SCN_MEM_SHARED = 0x10000000,
+        IMAGE_SCN_MEM_EXECUTE = 0x20000000,
+        IMAGE_SCN_MEM_READ = 0x40000000,
+        IMAGE_SCN_MEM_WRITE = 0x80000000,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct ImageSectionHeader
     {
@@ -395,7 +501,7 @@ namespace NtApiDotNet.Win32
         public int PointerToLinenumbers;
         public ushort NumberOfRelocations;
         public ushort NumberOfLinenumbers;
-        public uint Characteristics;
+        public IMAGE_SCN_CHARACTERISTICS Characteristics;
 
         public string GetName()
         {
