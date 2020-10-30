@@ -155,7 +155,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a byte array containing the security descriptor.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromBytes")]
-        public byte[] Bytes { get; set; }
+        [Alias("Byte")]
+        public byte[] Byte { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a registry key to read the security descriptor from.</para>
@@ -250,7 +251,7 @@ namespace NtObjectManager.Cmdlets.Object
                     sd = new SecurityDescriptor(Sddl);
                     break;
                 case "FromBytes":
-                    sd = new SecurityDescriptor(Bytes);
+                    sd = new SecurityDescriptor(Byte);
                     break;
                 case "FromKey":
                     sd = new SecurityDescriptor(Key.QueryValue(ValueName).Data);
