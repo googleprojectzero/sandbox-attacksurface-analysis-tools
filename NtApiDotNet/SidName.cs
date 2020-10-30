@@ -48,7 +48,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Scoped policy SID.
         /// </summary>
-        ScopedPolicyId
+        ScopedPolicyId,
+        /// <summary>
+        /// Manually added name.
+        /// </summary>
+        Manual
     }
 
     /// <summary>

@@ -12598,3 +12598,104 @@ function Get-NtApiSet {
         [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.Entries | Write-Output
     }
 }
+
+<#
+.SYNOPSIS
+Add a SID to name mapping.
+.DESCRIPTION
+This cmdlet adds a SID to name mapping. You can also add the name to LSASS if you have SeTcbPrivilege
+and the SID meets specific requirements.
+.PARAMETER Sid
+Specify the SID to add.
+.PARAMETER Domain
+Specify the domain name to add. When adding a cache this is optional. For register this is required.
+.PARAMETER Name
+Specify the name to add. For register this is optional.
+.PARAMETER NameUse
+Specify the name to use type.
+.PARAMETER Register
+Register SID name with LSASS.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Add-NtSidName -Sid S-1-2-3-4-5 -Domain ABC -User XYZ
+Add a SID name.
+.EXAMPLE
+Add-NtSidName -Sid S-1-5-101-0 -Domain ABC -User XYZ -Register
+Add a SID name and register with LSASS.
+#>
+function Add-NtSidName {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [parameter(Position = 2, ParameterSetName="RegisterSid")]
+        [string]$Name,
+        [parameter(Position = 2, ParameterSetName="FromName")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="RegisterSid")]
+        [string]$Domain,
+        [parameter(Position = 3, ParameterSetName="FromName")]
+        [NtApiDotNet.Win32.SidNameUse]$NameUse = "Group",
+        [parameter(Mandatory, ParameterSetName="RegisterSid")]
+        [switch]$Register
+    )
+
+    if ($Register) {
+        [NtApiDotNet.Win32.Security.Win32Security]::AddSidNameMapping($Domain, $Name, $Sid)
+    } else {
+        [NtApiDotNet.NtSecurity]::AddSidName($Sid, $Domain, $Name, $NameUse)
+    }
+}
+
+<#
+.SYNOPSIS
+Add a SID to name mapping.
+.DESCRIPTION
+This cmdlet adds a SID to name mapping. You can also add the name to LSASS if you have SeTcbPrivilege
+and the SID meets specific requirements.
+.PARAMETER Sid
+Specify an API set name to lookup.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Remove-NtSidName -Sid S-1-2-3-4-5
+Remove a SID name.
+.EXAMPLE
+Remove-NtSidName -Sid S-1-5-101-0 -Unregister
+Remove a SID name and unregister with LSASS.
+#>
+function Remove-NtSidName {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid]$Sid,
+        [switch]$Unregister
+    )
+
+    if ($Unregister) {
+        [NtApiDotNet.Win32.Security.Win32Security]::RemoveSidNameMapping($Sid)
+    }
+    [NtApiDotNet.NtSecurity]::RemoveSidName($Sid)
+}
+
+<#
+.SYNOPSIS
+Clear the SID to name cache.
+.DESCRIPTION
+This cmdlet clears the SID to name cache.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Clear-NtSidName
+Clears the SID to name cache.
+#>
+function Clear-NtSidName {
+    [NtApiDotNet.NtSecurity]::ClearSidNameCache()
+}

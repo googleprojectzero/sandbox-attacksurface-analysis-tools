@@ -495,7 +495,7 @@ namespace NtApiDotNet.Win32.Security
                     Sid = sid_buffer.DangerousGetHandle(),
                     DomainName = new UnicodeStringIn(domain)
                 };
-                if (name != null)
+                if (!string.IsNullOrEmpty(name))
                 {
                     input.AccountName = new UnicodeStringIn(name);
                 }
@@ -570,6 +570,17 @@ namespace NtApiDotNet.Win32.Security
         public static void RemoveSidNameMapping(string domain, string name)
         {
             RemoveSidNameMapping(domain, name, true);
+        }
+
+        /// <summary>
+        /// Remove a SID to name mapping with LSA.
+        /// </summary>
+        /// <param name="sid">The SID to remove.</param>
+        /// <returns>The NT status result.</returns>
+        public static void RemoveSidNameMapping(Sid sid)
+        {
+            SidName name = sid.GetName();
+            RemoveSidNameMapping(name.Domain, name.NameUse == SidNameUse.Domain ? string.Empty : name.Name, true);
         }
 
         #endregion

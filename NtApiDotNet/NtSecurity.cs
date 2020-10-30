@@ -1369,6 +1369,28 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Add a SID name to the local name cache.
+        /// </summary>
+        /// <param name="sid">The SID to add.</param>
+        /// <param name="domain">The SID's domain name.</param>
+        /// <param name="name">The name of the account.</param>
+        /// <param name="name_use">The name user value.</param>
+        public static void AddSidName(Sid sid, string domain, string name, SidNameUse name_use)
+        {
+            var sid_name = new SidName(sid, domain, name, SidNameSource.Manual, name_use, false);
+            _cached_names.AddOrUpdate(sid, sid_name, (s, n) => sid_name);
+        }
+
+        /// <summary>
+        /// Remove a SID name from the local cache.
+        /// </summary>
+        /// <param name="sid">The SID to remove.</param>
+        public static void RemoveSidName(Sid sid)
+        {
+            _cached_names.TryRemove(sid, out SidName _);
+        }
+
+        /// <summary>
         /// Clear the SID name cache.
         /// </summary>
         public static void ClearSidNameCache()
