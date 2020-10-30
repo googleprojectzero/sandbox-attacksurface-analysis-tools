@@ -3662,6 +3662,8 @@ This cmdlet looks up a name for a SID and returns the name with a source for whe
 The SID to lookup the name for.
 .PARAMETER BypassCache
 Specify to bypass the name cache for this lookup.
+.INPUTS
+NtApiDotNet.Sid[]
 .OUTPUTS
 NtApiDotNet.SidName
 .EXAMPLE
@@ -3680,7 +3682,7 @@ function Get-NtSidName {
     )
 
     PROCESS {
-        [NtApiDotNet.NtSecurity]::GetNameForSid($Sid, $BypassCache)
+        $Sid.GetName($BypassCache)
     }
 }
 

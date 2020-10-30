@@ -198,9 +198,16 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the relative identifiers.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "sid")]
+        [Parameter(ParameterSetName = "sid")]
+        [Parameter(Mandatory = true, ParameterSetName = "relsid")]
         [Alias("RelativeIdentifiers", "rid")]
         public uint[] RelativeIdentifier { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the base SID to create a relative SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "relsid")]
+        public Sid BaseSid { get; set; }
 
         /// <summary>
         /// <para type="description">Get a new logon session SID.</para>
@@ -299,7 +306,7 @@ namespace NtObjectManager.Cmdlets.Object
                                     : NtSecurity.GetCapabilitySid(CapabilityName);
                     break;
                 case "sid":
-                    sid = new Sid(SecurityAuthority, RelativeIdentifier);
+                    sid = new Sid(SecurityAuthority, RelativeIdentifier ?? new uint[0]);
                     break;
                 case "logon":
                     sid = NtSecurity.GetLogonSessionSid();
@@ -309,6 +316,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "ace":
                     sid = AccessControlEntry.Sid;
+                    break;
+                case "relsid":
+                    sid = BaseSid.CreateRelative(RelativeIdentifier);
                     break;
                 default:
                     throw new ArgumentException("No SID type specified");

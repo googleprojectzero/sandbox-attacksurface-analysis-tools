@@ -110,6 +110,7 @@
     <Compile Include="Security\Policy\CentralAccessPolicy.cs" />
     <Compile Include="Security\Policy\CentralAccessRule.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
+    <Compile Include="SidName.cs" />
     <Compile Include="TokenGroupsBuilder.cs" />
     <Compile Include="TokenPrivilegesBuilder.cs" />
     <Compile Include="UnicodeStringBytesSafeBuffer.cs" />

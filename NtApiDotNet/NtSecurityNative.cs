@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.SafeBuffers;
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -288,53 +289,6 @@ namespace NtApiDotNet
         WindowsProtectedProcessLight = 13,
         WindowsTCB = 14,
         Custom6 = 15
-    }
-
-    /// <summary>
-    /// Source for a SID name.
-    /// </summary>
-    public enum SidNameSource
-    {
-        Sddl,
-        Account,
-        Capability,
-        Package,
-        ProcessTrust,
-        WellKnown,
-        ScopedPolicyId
-    }
-
-    /// <summary>
-    /// Represents a name for a SID.
-    /// </summary>
-    public class SidName
-    {
-        /// <summary>
-        /// The name of the SID.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// The source of name.
-        /// </summary>
-        public SidNameSource Source { get; }
-
-        /// <summary>
-        /// Used for caching. Indicates the lookup name was denied rather than not available.
-        /// </summary>
-        internal bool LookupDenied { get; }
-
-        internal SidName(string name, SidNameSource source, bool lookup_denied)
-        {
-            Name = name;
-            Source = source;
-            LookupDenied = lookup_denied;
-        }
-
-        internal SidName(string name, SidNameSource source)
-            : this(name, source, false)
-        {
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

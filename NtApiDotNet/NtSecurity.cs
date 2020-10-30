@@ -38,8 +38,8 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sid">The SID to lookup</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The name, or null if the lookup failed</returns>
-        public static NtResult<string> LookupAccountSid(Sid sid, bool throw_on_error)
+        /// <returns>The name.</returns>
+        public static NtResult<SidName> LookupAccountSidName(Sid sid, bool throw_on_error)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
@@ -50,18 +50,34 @@ namespace NtApiDotNet
                 if (!Win32NativeMethods.LookupAccountSid(null, sid_buffer, name,
                     ref length, domain, ref domain_length, out SidNameUse name_use))
                 {
-                    return NtObjectUtils.CreateResultFromDosError<string>(throw_on_error);
+                    return NtObjectUtils.CreateResultFromDosError<SidName>(throw_on_error);
                 }
 
-                if (domain_length == 0)
-                {
-                    return name.ToString().CreateResult();
-                }
-                else
-                {
-                    return $@"{domain}\{name}".CreateResult();
-                }
+                return new SidName(domain.ToString(), name.ToString(), 
+                    SidNameSource.Account, name_use, false).CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Looks up the account name of a SID. 
+        /// </summary>
+        /// <param name="sid">The SID to lookup</param>
+        /// <returns>The SID name.</returns>
+        /// <exception cref="NtException">Thrown if lookup fails.</exception>
+        public static SidName LookupAccountSidName(Sid sid)
+        {
+            return LookupAccountSidName(sid, true).Result;
+        }
+
+        /// <summary>
+        /// Looks up the account name of a SID. 
+        /// </summary>
+        /// <param name="sid">The SID to lookup</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The name.</returns>
+        public static NtResult<string> LookupAccountSid(Sid sid, bool throw_on_error)
+        {
+            return LookupAccountSidName(sid, throw_on_error).Map(n => n.QualifiedName);
         }
 
         /// <summary>
@@ -931,7 +947,8 @@ namespace NtApiDotNet
                     new UnicodeString(capability_name),
                     cap_group_sid, cap_sid)
                     .CreateResult(throw_on_error, ()
-                    => CacheSidName(new Sid(cap_sid), capability_name, SidNameSource.Capability));
+                    => CacheSidName(new Sid(cap_sid), GetNamedCapabilityDomain(false), capability_name, 
+                            SidNameSource.Capability, SidNameUse.Group));
             }
         }
 
@@ -959,7 +976,9 @@ namespace NtApiDotNet
                 return NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
                     cap_group_sid, cap_sid).CreateResult(throw_on_error,
-                    () => CacheSidName(new Sid(cap_group_sid), capability_name, SidNameSource.Capability));
+                    () => CacheSidName(new Sid(cap_group_sid),
+                        GetNamedCapabilityDomain(true), capability_name, 
+                        SidNameSource.Capability, SidNameUse.Group));
             }
         }
 
@@ -2068,7 +2087,7 @@ namespace NtApiDotNet
         #endregion
 
         #region Internal Members
-        internal static Sid CacheSidName(Sid sid, string name, SidNameSource source)
+        internal static Sid CacheSidName(Sid sid, string domain, string username, SidNameSource source, SidNameUse name_use)
         {
             _cached_names.GetOrAdd(sid, s =>
             {
@@ -2077,12 +2096,13 @@ namespace NtApiDotNet
                     var cap_sids = GetKnownCapabilitySids();
                     if (cap_sids.ContainsKey(sid))
                     {
-                        name = cap_sids[sid];
+                        username = cap_sids[sid];
                     }
 
-                    name = MakeFakeCapabilityName(name, IsCapabilityGroupSid(sid));
+                    domain = GetNamedCapabilityDomain(IsCapabilityGroupSid(sid));
+                    username = MakeFakeCapabilityName(username);
                 }
-                return new SidName(name, source);
+                return new SidName(domain, username, source, name_use, false);
             });
             return sid;
         }
@@ -2103,20 +2123,23 @@ namespace NtApiDotNet
         private static Dictionary<Sid, string> _device_capabilities;
         private static readonly Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
         private static readonly ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
-        private static readonly Dictionary<Sid, string> _known_sids = new Dictionary<Sid, string>()
+        private static readonly Dictionary<Sid, Tuple<string, string>> _known_group_sids = new Dictionary<Sid, Tuple<string, string>>()
         {
             // S-1-5-86-1544737700-199408000-2549878335-3519669259-381336952
-            { new Sid(SecurityAuthority.Nt, 86, 1544737700, 199408000, 2549878335, 3519669259, 381336952), "WMI_LOCAL_SERVICE" },
+            { new Sid(SecurityAuthority.Nt, 86, 1544737700, 199408000, 2549878335, 3519669259, 381336952), Tuple.Create(string.Empty, "WMI_LOCAL_SERVICE") },
             // S-1-5-86-615999462-62705297-2911207457-59056572-3668589837
-            { new Sid(SecurityAuthority.Nt, 86, 615999462, 62705297, 2911207457, 59056572, 3668589837), "WMI_NETWORK_SERVICE" },
+            { new Sid(SecurityAuthority.Nt, 86, 615999462, 62705297, 2911207457, 59056572, 3668589837), Tuple.Create(string.Empty, "WMI_NETWORK_SERVICE") },
             // S-1-5-96-0
-            { new Sid(SecurityAuthority.Nt, 96, 0), @"Font Driver Host\Font Driver Host Group" },
+            { new Sid(SecurityAuthority.Nt, 96, 0), Tuple.Create("Font Driver Host", "Font Driver Host Group")},
             // S-1-5-93-0
-            { new Sid(SecurityAuthority.Nt, 93, 0), @"ContainerGroup" },
+            { new Sid(SecurityAuthority.Nt, 93, 0), Tuple.Create("User Manager", "AllContainers") }
+        };
+
+        private static readonly Dictionary<Sid, Tuple<string, string>> _known_user_sids = new Dictionary<Sid, Tuple<string, string>>() {
             // S-1-5-93-2-1
-            { new Sid(SecurityAuthority.Nt, 93, 2, 1), @"ContainerAdmin" },
+            { new Sid(SecurityAuthority.Nt, 93, 2, 1), Tuple.Create("User Manager", "ContainerAdmin") },
             // S-1-5-93-2-2
-            { new Sid(SecurityAuthority.Nt, 93, 2, 2), @"ContainerUser" },
+            { new Sid(SecurityAuthority.Nt, 93, 2, 2), Tuple.Create("User Manager", "ContainerUser") },
         };
 
         private static string UpperCaseString(string name)
@@ -2151,7 +2174,7 @@ namespace NtApiDotNet
                 == base_sid.SubAuthorities.Count + 1;
         }
 
-        private static string MakeFakeCapabilityName(string name, bool group)
+        private static string MakeFakeCapabilityName(string name)
         {
             List<string> parts = new List<string>();
             if (name.Contains("_"))
@@ -2175,17 +2198,21 @@ namespace NtApiDotNet
                 parts.Add(name.Substring(start));
                 parts[0] = UpperCaseString(parts[0]);
             }
+            return string.Join(" ", parts);
+        }
 
-            return $@"NAMED CAPABILITIES{(group ? " GROUP" : "")}\{string.Join(" ", parts)}";
+        private static string GetNamedCapabilityDomain(bool group)
+        {
+            return $"NAMED CAPABILITIES{(group ? " GROUP" : "")}";
         }
 
         private static SidName GetNameForSidInternal(Sid sid)
         {
             bool lookup_denied = false;
-            var account_name = LookupAccountSid(sid, false);
+            var account_name = LookupAccountSidName(sid, false);
             if (account_name.IsSuccess)
             {
-                return new SidName(account_name.Result, SidNameSource.Account);
+                return account_name.Result;
             }
 
             if (account_name.Status.MapNtStatusToDosError() == Win32Error.ERROR_ACCESS_DENIED)
@@ -2217,7 +2244,8 @@ namespace NtApiDotNet
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(MakeFakeCapabilityName(name, false), SidNameSource.Capability);
+                    return new SidName(GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
+                        SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
             else if (IsCapabilityGroupSid(sid))
@@ -2225,7 +2253,8 @@ namespace NtApiDotNet
                 name = LookupKnownCapabilityName(sid);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(MakeFakeCapabilityName(name, true), SidNameSource.Capability);
+                    return new SidName(GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
+                        SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
             else if (IsPackageSid(sid))
@@ -2233,7 +2262,7 @@ namespace NtApiDotNet
                 name = LookupPackageName(sid);
                 if (name != null)
                 {
-                    return new SidName(name, SidNameSource.Package);
+                    return new SidName(string.Empty, name, SidNameSource.Package, SidNameUse.User, false);
                 }
             }
             else if (IsProcessTrustSid(sid))
@@ -2241,20 +2270,27 @@ namespace NtApiDotNet
                 name = LookupProcessTrustName(sid);
                 if (name != null)
                 {
-                    return new SidName($@"TRUST LEVEL\{name}", SidNameSource.ProcessTrust);
+                    return new SidName("TRUST LEVEL", name, 
+                        SidNameSource.ProcessTrust, SidNameUse.Label, false);
                 }
             }
-            else if (_known_sids.ContainsKey(sid))
+            else if (_known_group_sids.ContainsKey(sid))
             {
-                return new SidName(_known_sids[sid], SidNameSource.WellKnown);
+                var names = _known_group_sids[sid];
+                return new SidName(names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.Group, false);
+            }
+            else if (_known_user_sids.ContainsKey(sid))
+            {
+                var names = _known_user_sids[sid];
+                return new SidName(names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsDwmSid(sid))
             {
-                return new SidName($@"Window Manager\DWM-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
+                return new SidName("Window Manager", $"DWM-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsUmdfSid(sid))
             {
-                return new SidName($@"Font Driver Host\UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
+                return new SidName("Font Driver Host", $"UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsScopedPolicySid(sid))
             {
@@ -2265,14 +2301,14 @@ namespace NtApiDotNet
                     {
                         if (cap.CapId == sid)
                         {
-                            return new SidName($@"CAP\{cap.Name}", SidNameSource.ScopedPolicyId);
+                            return new SidName("CAP", cap.Name, SidNameSource.ScopedPolicyId, SidNameUse.Label, false);
                         }
                     }
                 }
             }
 
             // If lookup was denied then try and request next time.
-            return new SidName(sid.ToString(), SidNameSource.Sddl, lookup_denied);
+            return new SidName(string.Empty, sid.ToString(), SidNameSource.Sddl, SidNameUse.Unknown, lookup_denied);
         }
 
         private static Dictionary<Sid, string> GetKnownCapabilitySids()

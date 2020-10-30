@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -69,7 +70,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the account name of the SID or the SDDL form is no corresponding name.
         /// </summary>
-        public string Name => NtSecurity.GetNameForSid(this).Name;
+        public string Name => NtSecurity.GetNameForSid(this).QualifiedName;
         #endregion
 
         #region Constructors
@@ -403,6 +404,25 @@ namespace NtApiDotNet
             List<uint> new_rids = new List<uint>(SubAuthorities);
             new_rids.AddRange(rids);
             return new Sid(Authority, new_rids.ToArray());
+        }
+
+        /// <summary>
+        /// Get the SID name for this SID.
+        /// </summary>
+        /// <param name="bypass_cache">True to bypass the SID name cache.</param>
+        /// <returns>The SID name.</returns>
+        public SidName GetName(bool bypass_cache)
+        {
+            return NtSecurity.GetNameForSid(this, bypass_cache);
+        }
+
+        /// <summary>
+        /// Get the SID name for this SID.
+        /// </summary>
+        /// <returns>The SID name.</returns>
+        public SidName GetName()
+        {
+            return GetName(false);
         }
 
         #endregion

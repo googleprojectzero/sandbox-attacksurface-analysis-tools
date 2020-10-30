@@ -228,8 +228,8 @@ namespace NtApiDotNet.Win32
                 using (sid)
                 {
                     Sid result = new Sid(sid);
-                    NtSecurity.CacheSidName(result, name, SidNameSource.Package);
-                    return result.CreateResult();
+                    return NtSecurity.CacheSidName(result, string.Empty, name, 
+                        SidNameSource.Package, SidNameUse.User).CreateResult();
                 }
             }
 
@@ -264,7 +264,8 @@ namespace NtApiDotNet.Win32
                     using (sid)
                     {
                         Sid result = new Sid(sid);
-                        NtSecurity.CacheSidName(result, $"{package_sid.Name}/{restricted_name}", SidNameSource.Package);
+                        NtSecurity.CacheSidName(result, string.Empty, $"{package_sid.Name}/{restricted_name}", 
+                            SidNameSource.Package, SidNameUse.User);
                         return result.CreateResult();
                     }
                 }

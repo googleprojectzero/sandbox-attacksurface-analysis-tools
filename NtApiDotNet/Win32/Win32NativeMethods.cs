@@ -199,17 +199,18 @@ namespace NtApiDotNet.Win32
 
     public enum SidNameUse
     {
-        SidTypeUser = 1,
-        SidTypeGroup,
-        SidTypeDomain,
-        SidTypeAlias,
-        SidTypeWellKnownGroup,
-        SidTypeDeletedAccount,
-        SidTypeInvalid,
-        SidTypeUnknown,
-        SidTypeComputer,
-        SidTypeLabel,
-        SidTypeLogonSession
+        None = 0,
+        User,
+        Group,
+        Domain,
+        Alias,
+        WellKnownGroup,
+        DeletedAccount,
+        Invalid,
+        Unknown,
+        Computer,
+        Label,
+        LogonSession
     }
 
     /// <summary>
