@@ -196,9 +196,16 @@ namespace NtObjectManager.Cmdlets.Object
         public SecurityAuthority SecurityAuthority { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a SIDs security authority.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "rawsa")]
+        public byte[] SecurityAuthorityByte { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the relative identifiers.</para>
         /// </summary>
         [Parameter(ParameterSetName = "sid")]
+        [Parameter(ParameterSetName = "rawsa")]
         [Parameter(Mandatory = true, ParameterSetName = "relsid")]
         [Alias("RelativeIdentifiers", "rid")]
         public uint[] RelativeIdentifier { get; set; }
@@ -238,6 +245,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter]
         public SwitchParameter ToName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a SIDs as a byte array.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "bytes")]
+        public byte[] Byte { get; set; }
 
         /// <summary>
         /// Process record.
@@ -308,6 +321,9 @@ namespace NtObjectManager.Cmdlets.Object
                 case "sid":
                     sid = new Sid(SecurityAuthority, RelativeIdentifier ?? new uint[0]);
                     break;
+                case "rawsa":
+                    sid = new Sid(new SidIdentifierAuthority(SecurityAuthorityByte), RelativeIdentifier);
+                    break;
                 case "logon":
                     sid = NtSecurity.GetLogonSessionSid();
                     break;
@@ -319,6 +335,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "relsid":
                     sid = BaseSid.CreateRelative(RelativeIdentifier);
+                    break;
+                case "bytes":
+                    sid = new Sid(Byte);
                     break;
                 default:
                     throw new ArgumentException("No SID type specified");
