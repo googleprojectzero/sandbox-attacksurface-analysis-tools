@@ -53,7 +53,7 @@ namespace NtApiDotNet
                     return NtObjectUtils.CreateResultFromDosError<SidName>(throw_on_error);
                 }
 
-                return new SidName(domain.ToString(), name.ToString(), 
+                return new SidName(sid, domain.ToString(), name.ToString(), 
                     SidNameSource.Account, name_use, false).CreateResult();
             }
         }
@@ -2102,7 +2102,7 @@ namespace NtApiDotNet
                     domain = GetNamedCapabilityDomain(IsCapabilityGroupSid(sid));
                     username = MakeFakeCapabilityName(username);
                 }
-                return new SidName(domain, username, source, name_use, false);
+                return new SidName(sid, domain, username, source, name_use, false);
             });
             return sid;
         }
@@ -2244,7 +2244,7 @@ namespace NtApiDotNet
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
+                    return new SidName(sid, GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
                         SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
@@ -2253,7 +2253,7 @@ namespace NtApiDotNet
                 name = LookupKnownCapabilityName(sid);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
+                    return new SidName(sid, GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
                         SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
@@ -2262,7 +2262,7 @@ namespace NtApiDotNet
                 name = LookupPackageName(sid);
                 if (name != null)
                 {
-                    return new SidName(string.Empty, name, SidNameSource.Package, SidNameUse.User, false);
+                    return new SidName(sid, string.Empty, name, SidNameSource.Package, SidNameUse.User, false);
                 }
             }
             else if (IsProcessTrustSid(sid))
@@ -2270,27 +2270,27 @@ namespace NtApiDotNet
                 name = LookupProcessTrustName(sid);
                 if (name != null)
                 {
-                    return new SidName("TRUST LEVEL", name, 
+                    return new SidName(sid, "TRUST LEVEL", name, 
                         SidNameSource.ProcessTrust, SidNameUse.Label, false);
                 }
             }
             else if (_known_group_sids.ContainsKey(sid))
             {
                 var names = _known_group_sids[sid];
-                return new SidName(names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.Group, false);
+                return new SidName(sid, names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.Group, false);
             }
             else if (_known_user_sids.ContainsKey(sid))
             {
                 var names = _known_user_sids[sid];
-                return new SidName(names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.User, false);
+                return new SidName(sid, names.Item1, names.Item2, SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsDwmSid(sid))
             {
-                return new SidName("Window Manager", $"DWM-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
+                return new SidName(sid, "Window Manager", $"DWM-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsUmdfSid(sid))
             {
-                return new SidName("Font Driver Host", $"UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
+                return new SidName(sid, "Font Driver Host", $"UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown, SidNameUse.User, false);
             }
             else if (IsScopedPolicySid(sid))
             {
@@ -2301,14 +2301,14 @@ namespace NtApiDotNet
                     {
                         if (cap.CapId == sid)
                         {
-                            return new SidName("CAP", cap.Name, SidNameSource.ScopedPolicyId, SidNameUse.Label, false);
+                            return new SidName(sid, "CAP", cap.Name, SidNameSource.ScopedPolicyId, SidNameUse.Label, false);
                         }
                     }
                 }
             }
 
             // If lookup was denied then try and request next time.
-            return new SidName(string.Empty, sid.ToString(), SidNameSource.Sddl, SidNameUse.Unknown, lookup_denied);
+            return new SidName(sid, string.Empty, sid.ToString(), SidNameSource.Sddl, SidNameUse.Unknown, lookup_denied);
         }
 
         private static Dictionary<Sid, string> GetKnownCapabilitySids()

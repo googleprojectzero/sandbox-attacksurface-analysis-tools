@@ -76,7 +76,8 @@ namespace NtApiDotNet
         {
             if (authority.Length != 6)
             {
-                throw new ArgumentOutOfRangeException("authority", "Authority must be 6 bytes in size");
+                throw new ArgumentOutOfRangeException(nameof(authority), 
+                    "Authority must be 6 bytes in size");
             }
 
             _value = (byte[])authority.Clone();

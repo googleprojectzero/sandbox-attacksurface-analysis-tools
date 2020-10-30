@@ -83,11 +83,16 @@ namespace NtApiDotNet
         public SidNameUse NameUse { get; }
 
         /// <summary>
+        /// The SDDL format of the SID.
+        /// </summary>
+        public string Sddl { get; }
+
+        /// <summary>
         /// Used for caching. Indicates the lookup name was denied rather than not available.
         /// </summary>
         internal bool LookupDenied { get; }
 
-        internal SidName(string domain, string name, SidNameSource source, SidNameUse name_use, bool lookup_denied)
+        internal SidName(Sid sid, string domain, string name, SidNameSource source, SidNameUse name_use, bool lookup_denied)
         {
             Domain = domain;
             Name = name;
@@ -97,6 +102,7 @@ namespace NtApiDotNet
                 QualifiedName = $"{Domain}\\{Name}";
             Source = source;
             NameUse = name_use;
+            Sddl = sid.ToString();
             LookupDenied = lookup_denied;
         }
     }
