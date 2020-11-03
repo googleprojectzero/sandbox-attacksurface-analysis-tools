@@ -54,7 +54,7 @@ namespace NtApiDotNet.Win32
                     throw new SafeWin32Exception();
                 }
 
-                if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
+                if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, config.LogonFlags, config.ApplicationName, config.CommandLine,
                     config.CreationFlags, config.Environment, config.CurrentDirectory,
                     ref start_info.StartupInfo, out proc_info))
                 {
@@ -193,6 +193,33 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Create process with a token.
+        /// </summary>
+        /// <param name="token">The token to create the process with.</param>
+        /// <param name="config">The process configuration.</param>
+        /// <returns>The created win32 process.</returns>
+        public static Win32Process CreateProcessWithToken(NtToken token, Win32ProcessConfig config)
+        {
+            using (var resources = new DisposableList())
+            {
+                PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
+                STARTUPINFO start_info = config.ToStartupInfo();
+                SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
+                SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
+
+                if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, config.LogonFlags, 
+                    config.ApplicationName, config.CommandLine,
+                    config.CreationFlags, config.Environment, config.CurrentDirectory,
+                    ref start_info, out proc_info))
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                return new Win32Process(proc_info, config.TerminateOnDispose);
+            }
+        }
+
+        /// <summary>
         /// Create process.
         /// </summary>
         /// <param name="config">The process configuration.</param>
@@ -201,6 +228,11 @@ namespace NtApiDotNet.Win32
         {
             if (config.Token != null)
             {
+                if (config.TokenCall == Win32ProcessConfigTokenCallFlags.WithToken)
+                {
+                    return CreateProcessWithToken(config.Token, config);
+                }
+
                 return CreateProcessAsUser(config.Token, config);
             }
 

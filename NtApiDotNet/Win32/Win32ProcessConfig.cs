@@ -22,6 +22,25 @@ using System.Text;
 namespace NtApiDotNet.Win32
 {
     /// <summary>
+    /// Specify the CreateProcess API to use with a Token.
+    /// </summary>
+    public enum Win32ProcessConfigTokenCallFlags
+    {
+        /// <summary>
+        /// Use CreateProcessAsUser, if that fails use CreateProcessWithToken.
+        /// </summary>
+        Both,
+        /// <summary>
+        /// Use only CreateProcessAsUser.
+        /// </summary>
+        AsUser,
+        /// <summary>
+        /// User only CreateProcessWithToken.
+        /// </summary>
+        WithToken
+    }
+
+    /// <summary>
     /// Win32 process creation configuration.
     /// </summary>
     public class Win32ProcessConfig
@@ -183,7 +202,11 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// When specified do not fallback to using CreateProcessWithToken if CreateProcessWithUser fails.
         /// </summary>
-        public bool NoTokenFallback { get; set; }
+        public bool NoTokenFallback
+        {
+            get => TokenCall == Win32ProcessConfigTokenCallFlags.AsUser;
+            set => TokenCall = value ? Win32ProcessConfigTokenCallFlags.AsUser : Win32ProcessConfigTokenCallFlags.Both;
+        }
         /// <summary>
         /// Specify additional extended flags.
         /// </summary>
@@ -201,9 +224,13 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public UserCredentials Credentials { get; set; }
         /// <summary>
-        /// Specify logon flags for the Credentials.
+        /// Specify logon flags for the Credentials or when calling CreateProcessWithToken.
         /// </summary>
         public CreateProcessLogonFlags LogonFlags { get; set; }
+        /// <summary>
+        /// Specify the type of API to call when specifying a token.
+        /// </summary>
+        public Win32ProcessConfigTokenCallFlags TokenCall { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
