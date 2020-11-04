@@ -920,6 +920,28 @@ namespace NtApiDotNet.Win32
             );
 
         [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool DeleteService(
+          SafeServiceHandle hService
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern SafeServiceHandle CreateService(
+          SafeServiceHandle hSCManager,
+          string lpServiceName,
+          string lpDisplayName,
+          ServiceAccessRights     dwDesiredAccess,
+          ServiceType dwServiceType,
+          ServiceStartType dwStartType,
+          ServiceErrorControl dwErrorControl,
+          string lpBinaryPathName,
+          string lpLoadOrderGroup,
+          [Out] OptionalInt32 lpdwTagId,
+          string lpDependencies,
+          string lpServiceStartName,
+          IntPtr lpPassword
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool QueryServiceObjectSecurity(SafeServiceHandle hService,
             SecurityInformation dwSecurityInformation,
             [Out] byte[] lpSecurityDescriptor,

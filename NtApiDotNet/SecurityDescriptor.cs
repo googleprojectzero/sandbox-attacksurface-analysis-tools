@@ -501,7 +501,7 @@ namespace NtApiDotNet
             DaclUntrusted = control.HasFlag(SecurityDescriptorControl.DaclUntrusted);
         }
 
-        private static void MapAcl(Acl acl, GenericMapping generic_mapping)
+        private static void MapAcl(Acl acl, GenericMapping generic_mapping, bool unmap)
         {
             if (acl == null)
                 return;
@@ -509,7 +509,7 @@ namespace NtApiDotNet
             {
                 if (!ace.IsInheritOnly && !ace.IsMandatoryLabel)
                 {
-                    ace.Mask = generic_mapping.MapMask(ace.Mask);
+                    ace.Mask = unmap ? generic_mapping.UnmapMask(ace.Mask) : generic_mapping.MapMask(ace.Mask);
                 }
             }
         }
@@ -1054,8 +1054,37 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The generic mapping.</param>
         public void MapGenericAccess(GenericMapping generic_mapping)
         {
-            MapAcl(Dacl, generic_mapping);
-            MapAcl(Sacl, generic_mapping);
+            MapAcl(Dacl, generic_mapping, false);
+            MapAcl(Sacl, generic_mapping, false);
+        }
+
+        /// <summary>
+        /// Unmap all generic access in this security descriptor to the default type specified by NtType.
+        /// </summary>
+        public void UnmapGenericAccess()
+        {
+            if (NtType == null)
+                return;
+            UnmapGenericAccess(NtType);
+        }
+
+        /// <summary>
+        /// Unmap all generic access in this security descriptor to a specific type.
+        /// </summary>
+        /// <param name="type">The type to get the generic mapping from.</param>
+        public void UnmapGenericAccess(NtType type)
+        {
+            UnmapGenericAccess(type.GenericMapping);
+        }
+
+        /// <summary>
+        /// Unap all generic access in this security descriptor to a specific type.
+        /// </summary>
+        /// <param name="generic_mapping">The generic mapping.</param>
+        public void UnmapGenericAccess(GenericMapping generic_mapping)
+        {
+            MapAcl(Dacl, generic_mapping, true);
+            MapAcl(Sacl, generic_mapping, true);
         }
 
         /// <summary>

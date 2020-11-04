@@ -7873,6 +7873,7 @@ function Edit-NtSecurityDescriptor {
         [Parameter(ParameterSetName = "ModifySd")]
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [Parameter(ParameterSetName = "MapGenericSd")]
+        [Parameter(ParameterSetName = "UnmapGenericSd")]
         [NtApiDotNet.NtType]$Type,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
         [switch]$CanonicalizeDacl,
@@ -7880,12 +7881,15 @@ function Edit-NtSecurityDescriptor {
         [switch]$CanonicalizeSacl,
         [Parameter(Mandatory, ParameterSetName = "MapGenericSd")]
         [switch]$MapGeneric,
+        [Parameter(Mandatory, ParameterSetName = "UnmapGenericSd")]
+        [switch]$UnmapGeneric,
         [Parameter(Mandatory, ParameterSetName = "ToAutoInherit")]
         [switch]$ConvertToAutoInherit,
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [switch]$Container,
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [NtApiDotNet.SecurityDescriptor]$Parent,
+        [Parameter(ParameterSetName = "ToAutoInherit")]
         [Nullable[Guid]]$ObjectType = $null,
         [switch]$PassThru
     )
@@ -7918,6 +7922,9 @@ function Edit-NtSecurityDescriptor {
     }
     elseif ($PsCmdlet.ParameterSetName -eq "MapGenericSd") {
         $SecurityDescriptor.MapGenericAccess($Type)
+    }
+    elseif ($PsCmdlet.ParameterSetName -eq "UnmapGenericSd") {
+        $SecurityDescriptor.UnmapGenericAccess($Type)
     }
     elseif ($PsCmdlet.ParameterSetName -eq "ToAutoInherit") {
         $SecurityDescriptor.ConvertToAutoInherit($Parent,
@@ -12698,4 +12705,82 @@ Clears the SID to name cache.
 #>
 function Clear-NtSidName {
     [NtApiDotNet.NtSecurity]::ClearSidNameCache()
+}
+
+<#
+.SYNOPSIS
+Create a new Win32 service.
+.DESCRIPTION
+This cmdlet creates a new Win32 service. This is similar New-Service but it exposes
+all the options from the CreateService API and allows you to specify service users.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER DisplayName
+Specify the display name for the service.
+.PARAMETER Type
+Specify the service type.
+.PARAMETER Start
+Specify the service start type.
+.PARAMETER Path
+Specify the path to the service binary.
+.PARAMETER LoadOrderGroup
+Specify the load order group.
+.PARAMETER Dependencies
+Specify the list of dependencies.
+.PARAMETER Username
+Specify the username for the service.
+.PARAMETER Password
+Specify the password for the username.
+.PARAMETER PassThru
+Specify to return information about the service.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RunningService
+#>
+function New-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [string]$DisplayName,
+        [NtApiDotNet.Win32.ServiceType]$Type = "Win32OwnProcess",
+        [NtApiDotNet.Win32.ServiceStartType]$Start = "Demand",
+        [NtApiDotNet.Win32.ServiceErrorControl]$ErrorControl = 0,
+        [parameter(Mandatory, Position = 1)]
+        [string]$Path,
+        [string]$LoadOrderGroup,
+        [string[]]$Dependencies,
+        [string]$Username,
+        [System.Security.SecureString]$Password,
+        [switch]$PassThru
+    )
+
+    $service = [NtApiDotNet.Win32.ServiceUtils]::CreateService($Name, $DisplayName, $Type, $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $Password)
+    if ($PassThru) {
+        $service
+    }
+}
+
+<#
+.SYNOPSIS
+Delete a Win32 service.
+.DESCRIPTION
+This cmdlet deletes a Win32 service. This is basically the same as Remove-Service
+but is available on PowerShell 5.1.
+.PARAMETER Name
+Specify the name of the service.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name
+    )
+
+    [NtApiDotNet.Win32.ServiceUtils]::DeleteService($Name)
 }
