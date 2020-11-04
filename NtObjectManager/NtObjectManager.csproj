@@ -60,6 +60,10 @@
     <Compile Include="Cmdlets\Accessible\GetAccessibleWindowStation.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleWnfCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\ProcessTokenInformation.cs" />
+    <Compile Include="Cmdlets\Accessible\ScheduledTaskAccessCheckResult.cs" />
+    <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
+    <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />
+    <Compile Include="Utils\ScheduledTask\ScheduledTaskEntry.cs" />
     <Compile Include="Cmdlets\Accessible\TokenEntry.cs" />
     <Compile Include="Cmdlets\Accessible\TokenInformation.cs" />
     <Compile Include="Cmdlets\Object\NewNtEnclaveCmdlet.cs" />
@@ -182,12 +186,14 @@
     <Compile Include="Cmdlets\Utils\GetRandomByteCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\AddAuthZSidCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\GetAuthZGrantedAccessCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\GetRunningScheduledTaskCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\NewAuthZResourceManagerCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\RemoveAuthZSidCmdlet.cs" />
     <Compile Include="Utils\BaseTransformAttribute.cs" />
     <Compile Include="Utils\InfoClassCompleter.cs" />
     <Compile Include="Utils\NtTypeArgumentCompleter.cs" />
+    <Compile Include="Utils\ScheduledTask\ScheduledTaskTrigger.cs" />
     <Compile Include="Utils\SecurityDescriptorTransformAttribute.cs" />
     <Compile Include="Utils\SidTransformAttribute.cs" />
     <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />
