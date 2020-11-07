@@ -2093,6 +2093,30 @@ namespace NtApiDotNet
                 access_granted, true);
         }
 
+        /// <summary>
+        /// Perform a capability check for a token.
+        /// </summary>
+        /// <param name="token">Specify the token handle. If null will use the effective token.</param>
+        /// <param name="capability_name">The name of the capability to check.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the token has the capability.</returns>
+        public static NtResult<bool> CapabilityCheck(SafeKernelObjectHandle token, string capability_name, bool throw_on_error)
+        {
+            return NtRtl.RtlCapabilityCheck(token ?? SafeKernelObjectHandle.Null, new UnicodeString(capability_name), 
+                out bool result).CreateResult(throw_on_error, () => result);
+        }
+
+        /// <summary>
+        /// Perform a capability check for a token.
+        /// </summary>
+        /// <param name="token">Specify the token handle. If null will use the effective token.</param>
+        /// <param name="capability_name">The name of the capability to check.</param>
+        /// <returns>True if the token has the capability.</returns>
+        public static bool CapabilityCheck(SafeKernelObjectHandle token, string capability_name)
+        {
+            return CapabilityCheck(token, capability_name, true).Result;
+        }
+
         #endregion
 
         #region Static Properties

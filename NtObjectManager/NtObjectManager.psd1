@@ -108,7 +108,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtSystemInformation', 'Get-NtSigningLevel', 'Get-X509Certificate', 'Set-NtCachedSigningLevel',
           'Invoke-NtEnclave', 'Add-NtAccountRight', 'Remove-NtAccountRight', 'Start-Win32DebugConsole',
           'Get-Win32Service', 'Test-NtProcess', 'Get-NtApiSet', 'Clear-NtSidName', 'Add-NtSidName',
-          'Remove-NtSidName', 'New-Win32Service', 'Remove-Win32Service'
+          'Remove-NtSidName', 'New-Win32Service', 'Remove-Win32Service', 'Test-NtTokenCapability'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

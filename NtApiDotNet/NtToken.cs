@@ -1152,6 +1152,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Perform a capability check for a token.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability to check.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the token has the capability.</returns>
+        public NtResult<bool> CapabilityCheck(string capability_name, bool throw_on_error)
+        {
+            return NtSecurity.CapabilityCheck(Handle, capability_name, throw_on_error);
+        }
+
+        /// <summary>
+        /// Perform a capability check for a token.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability to check.</param>
+        /// <returns>True if the token has the capability.</returns>
+        public bool CapabilityCheck(string capability_name)
+        {
+            return CapabilityCheck(capability_name, true).Result;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

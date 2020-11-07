@@ -12784,3 +12784,32 @@ function Remove-Win32Service {
 
     [NtApiDotNet.Win32.ServiceUtils]::DeleteService($Name)
 }
+
+<#
+.SYNOPSIS
+Check if a token has a specified capability.
+.DESCRIPTION
+This cmdlet checks if a token has a specified capability. This is primarily for checking AppContainer tokens.
+.PARAMETER Token
+Specify the token to check. If you do not specify the token then the effective token is used.
+.PARAMETER Name
+The name of the capability to check.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+#>
+function Test-NtTokenCapability {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [NtApiDotNet.NtToken]$Token
+    )
+
+    if ($null -eq $Token) {
+        [NtApiDotNet.NtSecurity]::CapabilityCheck($null, $Name)
+    } else {
+        $Token.CapabilityCheck($Name)
+    }
+}

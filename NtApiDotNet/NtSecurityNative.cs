@@ -757,6 +757,10 @@ namespace NtApiDotNet
             [Out] byte[] Sid2,
             [MarshalAs(UnmanagedType.U1)] out bool HigherLevel
         );
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlCapabilityCheck(SafeKernelObjectHandle TokenHandle,
+            [In] UnicodeString CapabilityName, [MarshalAs(UnmanagedType.U1)] out bool Result);
     }
 
     public static partial class NtSystemCalls
