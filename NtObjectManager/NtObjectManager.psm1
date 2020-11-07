@@ -12522,14 +12522,9 @@ function Start-Win32DebugConsole {
     )
 
     try {
-        $session_id = if ($Global) {
-            0
-        } else {
-            (Get-NtProcess -Current).SessionId
-        }
-        Use-NtObject($console = [NtApiDotNet.Win32.Debugger.Win32DebugConsole]::Create($session_id)) {
+        Use-NtObject($console = New-Win32DebugConsole -Global:$Global) {
             while($true) {
-                $result = $console.Read(1000)
+                $result = Read-Win32DebugConsole -Console $console -TimeoutMs 1000
                 if ($null -ne $result.Output) {
                     Write-Host "[$($result.ProcessId)] - $($result.Output.Trim())"
                 }
@@ -12537,6 +12532,63 @@ function Start-Win32DebugConsole {
         }
     } catch {
         Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new Win32 debug console.
+.DESCRIPTION
+This cmdlet creates Win32 debug console. You can then read debug events using Read-Win32DebugConsole.
+.PARAMETER Global
+Capture debug output for session 0.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Debugger.Win32DebugConsole
+#>
+function New-Win32DebugConsole {
+    param(
+        [switch]$Global
+    )
+
+    $session_id = if ($Global) {
+        0
+    } else {
+        (Get-NtProcess -Current).SessionId
+    }
+    [NtApiDotNet.Win32.Debugger.Win32DebugConsole]::Create($session_id)
+}
+
+<#
+.SYNOPSIS
+Reads a debug event from the Win32 debug console.
+.DESCRIPTION
+This cmdlet reads a Win32 debug event from a console.
+.PARAMETER Console
+The console to read from.
+.PARAMETER TimeoutMs
+The timeout to read in milliseconds. The default is to wait indefinitely.
+.PARAMETER Async
+Read the string asynchronously.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Debugger.Win32DebugString
+System.Threading.Tasks.Task[Win32DebugString]
+#>
+function Read-Win32DebugConsole {
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Debugger.Win32DebugConsole]$Console,
+        [int]$TimeoutMs = -1,
+        [switch]$Async
+    )
+
+    if ($Async) {
+        $Console.ReadAsync($TimeoutMs)
+    } else {
+        $Console.Read($TimeoutMs)
     }
 }
 
