@@ -8919,6 +8919,7 @@ function Format-Win32SecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromName")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName", Mandatory)]
+        [AllowEmptyString()]
         [string]$Name,
         [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",

@@ -942,11 +942,19 @@ namespace NtApiDotNet.Win32
         );
 
         [DllImport("Advapi32.dll", SetLastError = true)]
-        internal static extern bool QueryServiceObjectSecurity(SafeServiceHandle hService,
+        internal static extern bool QueryServiceObjectSecurity(
+            SafeServiceHandle hService,
             SecurityInformation dwSecurityInformation,
             [Out] byte[] lpSecurityDescriptor,
             int cbBufSize,
             out int pcbBytesNeeded);
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool SetServiceObjectSecurity(
+            SafeServiceHandle hService,
+            SecurityInformation dwSecurityInformation,
+            [In] byte[] lpSecurityDescriptor
+        );
 
         [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool QueryServiceConfig(

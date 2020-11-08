@@ -47,6 +47,7 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <para type="description">The name of the object.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
+        [AllowEmptyString]
         public string Name { get; set; }
 
         /// <summary>
@@ -92,7 +93,7 @@ namespace NtObjectManager.Cmdlets.Win32
                     {
                         SecurityInformation &= SecurityInformation.Owner |
                             SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label;
-                        if (Name == ".")
+                        if (string.IsNullOrEmpty(Name))
                         {
                             sd = ServiceUtils.GetScmSecurityDescriptor(SecurityInformation);
                             break;

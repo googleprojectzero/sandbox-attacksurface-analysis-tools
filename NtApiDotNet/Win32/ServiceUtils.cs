@@ -398,6 +398,27 @@ namespace NtApiDotNet.Win32
             return new SecurityDescriptor(sd, GetServiceNtType(type_name));
         }
 
+        private static NtStatus SetServiceSecurityDescriptor(SafeServiceHandle handle,
+            SecurityInformation security_information, SecurityDescriptor security_descriptor, bool throw_on_error)
+        {
+            if (handle is null)
+            {
+                throw new ArgumentNullException(nameof(handle));
+            }
+
+            if (security_descriptor is null)
+            {
+                throw new ArgumentNullException(nameof(security_descriptor));
+            }
+
+            if (!Win32NativeMethods.SetServiceObjectSecurity(handle, security_information, security_descriptor.ToByteArray()))
+            {
+                return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
+            }
+
+            return NtStatus.STATUS_SUCCESS;
+        }
+
         private static IEnumerable<ServiceTriggerInformation> GetTriggersForService(SafeServiceHandle service)
         {
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
@@ -651,11 +672,45 @@ namespace NtApiDotNet.Win32
         /// <returns>The SCM security descriptor.</returns>
         public static SecurityDescriptor GetScmSecurityDescriptor(SecurityInformation security_information)
         {
+            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
+
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
+                            ServiceControlManagerAccessRights.Connect | desired_access))
             {
                 return GetServiceSecurityDescriptor(scm, "scm", security_information);
             }
+        }
+
+        /// <summary>
+        /// Set the SCM security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The parts of the security descriptor to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetScmSecurityDescriptor(SecurityDescriptor security_descriptor, 
+            SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.SetSecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
+
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect | desired_access))
+            {
+                if (scm.IsInvalid)
+                    return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
+                return SetServiceSecurityDescriptor(scm, security_information, security_descriptor, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set the SCM security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The parts of the security descriptor to set.</param>
+        public static void SetScmSecurityDescriptor(SecurityDescriptor security_descriptor,
+            SecurityInformation security_information)
+        {
+            SetScmSecurityDescriptor(security_descriptor, security_information, true);
         }
 
         /// <summary>
@@ -667,7 +722,7 @@ namespace NtApiDotNet.Win32
         public static NtResult<ServiceInformation> GetServiceInformation(string name, bool throw_on_error)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
+                            ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
                 {
@@ -676,6 +731,38 @@ namespace NtApiDotNet.Win32
 
                 return GetServiceSecurityInformation(scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Set the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The security information to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public static NtStatus SetServiceSecurityDescriptor(string name, SecurityDescriptor security_descriptor, 
+            SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.SetSecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
+            using (var service = OpenService(name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return SetServiceSecurityDescriptor(service.Result, security_information, security_descriptor, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The security information to set.</param>
+        public static void SetServiceSecurityDescriptor(string name, SecurityDescriptor security_descriptor,
+            SecurityInformation security_information)
+        {
+            SetServiceSecurityDescriptor(name, security_descriptor, security_information, true);
         }
 
         /// <summary>
