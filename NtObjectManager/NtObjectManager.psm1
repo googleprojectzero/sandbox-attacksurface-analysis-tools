@@ -4977,7 +4977,7 @@ Gets a list of win32 services.
 This cmdlet gets a list of all win32 services. 
 .PARAMETER State
 Specify the state of the services to get.
-.PARAMETER ServiceType
+.PARAMETER Type
 Specify to filter the services to specific types only.
 .PARAMETER Name
 Specify names to lookup.
@@ -4992,7 +4992,7 @@ Get all services.
 Get-Win32Service -State Active
 Get all active services.
 .EXAMPLE
-Get-Win32Service -State All -ServiceType UserService
+Get-Win32Service -State All -Type UserService
 Get all user services.
 #>
 function Get-Win32Service {
@@ -5001,7 +5001,7 @@ function Get-Win32Service {
         [parameter(ParameterSetName = "All")]
         [NtApiDotNet.Win32.ServiceState]$State = "All",
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceType]$ServiceType = 0,
+        [NtApiDotNet.Win32.ServiceType]$Type = 0,
         [parameter(ParameterSetName = "FromName", Position = 0)]
         [string[]]$Name
     )
@@ -5009,10 +5009,10 @@ function Get-Win32Service {
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "All" {
-                if ($ServiceType -eq 0) {
-                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
+                if ($Type -eq 0) {
+                    $Type = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
                 }
-                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $ServiceType) | Write-Output
+                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $Type) | Write-Output
             }
             "FromName" {
                 foreach ($n in $Name) {
@@ -8919,7 +8919,6 @@ function Format-Win32SecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromName")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName", Mandatory)]
-        [AllowEmptyString()]
         [string]$Name,
         [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
@@ -12864,5 +12863,82 @@ function Test-NtTokenCapability {
         [NtApiDotNet.NtSecurity]::CapabilityCheck($null, $Name)
     } else {
         $Token.CapabilityCheck($Name)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the security descriptor for a service.
+.DESCRIPTION
+This cmdlet gets the security descriptor for a service or the SCM.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ServiceControlManager
+Specify to query the service control manager security descriptor.
+.PARAMETER SecurityInformation
+Specify the parts of the security descriptor to return.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+#>
+function Get-Win32ServiceSecurityDescriptor {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromScm")]
+        [switch]$ServiceControlManager,
+        [parameter(Position = 1)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation = "Owner, Group, Dacl, Label"
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceSecurityDescriptor($Name, $SecurityInformation)
+        }
+        "FromScm" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetScmSecurityDescriptor($SecurityInformation)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set the security descriptor for a service.
+.DESCRIPTION
+This cmdlet sets the security descriptor for a service or the SCM.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ServiceControlManager
+Specify to set the service control manager security descriptor.
+.PARAMETER SecurityInformation
+Specify the parts of the security descriptor to set.
+.PARAMETER SecurityDescriptor 
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-Win32ServiceSecurityDescriptor {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(Mandatory, ParameterSetName="FromScm")]
+        [switch]$ServiceControlManager,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [parameter(Mandatory, Position = 2)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::SetServiceSecurityDescriptor($Name, $SecurityDescriptor, $SecurityInformation)
+        }
+        "FromScm" {
+            [NtApiDotNet.Win32.ServiceUtils]::SetScmSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
+        }
     }
 }

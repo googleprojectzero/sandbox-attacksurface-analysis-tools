@@ -386,16 +386,14 @@ namespace NtApiDotNet.Win32
                 | SecurityInformation.Label
                 | SecurityInformation.Group;
 
-        private static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle,
-            string type_name, SecurityInformation security_information)
+        private static NtResult<SecurityDescriptor> GetServiceSecurityDescriptor(
+            SafeServiceHandle handle, string type_name, SecurityInformation security_information,
+            bool throw_on_error)
         {
             byte[] sd = new byte[8192];
-            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information, sd, sd.Length, out _))
-            {
-                throw new SafeWin32Exception();
-            }
-
-            return new SecurityDescriptor(sd, GetServiceNtType(type_name));
+            return Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information,
+                sd, sd.Length, out _).CreateWin32Result(throw_on_error, 
+                () => new SecurityDescriptor(sd, GetServiceNtType(type_name)));
         }
 
         private static NtStatus SetServiceSecurityDescriptor(SafeServiceHandle handle,
@@ -504,7 +502,8 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service", security_information),
+                return new ServiceInformation(name, 
+                    GetServiceSecurityDescriptor(service, "service", security_information, false).GetResultOrDefault(),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
                     QueryConfig(service, false).GetResultOrDefault()).CreateResult();
@@ -669,16 +668,61 @@ namespace NtApiDotNet.Win32
         /// Get the security descriptor of the SCM.
         /// </summary>
         /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The SCM security descriptor.</returns>
-        public static SecurityDescriptor GetScmSecurityDescriptor(SecurityInformation security_information)
+        public static NtResult<SecurityDescriptor> GetScmSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
             var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
 
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | desired_access))
             {
-                return GetServiceSecurityDescriptor(scm, "scm", security_information);
+                if (scm.IsInvalid)
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
+                return GetServiceSecurityDescriptor(scm, "scm", security_information, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Get the security descriptor of the SCM.
+        /// </summary>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <returns>The SCM security descriptor.</returns>
+        public static SecurityDescriptor GetScmSecurityDescriptor(SecurityInformation security_information)
+        {
+            return GetScmSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Get the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor.</returns>
+        public static NtResult<SecurityDescriptor> GetServiceSecurityDescriptor(string name, 
+            SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
+
+            using (var service = OpenService(name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Cast<SecurityDescriptor>();
+                return GetServiceSecurityDescriptor(service.Result, "service", security_information, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Get the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <returns>The security descriptor.</returns>
+        public static SecurityDescriptor GetServiceSecurityDescriptor(string name,
+            SecurityInformation security_information)
+        {
+            return GetServiceSecurityDescriptor(name, security_information, true).Result;
         }
 
         /// <summary>

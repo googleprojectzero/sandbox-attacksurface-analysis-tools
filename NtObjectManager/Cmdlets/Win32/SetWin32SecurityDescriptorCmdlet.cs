@@ -55,7 +55,6 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <para type="description">The name of the object.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
-        [AllowEmptyString]
         public string Name { get; set; }
 
         /// <summary>
@@ -146,12 +145,8 @@ namespace NtObjectManager.Cmdlets.Win32
             if (Type == SeObjectType.Service)
             {
                 SecurityInformation &= SecurityInformation.Owner |
-                    SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label;
-                if (string.IsNullOrEmpty(Name))
-                {
-                    ServiceUtils.SetScmSecurityDescriptor(SecurityDescriptor, SecurityInformation);
-                    return;
-                }
+                    SecurityInformation.Group | SecurityInformation.Dacl | 
+                    SecurityInformation.Label | SecurityInformation.Sacl;
             }
 
             if (do_callback || Action != TreeSecInfo.Set)
