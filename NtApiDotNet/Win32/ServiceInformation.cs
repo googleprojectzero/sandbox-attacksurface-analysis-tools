@@ -81,11 +81,15 @@ namespace NtApiDotNet.Win32
         /// Service start name. For user mode services this is the username, for drivers it's the driver name.
         /// </summary>
         public string ServiceStartName { get; }
+        /// <summary>
+        /// Indicates this service is set to delayed automatic start.
+        /// </summary>
+        public bool DelayedAutoStart { get; }
 
         internal ServiceInformation(string name, SecurityDescriptor sd, 
             IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
             ServiceLaunchProtectedType launch_protected, IEnumerable<string> required_privileges,
-            SafeStructureInOutBuffer<QUERY_SERVICE_CONFIG> config)
+            SafeStructureInOutBuffer<QUERY_SERVICE_CONFIG> config, bool delayed_auto_start)
         {
             using (config)
             {
@@ -116,12 +120,13 @@ namespace NtApiDotNet.Win32
                 Dependencies = result.lpLoadOrderGroup.GetMultiString();
                 DisplayName = result.lpDisplayName.GetString();
                 ServiceStartName = result.lpServiceStartName.GetString();
+                DelayedAutoStart = delayed_auto_start;
             }
         }
 
         internal ServiceInformation(string name) : this(name, null,
                 new ServiceTriggerInformation[0], ServiceSidType.None,
-                ServiceLaunchProtectedType.None, new string[0], null)
+                ServiceLaunchProtectedType.None, new string[0], null, false)
         {
         }
     }

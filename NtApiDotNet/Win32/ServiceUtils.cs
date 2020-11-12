@@ -300,6 +300,13 @@ namespace NtApiDotNet.Win32
         public ServiceLaunchProtectedType dwLaunchProtected;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_DELAYED_AUTO_START_INFO
+    {
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool fDelayedAutostart;
+    }
+
     public enum ServiceStartType
     {
         Boot = 0,
@@ -342,6 +349,7 @@ namespace NtApiDotNet.Win32
         private const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
         private const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
         private const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
+        private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
 
         internal static string GetString(this IntPtr ptr)
         {
@@ -491,6 +499,19 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private static bool GetDelayedStart(SafeServiceHandle service)
+        {
+            using (var buf = new SafeStructureInOutBuffer<SERVICE_DELAYED_AUTO_START_INFO>())
+            {
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO,
+                        buf, buf.Length, out int needed))
+                {
+                    return false;
+                }
+                return buf.Result.fDelayedAutostart;
+            }
+        }
+
         private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name,
             SecurityInformation security_information, bool throw_on_error)
         {
@@ -506,7 +527,7 @@ namespace NtApiDotNet.Win32
                     GetServiceSecurityDescriptor(service, "service", security_information, false).GetResultOrDefault(),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
-                    QueryConfig(service, false).GetResultOrDefault()).CreateResult();
+                    QueryConfig(service, false).GetResultOrDefault(), GetDelayedStart(service)).CreateResult();
             }
         }
 
@@ -1139,6 +1160,55 @@ namespace NtApiDotNet.Win32
         {
             DeleteService(name, true);
         }
+
+        /// <summary>
+        /// Change service configuration.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ChangeServiceConfig(
+            string name,
+            string display_name,
+            ServiceType? service_type,
+            ServiceStartType? start_type,
+            ServiceErrorControl? error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password,
+            bool throw_on_error)
+        {
+            using (var service = OpenService(name, ServiceAccessRights.ChangeConfig, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                IntPtr pwd = password != null ? Marshal.SecureStringToBSTR(password) : IntPtr.Zero;
+                try
+                {
+                    return Win32NativeMethods.ChangeServiceConfig(service.Result,
+                        service_type ?? (ServiceType)(-1), start_type ?? (ServiceStartType)(-1),
+                        error_control ?? (ServiceErrorControl)(-1), binary_path_name, load_order_group,
+                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).GetLastWin32Error().ToNtException(throw_on_error);
+                }
+                finally
+                {
+                    if (pwd != IntPtr.Zero)
+                        Marshal.FreeBSTR(pwd);
+                }
+            }
+        }
+
         #endregion
     }
 }

@@ -114,6 +114,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public ServiceStartType StartType => _service_information.Value.StartType;
         /// <summary>
+        /// Whether the service is a delayed auto start service.
+        /// </summary>
+        public bool DelayedAutoStart => _service_information.Value.DelayedAutoStart;
+        /// <summary>
         /// Error control.
         /// </summary>
         public ServiceErrorControl ErrorControl => _service_information.Value.ErrorControl;

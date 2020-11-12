@@ -929,7 +929,7 @@ namespace NtApiDotNet.Win32
           SafeServiceHandle hSCManager,
           string lpServiceName,
           string lpDisplayName,
-          ServiceAccessRights     dwDesiredAccess,
+          ServiceAccessRights dwDesiredAccess,
           ServiceType dwServiceType,
           ServiceStartType dwStartType,
           ServiceErrorControl dwErrorControl,
@@ -971,6 +971,28 @@ namespace NtApiDotNet.Win32
           SafeBuffer lpBuffer,
           int cbBufSize,
           out int pcbBytesNeeded
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool ChangeServiceConfig(
+            SafeServiceHandle hService,
+            ServiceType dwServiceType,
+            ServiceStartType dwStartType,
+            ServiceErrorControl dwErrorControl,
+            string lpBinaryPathName,
+            string lpLoadOrderGroup,
+            [Out] OptionalInt32 lpdwTagId,
+            string lpDependencies,
+            string lpServiceStartName,
+            IntPtr lpPassword,
+            string lpDisplayName
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool ChangeServiceConfig2(
+            SafeServiceHandle hService,
+            int dwInfoLevel,
+            SafeBuffer lpInfo
         );
 
         [DllImport("Advapi32.dll", SetLastError = true)]
