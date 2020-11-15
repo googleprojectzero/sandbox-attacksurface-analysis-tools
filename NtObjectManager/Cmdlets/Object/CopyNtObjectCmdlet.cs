@@ -32,7 +32,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Duplicate an object to another process. If the desintation process is the current process an object is returned, otherwise a handle is returned.</para>
     /// </example>
     /// <example>
-    ///   <code>Copy-NtObject -Handle 1234 -SourceProcess $proc</code>
+    ///   <code>Copy-NtObject -SourceHandle 1234 -SourceProcess $proc</code>
     ///   <para>Duplicate an object from another process to the current process.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Copy, "NtObject")]
@@ -44,6 +44,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromObject", ValueFromPipeline = true)]
         public NtObject[] Object { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the object to duplicate in the current process.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromNtHandle", ValueFromPipeline = true)]
+        public NtHandle[] Handle { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the object to duplicate as a handle.</para>
@@ -156,6 +162,27 @@ namespace NtObjectManager.Cmdlets.Object
                 GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
         }
 
+        private object GetObject(NtHandle handle)
+        {
+            using (var proc = NtProcess.Open(handle.ProcessId, ProcessAccessRights.DupHandle))
+            {
+                using (var dup_obj = NtGeneric.DuplicateFrom(proc, new IntPtr(handle.Handle),
+                    GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions()))
+                {
+                    return dup_obj.ToTypedObject();
+                }
+            }
+        }
+
+        private object GetHandle(NtHandle handle)
+        {
+            using (var proc = NtProcess.Open(handle.ProcessId, ProcessAccessRights.DupHandle))
+            {
+                return NtObject.DuplicateHandle(proc, new IntPtr(handle.Handle), DestinationProcess,
+                    GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
+            }
+        }
+
         private object GetObject(NtObject obj)
         {
             return obj.DuplicateObject(GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
@@ -186,6 +213,32 @@ namespace NtObjectManager.Cmdlets.Object
                 foreach (var obj in Object)
                 {
                     WriteObject(func(obj));
+                }
+            }
+            else if (ParameterSetName == "FromNtHandle")
+            {
+                Func<NtHandle, object> func;
+                if (DestinationProcess.ProcessId == NtProcess.Current.ProcessId)
+                {
+                    func = GetObject;
+                }
+                else
+                {
+                    func = GetHandle;
+                }
+
+                foreach (var obj in Handle)
+                {
+                    try
+                    {
+                        WriteObject(func(obj));
+                    }
+                    catch (NtException ex)
+                    {
+                        if (Handle.Length == 1)
+                            throw;
+                        WriteError(new ErrorRecord(ex, "Error", ErrorCategory.OpenError, obj));
+                    }
                 }
             }
             else
