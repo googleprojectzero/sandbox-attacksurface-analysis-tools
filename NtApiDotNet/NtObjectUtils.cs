@@ -73,7 +73,7 @@ namespace NtApiDotNet
 
         internal static byte[] ReadToEnd(this BinaryReader reader)
         {
-            return reader.ReadBytes(int.MaxValue);
+            return reader.ReadBytes((int)reader.RemainingLength());
         }
 
         internal static long RemainingLength(this Stream stm)
