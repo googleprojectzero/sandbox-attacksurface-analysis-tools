@@ -155,7 +155,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a byte array containing the security descriptor.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromBytes")]
-        [Alias("Byte")]
+        [Alias("Bytes")]
         public byte[] Byte { get; set; }
 
         /// <summary>
