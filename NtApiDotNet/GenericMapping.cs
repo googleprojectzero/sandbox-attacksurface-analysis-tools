@@ -109,15 +109,19 @@ namespace NtApiDotNet
                 result |= GenericAccessRights.GenericRead;
                 remaining &= ~GenericRead;
             }
-            if ((mask & GenericWrite) == GenericWrite)
-            {
-                result |= GenericAccessRights.GenericWrite;
-                remaining &= ~GenericWrite;
-            }
+            if (remaining.IsEmpty)
+                return result;
             if ((mask & GenericExecute) == GenericExecute)
             {
                 result |= GenericAccessRights.GenericExecute;
                 remaining &= ~GenericExecute;
+            }
+            if (remaining.IsEmpty)
+                return result;
+            if ((mask & GenericWrite) == GenericWrite)
+            {
+                result |= GenericAccessRights.GenericWrite;
+                remaining &= ~GenericWrite;
             }
 
             return result | remaining;
