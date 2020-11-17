@@ -106,7 +106,7 @@ namespace NtApiDotNet.Win32
         SQoSPresent = 0x00100000,
         OpenReparsePoint = 0x00200000,
         PosixSemantics = 0x01000000,
-        BackupDemantics = 0x02000000,
+        BackupSemantics = 0x02000000,
         DeleteOnClose = 0x04000000,
         SequentialScan = 0x08000000,
         RandomAccess = 0x10000000,
@@ -1017,6 +1017,13 @@ namespace NtApiDotNet.Win32
               ref int lpResumeHandle,
               string pszGroupName
             );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool StartService(
+          SafeServiceHandle hService,
+          int dwNumServiceArgs,
+          [MarshalAs(UnmanagedType.LPArray)] string[] lpServiceArgVectors
+        );
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool InitializeProcThreadAttributeList(
