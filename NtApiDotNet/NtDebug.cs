@@ -53,7 +53,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obja, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None);
+                return Create(obja, DebugAccessRights.MaximumAllowed, flags);
             }
         }
 
@@ -102,7 +102,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf, root))
             {
-                return Create(obja, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None);
+                return Create(obja, desired_access, DebugObjectFlags.None);
             }
         }
 
@@ -114,7 +114,7 @@ namespace NtApiDotNet
         /// <returns>The debug object</returns>
         public static NtDebug Open(ObjectAttributes object_attributes, DebugAccessRights desired_access)
         {
-            return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, true).Result;
+            return Create(object_attributes, desired_access, DebugObjectFlags.None, true).Result;
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtDebug> Open(ObjectAttributes object_attributes, DebugAccessRights desired_access, bool throw_on_error)
         {
-            return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, throw_on_error);
+            return Create(object_attributes, desired_access, DebugObjectFlags.None, throw_on_error);
         }
 
         /// <summary>
@@ -142,7 +142,7 @@ namespace NtApiDotNet
                 return new NtResult<NtDebug>();
             }
             return DuplicateFrom(NtProcess.Current, current_debug_object, 0, 
-                DuplicateObjectOptions.SameAttributes | DuplicateObjectOptions.SameAccess, false);
+                DuplicateObjectOptions.SameAttributes | DuplicateObjectOptions.SameAccess, throw_on_error);
         }
 
         #endregion
