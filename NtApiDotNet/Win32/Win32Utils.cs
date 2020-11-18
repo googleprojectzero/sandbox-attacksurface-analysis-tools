@@ -82,11 +82,16 @@ namespace NtApiDotNet.Win32
             return win32_path;
         }
 
-        internal static Dictionary<uint, String> GetMaskDictionary(Type access_type, AccessMask valid_access)
+        /// <summary>
+        /// Get a mask dictionary for a type. 
+        /// </summary>
+        /// <param name="access_type">The enumerated type to query for names.</param>
+        /// <param name="valid_access">The valid access.</param>
+        /// <returns>A dictionary mapping a mask value to a name.</returns>
+        public static Dictionary<uint, string> GetMaskDictionary(Type access_type, AccessMask valid_access)
         {
             Dictionary<uint, string> access = new Dictionary<uint, string>();
             AddEnumToDictionary(access, access_type, valid_access.Access);
-
             return access;
         }
 

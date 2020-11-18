@@ -123,6 +123,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NtApiDotNet.Forms\NtApiDotNet.Forms.csproj">
+      <Project>{fd4cb5f2-24ed-4561-b0e1-bb397ae5c636}</Project>
+      <Name>NtApiDotNet.Forms</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>

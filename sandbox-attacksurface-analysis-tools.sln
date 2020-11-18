@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2006
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30711.63
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditSection", "EditSection\EditSection.csproj", "{E0EC1C79-4200-466B-8415-DE70E18192CC}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtObjectManager", "NtObjectManager\NtObjectManager.csproj", "{2B17A3DD-0970-482F-976A-A4027B9B8817}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ViewSecurityDescriptor", "ViewSecurityDescriptor\ViewSecurityDescriptor.csproj", "{85E8EE16-53F3-493B-90D2-49396574EFC7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtApiDotNet.Forms", "NtApiDotNet.Forms\NtApiDotNet.Forms.csproj", "{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

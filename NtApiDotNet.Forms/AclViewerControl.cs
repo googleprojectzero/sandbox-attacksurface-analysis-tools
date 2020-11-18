@@ -167,7 +167,7 @@ namespace NtApiDotNet.Forms
                 {
                     access = ace.Mask.ToMandatoryLabelPolicy().ToString();
                 }
-                else if (ace.Flags.HasFlagSet(AceFlags.InheritOnly))
+                else if (ace.Flags.HasFlag(AceFlags.InheritOnly))
                 {
                     access = ace.Mask.ToSpecificAccess(access_type).ToString();
                 }
@@ -261,7 +261,7 @@ namespace NtApiDotNet.Forms
                 access_type = typeof(MandatoryLabelPolicy);
                 valid_access = 0x7;
             }
-            else if (ace.Flags.HasFlagSet(AceFlags.InheritOnly))
+            else if (ace.Flags.HasFlag(AceFlags.InheritOnly))
             {
                 mapped_mask = ace.Mask;
                 generic_access_mask = true;

@@ -143,24 +143,6 @@
     <Compile Include="DebugEvent.cs" />
     <Compile Include="DisposableList.cs" />
     <Compile Include="EaBuffer.cs" />
-    <Compile Include="Forms\AclViewerControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Forms\AclViewerControl.Designer.cs">
-      <DependentUpon>AclViewerControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\SecurityDescriptorViewerControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Forms\SecurityDescriptorViewerControl.Designer.cs">
-      <DependentUpon>SecurityDescriptorViewerControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\SecurityDescriptorViewerForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\SecurityDescriptorViewerForm.Designer.cs">
-      <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="GenericMapping.cs" />
     <Compile Include="INtTransaction.cs" />
     <Compile Include="MandatoryLabelAce.cs" />
@@ -574,17 +556,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Forms\AclViewerControl.resx">
-      <DependentUpon>AclViewerControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\SecurityDescriptorViewerControl.resx">
-      <DependentUpon>SecurityDescriptorViewerControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\SecurityDescriptorViewerForm.resx">
-      <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

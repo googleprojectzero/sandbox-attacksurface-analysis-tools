@@ -4,72 +4,76 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{85E8EE16-53F3-493B-90D2-49396574EFC7}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>ViewSecurityDescriptor</RootNamespace>
-    <AssemblyName>ViewSecurityDescriptor</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <ProjectGuid>{FD4CB5F2-24ED-4561-B0E1-BB397AE5C636}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>NtApiDotNet.Forms</RootNamespace>
+    <AssemblyName>NtApiDotNet.Forms</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <LangVersion>7.3</LangVersion>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="AclViewerControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="AclViewerControl.Designer.cs">
+      <DependentUpon>AclViewerControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <None Include="app.manifest">
-      <SubType>Designer</SubType>
-    </None>
+    <Compile Include="SecurityDescriptorViewerControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SecurityDescriptorViewerControl.Designer.cs">
+      <DependentUpon>SecurityDescriptorViewerControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SecurityDescriptorViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SecurityDescriptorViewerForm.Designer.cs">
+      <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
+    </Compile>
+    <Service Include="{94E38DFF-614B-4cbd-B67C-F211BB35CE8B}" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <EmbeddedResource Include="AclViewerControl.resx">
+      <DependentUpon>AclViewerControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SecurityDescriptorViewerControl.resx">
+      <DependentUpon>SecurityDescriptorViewerControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SecurityDescriptorViewerForm.resx">
+      <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NtApiDotNet.Forms\NtApiDotNet.Forms.csproj">
-      <Project>{fd4cb5f2-24ed-4561-b0e1-bb397ae5c636}</Project>
-      <Name>NtApiDotNet.Forms</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
