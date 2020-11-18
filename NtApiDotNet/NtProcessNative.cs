@@ -446,6 +446,13 @@ namespace NtApiDotNet
         public IntPtr ProcessHandle;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessCycleTimeInformation
+    {
+        public long AccumulatedCycles;
+        public long CurrentCycleCount;
+    }
+
     public enum ProcessInformationClass
     {
         ProcessBasicInformation, 
@@ -547,7 +554,9 @@ namespace NtApiDotNet
         ProcessEnableLogging,
         ProcessLeapSecondInformation,
         ProcessFiberShadowStackAllocation,
-        ProcessFreeFiberShadowStackAllocation
+        ProcessFreeFiberShadowStackAllocation,
+        ProcessAltSystemCallInformation,
+        ProcessDynamicEHContinuationTargets,
     }
 
     public enum ProcessMitigationPolicy
@@ -699,6 +708,63 @@ namespace NtApiDotNet
     public struct ProcessRevokeFileHandlesInformation
     {
         public UnicodeString TargetDevicePath;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct RateQuotaLimit
+    {
+        public int RateData;
+        public int RatePercent => RateData & 0x7F;
+
+        public override string ToString()
+        {
+            return $"{RatePercent}%";
+        }
+    }
+
+    [Flags]
+    public enum QuotaLimitsExFlags
+    {
+        None = 0,
+        MinEnable = 1,
+        MinDisable = 2,
+        MaxEnable = 4,
+        MaxDisable = 8,
+        UseDefaultLimits = 0x10
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct QuotaLimitsEx
+    {
+        public IntPtr PagedPoolLimit;
+        public IntPtr NonPagedPoolLimit;
+        public IntPtr MinimumWorkingSetSize;
+        public IntPtr MaximumWorkingSetSize;
+        public IntPtr PagefileLimit;
+        public LargeIntegerStruct TimeLimit;
+        public IntPtr WorkingSetLimit;
+        public IntPtr Reserved2;
+        public IntPtr Reserved3;
+        public IntPtr Reserved4;
+        public QuotaLimitsExFlags Flags;
+        public RateQuotaLimit CpuRateLimit;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct VmCountersEx
+    {
+        public IntPtr PeakVirtualSize;
+        public IntPtr VirtualSize;
+        public int PageFaultCount;
+        public IntPtr PeakWorkingSetSize;
+        public IntPtr WorkingSetSize;
+        public IntPtr QuotaPeakPagedPoolUsage;
+        public IntPtr QuotaPagedPoolUsage;
+        public IntPtr QuotaPeakNonPagedPoolUsage;
+        public IntPtr QuotaNonPagedPoolUsage;
+        public IntPtr PagefileUsage;
+        public IntPtr PeakPagefileUsage;
+        public IntPtr PrivateUsage;
     }
 
     public static partial class NtSystemCalls

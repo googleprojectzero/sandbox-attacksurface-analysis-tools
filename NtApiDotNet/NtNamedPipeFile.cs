@@ -301,6 +301,27 @@ namespace NtApiDotNet
         {
             return GetAttributeString(attribute_type, name, true).Result;
         }
+
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public override NtResult<object> QueryObject(FileInformationClass info_class, bool throw_on_error)
+        {
+            switch (info_class)
+            {
+                case FileInformationClass.FilePipeInformation:
+                    return Query<FilePipeInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FilePipeLocalInformation:
+                    return Query<FilePipeLocalInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FilePipeRemoteInformation:
+                    return Query<FilePipeRemoteInformation>(info_class, default, throw_on_error).Cast<object>();
+            }
+            return base.QueryObject(info_class, throw_on_error);
+        }
+
         #endregion
 
         #region Public Properties

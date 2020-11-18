@@ -953,6 +953,13 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct FilePipeRemoteInformation
+    {
+        public LargeIntegerStruct CollectDataTime;
+        public int MaximumCollectionCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct FileMailslotQueryInformation
     {
         public int MaximumMessageSize;

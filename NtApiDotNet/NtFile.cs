@@ -4829,6 +4829,32 @@ namespace NtApiDotNet
             return NtSystemCalls.NtSetInformationFile(Handle, io_status, buffer, buffer.GetLength(), info_class);
         }
 
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public override NtResult<object> QueryObject(FileInformationClass info_class, bool throw_on_error)
+        {
+            switch (info_class)
+            {
+                case FileInformationClass.FileBasicInformation:
+                    return Query<FileBasicInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FileEndOfFileInformation:
+                    return Query<FileEndOfFileInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FileStandardInformation:
+                    return Query<FileStandardInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FileNetworkOpenInformation:
+                    return Query<FileNetworkOpenInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FileInternalInformation:
+                    return Query<FileInternalInformation>(info_class, default, throw_on_error).Cast<object>();
+                case FileInformationClass.FileRemoteProtocolInformation:
+                    return Query<FileRemoteProtocolInformation>(info_class, default, throw_on_error).Cast<object>();
+            }
+            return base.QueryObject(info_class, throw_on_error);
+        }
+
         #endregion
 
         #region Public Properties

@@ -2201,6 +2201,14 @@ namespace NtApiDotNet
                     return Query<IoCounters>(info_class, default, throw_on_error).Cast<object>();
                 case ProcessInformationClass.ProcessTimes:
                     return Query<KernelUserTimes>(info_class, default, throw_on_error).Cast<object>();
+                case ProcessInformationClass.ProcessQuotaLimits:
+                    return Query<QuotaLimitsEx>(info_class, default, throw_on_error).Cast<object>();
+                case ProcessInformationClass.ProcessVmCounters:
+                    return Query<VmCountersEx>(info_class, default, throw_on_error).Cast<object>();
+                case ProcessInformationClass.ProcessCycleTime:
+                    return Query<ProcessCycleTimeInformation>(info_class, default, throw_on_error).Cast<object>();
+                case ProcessInformationClass.ProcessProtectionInformation:
+                    return Query<PsProtection>(info_class, default, throw_on_error).Cast<object>();
             }
             return base.QueryObject(info_class, throw_on_error);
         }
@@ -2491,10 +2499,8 @@ namespace NtApiDotNet
 
 
         /// <summary>
-        /// Get the process handle table and try and get them as objects.
+        /// Does the process has a child process restriction?
         /// </summary>
-        /// <returns>The list of handles as objects.</returns>
-        /// <remarks>This function will drop handles it can't duplicate.</remarks>
         public bool IsChildProcessRestricted
         {
             get
@@ -2631,7 +2637,6 @@ namespace NtApiDotNet
         /// Get the time spent in user mode.
         /// </summary>
         public double UserTimeSeconds => new TimeSpan(UserTime).TotalSeconds;
-
         /// <summary>
         /// Get the process IO counters.
         /// </summary>
