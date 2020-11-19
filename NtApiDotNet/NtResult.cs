@@ -137,6 +137,15 @@ namespace NtApiDotNet
             return status.CreateResultFromError<T>(throw_on_error);
         }
 
+        /// <summary>
+        /// Conversion operator from T to object.
+        /// </summary>
+        /// <param name="result">The result to convert.</param>
+        public static implicit operator NtResult<object>(NtResult<T> result)
+        {
+            return result.Cast<object>();
+        }
+
         internal NtResult(NtStatus status, T result)
         {
             Status = status;

@@ -34,7 +34,7 @@ namespace NtObjectManager.Utils
 
         protected override NtResult<object> Parse(string value, bool throw_on_error)
         {
-            return SecurityDescriptor.Parse(value, false).Cast<object>();
+            return SecurityDescriptor.Parse(value, false);
         }
     }
 }

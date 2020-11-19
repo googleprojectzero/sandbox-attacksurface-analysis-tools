@@ -4840,17 +4840,17 @@ namespace NtApiDotNet
             switch (info_class)
             {
                 case FileInformationClass.FileBasicInformation:
-                    return Query<FileBasicInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileBasicInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FileEndOfFileInformation:
-                    return Query<FileEndOfFileInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileEndOfFileInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FileStandardInformation:
-                    return Query<FileStandardInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileStandardInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FileNetworkOpenInformation:
-                    return Query<FileNetworkOpenInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileNetworkOpenInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FileInternalInformation:
-                    return Query<FileInternalInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileInternalInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FileRemoteProtocolInformation:
-                    return Query<FileRemoteProtocolInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FileRemoteProtocolInformation>(info_class, default, throw_on_error);
             }
             return base.QueryObject(info_class, throw_on_error);
         }

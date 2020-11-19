@@ -445,6 +445,28 @@ namespace NtApiDotNet
             return NtSystemCalls.NtSetInformationTransaction(Handle, info_class, buffer, buffer.GetLength());
         }
 
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public override NtResult<object> QueryObject(TransactionInformationClass info_class, bool throw_on_error)
+        {
+            switch (info_class)
+            {
+                case TransactionInformationClass.TransactionBasicInformation:
+                    return Query<TransactionBasicInformation>(info_class, default, throw_on_error);
+                case TransactionInformationClass.TransactionPropertiesInformation:
+                    return Query<TransactionPropertiesInformation>(info_class, default, throw_on_error);
+                case TransactionInformationClass.TransactionEnlistmentInformation:
+                    return Query<TransactionEnlistmentsInformation>(info_class, default, throw_on_error);
+                case TransactionInformationClass.TransactionSuperiorEnlistmentInformation:
+                    return Query<TransactionSuperiorEnlistmentInformation>(info_class, default, throw_on_error);
+            }
+            return base.QueryObject(info_class, throw_on_error);
+        }
+
         #endregion
 
         #region Public Properties

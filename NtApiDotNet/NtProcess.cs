@@ -2196,19 +2196,19 @@ namespace NtApiDotNet
             switch (info_class)
             {
                 case ProcessInformationClass.ProcessBasicInformation:
-                    return Query<ProcessBasicInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<ProcessBasicInformation>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessIoCounters:
-                    return Query<IoCounters>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<IoCounters>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessTimes:
-                    return Query<KernelUserTimes>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<KernelUserTimes>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessQuotaLimits:
-                    return Query<QuotaLimitsEx>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<QuotaLimitsEx>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessVmCounters:
-                    return Query<VmCountersEx>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<VmCountersEx>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessCycleTime:
-                    return Query<ProcessCycleTimeInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<ProcessCycleTimeInformation>(info_class, default, throw_on_error);
                 case ProcessInformationClass.ProcessProtectionInformation:
-                    return Query<PsProtection>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<PsProtection>(info_class, default, throw_on_error);
             }
             return base.QueryObject(info_class, throw_on_error);
         }

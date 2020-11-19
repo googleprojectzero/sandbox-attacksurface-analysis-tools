@@ -257,7 +257,7 @@ namespace NtApiDotNet
             switch (info_class)
             {
                 case EventInformationClass.EventBasicInformation:
-                    return Query<EventBasicInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<EventBasicInformation>(info_class, default, throw_on_error);
             }
 
             return base.QueryObject(info_class, throw_on_error);

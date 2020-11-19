@@ -313,11 +313,11 @@ namespace NtApiDotNet
             switch (info_class)
             {
                 case FileInformationClass.FilePipeInformation:
-                    return Query<FilePipeInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FilePipeInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FilePipeLocalInformation:
-                    return Query<FilePipeLocalInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FilePipeLocalInformation>(info_class, default, throw_on_error);
                 case FileInformationClass.FilePipeRemoteInformation:
-                    return Query<FilePipeRemoteInformation>(info_class, default, throw_on_error).Cast<object>();
+                    return Query<FilePipeRemoteInformation>(info_class, default, throw_on_error);
             }
             return base.QueryObject(info_class, throw_on_error);
         }

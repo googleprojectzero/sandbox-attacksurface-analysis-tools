@@ -178,7 +178,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class.</param>
         /// <returns>The information class as an object.</returns>
         /// <remarks>If the information class doesn't have an explicit object type a raw byte query will be made.</remarks>
-        public virtual object QueryObject(Q info_class)
+        public object QueryObject(Q info_class)
         {
             return QueryObject(info_class, true).Result;
         }

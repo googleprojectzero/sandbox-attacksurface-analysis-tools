@@ -294,6 +294,22 @@ namespace NtApiDotNet
             return Cancel(true).Result;
         }
 
+        /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public override NtResult<object> QueryObject(TimerInformationClass info_class, bool throw_on_error)
+        {
+            switch (info_class)
+            {
+                case TimerInformationClass.TimerBasicInformation:
+                    return Query<TimerBasicInformation>(info_class, default, throw_on_error);
+            }
+            return base.QueryObject(info_class, throw_on_error);
+        }
+
         #endregion
 
         #region Public Properties

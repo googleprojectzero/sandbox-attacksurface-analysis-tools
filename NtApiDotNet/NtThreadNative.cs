@@ -139,6 +139,13 @@ namespace NtApiDotNet
         public int BasePriority;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ThreadCycleTimeInformation
+    {
+        public long AccumulatedCycles;
+        public long CurrentCycleCount;
+    }
+
     [Flags]
     public enum WorkOnBehalfTicketFlags
     {

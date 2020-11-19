@@ -518,6 +518,26 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query the information class as an object.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The information class as an object.</returns>
+        public override NtResult<object> QueryObject(TransactionManagerInformationClass info_class, bool throw_on_error)
+        {
+            switch (info_class)
+            {
+                case TransactionManagerInformationClass.TransactionManagerBasicInformation:
+                    return Query<TransactionManagerBasicInformation>(info_class, default, throw_on_error);
+                case TransactionManagerInformationClass.TransactionManagerLogInformation:
+                    return Query<TransactionManagerLogInformation>(info_class, default, throw_on_error);
+                case TransactionManagerInformationClass.TransactionManagerRecoveryInformation:
+                    return Query<TransactionManagerRecoveryInformation>(info_class, default, throw_on_error);
+            }
+            return base.QueryObject(info_class, throw_on_error);
+        }
+
+        /// <summary>
         /// Get a list of all accessible transaction objects owned by this transaction manager.
         /// </summary>
         /// <param name="desired_access">The access for the transaction objects.</param>
