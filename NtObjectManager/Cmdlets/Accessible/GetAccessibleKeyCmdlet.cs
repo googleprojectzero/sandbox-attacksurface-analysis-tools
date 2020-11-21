@@ -54,7 +54,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     {
         private NtResult<NtKey> OpenKey(string name, NtObject root, bool open_link, bool open_for_backup)
         {
-            AttributeFlags flags = AttributeFlags.CaseInsensitive;
+            AttributeFlags flags = GetAttributeFlags();
             if (open_link)
             {
                 flags |= AttributeFlags.OpenLink;
@@ -82,7 +82,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private void CheckAccessUnderImpersonation(TokenEntry token, AccessMask access_rights, NtKey key)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
-                AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, key))
+                GetAttributeFlags() | (FollowLink ? AttributeFlags.None : AttributeFlags.OpenLink), key))
             {
                 using (var result = token.Token.RunUnderImpersonate(() => NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, false)))
                 {
@@ -131,11 +131,14 @@ namespace NtObjectManager.Cmdlets.Accessible
                     {
                         continue;
                     }
-                    using (var result = OpenKey(subkey, key, true, open_for_backup))
+                    using (var result = OpenKey(subkey, key, !FollowLink, open_for_backup))
                     {
                         if (result.IsSuccess)
                         {
-                            DumpKey(tokens, access_rights, open_for_backup, result.Result, current_depth - 1);
+                            if (FollowPath(result.Result.FullPath))
+                            {
+                                DumpKey(tokens, access_rights, open_for_backup, result.Result, current_depth - 1);
+                            }
                         }
                         else
                         {
@@ -181,7 +184,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             using (var result = OpenKey(path, null, false, _open_for_backup))
             {
                 NtKey key = result.GetResultOrThrow();
-                DumpKey(tokens, result.Result.NtType.MapGenericRights(Access), _open_for_backup, key, GetMaxDepth());
+                if (FollowPath(key.FullPath))
+                {
+                    DumpKey(tokens, result.Result.NtType.MapGenericRights(Access), _open_for_backup, key, GetMaxDepth());
+                }
             }
         }
     }

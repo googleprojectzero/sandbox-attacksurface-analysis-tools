@@ -87,8 +87,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private NtResult<NtFile> OpenFile(string name, NtFile root, FileOpenOptions options)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name,
-                AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obja = new ObjectAttributes(name, GetAttributeFlags(), root))
             {
                 var result = NtFile.Open(obja, GetMaximumAccess(FileAccessRights.Synchronize | FileAccessRights.ReadAttributes | FileAccessRights.ReadControl),
                     FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.SynchronousIoNonAlert, false);
@@ -147,7 +146,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             using (var result = token.Token.RunUnderImpersonate(() =>
                  file.ReOpen(FileAccessRights.MaximumAllowed,
                  FileShareMode.Read | FileShareMode.Delete,
-                 FileOpenOptions.None, false)))
+                 FileOpenOptions.None, GetAttributeFlags(), false)))
             {
                 if ( result.Status.IsSuccess() && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
@@ -207,7 +206,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (Recurse)
             {
                 using (var result = file.ReOpen(FileAccessRights.Synchronize | FileAccessRights.ReadData | FileAccessRights.ReadAttributes, 
-                    FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert, false))
+                    FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert,
+                    GetAttributeFlags(), false))
                 {
                     if (result.Status.IsSuccess())
                     {
@@ -230,12 +230,15 @@ namespace NtObjectManager.Cmdlets.Accessible
                             {
                                 if (new_file.IsSuccess)
                                 {
-                                    DumpFile(tokens, access_rights, dir_access_rights, 
-                                        parent_sd.IsSuccess ? parent_sd.Result : null, new_file.Result);
-                                    if (IsDirectoryNoThrow(new_file.Result))
+                                    if (FollowPath(new_file.Result, GetFilePath))
                                     {
-                                        DumpDirectory(tokens, access_rights, dir_access_rights, 
-                                            new_file.Result, options, current_depth - 1);
+                                        DumpFile(tokens, access_rights, dir_access_rights,
+                                            parent_sd.IsSuccess ? parent_sd.Result : null, new_file.Result);
+                                        if (IsDirectoryNoThrow(new_file.Result))
+                                        {
+                                            DumpDirectory(tokens, access_rights, dir_access_rights,
+                                                new_file.Result, options, current_depth - 1);
+                                        }
                                     }
                                 }
                             }
@@ -275,23 +278,35 @@ namespace NtObjectManager.Cmdlets.Accessible
             base.BeginProcessing();
         }
 
+        private static string GetFilePath(NtFile file)
+        {
+            return file.GetNormalizedFileName(false).GetResultOrDefault() ?? file.FileName;
+        }
+
         private protected override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
         {
-            FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (_open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
+            FileOpenOptions options = _open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None;
+            if (!FollowLink)
+            {
+                options |= FileOpenOptions.OpenReparsePoint;
+            }
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(Access);
             AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccess);
             using (var result = OpenFile(path, null, options))
             {
                 NtFile file = result.GetResultOrThrow();
-                DumpFile(tokens,
-                    access_rights,
-                    dir_access_rights,
-                    null,
-                    result.Result);
-                if (IsDirectoryNoThrow(result.Result))
+                if (FollowPath(file, GetFilePath))
                 {
-                    DumpDirectory(tokens, access_rights, dir_access_rights, file, options, GetMaxDepth());
+                    DumpFile(tokens,
+                        access_rights,
+                        dir_access_rights,
+                        null,
+                        result.Result);
+                    if (IsDirectoryNoThrow(result.Result))
+                    {
+                        DumpDirectory(tokens, access_rights, dir_access_rights, file, options, GetMaxDepth());
+                    }
                 }
             }
         }

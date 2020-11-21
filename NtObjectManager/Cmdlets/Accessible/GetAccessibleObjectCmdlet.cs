@@ -152,10 +152,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private static NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
+        private NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
-               AttributeFlags.CaseInsensitive, obj))
+               GetAttributeFlags(), obj))
             {
                 return token.Token.RunUnderImpersonate(() => type.Open(obj_attributes, GenericAccessRights.MaximumAllowed, false));
             }
@@ -248,17 +248,23 @@ namespace NtObjectManager.Cmdlets.Accessible
                         continue;
                     }
 
-                    if (entry.IsDirectory)
+                    if (entry.IsDirectory || (FollowLink && entry.IsSymbolicLink))
                     {
                         using (var new_dir = OpenDirectory(entry.Name, dir))
                         {
                             if (new_dir.IsSuccess)
                             {
-                                DumpDirectory(tokens, type_filter, access_rights, new_dir.Result, current_depth - 1);
+                                if (FollowPath(new_dir.Result.FullPath))
+                                {
+                                    DumpDirectory(tokens, type_filter, access_rights, new_dir.Result, current_depth - 1);
+                                }
                             }
                             else
                             {
-                                WriteAccessWarning(dir, entry.Name, new_dir.Status);
+                                if (entry.IsDirectory || new_dir.Status != NtStatus.STATUS_OBJECT_TYPE_MISMATCH)
+                                {
+                                    WriteAccessWarning(dir, entry.Name, new_dir.Status);
+                                }
                             }
                         }
                     }
@@ -292,10 +298,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private static NtResult<NtObject> OpenObject(ObjectDirectoryInformation entry, NtObject root, AccessMask desired_access)
+        private NtResult<NtObject> OpenObject(ObjectDirectoryInformation entry, NtObject root, AccessMask desired_access)
         {
             NtType type = entry.NtType;
-            using (var obja = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, root))
+            using (var obja = new ObjectAttributes(entry.Name, GetAttributeFlags(), root))
             {
                 return type.Open(obja, desired_access, false);
             }
@@ -303,8 +309,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path,
-                AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obja = new ObjectAttributes(path, GetAttributeFlags(), root))
             {
                 var result = NtDirectory.Open(obja, GetMaximumAccessGeneric(DirectoryAccessRights.Query | DirectoryAccessRights.ReadControl), false);
                 if (result.IsSuccess || result.Status != NtStatus.STATUS_ACCESS_DENIED)
@@ -342,11 +347,15 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 if (result.IsSuccess)
                 {
-                    DumpDirectory(tokens, GetTypeFilter(), Access, result.Result, GetMaxDepth());
+                    if (FollowPath(result.Result.FullPath))
+                    {
+                        DumpDirectory(tokens, GetTypeFilter(), Access, result.Result, GetMaxDepth());
+                    }
                 }
                 else
                 {
-                    using (var obj = NtObject.OpenWithType(null, path, null, AttributeFlags.CaseInsensitive, GetMaximumAccess(GenericAccessRights.MaximumAllowed), null, false))
+                    using (var obj = NtObject.OpenWithType(null, path, null, GetAttributeFlags(), 
+                        GetMaximumAccess(GenericAccessRights.MaximumAllowed), null, false))
                     {
                         if (obj.IsSuccess)
                         {

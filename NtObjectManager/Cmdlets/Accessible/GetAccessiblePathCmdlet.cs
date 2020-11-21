@@ -30,6 +30,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private Func<string, bool>[] _include_filters;
         private Func<string, bool>[] _exclude_filters;
         private Func<string, bool> _filter;
+        private HashSet<string> _checked_paths;
 
         /// <summary>
         /// <para type="description">Specify a list of native paths to check.</para>
@@ -82,6 +83,42 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         [Parameter(ParameterSetName = "path")]
         public string[] Exclude { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to follow links in an recursive enumeration.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "path")]
+        public SwitchParameter FollowLink { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the checks should be attempted case sensitively.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "path")]
+        public SwitchParameter CaseSensitive { get; set; }
+
+        private protected AttributeFlags GetAttributeFlags()
+        {
+            return CaseSensitive ? AttributeFlags.None : AttributeFlags.CaseInsensitive;
+        }
+
+        private protected bool FollowPath(string path)
+        {
+            if (!FollowLink)
+                return true;
+            if (_checked_paths == null)
+            {
+                _checked_paths = new HashSet<string>(CaseSensitive
+                    ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            }
+            return _checked_paths.Add(path);
+        }
+
+        private protected bool FollowPath<T>(T obj, Func<T, string> get_path)
+        {
+            if (!FollowLink)
+                return true;
+            return FollowPath(get_path(obj));
+        }
 
         /// <summary>
         /// Convert a Win32 path to a native path.
