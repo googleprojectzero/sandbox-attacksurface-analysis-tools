@@ -4937,18 +4937,16 @@ function Get-RunningService {
         [NtApiDotNet.Win32.ServiceState]$State = "Active",
         [parameter(Mandatory, ParameterSetName = "FromArgs")]
         [NtApiDotNet.Win32.ServiceType]$ServiceType = 0,
-        [parameter(ParameterSetName = "FromName", Position = 0)]
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
         [string[]]$Name
     )
 
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "All" {
+                $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
                 if ($Driver) {
                     $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetDriverTypes()
-                }
-                else {
-                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
                 }
 
                 if ($IncludeNonActive) {
@@ -4958,10 +4956,10 @@ function Get-RunningService {
                     $State = "Active"
                 }
 
-                Get-Win32Service -State $State -ServiceType $ServiceType
+                Get-Win32Service -State $State -Type $ServiceType
             }
             "FromArgs" {
-                Get-Win32Service -State $State -ServiceType $ServiceType
+                Get-Win32Service -State $State -Type $ServiceType
             }
             "FromName" {
                 Get-Win32Service -Name $Name
@@ -4994,6 +4992,12 @@ Get all active services.
 .EXAMPLE
 Get-Win32Service -State All -Type UserService
 Get all user services.
+.EXAMPLE
+Get-Win32Service -ProcessId 1234
+Get services running in PID 1234.
+.EXAMPLE
+Get-Win32Service -Name WebClient
+Get the WebClient service.
 #>
 function Get-Win32Service {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -5002,8 +5006,10 @@ function Get-Win32Service {
         [NtApiDotNet.Win32.ServiceState]$State = "All",
         [parameter(ParameterSetName = "All")]
         [NtApiDotNet.Win32.ServiceType]$Type = 0,
-        [parameter(ParameterSetName = "FromName", Position = 0)]
-        [string[]]$Name
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [string[]]$Name,
+        [parameter(Mandatory, ParameterSetName = "FromPid", Position = 0)]
+        [int[]]$ProcessId
     )
 
     PROCESS {
@@ -5018,6 +5024,9 @@ function Get-Win32Service {
                 foreach ($n in $Name) {
                     [NtApiDotNet.Win32.ServiceUtils]::GetService($n) | Write-Output
                 }
+            }
+            "FromPid" {
+                Get-Win32Service -State Active | Where-Object {$_.ProcessId -in $ProcessId}
             }
         }
     }
