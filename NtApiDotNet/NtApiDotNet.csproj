@@ -301,6 +301,7 @@
     <Compile Include="Win32\AppModel\AppModelUtils.cs" />
     <Compile Include="Win32\AppModel\IApplicationActivationManager.cs" />
     <Compile Include="Win32\ConsoleSession.cs" />
+    <Compile Include="Win32\Rpc\CrackedBindingString.cs" />
     <Compile Include="Win32\Debugger\ArrayTypeInformation.cs" />
     <Compile Include="Win32\Debugger\BaseTypeInformation.cs" />
     <Compile Include="Win32\Debugger\DataSymbolInformation.cs" />
@@ -359,6 +360,10 @@
     <Compile Include="Win32\RpcServerParserFlags.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
+    <Compile Include="Win32\SafeHandles\SafeRpcBindingHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeRpcIfIdVectorHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeRpcInquiryHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeRpcStringHandle.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
@@ -557,7 +562,9 @@
   <ItemGroup>
     <None Include="Readme.txt" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Win32\Rpc\Internal\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

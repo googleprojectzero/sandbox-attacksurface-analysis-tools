@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Rpc;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 
 namespace NtApiDotNet.Win32

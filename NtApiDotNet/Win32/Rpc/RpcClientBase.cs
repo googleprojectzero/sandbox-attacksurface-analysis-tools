@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Rpc.Transport;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,337 +59,58 @@ namespace NtApiDotNet.Win32
         public IntPtr IfId; // RPC_IF_ID*
     };
 
-    internal class CrackedBindingString
-    {
-        public string ObjUuid { get; }
-        public string Protseq { get; }
-        public string NetworkAddr { get; }
-        public string Endpoint { get; }
-        public string NetworkOptions { get; }
-
-        public CrackedBindingString(string string_binding)
-        {
-            SafeRpcStringHandle objuuid = null;
-            SafeRpcStringHandle protseq = null;
-            SafeRpcStringHandle endpoint = null;
-            SafeRpcStringHandle networkaddr = null;
-            SafeRpcStringHandle networkoptions = null;
-
-            try
-            {
-                int status = Win32NativeMethods.RpcStringBindingParse(string_binding, 
-                    out objuuid, out protseq, out networkaddr, out endpoint, out networkoptions);
-                if (status == 0)
-                {
-                    ObjUuid = objuuid.ToString();
-                    Protseq = protseq.ToString();
-                    Endpoint = endpoint.ToString();
-                    NetworkAddr = networkaddr.ToString();
-                    NetworkOptions = networkoptions.ToString();
-                }
-                else
-                {
-                    ObjUuid = string.Empty;
-                    Protseq = string.Empty;
-                    Endpoint = string.Empty;
-                    NetworkAddr = string.Empty;
-                    NetworkOptions = string.Empty;
-                }
-            }
-            finally
-            {
-                objuuid?.Dispose();
-                protseq?.Dispose();
-                endpoint?.Dispose();
-                networkaddr?.Dispose();
-                networkoptions?.Dispose();
-            }
-        }
-    }
-
-    internal sealed class SafeRpcBindingHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        private CrackedBindingString _cracked_binding;
-
-        private CrackedBindingString GetCrackedBinding()
-        {
-            if (IsClosed)
-            {
-                throw new ObjectDisposedException("CrackedBindingString");
-            }
-            if (_cracked_binding == null)
-            {
-                _cracked_binding = new CrackedBindingString(ToString());
-            }
-            return _cracked_binding;
-        }
-
-        public SafeRpcBindingHandle() : base(true)
-        {
-        }
-
-        public SafeRpcBindingHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.RpcBindingFree(ref handle) == 0;
-        }
-
-        public string ObjUuid => GetCrackedBinding().ObjUuid;
-        public string Protseq => GetCrackedBinding().Protseq;
-        public string NetworkAddr => GetCrackedBinding().NetworkAddr;
-        public string Endpoint => GetCrackedBinding().Endpoint;
-        public string NetworkOptions => GetCrackedBinding().NetworkOptions;
-
-        public static SafeRpcBindingHandle Create(string string_binding)
-        {
-            int status = Win32NativeMethods.RpcBindingFromStringBinding(string_binding, out SafeRpcBindingHandle binding);
-            if (status != 0)
-            {
-                throw new SafeWin32Exception(status);
-            }
-            binding._cracked_binding = new CrackedBindingString(string_binding);
-            return binding;
-        }
-
-        public static SafeRpcBindingHandle Create(string objuuid, string protseq, string networkaddr, string endpoint, string options)
-        {
-            int status = Win32NativeMethods.RpcStringBindingCompose(objuuid, protseq,
-                networkaddr, endpoint, options, out SafeRpcStringHandle binding);
-            if (status != 0)
-            {
-                throw new SafeWin32Exception(status);
-            }
-            using (binding)
-            {
-                return Create(binding.ToString());
-            }
-        }
-
-        public static string Compose(string objuuid, string protseq, string networkaddr, string endpoint, string options)
-        {
-            using (var binding = Create(objuuid, protseq, networkaddr, endpoint, options))
-            {
-                return binding.ToString();
-            }
-        }
-
-        public override string ToString()
-        {
-            if (!IsInvalid && !IsClosed)
-            {
-                if (Win32NativeMethods.RpcBindingToStringBinding(handle, out SafeRpcStringHandle str) == 0)
-                {
-                    using (str)
-                    {
-                        return str.ToString();
-                    }
-                }
-            }
-            return string.Empty;
-        }
-
-        public static SafeRpcBindingHandle Null => new SafeRpcBindingHandle(IntPtr.Zero, false);
-    }
-
-    internal sealed class SafeRpcStringHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeRpcStringHandle() : base(true)
-        {
-        }
-
-        public SafeRpcStringHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.RpcStringFree(ref handle) == 0;
-        }
-
-        public override string ToString()
-        {
-            if (!IsInvalid && !IsClosed)
-            {
-                return Marshal.PtrToStringUni(handle);
-            }
-            return string.Empty;
-        }
-    }
-
-    internal sealed class SafeRpcInquiryHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeRpcInquiryHandle() : base(true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.RpcMgmtEpEltInqDone(ref handle) == 0;
-        }
-    }
-
-    internal sealed class SafeRpcIfIdVectorHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeRpcIfIdVectorHandle() : base(true)
-        {
-        }
-
-        public SafeRpcIfIdVectorHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.RpcIfIdVectorFree(ref handle) == 0;
-        }
-
-        public RPC_IF_ID[] GetIfIds()
-        {
-            if (IsClosed)
-            {
-                throw new ObjectDisposedException("vector");
-            }
-
-            var vector_buffer = new SafeStructureInOutBuffer<RPC_IF_ID_VECTOR>(handle, int.MaxValue, false);
-            var vector = vector_buffer.Result;
-            IntPtr[] ptrs = new IntPtr[vector.Count];
-            vector_buffer.Data.ReadArray(0, ptrs, 0, vector.Count);
-            return ptrs.Select(p => (RPC_IF_ID)Marshal.PtrToStructure(p, typeof(RPC_IF_ID))).ToArray();
-        }
-    }
-
     /// <summary>
     /// Static class to access information from the RPC mapper.
     /// </summary>
     public static class RpcEndpointMapper
     {
-        private static IEnumerable<RpcEndpoint> QueryEndpoints(SafeRpcBindingHandle search_binding, RpcEndpointInquiryFlag inquiry_flag, RPC_IF_ID if_id_search, RpcEndPointVersionOption version, UUID uuid_search, bool throw_on_error = true)
+        #region Private Members
+        private static IEnumerable<RpcEndpoint> QueryEndpoints(string search_binding, RpcEndpointInquiryFlag inquiry_flag, RPC_IF_ID if_id_search, RpcEndPointVersionOption version, UUID uuid_search, bool throw_on_error = true)
         {
-            int status = Win32NativeMethods.RpcMgmtEpEltInqBegin(search_binding, 
-                inquiry_flag,
-                if_id_search, version, uuid_search, out SafeRpcInquiryHandle inquiry);
-            if (status != 0)
+            using (SafeRpcBindingHandle search_handle = string.IsNullOrEmpty(search_binding) ? SafeRpcBindingHandle.Null : SafeRpcBindingHandle.Create(search_binding))
             {
-                if (throw_on_error)
-                    throw new SafeWin32Exception(status);
-                yield break;
-            }
-
-            using (inquiry)
-            {
-                while (true)
+                int status = Win32NativeMethods.RpcMgmtEpEltInqBegin(search_handle,
+                    inquiry_flag,
+                    if_id_search, version, uuid_search, out SafeRpcInquiryHandle inquiry);
+                if (status != 0)
                 {
-                    RPC_IF_ID if_id = new RPC_IF_ID();
-                    UUID uuid = new UUID();
-                    status = Win32NativeMethods.RpcMgmtEpEltInqNext(inquiry, if_id, out SafeRpcBindingHandle binding, uuid, out SafeRpcStringHandle annotation);
-                    if (status != 0)
+                    if (throw_on_error)
+                        throw new SafeWin32Exception(status);
+                    yield break;
+                }
+
+                using (inquiry)
+                {
+                    while (true)
                     {
-                        if (status != 1772 && throw_on_error)
+                        RPC_IF_ID if_id = new RPC_IF_ID();
+                        UUID uuid = new UUID();
+                        status = Win32NativeMethods.RpcMgmtEpEltInqNext(inquiry, if_id, out SafeRpcBindingHandle binding, uuid, out SafeRpcStringHandle annotation);
+                        if (status != 0)
                         {
-                            throw new SafeWin32Exception(status);
+                            if (status != 1772 && throw_on_error)
+                            {
+                                throw new SafeWin32Exception(status);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    try
-                    {
-                        yield return new RpcEndpoint(if_id, uuid, annotation, binding, true);
-                    }
-                    finally
-                    {
-                        binding.Dispose();
-                        annotation.Dispose();
+                        try
+                        {
+                            yield return new RpcEndpoint(if_id, uuid, annotation, binding, true);
+                        }
+                        finally
+                        {
+                            binding.Dispose();
+                            annotation.Dispose();
+                        }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Query all endpoints registered on the local system.
-        /// </summary>
-        /// <returns>List of endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryEndpoints()
-        {
-            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.All, null, RpcEndPointVersionOption.All, null);
-        }
-
-        /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint.
-        /// </summary>
-        /// <param name="interface_id">Interface UUID to lookup.</param>
-        /// <param name="interface_version">Interface version lookup.</param>
-        /// <returns>The list of registered RPC endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id, Version interface_version)
-        {
-            RPC_IF_ID if_id = new RPC_IF_ID()
-            {
-                Uuid = interface_id,
-                VersMajor = (ushort)interface_version.Major,
-                VersMinor = (ushort)interface_version.Minor
-            };
-            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, RpcEndPointVersionOption.Exact, null);
-        }
-
-        /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint ignoring the version.
-        /// </summary>
-        /// <param name="interface_id">Interface UUID to lookup.</param>
-        /// <returns>The list of registered RPC endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id)
-        {
-            RPC_IF_ID if_id = new RPC_IF_ID()
-            {
-                Uuid = interface_id
-            };
-            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, RpcEndPointVersionOption.All, null);
-        }
-
-        /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint.
-        /// </summary>
-        /// <param name="server_interface">The server interface.</param>
-        /// <returns>The list of registered RPC endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryEndpoints(NdrRpcServerInterface server_interface)
-        {
-            return QueryEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
-        }
-
-        /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
-        /// </summary>
-        /// <param name="interface_id">Interface UUID to lookup.</param>
-        /// <param name="interface_version">Interface version lookup.</param>
-        /// <returns>The list of registered RPC endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(Guid interface_id, Version interface_version)
-        {
-            RPC_IF_ID if_id = new RPC_IF_ID()
-            {
-                Uuid = interface_id,
-                VersMajor = (ushort)interface_version.Major,
-                VersMinor = (ushort)interface_version.Minor
-            };
-            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, 
-                RpcEndPointVersionOption.Exact, null).Where(e => e.ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
-        }
-
-        /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
-        /// </summary>
-        /// <param name="server_interface">The server interface.</param>
-        /// <returns>The list of registered RPC endpoints.</returns>
-        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(NdrRpcServerInterface server_interface)
-        {
-            return QueryAlpcEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
-        }
-
         private static RpcEndpoint CreateEndpoint(SafeRpcBindingHandle binding_handle, RPC_IF_ID if_id)
         {
-            var endpoints = QueryEndpoints(binding_handle, RpcEndpointInquiryFlag.Interface, 
+            var endpoints = QueryEndpoints(binding_handle.ToString(), RpcEndpointInquiryFlag.Interface,
                 if_id, RpcEndPointVersionOption.Exact, null, false).ToArray();
             RpcEndpoint ret = endpoints.Where(ep => ep.BindingString.Equals(binding_handle.ToString(), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             return ret ?? new RpcEndpoint(if_id, new UUID(), null, binding_handle, false);
@@ -417,6 +138,120 @@ namespace NtApiDotNet.Win32
                     return if_id_vector.GetIfIds().Select(if_id => CreateEndpoint(binding_handle, if_id)).ToArray();
                 }
             }
+        }
+
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Query all endpoints registered on the local system.
+        /// </summary>
+        /// <returns>List of endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints()
+        {
+            return QueryEndpoints(null, RpcEndpointInquiryFlag.All, null, RpcEndPointVersionOption.All, null);
+        }
+
+        /// <summary>
+        /// Query all endpoints registered based on a binding string.
+        /// </summary>
+        /// <param name="search_binding">The binding string for the server to search on. If null or empty will search localhost.</param>
+        /// <returns>List of endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(string search_binding)
+        {
+            return QueryEndpoints(search_binding, RpcEndpointInquiryFlag.All, null, RpcEndPointVersionOption.All, null);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint.
+        /// </summary>
+        /// <param name="search_binding">The binding string for the server to search on. If null or empty will search localhost.</param>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(string search_binding, Guid interface_id, Version interface_version)
+        {
+            RPC_IF_ID if_id = new RPC_IF_ID()
+            {
+                Uuid = interface_id,
+                VersMajor = (ushort)interface_version.Major,
+                VersMinor = (ushort)interface_version.Minor
+            };
+            return QueryEndpoints(search_binding, RpcEndpointInquiryFlag.Interface, if_id, RpcEndPointVersionOption.Exact, null);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint.
+        /// </summary>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id, Version interface_version)
+        {
+            return QueryEndpoints(null, interface_id, interface_version);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint ignoring the version.
+        /// </summary>
+        /// <param name="search_binding">The binding string for the server to search on. If null or empty will search localhost.</param>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(string search_binding, Guid interface_id)
+        {
+            RPC_IF_ID if_id = new RPC_IF_ID()
+            {
+                Uuid = interface_id
+            };
+            return QueryEndpoints(search_binding, RpcEndpointInquiryFlag.Interface, if_id, RpcEndPointVersionOption.All, null);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint ignoring the version.
+        /// </summary>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id)
+        {
+            return QueryEndpoints(null, interface_id);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint.
+        /// </summary>
+        /// <param name="server_interface">The server interface.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(NdrRpcServerInterface server_interface)
+        {
+            return QueryEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
+        /// </summary>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(Guid interface_id, Version interface_version)
+        {
+            RPC_IF_ID if_id = new RPC_IF_ID()
+            {
+                Uuid = interface_id,
+                VersMajor = (ushort)interface_version.Major,
+                VersMinor = (ushort)interface_version.Minor
+            };
+            return QueryEndpoints(null, RpcEndpointInquiryFlag.Interface, if_id, 
+                RpcEndPointVersionOption.Exact, null).Where(e => e.ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
+        /// </summary>
+        /// <param name="server_interface">The server interface.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(NdrRpcServerInterface server_interface)
+        {
+            return QueryAlpcEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
         }
 
         /// <summary>
@@ -569,5 +404,6 @@ namespace NtApiDotNet.Win32
                 return binding.ToString();
             }
         }
+        #endregion
     }
 }
