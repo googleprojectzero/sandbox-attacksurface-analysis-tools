@@ -4560,10 +4560,10 @@ function Get-RpcEndpoint {
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromId")]
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromIdAndVersion")]
-        [string]$InterfaceId,
+        [Guid]$InterfaceId,
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromIdAndVersion")]
         [Version]$InterfaceVersion,
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer", ValueFromPipeline)]
+        [parameter(Mandatory, ParameterSetName = "FromServer", ValueFromPipeline)]
         [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server,
         [parameter(Mandatory, ParameterSetName = "FromBinding")]
         [string]$Binding,
@@ -4571,40 +4571,53 @@ function Get-RpcEndpoint {
         [string]$AlpcPort,
         [parameter(ParameterSetName = "FromIdAndVersion")]
         [parameter(ParameterSetName = "FromServer")]
-        [switch]$FindAlpcPort
+        [switch]$FindAlpcPort,
+        [parameter(ParameterSetName = "All")]
+        [parameter(ParameterSetName = "FromId")]
+        [parameter(ParameterSetName = "FromIdAndVersion")]
+        [string]$SearchBinding = "",
+        [parameter(ParameterSetName = "All")]
+        [parameter(ParameterSetName = "FromId")]
+        [parameter(ParameterSetName = "FromIdAndVersion")]
+        [string[]]$ProtocolSequence = @()
     )
 
     PROCESS {
-        switch ($PsCmdlet.ParameterSetName) {
+        $eps = switch ($PsCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints() | Write-Output
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding)
             }
             "FromId" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId) | Write-Output
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $InterfaceId)
             }
             "FromIdAndVersion" {
                 if ($FindAlpcPort) {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($InterfaceId, $InterfaceVersion) | Write-Output
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($InterfaceId, $InterfaceVersion)
                 }
                 else {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId, $InterfaceVersion) | Write-Output
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $InterfaceId, $InterfaceVersion)
                 }
             }
             "FromServer" {
                 if ($FindAlpcPort) {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server.InterfaceId, $Server.InterfaceVersion) | Write-Output
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server.InterfaceId, $Server.InterfaceVersion)
                 }
                 else {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server) | Write-Output
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server)
                 }
             }
             "FromBinding" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding) | Write-Output
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding)
             }
             "FromAlpc" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort) | Write-Output
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
             }
         }
+
+        if ($ProtocolSequence.Count -gt 0) {
+            $eps = $eps | Where-Object {$_.ProtocolSequence -in $ProtocolSequence}
+        }
+        $eps | Write-Output
     }
 }
 
