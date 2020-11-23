@@ -35,6 +35,7 @@ obj/
 *.opendb
 *.db
 *.nupkg
+*.snupkg
 *.ide
 
 .vs/
