@@ -3,13 +3,13 @@
   <metadata>
     <id>$id$</id>
     <version>$version$</version>
-    <title>NtApiDotNet</title>
+    <title>NtApiDotNet.Forms</title>
     <authors>James Forshaw</authors>
     <owners>James Forshaw</owners>
     <license type="expression">Apache-2.0</license>
     <projectUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A .NET class library to access native NT API system calls</description>
+    <description>A .NET class library to access native NT API system calls. This contains just the forms code.</description>
     <releaseNotes>
 1.1.29
 --------
@@ -62,5 +62,8 @@
 </releaseNotes>
     <copyright>Copyright Google Inc. 2016-2020</copyright>
     <tags>syscalls</tags>
+    <dependencies>
+      <dependency id="NtApiDotNet" version="1.1.29" />
+    </dependencies>
   </metadata>
 </package>
