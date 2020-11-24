@@ -319,6 +319,21 @@ namespace NtApiDotNet.Win32
                     providers.Add(guid, new EventTraceProvider(guid));
                 }
             }
+            using (var key = NtKey.Open(@"\REGISTRY\MACHINE\SYSTEM\CurrentControlSet\Control\WMI\Security", 
+                null, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+            {
+                if (key.IsSuccess)
+                {
+                    foreach (var value in key.Result.QueryValues())
+                    {
+                        if (Guid.TryParse(value.Name, out Guid id) && !providers.ContainsKey(id))
+                        {
+                            providers.Add(id, new EventTraceProvider(id,
+                                SecurityDescriptor.Parse(value.Data, false).GetResultOrDefault()));
+                        }
+                    }
+                }
+            }
             return providers.Values;
         }
     }

@@ -17,10 +17,35 @@ using System;
 namespace NtApiDotNet.Win32
 {
     /// <summary>
+    /// Source of an event trace provider.
+    /// </summary>
+    public enum EventTraceProviderSource
+    {
+        /// <summary>
+        /// Unknown source.
+        /// </summary>
+        Unknown = 0,
+        /// <summary>
+        /// From WMI.
+        /// </summary>
+        WMI,
+        /// <summary>
+        /// From NtTraceControl.
+        /// </summary>
+        TraceControl,
+        /// <summary>
+        /// From the security key.
+        /// </summary>
+        Security
+    }
+
+    /// <summary>
     /// Class to represent an Event Trace Provider.
     /// </summary>
     public sealed class EventTraceProvider
     {
+        private readonly Lazy<SecurityDescriptor> _security_descriptor;
+
         /// <summary>
         /// The ID of the provider.
         /// </summary>
@@ -36,11 +61,23 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The provider security descriptor (only available as admin).
         /// </summary>
-        public SecurityDescriptor SecurityDescriptor { get; }
+        public SecurityDescriptor SecurityDescriptor => _security_descriptor.Value;
+        /// <summary>
+        /// Indicates the source of the provider.
+        /// </summary>
+        public EventTraceProviderSource Source { get; }
 
         internal EventTraceProvider(Guid id) 
             : this(id, id.ToString(), false)
         {
+            Source = EventTraceProviderSource.TraceControl;
+        }
+
+        internal EventTraceProvider(Guid id, SecurityDescriptor security_descriptor)
+            : this(id, id.ToString(), false)
+        {
+            Source = EventTraceProviderSource.Security;
+            _security_descriptor = new Lazy<SecurityDescriptor>(() => security_descriptor);
         }
 
         internal EventTraceProvider(Guid id, string name, bool from_xml)
@@ -48,7 +85,8 @@ namespace NtApiDotNet.Win32
             Id = id;
             Name = name;
             FromXml = from_xml;
-            SecurityDescriptor = EventTracing.QueryTraceSecurity(Id, false).GetResultOrDefault();
+            _security_descriptor = new Lazy<SecurityDescriptor>(() => EventTracing.QueryTraceSecurity(Id, false).GetResultOrDefault());
+            Source = EventTraceProviderSource.WMI;
         }
     }
 }

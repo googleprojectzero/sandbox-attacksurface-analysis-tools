@@ -29,7 +29,17 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// The ID of the event trace provider.
         /// </summary>
-        public Guid Id { get; }
+        public Guid Id => Provider.Id;
+
+        /// <summary>
+        /// The source of the event trace provider.
+        /// </summary>
+        public EventTraceProviderSource Source => Provider.Source;
+
+        /// <summary>
+        /// The event trace provider.
+        /// </summary>
+        public EventTraceProvider Provider { get; }
 
         internal EventTraceAccessCheckResult(EventTraceProvider provider, 
             NtType type, AccessMask granted_access,
@@ -39,7 +49,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                     type.GenericMapping, sd,
                     type.AccessRightsType, false, token_info)
         {
-            Id = provider.Id;
+            Provider = provider;
         }
     }
 
