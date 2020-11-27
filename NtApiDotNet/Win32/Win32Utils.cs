@@ -432,7 +432,7 @@ namespace NtApiDotNet.Win32
             creation_disposition, flags_and_attributes, true).Result;
         }
 
-        internal static SECURITY_CAPABILITIES CreateSecuityCapabilities(Sid package_sid, IEnumerable<Sid> capabilities, DisposableList resources)
+        internal static SECURITY_CAPABILITIES CreateSecurityCapabilities(Sid package_sid, IEnumerable<Sid> capabilities, DisposableList resources)
         {
             SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES
             {

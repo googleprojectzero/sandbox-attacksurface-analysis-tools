@@ -446,7 +446,7 @@ namespace NtApiDotNet.Win32
 
             if (AppContainerSid != null)
             {
-                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecuityCapabilities(AppContainerSid, Capabilities, resources);
+                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecurityCapabilities(AppContainerSid, Capabilities, resources);
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
             }
 

@@ -417,7 +417,7 @@ namespace NtApiDotNet.Win32
         {
             using (var resources = new DisposableList())
             {
-                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecuityCapabilities(appcontainer_sid, capabilities ?? new Sid[0], resources);
+                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecurityCapabilities(appcontainer_sid, capabilities ?? new Sid[0], resources);
                 if (!Win32NativeMethods.CreateAppContainerToken(token.GetHandle(), ref caps, out SafeKernelObjectHandle new_token))
                 {
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<NtToken>(throw_on_error);
