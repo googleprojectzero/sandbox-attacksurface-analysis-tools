@@ -171,6 +171,16 @@ namespace NtObjectManager.Utils
             return path1 + @"\" + path2;
         }
 
+        internal static NtResult<string> GetFileBasePath(SessionState state)
+        {
+            var current_path = state.Path.CurrentLocation;
+            if (!current_path.Provider.Name.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
+            {
+                return NtResult<string>.CreateResultFromError(NtStatus.STATUS_OBJECT_PATH_NOT_FOUND, false);
+            }
+            return NtFileUtils.DosFileNameToNt(current_path.Path, false);
+        }
+
         private static string ResolveRelativePath(SessionState state, string path, RtlPathType path_type)
         {
             var current_path = state.Path.CurrentFileSystemLocation;
