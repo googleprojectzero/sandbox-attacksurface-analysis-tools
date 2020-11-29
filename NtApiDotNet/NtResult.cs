@@ -138,6 +138,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a result.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns>Create a new result.</returns>
+        public static NtResult<T> CreateResult(T result)
+        {
+            return new NtResult<T>(NtStatus.STATUS_SUCCESS, result);
+        }
+
+        /// <summary>
         /// Conversion operator from T to object.
         /// </summary>
         /// <param name="result">The result to convert.</param>
