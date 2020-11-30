@@ -501,7 +501,7 @@ namespace NtApiDotNet
         /// <returns>The type name, or null if it can't be found.</returns>
         public static string GetDirectoryEntryType(string path, NtObject root)
         {
-            if (root == null && path == @"\")
+            if (root == null && (path == @"\" || path == @"\??"))
             {
                 return "Directory";
             }
