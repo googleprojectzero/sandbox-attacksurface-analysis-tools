@@ -119,6 +119,31 @@ namespace NtObjectManager.Cmdlets.Object
         }
 
         /// <summary>
+        /// Get the base object manager path for the current powershell directory.
+        /// </summary>
+        /// <returns>The base path.</returns>
+        protected virtual NtResult<string> GetBasePath()
+        {
+            var current_path = SessionState.Path.CurrentLocation;
+            if (current_path.Drive is ObjectManagerPSDriveInfo drive)
+            {
+                string root_path = drive.DirectoryRoot.FullPath;
+                if (root_path == @"\")
+                {
+                    root_path = string.Empty;
+                }
+
+                string relative_path = RemoveDrive(current_path.Path);
+                if (relative_path.Length == 0)
+                {
+                    return NtResult<string>.CreateResult($@"{root_path}");
+                }
+                return NtResult<string>.CreateResult($@"{root_path}\{relative_path}");
+            }
+            return NtResult<string>.CreateResultFromError(NtStatus.STATUS_OBJECT_PATH_NOT_FOUND, false);
+        }
+
+        /// <summary>
         /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -144,26 +169,13 @@ namespace NtObjectManager.Cmdlets.Object
                 return Path;
             }
 
-            var current_path = SessionState.Path.CurrentLocation;
-            if (current_path.Drive is ObjectManagerPSDriveInfo drive)
-            {
-                string root_path = drive.DirectoryRoot.FullPath;
-                if (root_path == @"\")
-                {
-                    root_path = string.Empty;
-                }
-
-                string relative_path = RemoveDrive(current_path.Path);
-                if (relative_path.Length == 0)
-                {
-                    return $@"{root_path}\{Path}";
-                }
-                return $@"{root_path}\{relative_path}\{Path}";
-            }
-            else
+            var base_path = GetBasePath();
+            if (!base_path.IsSuccess)
             {
                 throw new ArgumentException("Can't make a relative object path when not in a NtObject drive.");
             }
+
+            return $@"{base_path.Result}\{Path}";
         }
 
 

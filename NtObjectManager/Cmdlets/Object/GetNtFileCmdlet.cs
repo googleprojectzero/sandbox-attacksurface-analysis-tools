@@ -105,6 +105,28 @@ namespace NtObjectManager.Cmdlets.Object
         public NtTransaction Transaction { get; set; }
 
         /// <summary>
+        /// Get the Win32 path for a specified path.
+        /// </summary>
+        /// <param name="path">The path component.</param>
+        /// <returns>The full NT path.</returns>
+        protected override string GetWin32Path(string path)
+        {
+            return PSUtils.ResolvePath(SessionState, Path, true);
+        }
+
+        /// <summary>
+        /// Get the base object manager path for the current powershell directory.
+        /// </summary>
+        /// <returns>The base path.</returns>
+        protected override NtResult<string> GetBasePath()
+        {
+            var result = base.GetBasePath();
+            if (result.IsSuccess)
+                return result;
+            return PSUtils.GetFileBasePath(SessionState);
+        }
+
+        /// <summary>
         /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -134,7 +156,7 @@ namespace NtObjectManager.Cmdlets.Object
                 return Convert.ToBase64String(data);
             }
 
-            return PSUtils.ResolvePath(SessionState, Path, Win32Path);
+            return base.ResolvePath();
         }
 
         /// <summary>
