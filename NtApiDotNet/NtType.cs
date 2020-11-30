@@ -651,6 +651,9 @@ namespace NtApiDotNet
         /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByName(string name, bool create_fake_type, bool cached)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             var types = cached ? _types : LoadTypes();
 
             if (types.ContainsKey(name))
@@ -805,6 +808,46 @@ namespace NtApiDotNet
             {
                 return LoadTypes().Values;
             }
+        }
+
+        /// <summary>
+        /// Get the NT type from a path.
+        /// </summary>
+        /// <param name="path">The object manager path.</param>
+        /// <param name="root">Optional root object.</param>
+        /// <returns>The NT type. Returns null if not available or unknown.</returns>
+        public static NtType GetTypeFromPath(string path, NtObject root)
+        {
+            NtType type = root?.NtType;
+            // If a file or a key root then that's what the target must end up being.
+            switch (type?.Name)
+            {
+                case "File":
+                case "Key":
+                    return type;
+            }
+
+            string type_name = NtDirectory.GetDirectoryEntryType(path, root);
+            if (type_name != null)
+                return GetTypeByName(type_name, true);
+            string full_path = path;
+            if (root != null)
+            {
+                string root_path = root.FullPath;
+                full_path = $@"{(root_path == @"\" ? string.Empty : root_path)}\{full_path}";
+            }
+            if (full_path.Equals(@"\REGISTRY", StringComparison.OrdinalIgnoreCase) 
+                || full_path.StartsWith(@"\REGISTRY\", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetTypeByType<NtKey>();
+            }
+            if (full_path.StartsWith(@"\??\")
+                || full_path.StartsWith(@"\GLOBAL??\", StringComparison.OrdinalIgnoreCase)
+                || full_path.StartsWith(@"\Device\", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetTypeByType<NtFile>();
+            }
+            return null;
         }
 
         #endregion

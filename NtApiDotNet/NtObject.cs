@@ -230,6 +230,43 @@ namespace NtApiDotNet
         /// <summary>
         /// Open an NT object with a specified type.
         /// </summary>
+        /// <param name="type">The type to open. If null the method will try and lookup the appropriate type.</param>
+        /// <param name="object_attributes">Object attributes for object.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        public static NtResult<NtObject> OpenWithType(NtType type, ObjectAttributes object_attributes,
+            AccessMask access, bool throw_on_error)
+        {
+            // Brute force the open.
+            if (type == null)
+            {
+                foreach (var nttype in NtType.GetTypes().Where(t => t.CanOpen))
+                {
+                    var result = nttype.Open(object_attributes, access, false);
+                    if (result.IsSuccess)
+                    {
+                        return result;
+                    }
+                }
+
+                return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+            }
+
+            if (type.CanOpen)
+            {
+                return type.Open(object_attributes, access, throw_on_error);
+            }
+            else
+            {
+                return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+            }
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
         /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
         /// <param name="path">The path to the object to open.</param>
         /// <param name="root">A root directory to open from.</param>
@@ -244,35 +281,8 @@ namespace NtApiDotNet
         {
             using (var obj_attr = new ObjectAttributes(path, attributes, root, security_quality_of_service, null))
             {
-                if (typename == null)
-                {
-                    typename = NtDirectory.GetDirectoryEntryType(path, root);
-                }
-
-                // Brute force the open.
-                if (typename == null)
-                {
-                    foreach (var nttype in NtType.GetTypes().Where(t => t.CanOpen))
-                    {
-                        var result = nttype.Open(obj_attr, access, false);
-                        if (result.IsSuccess)
-                        {
-                            return result;
-                        }
-                    }
-
-                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
-                }
-
-                NtType type = NtType.GetTypeByName(typename, false);
-                if (type != null && type.CanOpen)
-                {
-                    return type.Open(obj_attr, access, throw_on_error);
-                }
-                else
-                {
-                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
-                }
+                NtType type = NtType.GetTypeByName(typename ?? NtDirectory.GetDirectoryEntryType(path, root), false);
+                return OpenWithType(type, obj_attr, access, throw_on_error);
             }
         }
 
