@@ -84,6 +84,7 @@
     <Compile Include="NtFileObjectId.cs" />
     <Compile Include="NtFilterConnectionPort.cs" />
     <Compile Include="NtFilterConnectionPortNative.cs" />
+    <Compile Include="NtKeyEntry.cs" />
     <Compile Include="NtKeyHive.cs" />
     <Compile Include="NtMailslotFile.cs" />
     <Compile Include="NtProcessCreateResult.cs" />

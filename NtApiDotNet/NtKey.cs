@@ -982,21 +982,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Query all subkey names
+        /// Query all subkey entries.
         /// </summary>
-        /// <returns>The list of subkey names</returns>
+        /// <returns>The list of subkey entries</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public IEnumerable<string> QueryKeys()
+        public IEnumerable<NtKeyEntry> QueryKeyEntries()
         {
             int index = 0;
-            using (SafeStructureInOutBuffer<KeyBasicInformation> name_info = new SafeStructureInOutBuffer<KeyBasicInformation>(512, true))
+            using (var buffer = new SafeStructureInOutBuffer<KeyBasicInformation>(512, true))
             {
                 while (true)
                 {
-                    NtStatus status = NtSystemCalls.NtEnumerateKey(Handle, index, KeyInformationClass.KeyBasicInformation, name_info, name_info.Length, out int result_length);
+                    NtStatus status = NtSystemCalls.NtEnumerateKey(Handle, index, KeyInformationClass.KeyBasicInformation, buffer, buffer.Length, out int result_length);
                     if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
-                        name_info.Resize(result_length);
+                        buffer.Resize(result_length);
                         continue;
                     }
                     index++;
@@ -1004,12 +1004,19 @@ namespace NtApiDotNet
                     {
                         break;
                     }
-                    KeyBasicInformation res = name_info.Result;
-                    char[] name_buffer = new char[res.NameLength / 2];
-                    name_info.Data.ReadArray(0, name_buffer, 0, name_buffer.Length);
-                    yield return new string(name_buffer);
+                    yield return new NtKeyEntry(buffer);
                 }
             }
+        }
+
+        /// <summary>
+        /// Query all subkey names
+        /// </summary>
+        /// <returns>The list of subkey names</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<string> QueryKeys()
+        {
+            return QueryKeyEntries().Select(k => k.Name);
         }
 
         /// <summary>
