@@ -7053,6 +7053,10 @@ function Import-Win32Module {
         [NtApiDotNet.Win32.LoadLibraryFlags]$Flags = 0
     )
 
+    if (Test-Path $Path) {
+        $Path = Resolve-Path $Path
+    }
+
     [NtApiDotNet.Win32.SafeLoadLibraryHandle]::LoadLibrary($Path, $Flags) | Write-Output
 }
 
@@ -7080,6 +7084,9 @@ function Get-Win32Module {
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromPath") {
+        if (Test-Path $Path) {
+            $Path = Resolve-Path $Path
+        }
         [NtApiDotNet.Win32.SafeLoadLibraryHandle]::GetModuleHandle($Path) | Write-Output
     }
     else {
