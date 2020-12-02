@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>NtApiDotNet.Forms</AssemblyName>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <PackageId>NtApiDotNet.Forms.Core</PackageId>
+    <Authors>James Forshaw</Authors>
+    <Company>Google Inc.</Company>
+    <Product>NtApiDotNet.Forms</Product>
+    <FileVersion>1.1.29.0</FileVersion>
+    <Version>1.1.29</Version>
+    <Copyright>Copyright © Google Inc. 2016-2020</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</RepositoryUrl>
+    <Description>A .NET class library to access native NT API system calls</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PackageReleaseNotes>1.1.29
+--------
+* Released Core Version.
+    </PackageReleaseNotes>
+  </PropertyGroup>
+ 
+  <ItemGroup>
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
+  </ItemGroup>
+</Project>

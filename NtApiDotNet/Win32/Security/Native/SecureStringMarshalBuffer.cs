@@ -20,11 +20,11 @@ namespace NtApiDotNet.Win32.Security.Native
 {
 #pragma warning disable 1591
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SecureStringMarshal : IDisposable
+    internal struct SecureStringMarshalBuffer : IDisposable
     {
         public IntPtr Ptr;
 
-        public SecureStringMarshal(SecureString s)
+        public SecureStringMarshalBuffer(SecureString s)
         {
             Ptr = Marshal.SecureStringToBSTR(s);
         }

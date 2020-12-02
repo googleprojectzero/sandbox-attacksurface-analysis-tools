@@ -526,7 +526,7 @@
     <Compile Include="Win32\Security\Native\SecHandle.cs" />
     <Compile Include="Win32\Security\Native\SecPkgInfo.cs" />
     <Compile Include="Win32\Security\Native\SecStatusCode.cs" />
-    <Compile Include="Win32\Security\Native\SecureStringMarshal.cs" />
+    <Compile Include="Win32\Security\Native\SecureStringMarshalBuffer.cs" />
     <Compile Include="Win32\Security\Native\SECURITY_LOGON_SESSION_DATA.cs" />
     <Compile Include="Win32\Security\Native\SecWinNtAuthIdentityFlags.cs" />
     <Compile Include="Win32\Security\Native\SEC_WINNT_AUTH_IDENTITY.cs" />

@@ -71,13 +71,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
-        internal SecureStringMarshal GetPassword()
+        internal SecureStringMarshalBuffer GetPassword()
         {
             if (Password != null)
             {
-                return new SecureStringMarshal(Password);
+                return new SecureStringMarshalBuffer(Password);
             }
-            return new SecureStringMarshal();
+            return new SecureStringMarshalBuffer();
         }
 
         /// <summary>

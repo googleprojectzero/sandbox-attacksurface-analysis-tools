@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Native
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Domain;
         public int DomainLength;
-        public SecureStringMarshal Password;
+        public SecureStringMarshalBuffer Password;
         public int PasswordLength;
         public SecWinNtAuthIdentityFlags Flags;
 
@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Native
             DomainLength = domain?.Length ?? 0;
             if (password != null)
             {
-                Password = list.AddResource(new SecureStringMarshal(password));
+                Password = list.AddResource(new SecureStringMarshalBuffer(password));
                 PasswordLength = password.Length;
             }
             Flags = SecWinNtAuthIdentityFlags.Unicode;

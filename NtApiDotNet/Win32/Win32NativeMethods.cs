@@ -1106,7 +1106,7 @@ namespace NtApiDotNet.Win32
         internal static extern bool CreateProcessWithLogonW(
           string lpUsername,
           string lpDomain,
-          SecureStringMarshal lpPassword,
+          SecureStringMarshalBuffer lpPassword,
           CreateProcessLogonFlags dwLogonFlags,
           string lpApplicationName,
           string lpCommandLine,

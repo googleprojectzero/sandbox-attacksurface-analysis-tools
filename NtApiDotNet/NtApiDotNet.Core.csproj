@@ -1,26 +1,79 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<AssemblyName>NtApiDotNet</AssemblyName>
+    <AssemblyName>NtApiDotNet</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>NtApiDotNet</PackageId>
+    <PackageId>NtApiDotNet.Core</PackageId>
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
     <Product>NtApiDotNet</Product>
     <FileVersion>1.1.29.0</FileVersion>
+    <Version>1.1.29</Version>
     <Copyright>Copyright © Google Inc. 2016-2020</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</RepositoryUrl>
+    <Description>A .NET class library to access native NT API system calls</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReleaseNotes>1.1.29
+--------
+* Added Get-NtProcessUser.
+* Added Get-NtProcessEnvironment.
+* Added global option for New-NtSymbolicLink.
+* Added Split-Win32CommandLine.
+* Added send and post methods to NtMessage.
+* Added AsObject parameter for Get-NtObjectInformation.
+* Added NtMailslotFile and fixed mailslot creation.
+* Added Get-NtKeySymbolicLinkTarget.
+* Added support for a FollowLink switch which will allow accessible cmdlets to follow symbolic links. Feature request #29.
+* Separated forms code from the main assembly.
+* Added setting service security and Get/Set-Win32ServiceSecurityDescriptor.
+* Added Win32 debug console class and Start/New/Read-Win32DebugConsole.
+* Added Test-NtTokenCapability.
+* Added New-Win32Service and Remove-Win32Service.
+* Reimplemented SidName to allow access to the Domain component.
+* Added section characteristics check when parsing RPC servers. Fix for issue #27.
+* Added an SDKName attribute to access rights.
+* Added Add-NtAccountRight and Remove-NtAccountRight.
+* Added basic VBS enclave support.
+* Added support to parse ELAM information from a binary.
+* Added Get-NtSigningLevel and Get-X509Certificate.
+* Added Compare-NtSigningLevel.
+* Added silo impersonation commands.
+* Added option to impersonation System when creating a token or with Invoke-NtToken.
+* Added proper enumeration of AppContainer profiles and support creating with capabilities.
+* Added Get-AppModelApplicationPolicy.
+* Added Get-NtThreadContext and Set-NtThreadContext.
+* Added support for calling CreateProcessWithLogon via Win32Process.
+* Added Start-AppModelApplication.
+* Added Add-NtThreadApc.
+* Fixed path handling in Get-Win32SecurityDescriptor.
+* Added Get-NtFileFinalPath command.
+* Reworked handling of lease oplocks.
+* Added basic USN journal support.
+* Added Get-NtFileStream.
+* Added Get-NtMountPoint command.
+* Added basic async support and the Wait-AsyncTaskResult command.
+* Added Send-NtFileControl command.
+* Added Get-NtFileVolumeInformation and Set-NtFileVolumeInformation.
+* Added Get-NtFileItem command.
+* Added support for querying device nodes, setup class and interface classes.
+* Added Get-NtFileSharingProcess.
+* IPeb: Added GetBeingDebugged() (#26)
+* Added support for enumerating filter drivers and connecting to ports.
+* Added New-NtKeySymbolicLink and Set-NtKeySymbolicLinkTarget.
+* Added a Get-NtKeyHive command.
+</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
   <Compile Remove="Properties\AssemblyInfo.cs" />
-  <Compile Remove="Forms\*" />
   </ItemGroup>
 </Project>
