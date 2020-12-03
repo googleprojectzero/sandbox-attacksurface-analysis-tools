@@ -921,7 +921,7 @@ namespace NtApiDotNet
         /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
-            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
+            AddAccessAllowedAceInternal(mask, flags, sid);
         }
 
         /// <summary>
