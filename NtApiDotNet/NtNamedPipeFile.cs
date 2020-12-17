@@ -48,7 +48,7 @@ namespace NtApiDotNet
         internal NtNamedPipeFileBase(SafeKernelObjectHandle handle, IoStatus io_status)
             : base(handle, io_status)
         {
-            _pipe_information = new Lazy<NtResult<FilePipeInformation>>(() 
+            _pipe_information = new Lazy<NtResult<FilePipeInformation>>(()
                 => Query(FileInformationClass.FilePipeInformation, new FilePipeInformation(), false));
             _pipe_local_information = new Lazy<NtResult<FilePipeLocalInformation>>(()
                 => Query(FileInformationClass.FilePipeLocalInformation, new FilePipeLocalInformation(), false));
@@ -303,6 +303,85 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Send and receive a message in one call.
+        /// </summary>
+        /// <param name="input_buffer">The input buffer to send.</param>
+        /// <param name="max_output">The maximum output size.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The received buffer.</returns>
+        public NtResult<byte[]> Transceive(byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_TRANSCEIVE, input_buffer, max_output, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send and receive a message in one call.
+        /// </summary>
+        /// <param name="input_buffer">The input buffer to send.</param>
+        /// <param name="max_output">The maximum output size.</param>
+        /// <returns>The received buffer.</returns>
+        public byte[] Transceive(byte[] input_buffer, int max_output)
+        {
+            return Transceive(input_buffer, max_output, true).Result;
+        }
+
+        /// <summary>
+        /// Send and receive a message in one call.
+        /// </summary>
+        /// <param name="input_buffer">The input buffer to send.</param>
+        /// <param name="max_output">The maximum output size.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The received buffer.</returns>
+        public Task<NtResult<byte[]>> TransceiveAsync(byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_PIPE_TRANSCEIVE, input_buffer, max_output, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send and receive a message in one call.
+        /// </summary>
+        /// <param name="input_buffer">The input buffer to send.</param>
+        /// <param name="max_output">The maximum output size.</param>
+        /// <returns>The received buffer.</returns>
+        public Task<byte[]> TransceiveAsync(byte[] input_buffer, int max_output)
+        {
+            return TransceiveAsync(input_buffer, max_output, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Set pipe information flags.
+        /// </summary>
+        /// <param name="read_mode">The read mode to set.</param>
+        /// <param name="completion_mode">The completion mode.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetPipeInformation(NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, bool throw_on_error)
+        {
+            FilePipeInformation info = new FilePipeInformation()
+            {
+                ReadMode = read_mode,
+                CompletionMode = completion_mode
+            };
+
+            NtStatus status = Set(FileInformationClass.FilePipeInformation, info, throw_on_error);
+            if (!status.IsSuccess())
+                return status;
+            _pipe_information = new Lazy<NtResult<FilePipeInformation>>(()
+                => Query(FileInformationClass.FilePipeInformation, new FilePipeInformation(), false));
+            return status;
+        }
+
+        /// <summary>
+        /// Set pipe information flags.
+        /// </summary>
+        /// <param name="read_mode">The read mode to set.</param>
+        /// <param name="completion_mode">The completion mode.</param>
+        public void SetPipeInformation(NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode)
+        {
+            SetPipeInformation(read_mode, completion_mode, true);
+        }
+
+        /// <summary>
         /// Query the information class as an object.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -329,11 +408,21 @@ namespace NtApiDotNet
         /// <summary>
         /// Pipe completion mode.
         /// </summary>
-        public NamedPipeCompletionMode CompletionMode => GetLazyResult(_pipe_information).CompletionMode;
+        public NamedPipeCompletionMode CompletionMode
+        {
+            get => GetLazyResult(_pipe_information).CompletionMode;
+            set => SetPipeInformation(ReadMode, value);
+        }
+
         /// <summary>
         /// Pipe read mode.
         /// </summary>
-        public NamedPipeReadMode ReadMode => GetLazyResult(_pipe_information).ReadMode;
+        public NamedPipeReadMode ReadMode
+        {
+            get => GetLazyResult(_pipe_information).ReadMode;
+            set => SetPipeInformation(value, CompletionMode);
+        }
+
         /// <summary>
         /// Pipe type.
         /// </summary>
