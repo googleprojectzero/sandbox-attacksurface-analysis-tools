@@ -115,6 +115,11 @@ namespace NtObjectManager.Cmdlets.Object
         /// <returns>The full NT path.</returns>
         protected virtual string GetWin32Path(string path)
         {
+            if (path.StartsWith(@"\"))
+            {
+                throw new ArgumentException("Win32 paths can't start with a path separator");
+            }
+
             return $@"{NtDirectory.GetBasedNamedObjects()}\{path}";
         }
 
@@ -156,11 +161,6 @@ namespace NtObjectManager.Cmdlets.Object
 
             if (Win32Path)
             {
-                if (Path.StartsWith(@"\"))
-                {
-                    throw new ArgumentException("Win32 paths can't start with a path separator");
-                }
-
                 return GetWin32Path(Path);
             }
 
