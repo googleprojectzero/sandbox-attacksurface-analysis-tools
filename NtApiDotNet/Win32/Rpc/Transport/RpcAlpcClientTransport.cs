@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             var header = buffer.Read<LRPC_HEADER>(0);
             if (header.MessageType != LRPC_MESSAGE_TYPE.lmtFault && header.MessageType != message_type)
             {
-                throw new ArgumentException($"Invalid response message type {header.MessageType}");
+                throw new RpcTransportException($"Invalid response message type {header.MessageType}");
             }
 
             if (header.MessageType == LRPC_MESSAGE_TYPE.lmtFault)
@@ -94,7 +94,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             if (!attributes.HasValidAttribute(AlpcMessageAttributeFlags.View))
             {
-                throw new ArgumentException("Large response received but no data view available");
+                throw new RpcTransportException("Large response received but no data view available");
             }
 
             return new RpcClientResponse(attributes.DataView.ReadBytes(response.Result.LargeDataSize), attributes.Handles);
@@ -114,7 +114,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 var response = buffer.Read<LRPC_IMMEDIATE_RESPONSE_MESSAGE>(0);
                 if (response.CallId != call_id)
                 {
-                    throw new ArgumentException("Mismatched Call ID");
+                    throw new RpcTransportException("Mismatched Call ID");
                 }
 
                 if ((response.Flags & LRPC_RESPONSE_MESSAGE_FLAGS.ViewPresent) == LRPC_RESPONSE_MESSAGE_FLAGS.ViewPresent)
