@@ -301,8 +301,14 @@ namespace NtApiDotNet.Win32
                             NdrParser parser = new NdrParser(reader, NtProcess.Current,
                                 sym_resolver, parser_flags);
                             IntPtr ifspec = lib.DangerousGetHandle() + (int)offset.Offset;
-                            var rpc = parser.ReadFromRpcServerInterface(ifspec, lib.DangerousGetHandle());
-                            servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));
+                            try
+                            {
+                                var rpc = parser.ReadFromRpcServerInterface(ifspec, lib.DangerousGetHandle());
+                                servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));
+                            }
+                            catch (NdrParserException)
+                            {
+                            }
                         }
                     }
                 }
