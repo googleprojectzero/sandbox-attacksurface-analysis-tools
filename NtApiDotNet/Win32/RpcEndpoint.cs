@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32
             }
             else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
-                EndpointPath = $@"\??{Endpoint}";
+                EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
             }
             else
             {

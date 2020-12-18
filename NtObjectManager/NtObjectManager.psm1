@@ -5916,6 +5916,8 @@ function Connect-RpcClient {
         [string]$EndpointPath,
         [parameter(ParameterSetName = "FromProtocol")]
         [string]$ProtocolSequence = "ncalrpc",
+        [parameter(ParameterSetName = "FromProtocol")]
+        [string]$NetworkAddress,
         [parameter(Position = 1, Mandatory, ParameterSetName = "FromEndpoint")]
         [NtApiDotNet.Win32.RpcEndpoint]$Endpoint,
         [parameter(Mandatory, ParameterSetName = "FromFindEndpoint")]
@@ -5927,7 +5929,7 @@ function Connect-RpcClient {
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "FromProtocol" {
-                $Client.Connect($ProtocolSequence, $EndpointPath, $SecurityQualityOfService)
+                $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $SecurityQualityOfService)
             }
             "FromEndpoint" {
                 $Client.Connect($Endpoint, $SecurityQualityOfService)

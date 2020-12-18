@@ -29,7 +29,7 @@ namespace NtApiDotNet.Ndr.Marshal
     /// </summary>
     public enum NdrCharacterRepresentation
     {
-        ASCII,
+        ASCII = 0,
         EBCDIC
     }
 
@@ -38,7 +38,7 @@ namespace NtApiDotNet.Ndr.Marshal
     /// </summary>
     public enum NdrFloatingPointRepresentation
     {
-        IEEE,
+        IEEE = 0,
         VAX,
         Cray,
         IBM
@@ -61,6 +61,22 @@ namespace NtApiDotNet.Ndr.Marshal
         /// The floating representation of the NDR data.
         /// </summary>
         public NdrFloatingPointRepresentation FloatingPointRepresentation { get; set; }
+
+        internal NdrDataRepresentation(byte[] data_rep)
+        {
+            CharacterRepresentation = (NdrCharacterRepresentation)(data_rep[0] & 0xF);
+            IntegerRepresentation = (data_rep[0] & 0xF0) == 0 ? NdrIntegerRepresentation.BigEndian : NdrIntegerRepresentation.LittleEndian;
+            FloatingPointRepresentation = (NdrFloatingPointRepresentation)data_rep[1];
+        }
+
+        internal byte[] ToArray()
+        {
+            byte[] ret = new byte[4];
+            ret[0] = (byte)(IntegerRepresentation == NdrIntegerRepresentation.LittleEndian ? 0x10 : 0);
+            ret[0] |= (byte)CharacterRepresentation;
+            ret[1] = (byte)FloatingPointRepresentation;
+            return ret;
+        }
     }
 #pragma warning restore 1591
 }

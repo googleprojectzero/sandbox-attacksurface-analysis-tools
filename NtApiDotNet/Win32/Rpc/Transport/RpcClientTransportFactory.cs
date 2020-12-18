@@ -37,13 +37,24 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public static class RpcClientTransportFactory
     {
         private static Dictionary<string, IRpcClientTransportFactory> _factories = 
-            new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase) { { "ncalrpc", new AlpcRpcClientTransportFactory() } };
+            new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase) { 
+                { "ncalrpc", new AlpcRpcClientTransportFactory() },
+                { "ncacn_np", new NamedPipeRpcClientTransportFactory() }
+            };
 
         private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
         {
             public IRpcClientTransport Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
             {
                 return new RpcAlpcClientTransport(endpoint.EndpointPath, security_quality_of_service);
+            }
+        }
+
+        private class NamedPipeRpcClientTransportFactory : IRpcClientTransportFactory
+        {
+            public IRpcClientTransport Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+            {
+                return new RpcNamedPipeClientTransport(endpoint.EndpointPath, security_quality_of_service);
             }
         }
 

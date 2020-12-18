@@ -1,0 +1,46 @@
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using System.Collections.Generic;
+using System.IO;
+
+namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+{
+    internal class PDUBind : PDUBase
+    {
+        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag) 
+            : base(PDUType.Bind)
+        {
+            _max_xmit_frag = max_xmit_frag;
+            _max_recv_frag = max_recv_frag;
+            Elements = new List<ContextElement>();
+        }
+
+        private readonly ushort _max_xmit_frag;
+        private readonly ushort _max_recv_frag;
+
+        public List<ContextElement> Elements { get; }
+
+        public override List<byte[]> DoFragment(int max_frag_length)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(_max_xmit_frag);
+            writer.Write(_max_recv_frag);
+            writer.Write(0); // assoc_group_id.
+            ContextElement.WriteList(writer, Elements);
+            return new List<byte[]>() { stm.ToArray() };
+        }
+    }
+}
