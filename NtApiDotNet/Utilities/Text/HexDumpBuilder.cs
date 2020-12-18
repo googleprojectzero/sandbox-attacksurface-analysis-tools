@@ -116,14 +116,15 @@ namespace NtApiDotNet.Utilities.Text
         {
             int line_length = GetDataLeft();
             System.Diagnostics.Debug.Assert(line_length < 16);
-            if (line_length == 0)
-            {
-                return;
-            }
 
             if (_repeat_count > 0)
             {
                 _builder.AppendLine($"-> REPEATED {_repeat_count} LINES");
+            }
+
+            if (line_length == 0)
+            {
+                return;
             }
 
             int j = 0;
