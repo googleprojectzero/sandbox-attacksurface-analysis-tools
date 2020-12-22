@@ -18,7 +18,6 @@ using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace NtApiDotNet.Win32.Rpc
 {
@@ -39,37 +38,9 @@ namespace NtApiDotNet.Win32.Rpc
             }
             return endpoint;
         }
-
-        private static void DumpNdrBuffer(string title, byte[] buffer)
-        {
-            if (!RpcUtils.RpcTraceSwitch.TraceVerbose)
-            {
-                return;
-            }
-            Trace.WriteLine($"{title}:");
-            int trailing = buffer.Length % 16;
-            int count = (buffer.Length / 16) * 16;
-            for (int i = 0; i < count; i += 16)
-            {
-                for (int j = 0; j < 16; j += 4)
-                {
-                    Trace.Write($"{BitConverter.ToUInt32(buffer, i + j):X08} ");
-                }
-                Trace.WriteLine(string.Empty);
-            }
-
-            for (int i = 0; i < trailing; i += 4)
-            {
-                Trace.Write($"{BitConverter.ToUInt32(buffer, count + i):X08} ");
-            }
-
-            Trace.WriteLine(string.Empty);
-        }
-
         #endregion
 
         #region Constructors
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -112,9 +83,9 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new InvalidOperationException("RPC client is not connected.");
             }
 
-            DumpNdrBuffer("NDR Send Data", ndr_buffer);
+            RpcUtils.DumpBuffer(false, "NDR Send Data", ndr_buffer);
             var resp = _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
-            DumpNdrBuffer("NDR Receive Data", resp.NdrBuffer);
+            RpcUtils.DumpBuffer(false, "NDR Receive Data", resp.NdrBuffer);
             return resp;
         }
 

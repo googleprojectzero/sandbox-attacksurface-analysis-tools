@@ -52,23 +52,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        private static void CheckDataRepresentation(NdrDataRepresentation data_rep)
-        {
-            if (data_rep.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian)
-                throw new ArgumentException("Only supports little endian marshaling.");
-            if (data_rep.CharacterRepresentation != NdrCharacterRepresentation.ASCII)
-                throw new ArgumentException("Only supports ASCII character representation.");
-            if (data_rep.FloatingPointRepresentation != NdrFloatingPointRepresentation.IEEE)
-                throw new ArgumentException("Only supports IEEE float representation.");
-        }
-
-        private Tuple<PDUHeader, byte[]> ReadPDU()
+        private Tuple<PDUHeader, byte[]> ReadPDU(int frag_count)
         {
             byte[] buffer = _pipe.Read(_max_recv_fragment);
+            RpcUtils.DumpBuffer(true, $"RPC Named Pipe Receive Buffer - Fragment {frag_count}", buffer);
             MemoryStream stm = new MemoryStream(buffer);
             BinaryReader reader = new BinaryReader(stm);
             PDUHeader header = PDUHeader.Read(reader);
-            CheckDataRepresentation(header.DataRep);
+            NdrUnmarshalBuffer.CheckDataRepresentation(header.DataRep);
             if (header.AuthLength != 0)
                 throw new NotSupportedException("Named pipe transport doesn't support authentication data.");
             return Tuple.Create(header, reader.ReadAllBytes(header.FragmentLength - PDUHeader.PDU_HEADER_SIZE));
@@ -123,15 +114,18 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     pdu_header.Write(writer);
                     writer.Write(fragments[i]);
                     byte[] fragment = send_stm.ToArray();
+                    string name = fragments.Count == 1 ? "RPC Named Pipe Send Buffer" : $"RPC Named Pipe Send Buffer - Fragment {i}";
+                    RpcUtils.DumpBuffer(true, name, fragment);
                     if (_pipe.Write(fragment) != fragment.Length)
                         throw new RpcTransportException("Failed to write out PDU buffer.");
                 }
 
                 MemoryStream recv_stm = new MemoryStream();
                 PDUHeader curr_header = new PDUHeader();
+                int frag_count = 0;
                 while ((curr_header.Flags & PDUFlags.LastFrag) == 0)
                 {
-                    var pdu = ReadPDU();
+                    var pdu = ReadPDU(frag_count++);
                     curr_header = pdu.Item1;
                     if (curr_header.CallId != CallId)
                     {
@@ -154,7 +148,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="path">The Win32 pipe path to connect. e.g. \\.\pipe\ABC.</param>
+        /// <param name="path">The NT pipe path to connect. e.g. \??\pipe\ABC.</param>
         /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
         public RpcNamedPipeClientTransport(string path, SecurityQualityOfService security_quality_of_service)
         {
@@ -217,7 +211,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcClientResponse SendReceive(int proc_num, Guid objuuid, NdrDataRepresentation data_representation,
             byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
-            CheckDataRepresentation(data_representation);
+            NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
 
             PDURequest request = new PDURequest
             {

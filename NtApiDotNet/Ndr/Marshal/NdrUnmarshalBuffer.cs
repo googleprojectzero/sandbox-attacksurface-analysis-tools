@@ -109,7 +109,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private void Align(int alignment)
         {
             _stm.Position += NdrNativeUtils.CalculateAlignment((int)_stm.Position, alignment);
-            System.Diagnostics.Debug.WriteLine($"Pos: {_stm.Position} - Align: {alignment}");
+            NdrUtils.WriteLine($"Pos: {_stm.Position} - Align: {alignment}");
         }
 
         #endregion

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Utilities.Text;
 using System;
 using System.Diagnostics;
 
@@ -29,9 +30,49 @@ namespace NtApiDotNet.Win32.Rpc
         /// Specify RPC trace level.
         /// </summary>
         /// <param name="level">Specify the RPC trace level.</param>
+        /// <remarks>This dumps NDR data. Verbose dumps the binary data.</remarks>
         public static void SetRpcTraceLevel(TraceLevel level)
         {
             RpcTraceSwitch.Level = level;
+        }
+
+        internal static TraceSwitch RpcTransportTraceSwitch = new TraceSwitch("RpcTransportTrace", "RPC Transport Tracing");
+
+        /// <summary>
+        /// Specify RPC transport trace level.
+        /// </summary>
+        /// <param name="level">Specify the RPC transport trace level.</param>
+        /// <remarks>Verbose dumps the transport binary data.</remarks>
+        public static void SetRpcTransportTraceLevel(TraceLevel level)
+        {
+            RpcTransportTraceSwitch.Level = level;
+        }
+
+        private static bool CheckSwitch(bool transport)
+        {
+            var trace_switch = transport ? RpcTransportTraceSwitch : RpcTraceSwitch;
+            return trace_switch.TraceVerbose;
+        }
+
+        internal static void DumpBuffer(bool transport, string title, byte[] buffer)
+        {
+            if (!CheckSwitch(transport))
+                return;
+            Trace.WriteLine($"{title}:");
+            HexDumpBuilder builder = new HexDumpBuilder(true, true, true, true, 0);
+            builder.Append(buffer);
+            builder.Complete();
+            Trace.WriteLine(builder.ToString());
+        }
+
+        internal static void DumpBuffer(bool transport, string title, AlpcMessage message)
+        {
+            if (!CheckSwitch(transport))
+                return;
+            using (var buffer = message.ToSafeBuffer())
+            {
+                DumpBuffer(transport, title, buffer.ToArray());
+            }
         }
 
         /// <summary>

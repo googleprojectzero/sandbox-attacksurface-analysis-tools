@@ -74,6 +74,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalReasonFlags.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Sockets\HyperVEndpoint.cs" />
     <Compile Include="Net\Sockets\HyperVSocketGuids.cs" />
     <Compile Include="Net\Sockets\UnixEndPoint.cs" />

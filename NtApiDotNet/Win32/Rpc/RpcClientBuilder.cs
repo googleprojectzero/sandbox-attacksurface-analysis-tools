@@ -1072,7 +1072,10 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     foreach (CompilerError e in results.Errors)
                     {
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        if (RpcUtils.RpcTraceSwitch.TraceError)
+                        {
+                            System.Diagnostics.Trace.WriteLine(e.ToString());
+                        }
                     }
                     throw new InvalidOperationException("Internal error compiling RPC source code");
                 }

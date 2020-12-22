@@ -73,11 +73,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private void BindInterface(Guid interface_id, Version interface_version)
         {
             var bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(interface_id, interface_version));
+            RpcUtils.DumpBuffer(true, "ALPC BindInterface Send", bind_msg); 
             var recv_msg = new AlpcMessageRaw(0x1000);
 
             using (var recv_attr = new AlpcReceiveMessageAttributes())
             {
                 _client.SendReceive(AlpcMessageFlags.SyncRequest, bind_msg, null, recv_msg, recv_attr, NtWaitTimeout.Infinite);
+                RpcUtils.DumpBuffer(true, "ALPC BindInterface Receive", recv_msg);
                 using (var buffer = recv_msg.Data.ToBuffer())
                 {
                     CheckForFault(buffer, LRPC_MESSAGE_TYPE.lmtBind);
@@ -171,7 +173,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     send_attr.Add(data_view.ToMessageAttribute());
                     using (var recv_attr = new AlpcReceiveMessageAttributes())
                     {
+                        RpcUtils.DumpBuffer(true, "ALPC Request Large", send_msg);
                         _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, recv_msg, recv_attr, NtWaitTimeout.Infinite);
+                        RpcUtils.DumpBuffer(true, "ALPC Response Large", recv_msg);
                         RpcClientResponse response = HandleResponse(recv_msg, recv_attr, req_msg.CallId);
                         ClearAttributes(recv_msg, recv_attr);
                         return response;
@@ -207,7 +211,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             using (AlpcReceiveMessageAttributes recv_attr = new AlpcReceiveMessageAttributes())
             {
+                RpcUtils.DumpBuffer(true, "ALPC Request Immediate", send_msg);
                 _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, resp_msg, recv_attr, NtWaitTimeout.Infinite);
+                RpcUtils.DumpBuffer(true, "ALPC Response Immediate", resp_msg);
                 RpcClientResponse response = HandleResponse(resp_msg, recv_attr, req_msg.CallId);
                 ClearAttributes(resp_msg, recv_attr);
                 return response;

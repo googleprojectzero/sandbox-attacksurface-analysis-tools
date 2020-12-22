@@ -167,9 +167,8 @@ namespace NtApiDotNet.Win32
                     }
                 }
 
-                var status = Win32NativeMethods.ControlTrace(_handle, null,
+                Win32NativeMethods.ControlTrace(_handle, null,
                     _properties, EventTraceControl.Stop);
-                System.Diagnostics.Debug.WriteLine($"{status}");
                 _properties?.Dispose();
             }
         }

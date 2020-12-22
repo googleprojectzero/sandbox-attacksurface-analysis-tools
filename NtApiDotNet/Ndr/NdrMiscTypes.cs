@@ -32,7 +32,7 @@ namespace NtApiDotNet.Ndr
         {
             if (_formats.Add(format))
             {
-                System.Diagnostics.Debug.WriteLine(format.ToString());
+                NdrUtils.WriteLine(format.ToString());
             }
         }
 

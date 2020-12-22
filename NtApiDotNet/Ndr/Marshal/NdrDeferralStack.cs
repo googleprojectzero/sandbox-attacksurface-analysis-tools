@@ -31,7 +31,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
             var list = _stack.Pop();
             System.Diagnostics.Debug.Assert(list == _list);
-            System.Diagnostics.Debug.WriteLine($"Flushing {list.Count} queued entries");
+            NdrUtils.WriteLine($"Flushing {list.Count} queued entries");
 
             foreach (var a in list)
             {
@@ -59,7 +59,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (allocate)
             {
-                System.Diagnostics.Debug.WriteLine($"Pushing new queue entry Empty: {Empty}");
+                NdrUtils.WriteLine($"Pushing new queue entry Empty: {Empty}");
                 _stack.Push(new List<Action>());
                 return new NdrDeferralStackEntry(_stack);
             }
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 }
             };
             System.Diagnostics.Debug.Assert(!Empty);
-            System.Diagnostics.Debug.WriteLine("Adding deferred entry");
+            NdrUtils.WriteLine("Adding deferred entry");
             _stack.Peek().Add(deferral);
         }
 
