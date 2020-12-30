@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.SafeBuffers;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -280,6 +281,39 @@ namespace NtApiDotNet
         public Stream GetStream()
         {
             return new UnmanagedMemoryStream(this, 0, LongLength, _writable ? FileAccess.ReadWrite : FileAccess.Read);
+        }
+
+        /// <summary>
+        /// Create a view accessor over the full buffer.
+        /// </summary>
+        /// <returns>The view accessor.</returns>
+        public UnmanagedMemoryAccessor CreateViewAccessor()
+        {
+            return CreateViewAccessor(0, LongLength);
+        }
+
+        /// <summary>
+        /// Create a view accessor.
+        /// </summary>
+        /// <param name="offset">Offset into the buffer</param>
+        /// <param name="capacity">Size of view.</param>
+        /// <returns>The view accessor.</returns>
+        public UnmanagedMemoryAccessor CreateViewAccessor(long offset, long capacity)
+        {
+            return CreateViewAccessor(offset, capacity, _writable);
+        }
+
+        /// <summary>
+        /// Create a view accessor.
+        /// </summary>
+        /// <param name="offset">Offset into the buffer</param>
+        /// <param name="capacity">Size of view.</param>
+        /// <param name="writable">True to make the view writable. False for read-only</param>
+        /// <returns>The view accessor.</returns>
+        public UnmanagedMemoryAccessor CreateViewAccessor(long offset, long capacity, bool writable)
+        {
+            return new UnmanagedMemoryAccessor(new SafeBufferView(this, writable), offset, capacity, 
+                writable ? FileAccess.ReadWrite : FileAccess.Read);
         }
 
         #endregion

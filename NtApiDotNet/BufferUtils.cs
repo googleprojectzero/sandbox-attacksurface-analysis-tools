@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
@@ -308,15 +309,49 @@ namespace NtApiDotNet
         /// <returns>The buffer view.</returns>
         /// <remarks>Note that the returned buffer doesn't own the memory, therefore the original buffer
         /// must be maintained for the lifetime of this buffer.</remarks>
+        [Obsolete("Use version which takes Int64 paramaters")]
         public static SafeBuffer CreateBufferView(SafeBuffer buffer, int offset, int length)
         {
-            long total_length = (long)buffer.ByteLength;
-            if (offset + length > total_length)
+            return CreateBufferView(buffer, offset, length, true);
+        }
+
+        /// <summary>
+        /// Creates a view of an existing safe buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to create a view on.</param>
+        /// <param name="offset">The offset from the start of the buffer.</param>
+        /// <param name="length">The length of the view.</param>
+        /// <param name="writable">True to make the view writable, false for read-only.</param>
+        /// <returns>The buffer view.</returns>
+        /// <remarks>Note that the returned buffer doesn't own the memory, therefore the original buffer
+        /// must be maintained for the lifetime of this buffer.</remarks>
+        public static SafeBufferGeneric CreateBufferView(SafeBuffer buffer, long offset, long length, bool writable)
+        {
+            if (offset < 0)
             {
-                throw new ArgumentException("Offset and length is larger than the existing buffer");
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset less than 0.");
             }
 
-            return new SafeHGlobalBuffer(buffer.DangerousGetHandle() + offset, length, false);
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), "Length less than 0.");
+            }
+
+            long total_length = checked((long)buffer.ByteLength);
+            if (length > total_length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), "Length is greater than the buffer's length.");
+            }
+
+            if (checked(offset + length) > total_length)
+            {
+                throw new ArgumentOutOfRangeException("Offset and length is larger than the existing buffer");
+            }
+
+            long base_address = buffer.DangerousGetHandle().ToInt64();
+            base_address += offset;
+
+            return new SafeBufferView(new IntPtr(base_address), length, writable);
         }
 
         /// <summary>
