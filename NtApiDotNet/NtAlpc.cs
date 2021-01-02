@@ -674,6 +674,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set port attribute flags.
+        /// </summary>
+        /// <param name="flags">The flags to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetPortAttributeFlags(AlpcPortAttributeFlags flags, bool throw_on_error)
+        {
+            return Set(AlpcPortInformationClass.AlpcPortInformation, new AlpcPortAttributes() { Flags = flags }, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -703,7 +714,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Port flags.
         /// </summary>
-        public AlpcPortAttributeFlags Flags => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).Flags;
+        public AlpcPortAttributeFlags Flags
+        {
+            get => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).Flags;
+            set => SetPortAttributeFlags(value, true);
+        }
 
         /// <summary>
         /// Port sequence number.
@@ -714,6 +729,8 @@ namespace NtApiDotNet
         /// Port context.
         /// </summary>
         public long PortContext => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).PortContext.ToInt64();
+
+
 
         #endregion
     }
