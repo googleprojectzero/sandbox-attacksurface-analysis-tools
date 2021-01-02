@@ -403,7 +403,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtStatus Set<T>(S info_class, T value, bool throw_on_error) where T : struct
+        public virtual NtStatus Set<T>(S info_class, T value, bool throw_on_error) where T : new()
         {
             using (var buffer = value.ToBuffer())
             {
@@ -419,7 +419,7 @@ namespace NtApiDotNet
         /// <param name="value">The value to set.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void Set<T>(S info_class, T value) where T : struct
+        public void Set<T>(S info_class, T value) where T : new()
         {
             Set(info_class, value, true);
         }
