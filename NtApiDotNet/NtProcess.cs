@@ -2163,6 +2163,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get priority boost disable value.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if priority base </returns>
+        public NtResult<bool> GetPriorityBoostDisabled(bool throw_on_error)
+        {
+            return Query(ProcessInformationClass.ProcessPriorityBoost, 0, throw_on_error).Map(i => i != 0);
+        }
+
+        /// <summary>
+        /// Set priority boost disable value.
+        /// </summary>
+        /// <param name="disable">True to disable priority boost.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetPriorityBoostDisabled(bool disable, bool throw_on_error)
+        {
+            return Set(ProcessInformationClass.ProcessPriorityBoost, disable ? 1 : 0, throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -2641,6 +2662,14 @@ namespace NtApiDotNet
         /// Get the process IO counters.
         /// </summary>
         public IoCounters IoCounters => GetIoCounters(true).Result;
+        /// <summary>
+        /// Get or set priority boost disabled.
+        /// </summary>
+        public bool PriorityBoostDisabled
+        {
+            get => GetPriorityBoostDisabled(true).Result;
+            set => SetPriorityBoostDisabled(value, true);
+        }
 
         #endregion
 
