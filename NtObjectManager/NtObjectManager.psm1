@@ -9509,7 +9509,7 @@ function Set-NtAuditSecurity {
     switch($PSCmdlet.ParameterSetName) {
         "FromSecurityDescriptor" {
             if ($PSCmdlet.ShouldProcess("$SecurityDescriptor", "Set Audit SD")) {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetSecurity($SecurityDescriptor)
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetSecurity("Dacl", $SecurityDescriptor)
             }
         }
         "FromGlobalSacl" {
