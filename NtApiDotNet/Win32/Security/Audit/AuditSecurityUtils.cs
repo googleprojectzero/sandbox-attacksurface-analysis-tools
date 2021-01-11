@@ -372,7 +372,7 @@ namespace NtApiDotNet.Win32.Security.Audit
                 var sid_array = buffer.Read<POLICY_AUDIT_SID_ARRAY>(0);
                 for (int i = 0; i < sid_array.UsersCount; ++i)
                 {
-                    sids.Add(new Sid(Marshal.ReadIntPtr(buffer.DangerousGetHandle(), i * IntPtr.Size)));
+                    sids.Add(new Sid(Marshal.ReadIntPtr(sid_array.UserSidArray, i * IntPtr.Size)));
                 }
                 return sids.CreateResult();
             }
