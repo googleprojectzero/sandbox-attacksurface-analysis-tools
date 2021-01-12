@@ -12,12 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Win32.Security.Audit
 {
 #pragma warning disable 1591
     /// <summary>
     /// Access rights for system audit policy.
     /// </summary>
+    [Flags]
     public enum AuditAccessRights : uint
     {
         [SDKName("AUDIT_SET_SYSTEM_POLICY")]
