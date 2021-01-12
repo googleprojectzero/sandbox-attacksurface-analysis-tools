@@ -2400,8 +2400,9 @@ function Format-NtSecurityDescriptor {
         try {
             $sd, $t, $n = switch ($PsCmdlet.ParameterSetName) {
                 "FromObject" {
-                    if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
-                        Write-Error "Object doesn't have Read Control access."
+                    $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
+                    if (!$Object.IsAccessMaskGranted($access)) {
+                        Write-Error "Object doesn't have $access access."
                         return
                     }
                     ($Object.GetSecurityDescriptor($SecurityInformation), $Object.NtType, $Object.FullPath)
