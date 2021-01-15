@@ -26,17 +26,8 @@ Get-ChildItem NtObject:\
 
 Also see help for various commons such as Get-NtProcess, Get-NtType or New-File.
 
-The tools can be built with Visual Studio 2017. It's possible to also build NtApiDotNet and NtObjectManager
-with .NET Core 2.0/PowerShell Core 6.0 by building the specific project files.
-
-In order to build for PowerShell Core 6.0 you first need to build the .NET Framework
-version of the module, or pull the latest version of NtObjectManager from the PowerShell
-Gallery. Next build the .NET Core version of the module using the dotnet command line tool:
-
-dotnet build NtObjectManager\NtObjectManager.Core.csproj -c Release
-
-Now copy the files NtObjectManager.dll and NtApiDotNet.dll from the output folder to
-the folder Core inside the original NtObjectManager module module directory.
+The tools can be built with Visual Studio 2019. It's possible to also build NtApiDotNet and NtObjectManager
+with .NET 5.0 building the specific project files.
 
 Thanks to the people who were willing to test it and give feedback:
 * Matt Graeber
@@ -45,6 +36,17 @@ Thanks to the people who were willing to test it and give feedback:
 * Jared Atkinson
 
 Release Notes:
+
+1.1.30
+--------
+* Fixed issue when displaying only a SACL with Format-NtSecurityDescriptor.
+* Added basic named pipe support for RPC clients.
+* Fixed issue enumerating per-user audit rules.
+* Added view accessor for safe buffers.
+* Improved debug tracing for RPC clients.
+* Improved handling of paths with local files commands.
+* Fixed path issue with Set-Win32SecurityDescriptor.
+* Added querying trace providers from the WMI security key.
 
 1.1.29
 --------

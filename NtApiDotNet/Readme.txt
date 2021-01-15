@@ -26,12 +26,3 @@ And others I've no doubt forgotten.
 NOTE: It's still a work in progress and it's not designed to act as a documentation
 source for the entire NT API. There will be bits missing. Patches are welcome to 
 add missing functions or fix bugs, see the CONTRIBUTING file in the root of the solution.
-
-Building for PowerShell Core 6.0/.NET Core 2.0
------------------------------------------
-
-In order to build for PowerShell Core 6.0 use the command line:
-
-dotnet build NtApiDotNet\NtApiDotNet.Core.csproj -c Release
-
-Building for .NET Core does not currently work in Visual Studio 2017.

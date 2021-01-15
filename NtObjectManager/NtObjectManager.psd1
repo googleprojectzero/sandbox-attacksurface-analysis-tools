@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.29'
+ModuleVersion = '1.1.30'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -180,54 +180,16 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.29
+        ReleaseNotes = '1.1.30
 --------
-* Added Get-NtProcessUser.
-* Added Get-NtProcessEnvironment.
-* Added global option for New-NtSymbolicLink.
-* Added Split-Win32CommandLine.
-* Added send and post methods to NtMessage.
-* Added AsObject parameter for Get-NtObjectInformation.
-* Added NtMailslotFile and fixed mailslot creation.
-* Added Get-NtKeySymbolicLinkTarget.
-* Added support for a FollowLink switch which will allow accessible cmdlets to follow symbolic links. Feature request #29.
-* Separated forms code from the main assembly.
-* Added setting service security and Get/Set-Win32ServiceSecurityDescriptor.
-* Added Win32 debug console class and Start/New/Read-Win32DebugConsole.
-* Added Test-NtTokenCapability.
-* Added New-Win32Service and Remove-Win32Service.
-* Reimplemented SidName to allow access to the Domain component.
-* Added section characteristics check when parsing RPC servers. Fix for issue #27.
-* Added an SDKName attribute to access rights.
-* Added Add-NtAccountRight and Remove-NtAccountRight.
-* Added basic VBS enclave support.
-* Added support to parse ELAM information from a binary.
-* Added Get-NtSigningLevel and Get-X509Certificate.
-* Added Compare-NtSigningLevel.
-* Added silo impersonation commands.
-* Added option to impersonation System when creating a token or with Invoke-NtToken.
-* Added proper enumeration of AppContainer profiles and support creating with capabilities.
-* Added Get-AppModelApplicationPolicy.
-* Added Get-NtThreadContext and Set-NtThreadContext.
-* Added support for calling CreateProcessWithLogon via Win32Process.
-* Added Start-AppModelApplication.
-* Added Add-NtThreadApc.
-* Fixed path handling in Get-Win32SecurityDescriptor.
-* Added Get-NtFileFinalPath command.
-* Reworked handling of lease oplocks.
-* Added basic USN journal support.
-* Added Get-NtFileStream.
-* Added Get-NtMountPoint command.
-* Added basic async support and the Wait-AsyncTaskResult command.
-* Added Send-NtFileControl command.
-* Added Get-NtFileVolumeInformation and Set-NtFileVolumeInformation.
-* Added Get-NtFileItem command.
-* Added support for querying device nodes, setup class and interface classes.
-* Added Get-NtFileSharingProcess.
-* IPeb: Added GetBeingDebugged() (#26)
-* Added support for enumerating filter drivers and connecting to ports.
-* Added New-NtKeySymbolicLink and Set-NtKeySymbolicLinkTarget.
-* Added a Get-NtKeyHive command.
+* Fixed issue when displaying only a SACL with Format-NtSecurityDescriptor.
+* Added basic named pipe support for RPC clients.
+* Fixed issue enumerating per-user audit rules.
+* Added view accessor for safe buffers.
+* Improved debug tracing for RPC clients.
+* Improved handling of paths with local files commands.
+* Fixed path issue with Set-Win32SecurityDescriptor.
+* Added querying trace providers from the WMI security key.
 '
 
         # External dependent modules of this module
