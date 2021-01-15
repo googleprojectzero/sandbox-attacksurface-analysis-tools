@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.Core.csproj" />
+    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.Build.csproj" />
   </ItemGroup>
 
   <ItemGroup>
