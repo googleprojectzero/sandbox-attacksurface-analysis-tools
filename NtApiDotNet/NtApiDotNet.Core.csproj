@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <AssemblyName>NtApiDotNet</AssemblyName>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>NtApiDotNet.Core</PackageId>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <PackageId>NtApiDotNet</PackageId>
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
     <Product>NtApiDotNet</Product>
@@ -66,14 +66,28 @@
 * Added a Get-NtKeyHive command.
 </PackageReleaseNotes>
   </PropertyGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-  <Compile Remove="Properties\AssemblyInfo.cs" />
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>  
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
 </Project>

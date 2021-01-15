@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <AssemblyName>NtApiDotNet.Forms</AssemblyName>
-    <TargetFramework>net5.0-windows</TargetFramework>
-    <PackageId>NtApiDotNet.Forms.Core</PackageId>
+    <TargetFrameworks>net461;net5.0-windows</TargetFrameworks>
+    <PackageId>NtApiDotNet.Forms</PackageId>
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
     <Product>NtApiDotNet.Forms</Product>
@@ -17,14 +17,64 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <UseWindowsForms>true</UseWindowsForms>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <PackageReleaseNotes>1.1.29
 --------
-* Released Core Version.
+* Added Get-NtProcessUser.
+* Added Get-NtProcessEnvironment.
+* Added global option for New-NtSymbolicLink.
+* Added Split-Win32CommandLine.
+* Added send and post methods to NtMessage.
+* Added AsObject parameter for Get-NtObjectInformation.
+* Added NtMailslotFile and fixed mailslot creation.
+* Added Get-NtKeySymbolicLinkTarget.
+* Added support for a FollowLink switch which will allow accessible cmdlets to follow symbolic links. Feature request #29.
+* Separated forms code from the main assembly.
+* Added setting service security and Get/Set-Win32ServiceSecurityDescriptor.
+* Added Win32 debug console class and Start/New/Read-Win32DebugConsole.
+* Added Test-NtTokenCapability.
+* Added New-Win32Service and Remove-Win32Service.
+* Reimplemented SidName to allow access to the Domain component.
+* Added section characteristics check when parsing RPC servers. Fix for issue #27.
+* Added an SDKName attribute to access rights.
+* Added Add-NtAccountRight and Remove-NtAccountRight.
+* Added basic VBS enclave support.
+* Added support to parse ELAM information from a binary.
+* Added Get-NtSigningLevel and Get-X509Certificate.
+* Added Compare-NtSigningLevel.
+* Added silo impersonation commands.
+* Added option to impersonation System when creating a token or with Invoke-NtToken.
+* Added proper enumeration of AppContainer profiles and support creating with capabilities.
+* Added Get-AppModelApplicationPolicy.
+* Added Get-NtThreadContext and Set-NtThreadContext.
+* Added support for calling CreateProcessWithLogon via Win32Process.
+* Added Start-AppModelApplication.
+* Added Add-NtThreadApc.
+* Fixed path handling in Get-Win32SecurityDescriptor.
+* Added Get-NtFileFinalPath command.
+* Reworked handling of lease oplocks.
+* Added basic USN journal support.
+* Added Get-NtFileStream.
+* Added Get-NtMountPoint command.
+* Added basic async support and the Wait-AsyncTaskResult command.
+* Added Send-NtFileControl command.
+* Added Get-NtFileVolumeInformation and Set-NtFileVolumeInformation.
+* Added Get-NtFileItem command.
+* Added support for querying device nodes, setup class and interface classes.
+* Added Get-NtFileSharingProcess.
+* IPeb: Added GetBeingDebugged() (#26)
+* Added support for enumerating filter drivers and connecting to ports.
+* Added New-NtKeySymbolicLink and Set-NtKeySymbolicLinkTarget.
+* Added a Get-NtKeyHive command.
     </PackageReleaseNotes>
   </PropertyGroup>
- 
+
   <ItemGroup>
     <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +82,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="4.6.0" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>  
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
 </Project>
