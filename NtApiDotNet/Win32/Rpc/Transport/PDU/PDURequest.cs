@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             List<byte[]> fragments = new List<byte[]>();
             int remaining_length = StubData.Length;
             int curr_offset = 0;
-            while (remaining_length > 0)
+            do
             {
                 int data_length = Math.Min(max_frag_length - header_length, remaining_length);
                 MemoryStream stm = new MemoryStream();
@@ -53,6 +53,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
                 remaining_length -= data_length;
                 fragments.Add(stm.ToArray());
             }
+            while (remaining_length > 0);
             return fragments;
         }
 
