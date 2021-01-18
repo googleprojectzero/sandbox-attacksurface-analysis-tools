@@ -383,6 +383,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcAuthnLevel.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcAuthnType.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransport.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcDCEClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportException.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
