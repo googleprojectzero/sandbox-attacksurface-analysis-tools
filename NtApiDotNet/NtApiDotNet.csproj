@@ -380,8 +380,8 @@
     <Compile Include="Win32\Rpc\Transport\PDU\ContextElement.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\ContextResult.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\AuthData.cs" />
-    <Compile Include="Win32\Rpc\Transport\RpcAuthnLevel.cs" />
-    <Compile Include="Win32\Rpc\Transport\RpcAuthnType.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAuthenticationLevel.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAuthenticationType.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcHyperVClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcDCEClientTransport.cs" />

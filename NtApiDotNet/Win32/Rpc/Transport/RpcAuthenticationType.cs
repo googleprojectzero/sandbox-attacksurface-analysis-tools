@@ -17,8 +17,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// <summary>
     /// RPC authentication type.
     /// </summary>
-    public enum RpcAuthnType
+    public enum RpcAuthenticationType
     {
+        /// <summary>
+        /// No authentication.
+        /// </summary>
+        None = 0,
+
         /// <summary>
         /// WinNT authentication, i.e. NTLM.
         /// </summary>

@@ -12,17 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication;
+
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
     /// <summary>
     /// Class to represent the RPC transport security.
     /// </summary>
-    public sealed class RpcTransportSecurity
+    public struct RpcTransportSecurity
     {
         /// <summary>
         /// Security quality of service.
         /// </summary>
-        public SecurityQualityOfService SecurityQualityOfService { get; }
+        public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+        /// <summary>
+        /// Authentication level.
+        /// </summary>
+        public RpcAuthenticationLevel AuthenticationLevel { get; set; }
+
+        /// <summary>
+        /// Authentication type.
+        /// </summary>
+        public RpcAuthenticationType AuthenticationType { get; set; }
+
+        /// <summary>
+        /// Authentication credentials.
+        /// </summary>
+        public AuthenticationCredentials Credentials { get; set; }
+
+        /// <summary>
+        /// The SPN for the authentication.
+        /// </summary>
+        public string ServicePrincipalName { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -31,6 +53,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service)
         {
             SecurityQualityOfService = security_quality_of_service;
+            AuthenticationLevel = RpcAuthenticationLevel.None;
+            AuthenticationType = RpcAuthenticationType.None;
+            Credentials = null;
+            ServicePrincipalName = null;
         }
     }
 }

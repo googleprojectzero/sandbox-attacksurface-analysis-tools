@@ -17,7 +17,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// <summary>
     /// Authentication level for RPC transport.
     /// </summary>
-    public enum RpcAuthnLevel : byte
+    public enum RpcAuthenticationLevel : byte
     {
         /// <summary>
         /// Unknown.

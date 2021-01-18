@@ -18,13 +18,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal struct AuthData
     {
-        public RpcAuthnType Type;
-        public RpcAuthnLevel Level;
+        public RpcAuthenticationType Type;
+        public RpcAuthenticationLevel Level;
         public int Padding;
         public int ContextId;
         public byte[] Data;
 
-        public AuthData(RpcAuthnType type, RpcAuthnLevel level, int padding, int context_id, byte[] data)
+        public AuthData(RpcAuthenticationType type, RpcAuthenticationLevel level, int padding, int context_id, byte[] data)
         {
             Type = type;
             Level = level;
@@ -35,8 +35,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 
         public static AuthData Read(BinaryReader reader, int auth_length)
         {
-            RpcAuthnType type = (RpcAuthnType)reader.ReadByte();
-            RpcAuthnLevel level = (RpcAuthnLevel)reader.ReadByte();
+            RpcAuthenticationType type = (RpcAuthenticationType)reader.ReadByte();
+            RpcAuthenticationLevel level = (RpcAuthenticationLevel)reader.ReadByte();
             int padding = reader.ReadByte();
             reader.ReadByte(); // Reserved;
             int context_id = reader.ReadInt32();

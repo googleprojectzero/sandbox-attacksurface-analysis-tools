@@ -5881,6 +5881,14 @@ Specify the RPC protocol sequence this client will connect through.
 Specify the endpoint string. If not specified this will lookup the endpoint from the endpoint mapper.
 .PARAMETER SecurityQualityOfService
 Specify the security quality of service for the connection.
+.PARAMETER Credentials
+Specify user credentials for the RPC client authentication.
+.PARAMETER ServicePrincipalName
+Specify service principal name for the RPC client authentication.
+.PARAMETER AuthenticationLevel
+Specify authentication level for the RPC client authentication.
+.PARAMETER AuthenticationType
+Specify authentication type for the RPC client authentication.
 .PARAMETER PassThru
 Specify to the pass the client object to the output.
 .PARAMETER FindAlpcPort
@@ -5924,11 +5932,20 @@ function Connect-RpcClient {
         [parameter(Mandatory, ParameterSetName = "FromFindEndpoint")]
         [switch]$FindAlpcPort,
         [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
+        [string]$ServicePrincipalName,
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
         [switch]$PassThru
     )
 
     BEGIN {
-        $security = [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity]::new($SecurityQualityOfService)
+        $security = New-Object NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity
+        $security.SecurityQualityOfService = $SecurityQualityOfService
+        $security.Credentials = $Credentials
+        $security.ServicePrincipalName = $ServicePrincipalName
+        $security.AuthenticationLevel = $AuthenticationLevel
+        $security.AuthenticationType = $AuthenticationType
     }
 
     PROCESS {
