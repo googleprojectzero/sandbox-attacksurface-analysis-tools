@@ -222,7 +222,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityNativeMethods.DeleteSecurityContext(_context);
         }
 
-        void IDisposable.Dispose()
+        /// <summary>
+        /// Dispose the client context.
+        /// </summary>
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

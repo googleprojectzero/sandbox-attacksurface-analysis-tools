@@ -176,6 +176,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return SecurityContextUtils.DecryptMessage(_context, message, sequence_no);
         }
 
+        /// <summary>
+        /// Dispose the client context.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         private bool GenServerContext(AuthenticationToken token)
         {
             bool new_context = _new_context;
@@ -212,12 +221,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             if (!_new_context)
                 SecurityNativeMethods.DeleteSecurityContext(_context);
-        }
-
-        void IDisposable.Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
