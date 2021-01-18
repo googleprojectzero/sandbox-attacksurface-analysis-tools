@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Net.Sockets;
 using System;
 using System.Collections.Generic;
 
@@ -36,11 +37,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// </summary>
     public static class RpcClientTransportFactory
     {
-        private static Dictionary<string, IRpcClientTransportFactory> _factories = 
+        private static readonly Dictionary<string, IRpcClientTransportFactory> _factories = 
             new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase) { 
                 { "ncalrpc", new AlpcRpcClientTransportFactory() },
                 { "ncacn_np", new NamedPipeRpcClientTransportFactory() },
                 { "ncacn_ip_tcp", new TcpRpcClientTransportFactory() },
+                { "ncacn_hvsocket", new HyperVRpcClientTransportFactory() },
             };
 
         private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
@@ -66,6 +68,43 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 string hostname = string.IsNullOrEmpty(endpoint.NetworkAddress) ? "127.0.0.1" : endpoint.NetworkAddress;
                 int port = int.Parse(endpoint.Endpoint);
                 return new RpcTcpClientTransport(hostname, port);
+            }
+        }
+
+        private class HyperVRpcClientTransportFactory : IRpcClientTransportFactory
+        {
+            private static Guid ResolveVmId(string guid)
+            {
+                switch (guid.ToLower())
+                {
+                    case "parent":
+                        return HyperVSocketGuids.HV_GUID_PARENT;
+                    case "children":
+                        return HyperVSocketGuids.HV_GUID_CHILDREN;
+                    case "silohost":
+                        return HyperVSocketGuids.HV_GUID_SILOHOST;
+                    case "loopback":
+                        return HyperVSocketGuids.HV_GUID_LOOPBACK;
+                    default:
+                        return Guid.Parse(guid);
+                }
+            }
+
+            private static HyperVEndPoint GetEndpoint(string endpoint)
+            {
+                if (Guid.TryParse(endpoint, out Guid service_id))
+                {
+                    return new HyperVEndPoint(service_id, HyperVSocketGuids.HV_GUID_LOOPBACK);
+                }
+                string[] vals = endpoint.Split(':');
+                if (vals.Length != 2)
+                    throw new ArgumentException("Invalid HyperV socket address.");
+                return new HyperVEndPoint(Guid.Parse(vals[0]), ResolveVmId(vals[1]));
+            }
+
+            public IRpcClientTransport Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+            {
+                return new RpcHyperVClientTransport(GetEndpoint(endpoint.Endpoint));
             }
         }
 
