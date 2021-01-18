@@ -39,7 +39,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private static Dictionary<string, IRpcClientTransportFactory> _factories = 
             new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase) { 
                 { "ncalrpc", new AlpcRpcClientTransportFactory() },
-                { "ncacn_np", new NamedPipeRpcClientTransportFactory() }
+                { "ncacn_np", new NamedPipeRpcClientTransportFactory() },
+                { "ncacn_ip_tcp", new TcpRpcClientTransportFactory() },
             };
 
         private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
@@ -55,6 +56,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             public IRpcClientTransport Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
             {
                 return new RpcNamedPipeClientTransport(endpoint.EndpointPath, security_quality_of_service);
+            }
+        }
+
+        private class TcpRpcClientTransportFactory : IRpcClientTransportFactory
+        {
+            public IRpcClientTransport Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+            {
+                string hostname = string.IsNullOrEmpty(endpoint.NetworkAddress) ? "127.0.0.1" : endpoint.NetworkAddress;
+                int port = int.Parse(endpoint.Endpoint);
+                return new RpcTcpClientTransport(hostname, port);
             }
         }
 

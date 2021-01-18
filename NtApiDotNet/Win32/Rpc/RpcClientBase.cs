@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Rpc
         private RpcEndpoint LookupEndpoint(string protocol_seq)
         {
             var endpoint = RpcEndpointMapper.MapServerToEndpoint(protocol_seq, InterfaceId, InterfaceVersion);
-            if (endpoint == null || string.IsNullOrEmpty(endpoint.EndpointPath))
+            if (endpoint == null || string.IsNullOrEmpty(endpoint.Endpoint))
             {
                 throw new ArgumentException($"Can't find endpoint for {InterfaceId} {InterfaceVersion} with protocol sequence {protocol_seq}");
             }
