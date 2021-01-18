@@ -130,7 +130,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool _)
+        {
             SecurityNativeMethods.FreeCredentialsHandle(CredHandle);
+        }
+
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~CredentialHandle()
+        {
+            Dispose(false);
         }
     }
 }

@@ -208,10 +208,24 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
-        void IDisposable.Dispose()
+        private void Dispose(bool _)
         {
             if (!_new_context)
                 SecurityNativeMethods.DeleteSecurityContext(_context);
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~ServerAuthenticationContext()
+        {
+            Dispose(false);
         }
 
         private string GetTargetName()
