@@ -51,16 +51,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Constructor.
         /// </summary>
         /// <param name="path">The NT pipe path to connect. e.g. \??\pipe\ABC.</param>
-        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
-        public RpcNamedPipeClientTransport(string path, SecurityQualityOfService security_quality_of_service) 
-            : base(MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation())
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public RpcNamedPipeClientTransport(string path, RpcTransportSecurity transport_security) 
+            : base(MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
         {
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException("Must specify a path to connect to", nameof(path));
             }
 
-            _pipe = ConnectPipe(path, security_quality_of_service);
+            _pipe = ConnectPipe(path, transport_security.SecurityQualityOfService);
             Endpoint = path;
         }
         #endregion

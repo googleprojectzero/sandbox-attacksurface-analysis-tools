@@ -33,12 +33,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
         /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
         /// <param name="data_rep">The data representation.</param>
-        protected RpcDCEClientTransport(ushort max_recv_fragment, ushort max_send_fragment, NdrDataRepresentation data_rep)
+        protected RpcDCEClientTransport(ushort max_recv_fragment, ushort max_send_fragment, 
+            NdrDataRepresentation data_rep, RpcTransportSecurity transport_security)
         {
             _max_recv_fragment = max_recv_fragment;
             _max_send_fragment = max_send_fragment;
             _data_rep = data_rep;
+            _transport_security = transport_security;
         }
 
         /// <summary>
@@ -60,6 +63,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private readonly NdrDataRepresentation _data_rep;
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
+        private readonly RpcTransportSecurity _transport_security;
 
         private PDUBase CheckFault(PDUBase pdu)
         {

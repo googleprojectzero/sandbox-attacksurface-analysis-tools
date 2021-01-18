@@ -33,9 +33,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="socket">The socket to use to communicate.</param>
         /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
         /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
         /// <param name="data_rep">The data representation.</param>
-        protected RpcStreamSocketClientTransport(Socket socket, ushort max_recv_fragment, ushort max_send_fragment, NdrDataRepresentation data_rep) 
-            : base(new NetworkStream(socket), max_recv_fragment, max_send_fragment, data_rep)
+        protected RpcStreamSocketClientTransport(Socket socket, ushort max_recv_fragment, ushort max_send_fragment, 
+            NdrDataRepresentation data_rep, RpcTransportSecurity transport_security) 
+            : base(new NetworkStream(socket), max_recv_fragment, max_send_fragment, data_rep, transport_security)
         {
             _socket = socket;
         }

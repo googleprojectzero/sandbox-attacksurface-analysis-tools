@@ -389,6 +389,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcStreamSocketClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTcpClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportException.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcTransportSecurity.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\SafeHandles\SafeRpcBindingHandle.cs" />

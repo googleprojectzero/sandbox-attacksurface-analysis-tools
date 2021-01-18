@@ -38,8 +38,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Constructor.
         /// </summary>
         /// <param name="endpoint">The HyperV socket endpoint to connect to.</param>
-        public RpcHyperVClientTransport(HyperVEndPoint endpoint)
-            : base(CreateSocket(endpoint), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation())
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public RpcHyperVClientTransport(HyperVEndPoint endpoint, RpcTransportSecurity transport_security)
+            : base(CreateSocket(endpoint), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
         {
         }
         #endregion

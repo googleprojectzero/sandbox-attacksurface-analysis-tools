@@ -36,9 +36,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="stream">The stream to use to communicate with the transport.</param>
         /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
         /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
         /// <param name="data_rep">The data representation.</param>
-        protected RpcStreamClientTransport(Stream stream, ushort max_recv_fragment, ushort max_send_fragment, NdrDataRepresentation data_rep) 
-            : base(max_recv_fragment, max_send_fragment, data_rep)
+        protected RpcStreamClientTransport(Stream stream, ushort max_recv_fragment, ushort max_send_fragment, 
+            NdrDataRepresentation data_rep, RpcTransportSecurity transport_security) 
+            : base(max_recv_fragment, max_send_fragment, data_rep, transport_security)
         {
             _reader = new BinaryReader(stream, Encoding.ASCII, true);
             _writer = new BinaryWriter(stream, Encoding.ASCII, true);

@@ -5927,20 +5927,24 @@ function Connect-RpcClient {
         [switch]$PassThru
     )
 
+    BEGIN {
+        $security = [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity]::new($SecurityQualityOfService)
+    }
+
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "FromProtocol" {
-                $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $SecurityQualityOfService)
+                $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $security)
             }
             "FromEndpoint" {
-                $Client.Connect($Endpoint, $SecurityQualityOfService)
+                $Client.Connect($Endpoint, $security)
             }
             "FromFindEndpoint" {
                 foreach ($ep in $(Get-ChildItem "NtObject:\RPC Control")) {
                     try {
                         $name = $ep.Name
                         Write-Progress -Activity "Finding ALPC Endpoint" -CurrentOperation "$name"
-                        $Client.Connect("ncalrpc", $name, $SecurityQualityOfService)
+                        $Client.Connect("ncalrpc", $name, $security)
                     }
                     catch {
                         Write-Information $_

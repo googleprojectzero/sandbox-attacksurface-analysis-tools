@@ -43,8 +43,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         /// <param name="hostname">The hostname to connect to.</param>
         /// <param name="port">The TCP port to connect to.</param>
-        public RpcTcpClientTransport(string hostname, int port) 
-            : base(CreateSocket(hostname, port), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation())
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public RpcTcpClientTransport(string hostname, int port, RpcTransportSecurity transport_security) 
+            : base(CreateSocket(hostname, port), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
         {
         }
         #endregion

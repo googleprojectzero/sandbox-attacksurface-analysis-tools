@@ -131,8 +131,8 @@ namespace NtApiDotNet.Win32.Rpc
         /// Connect the client to a RPC endpoint.
         /// </summary>
         /// <param name="endpoint">The endpoint for RPC server.</param>
-        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
-        public void Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public void Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
         {
             if (Connected)
             {
@@ -146,7 +146,7 @@ namespace NtApiDotNet.Win32.Rpc
 
             try
             {
-                _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, security_quality_of_service);
+                _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, transport_security);
                 _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
             }
             catch
@@ -158,6 +158,18 @@ namespace NtApiDotNet.Win32.Rpc
             }
         }
 
+
+        /// <summary>
+        /// Connect the client to a RPC endpoint.
+        /// </summary>
+        /// <param name="endpoint">The endpoint for RPC server.</param>
+        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
+        [Obsolete("Use Connect specifying RpcTransportSecurity.")]
+        public void Connect(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+        {
+            Connect(endpoint, new RpcTransportSecurity(security_quality_of_service));
+        }
+
         /// <summary>
         /// Connect the client to a RPC endpoint.
         /// </summary>
@@ -165,7 +177,20 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="endpoint">The endpoint for the protocol sequence.</param>
         /// <param name="network_address">The network address for the protocol sequence.</param>
         /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
+        [Obsolete("Use Connect specifying RpcTransportSecurity.")]
         public void Connect(string protocol_seq, string endpoint, string network_address, SecurityQualityOfService security_quality_of_service)
+        {
+            Connect(protocol_seq, endpoint, network_address, new RpcTransportSecurity(security_quality_of_service));
+        }
+
+        /// <summary>
+        /// Connect the client to a RPC endpoint.
+        /// </summary>
+        /// <param name="protocol_seq">The protocol sequence for the transport.</param>
+        /// <param name="endpoint">The endpoint for the protocol sequence.</param>
+        /// <param name="network_address">The network address for the protocol sequence.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public void Connect(string protocol_seq, string endpoint, string network_address, RpcTransportSecurity transport_security)
         {
             if (Connected)
             {
@@ -179,9 +204,9 @@ namespace NtApiDotNet.Win32.Rpc
 
             Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq) :
                 new RpcEndpoint(InterfaceId, InterfaceVersion,
-                    SafeRpcBindingHandle.Compose(null, protocol_seq, 
+                    SafeRpcBindingHandle.Compose(null, protocol_seq,
                     string.IsNullOrEmpty(network_address) ? null : network_address, endpoint, null), true),
-                    security_quality_of_service);
+                    transport_security);
         }
 
         /// <summary>
@@ -190,9 +215,21 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="protocol_seq">The protocol sequence for the transport.</param>
         /// <param name="endpoint">The endpoint for the protocol sequence.</param>
         /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
+        [Obsolete("Use Connect specifying RpcTransportSecurity.")]
         public void Connect(string protocol_seq, string endpoint, SecurityQualityOfService security_quality_of_service)
         {
             Connect(protocol_seq, endpoint, null, security_quality_of_service);
+        }
+
+        /// <summary>
+        /// Connect the client to a RPC endpoint.
+        /// </summary>
+        /// <param name="protocol_seq">The protocol sequence for the transport.</param>
+        /// <param name="endpoint">The endpoint for the protocol sequence.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public void Connect(string protocol_seq, string endpoint, RpcTransportSecurity transport_security)
+        {
+            Connect(protocol_seq, endpoint, null, transport_security);
         }
 
         /// <summary>
@@ -207,7 +244,7 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new InvalidOperationException("RPC client is already connected.");
             }
 
-            Connect("ncalrpc", alpc_path, security_quality_of_service);
+            Connect("ncalrpc", alpc_path, new RpcTransportSecurity(security_quality_of_service));
         }
 
         /// <summary>
