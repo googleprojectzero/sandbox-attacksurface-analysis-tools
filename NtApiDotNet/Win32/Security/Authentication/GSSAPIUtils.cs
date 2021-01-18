@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication

@@ -379,6 +379,9 @@
     <Compile Include="Win32\Rpc\Transport\PDU\PDUType.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\ContextElement.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\ContextResult.cs" />
+    <Compile Include="Win32\Rpc\Transport\PDU\AuthData.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAuthnLevel.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAuthnType.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportException.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
@@ -389,6 +392,7 @@
     <Compile Include="Win32\SafeHandles\SafeRpcStringHandle.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
+    <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAPReplyEncryptedPart.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACDevice.cs" />
@@ -438,6 +442,7 @@
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateResponseAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAuthenticateAuthenticationTokenV2.cs" />
+    <Compile Include="Win32\Security\Authentication\SecurityContextUtils.cs" />
     <Compile Include="Win32\Security\Authenticode\AuthenticodeCertificate.cs" />
     <Compile Include="Win32\Security\Authenticode\AuthenticodeUtils.cs" />
     <Compile Include="Win32\Security\Authenticode\ElamInformation.cs" />
@@ -458,6 +463,8 @@
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_TYPE.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_Sizes.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_StreamSizes.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_ATTR.cs" />
     <Compile Include="Win32\Security\Native\SEC_CHANNEL_BINDING.cs" />
     <Compile Include="Win32\Security\Policy\AccountRight.cs" />

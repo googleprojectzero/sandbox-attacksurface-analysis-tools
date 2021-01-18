@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,29 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtApiDotNet.Win32.Rpc.Transport
 {
-    internal enum PDUType : byte
+    /// <summary>
+    /// RPC authentication type.
+    /// </summary>
+    public enum RpcAuthnType
     {
-        Request = 0,
-        Ping = 1,
-        Response = 2,
-        Fault = 3,
-        Working = 4,
-        NoCall = 5,
-        Reject = 6,
-        Ack = 7,
-        ClCancel = 8,
-        FAck = 9,
-        CancelAck = 10,
-        Bind = 11,
-        BindAck = 12,
-        BindNack = 13,
-        AlterContext = 14,
-        AlterContextResp = 15,
-        Auth3 = 16,
-        Shutdown = 17,
-        CoCancel = 18,
-        Orphaned = 19,
+        /// <summary>
+        /// WinNT authentication, i.e. NTLM.
+        /// </summary>
+        WinNT = 10,
     }
 }

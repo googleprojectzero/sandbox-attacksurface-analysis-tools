@@ -63,6 +63,13 @@ namespace NtApiDotNet.Win32.Security.Native
         Virtual = 4
     }
 
+    [Flags]
+    internal enum SecQopFlags : uint
+    {
+        None = 0,
+        WrapNoEncrypt = 0x80000001
+    }
+
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -132,6 +139,38 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern SecStatusCode EnumerateSecurityPackages(
             out int pcPackages,
             out IntPtr ppPackageInfo
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode MakeSignature(
+          [In] SecHandle phContext,
+          int fQOP,
+          SecBufferDesc pMessage,
+          int MessageSeqNo
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode VerifySignature(
+            [In] SecHandle phContext,
+            SecBufferDesc pMessage,
+            int MessageSeqNo,
+            out int pfQOP
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode EncryptMessage(
+            [In] SecHandle phContext,
+            SecQopFlags fQOP,
+            SecBufferDesc pMessage,
+            int MessageSeqNo
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode DecryptMessage(
+            [In] SecHandle phContext,
+            SecBufferDesc pMessage,
+            int MessageSeqNo,
+            out SecQopFlags pfQOP
         );
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
