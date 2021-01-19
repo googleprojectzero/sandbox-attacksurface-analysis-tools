@@ -27,10 +27,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             RejectionReason = (BindRejectionReason)BitConverter.ToUInt16(data, 0);
             // TODO: Supported protocol versions.
         }
-
-        public override List<byte[]> DoFragment(int max_frag_length)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

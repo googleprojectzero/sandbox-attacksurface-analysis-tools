@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 
         public List<ContextElement> Elements { get; }
 
-        public override List<byte[]> DoFragment(int max_frag_length)
+        public override byte[] ToArray()
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             writer.Write(_max_recv_frag);
             writer.Write(0); // assoc_group_id.
             ContextElement.WriteList(writer, Elements);
-            return new List<byte[]>() { stm.ToArray() };
+            return stm.ToArray();
         }
     }
 }

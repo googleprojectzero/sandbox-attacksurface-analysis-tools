@@ -29,8 +29,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         public short OpNum { get; set; }
         public Guid ObjectUUID { get; set; }
         public byte[] StubData { get; set; }
+        public bool HasObjectUUID => ObjectUUID != Guid.Empty;
 
-        public override List<byte[]> DoFragment(int max_frag_length)
+        public List<byte[]> DoFragment(int max_frag_length)
         {
             int header_length = 8 + (ObjectUUID != Guid.Empty ? 16 : 0);
             List<byte[]> fragments = new List<byte[]>();
@@ -55,11 +56,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             }
             while (remaining_length > 0);
             return fragments;
-        }
-
-        public override PDUFlags GetFlags()
-        {
-            return ObjectUUID != Guid.Empty ? PDUFlags.ObjectUuid : PDUFlags.None;
         }
     }
 }

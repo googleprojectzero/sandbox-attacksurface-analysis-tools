@@ -23,10 +23,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             : base(PDUType.Shutdown)
         {
         }
-
-        public override List<byte[]> DoFragment(int max_frag_length)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

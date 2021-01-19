@@ -36,10 +36,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             reader.ReadByte(); // reserved.
             StubData = reader.ReadAllBytes((int)stm.RemainingLength());
         }
-
-        public override List<byte[]> DoFragment(int max_frag_length)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

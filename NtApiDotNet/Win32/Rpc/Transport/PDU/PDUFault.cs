@@ -36,10 +36,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             Status = reader.ReadInt32();
             // TODO: Added additional fault data.
         }
-
-        public override List<byte[]> DoFragment(int max_frag_length)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

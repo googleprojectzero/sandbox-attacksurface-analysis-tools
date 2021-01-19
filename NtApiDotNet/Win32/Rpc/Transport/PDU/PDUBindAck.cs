@@ -43,10 +43,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             }
             ResultList = ContextResult.ReadList(reader);
         }
-
-        public override List<byte[]> DoFragment(int max_frag_length)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
