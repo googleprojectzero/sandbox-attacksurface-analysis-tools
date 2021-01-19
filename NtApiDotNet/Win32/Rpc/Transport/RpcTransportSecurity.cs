@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
+using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -47,6 +48,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public string ServicePrincipalName { get; set; }
 
         /// <summary>
+        /// Authentication capabilities.
+        /// </summary>
+        public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="security_quality_of_service">Security quality of service.</param>
@@ -55,8 +61,80 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             SecurityQualityOfService = security_quality_of_service;
             AuthenticationLevel = RpcAuthenticationLevel.None;
             AuthenticationType = RpcAuthenticationType.None;
+            AuthenticationCapabilities = RpcAuthenticationCapabilities.None;
             Credentials = null;
             ServicePrincipalName = null;
+        }
+
+        private string GetAuthPackageName()
+        {
+            switch (AuthenticationType)
+            {
+                case RpcAuthenticationType.Negotiate:
+                    return "Negotiate";
+                case RpcAuthenticationType.Kerberos:
+                    return "Kerberos";
+                case RpcAuthenticationType.WinNT:
+                    return "NTLM";
+                case RpcAuthenticationType.None:
+                    throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
+                default:
+                    throw new ArgumentException($"Unknown authentication type: {AuthenticationType}");
+            }
+        }
+
+        private InitializeContextReqFlags GetContextRequestFlags()
+        {
+            InitializeContextReqFlags flags = InitializeContextReqFlags.None;
+            if (SecurityQualityOfService != null)
+            {
+                switch (SecurityQualityOfService.ImpersonationLevel)
+                {
+                    case SecurityImpersonationLevel.Identification:
+                        flags |= InitializeContextReqFlags.Identify;
+                        break;
+                    case SecurityImpersonationLevel.Anonymous:
+                        flags |= InitializeContextReqFlags.NullSession;
+                        break;
+                }
+            }
+
+            switch (AuthenticationLevel)
+            {
+                case RpcAuthenticationLevel.PacketIntegrity:
+                    flags |= InitializeContextReqFlags.Integrity;
+                    break;
+                case RpcAuthenticationLevel.PacketPrivacy:
+                    flags |= InitializeContextReqFlags.Confidentiality;
+                    break;
+            }
+
+            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.Delegation))
+            {
+                flags |= InitializeContextReqFlags.Delegate;
+            }
+            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.MutualAuthentication))
+            {
+                flags |= InitializeContextReqFlags.MutualAuth;
+            }
+
+            return flags;
+        }
+
+        internal ClientAuthenticationContext CreateClientContext()
+        {
+            if (AuthenticationLevel == RpcAuthenticationLevel.None)
+                return null;
+
+            if (AuthenticationLevel != RpcAuthenticationLevel.Call)
+                throw new ArgumentException("RPC client only supports Call authentication.");
+
+            using (var creds = CredentialHandle.Create(GetAuthPackageName(),
+                    SecPkgCredFlags.Outbound, Credentials))
+            {
+                return new ClientAuthenticationContext(creds, GetContextRequestFlags(),
+                    ServicePrincipalName, SecDataRep.Native);
+            }
         }
     }
 }

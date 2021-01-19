@@ -5889,6 +5889,8 @@ Specify service principal name for the RPC client authentication.
 Specify authentication level for the RPC client authentication.
 .PARAMETER AuthenticationType
 Specify authentication type for the RPC client authentication.
+.PARAMETER AuthenticationCapabilities
+Specify authentication capabilities for the RPC client authentication.
 .PARAMETER PassThru
 Specify to the pass the client object to the output.
 .PARAMETER FindAlpcPort
@@ -5936,6 +5938,7 @@ function Connect-RpcClient {
         [string]$ServicePrincipalName,
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
         [switch]$PassThru
     )
 
@@ -5946,6 +5949,7 @@ function Connect-RpcClient {
         $security.ServicePrincipalName = $ServicePrincipalName
         $security.AuthenticationLevel = $AuthenticationLevel
         $security.AuthenticationType = $AuthenticationType
+        $security.AuthenticationCapabilities = $AuthenticationCapabilities
     }
 
     PROCESS {

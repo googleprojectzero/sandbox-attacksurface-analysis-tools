@@ -12,31 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
     /// <summary>
-    /// RPC authentication type.
+    /// Flags to specify RPC authentication capabilities.
     /// </summary>
-    public enum RpcAuthenticationType
+    [Flags]
+    public enum RpcAuthenticationCapabilities
     {
         /// <summary>
-        /// No authentication.
+        /// None.
         /// </summary>
         None = 0,
-
         /// <summary>
-        /// SPNEGO authentication.
+        /// Enable credential delegation.
         /// </summary>
-        Negotiate = 9,
-
+        Delegation = 1,
         /// <summary>
-        /// WinNT authentication, i.e. NTLM.
+        /// Enable mutual authentication.
         /// </summary>
-        WinNT = 10,
-
-        /// <summary>
-        /// Kerberos.
-        /// </summary>
-        Kerberos = 16,
+        MutualAuthentication = 2,
     }
 }

@@ -72,6 +72,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public override void Dispose()
         {
             Disconnect();
+            base.Dispose();
         }
 
         /// <summary>

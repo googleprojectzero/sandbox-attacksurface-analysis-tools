@@ -18,6 +18,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal struct AuthData
     {
+        public const int PDU_AUTH_DATA_HEADER_SIZE = 8;
+
         public RpcAuthenticationType Type;
         public RpcAuthenticationLevel Level;
         public int Padding;
@@ -53,6 +55,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             writer.Write(Data);
         }
 
-        public ushort Length => (ushort)(Data?.Length + 8);
+        public ushort Length => (ushort)Data?.Length;
     }
 }

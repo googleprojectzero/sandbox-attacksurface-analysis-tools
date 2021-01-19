@@ -385,6 +385,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcHyperVClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcDCEClientTransport.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAuthenticationCapabilities.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcStreamClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcStreamSocketClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTcpClientTransport.cs" />
