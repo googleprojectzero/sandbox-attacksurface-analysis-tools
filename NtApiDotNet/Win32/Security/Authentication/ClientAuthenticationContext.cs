@@ -57,6 +57,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public byte[] SessionKey => ServerAuthenticationContext.GetSessionKey(_context);
 
         /// <summary>
+        /// Get the maximum signature size of this context.
+        /// </summary>
+        public int MaxSignatureSize => SecurityContextUtils.GetMaxSignatureSize(_context);
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>

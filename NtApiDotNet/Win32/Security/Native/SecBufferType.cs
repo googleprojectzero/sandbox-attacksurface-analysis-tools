@@ -18,7 +18,7 @@ namespace NtApiDotNet.Win32.Security.Native
     /// <summary>
     /// Security buffer type.
     /// </summary>
-    internal enum SecBufferType
+    internal enum SecBufferType : uint
     {
         Empty = 0,
         Data = 1,
@@ -45,5 +45,6 @@ namespace NtApiDotNet.Win32.Security.Native
         PresharedKey = 22,
         PresharedKeyIdentity = 23,
         DTLAMtu = 24,
+        ReadOnly = 0x80000000,
     }
 }

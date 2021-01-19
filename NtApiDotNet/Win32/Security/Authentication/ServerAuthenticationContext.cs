@@ -63,6 +63,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public byte[] SessionKey => GetSessionKey(_context);
 
         /// <summary>
+        /// Get the maximum signature size of this context.
+        /// </summary>
+        public int MaxSignatureSize => SecurityContextUtils.GetMaxSignatureSize(_context);
+
+        /// <summary>
         /// Get an access token for the authenticated user.
         /// </summary>
         /// <returns>The user's access token.</returns>

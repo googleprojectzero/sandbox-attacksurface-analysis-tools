@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 {
     internal static class SecurityContextUtils
     {
-        private static T QueryContextAttribute<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
+        internal static T QueryContextAttribute<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 int max_sig_size = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbMaxSignature;
                 SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, max_sig_size));
-                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data, message));
+                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data | SecBufferType.ReadOnly, message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_message_buffer, out_sig_buffer }));
                 SecurityNativeMethods.MakeSignature(context, flags, desc, sequence_no).CheckResult();
                 return out_sig_buffer.ToArray();
@@ -86,11 +86,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             using (var list = new DisposableList())
             {
-                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, signature));
-                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data, message));
+                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token | SecBufferType.ReadOnly, signature));
+                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data | SecBufferType.ReadOnly, message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_message_buffer, in_sig_buffer }));
                 return SecurityNativeMethods.VerifySignature(context, desc, sequence_no, out int _).CheckResult() == SecStatusCode.Success;
             }
+        }
+
+        internal static int GetMaxSignatureSize(SecHandle context)
+        {
+            return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbMaxSignature;
         }
     }
 }
