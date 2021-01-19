@@ -12,8 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Rpc.Transport.PDU
@@ -24,7 +22,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         public ushort ContextId { get; }
         public byte CancelCount { get; }
         public int Status { get; }
-        public ExtendedErrorInfo? ExtendedError { get; }
+        public byte[] ExtendedErrorData { get; }
 
         public PDUFault(byte[] data) : base(PDUType.Fault)
         {
@@ -38,12 +36,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             reader.ReadInt32(); // Reserved.
             if (extended_error_present)
             {
-                byte[] remaining_data = reader.ReadBytes(AllocHint - 0x20);
                 try
                 {
-                    ExtendedError = ExtendedErrorInfoDecoder.Decode(remaining_data);
+                    ExtendedErrorData = reader.ReadBytes(AllocHint - 0x20);
                 }
-                catch (Exception)
+                catch (EndOfStreamException)
                 {
                 }
             }

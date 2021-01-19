@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Rpc.Transport.PDU;
 using System;
 using System.Collections.Generic;
 
@@ -26,7 +27,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer, LRPC_FAULT_MESSAGE message) 
             : this(message.RpcStatus)
         {
-            ExtendedErrorInfo = new RpcExtendedErrorInfo[0];
             if (message.Flags.HasFlag(LRPC_FAULT_MESSAGE_FLAGS.ExtendedErrorInfo))
             {
                 try
@@ -45,6 +45,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
         }
 
+        internal RpcFaultException(PDUFault fault) : this(fault.Status)
+        {
+            if (fault.ExtendedErrorData != null)
+            {
+                try
+                {
+                    ExtendedErrorInfo = RpcExtendedErrorInfo.ReadErrorInfo(fault.ExtendedErrorData);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -52,6 +66,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcFaultException(int rpc_status) 
             : base(NtObjectUtils.MapDosErrorToStatus(rpc_status))
         {
+            ExtendedErrorInfo = new RpcExtendedErrorInfo[0];
         }
 
         /// <summary>
