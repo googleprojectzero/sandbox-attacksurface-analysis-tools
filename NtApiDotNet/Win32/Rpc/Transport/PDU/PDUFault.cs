@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             reader.ReadInt32(); // Reserved.
             if (extended_error_present)
             {
-                byte[] remaining_data = reader.ReadBytes((int)(stm.Length - stm.Position));
+                byte[] remaining_data = reader.ReadBytes(AllocHint - 0x20);
                 try
                 {
                     ExtendedError = ExtendedErrorInfoDecoder.Decode(remaining_data);
