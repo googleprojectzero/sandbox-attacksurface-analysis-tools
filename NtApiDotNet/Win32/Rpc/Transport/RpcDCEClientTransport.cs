@@ -313,9 +313,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 _max_recv_fragment = bind_ack.MaxRecvFrag;
                 _max_send_fragment = bind_ack.MaxXmitFrag;
             }
+            else if (recv_pdu is PDUBindNack bind_nack)
+            {
+                throw new RpcTransportException($"Bind NACK returned with rejection reason {bind_nack.RejectionReason}");
+            }
             else
             {
-                throw new RpcTransportException("Unexpected PDU from server.");
+                throw new RpcTransportException($"Unexpected {recv_pdu.PDUType} PDU from server.");
             }
         }
 
@@ -346,9 +350,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     SendReceivePDU(call_id, new PDUAuth3(), _auth_context.Token.ToArray(), false);
                 }
             }
+            else if (recv.Item1 is PDUBindNack bind_nack)
+            {
+                throw new RpcTransportException($"Bind NACK returned with rejection reason {bind_nack.RejectionReason}");
+            }
             else
             {
-                throw new RpcTransportException("Unexpected PDU from server.");
+                throw new RpcTransportException($"Unexpected {recv.Item1.PDUType} PDU from server.");
             }
         }
 
