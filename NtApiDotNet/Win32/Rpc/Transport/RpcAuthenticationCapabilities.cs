@@ -34,5 +34,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Enable mutual authentication.
         /// </summary>
         MutualAuthentication = 2,
+        /// <summary>
+        /// Enable a NULL session authentication.
+        /// </summary>
+        NullSession
     }
 }

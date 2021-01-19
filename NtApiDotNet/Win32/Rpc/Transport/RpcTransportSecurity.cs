@@ -93,9 +93,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     case SecurityImpersonationLevel.Identification:
                         flags |= InitializeContextReqFlags.Identify;
                         break;
-                    case SecurityImpersonationLevel.Anonymous:
-                        flags |= InitializeContextReqFlags.NullSession;
-                        break;
                 }
             }
 
@@ -117,14 +114,28 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 flags |= InitializeContextReqFlags.MutualAuth;
             }
+            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.NullSession))
+            {
+                flags |= InitializeContextReqFlags.NullSession;
+            }
 
             return flags;
         }
 
         internal ClientAuthenticationContext CreateClientContext()
         {
-            if (AuthenticationLevel == RpcAuthenticationLevel.None)
-                return null;
+            switch (AuthenticationLevel)
+            {
+                case RpcAuthenticationLevel.None:
+                    return null;
+                case RpcAuthenticationLevel.Connect:
+                case RpcAuthenticationLevel.PacketIntegrity:
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
+            }
+            if (AuthenticationType != RpcAuthenticationType.WinNT)
+                throw new ArgumentException($"Unsupported authentication type {AuthenticationType}");
 
             using (var creds = CredentialHandle.Create(GetAuthPackageName(),
                     SecPkgCredFlags.Outbound, Credentials))
