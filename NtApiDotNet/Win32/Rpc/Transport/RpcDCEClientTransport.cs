@@ -67,7 +67,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
         private readonly ClientAuthenticationContext _auth_context;
-        private int _sequence_no;
+        private int _send_sequence_no;
+        private int _recv_sequence_no;
 
         private PDUBase CheckFault(PDUBase pdu)
         {
@@ -79,7 +80,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (pdu is PDUFault fault)
             {
-                throw new RpcFaultException(fault.Status);
+                throw new RpcFaultException(fault);
             }
 
             return pdu;
@@ -125,7 +126,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 RpcUtils.DumpBuffer(true, $"{GetType().Name} Send Buffer", fragment);
                 if (!WriteFragment(fragment))
                     throw new RpcTransportException("Failed to write out PDU buffer.");
-                _sequence_no++;
+                _send_sequence_no++;
                 if (!receive_pdu)
                     return null;
 
@@ -140,6 +141,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 {
                     throw new RpcTransportException($"Mismatching call ID - {curr_header.CallId} should be {call_id}.");
                 }
+
+                _recv_sequence_no++;
 
                 return Tuple.Create(CheckFault(curr_header.ToPDU(pdu.Item2)), pdu.Item3);
             }
@@ -241,7 +244,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
                         {
                             auth_data = _auth_context.MakeSignature(BuildNtlmSignatureData(pdu_header, data, auth_data_padding, 
-                                _auth_context.MaxSignatureSize), _sequence_no);
+                                _auth_context.MaxSignatureSize), _send_sequence_no);
                         }
                         else
                         {
@@ -263,7 +266,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     RpcUtils.DumpBuffer(true, name, fragment);
                     if (!WriteFragment(fragment))
                         throw new RpcTransportException("Failed to write out PDU buffer.");
-                    _sequence_no++;
+                    _send_sequence_no++;
                 }
 
                 MemoryStream recv_stm = new MemoryStream();
@@ -279,6 +282,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     }
 
                     // TODO: Handle encryption/verification.
+                    _recv_sequence_no++;
                     recv_stm.Write(pdu.Item2, 0, pdu.Item2.Length);
                 }
 
