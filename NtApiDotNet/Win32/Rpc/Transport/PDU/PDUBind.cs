@@ -19,8 +19,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal class PDUBind : PDUBase
     {
-        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag) 
-            : base(PDUType.Bind)
+        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag, bool alter_context) 
+            : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
         {
             _max_xmit_frag = max_xmit_frag;
             _max_recv_frag = max_recv_frag;

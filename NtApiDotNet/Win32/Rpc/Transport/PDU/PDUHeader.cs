@@ -65,7 +65,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             switch (Type)
             {
                 case PDUType.BindAck:
-                    return new PDUBindAck(data);
+                    return new PDUBindAck(data, false);
+                case PDUType.AlterContextResp:
+                    return new PDUBindAck(data, true);
                 case PDUType.BindNack:
                     return new PDUBindNack(data);
                 case PDUType.Response:

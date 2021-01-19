@@ -27,7 +27,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         public string SecondaryAddress { get; }
         public List<ContextResult> ResultList { get; }
 
-        public PDUBindAck(byte[] data) : base(PDUType.BindAck)
+        public PDUBindAck(byte[] data, bool alter_context) 
+            : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
         {
             MemoryStream stm = new MemoryStream(data);
             BinaryReader reader = new BinaryReader(stm, Encoding.ASCII);

@@ -300,7 +300,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private void BindNoAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
-            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment);
+            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, false);
             bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
             var recv_pdu = SendReceivePDU(++CallId, bind_pdu, new byte[0], true).Item1;
             if (recv_pdu is PDUBindAck bind_ack)
@@ -325,7 +325,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private void BindAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
-            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment);
+            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, false);
             bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
             int call_id = ++CallId;
 
