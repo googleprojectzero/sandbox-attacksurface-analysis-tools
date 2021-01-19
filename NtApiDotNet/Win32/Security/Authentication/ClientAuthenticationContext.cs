@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
@@ -177,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 SecStatusCode result = 0;
 
-                SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, 64 * 1024));
+                SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, 64 * 1024));
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
 
                 InitializeContextRetFlags flags;
@@ -185,7 +186,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 if (token != null)
                 {
                     List<SecBuffer> buffers = new List<SecBuffer>();
-                    buffers.Add(list.AddResource(new SecBuffer(SecBufferType.Token, token.ToArray())));
+                    buffers.Add(list.AddResource(new SecBuffer(SecurityBufferType.Token, token.ToArray())));
                     if (_channel_binding != null)
                     {
                         buffers.Add(list.AddResource(SecBuffer.CreateForChannelBinding(_channel_binding)));

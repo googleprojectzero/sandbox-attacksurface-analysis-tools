@@ -463,6 +463,9 @@
     <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_ENTRY_UNION.cs" />
     <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_METADATA.cs" />
     <Compile Include="Win32\Security\Authenticode\EnclaveConfiguration.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBuffer.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferInOut.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferOut.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_MULTIPLE_INPUT.cs" />
@@ -556,7 +559,7 @@
     <Compile Include="Win32\Security\Native\POLICY_AUDIT_SID_ARRAY.cs" />
     <Compile Include="Win32\Security\Native\SecBuffer.cs" />
     <Compile Include="Win32\Security\Native\SecBufferDesc.cs" />
-    <Compile Include="Win32\Security\Native\SecBufferType.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferType.cs" />
     <Compile Include="Win32\Security\Native\SecHandle.cs" />
     <Compile Include="Win32\Security\Native\SecPkgInfo.cs" />
     <Compile Include="Win32\Security\Native\SecStatusCode.cs" />

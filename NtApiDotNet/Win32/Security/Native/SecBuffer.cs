@@ -12,17 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Buffers;
 using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
-#pragma warning disable 1591
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class SecBuffer : IDisposable
     {
         public int cbBuffer;
-        public SecBufferType BufferType;
+        public SecurityBufferType BufferType;
         public IntPtr pvBuffer;
 
         void IDisposable.Dispose()
@@ -37,13 +37,13 @@ namespace NtApiDotNet.Win32.Security.Native
         {
         }
 
-        public SecBuffer(SecBufferType type, byte[] data)
+        public SecBuffer(SecurityBufferType type, byte[] data)
             : this(type, data.Length)
         {
             Marshal.Copy(data, 0, pvBuffer, data.Length);
         }
 
-        public SecBuffer(SecBufferType type, int length)
+        public SecBuffer(SecurityBufferType type, int length)
         {
             cbBuffer = length;
             BufferType = type;
@@ -77,7 +77,7 @@ namespace NtApiDotNet.Win32.Security.Native
             using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
             {
                 binding.Data.WriteBytes(channel_binding_token);
-                return new SecBuffer(SecBufferType.ChannelBindings, binding.ToArray());
+                return new SecBuffer(SecurityBufferType.ChannelBindings, binding.ToArray());
             }
         }
     }

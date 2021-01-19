@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
-using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -37,8 +37,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             using (var list = new DisposableList())
             {
                 int max_sig_size = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbMaxSignature;
-                SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, max_sig_size));
-                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data | SecBufferType.ReadOnly, message));
+                SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, max_sig_size));
+                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data | SecurityBufferType.ReadOnly, message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_message_buffer, out_sig_buffer }));
                 SecurityNativeMethods.MakeSignature(context, flags, desc, sequence_no).CheckResult();
                 return out_sig_buffer.ToArray();
@@ -54,8 +54,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             using (var list = new DisposableList())
             {
                 var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-                SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, sizes.cbSecurityTrailer));
-                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data, message));
+                SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, sizes.cbSecurityTrailer));
+                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { out_sig_buffer, in_out_message_buffer }));
                 SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
                 return new EncryptedMessage(in_out_message_buffer.ToArray(), out_sig_buffer.ToArray());
@@ -70,8 +70,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             using (var list = new DisposableList())
             {
                 var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, message.Signature));
-                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data, message.Message));
+                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, message.Signature));
+                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message.Message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_sig_buffer, in_out_message_buffer }));
                 SecurityNativeMethods.DecryptMessage(context, desc, sequence_no, out _).CheckResult();
                 return in_out_message_buffer.ToArray();
@@ -86,8 +86,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             using (var list = new DisposableList())
             {
-                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecBufferType.Token | SecBufferType.ReadOnly, signature));
-                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecBufferType.Data | SecBufferType.ReadOnly, message));
+                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
+                SecBuffer in_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data | SecurityBufferType.ReadOnly, message));
                 SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_message_buffer, in_sig_buffer }));
                 return SecurityNativeMethods.VerifySignature(context, desc, sequence_no, out int _).CheckResult() == SecStatusCode.Success;
             }
