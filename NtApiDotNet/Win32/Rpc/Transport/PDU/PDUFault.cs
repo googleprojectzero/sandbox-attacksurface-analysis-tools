@@ -24,6 +24,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         public ushort ContextId { get; }
         public byte CancelCount { get; }
         public int Status { get; }
+        public ExtendedErrorInfo? ExtendedError { get; }
 
         public PDUFault(byte[] data) : base(PDUType.Fault)
         {
@@ -32,9 +33,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             AllocHint = reader.ReadInt32();
             ContextId = reader.ReadUInt16();
             CancelCount = reader.ReadByte();
-            reader.ReadByte(); // reserved.
+            bool extended_error_present = reader.ReadByte() != 0;
             Status = reader.ReadInt32();
-            // TODO: Added additional fault data.
+            reader.ReadInt32(); // Reserved.
+            if (extended_error_present)
+            {
+                byte[] remaining_data = reader.ReadBytes((int)(stm.Length - stm.Position));
+                try
+                {
+                    ExtendedError = ExtendedErrorInfoDecoder.Decode(remaining_data);
+                }
+                catch (Exception)
+                {
+                }
+            }
         }
     }
 }
