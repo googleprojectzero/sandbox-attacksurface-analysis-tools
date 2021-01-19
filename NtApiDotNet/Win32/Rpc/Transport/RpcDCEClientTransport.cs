@@ -67,6 +67,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
         private readonly ClientAuthenticationContext _auth_context;
+        private int _sequence_no;
 
         private PDUBase CheckFault(PDUBase pdu)
         {
@@ -84,10 +85,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return pdu;
         }
 
-        private PDUBase SendReceivePDU(int call_id, PDUBase send_pdu, AuthData auth_data, bool receive_pdu)
+        private Tuple<PDUBase, AuthData> SendReceivePDU(int call_id, PDUBase send_pdu, byte[] auth_data, bool receive_pdu)
         {
             try
             {
+                int trailing_auth_length = auth_data.Length > 0 ? auth_data.Length + AuthData.PDU_AUTH_DATA_HEADER_SIZE : 0;
+
                 PDUHeader pdu_header = new PDUHeader()
                 {
                     MajorVersion = PDUHeader.RPC_VERSION_MAJOR,
@@ -95,20 +98,34 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     DataRep = _data_rep,
                     CallId = CallId,
                     Type = send_pdu.PDUType,
-                    Flags = PDUFlags.LastFrag | PDUFlags.FirstFrag
+                    Flags = PDUFlags.LastFrag | PDUFlags.FirstFrag,
+                    AuthLength = checked((ushort)auth_data.Length)
                 };
 
                 byte[] pdu_data = send_pdu.ToArray();
-                pdu_header.FragmentLength = (ushort)(pdu_data.Length + PDUHeader.PDU_HEADER_SIZE);
+                int pdu_data_length = pdu_data.Length + PDUHeader.PDU_HEADER_SIZE;
+                int auth_padding = 0;
+                if (auth_data.Length > 0 && (pdu_data_length & 15) != 0 && send_pdu.PDUType != PDUType.Auth3)
+                {
+                    auth_padding = 16 - (pdu_data_length & 15);
+                }
+
+                pdu_header.FragmentLength = checked((ushort)(pdu_data.Length + PDUHeader.PDU_HEADER_SIZE + trailing_auth_length + auth_padding));
                 MemoryStream send_stm = new MemoryStream();
                 BinaryWriter writer = new BinaryWriter(send_stm);
                 pdu_header.Write(writer);
                 writer.Write(pdu_data);
+                if (auth_data.Length > 0)
+                {
+                    writer.Write(new byte[auth_padding]);
+                    new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel, 
+                        auth_padding, 0, auth_data).Write(writer, auth_padding);
+                }
                 byte[] fragment = send_stm.ToArray();
                 RpcUtils.DumpBuffer(true, $"{GetType().Name} Send Buffer", fragment);
                 if (!WriteFragment(fragment))
                     throw new RpcTransportException("Failed to write out PDU buffer.");
-
+                _sequence_no++;
                 if (!receive_pdu)
                     return null;
 
@@ -123,8 +140,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 {
                     throw new RpcTransportException($"Mismatching call ID - {curr_header.CallId} should be {call_id}.");
                 }
-                 
-                return CheckFault(curr_header.ToPDU(pdu.Item2));
+
+                return Tuple.Create(CheckFault(curr_header.ToPDU(pdu.Item2)), pdu.Item3);
             }
             catch (EndOfStreamException)
             {
@@ -141,14 +158,33 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             PDUHeader header = PDUHeader.Read(reader);
             NdrUnmarshalBuffer.CheckDataRepresentation(header.DataRep);
             AuthData auth_data = new AuthData();
-            int auth_trailing_length = header.AuthLength > 0 ? header.AuthLength - AuthData.PDU_AUTH_DATA_HEADER_SIZE : 0;
+            int auth_trailing_length = header.AuthLength > 0 ? header.AuthLength + AuthData.PDU_AUTH_DATA_HEADER_SIZE : 0;
             byte[] data = reader.ReadAllBytes(header.FragmentLength - PDUHeader.PDU_HEADER_SIZE - auth_trailing_length);
             if (auth_trailing_length > 0)
             {
-                stm.Position = header.FragmentLength - auth_trailing_length;
+                stm.Seek(header.FragmentLength - auth_trailing_length, SeekOrigin.Begin);
                 auth_data = AuthData.Read(reader, header.AuthLength);
             }
             return Tuple.Create(header, data, auth_data);
+        }
+
+        private byte[] BuildNtlmSignatureData(PDUHeader header, byte[] stubdata, int auth_padding_length, int signature_length)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            int total_length = PDUHeader.PDU_HEADER_SIZE + stubdata.Length + auth_padding_length + AuthData.PDU_AUTH_DATA_HEADER_SIZE;
+            header.FragmentLength = checked((ushort)(total_length + signature_length));
+            header.AuthLength = checked((ushort)signature_length);
+            header.Write(writer);
+            writer.Write(stubdata);
+            writer.Write(new byte[auth_padding_length]);
+            new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel, 0, 0, new byte[0]).Write(writer, auth_padding_length);
+
+            var builder = new Utilities.Text.HexDumpBuilder(true, true, true, true, 0);
+            builder.Append(stm.ToArray());
+            builder.Complete();
+            Console.WriteLine(builder);
+            return stm.ToArray();
         }
 
         private PDUResponse SendReceiveRequestPDU(PDURequest send_pdu)
@@ -165,7 +201,17 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     Type = send_pdu.PDUType
                 };
 
-                List<byte[]> fragments = send_pdu.DoFragment(_max_send_fragment - PDUHeader.PDU_HEADER_SIZE);
+                bool auth_required = false;
+                int max_fragment = _max_send_fragment - PDUHeader.PDU_HEADER_SIZE;
+                if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity ||
+                    _transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketPrivacy)
+                {
+                    max_fragment &= ~0xF;
+                    max_fragment = max_fragment - _auth_context.MaxSignatureSize - AuthData.PDU_AUTH_DATA_HEADER_SIZE;
+                    auth_required = true;
+                }
+
+                List<byte[]> fragments = send_pdu.DoFragment(max_fragment);
                 for (int i = 0; i < fragments.Count; ++i)
                 {
                     pdu_header.Flags = send_pdu.HasObjectUUID ? PDUFlags.ObjectUuid : 0;
@@ -178,18 +224,46 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         pdu_header.Flags |= PDUFlags.LastFrag;
                     }
 
-                    pdu_header.FragmentLength = (ushort)(fragments[i].Length + PDUHeader.PDU_HEADER_SIZE);
+                    byte[] data = fragments[i];
+                    if (auth_required)
+                    {
+                        MemoryStream stm = new MemoryStream();
+                        BinaryWriter auth_writer = new BinaryWriter(stm);
+                        auth_writer.Write(data);
+                        int auth_data_padding = 0;
+                        int auth_trailing_size = (data.Length + AuthData.PDU_AUTH_DATA_HEADER_SIZE) & 0xF;
+                        if (auth_trailing_size != 0)
+                        {
+                            auth_data_padding = 16 - auth_trailing_size;
+                            auth_writer.Write(new byte[auth_data_padding]);
+                        }
+                        byte[] auth_data;
+                        if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
+                        {
+                            auth_data = _auth_context.MakeSignature(BuildNtlmSignatureData(pdu_header, data, auth_data_padding, 
+                                _auth_context.MaxSignatureSize), _sequence_no);
+                        }
+                        else
+                        {
+                            auth_data = new byte[1];
+                        }
+                        new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel, 
+                            auth_data_padding, 0, auth_data).Write(auth_writer, auth_data_padding);
+                        pdu_header.AuthLength = checked((ushort)auth_data.Length);
+                        data = stm.ToArray();
+                    }
+
+                    pdu_header.FragmentLength = (ushort)(data.Length + PDUHeader.PDU_HEADER_SIZE);
                     MemoryStream send_stm = new MemoryStream();
                     BinaryWriter writer = new BinaryWriter(send_stm);
                     pdu_header.Write(writer);
-
-                    // TODO: Handle encryption/verification.
-                    writer.Write(fragments[i]);
+                    writer.Write(data);
                     byte[] fragment = send_stm.ToArray();
                     string name = fragments.Count == 1 ? $"{GetType().Name} Send Buffer" : $"{GetType().Name} Send Buffer - Fragment {i}";
                     RpcUtils.DumpBuffer(true, name, fragment);
                     if (!WriteFragment(fragment))
                         throw new RpcTransportException("Failed to write out PDU buffer.");
+                    _sequence_no++;
                 }
 
                 MemoryStream recv_stm = new MemoryStream();
@@ -219,6 +293,61 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 throw new RpcTransportException("End of stream.");
             }
         }
+
+        private void BindNoAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        {
+            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment);
+            bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+            var recv_pdu = SendReceivePDU(++CallId, bind_pdu, new byte[0], true).Item1;
+            if (recv_pdu is PDUBindAck bind_ack)
+            {
+                if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
+                {
+                    throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
+                }
+
+                _max_recv_fragment = bind_ack.MaxRecvFrag;
+                _max_send_fragment = bind_ack.MaxXmitFrag;
+            }
+            else
+            {
+                throw new RpcTransportException("Unexpected PDU from server.");
+            }
+        }
+
+        private void BindAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        {
+            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment);
+            bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+            int call_id = ++CallId;
+
+            var recv = SendReceivePDU(call_id, bind_pdu, _auth_context.Token.ToArray(), true);
+            if (recv.Item1 is PDUBindAck bind_ack)
+            {
+                if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
+                {
+                    throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
+                }
+
+                _max_recv_fragment = bind_ack.MaxRecvFrag;
+                _max_send_fragment = bind_ack.MaxXmitFrag;
+                if (recv.Item2.Data != null)
+                {
+                    _auth_context.Continue(new AuthenticationToken(recv.Item2.Data));
+                    if (!_auth_context.Done)
+                    {
+                        // TODO: Continue with alter context.
+                        throw new RpcTransportException("Failed to complete the client authentication.");
+                    }
+                    SendReceivePDU(call_id, new PDUAuth3(), _auth_context.Token.ToArray(), false);
+                }
+            }
+            else
+            {
+                throw new RpcTransportException("Unexpected PDU from server.");
+            }
+        }
+
         #endregion
 
         #region IRpcClientTransport implementation.
@@ -252,23 +381,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 throw new ArgumentException("Only supports DCE transfer syntax");
             }
 
-            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment);
-            bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
-            int call_id = ++CallId;
-            var recv_pdu = SendReceivePDU(call_id, bind_pdu, new AuthData(), true);
-            if (recv_pdu is PDUBindAck bind_ack)
+            if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.None)
             {
-                if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
-                {
-                    throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
-                }
-
-                _max_recv_fragment = bind_ack.MaxRecvFrag;
-                _max_send_fragment = bind_ack.MaxXmitFrag;
+                BindNoAuth(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version);
             }
             else
             {
-                throw new RpcTransportException("Unexpected PDU from server.");
+                BindAuth(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version);
             }
         }
 

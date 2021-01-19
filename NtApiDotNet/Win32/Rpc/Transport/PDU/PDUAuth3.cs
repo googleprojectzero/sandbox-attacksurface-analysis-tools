@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,22 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-
 namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
-    internal abstract class PDUBase
+    internal class PDUAuth3 : PDUBase
     {
-        public PDUType PDUType { get; }
-
-        protected PDUBase(PDUType pdu_type)
+        public PDUAuth3() : base(PDUType.Auth3)
         {
-            PDUType = pdu_type;
         }
 
-        public virtual byte[] ToArray()
+        public override byte[] ToArray()
         {
-            throw new NotImplementedException();
+            return new byte[4];
         }
     }
 }

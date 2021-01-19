@@ -365,6 +365,7 @@
     <Compile Include="Win32\Filter\FilterVolume.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
     <Compile Include="Win32\RpcServerParserFlags.cs" />
+    <Compile Include="Win32\Rpc\Transport\PDU\PDUAuth3.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\PDUBind.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\PDUBindAck.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\BindRejectionReason.cs" />

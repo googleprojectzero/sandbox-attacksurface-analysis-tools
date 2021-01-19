@@ -85,7 +85,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private InitializeContextReqFlags GetContextRequestFlags()
         {
-            InitializeContextReqFlags flags = InitializeContextReqFlags.None;
+            InitializeContextReqFlags flags = InitializeContextReqFlags.Connection | InitializeContextReqFlags.UseDCEStyle;
             if (SecurityQualityOfService != null)
             {
                 switch (SecurityQualityOfService.ImpersonationLevel)
@@ -102,10 +102,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (AuthenticationLevel)
             {
                 case RpcAuthenticationLevel.PacketIntegrity:
-                    flags |= InitializeContextReqFlags.Integrity;
+                    flags |= InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
                     break;
                 case RpcAuthenticationLevel.PacketPrivacy:
-                    flags |= InitializeContextReqFlags.Confidentiality;
+                    flags |= InitializeContextReqFlags.Confidentiality | InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
                     break;
             }
 
@@ -125,9 +125,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             if (AuthenticationLevel == RpcAuthenticationLevel.None)
                 return null;
-
-            if (AuthenticationLevel != RpcAuthenticationLevel.Call)
-                throw new ArgumentException("RPC client only supports Call authentication.");
 
             using (var creds = CredentialHandle.Create(GetAuthPackageName(),
                     SecPkgCredFlags.Outbound, Credentials))

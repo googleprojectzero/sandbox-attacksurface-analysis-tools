@@ -54,7 +54,5 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             writer.Write(ContextId);
             writer.Write(Data);
         }
-
-        public ushort Length => (ushort)Data?.Length;
     }
 }
