@@ -18,6 +18,7 @@ using NtApiDotNet.Win32.Security.Authentication;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -181,12 +182,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             header.Write(writer);
             writer.Write(stubdata);
             writer.Write(new byte[auth_padding_length]);
-            new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel, 0, 0, new byte[0]).Write(writer, auth_padding_length);
-
-            var builder = new Utilities.Text.HexDumpBuilder(true, true, true, true, 0);
-            builder.Append(stm.ToArray());
-            builder.Complete();
-            Console.WriteLine(builder);
+            new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel,
+                0, 0, new byte[0]).Write(writer, auth_padding_length);
+            RpcUtils.DumpBuffer(true, "NTLM signature data", stm.ToArray());
             return stm.ToArray();
         }
 
@@ -243,8 +241,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         byte[] auth_data;
                         if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
                         {
-                            auth_data = _auth_context.MakeSignature(BuildNtlmSignatureData(pdu_header, data, auth_data_padding, 
-                                _auth_context.MaxSignatureSize), _send_sequence_no);
+                            if (_transport_security.AuthenticationType == RpcAuthenticationType.WinNT)
+                            {
+                                auth_data = _auth_context.MakeSignature(BuildNtlmSignatureData(pdu_header, data, auth_data_padding,
+                                    _auth_context.MaxSignatureSize), _send_sequence_no);
+                            }
+                            else
+                            {
+                                auth_data = _auth_context.MakeSignature(data.Skip(8).Concat(new byte[auth_data_padding]).ToArray(), _send_sequence_no);
+                            }
                         }
                         else
                         {
@@ -325,38 +330,65 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private void BindAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
-            PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, false);
-            bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+            // 8 should be more than enough legs to complete authentication.
+            const int MAX_LEGS = 8;
             int call_id = ++CallId;
+            int count = 0;
+            bool alter_context = false;
 
-            var recv = SendReceivePDU(call_id, bind_pdu, _auth_context.Token.ToArray(), true);
-            if (recv.Item1 is PDUBindAck bind_ack)
+            while (count++ < MAX_LEGS)
             {
-                if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
-                {
-                    throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
-                }
+                PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, alter_context);
 
-                _max_recv_fragment = bind_ack.MaxRecvFrag;
-                _max_send_fragment = bind_ack.MaxXmitFrag;
-                if (recv.Item2.Data != null)
+                bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+
+                var recv = SendReceivePDU(call_id, bind_pdu, _auth_context.Token.ToArray(), true);
+                if (recv.Item1 is PDUBindAck bind_ack)
                 {
-                    _auth_context.Continue(new AuthenticationToken(recv.Item2.Data));
-                    if (!_auth_context.Done)
+                    if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
                     {
-                        // TODO: Continue with alter context.
-                        throw new RpcTransportException("Failed to complete the client authentication.");
+                        throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
                     }
-                    SendReceivePDU(call_id, new PDUAuth3(), _auth_context.Token.ToArray(), false);
+
+                    if (!alter_context)
+                    {
+                        // Only capture values from the BindAck.
+                        _max_recv_fragment = bind_ack.MaxRecvFrag;
+                        _max_send_fragment = bind_ack.MaxXmitFrag;
+                        alter_context = true;
+                    }
+
+                    if (recv.Item2.Data == null)
+                    {
+                        // No auth, assume success.
+                        break;
+                    }
+                    _auth_context.Continue(new AuthenticationToken(recv.Item2.Data));
+                    if (_auth_context.Done)
+                    {
+                        // If we still have a token to complete then send as an Auth3 PDU.
+                        byte[] token = _auth_context.Token.ToArray();
+                        if (token.Length > 0)
+                        {
+                            SendReceivePDU(call_id, new PDUAuth3(), _auth_context.Token.ToArray(), false);
+                        }
+                        break;
+                    }
+                }
+                else if (recv.Item1 is PDUBindNack bind_nack)
+                {
+                    throw new RpcTransportException($"Bind NACK returned with rejection reason {bind_nack.RejectionReason}");
+                }
+                else
+                {
+                    throw new RpcTransportException($"Unexpected {recv.Item1.PDUType} PDU from server.");
                 }
             }
-            else if (recv.Item1 is PDUBindNack bind_nack)
+
+            if (!_auth_context.Done)
             {
-                throw new RpcTransportException($"Bind NACK returned with rejection reason {bind_nack.RejectionReason}");
-            }
-            else
-            {
-                throw new RpcTransportException($"Unexpected {recv.Item1.PDUType} PDU from server.");
+                // TODO: Continue with alter context.
+                throw new RpcTransportException("Failed to complete the client authentication.");
             }
         }
 
