@@ -130,6 +130,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Make a signature for this context.
         /// </summary>
+        /// <param name="messages">The message buffers to sign.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <returns>The signature blob.</returns>
+        public byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
+        {
+            return SecurityContextUtils.MakeSignature(_context, 0, messages, sequence_no);
+        }
+
+        /// <summary>
+        /// Make a signature for this context.
+        /// </summary>
         /// <param name="message">The message to sign.</param>
         /// <param name="sequence_no">The sequence number.</param>
         /// <returns>The signature blob.</returns>
@@ -148,6 +159,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool VerifySignature(byte[] message, byte[] signature, int sequence_no)
         {
             return SecurityContextUtils.VerifySignature(_context, message, signature, sequence_no);
+        }
+
+        /// <summary>
+        /// Verify a signature for this context.
+        /// </summary>
+        /// <param name="messages">The messages to verify.</param>
+        /// <param name="signature">The signature blob for the message.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <returns>True if the signature is valid, otherwise false.</returns>
+        public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
+        {
+            return SecurityContextUtils.VerifySignature(_context, messages, signature, sequence_no);
         }
 
         /// <summary>

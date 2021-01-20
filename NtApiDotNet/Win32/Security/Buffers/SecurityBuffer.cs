@@ -32,8 +32,8 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// <returns>The buffer as an array.</returns>
         public abstract byte[] ToArray();
 
-        private protected abstract void FromBuffer(SecBuffer buffer);
-        private protected abstract SecBuffer ToBuffer();
+        internal abstract void FromBuffer(SecBuffer buffer);
+        internal abstract SecBuffer ToBuffer();
 
         private protected SecurityBuffer(SecurityBufferType type)
         {

@@ -12,6 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Buffers;
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
@@ -55,6 +58,23 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="sequence_no">The sequence number.</param>
         /// <returns>True if the signature is valid, otherwise false.</returns>
         bool VerifySignature(byte[] message, byte[] signature, int sequence_no);
+
+        /// <summary>
+        /// Make a signature for this context.
+        /// </summary>
+        /// <param name="messages">The message buffers to sign.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <returns>The signature blob.</returns>
+        byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no);
+
+        /// <summary>
+        /// Verify a signature for this context.
+        /// </summary>
+        /// <param name="messages">The messages to verify.</param>
+        /// <param name="signature">The signature blob for the message.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <returns>True if the signature is valid, otherwise false.</returns>
+        bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no);
 
         /// <summary>
         /// Encrypt a message for this context.
