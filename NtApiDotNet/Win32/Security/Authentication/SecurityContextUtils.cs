@@ -114,14 +114,39 @@ namespace NtApiDotNet.Win32.Security.Authentication
             byte[] message,
             int sequence_no)
         {
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message);
+            var signature = EncryptMessage(context, flags, new[] { buffer }, sequence_no);
+            return new EncryptedMessage(buffer.ToArray(), signature);
+
+            //using (var list = new DisposableList())
+            //{
+            //    var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
+            //    SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, sizes.cbSecurityTrailer));
+            //    SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message));
+            //    SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { out_sig_buffer, in_out_message_buffer }));
+            //    SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
+            //    return new EncryptedMessage(in_out_message_buffer.ToArray(), out_sig_buffer.ToArray());
+            //}
+        }
+
+        internal static byte[] EncryptMessage(
+            SecHandle context,
+            SecQopFlags flags,
+            IEnumerable<SecurityBuffer> messages,
+            int sequence_no)
+        {
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
+            var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, sizes.cbSecurityTrailer);
+            sig_buffers.Add(out_sig_buffer);
+
             using (var list = new DisposableList())
             {
-                var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-                SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, sizes.cbSecurityTrailer));
-                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message));
-                SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { out_sig_buffer, in_out_message_buffer }));
+                var buffers = sig_buffers.ToBufferList(list);
+                var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
-                return new EncryptedMessage(in_out_message_buffer.ToArray(), out_sig_buffer.ToArray());
+                sig_buffers.UpdateBuffers(buffers);
+                return out_sig_buffer.ToArray();
             }
         }
 
@@ -130,14 +155,26 @@ namespace NtApiDotNet.Win32.Security.Authentication
             EncryptedMessage message,
             int sequence_no)
         {
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message.Message);
+            DecryptMessage(context, new[] { buffer }, message.Signature, sequence_no);
+            return buffer.ToArray();
+        }
+
+        internal static void DecryptMessage(
+            SecHandle context,
+            IEnumerable<SecurityBuffer> messages,
+            byte[] signature,
+            int sequence_no)
+        {
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
+
             using (var list = new DisposableList())
             {
-                var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-                SecBuffer in_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, message.Signature));
-                SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message.Message));
-                SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { in_sig_buffer, in_out_message_buffer }));
+                var buffers = sig_buffers.ToBufferList(list);
+                var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.DecryptMessage(context, desc, sequence_no, out _).CheckResult();
-                return in_out_message_buffer.ToArray();
+                sig_buffers.UpdateBuffers(buffers);
             }
         }
 

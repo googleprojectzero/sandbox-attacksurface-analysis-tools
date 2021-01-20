@@ -195,6 +195,30 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Encrypt a message for this context.
+        /// </summary>
+        /// <param name="messages">The messages to encrypt.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <returns>The signature for the messages.</returns>
+        /// <remarks>The messages are encrypted in place. You can add buffers with the ReadOnly flag to prevent them being encrypted.</remarks>
+        public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, int sequence_no)
+        {
+            return SecurityContextUtils.EncryptMessage(_context, 0, messages, sequence_no);
+        }
+
+        /// <summary>
+        /// Decrypt a message for this context.
+        /// </summary>
+        /// <param name="messages">The messages to decrypt.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <param name="signature">The signature for the messages.</param>
+        /// <remarks>The messages are decrypted in place. You can add buffers with the ReadOnly flag to prevent them being decrypted.</remarks>
+        public void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
+        {
+            SecurityContextUtils.DecryptMessage(_context, messages, signature, sequence_no);
+        }
+
+        /// <summary>
         /// Decrypt a message for this context.
         /// </summary>
         /// <param name="message">The message to decrypt.</param>
