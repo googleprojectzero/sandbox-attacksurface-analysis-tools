@@ -134,8 +134,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 default:
                     throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
             }
-            if (AuthenticationType != RpcAuthenticationType.WinNT)
-                throw new ArgumentException($"Unsupported authentication type {AuthenticationType}");
 
             using (var creds = CredentialHandle.Create(GetAuthPackageName(),
                     SecPkgCredFlags.Outbound, Credentials))
