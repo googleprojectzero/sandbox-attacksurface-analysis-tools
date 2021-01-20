@@ -188,7 +188,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return stm.ToArray();
         }
 
-        private PDUResponse SendReceiveRequestPDU(PDURequest send_pdu)
+        private byte[] SendReceiveRequestPDU(PDURequest send_pdu)
         {
             try
             {
@@ -293,7 +293,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
                 var recv_pdu = CheckFault(curr_header.ToPDU(recv_stm.ToArray()));
                 if (recv_pdu is PDUResponse pdu_respose)
-                    return pdu_respose;
+                    return pdu_respose.StubData;
 
                 throw new RpcTransportException($"Unexpected {recv_pdu.PDUType} PDU from server.");
             }
@@ -455,7 +455,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 StubData = ndr_buffer
             };
 
-            return new RpcClientResponse(SendReceiveRequestPDU(request).StubData, new NtObject[0]);
+            return new RpcClientResponse(SendReceiveRequestPDU(request), new NtObject[0]);
         }
 
         /// <summary>
