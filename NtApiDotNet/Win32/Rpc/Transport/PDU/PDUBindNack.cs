@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
