@@ -5934,7 +5934,7 @@ function Connect-RpcClient {
         [parameter(Mandatory, ParameterSetName = "FromFindEndpoint")]
         [switch]$FindAlpcPort,
         [parameter(ParameterSetName = "FromBindingString")]
-        [string]$BindingString,
+        [string]$StringBinding,
         [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
         [string]$ServicePrincipalName,
@@ -5975,7 +5975,7 @@ function Connect-RpcClient {
                 }
             }
             "FromBindingString" {
-                $Client.Connect($BindingString, $security)
+                $Client.Connect($StringBinding, $security)
             }
         }
 

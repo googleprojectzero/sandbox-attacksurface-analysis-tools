@@ -38,6 +38,17 @@ namespace NtApiDotNet.Win32.Rpc
             }
             return endpoint;
         }
+
+        private RpcEndpoint LookupEndpoint(string string_binding)
+        {
+            var endpoint = RpcEndpointMapper.MapBindingStringToEndpoint(string_binding, InterfaceId, InterfaceVersion);
+            if (endpoint == null || string.IsNullOrEmpty(endpoint.Endpoint))
+            {
+                throw new ArgumentException($"Can't find endpoint for {InterfaceId} {InterfaceVersion} for binding string {string_binding}");
+            }
+            return endpoint;
+        }
+
         #endregion
 
         #region Constructors
@@ -148,6 +159,7 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, transport_security);
                 _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+                ObjectUuid = endpoint.ObjectUuid;
             }
             catch
             {
@@ -249,11 +261,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <summary>
         /// Connect the client to a RPC endpoint.
         /// </summary>
-        /// <param name="binding_string">The binding string for the RPC server.</param>
+        /// <param name="string_binding">The binding string for the RPC server.</param>
         /// <param name="transport_security">The transport security for the connection.</param>
-        public void Connect(string binding_string, RpcTransportSecurity transport_security)
+        public void Connect(string string_binding, RpcTransportSecurity transport_security)
         {
-            var endpoint = new RpcEndpoint(InterfaceId, InterfaceVersion, binding_string, false);
+            var endpoint = new RpcEndpoint(InterfaceId, InterfaceVersion, string_binding, false);
             if (string.IsNullOrEmpty(endpoint.ProtocolSequence))
             {
                 throw new ArgumentException("Binding string must contain a protocol sequence.");
@@ -261,7 +273,7 @@ namespace NtApiDotNet.Win32.Rpc
 
             if (string.IsNullOrEmpty(endpoint.Endpoint))
             {
-                endpoint = LookupEndpoint(endpoint.ProtocolSequence, endpoint.NetworkAddress);
+                endpoint = LookupEndpoint(string_binding);
             }
 
             Connect(endpoint, transport_security);
