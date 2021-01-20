@@ -16,13 +16,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal enum BindRejectionReason
     {
-        REASON_NOT_SPECIFIED = 0,
-        TEMPORARY_CONGESTION = 1,
-        LOCAL_LIMIT_EXCEEDED = 2,
-        CALLED_PADDR_UNKNOWN = 3,
-        PROTOCOL_VERSION_NOT_SUPPORTED = 4,
-        DEFAULT_CONTEXT_NOT_SUPPORTED = 5,
-        USER_DATA_NOT_READABLE = 6,
-        NO_PSAP_AVAILABLE = 7,
+        ResonaNotSpecified = 0,
+        TemporaryCongestion = 1,
+        LocalLimitExceeded = 2,
+        CalledPAddrUnknown = 3,
+        ProtocolVersionNotSupported = 4,
+        DefaultContextNotSupported = 5,
+        UserDataNotReadable = 6,
+        NoPSAPAvailable = 7,
+        AuthenticationTypeNotRecognized = 8,
+        InvalidChecksum = 9,
     }
 }

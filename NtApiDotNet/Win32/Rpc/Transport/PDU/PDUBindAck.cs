@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         public List<ContextResult> ResultList { get; }
 
         public PDUBindAck(byte[] data, bool alter_context) 
-            : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
+            : base(alter_context ? PDUType.AlterContextResp : PDUType.BindAck)
         {
             MemoryStream stm = new MemoryStream(data);
             BinaryReader reader = new BinaryReader(stm, Encoding.ASCII);
