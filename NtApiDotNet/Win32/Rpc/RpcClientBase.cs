@@ -29,9 +29,9 @@ namespace NtApiDotNet.Win32.Rpc
         #region Private Members
         private IRpcClientTransport _transport;
 
-        private RpcEndpoint LookupEndpoint(string protocol_seq)
+        private RpcEndpoint LookupEndpoint(string protocol_seq, string network_address)
         {
-            var endpoint = RpcEndpointMapper.MapServerToEndpoint(protocol_seq, InterfaceId, InterfaceVersion);
+            var endpoint = RpcEndpointMapper.MapServerToEndpoint(protocol_seq, network_address, InterfaceId, InterfaceVersion);
             if (endpoint == null || string.IsNullOrEmpty(endpoint.Endpoint))
             {
                 throw new ArgumentException($"Can't find endpoint for {InterfaceId} {InterfaceVersion} with protocol sequence {protocol_seq}");
@@ -158,7 +158,6 @@ namespace NtApiDotNet.Win32.Rpc
             }
         }
 
-
         /// <summary>
         /// Connect the client to a RPC endpoint.
         /// </summary>
@@ -202,7 +201,7 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new ArgumentException("Must specify a protocol sequence", nameof(protocol_seq));
             }
 
-            Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq) :
+            Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq, network_address) :
                 new RpcEndpoint(InterfaceId, InterfaceVersion,
                     SafeRpcBindingHandle.Compose(null, protocol_seq,
                     string.IsNullOrEmpty(network_address) ? null : network_address, endpoint, null), true),
@@ -245,6 +244,27 @@ namespace NtApiDotNet.Win32.Rpc
             }
 
             Connect("ncalrpc", alpc_path, new RpcTransportSecurity(security_quality_of_service));
+        }
+
+        /// <summary>
+        /// Connect the client to a RPC endpoint.
+        /// </summary>
+        /// <param name="binding_string">The binding string for the RPC server.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public void Connect(string binding_string, RpcTransportSecurity transport_security)
+        {
+            var endpoint = new RpcEndpoint(InterfaceId, InterfaceVersion, binding_string, false);
+            if (string.IsNullOrEmpty(endpoint.ProtocolSequence))
+            {
+                throw new ArgumentException("Binding string must contain a protocol sequence.");
+            }
+
+            if (string.IsNullOrEmpty(endpoint.Endpoint))
+            {
+                endpoint = LookupEndpoint(endpoint.ProtocolSequence, endpoint.NetworkAddress);
+            }
+
+            Connect(endpoint, transport_security);
         }
 
         /// <summary>

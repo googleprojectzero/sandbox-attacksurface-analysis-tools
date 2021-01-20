@@ -57,26 +57,36 @@ namespace NtApiDotNet.Win32.SafeHandles
 
         public static SafeRpcBindingHandle Create(string string_binding)
         {
-            int status = Win32NativeMethods.RpcBindingFromStringBinding(string_binding, out SafeRpcBindingHandle binding);
-            if (status != 0)
+            return Create(string_binding, false).Result;
+        }
+
+        public static NtResult<SafeRpcBindingHandle> Create(string string_binding, bool throw_on_error)
+        {
+            var status = Win32NativeMethods.RpcBindingFromStringBinding(string_binding, out SafeRpcBindingHandle binding);
+            if (status != Win32Error.SUCCESS)
             {
-                throw new SafeWin32Exception(status);
+                return status.CreateResultFromDosError<SafeRpcBindingHandle>(throw_on_error);
             }
             binding._cracked_binding = new CrackedBindingString(string_binding);
-            return binding;
+            return binding.CreateResult();
         }
 
         public static SafeRpcBindingHandle Create(string objuuid, string protseq, string networkaddr, string endpoint, string options)
         {
-            int status = Win32NativeMethods.RpcStringBindingCompose(objuuid, protseq,
+            return Create(objuuid, protseq, networkaddr, endpoint, options, true).Result;
+        }
+
+        public static NtResult<SafeRpcBindingHandle> Create(string objuuid, string protseq, string networkaddr, string endpoint, string options, bool throw_on_error)
+        {
+            var status = Win32NativeMethods.RpcStringBindingCompose(objuuid, protseq,
                 networkaddr, endpoint, options, out SafeRpcStringHandle binding);
-            if (status != 0)
+            if (status != Win32Error.SUCCESS)
             {
-                throw new SafeWin32Exception(status);
+                return status.CreateResultFromDosError<SafeRpcBindingHandle>(throw_on_error);
             }
             using (binding)
             {
-                return Create(binding.ToString());
+                return Create(binding.ToString(), throw_on_error);
             }
         }
 

@@ -592,10 +592,10 @@ namespace NtApiDotNet.Win32
         internal static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
-        internal static extern int RpcBindingFromStringBinding([MarshalAs(UnmanagedType.LPTStr)] string StringBinding, out SafeRpcBindingHandle Binding);
+        internal static extern Win32Error RpcBindingFromStringBinding([MarshalAs(UnmanagedType.LPTStr)] string StringBinding, out SafeRpcBindingHandle Binding);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
-        internal static extern int RpcEpResolveBinding(SafeRpcBindingHandle Binding, ref RPC_SERVER_INTERFACE IfSpec);
+        internal static extern Win32Error RpcEpResolveBinding(SafeRpcBindingHandle Binding, ref RPC_SERVER_INTERFACE IfSpec);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
         internal static extern int RpcMgmtEpEltInqBegin(
@@ -637,7 +637,7 @@ namespace NtApiDotNet.Win32
         );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
-        internal static extern int RpcStringBindingParse(
+        internal static extern Win32Error RpcStringBindingParse(
               string StringBinding,
               out SafeRpcStringHandle ObjUuid,
               out SafeRpcStringHandle Protseq,
@@ -647,7 +647,7 @@ namespace NtApiDotNet.Win32
             );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
-        internal static extern int RpcStringBindingCompose(
+        internal static extern Win32Error RpcStringBindingCompose(
           string ObjUuid,
           string ProtSeq,
           string NetworkAddr,

@@ -34,9 +34,9 @@ namespace NtApiDotNet.Win32.Rpc
 
             try
             {
-                int status = Win32NativeMethods.RpcStringBindingParse(string_binding,
+                var status = Win32NativeMethods.RpcStringBindingParse(string_binding,
                     out objuuid, out protseq, out networkaddr, out endpoint, out networkoptions);
-                if (status == 0)
+                if (status == Win32Error.SUCCESS)
                 {
                     ObjUuid = objuuid.ToString();
                     Protseq = protseq.ToString();
