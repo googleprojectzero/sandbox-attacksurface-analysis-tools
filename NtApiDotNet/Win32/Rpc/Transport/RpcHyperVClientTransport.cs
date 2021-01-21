@@ -18,7 +18,10 @@ using System.Net.Sockets;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
-    class RpcHyperVClientTransport : RpcStreamSocketClientTransport
+    /// <summary>
+    /// RPC client transport over HyperV sockets.
+    /// </summary>
+    public sealed class RpcHyperVClientTransport : RpcStreamSocketClientTransport
     {
         #region Private Members
         private const ushort MaxXmitFrag = 5840;
