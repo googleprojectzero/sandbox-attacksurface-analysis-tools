@@ -182,5 +182,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbMaxSignature;
         }
+
+        internal static int GetSecurityTrailerSize(SecHandle context)
+        {
+            return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbSecurityTrailer;
+        }
     }
 }

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Native;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Buffers
 {
@@ -31,6 +32,26 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// </summary>
         /// <returns>The buffer as an array.</returns>
         public abstract byte[] ToArray();
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The buffer as a string.</returns>
+        public override string ToString()
+        {
+            List<string> type_names = new List<string>();
+            type_names.Add((Type & SecurityBufferType.Mask).ToString());
+            if (Type.HasFlagSet(SecurityBufferType.ReadOnly))
+            {
+                type_names.Add("ReadOnly");
+            }
+            if (Type.HasFlagSet(SecurityBufferType.ReadOnlyWithChecksum))
+            {
+                type_names.Add("ReadOnlyWithChecksum");
+            }
+
+            return $"Buffer Type: {string.Join(",", type_names)}";
+        }
 
         internal abstract void FromBuffer(SecBuffer buffer);
         internal abstract SecBuffer ToBuffer();

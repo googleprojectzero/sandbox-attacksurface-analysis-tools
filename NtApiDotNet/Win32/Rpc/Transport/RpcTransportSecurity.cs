@@ -130,6 +130,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     return null;
                 case RpcAuthenticationLevel.Connect:
                 case RpcAuthenticationLevel.PacketIntegrity:
+                case RpcAuthenticationLevel.PacketPrivacy:
                     break;
                 default:
                     throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");

@@ -243,6 +243,14 @@ namespace NtApiDotNet.Utilities.Text
             AppendTrailing();
         }
 
+        internal static string BufferToString(byte[] buffer)
+        {
+            var builder = new HexDumpBuilder(true, true, true, true, 0);
+            builder.Append(buffer);
+            builder.Complete();
+            return builder.ToString();
+        }
+
         /// <summary>
         /// Finish builder and convert to a string.
         /// </summary>

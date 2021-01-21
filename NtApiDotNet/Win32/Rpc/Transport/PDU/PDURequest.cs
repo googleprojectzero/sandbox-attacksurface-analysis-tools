@@ -18,38 +18,44 @@ using System.IO;
 
 namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
-    internal class PDURequest : PDUBase
+    internal class PDURequest
     {
-        public PDURequest() : base(PDUType.Request)
-        {
-        }
-
         public int AllocHint { get; set; }
         public ushort ContextId { get; set; }
         public short OpNum { get; set; }
         public Guid ObjectUUID { get; set; }
-        public byte[] StubData { get; set; }
         public bool HasObjectUUID => ObjectUUID != Guid.Empty;
+        public int HeaderLength => PDUHeader.PDU_HEADER_SIZE + 8 + (ObjectUUID != Guid.Empty ? 16 : 0);
 
-        public List<byte[]> DoFragment(int max_frag_length)
+        public byte[] ToArray(PDUHeader header, int stub_length, int auth_length)
         {
-            int header_length = 8 + (ObjectUUID != Guid.Empty ? 16 : 0);
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            header.AuthLength = checked((ushort)auth_length);
+            header.FragmentLength = checked((ushort)(HeaderLength + stub_length + auth_length));
+            header.Flags |= HasObjectUUID ? PDUFlags.ObjectUuid : 0;
+            header.Write(writer);
+            writer.Write(AllocHint);
+            writer.Write(ContextId);
+            writer.Write(OpNum);
+            if (HasObjectUUID)
+            {
+                writer.Write(ObjectUUID.ToByteArray());
+            }
+            return stm.ToArray();
+        }
+
+        public static List<byte[]> DoFragment(byte[] stub_data, int max_frag_length)
+        {
             List<byte[]> fragments = new List<byte[]>();
-            int remaining_length = StubData.Length;
+            int remaining_length = stub_data.Length;
             int curr_offset = 0;
             do
             {
-                int data_length = Math.Min(max_frag_length - header_length, remaining_length);
+                int data_length = Math.Min(max_frag_length, remaining_length);
                 MemoryStream stm = new MemoryStream();
                 BinaryWriter writer = new BinaryWriter(stm);
-                writer.Write(AllocHint);
-                writer.Write(ContextId);
-                writer.Write(OpNum);
-                if (ObjectUUID != Guid.Empty)
-                {
-                    writer.Write(ObjectUUID.ToByteArray());
-                }
-                writer.Write(StubData, curr_offset, data_length);
+                writer.Write(stub_data, curr_offset, data_length);
                 curr_offset += data_length;
                 remaining_length -= data_length;
                 fragments.Add(stm.ToArray());

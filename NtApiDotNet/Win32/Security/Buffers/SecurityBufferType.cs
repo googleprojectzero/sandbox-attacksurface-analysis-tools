@@ -45,6 +45,8 @@ namespace NtApiDotNet.Win32.Security.Buffers
         PresharedKey = 22,
         PresharedKeyIdentity = 23,
         DTLAMtu = 24,
+        // Mask to remove the upper flags.
+        Mask = 0x0FFFFFFF,
         ReadOnlyWithChecksum = 0x10000000,
         ReadOnly = 0x80000000,
     }

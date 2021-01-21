@@ -69,6 +69,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public int MaxSignatureSize => SecurityContextUtils.GetMaxSignatureSize(_context);
 
         /// <summary>
+        /// Get the size of the security trailer for this context.
+        /// </summary>
+        public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(_context);
+
+        /// <summary>
         /// Get an access token for the authenticated user.
         /// </summary>
         /// <returns>The user's access token.</returns>

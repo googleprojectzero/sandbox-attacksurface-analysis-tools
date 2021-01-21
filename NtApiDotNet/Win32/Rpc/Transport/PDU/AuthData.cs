@@ -35,6 +35,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             Data = data;
         }
 
+        public static byte[] ToArray(RpcTransportSecurity transport_security, int auth_padding_length, int context_id, byte[] security_data)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            AuthData data = new AuthData(transport_security.AuthenticationType, transport_security.AuthenticationLevel,
+                auth_padding_length, context_id, security_data);
+            data.Write(writer, auth_padding_length);
+            return stm.ToArray();
+        }
+
         public static AuthData Read(BinaryReader reader, int auth_length)
         {
             RpcAuthenticationType type = (RpcAuthenticationType)reader.ReadByte();
