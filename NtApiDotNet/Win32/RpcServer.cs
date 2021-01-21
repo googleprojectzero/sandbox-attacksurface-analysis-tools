@@ -197,13 +197,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// List of endpoints for this service if running.
         /// </summary>
-        public IEnumerable<RpcEndpoint> Endpoints
-        {
-            get
-            {
-                return RpcEndpointMapper.QueryAlpcEndpoints(Server);
-            }
-        }
+        public IEnumerable<RpcEndpoint> Endpoints => RpcEndpointMapper.QueryEndpoints(Server);
         /// <summary>
         /// Count of endpoints for this service if running.
         /// </summary>
