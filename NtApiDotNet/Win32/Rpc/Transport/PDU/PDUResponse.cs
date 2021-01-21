@@ -34,5 +34,17 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             reader.ReadByte(); // reserved.
             StubData = reader.ReadAllBytes((int)stm.RemainingLength());
         }
+
+        public byte[] ToArray(PDUHeader header)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            header.Write(writer);
+            writer.Write(AllocHint);
+            writer.Write(ContextId);
+            writer.Write(CancelCount);
+            writer.Write((byte)0);
+            return stm.ToArray();
+        }
     }
 }

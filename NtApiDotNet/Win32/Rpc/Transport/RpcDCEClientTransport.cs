@@ -173,22 +173,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return Tuple.Create(header, data, auth_data);
         }
 
-        private byte[] BuildNtlmSignatureData(PDUHeader header, byte[] stubdata, int auth_padding_length, int signature_length)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            int total_length = PDUHeader.PDU_HEADER_SIZE + stubdata.Length + auth_padding_length + AuthData.PDU_AUTH_DATA_HEADER_SIZE;
-            header.FragmentLength = checked((ushort)(total_length + signature_length));
-            header.AuthLength = checked((ushort)signature_length);
-            header.Write(writer);
-            writer.Write(stubdata);
-            writer.Write(new byte[auth_padding_length]);
-            new AuthData(_transport_security.AuthenticationType, _transport_security.AuthenticationLevel,
-                0, 0, new byte[0]).Write(writer, auth_padding_length);
-            RpcUtils.DumpBuffer(true, "NTLM signature data", stm.ToArray());
-            return stm.ToArray();
-        }
-
         private byte[] ProtectPDU(byte[] header, ref byte[] stub_data, int auth_padding_length)
         {
             List<SecurityBuffer> buffers = new List<SecurityBuffer>();
@@ -217,8 +201,51 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(stub_data));
             }
 
+            Console.WriteLine("Signature Data");
+            Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(signature));
+
             RpcUtils.DumpBuffer(true, "NTLM signature data", signature);
             return AuthData.ToArray(_transport_security, auth_padding_length, 0, signature);
+        }
+
+        private byte[] UnprotectPDU(byte[] header, byte[] stub_data, AuthData auth_data)
+        {
+            List<SecurityBuffer> buffers = new List<SecurityBuffer>();
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly, header));
+            var stub_data_buffer = new SecurityBufferInOut(SecurityBufferType.Data, stub_data);
+            buffers.Add(stub_data_buffer);
+            byte[] signature = auth_data.Data;
+            auth_data.Data = new byte[0];
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            auth_data.Write(writer, auth_data.Padding);
+
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly, stm.ToArray()));
+
+            for (int i = 0; i < buffers.Count; ++i)
+            {
+                Console.WriteLine("{0}: {1}", i, buffers[i]);
+                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(buffers[i].ToArray()));
+            }
+
+            if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
+            {
+                if (!_auth_context.VerifySignature(buffers, signature, _recv_sequence_no))
+                {
+                    throw new RpcTransportException("Invalid response PDU signature.");
+                }
+            }
+            else
+            {
+                _auth_context.DecryptMessage(buffers, signature, _recv_sequence_no);
+                stub_data = stub_data_buffer.ToArray();
+                Console.WriteLine("Decrypted Data");
+                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(stub_data));
+            }
+
+            Array.Resize(ref stub_data, stub_data.Length - auth_data.Padding);
+
+            return stub_data;
         }
 
         private byte[] SendReceiveRequestPDU(int proc_num, Guid objuuid, byte[] stub_data)
@@ -304,21 +331,27 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 {
                     var pdu = ReadPDU(frag_count++);
                     curr_header = pdu.Item1;
+                    AuthData auth_data = pdu.Item3;
                     if (curr_header.CallId != CallId)
                     {
                         throw new RpcTransportException("Mismatching call ID.");
                     }
 
-                    // TODO: Handle encryption/verification.
-                    _recv_sequence_no++;
-                    recv_stm.Write(pdu.Item2, 0, pdu.Item2.Length);
+                    var recv_pdu = CheckFault(curr_header.ToPDU(pdu.Item2));
+                    if (recv_pdu is PDUResponse resp_pdu)
+                    {
+                        byte[] resp_stub_data = auth_required ? UnprotectPDU(resp_pdu.ToArray(curr_header), 
+                            resp_pdu.StubData, auth_data) : resp_pdu.StubData;
+                        _recv_sequence_no++;
+                        recv_stm.Write(resp_stub_data, 0, resp_stub_data.Length);
+                    }
+                    else
+                    {
+                        throw new RpcTransportException($"Unexpected {recv_pdu.PDUType} PDU from server.");
+                    }
                 }
 
-                var recv_pdu = CheckFault(curr_header.ToPDU(recv_stm.ToArray()));
-                if (recv_pdu is PDUResponse pdu_respose)
-                    return pdu_respose.StubData;
-
-                throw new RpcTransportException($"Unexpected {recv_pdu.PDUType} PDU from server.");
+                return recv_stm.ToArray();
             }
             catch (EndOfStreamException)
             {
@@ -354,12 +387,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private void BindAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
             // 8 should be more than enough legs to complete authentication.
-            const int MAX_LEGS = 8;
+            int max_legs = _transport_security.AuthenticationType == RpcAuthenticationType.WinNT ? 3 : 8;
             int call_id = ++CallId;
             int count = 0;
             bool alter_context = false;
 
-            while (count++ < MAX_LEGS)
+            while (count++ < max_legs)
             {
                 PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, alter_context);
 
@@ -381,15 +414,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         alter_context = true;
                     }
 
-                    if (recv.Item2.Data == null)
+                    if (recv.Item2.Data == null || recv.Item2.Data.Length == 0)
                     {
                         // No auth, assume success.
                         break;
                     }
+
                     _auth_context.Continue(new AuthenticationToken(recv.Item2.Data));
                     if (_auth_context.Done)
                     {
-                        // If we still have a token to complete then send as an Auth3 PDU.
+                        // If we still have an NTLM token to complete then send as an Auth3 PDU.
                         byte[] token = _auth_context.Token.ToArray();
                         if (token.Length > 0)
                         {
