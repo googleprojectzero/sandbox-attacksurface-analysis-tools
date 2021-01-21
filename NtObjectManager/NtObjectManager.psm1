@@ -5895,10 +5895,12 @@ Specify authentication capabilities for the RPC client authentication.
 Specify to the pass the client object to the output.
 .PARAMETER FindAlpcPort
 Specify to search for an ALPC port for the RPC client.
+.PARAMETER Force
+Specify to for the client to connect even if the client is already connected to another transport.
 .INPUTS
-None
+NtApiDotNet.Win32.Rpc.RpcClientBase[]
 .OUTPUTS
-None
+NtApiDotNet.Win32.Rpc.RpcClientBase[]
 .EXAMPLE
 Connect-RpcClient -Client $Client
 Connect an RPC ALPC client, looking up the path using the endpoint mapper.
@@ -5941,7 +5943,8 @@ function Connect-RpcClient {
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
-        [switch]$PassThru
+        [switch]$PassThru,
+        [switch]$Force
     )
 
     BEGIN {
@@ -5955,6 +5958,9 @@ function Connect-RpcClient {
     }
 
     PROCESS {
+        if ($Force) {
+            Disconnect-RpcClient -Client $Client
+        }
         switch ($PSCmdlet.ParameterSetName) {
             "FromProtocol" {
                 $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $security)
@@ -5978,6 +5984,40 @@ function Connect-RpcClient {
                 $Client.Connect($StringBinding, $security)
             }
         }
+
+        if ($PassThru) {
+            $Client | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Disconnect an RPC client.
+.DESCRIPTION
+This cmdlet disconnects a RPC client from an endpoint.
+.PARAMETER Client
+Specify the RPC client to disconnect.
+.PARAMETER PassThru
+Specify to the pass the client object to the output.
+.INPUTS
+NtApiDotNet.Win32.Rpc.RpcClientBase[]
+.OUTPUTS
+NtApiDotNet.Win32.Rpc.RpcClientBase[]
+.EXAMPLE
+Disconnect-RpcClient -Client $Client
+Disconnect an RPC ALPC client.
+#>
+function Disconnect-RpcClient {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [switch]$PassThru
+    )
+
+    PROCESS {
+        $Client.Disconnect()
 
         if ($PassThru) {
             $Client | Write-Output
