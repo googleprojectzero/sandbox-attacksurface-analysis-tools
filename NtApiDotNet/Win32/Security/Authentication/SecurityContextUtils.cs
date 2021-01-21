@@ -30,6 +30,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
+        internal static AuthenticationPackage GetAuthenticationPackage(SecHandle context)
+        {
+            var pkg_info = QueryContextAttribute<SecPkgContext_PackageInfo>(context, SECPKG_ATTR.PACKAGE_INFO);
+            return new AuthenticationPackage(pkg_info.PackageInfo);
+        }
+
         internal static List<SecBuffer> ToBufferList(this List<SecurityBuffer> buffers, DisposableList list)
         {
             return buffers.Select(b => list.AddResource(b.ToBuffer())).ToList();
@@ -117,16 +123,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message);
             var signature = EncryptMessage(context, flags, new[] { buffer }, sequence_no);
             return new EncryptedMessage(buffer.ToArray(), signature);
-
-            //using (var list = new DisposableList())
-            //{
-            //    var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-            //    SecBuffer out_sig_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, sizes.cbSecurityTrailer));
-            //    SecBuffer in_out_message_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Data, message));
-            //    SecBufferDesc desc = list.AddResource(new SecBufferDesc(new SecBuffer[] { out_sig_buffer, in_out_message_buffer }));
-            //    SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
-            //    return new EncryptedMessage(in_out_message_buffer.ToArray(), out_sig_buffer.ToArray());
-            //}
         }
 
         internal static byte[] EncryptMessage(

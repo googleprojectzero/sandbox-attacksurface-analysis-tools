@@ -224,6 +224,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityContextUtils.DecryptMessage(_context, messages, signature, sequence_no);
         }
 
+        /// <summary>
+        /// Query the context's package info.
+        /// </summary>
+        /// <returns>The authentication package info,</returns>
+        public AuthenticationPackage GetAuthenticationPackage()
+        {
+            return SecurityContextUtils.GetAuthenticationPackage(_context);
+        }
+
         private bool GenClientContext(AuthenticationToken token)
         {
             using (DisposableList list = new DisposableList())

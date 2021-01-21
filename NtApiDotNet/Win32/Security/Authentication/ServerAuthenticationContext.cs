@@ -235,6 +235,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Query the context's package info.
+        /// </summary>
+        /// <returns>The authentication package info,</returns>
+        public AuthenticationPackage GetAuthenticationPackage()
+        {
+            return SecurityContextUtils.GetAuthenticationPackage(_context);
+        }
+
+        /// <summary>
         /// Dispose the client context.
         /// </summary>
         public void Dispose()

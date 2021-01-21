@@ -75,8 +75,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public string Comment { get; }
 
-        private AuthenticationPackage(SecPkgInfo pkg)
+        internal AuthenticationPackage(IntPtr pkg_ptr)
         {
+            SecPkgInfo pkg = (SecPkgInfo)Marshal.PtrToStructure(pkg_ptr, typeof(SecPkgInfo));
+
             Capabilities = pkg.fCapabilities;
             Version = pkg.wVersion;
             RpcId = pkg.wRPCID;
@@ -100,8 +102,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     int size = Marshal.SizeOf(typeof(SecPkgInfo));
                     for (int i = 0; i < count; ++i)
                     {
-                        SecPkgInfo pkg = (SecPkgInfo)Marshal.PtrToStructure(ppPackageInfo + i * size, typeof(SecPkgInfo));
-                        packages.Add(new AuthenticationPackage(pkg));
+                        //SecPkgInfo pkg = (SecPkgInfo)Marshal.PtrToStructure(ppPackageInfo + i * size, typeof(SecPkgInfo));
+                        packages.Add(new AuthenticationPackage(ppPackageInfo + i * size));
                     }
                 }
                 finally
@@ -131,7 +133,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
             try
             {
-                return new AuthenticationPackage((SecPkgInfo)Marshal.PtrToStructure(package_info, typeof(SecPkgInfo)));
+                //return new AuthenticationPackage((SecPkgInfo)Marshal.PtrToStructure(package_info, typeof(SecPkgInfo)));
+                return new AuthenticationPackage(package_info);
             }
             finally
             {
