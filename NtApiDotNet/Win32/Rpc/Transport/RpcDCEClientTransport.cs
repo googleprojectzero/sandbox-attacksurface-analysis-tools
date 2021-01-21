@@ -71,6 +71,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private readonly ClientAuthenticationContext _auth_context;
         private int _send_sequence_no;
         private int _recv_sequence_no;
+        private RpcAuthenticationType _negotiated_auth_type;
 
         private PDUBase CheckFault(PDUBase pdu)
         {
@@ -176,16 +177,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private byte[] ProtectPDU(byte[] header, ref byte[] stub_data, int auth_padding_length)
         {
             List<SecurityBuffer> buffers = new List<SecurityBuffer>();
-            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum, header));
+            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
+            {
+                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum, header));
+            }
             var stub_data_buffer = new SecurityBufferInOut(SecurityBufferType.Data, stub_data);
             buffers.Add(stub_data_buffer);
-            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum,
-                AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
-
-            for (int i = 0; i < buffers.Count; ++i)
+            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
             {
-                Console.WriteLine("{0}: {1}", i, buffers[i]);
-                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(buffers[i].ToArray()));
+                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum,
+                    AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
             }
 
             byte[] signature;
@@ -197,14 +198,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 signature = _auth_context.EncryptMessage(buffers, _send_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
-                Console.WriteLine("Encrypted Data");
-                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(stub_data));
+                RpcUtils.DumpBuffer(true, "Send Encrypted Data", stub_data);
             }
 
-            Console.WriteLine("Signature Data");
-            Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(signature));
-
-            RpcUtils.DumpBuffer(true, "NTLM signature data", signature);
+            RpcUtils.DumpBuffer(true, "Send Signature Data", signature);
             return AuthData.ToArray(_transport_security, auth_padding_length, 0, signature);
         }
 
@@ -222,12 +219,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly, stm.ToArray()));
 
-            for (int i = 0; i < buffers.Count; ++i)
-            {
-                Console.WriteLine("{0}: {1}", i, buffers[i]);
-                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(buffers[i].ToArray()));
-            }
-
             if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
             {
                 if (!_auth_context.VerifySignature(buffers, signature, _recv_sequence_no))
@@ -239,8 +230,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 _auth_context.DecryptMessage(buffers, signature, _recv_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
-                Console.WriteLine("Decrypted Data");
-                Console.WriteLine(Utilities.Text.HexDumpBuilder.BufferToString(stub_data));
             }
 
             Array.Resize(ref stub_data, stub_data.Length - auth_data.Padding);
@@ -444,8 +433,18 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (!_auth_context.Done)
             {
-                // TODO: Continue with alter context.
                 throw new RpcTransportException("Failed to complete the client authentication.");
+            }
+
+            if (_transport_security.AuthenticationType == RpcAuthenticationType.Negotiate)
+            {
+                var package_info = _auth_context.GetAuthenticationPackage();
+                _negotiated_auth_type = AuthenticationPackage.CheckKerberos(package_info.Name) 
+                    ? RpcAuthenticationType.Kerberos : RpcAuthenticationType.WinNT;
+            }
+            else
+            {
+                _negotiated_auth_type = _transport_security.AuthenticationType;
             }
         }
 
