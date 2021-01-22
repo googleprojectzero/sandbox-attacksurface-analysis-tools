@@ -63,5 +63,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the transport protocol sequence.
         /// </summary>
         string ProtocolSequence { get; }
+
+        /// <summary>
+        /// Get information about the local server process, if known.
+        /// </summary>
+        RpcServerProcessInformation ServerProcess { get; }
     }
 }

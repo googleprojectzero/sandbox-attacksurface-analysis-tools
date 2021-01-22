@@ -323,6 +323,19 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public string ProtocolSequence => "ncalrpc";
 
+        /// <summary>
+        /// Get information about the local server process, if known.
+        /// </summary>
+        public RpcServerProcessInformation ServerProcess
+        {
+            get
+            {
+                if (!Connected)
+                    throw new InvalidOperationException("ALPC transport is not connected.");
+                return new RpcServerProcessInformation(_client.ServerProcessId, _client.ServerSessionId);
+            }
+        }
+
         #endregion
     }
 }

@@ -121,6 +121,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the transport protocol sequence.
         /// </summary>
         public override string ProtocolSequence => "ncacn_np";
+
+        /// <summary>
+        /// Get information about the local server process, if known.
+        /// </summary>
+        public override RpcServerProcessInformation ServerProcess
+        {
+            get
+            {
+                if (!Connected)
+                    throw new InvalidOperationException("Named Pipe transport is not connected.");
+                return new RpcServerProcessInformation(_pipe.ServerProcessId, _pipe.ServerSessionId);
+            }
+        }
+
         #endregion
     }
 }

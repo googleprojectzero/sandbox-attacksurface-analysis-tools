@@ -468,6 +468,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public abstract string ProtocolSequence { get; }
 
         /// <summary>
+        /// Get information about the server process, if known.
+        /// </summary>
+        public virtual RpcServerProcessInformation ServerProcess => throw new NotImplementedException();
+
+        /// <summary>
         /// Bind the RPC transport to a specified interface.
         /// </summary>
         /// <param name="interface_id">The interface ID to bind to.</param>

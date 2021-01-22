@@ -308,6 +308,9 @@
     <Compile Include="Win32\AppModel\AppModelUtils.cs" />
     <Compile Include="Win32\AppModel\IApplicationActivationManager.cs" />
     <Compile Include="Win32\ConsoleSession.cs" />
+    <Compile Include="Win32\Net\TcpListenerInformation.cs" />
+    <Compile Include="Win32\Net\Win32NetworkNativeMethods.cs" />
+    <Compile Include="Win32\Net\Win32NetworkUtils.cs" />
     <Compile Include="Win32\Rpc\CrackedBindingString.cs" />
     <Compile Include="Win32\Debugger\ArrayTypeInformation.cs" />
     <Compile Include="Win32\Debugger\BaseTypeInformation.cs" />
@@ -365,6 +368,7 @@
     <Compile Include="Win32\Filter\FilterVolume.cs" />
     <Compile Include="Win32\ISymbolResolver.cs" />
     <Compile Include="Win32\RpcServerParserFlags.cs" />
+    <Compile Include="Win32\Rpc\RpcServerProcessInformation.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\PDUAuth3.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\PDUBind.cs" />
     <Compile Include="Win32\Rpc\Transport\PDU\PDUBindAck.cs" />

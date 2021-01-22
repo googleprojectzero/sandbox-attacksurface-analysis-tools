@@ -134,6 +134,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         public Version InterfaceVersion { get; }
 
+        /// <summary>
+        /// Get the client transport object.
+        /// </summary>
+        public IRpcClientTransport Transport => _transport;
+
         #endregion
 
         #region Public Methods

@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Win32.Net;
+using System;
+using System.Net;
 using System.Net.Sockets;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
@@ -35,6 +38,34 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             socket.Connect(hostname, port);
             return socket;
         }
+
+        /// <summary>
+        /// Get the server process information.
+        /// </summary>
+        /// <returns>The server process information.</returns>
+        private RpcServerProcessInformation GetServerProcess()
+        {
+            if (!Connected)
+                throw new InvalidOperationException("TCP/IP transport is not connected.");
+            IPEndPoint endpoint = (IPEndPoint)_socket.RemoteEndPoint;
+            IPAddress address = endpoint.Address;
+
+            if (address.IsIPv4MappedToIPv6)
+            {
+                address = address.MapToIPv4();
+            }
+
+            if (!IPAddress.IsLoopback(address))
+            {
+                throw new ArgumentException("Can't get server process on a remote system.");
+            }
+
+            var listener_info = Win32NetworkUtils.GetListenerForTcpPort(address.AddressFamily, endpoint.Port);
+            if (listener_info == null)
+                throw new ArgumentException("Can't find local listener for port.");
+            return new RpcServerProcessInformation(listener_info.ProcessId, 0);
+        }
+
         #endregion
 
         #region Constructors
@@ -55,6 +86,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the transport protocol sequence.
         /// </summary>
         public override string ProtocolSequence => "ncacn_ip_tcp";
+
+        /// <summary>
+        /// Get information about the local server process, if known.
+        /// </summary>
+        public override RpcServerProcessInformation ServerProcess => GetServerProcess();
         #endregion
     }
 }

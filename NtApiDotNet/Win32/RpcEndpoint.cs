@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Rpc;
+using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 
@@ -21,8 +22,59 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Class to represent an RPC endpoint.
     /// </summary>
-    public class RpcEndpoint
+    public sealed class RpcEndpoint
     {
+        #region Private Members
+        private readonly Lazy<RpcServerProcessInformation> _server_process_info;
+
+        private RpcServerProcessInformation GetServerProcessInformation()
+        {
+            using (var transport = RpcClientTransportFactory.ConnectEndpoint(this, new RpcTransportSecurity() { AuthenticationLevel = RpcAuthenticationLevel.None }))
+            {
+                return transport.ServerProcess;
+            }
+        }
+
+        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered)
+        {
+            InterfaceId = interface_id;
+            InterfaceVersion = interface_version;
+            CrackedBindingString cracked = new CrackedBindingString(binding);
+            Guid.TryParse(cracked.ObjUuid, out Guid guid);
+            ObjectUuid = guid;
+
+            Annotation = annotation ?? string.Empty;
+            BindingString = binding.ToString();
+            ProtocolSequence = cracked.Protseq;
+            NetworkAddress = cracked.NetworkAddr;
+            Endpoint = cracked.Endpoint;
+            NetworkOptions = cracked.NetworkOptions;
+            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                if (Endpoint.Contains(@"\"))
+                {
+                    EndpointPath = Endpoint;
+                }
+                else
+                {
+                    EndpointPath = $@"\RPC Control\{Endpoint}";
+                }
+            }
+            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
+            }
+            else
+            {
+                EndpointPath = string.Empty;
+            }
+            Registered = registered;
+            _server_process_info = new Lazy<RpcServerProcessInformation>(GetServerProcessInformation);
+        }
+
+        #endregion
+
+        #region Public Properties
         /// <summary>
         /// The interface ID of the endpoint.
         /// </summary>
@@ -67,43 +119,9 @@ namespace NtApiDotNet.Win32
         /// Indicates this endpoint is registered with the endpoint mapper.
         /// </summary>
         public bool Registered { get; }
+        #endregion
 
-        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered)
-        {
-            InterfaceId = interface_id;
-            InterfaceVersion = interface_version;
-            CrackedBindingString cracked = new CrackedBindingString(binding);
-            Guid.TryParse(cracked.ObjUuid, out Guid guid);
-            ObjectUuid = guid;
-
-            Annotation = annotation ?? string.Empty;
-            BindingString = binding.ToString();
-            ProtocolSequence = cracked.Protseq;
-            NetworkAddress = cracked.NetworkAddr;
-            Endpoint = cracked.Endpoint;
-            NetworkOptions = cracked.NetworkOptions;
-            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                if (Endpoint.Contains(@"\"))
-                {
-                    EndpointPath = Endpoint;
-                }
-                else
-                {
-                    EndpointPath = $@"\RPC Control\{Endpoint}";
-                }
-            }
-            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
-            }
-            else
-            {
-                EndpointPath = string.Empty;
-            }
-            Registered = registered;
-        }
-
+        #region Internal Members
         internal RpcEndpoint(Guid interface_id, Version interface_version, string string_binding, bool registered)
             : this(interface_id, interface_version, null, string_binding, registered)
         {
@@ -113,7 +131,9 @@ namespace NtApiDotNet.Win32
             : this(if_id.Uuid, new Version(if_id.VersMajor, if_id.VersMinor), annotation?.ToString(), binding.ToString(), registered)
         {
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -122,5 +142,16 @@ namespace NtApiDotNet.Win32
         {
             return $"[{InterfaceId}, {InterfaceVersion}] {BindingString}";
         }
+
+        /// <summary>
+        /// Get information about the server process.
+        /// </summary>
+        /// <returns></returns>
+        public RpcServerProcessInformation GetServerProcess()
+        {
+            return _server_process_info.Value;
+        }
+
+        #endregion
     }
 }

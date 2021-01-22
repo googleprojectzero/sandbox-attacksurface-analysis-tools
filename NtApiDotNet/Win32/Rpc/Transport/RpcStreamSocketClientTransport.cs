@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public abstract class RpcStreamSocketClientTransport : RpcStreamClientTransport
     {
         #region Private Members
-        private readonly Socket _socket;
+        private protected readonly Socket _socket;
         #endregion
 
         #region Constructors
