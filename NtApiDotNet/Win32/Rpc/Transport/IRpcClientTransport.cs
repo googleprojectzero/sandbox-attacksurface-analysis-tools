@@ -83,5 +83,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get information about the local server process, if known.
         /// </summary>
         RpcServerProcessInformation ServerProcess { get; }
+
+        /// <summary>
+        /// Get the current Call ID.
+        /// </summary>
+        int CallId { get; }
     }
 }
