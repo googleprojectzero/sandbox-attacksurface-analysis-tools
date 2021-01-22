@@ -23,10 +23,10 @@ using System.IO;
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
     /// <summary>
-    /// Base class for a DCE/RPC client transport. This implements the common functions
-    /// of the DCE/RPC specs for network based RPC transports.
+    /// Base class for a DCE/RPC connected client transport. This implements the common functions
+    /// of the DCE/RPC specs for connected network based RPC transports.
     /// </summary>
-    public abstract class RpcDCEClientTransport : IRpcClientTransport
+    public abstract class RpcConnectedClientTransport : IRpcClientTransport
     {
         #region Protected Members
 
@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
         /// <param name="transport_security">The transport security for the connection.</param>
         /// <param name="data_rep">The data representation.</param>
-        protected RpcDCEClientTransport(ushort max_recv_fragment, ushort max_send_fragment, 
+        protected RpcConnectedClientTransport(ushort max_recv_fragment, ushort max_send_fragment, 
             NdrDataRepresentation data_rep, RpcTransportSecurity transport_security)
         {
             _max_recv_fragment = max_recv_fragment;
@@ -489,6 +489,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcAuthenticationLevel AuthenticationLevel => Authenticated ? _transport_security.AuthenticationLevel : RpcAuthenticationLevel.None;
 
         /// <summary>
+        /// Get the current Call ID.
+        /// </summary>
+        public int CallId { get; private set; }
+
+        /// <summary>
         /// Bind the RPC transport to a specified interface.
         /// </summary>
         /// <param name="interface_id">The interface ID to bind to.</param>
@@ -541,13 +546,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             _auth_context?.Dispose();
         }
-        #endregion
-
-        #region Public Properties
-        /// <summary>
-        /// Get the current Call ID.
-        /// </summary>
-        public int CallId { get; private set; }
         #endregion
     }
 }

@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// <summary>
     /// Class to implement a RPC client transport based on a stream.
     /// </summary>
-    public abstract class RpcStreamClientTransport : RpcDCEClientTransport
+    public abstract class RpcStreamClientTransport : RpcConnectedClientTransport
     {
         #region Private Members
         private readonly BinaryReader _reader;

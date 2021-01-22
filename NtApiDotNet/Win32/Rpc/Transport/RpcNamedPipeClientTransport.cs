@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// <summary>
     /// RPC client transport over named pipes.
     /// </summary>
-    public sealed class RpcNamedPipeClientTransport : RpcDCEClientTransport
+    public sealed class RpcNamedPipeClientTransport : RpcConnectedClientTransport
     {
         #region Private Members
         private readonly NtNamedPipeFileClient _pipe;
