@@ -89,7 +89,7 @@ function Get-AccessibleAlpcPort {
 Set the state of a token's privileges.
 .DESCRIPTION
 This cmdlet will set the state of a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions.
-If no token is specified then the current process token is used.
+If no token is specified then the current effective token is used.
 .PARAMETER Privilege
 A list of privileges to set their state.
 .PARAMETER Token
@@ -160,6 +160,77 @@ function Set-NtTokenPrivilege {
             $result | Write-Output
         }
     }
+}
+
+<#
+.SYNOPSIS
+Enable a token's privileges.
+.DESCRIPTION
+This cmdlet will enable a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions.
+If no token is specified then the current effective token is used.
+.PARAMETER Privilege
+A list of privileges to enable.
+.PARAMETER Token
+Optional token object to use to enable privileges. Must be accesible for AdjustPrivileges right.
+.PARAMETER PassThru
+Passthrough the updated privilege results.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the new state of all privileges successfully modified.
+.EXAMPLE
+Enable-NtTokenPrivilege SeDebugPrivilege
+Enable SeDebugPrivilege on the current effective token
+.EXAMPLE
+Enable-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
+#>
+function Enable-NtTokenPrivilege {
+    [CmdletBinding(DefaultParameterSetName = "FromPrivilege")]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPrivilege")]
+        [alias("Privileges")]
+        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [switch]$PassThru
+    )
+
+    Set-NtTokenPrivilege -Token $Token -Privilege $Privilege -PassThru:$PassThru -Attribute Enabled
+}
+
+<#
+.SYNOPSIS
+Disable a token's privileges.
+.DESCRIPTION
+This cmdlet will disable a token's privileges. If no token is specified then the current effective token is used.
+.PARAMETER Privilege
+A list of privileges to disable.
+.PARAMETER Token
+Optional token object to use to disable privileges. Must be accesible for AdjustPrivileges right.
+.PARAMETER PassThru
+Passthrough the updated privilege results.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the new state of all privileges successfully modified.
+.EXAMPLE
+Disable-NtTokenPrivilege SeDebugPrivilege
+Disable SeDebugPrivilege on the current effective token
+.EXAMPLE
+Disable-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Disable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
+#>
+function Disable-NtTokenPrivilege {
+    [CmdletBinding(DefaultParameterSetName = "FromPrivilege")]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPrivilege")]
+        [alias("Privileges")]
+        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [switch]$PassThru
+    )
+
+    Set-NtTokenPrivilege -Token $Token -Privilege $Privilege -PassThru:$PassThru -Attribute Disabled
 }
 
 <#
