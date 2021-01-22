@@ -41,6 +41,15 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         public string ImagePath { get; }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{ProcessId} - {Name}";
+        }
+
         internal RpcServerProcessInformation(int process_id, int session_id)
         {
             ProcessId = process_id;

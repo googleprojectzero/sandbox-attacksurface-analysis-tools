@@ -65,6 +65,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         string ProtocolSequence { get; }
 
         /// <summary>
+        /// Get whether the client has been authenticated.
+        /// </summary>
+        bool Authenticated { get; }
+
+        /// <summary>
         /// Get information about the local server process, if known.
         /// </summary>
         RpcServerProcessInformation ServerProcess { get; }

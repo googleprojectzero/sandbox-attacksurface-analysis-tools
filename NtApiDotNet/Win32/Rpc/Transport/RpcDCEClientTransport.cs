@@ -472,6 +472,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public virtual RpcServerProcessInformation ServerProcess => throw new NotImplementedException();
 
         /// <summary>
+        /// Get whether the client has been authenticated.
+        /// </summary>
+        public bool Authenticated => _auth_context?.Done ?? false;
+
+        /// <summary>
         /// Bind the RPC transport to a specified interface.
         /// </summary>
         /// <param name="interface_id">The interface ID to bind to.</param>

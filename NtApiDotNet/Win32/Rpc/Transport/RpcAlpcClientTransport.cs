@@ -336,6 +336,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
+        /// <summary>
+        /// Get whether the client has been authenticated.
+        /// </summary>
+        public bool Authenticated => Connected;
+
         #endregion
     }
 }
