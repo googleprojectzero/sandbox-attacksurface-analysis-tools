@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Buffers;
+using System;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -20,7 +21,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Interface for authentication contexts.
     /// </summary>
-    public interface IAuthenticationContext
+    public interface IAuthenticationContext : IDisposable
     {
         /// <summary>
         /// The current authentication token.
@@ -109,5 +110,27 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="sequence_no">The sequence number.</param>
         /// <remarks>The messages are decrypted in place. You can add buffers with the ReadOnly flag to prevent them being decrypted.</remarks>
         void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no);
+
+        /// <summary>
+        /// Query the context's package info.
+        /// </summary>
+        /// <returns>The authentication package info,</returns>
+        AuthenticationPackage GetAuthenticationPackage();
+
+        /// <summary>
+        /// Continue the authentication with the token.
+        /// </summary>
+        /// <param name="token">The token to continue authentication.</param>
+        void Continue(AuthenticationToken token);
+
+        /// <summary>
+        /// Get the maximum signature size of this context.
+        /// </summary>
+        int MaxSignatureSize { get; }
+
+        /// <summary>
+        /// Get the size of the security trailer for this context.
+        /// </summary>
+        int SecurityTrailerSize { get; }
     }
 }

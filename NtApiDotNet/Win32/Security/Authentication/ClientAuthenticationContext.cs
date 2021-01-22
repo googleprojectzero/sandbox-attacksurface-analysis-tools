@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a client authentication context.
     /// </summary>
-    public sealed class ClientAuthenticationContext : IDisposable, IAuthenticationContext
+    public sealed class ClientAuthenticationContext : IDisposable, IAuthenticationContext, IClientAuthenticationContext
     {
         private readonly CredentialHandle _creds;
         private readonly InitializeContextReqFlags _req_attributes;

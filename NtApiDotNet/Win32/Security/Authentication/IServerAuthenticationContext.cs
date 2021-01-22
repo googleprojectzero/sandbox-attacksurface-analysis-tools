@@ -12,27 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
-    /// Flags to specify RPC authentication capabilities.
+    /// Placeholder interface for a server authentication context.
     /// </summary>
-    [Flags]
-    public enum RpcAuthenticationCapabilities
+    public interface IServerAuthenticationContext : IAuthenticationContext
     {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Enable mutual authentication.
-        /// </summary>
-        MutualAuthentication = 1,
-        /// <summary>
-        /// Enable a NULL session authentication.
-        /// </summary>
-        NullSession = 2
     }
 }

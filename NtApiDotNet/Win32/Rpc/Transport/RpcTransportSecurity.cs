@@ -93,6 +93,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     case SecurityImpersonationLevel.Identification:
                         flags |= InitializeContextReqFlags.Identify;
                         break;
+                    case SecurityImpersonationLevel.Delegation:
+                        flags |= InitializeContextReqFlags.Delegate;
+                        break;
                 }
             }
 
@@ -106,10 +109,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     break;
             }
 
-            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.Delegation))
-            {
-                flags |= InitializeContextReqFlags.Delegate;
-            }
             if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.MutualAuthentication))
             {
                 flags |= InitializeContextReqFlags.MutualAuth;
@@ -122,7 +121,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return flags;
         }
 
-        internal ClientAuthenticationContext CreateClientContext()
+        internal IClientAuthenticationContext CreateClientContext()
         {
             switch (AuthenticationLevel)
             {

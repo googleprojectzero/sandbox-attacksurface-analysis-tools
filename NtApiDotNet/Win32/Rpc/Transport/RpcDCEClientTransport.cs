@@ -68,7 +68,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private readonly RpcTransportSecurity _transport_security;
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
-        private readonly ClientAuthenticationContext _auth_context;
+        private readonly IClientAuthenticationContext _auth_context;
         private int _send_sequence_no;
         private int _recv_sequence_no;
         private RpcAuthenticationType _negotiated_auth_type;
