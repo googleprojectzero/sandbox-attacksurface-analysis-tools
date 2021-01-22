@@ -411,13 +411,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     _auth_context.Continue(new AuthenticationToken(recv.Item2.Data));
                     if (_auth_context.Done)
                     {
-                        // If we still have an NTLM token to complete then send as an Auth3 PDU.
                         byte[] token = _auth_context.Token.ToArray();
-                        if (token.Length > 0)
+                        if (token.Length == 0)
+                            break;
+                        // If we still have an NTLM token to complete then send as an Auth3 PDU.
+                        if (_transport_security.AuthenticationType == RpcAuthenticationType.WinNT)
                         {
                             SendReceivePDU(call_id, new PDUAuth3(), _auth_context.Token.ToArray(), false);
+                            break;
                         }
-                        break;
                     }
                 }
                 else if (recv.Item1 is PDUBindNack bind_nack)
