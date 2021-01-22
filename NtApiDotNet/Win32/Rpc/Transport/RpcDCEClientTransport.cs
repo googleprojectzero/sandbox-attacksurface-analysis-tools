@@ -19,7 +19,6 @@ using NtApiDotNet.Win32.Security.Buffers;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {

@@ -22,6 +22,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// </summary>
     public struct RpcTransportSecurity
     {
+        private Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
+
         /// <summary>
         /// Security quality of service.
         /// </summary>
@@ -55,15 +57,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="auth_factory">Factory to create a non-standard authentication context.</param>
+        /// <remarks>You can use this version to create a mechanism to pass existing tokens such as pass-the-hash or sending arbitrary Kerberos tickets.</remarks>
+        public RpcTransportSecurity(Func<RpcTransportSecurity, IClientAuthenticationContext> auth_factory) : this()
+        {
+            _auth_factory = auth_factory;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         /// <param name="security_quality_of_service">Security quality of service.</param>
-        public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service)
+        public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
         {
             SecurityQualityOfService = security_quality_of_service;
-            AuthenticationLevel = RpcAuthenticationLevel.None;
-            AuthenticationType = RpcAuthenticationType.None;
-            AuthenticationCapabilities = RpcAuthenticationCapabilities.None;
-            Credentials = null;
-            ServicePrincipalName = null;
         }
 
         private string GetAuthPackageName()
@@ -123,6 +130,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         internal IClientAuthenticationContext CreateClientContext()
         {
+            if (_auth_factory != null)
+                return _auth_factory(this);
+
             switch (AuthenticationLevel)
             {
                 case RpcAuthenticationLevel.None:
