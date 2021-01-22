@@ -341,6 +341,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public bool Authenticated => Connected;
 
+        /// <summary>
+        /// Get the transports authentication type.
+        /// </summary>
+        public RpcAuthenticationType AuthenticationType => Authenticated ? RpcAuthenticationType.WinNT : RpcAuthenticationType.None;
+
+        /// <summary>
+        /// Get the transports authentication level.
+        /// </summary>
+        public RpcAuthenticationLevel AuthenticationLevel => Authenticated ? RpcAuthenticationLevel.PacketPrivacy : RpcAuthenticationLevel.None;
+
         #endregion
     }
 }

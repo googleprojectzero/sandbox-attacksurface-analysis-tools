@@ -70,6 +70,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         bool Authenticated { get; }
 
         /// <summary>
+        /// Get the transports authentication type.
+        /// </summary>
+        RpcAuthenticationType AuthenticationType { get; }
+
+        /// <summary>
+        /// Get the transports authentication level.
+        /// </summary>
+        RpcAuthenticationLevel AuthenticationLevel { get; }
+
+        /// <summary>
         /// Get information about the local server process, if known.
         /// </summary>
         RpcServerProcessInformation ServerProcess { get; }

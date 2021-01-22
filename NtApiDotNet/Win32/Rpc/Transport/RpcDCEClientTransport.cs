@@ -479,6 +479,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public bool Authenticated => _auth_context?.Done ?? false;
 
         /// <summary>
+        /// Get the transports authentication type.
+        /// </summary>
+        public RpcAuthenticationType AuthenticationType => Authenticated ? _negotiated_auth_type : RpcAuthenticationType.None;
+
+        /// <summary>
+        /// Get the transports authentication level.
+        /// </summary>
+        public RpcAuthenticationLevel AuthenticationLevel => Authenticated ? _transport_security.AuthenticationLevel : RpcAuthenticationLevel.None;
+
+        /// <summary>
         /// Bind the RPC transport to a specified interface.
         /// </summary>
         /// <param name="interface_id">The interface ID to bind to.</param>
