@@ -7335,6 +7335,72 @@ function Get-Win32ModuleImport {
 
 <#
 .SYNOPSIS
+Download a symbol file from a symbol server for a module.
+.DESCRIPTION
+This cmdlet extracts the debug information from a loaded module and downloads the symbol file from a symbol server.
+.PARAMETER Module
+Specify the loaded module.
+.PARAMETER Path
+Specify the path to the module.
+.PARAMETER OutPath
+Specify the output path to write the symbol file to. If you specify a directory it will use the original filename. Defaults to current directory.
+.PARAMETER SymbolServerUrl
+Specify the URL for the symbol server. Defaults to the Microsoft public symbol server.
+.PARAMETER Mirror
+Specify that the output file should be a mirror of the symbol path. Useful to create a local symbol cache.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Get-Win32ModuleSymbolFile {
+    [CmdletBinding(DefaultParameterSetName = "FromModule")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
+        [string]$Path,
+        [Parameter(Position = 1)]
+        [string]$OutPath,
+        [string]$SymbolServerUrl = "https://msdl.microsoft.com/download/symbols",
+        [switch]$Mirror
+    )
+
+    if ($PsCmdlet.ParameterSetName -eq "FromPath") {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+            if ($null -ne $lib) {
+                Get-Win32ModuleSymbolFile -Module $lib -OutPath $OutPath -SymbolServerUrl $SymbolServerUrl -Mirror:$Mirror
+            }
+        }
+    }
+    else {
+        $debug_data = $Module.DebugData
+        $name = $debug_data.PdbName
+        if ($Mirror) {
+            if (!(Test-Path -Path $OutPath -PathType Container)) {
+                Write-Error "Output path must be a directory when using mirror."
+                return
+            }
+
+            $OutPath = $debug_data.GetSymbolPath((Resolve-Path $OutPath))
+            New-Item -Type Directory -Path (Split-Path $OutPath -Parent) -Force -ErrorAction Stop | Out-Null
+        } else {
+            if ("" -eq $OutPath) {
+                $OutPath = $name
+            } else {
+                if (Test-Path -Path $OutPath -PathType Container) {
+                    $OutPath = Join-Path $OutPath $name
+                }
+            }
+        }
+        $url = $debug_data.GetSymbolPath($SymbolServerUrl)
+        Write-Information "Downloading $url to $OutPath"
+        Invoke-WebRequest -Uri $url -OutFile $OutPath -ErrorAction Stop
+    }
+}
+
+<#
+.SYNOPSIS
 Gets entries from an object directory.
 .DESCRIPTION
 This cmdlet gets the list entries in an object directory.

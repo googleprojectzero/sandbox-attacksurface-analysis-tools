@@ -110,7 +110,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-Win32Service', 'Test-NtProcess', 'Get-NtApiSet', 'Clear-NtSidName', 'Add-NtSidName',
           'Remove-NtSidName', 'New-Win32Service', 'Remove-Win32Service', 'Test-NtTokenCapability',
           'New-Win32DebugConsole', 'Read-Win32DebugConsole', 'Get-Win32ServiceSecurityDescriptor',
-          'Disconnect-RpcClient', 'Enable-NtTokenPrivilege', 'Disable-NtTokenPrivilege'
+          'Disconnect-RpcClient', 'Enable-NtTokenPrivilege', 'Disable-NtTokenPrivilege', 'Get-Win32ModuleSymbolFile'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

@@ -570,7 +570,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Single DLL export entry.
     /// </summary>
-    public class DllExport
+    public sealed class DllExport
     {
         /// <summary>
         /// The name of the export. If an ordinal this is #ORD.
@@ -615,7 +615,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Single DLL import.
     /// </summary>
-    public class DllImport
+    public sealed class DllImport
     {
         /// <summary>
         /// The name of the DLL importing from.
@@ -664,7 +664,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Single DLL import function.
     /// </summary>
-    public class DllImportFunction
+    public sealed class DllImportFunction
     {
         /// <summary>
         /// The name of the DLL importing from.
@@ -705,7 +705,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// CodeView debug data for an executable.
     /// </summary>
-    public class DllDebugData
+    public sealed class DllDebugData
     {
         /// <summary>
         /// The magic identifier.
@@ -727,6 +727,10 @@ namespace NtApiDotNet.Win32
         /// Identifier path to use when looking up symbol file.
         /// </summary>
         public string IdentiferPath { get; }
+        /// <summary>
+        /// Get just the name of the PDB file.
+        /// </summary>
+        public string PdbName => Path.GetFileName(PdbPath);
 
         /// <summary>
         /// Get the symbol server path.
@@ -735,7 +739,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The symbol server path.</returns>
         public string GetSymbolPath(string symbol_url)
         {
-            string filename = Path.GetFileName(PdbPath);
+            string filename = PdbName;
             Uri uri = new Uri(symbol_url);
             if (uri.IsFile)
             {
@@ -770,7 +774,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Safe handle for a loaded library.
     /// </summary>
-    public class SafeLoadLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed class SafeLoadLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region Constructors
         /// <summary>
