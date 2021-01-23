@@ -7394,7 +7394,7 @@ function Get-Win32ModuleSymbolFile {
             }
         }
         $url = $debug_data.GetSymbolPath($SymbolServerUrl)
-        Write-Information "Downloading $url to $OutPath"
+        Write-Verbose "Writing symbol file to $OutPath"
         Invoke-WebRequest -Uri $url -OutFile $OutPath -ErrorAction Stop
     }
 }
