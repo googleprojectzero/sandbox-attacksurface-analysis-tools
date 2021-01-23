@@ -56,6 +56,48 @@ namespace NtApiDotNet.Win32.Net
         }
     }
 
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MIB_TCPROW_OWNER_MODULE
+    {
+        public int dwState;
+        public uint dwLocalAddr;
+        public int dwLocalPort;
+        public uint dwRemoteAddr;
+        public int dwRemotePort;
+        public int dwOwningPid;
+        public LargeIntegerStruct liCreateTimestamp;
+        public ulong OwningModuleInfo0;
+        public ulong OwningModuleInfo1;
+        public ulong OwningModuleInfo2;
+        public ulong OwningModuleInfo3;
+        public ulong OwningModuleInfo4;
+        public ulong OwningModuleInfo5;
+        public ulong OwningModuleInfo6;
+        public ulong OwningModuleInfo7;
+        public ulong OwningModuleInfo8;
+        public ulong OwningModuleInfo9;
+        public ulong OwningModuleInfo10;
+        public ulong OwningModuleInfo11;
+        public ulong OwningModuleInfo12;
+        public ulong OwningModuleInfo13;
+        public ulong OwningModuleInfo14;
+        public ulong OwningModuleInfo15;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("table")]
+    internal struct MIB_TCPTABLE_OWNER_MODULE : ITcpTable<MIB_TCPTABLE_OWNER_MODULE>
+    {
+        public int dwNumEntries;
+        public MIB_TCPROW_OWNER_MODULE table;
+
+        public TcpListenerInformation[] GetListeners(SafeStructureInOutBuffer<MIB_TCPTABLE_OWNER_MODULE> buffer)
+        {
+            return buffer.Data.ReadArray<MIB_TCPROW_OWNER_MODULE>(0, dwNumEntries)
+                .Select(e => new TcpListenerInformation(e)).ToArray();
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct IPv6Address
     {
@@ -104,10 +146,70 @@ namespace NtApiDotNet.Win32.Net
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MIB_TCP6ROW_OWNER_MODULE
+    {
+        public IPv6Address ucLocalAddr;
+        public uint dwLocalScopeId;
+        public int dwLocalPort;
+        public IPv6Address ucRemoteAddr;
+        public uint dwRemoteScopeId;
+        public int dwRemotePort;
+        public int dwState;
+        public int dwOwningPid;
+        public LargeIntegerStruct liCreateTimestamp;
+        public ulong OwningModuleInfo0;
+        public ulong OwningModuleInfo1;
+        public ulong OwningModuleInfo2;
+        public ulong OwningModuleInfo3;
+        public ulong OwningModuleInfo4;
+        public ulong OwningModuleInfo5;
+        public ulong OwningModuleInfo6;
+        public ulong OwningModuleInfo7;
+        public ulong OwningModuleInfo8;
+        public ulong OwningModuleInfo9;
+        public ulong OwningModuleInfo10;
+        public ulong OwningModuleInfo11;
+        public ulong OwningModuleInfo12;
+        public ulong OwningModuleInfo13;
+        public ulong OwningModuleInfo14;
+        public ulong OwningModuleInfo15;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("table")]
+    internal struct MIB_TCP6TABLE_OWNER_MODULE : ITcpTable<MIB_TCP6TABLE_OWNER_MODULE>
+    {
+        public int dwNumEntries;
+        public MIB_TCP6ROW_OWNER_MODULE table;
+
+        public TcpListenerInformation[] GetListeners(SafeStructureInOutBuffer<MIB_TCP6TABLE_OWNER_MODULE> buffer)
+        {
+            return buffer.Data.ReadArray<MIB_TCP6ROW_OWNER_MODULE>(0, dwNumEntries)
+                .Select(e => new TcpListenerInformation(e)).ToArray();
+        }
+    }
+
     internal interface ITcpTable<T> where T : struct
     {
         TcpListenerInformation[] GetListeners(SafeStructureInOutBuffer<T> buffer);
     }
+
+    internal enum TCPIP_OWNER_MODULE_INFO_CLASS
+    {
+        TCPIP_OWNER_MODULE_INFO_BASIC
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TCPIP_OWNER_MODULE_BASIC_INFO
+    {
+        public IntPtr pModuleName;
+        public IntPtr pModulePath;
+    }
+
+    internal delegate Win32Error GetOwnerModuleDelegate<T>(in T pTcpEntry, 
+            TCPIP_OWNER_MODULE_INFO_CLASS Class,
+            SafeBuffer pBuffer,
+            ref int pdwSize);
 
     internal static class Win32NetworkNativeMethods
     {
@@ -120,6 +222,22 @@ namespace NtApiDotNet.Win32.Net
             AddressFamily ulAf,
             TCP_TABLE_CLASS TableClass,
             int Reserved
+        );
+
+        [DllImport("Iphlpapi.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetOwnerModuleFromTcpEntry(
+            in MIB_TCPROW_OWNER_MODULE pTcpEntry,
+            TCPIP_OWNER_MODULE_INFO_CLASS Class,
+            SafeBuffer pBuffer,
+            ref int pdwSize
+        );
+
+        [DllImport("Iphlpapi.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetOwnerModuleFromTcp6Entry(
+            in MIB_TCP6ROW_OWNER_MODULE pTcpEntry,
+            TCPIP_OWNER_MODULE_INFO_CLASS Class,
+            SafeBuffer pBuffer,
+            ref int pdwSize
         );
     }
 }

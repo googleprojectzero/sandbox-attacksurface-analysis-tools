@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Net
 {
@@ -32,16 +34,45 @@ namespace NtApiDotNet.Win32.Net
 
         /// <summary>Gets the state of this Transmission Control Protocol (TCP) connection.</summary>
         /// <returns>One of the <see cref="T:System.Net.NetworkInformation.TcpState" /> enumeration values.</returns>
-        public override TcpState State {get;}
+        public override TcpState State { get; }
 
         /// <summary>
         /// Gets the process ID of the listener on the local system.
         /// </summary>
         public int ProcessId { get; }
 
+        /// <summary>
+        /// Gets the time the socket was created.
+        /// </summary>
+        public DateTime CreateTime { get; }
+
+        /// <summary>
+        /// Gets the owner of the module. This could be an executable path or a service name.
+        /// </summary>
+        public string OwnerModule { get; }
+
         private static int ConvertPort(int port)
         {
             return ((port & 0xFF) << 8) | ((port >> 8) & 0xFF);
+        }
+
+        private static string GetOwnerModule<T>(GetOwnerModuleDelegate<T> func, T entry, int process_id)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<TCPIP_OWNER_MODULE_BASIC_INFO>(64 * 1024, true))
+            {
+                int size = buffer.Length;
+                Win32Error error = func(entry, TCPIP_OWNER_MODULE_INFO_CLASS.TCPIP_OWNER_MODULE_INFO_BASIC, buffer, ref size);
+                string ret;
+                if (error == Win32Error.SUCCESS)
+                {
+                    ret = Marshal.PtrToStringUni(buffer.Result.pModulePath);
+                }
+                else
+                {
+                    ret = NtSystemInfo.GetProcessIdImagePath(process_id, false).GetResultOrDefault(string.Empty);
+                }
+                return ret;
+            }
         }
 
         internal TcpListenerInformation(MIB_TCPROW_OWNER_PID entry)
@@ -50,6 +81,17 @@ namespace NtApiDotNet.Win32.Net
             RemoteEndPoint = new IPEndPoint(entry.dwRemoteAddr, ConvertPort(entry.dwRemotePort));
             State = (TcpState)entry.dwState;
             ProcessId = entry.dwOwningPid;
+            OwnerModule = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
+        }
+
+        internal TcpListenerInformation(MIB_TCPROW_OWNER_MODULE entry)
+        {
+            LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, ConvertPort(entry.dwLocalPort));
+            RemoteEndPoint = new IPEndPoint(entry.dwRemoteAddr, ConvertPort(entry.dwRemotePort));
+            State = (TcpState)entry.dwState;
+            ProcessId = entry.dwOwningPid;
+            CreateTime = entry.liCreateTimestamp.ToDateTime();
+            OwnerModule = GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcpEntry, entry, ProcessId);
         }
 
         internal TcpListenerInformation(MIB_TCP6ROW_OWNER_PID entry)
@@ -60,6 +102,18 @@ namespace NtApiDotNet.Win32.Net
                 ConvertPort(entry.dwRemotePort));
             State = (TcpState)entry.dwState;
             ProcessId = entry.dwOwningPid;
+        }
+
+        internal TcpListenerInformation(MIB_TCP6ROW_OWNER_MODULE entry)
+        {
+            LocalEndPoint = new IPEndPoint(new IPAddress(entry.ucLocalAddr.ToArray(), entry.dwLocalScopeId),
+                ConvertPort(entry.dwLocalPort));
+            RemoteEndPoint = new IPEndPoint(new IPAddress(entry.ucRemoteAddr.ToArray(), entry.dwRemoteScopeId),
+                ConvertPort(entry.dwRemotePort));
+            State = (TcpState)entry.dwState;
+            ProcessId = entry.dwOwningPid;
+            CreateTime = entry.liCreateTimestamp.ToDateTime();
+            OwnerModule = GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcp6Entry, entry, ProcessId);
         }
     }
 }

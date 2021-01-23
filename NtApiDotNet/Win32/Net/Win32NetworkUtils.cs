@@ -61,11 +61,11 @@ namespace NtApiDotNet.Win32.Net
             switch (address_family)
             {
                 case AddressFamily.InterNetwork:
-                    return GetTcpListeners<MIB_TCPTABLE_OWNER_PID>(AddressFamily.InterNetwork, 
-                        TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_LISTENER, throw_on_error).Cast<IEnumerable<TcpListenerInformation>>();
+                return GetTcpListeners<MIB_TCPTABLE_OWNER_MODULE>(AddressFamily.InterNetwork, 
+                    TCP_TABLE_CLASS.TCP_TABLE_OWNER_MODULE_LISTENER, throw_on_error).Cast<IEnumerable<TcpListenerInformation>>();
                 case AddressFamily.InterNetworkV6:
-                    return GetTcpListeners<MIB_TCP6TABLE_OWNER_PID>(AddressFamily.InterNetworkV6, 
-                        TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_LISTENER, throw_on_error).Cast<IEnumerable<TcpListenerInformation>>();
+                    return GetTcpListeners<MIB_TCP6TABLE_OWNER_MODULE>(AddressFamily.InterNetworkV6, 
+                        TCP_TABLE_CLASS.TCP_TABLE_OWNER_MODULE_LISTENER, throw_on_error).Cast<IEnumerable<TcpListenerInformation>>();
                 default:
                     throw new ArgumentException("Only support IPv4 and IPv6 address families.");
             }
