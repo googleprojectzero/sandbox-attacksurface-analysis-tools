@@ -21,14 +21,25 @@ function Get-IsPSCore {
     return ($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')
 }
 
-if ([System.Environment]::Is64BitProcess) {
-    $native_dir = "$PSScriptRoot\x64"
-}
-else {
-    $native_dir = "$PSScriptRoot\x86"
+$native_dir = switch([NtApiDotNet.NtSystemInfo]::ProcessorInformation.ProcessorArchitecture) {
+    "AMD64" { 
+        "$PSScriptRoot\x64"
+    }
+    "Intel" {
+        "$PSScriptRoot\x86"
+    }
+    "ARM64" {
+        "$PSScriptRoot\ARM64"
+    }
+    "ARM" {
+        "$PSScriptRoot\ARM"
+    }
+    default {
+        ""
+    }
 }
 
-if (Test-Path "$native_dir\dbghelp.dll") {
+if ("" -ne $native_dir -and (Test-Path "$native_dir\dbghelp.dll")) {
     $Script:GlobalDbgHelpPath = "$native_dir\dbghelp.dll"
 }
 else {
