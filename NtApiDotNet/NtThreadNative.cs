@@ -177,7 +177,7 @@ namespace NtApiDotNet
         public ulong Ticket { get; }
         public WorkOnBehalfTicketFlags Flags { get; }
 
-        internal WorkOnBehalfTicket(RtlWorkOnBehalfTicketEx ticket) 
+        internal WorkOnBehalfTicket(RtlWorkOnBehalfTicketEx ticket)
             : this(ticket.Ticket.WorkOnBehalfTicket)
         {
             Flags = ticket.Flags;
@@ -190,7 +190,7 @@ namespace NtApiDotNet
 
         public WorkOnBehalfTicket(int thread_id, long creation_time, ulong xor_key)
         {
-            RtlWorkOnBehalfTicket ticket = new RtlWorkOnBehalfTicket() { ThreadId = (uint)thread_id, 
+            RtlWorkOnBehalfTicket ticket = new RtlWorkOnBehalfTicket() { ThreadId = (uint)thread_id,
                 ThreadCreationTimeLow = (uint)(creation_time & 0xFFFFFFFF) };
             Ticket = ticket.WorkOnBehalfTicket ^ xor_key;
         }
@@ -238,7 +238,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ContextX86 : IContext
+    public sealed class ContextX86 : IContext
     {
         //
         // The flags values within this flag control the contents of
@@ -353,6 +353,8 @@ namespace NtApiDotNet
     {
         X86 = 0x00010000,
         Amd64 = 0x00100000,
+        ARM = 0x00200000,
+        ARM64 = 0x00400000,
         Control = 0x00000001,
         Integer = 0x00000002,
         Segments = 0x00000004,
@@ -368,7 +370,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ContextAmd64 : IContext
+    public sealed class ContextAmd64 : IContext
     {
         public ulong P1Home;
         public ulong P2Home;
@@ -385,23 +387,11 @@ namespace NtApiDotNet
 
         public ContextFlags ContextFlags
         {
-            get
-            {
-                return _ContextFlags & ~ContextFlags.Amd64;
-            }
-            set
-            {
-                _ContextFlags = value | ContextFlags.Amd64;
-            }
+            get => _ContextFlags & ~ContextFlags.Amd64;
+            set => _ContextFlags = value | ContextFlags.Amd64;
         }
 
-        public ulong InstructionPointer
-        {
-            get
-            {
-                return Rip;
-            }
-        }
+        public ulong InstructionPointer => Rip;
 
         public uint MxCsr;
 
@@ -496,6 +486,138 @@ namespace NtApiDotNet
         public ulong LastBranchFromRip;
         public ulong LastExceptionToRip;
         public ulong LastExceptionFromRip;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Arm64Neon128
+    {
+        public ulong Low;
+        public long High;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class ContextARM64 : IContext
+    {
+        private ContextFlags _ContextFlags;
+        public uint Cpsr;
+        public ulong X0;
+        public ulong X1;
+        public ulong X2;
+        public ulong X3;
+        public ulong X4;
+        public ulong X5;
+        public ulong X6;
+        public ulong X7;
+        public ulong X8;
+        public ulong X9;
+        public ulong X10;
+        public ulong X11;
+        public ulong X12;
+        public ulong X13;
+        public ulong X14;
+        public ulong X15;
+        public ulong X16;
+        public ulong X17;
+        public ulong X18;
+        public ulong X19;
+        public ulong X20;
+        public ulong X21;
+        public ulong X22;
+        public ulong X23;
+        public ulong X24;
+        public ulong X25;
+        public ulong X26;
+        public ulong X27;
+        public ulong X28;
+        public ulong Fp;
+        public ulong Lr;
+        public ulong Sp;
+        public ulong Pc;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public Arm64Neon128[] V;
+        public uint Fpcr;
+        public uint Fpsr;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public uint[] Bcr;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public ulong[] Bvr;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public uint[] Wcr;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public ulong[] Wvr;
+
+        public ContextFlags ContextFlags
+        {
+            get => _ContextFlags & ~ContextFlags.ARM64;
+            set => _ContextFlags = value | ContextFlags.ARM64;
+        }
+
+        public ulong InstructionPointer => Pc;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class ContextARM : IContext
+    {
+        //
+        // Control flags.
+        //
+
+        private ContextFlags _ContextFlags;
+
+        //
+        // Integer registers
+        //
+
+        public uint R0;
+        public uint R1;
+        public uint R2;
+        public uint R3;
+        public uint R4;
+        public uint R5;
+        public uint R6;
+        public uint R7;
+        public uint R8;
+        public uint R9;
+        public uint R10;
+        public uint R11;
+        public uint R12;
+
+        //
+        // Control Registers
+        //
+
+        public uint Sp;
+        public uint Lr;
+        public uint Pc;
+        public uint Cpsr;
+
+        //
+        // Floating Point/NEON Registers
+        //
+
+        public uint Fpscr;
+        public uint Padding;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public ulong[] D;
+
+        // Debug registers
+        //
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public uint[] Bvr;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public uint[] Bcr;
+        public uint Wvr;
+        public uint Wcr;
+        public uint Padding2_0;
+        public uint Padding2_1;
+
+        public ContextFlags ContextFlags
+        {
+            get => _ContextFlags & ~ContextFlags.ARM;
+            set => _ContextFlags = value | ContextFlags.ARM;
+        }
+
+        public ulong InstructionPointer => Pc;
     }
 
     [StructLayout(LayoutKind.Sequential)]

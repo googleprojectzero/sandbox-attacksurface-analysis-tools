@@ -50,9 +50,9 @@ namespace NtApiDotNet
             return Query(ThreadInformationClass.ThreadBasicInformation, new ThreadBasicInformation(), throw_on_error);
         }
 
-        private NtResult<IContext> GetX86Context(ContextFlags flags, bool throw_on_error)
+        private NtResult<IContext> GetContext32<T>(ContextFlags flags, bool throw_on_error) where T : IContext, new()
         {
-            var context = new ContextX86
+            var context = new T
             {
                 ContextFlags = flags
             };
@@ -63,9 +63,9 @@ namespace NtApiDotNet
             }
         }
 
-        private NtResult<IContext> GetAmd64Context(ContextFlags flags, bool throw_on_error)
+        private NtResult<IContext> GetContext64<T>(ContextFlags flags, bool throw_on_error) where T : IContext, new()
         {
-            var context = new ContextAmd64
+            var context = new T
             {
                 ContextFlags = flags
             };
@@ -82,7 +82,7 @@ namespace NtApiDotNet
                 }
 
                 Marshal.StructureToPtr(context, buffer.DangerousGetHandle() + write_ofs, false);
-                var sbuffer = buffer.GetStructAtOffset<ContextAmd64>(write_ofs);
+                var sbuffer = buffer.GetStructAtOffset<T>(write_ofs);
                 return NtSystemCalls.NtGetContextThread(Handle, sbuffer).CreateResult(throw_on_error, () => sbuffer.Result).Cast<IContext>();
             }
         }
@@ -109,6 +109,30 @@ namespace NtApiDotNet
                 }
             }
             throw new ArgumentException("Must specify a ContextAmd64 instance for a x64 process.");
+        }
+
+        private NtStatus SetARMContext(IContext context, bool throw_on_error)
+        {
+            if (context is ContextARM arm_context)
+            {
+                using (var buffer = arm_context.ToBuffer())
+                {
+                    return NtSystemCalls.NtSetContextThread(Handle, buffer).ToNtException(throw_on_error);
+                }
+            }
+            throw new ArgumentException("Must specify a ContextARM instance for an ARM process.");
+        }
+
+        private NtStatus SetARM64Context(IContext context, bool throw_on_error)
+        {
+            if (context is ContextARM64 arm_context)
+            {
+                using (var buffer = arm_context.ToBuffer())
+                {
+                    return NtSystemCalls.NtSetContextThread(Handle, buffer).ToNtException(throw_on_error);
+                }
+            }
+            throw new ArgumentException("Must specify a ContextARM instance for an ARM64 process.");
         }
 
         private static NtResult<WorkOnBehalfTicket> GetTicket(int thread_id, bool throw_on_error)
@@ -1027,14 +1051,18 @@ namespace NtApiDotNet
         public NtResult<IContext> GetContext(ContextFlags flags, bool throw_on_error)
         {
             var processor = NtSystemInfo.ProcessorInformation.ProcessorArchitecture;
-            if (processor == ProcessorAchitecture.AMD64 && Environment.Is64BitProcess)
+            switch (processor)
             {
-                return GetAmd64Context(flags, throw_on_error);
+                case ProcessorAchitecture.AMD64:
+                    return GetContext64<ContextAmd64>(flags, throw_on_error);
+                case ProcessorAchitecture.Intel:
+                    return GetContext32<ContextX86>(flags, throw_on_error);
+                case ProcessorAchitecture.ARM:
+                    return GetContext32<ContextARM>(flags, throw_on_error);
+                case ProcessorAchitecture.ARM64:
+                    return GetContext32<ContextARM64>(flags, throw_on_error);
             }
-            else if (processor == ProcessorAchitecture.Intel)
-            {
-                return GetX86Context(flags, throw_on_error);
-            }
+
             throw new InvalidOperationException($"GetContext doesn't support {processor} architecture");
         }
 
@@ -1057,14 +1085,18 @@ namespace NtApiDotNet
         public NtStatus SetContext(IContext context, bool throw_on_error)
         {
             var processor = NtSystemInfo.ProcessorInformation.ProcessorArchitecture;
-            if (processor == ProcessorAchitecture.AMD64 && Environment.Is64BitProcess)
+            switch (processor)
             {
-                return SetAmd64Context(context, throw_on_error);
+                case ProcessorAchitecture.AMD64:
+                    return SetAmd64Context(context, throw_on_error);
+                case ProcessorAchitecture.Intel:
+                    return SetX86Context(context, throw_on_error);
+                case ProcessorAchitecture.ARM:
+                    return SetARMContext(context, throw_on_error);
+                case ProcessorAchitecture.ARM64:
+                    return SetARM64Context(context, throw_on_error);
             }
-            else if (processor == ProcessorAchitecture.Intel)
-            {
-                return SetX86Context(context, throw_on_error);
-            }
+
             throw new InvalidOperationException($"SetContext doesn't support {processor} architecture");
         }
 
