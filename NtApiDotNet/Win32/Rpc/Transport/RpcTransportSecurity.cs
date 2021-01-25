@@ -101,7 +101,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         flags |= InitializeContextReqFlags.Identify;
                         break;
                     case SecurityImpersonationLevel.Delegation:
-                        flags |= InitializeContextReqFlags.Delegate;
+                        flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
                         break;
                 }
             }
