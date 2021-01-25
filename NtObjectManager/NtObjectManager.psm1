@@ -4664,11 +4664,15 @@ function Get-RpcEndpoint {
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromId")]
         [parameter(ParameterSetName = "FromIdAndVersion")]
+        [parameter(ParameterSetName = "FromRpcClient")]
         [string]$SearchBinding = "",
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromId")]
         [parameter(ParameterSetName = "FromIdAndVersion")]
-        [string[]]$ProtocolSequence = @()
+        [parameter(ParameterSetName = "FromRpcClient")]
+        [string[]]$ProtocolSequence = @(),
+        [parameter(Mandatory, ParameterSetName = "FromRpcClient")]
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client
     )
 
     PROCESS {
@@ -4700,6 +4704,9 @@ function Get-RpcEndpoint {
             }
             "FromAlpc" {
                 [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
+            }
+            "FromRpcClient" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $Client.InterfaceId, $Client.InterfaceVersion)
             }
         }
 
