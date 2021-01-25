@@ -1036,7 +1036,7 @@ namespace NtApiDotNet.Win32.Debugger
             if (!disposedValue)
             {
                 disposedValue = true;
-                _callback_handler.RemoveHandler(Handle);
+                _callback_handler?.RemoveHandler(Handle);
                 _sym_cleanup?.Invoke(Handle);
                 _dbghelp_lib?.Close();
                 Process?.Dispose();
