@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet.Win32.Debugger
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    struct IMAGEHLP_MODULE64
+    internal struct IMAGEHLP_MODULE64
     {
         public int SizeOfStruct;
         public long BaseOfImage;

@@ -3782,6 +3782,10 @@ which will allow symbol servers however you can use the system version if you ju
 .PARAMETER SymbolPath
 Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the
 default of 'srv*https://msdl.microsoft.com/download/symbols'
+.PARAMETER Flags
+Flags for the symbol resolver.
+.PARAMETER TraceWriter
+Specify the output text writer for symbol tracing when enabled by the flags.
 .OUTPUTS
 NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
 .EXAMPLE
@@ -3798,7 +3802,9 @@ function New-SymbolResolver {
     Param(
         [NtApiDotNet.NtProcess]$Process,
         [string]$DbgHelpPath,
-        [string]$SymbolPath
+        [string]$SymbolPath,
+        [NtApiDotNet.Win32.Debugger.SymbolResolverFlags]$Flags = 0,
+        [System.IO.TextWriter]$TraceWriter
     )
     if ($DbgHelpPath -eq "") {
         $DbgHelpPath = $Script:GlobalDbgHelpPath
@@ -3812,7 +3818,7 @@ function New-SymbolResolver {
     if ($null -eq $Process) {
         $Process = Get-NtProcess -Current
     }
-    [NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
+    [NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath, $Flags, $TraceWriter)
 }
 
 <#

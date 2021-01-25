@@ -308,6 +308,11 @@
     <Compile Include="Win32\AppModel\AppModelUtils.cs" />
     <Compile Include="Win32\AppModel\IApplicationActivationManager.cs" />
     <Compile Include="Win32\ConsoleSession.cs" />
+    <Compile Include="Win32\Debugger\DbgHelpCallbackActionCode.cs" />
+    <Compile Include="Win32\Debugger\DbgHelpDebugCallbackHandler.cs" />
+    <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
+    <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
+    <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
     <Compile Include="Win32\Net\TcpListenerInformation.cs" />
     <Compile Include="Win32\Net\Win32NetworkNativeMethods.cs" />
     <Compile Include="Win32\Net\Win32NetworkUtils.cs" />
@@ -589,6 +594,7 @@
     <Compile Include="Win32\SymbolLoadedModule.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Security\Native\TOKEN_SOURCE.cs" />
+    <Compile Include="Win32\Debugger\SymbolResolverFlags.cs" />
     <Compile Include="Win32\Win32Debug.cs" />
     <Compile Include="Win32\Win32Error.cs" />
     <Compile Include="Win32\Win32ProcessConfig.cs" />

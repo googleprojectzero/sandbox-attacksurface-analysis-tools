@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -27,7 +28,7 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Debugger
 {
-    internal sealed class DbgHelpSymbolResolver : ISymbolResolver, ISymbolTypeResolver, IDisposable
+    internal sealed partial class DbgHelpSymbolResolver : ISymbolResolver, ISymbolTypeResolver, IDisposable
     {
         #region Private Members
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
@@ -198,23 +199,6 @@ namespace NtApiDotNet.Win32.Debugger
             IntPtr Context
         );
 
-        [StructLayout(LayoutKind.Sequential)]
-        struct IMAGEHLP_STACK_FRAME
-        {
-            public long InstructionOffset;
-            public long ReturnOffset;
-            public long FrameOffset;
-            public long StackOffset;
-            public long BackingStoreOffset;
-            public long FuncTableEntry;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-            public long[] Params;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)]
-            public long[] Reserved;
-            public int Virtual;
-            public int Reserved2;
-        }
-
         private readonly SafeLoadLibraryHandle _dbghelp_lib;
         private readonly SymInitializeW _sym_init;
         private readonly SymCleanup _sym_cleanup;
@@ -237,6 +221,9 @@ namespace NtApiDotNet.Win32.Debugger
         private readonly SymSetContext _sym_set_context;
         private readonly SymEnumSymbolsW _sym_enum_symbols;
         private IEnumerable<SymbolLoadedModule> _loaded_modules;
+        private readonly TextWriter _trace_writer;
+        private readonly bool _trace_symbol_loading;
+        private readonly DbgHelpDebugCallbackHandler _callback_handler;
 
         private void GetFunc<T>(ref T f) where T : Delegate
         {
@@ -601,7 +588,7 @@ namespace NtApiDotNet.Win32.Debugger
                     ret = CreateFunctionType(type_cache, module_base, index, module, name, address);
                     break;
                 default:
-                    System.Diagnostics.Debug.WriteLine(tag.ToString());
+                    Debug.WriteLine(tag.ToString());
                     ret = new TypeInformation(tag, size, index, module, name);
                     break;
             }
@@ -713,6 +700,49 @@ namespace NtApiDotNet.Win32.Debugger
                 return new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex,
                     result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), GetNameFromSymbolInfo(sym_info));
             }
+        }
+
+        private class TraceTextWriter : TextWriter
+        {
+            public override Encoding Encoding => Encoding.UTF8;
+
+            public override void WriteLine(string value)
+            {
+                Trace.WriteLine(value);
+            }
+            public override void Write(string value)
+            {
+                Trace.Write(value);
+            }
+        }
+
+        private bool SymDebugCallback(
+            IntPtr hProcess,
+            DbgHelpCallbackActionCode ActionCode,
+            IntPtr CallbackData
+        )
+        {
+            if (_trace_symbol_loading)
+            {
+                switch (ActionCode)
+                {
+                    case DbgHelpCallbackActionCode.CBA_EVENT:
+                        var evt = (IMAGEHLP_CBA_EVENTW)Marshal.PtrToStructure(CallbackData, typeof(IMAGEHLP_CBA_EVENTW));
+                        _trace_writer.WriteLine(Marshal.PtrToStringUni(evt.desc).TrimEnd());
+                        return true;
+                }
+            }
+
+            switch (ActionCode)
+            {
+                case DbgHelpCallbackActionCode.CBA_DEFERRED_SYMBOL_LOAD_START:
+                    {
+                        var load_evt = (IMAGEHLP_DEFERRED_SYMBOL_LOADW)Marshal.PtrToStructure(CallbackData, typeof(IMAGEHLP_DEFERRED_SYMBOL_LOADW));
+                        return false;
+                    }
+            }
+
+            return false;
         }
 
         #endregion
@@ -896,7 +926,7 @@ namespace NtApiDotNet.Win32.Debugger
         internal NtProcess Process { get; }
         internal SafeKernelObjectHandle Handle { get { return Process.Handle; } }
 
-        internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path)
+        internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path, SymbolResolverFlags flags, TextWriter trace_writer)
         {
             Process = process.Duplicate();
             _dbghelp_lib = SafeLoadLibraryHandle.LoadLibrary(dbghelp_path);
@@ -921,7 +951,18 @@ namespace NtApiDotNet.Win32.Debugger
             GetFunc(ref _sym_enum_symbols);
             GetFunc(ref _sym_set_context);
 
-            _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
+            _trace_writer = trace_writer ?? new TraceTextWriter();
+            SymOptions options = SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS;
+            _trace_symbol_loading = flags.HasFlagSet(SymbolResolverFlags.TraceSymbolLoading);
+            if (_trace_symbol_loading)
+            {
+                options |= SymOptions.DEBUG;
+            }
+            if (flags.HasFlagSet(SymbolResolverFlags.DisableExportSymbols))
+            {
+                options |= SymOptions.EXACT_SYMBOLS;
+            }
+            _sym_set_options(options);
 
             if (!_sym_init(Handle, symbol_path, true))
             {
@@ -943,11 +984,17 @@ namespace NtApiDotNet.Win32.Debugger
                             if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(),
                                 Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), GetImageSize(module)) == 0)
                             {
-                                System.Diagnostics.Debug.WriteLine($"Couldn't load {dllpath}");
+                                Debug.WriteLine($"Couldn't load {dllpath}");
                             }
                         }
                     }
                 }
+            }
+
+            if (_trace_symbol_loading)
+            {
+                _callback_handler = DbgHelpDebugCallbackHandler.GetInstance(_dbghelp_lib);
+                _callback_handler.RegisterHandler(Handle, SymDebugCallback);
             }
         }
 
@@ -989,6 +1036,7 @@ namespace NtApiDotNet.Win32.Debugger
             if (!disposedValue)
             {
                 disposedValue = true;
+                _callback_handler.RemoveHandler(Handle);
                 _sym_cleanup?.Invoke(Handle);
                 _dbghelp_lib?.Close();
                 Process?.Dispose();

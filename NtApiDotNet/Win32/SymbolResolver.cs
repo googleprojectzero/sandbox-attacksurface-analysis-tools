@@ -19,11 +19,12 @@
 
 using NtApiDotNet.Win32.Debugger;
 using System;
+using System.IO;
 
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Static class for create symbolc resolvers.
+    /// Static class for creating symbolic resolvers.
     /// </summary>
     public static class SymbolResolver
     {
@@ -33,10 +34,24 @@ namespace NtApiDotNet.Win32
         /// <param name="process">The process in which the symbols should be resolved.</param>
         /// <param name="dbghelp_path">The path to dbghelp.dll, ideally should use the one which comes with Debugging Tools for Windows.</param>
         /// <param name="symbol_path">The symbol path.</param>
+        /// <param name="flags">Flags for the symbol resolver.</param>
+        /// <param name="trace_writer">A text writer for output when specifying the <see cref="SymbolResolverFlags.TraceSymbolLoading">TraceSymbolLoading</see> flag.</param>
+        /// <returns>The instance of a symbol resolver. Should be disposed when finished.</returns>
+        public static ISymbolResolver Create(NtProcess process, string dbghelp_path, string symbol_path, SymbolResolverFlags flags, TextWriter trace_writer)
+        {
+            return new DbgHelpSymbolResolver(process, dbghelp_path, symbol_path, flags, trace_writer);
+        }
+
+        /// <summary>
+        /// Create a new instance of a symbol resolver.
+        /// </summary>
+        /// <param name="process">The process in which the symbols should be resolved.</param>
+        /// <param name="dbghelp_path">The path to dbghelp.dll, ideally should use the one which comes with Debugging Tools for Windows.</param>
+        /// <param name="symbol_path">The symbol path.</param>
         /// <returns>The instance of a symbol resolver. Should be disposed when finished.</returns>
         public static ISymbolResolver Create(NtProcess process, string dbghelp_path, string symbol_path)
         {
-            return new DbgHelpSymbolResolver(process, dbghelp_path, symbol_path);
+            return Create(process, dbghelp_path, symbol_path, SymbolResolverFlags.None, null);
         }
 
         /// <summary>
