@@ -5974,6 +5974,8 @@ Specify the RPC client to connect.
 Specify the RPC protocol sequence this client will connect through.
 .PARAMETER EndpointPath
 Specify the endpoint string. If not specified this will lookup the endpoint from the endpoint mapper.
+.PARAMETER NetworkAddress
+Specify the network address. If not specified the local system will be used.
 .PARAMETER SecurityQualityOfService
 Specify the security quality of service for the connection.
 .PARAMETER Credentials
@@ -13204,4 +13206,50 @@ function Set-Win32ServiceSecurityDescriptor {
             [NtApiDotNet.Win32.ServiceUtils]::SetScmSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
         }
     }
+}
+
+<#
+.SYNOPSIS
+Get an RPC string binding from its parts.
+.DESCRIPTION
+This cmdlet gets an RPC string binding based on its component parts.
+.PARAMETER ProtocolSequence
+Specify the RPC protocol sequence .
+.PARAMETER Endpoint
+Specify the endpoint string.
+.PARAMETER NetworkAddress
+Specify the network address.
+.PARAMETER ObjectUuid
+Specify the object UUID.
+.PARAMETER Options
+Specify the options.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Get-RpcStringBinding --ProtocolSequence "ncalrpc"
+Connect an RPC ALPC string binding from a specific protocol sequence.
+#>
+function Get-RpcStringBinding {
+    [CmdletBinding(DefaultParameterSetName = "FromProtocol")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$ProtocolSequence,
+        [parameter(Position = 1)]
+        [string]$Endpoint,
+        [parameter(Position = 2)]
+        [string]$NetworkAddress,
+        [parameter(Position = 3)]
+        [Guid]$ObjectUuid = [guid]::Empty,
+        [parameter(Position = 4)]
+        [string]$Options
+    )
+
+    $objuuid_str = ""
+    if ($ObjectUuid -ne [guid]::Empty) {
+        $objuuid_str = $ObjectUuid.ToString()
+    }
+
+    [NtApiDotNet.Win32.Rpc.RpcUtils]::ComposeStringBinding($objuuid_str, $ProtocolSequence, $NetworkAddress, $Endpoint, $Options)
 }

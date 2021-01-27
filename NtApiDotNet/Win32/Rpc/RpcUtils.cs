@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 
@@ -509,6 +510,20 @@ namespace NtApiDotNet.Win32.Rpc
         public static bool ToBool<T>(T value) where T : class
         {
             return value != null;
+        }
+
+        /// <summary>
+        /// Compose a string binding from its parts.
+        /// </summary>
+        /// <param name="objuuid">The object UUID.</param>
+        /// <param name="protseq">The protocol sequence.</param>
+        /// <param name="networkaddr">The network address.</param>
+        /// <param name="endpoint">The endpoint.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The composed binding string.</returns>
+        public static string ComposeStringBinding(string objuuid, string protseq, string networkaddr, string endpoint, string options)
+        {
+            return SafeRpcBindingHandle.Compose(objuuid, protseq, networkaddr, endpoint, options);
         }
     }
 }

@@ -75,6 +75,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             private static Guid ResolveVmId(string guid)
             {
+                if (string.IsNullOrEmpty(guid))
+                    return HyperVSocketGuids.HV_GUID_LOOPBACK;
+
                 switch (guid.ToLower())
                 {
                     case "parent":
@@ -90,21 +93,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 }
             }
 
-            private static HyperVEndPoint GetEndpoint(string endpoint)
+            private static HyperVEndPoint GetEndpoint(RpcEndpoint endpoint)
             {
-                if (Guid.TryParse(endpoint, out Guid service_id))
-                {
-                    return new HyperVEndPoint(service_id, HyperVSocketGuids.HV_GUID_LOOPBACK);
-                }
-                string[] vals = endpoint.Split(':');
-                if (vals.Length != 2)
-                    throw new ArgumentException("Invalid HyperV socket address.");
-                return new HyperVEndPoint(Guid.Parse(vals[0]), ResolveVmId(vals[1]));
+                return new HyperVEndPoint(Guid.Parse(endpoint.Endpoint), ResolveVmId(endpoint.NetworkAddress));
             }
 
             public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
             {
-                return new RpcHyperVClientTransport(GetEndpoint(endpoint.Endpoint), transport_security);
+                return new RpcHyperVClientTransport(GetEndpoint(endpoint), transport_security);
             }
         }
 
