@@ -68,6 +68,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(_context);
 
         /// <summary>
+        /// Get the last token status for the client context.
+        /// </summary>
+        public SecPkgLastClientTokenStatus LastTokenStatus => SecurityContextUtils.QueryContextAttribute<SecPkgContext_LastClientTokenStatus>(_context, 
+            SECPKG_ATTR.LAST_CLIENT_TOKEN_STATUS).LastClientTokenStatus;
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>

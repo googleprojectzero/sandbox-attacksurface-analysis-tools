@@ -12,18 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtApiDotNet.Win32.Security.Native
 {
     /// <summary>
-    /// Interface for a client authentication context.
+    /// Indicates the last client token status for the client context.
     /// </summary>
-    public interface IClientAuthenticationContext : IAuthenticationContext
+    public enum SecPkgLastClientTokenStatus
     {
         /// <summary>
-        /// Get the last token status for the client context.
+        /// Yes it's the last token.
         /// </summary>
-        SecPkgLastClientTokenStatus LastTokenStatus { get; }
+        Yes,
+        /// <summary>
+        /// No it's not the last token.
+        /// </summary>
+        No,
+        /// <summary>
+        /// It might be, who knows?
+        /// </summary>
+        Maybe
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SecPkgContext_LastClientTokenStatus
+    {
+        public SecPkgLastClientTokenStatus LastClientTokenStatus;
     }
 }

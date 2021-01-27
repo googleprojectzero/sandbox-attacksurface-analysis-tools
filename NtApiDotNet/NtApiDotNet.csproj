@@ -484,6 +484,7 @@
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_TYPE.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_LastClientTokenStatus.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_PackageInfo.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_Sizes.cs" />
