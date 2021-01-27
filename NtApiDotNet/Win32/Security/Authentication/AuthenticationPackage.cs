@@ -102,7 +102,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     int size = Marshal.SizeOf(typeof(SecPkgInfo));
                     for (int i = 0; i < count; ++i)
                     {
-                        //SecPkgInfo pkg = (SecPkgInfo)Marshal.PtrToStructure(ppPackageInfo + i * size, typeof(SecPkgInfo));
                         packages.Add(new AuthenticationPackage(ppPackageInfo + i * size));
                     }
                 }
@@ -133,7 +132,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
             try
             {
-                //return new AuthenticationPackage((SecPkgInfo)Marshal.PtrToStructure(package_info, typeof(SecPkgInfo)));
                 return new AuthenticationPackage(package_info);
             }
             finally
