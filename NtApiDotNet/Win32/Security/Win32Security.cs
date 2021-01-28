@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security
@@ -32,6 +33,21 @@ namespace NtApiDotNet.Win32.Security
     /// </summary>
     public static class Win32Security
     {
+        #region Internal Members
+        internal static SecureString ToSecureString(this string str)
+        {
+            if (str == null)
+                return null;
+            SecureString ret = new SecureString();
+            foreach (char ch in str)
+            {
+                ret.AppendChar(ch);
+            }
+            return ret;
+        }
+
+        #endregion
+
         #region Static Methods
         /// <summary>
         /// Set security using a named object.
@@ -581,6 +597,90 @@ namespace NtApiDotNet.Win32.Security
         {
             SidName name = sid.GetName();
             RemoveSidNameMapping(name.Domain, name.NameUse == SidNameUse.Domain ? string.Empty : name.Name, true);
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="provider">The Logon provider.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonUser(string user, string domain, SecureString password, SecurityLogonType type, Logon32Provider provider)
+        {
+            return LsaLogonUser(user, domain, password, type, provider, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="provider">The Logon provider.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtResult<NtToken> LsaLogonUser(string user, string domain, SecureString password, SecurityLogonType type, Logon32Provider provider, bool throw_on_error)
+        {
+            using (var pwd = new SecureStringMarshalBuffer(password))
+            {
+                return SecurityNativeMethods.LogonUser(user, domain, pwd, type, provider,
+                    out SafeKernelObjectHandle handle).CreateWin32Result(throw_on_error, () => new NtToken(handle));
+            }
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="provider">The Logon provider.</param>
+        /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken LsaLogonUser(string user, string domain, SecureString password, SecurityLogonType type, Logon32Provider provider, IEnumerable<UserGroup> groups)
+        {
+            return LsaLogonUser(user, domain, password, type, provider, groups, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="provider">The Logon provider.</param>
+        /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtResult<NtToken> LsaLogonUser(string user, string domain, SecureString password, SecurityLogonType type, Logon32Provider provider,
+            IEnumerable<UserGroup> groups, bool throw_on_error)
+        {
+            if (groups is null)
+            {
+                return LsaLogonUser(user, domain, password, type, provider, throw_on_error);
+            }
+
+            TokenGroupsBuilder builder = new TokenGroupsBuilder();
+            foreach (var group in groups)
+            {
+                builder.AddGroup(group.Sid, group.Attributes);
+            }
+
+            using (var group_buffer = builder.ToBuffer())
+            {
+                using (var pwd = new SecureStringMarshalBuffer(password))
+                {
+                    return SecurityNativeMethods.LogonUserExExW(user, domain, pwd, type, provider, group_buffer,
+                        out SafeKernelObjectHandle token, null, null, null, null)
+                        .CreateWin32Result(throw_on_error, () => new NtToken(token));
+                }
+            }
         }
 
         #endregion

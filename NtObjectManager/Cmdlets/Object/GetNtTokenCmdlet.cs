@@ -13,17 +13,17 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
-using System.Management.Automation;
-using System.Collections.Generic;
-using System.Linq;
 using NtApiDotNet.Win32;
-using System.Security;
-using System.Runtime.InteropServices;
+using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Native;
 using NtObjectManager.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Management.Automation;
+using System.Security;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -302,7 +302,7 @@ namespace NtObjectManager.Cmdlets.Object
         public string Password { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify password for logon token using a secure string. Note this isn't really secure, but useful for Read-Host -AsSecureString.</para>
+        /// <para type="description">Specify password for logon token using a secure string.</para>
         /// </summary>
         [Parameter(ParameterSetName = "Logon")]
         public SecureString SecurePassword { get; set; }
@@ -549,27 +549,21 @@ namespace NtObjectManager.Cmdlets.Object
             return NtToken.OpenProcessToken(pid, false, desired_access);
         }
 
-        private string GetPassword()
+        private SecureString GetPassword()
         {
             if (Password != null)
             {
-                return Password;
+                SecureString str = new SecureString();
+                foreach (var ch in Password)
+                {
+                    str.AppendChar(ch);
+                }
+                return str;
             }
 
             if (SecurePassword != null)
             {
-                IntPtr str = Marshal.SecureStringToBSTR(SecurePassword);
-                try
-                {
-                    return Marshal.PtrToStringBSTR(str);
-                }
-                finally
-                {
-                    if (str != IntPtr.Zero)
-                    {
-                        Marshal.FreeBSTR(str);
-                    }
-                }
+                return SecurePassword;
             }
 
             return null;
@@ -589,7 +583,7 @@ namespace NtObjectManager.Cmdlets.Object
         }
 
         private NtToken GetLogonToken(TokenAccessRights desired_access, string user, 
-            string domain, string password, SecurityLogonType logon_type)
+            string domain, SecureString password, SecurityLogonType logon_type)
         {
             IEnumerable<UserGroup> groups = null;
             if (AdditionalGroups != null && AdditionalGroups.Length > 0)
@@ -597,7 +591,7 @@ namespace NtObjectManager.Cmdlets.Object
                 groups = AdditionalGroups.Select(s => new UserGroup(s,
                     GetAttributes(s)));
             }
-            using (NtToken token = TokenUtils.GetLogonUserToken(user, domain, password, logon_type, LogonProvider, groups))
+            using (NtToken token = Win32Security.LsaLogonUser(user, domain, password, logon_type, LogonProvider, groups))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {

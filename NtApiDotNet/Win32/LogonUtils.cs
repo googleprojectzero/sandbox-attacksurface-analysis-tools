@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Native;
@@ -116,6 +117,7 @@ namespace NtApiDotNet.Win32
         /// <param name="password">The user's password.</param>
         /// <param name="type">The type of logon token.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type)
         {
             return Logon(user, domain, password, type, Logon32Provider.Default);
@@ -129,23 +131,8 @@ namespace NtApiDotNet.Win32
         /// <param name="password">The user's password.</param>
         /// <param name="type">The type of logon token.</param>
         /// <param name="provider">The Logon provider.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The logged on token.</returns>
-        public static NtResult<NtToken> Logon(string user, string domain, string password, SecurityLogonType type, Logon32Provider provider, bool throw_on_error)
-        {
-            return SecurityNativeMethods.LogonUser(user, domain, password, type, provider, 
-                out SafeKernelObjectHandle handle).CreateWin32Result(throw_on_error, () => new NtToken(handle));
-        }
-
-        /// <summary>
-        /// Logon a user with a username and password.
-        /// </summary>
-        /// <param name="user">The username.</param>
-        /// <param name="domain">The user's domain.</param>
-        /// <param name="password">The user's password.</param>
-        /// <param name="type">The type of logon token.</param>
-        /// <param name="provider">The Logon provider.</param>
-        /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type, Logon32Provider provider)
         {
             return Logon(user, domain, password, type, provider, true).Result;
@@ -159,8 +146,25 @@ namespace NtApiDotNet.Win32
         /// <param name="password">The user's password.</param>
         /// <param name="type">The type of logon token.</param>
         /// <param name="provider">The Logon provider.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
+        public static NtResult<NtToken> Logon(string user, string domain, string password, SecurityLogonType type, Logon32Provider provider, bool throw_on_error)
+        {
+            return Win32Security.LsaLogonUser(user, domain, password.ToSecureString(), type, provider, throw_on_error);
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="provider">The Logon provider.</param>
         /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type, Logon32Provider provider, IEnumerable<UserGroup> groups)
         {
             return Logon(user, domain, password, type, provider, groups, true).Result;
@@ -177,26 +181,11 @@ namespace NtApiDotNet.Win32
         /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtResult<NtToken> Logon(string user, string domain, string password, SecurityLogonType type, Logon32Provider provider, 
             IEnumerable<UserGroup> groups, bool throw_on_error)
         {
-            if (groups is null)
-            {
-                throw new ArgumentNullException(nameof(groups));
-            }
-
-            TokenGroupsBuilder builder = new TokenGroupsBuilder();
-            foreach (var group in groups)
-            {
-                builder.AddGroup(group.Sid, group.Attributes);
-            }
-
-            using (var group_buffer = builder.ToBuffer())
-            {
-                return SecurityNativeMethods.LogonUserExExW(user, domain, password, type, provider, group_buffer,
-                    out SafeKernelObjectHandle token, null, null, null, null)
-                    .CreateWin32Result(throw_on_error, () => new NtToken(token));
-            }
+            return Win32Security.LsaLogonUser(user, domain, password.ToSecureString(), type, provider, groups, throw_on_error);
         }
 
         /// <summary>
@@ -208,6 +197,7 @@ namespace NtApiDotNet.Win32
         /// <param name="type">The type of logon token.</param>
         /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type, IEnumerable<UserGroup> groups)
         {
             return Logon(user, domain, password, type, Logon32Provider.Default, groups);

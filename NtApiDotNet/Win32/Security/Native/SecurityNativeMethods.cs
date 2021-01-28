@@ -587,14 +587,14 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern bool AllocateLocallyUniqueId(out Luid Luid);
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
+        internal static extern bool LogonUser(string lpszUsername, string lpszDomain, SecureStringMarshalBuffer lpszPassword, SecurityLogonType dwLogonType,
             Logon32Provider dwLogonProvider, out SafeKernelObjectHandle phToken);
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool LogonUserExExW(
               string lpszUsername,
               string lpszDomain,
-              string lpszPassword,
+              SecureStringMarshalBuffer lpszPassword,
               SecurityLogonType dwLogonType,
               Logon32Provider dwLogonProvider,
               SafeTokenGroupsBuffer pTokenGroups,

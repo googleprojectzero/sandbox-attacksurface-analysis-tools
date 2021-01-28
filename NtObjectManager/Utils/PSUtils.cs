@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Utilities.Text;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections;
@@ -315,7 +316,7 @@ namespace NtObjectManager.Utils
                                 {
                                     using (imp_token.Impersonate())
                                     {
-                                        return LogonUtils.Logon("SYSTEM", "NT AUTHORITY", null, 
+                                        return Win32Security.LsaLogonUser("SYSTEM", "NT AUTHORITY", null, 
                                             SecurityLogonType.Service, Logon32Provider.Default, false).GetResultOrDefault();
                                     }
                                 }

@@ -15,11 +15,14 @@
 using NtApiDotNet;
 using NtApiDotNet.Forms;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Security;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Linq;
+using System.Security;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -385,18 +388,38 @@ namespace TokenViewer
         {
             try
             {
-                SecurityLogonType logonType = (SecurityLogonType)comboBoxS4ULogonType.SelectedItem;
+                SecurityLogonType logon_type = (SecurityLogonType)comboBoxS4ULogonType.SelectedItem;
 
                 if (radioLUNormal.Checked)
                 {
-                    using (NtToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, logonType, null))
+                    SecureString str = new SecureString();
+                    foreach (var ch in txtLUPassword.Text)
+                    {
+                        str.AppendChar(ch);
+                    }
+
+                    switch (logon_type)
+                    {
+                        case SecurityLogonType.Batch:
+                        case SecurityLogonType.Interactive:
+                        case SecurityLogonType.Network:
+                        case SecurityLogonType.NetworkCleartext:
+                        case SecurityLogonType.NewCredentials:
+                        case SecurityLogonType.Service:
+                            break;
+                        default:
+                            throw new ArgumentException("Invalid logon type for Logon");
+                    }
+
+
+                    using (NtToken token = Win32Security.LsaLogonUser(txtS4UUserName.Text, txtS4URealm.Text, str, logon_type, Logon32Provider.Default))
                     {
                         TokenForm.OpenForm(token, "LogonUser", true);
                     }
                 }
                 else
                 {
-                    using (NtToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logonType))
+                    using (NtToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logon_type))
                     {
                         TokenForm.OpenForm(token, "S4U", true);
                     }
@@ -464,8 +487,8 @@ namespace TokenViewer
             {
                 IEnumerable<UserGroup> groups = GetServiceSids();
                 
-                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, 
-                    SecurityLogonType.Service, groups), "Service", false);
+                TokenForm.OpenForm(Win32Security.LsaLogonUser(name, "NT AUTHORITY", null, 
+                    SecurityLogonType.Service, Logon32Provider.Default, groups), "Service", false);
             }
             catch (Exception ex)
             {

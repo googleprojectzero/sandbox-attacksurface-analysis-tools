@@ -100,6 +100,7 @@ namespace NtApiDotNet.Win32
         /// <param name="logon_type">The logon token's type.</param>
         /// <param name="groups">Optional list of additonal groups to add.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type, IEnumerable<UserGroup> groups)
         {
             return GetLogonUserToken(username, domain, password, logon_type, Logon32Provider.Default, groups);
@@ -115,6 +116,7 @@ namespace NtApiDotNet.Win32
         /// <param name="groups">Optional list of additonal groups to add.</param>
         /// <param name="provider">The Logon provider.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type, 
             Logon32Provider provider, IEnumerable<UserGroup> groups)
         {
@@ -132,6 +134,7 @@ namespace NtApiDotNet.Win32
         /// <param name="provider">The Logon provider.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The logged on token.</returns>
+        [Obsolete("Use Win32Security.LsaLogonUser.")]
         public static NtResult<NtToken> GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type,
             Logon32Provider provider, IEnumerable<UserGroup> groups, bool throw_on_error)
         {
@@ -331,9 +334,8 @@ namespace NtApiDotNet.Win32
             {
                 using (NtToken duptoken = token.Duplicate(TokenAccessRights.GenericRead | TokenAccessRights.GenericExecute))
                 {
-                    SafeKernelObjectHandle handle;
-                    if (Win32NativeMethods.SaferComputeTokenFromLevel(level_handle, 
-                        duptoken.Handle, out handle, make_inert ? SaferFlags.MakeInert : 0, IntPtr.Zero))
+                    if (Win32NativeMethods.SaferComputeTokenFromLevel(level_handle,
+                        duptoken.Handle, out SafeKernelObjectHandle handle, make_inert ? SaferFlags.MakeInert : 0, IntPtr.Zero))
                     {
                         return NtToken.FromHandle(handle);
                     }
