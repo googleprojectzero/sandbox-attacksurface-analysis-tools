@@ -938,7 +938,7 @@ namespace NtApiDotNet.Win32
           [Out] OptionalInt32 lpdwTagId,
           string lpDependencies,
           string lpServiceStartName,
-          IntPtr lpPassword
+          SecureStringMarshalBuffer lpPassword
         );
 
         [DllImport("Advapi32.dll", SetLastError = true)]

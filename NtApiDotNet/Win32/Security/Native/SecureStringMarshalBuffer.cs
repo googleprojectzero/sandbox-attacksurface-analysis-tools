@@ -18,7 +18,6 @@ using System.Security;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
-#pragma warning disable 1591
     [StructLayout(LayoutKind.Sequential)]
     internal struct SecureStringMarshalBuffer : IDisposable
     {
@@ -26,7 +25,12 @@ namespace NtApiDotNet.Win32.Security.Native
 
         public SecureStringMarshalBuffer(SecureString s)
         {
-            Ptr = Marshal.SecureStringToBSTR(s);
+            Ptr = s != null ? Marshal.SecureStringToBSTR(s) : IntPtr.Zero;
+        }
+
+        public SecureStringMarshalBuffer(string s)
+        {
+            Ptr = s != null ? Marshal.StringToBSTR(s) : IntPtr.Zero;
         }
 
         public void Dispose()

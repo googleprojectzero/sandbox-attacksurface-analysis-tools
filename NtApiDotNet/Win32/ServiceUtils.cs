@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1086,8 +1087,7 @@ namespace NtApiDotNet.Win32
                 if (scm.IsInvalid)
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<RunningService>(throw_on_error);
 
-                IntPtr pwd = password != null ? Marshal.SecureStringToBSTR(password) : IntPtr.Zero;
-                try
+                using (var pwd = new SecureStringMarshalBuffer(password))
                 {
                     using (var service = Win32NativeMethods.CreateService(scm, name, display_name, ServiceAccessRights.MaximumAllowed,
                             service_type, start_type, error_control, binary_path_name, load_order_group, null, dependencies.ToMultiString(),
@@ -1097,11 +1097,6 @@ namespace NtApiDotNet.Win32
                             return Win32Utils.GetLastWin32Error().CreateResultFromDosError<RunningService>(throw_on_error);
                         return new RunningService(name, display_name ?? string.Empty, QueryStatus(service)).CreateResult();
                     }
-                }
-                finally
-                {
-                    if (pwd != IntPtr.Zero)
-                        Marshal.FreeBSTR(pwd);
                 }
             }
         }
