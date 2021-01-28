@@ -39,5 +39,11 @@ namespace NtApiDotNet.Win32.Debugger
         /// Disable resolving export symbols if no PDB can be found.
         /// </summary>
         DisableExportSymbols = 2,
+        /// <summary>
+        /// Enable a symbol server fallback. If the copy of dbghelp doesn't have a symsrv.dll
+        /// then download from a public symbol URL to a local cache directory during symbol
+        /// resolving.
+        /// </summary>
+        SymSrvFallback = 4,
     }
 }
