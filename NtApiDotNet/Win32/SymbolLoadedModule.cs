@@ -40,6 +40,14 @@ namespace NtApiDotNet.Win32
         /// The image size of the module.
         /// </summary>
         public int ImageSize { get; }
+        /// <summary>
+        /// Get the path to the loaded PDB file is known.
+        /// </summary>
+        public string PdbPath { get; }
+        /// <summary>
+        /// True indicates this module only has export symbols.
+        /// </summary>
+        public bool ExportSymbols { get; }
 
         private readonly ISymbolTypeResolver _type_resolver;
 
@@ -81,12 +89,20 @@ namespace NtApiDotNet.Win32
             return _type_resolver?.QueryTypesByName(BaseAddress, mask) ?? new TypeInformation[0];
         }
 
-        internal SymbolLoadedModule(string name, IntPtr base_address, int image_size, ISymbolTypeResolver type_resolver)
+        internal SymbolLoadedModule(IMAGEHLP_MODULE64 mod_info, ISymbolTypeResolver type_resolver) 
+            : this(mod_info.ImageName, new IntPtr(mod_info.BaseOfImage),
+            mod_info.ImageSize, mod_info.LoadedPdbName, mod_info.SymType == SYM_TYPE.SymExport, type_resolver)
+        {
+        }
+
+        internal SymbolLoadedModule(string name, IntPtr base_address, int image_size, string pdb_path, bool export_symbols, ISymbolTypeResolver type_resolver)
         {
             Name = name;
             BaseAddress = base_address;
             ImageSize = image_size;
             _type_resolver = type_resolver;
+            PdbPath = pdb_path;
+            ExportSymbols = export_symbols;
         }
 
         /// <summary>

@@ -4740,6 +4740,10 @@ Also parse client interface information, otherwise only servers are returned.
 Don't resolve any symbol information.
 .PARAMETER SerializedPath
 Path to a serialized representation of the RPC servers.
+.PARAMETER ResolveStructureNames
+If private symbols available try and resolve the names of structures and parameters.
+.PARAMETER SymSrvFallback
+Specify to use a built-in fallback for symbol server resolving when using the system dbghelp DLL. You also need to specify a local cache directory in SymbolPath.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -4762,6 +4766,9 @@ Get the list of RPC servers from rpcss.dll, specifying a different symbol path.
 .EXAMPLE
 Get-RpcServer -SerializedPath rpc.bin
 Get the list of RPC servers from the serialized file rpc.bin.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll -SymSrvFallback -SymbolPath c:\symbols
+Get the list of RPC servers from rpcss.dll, use symbol server fallback with c:\symbols as the cache directory.
 #>
 function Get-RpcServer {
     [CmdletBinding(DefaultParameterSetName = "FromDll")]
@@ -4783,6 +4790,8 @@ function Get-RpcServer {
         [switch]$IgnoreSymbols,
         [parameter(ParameterSetName = "FromDll")]
         [switch]$ResolveStructureNames,
+        [parameter(ParameterSetName = "FromDll")]
+        [switch]$SymSrvFallback,
         [parameter(Mandatory = $true, ParameterSetName = "FromSerialized")]
         [string]$SerializedPath
     )
@@ -4807,6 +4816,9 @@ function Get-RpcServer {
         }
         if ($ResolveStructureNames) {
             $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::ResolveStructureNames
+        }
+        if ($SymSrvFallback) {
+            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::SymSrvFallback
         }
     }
 

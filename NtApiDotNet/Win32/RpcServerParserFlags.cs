@@ -38,5 +38,11 @@ namespace NtApiDotNet.Win32
         /// Try and resolve structure names. Needs private symbols.
         /// </summary>
         ResolveStructureNames = 4,
+        /// <summary>
+        /// Enable a symbol server fallback. If the copy of dbghelp doesn't have a symsrv.dll
+        /// then download from a public symbol URL to a local cache directory during symbol
+        /// resolving.
+        /// </summary>
+        SymSrvFallback = 8,
     }
 }

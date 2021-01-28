@@ -631,7 +631,7 @@ namespace NtApiDotNet.Win32.Debugger
                 }
                 else
                 {
-                    loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, this);
+                    loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, string.Empty, true, this);
                     modules.Add(result.ModBase, loaded_module);
                 }
 
@@ -653,6 +653,8 @@ namespace NtApiDotNet.Win32.Debugger
 
         private IMAGEHLP_MODULE64 GetModuleInfo(long base_address)
         {
+            if (base_address == 0)
+                return new IMAGEHLP_MODULE64();
             IMAGEHLP_MODULE64 module = new IMAGEHLP_MODULE64();
             module.SizeOfStruct = Marshal.SizeOf(module);
             if (_sym_get_module_info(Handle, base_address, ref module))
@@ -668,7 +670,9 @@ namespace NtApiDotNet.Win32.Debugger
 
             if (!_sym_enum_modules(Handle, (s, m, p) =>
             {
-                modules.Add(new SymbolLoadedModule(s, new IntPtr(m), GetModuleInfo(m).ImageSize, this));
+                var mod_info = GetModuleInfo(m);
+                modules.Add(new SymbolLoadedModule(s, new IntPtr(m), mod_info.ImageSize,
+                    mod_info.LoadedPdbName, mod_info.SymType == SYM_TYPE.SymExport, this));
                 return true;
             }, IntPtr.Zero))
             {
@@ -831,20 +835,18 @@ namespace NtApiDotNet.Win32.Debugger
             string[] parts = symbol_path.Split(';');
             foreach (var str in parts)
             {
-                if (str.StartsWith("cache*"))
+                if (str.StartsWith("srv*"))
                 {
-                    cache_path = Path.GetFullPath(str.Substring(6));
+                    string uri = str.Substring(4);
+                    if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri srv_path))
+                        continue;
+                    if (srv_path.Scheme != "http" && srv_path.Scheme != "https")
+                        continue;
                 }
-                else if (!str.StartsWith("srv*"))
+                else if (Directory.Exists(str))
                 {
-                    continue;
+                    cache_path = Path.GetFullPath(str);
                 }
-
-                string uri = str.Substring(4);
-                if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri srv_path))
-                    continue;
-                if (srv_path.Scheme != "http" && srv_path.Scheme != "https")
-                    continue;
             }
             return Tuple.Create(cache_path, server_path);
         }
@@ -868,6 +870,10 @@ namespace NtApiDotNet.Win32.Debugger
 
         public SymbolLoadedModule GetModuleForAddress(IntPtr address, bool refresh)
         {
+            var mod_info = GetModuleInfo(address.ToInt64());
+            if (!string.IsNullOrEmpty(mod_info.ImageName))
+                return new SymbolLoadedModule(mod_info, this);
+
             long check_addr = address.ToInt64();
 
             foreach (SymbolLoadedModule module in GetLoadedModules(refresh))
@@ -1001,7 +1007,7 @@ namespace NtApiDotNet.Win32.Debugger
                     }
                     else
                     {
-                        loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, this);
+                        loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, string.Empty, true, this);
                     }
                     TypeInformationCache type_cache = new TypeInformationCache();
                     var ret = CreateType(type_cache, result.Tag, result.ModBase, result.TypeIndex, result.Size, loaded_module, GetNameFromSymbolInfo(sym_info));
@@ -1099,7 +1105,7 @@ namespace NtApiDotNet.Win32.Debugger
                 _symbol_cache_path = srv.Item1;
                 _symbol_server_path = srv.Item2;
                 if (string.IsNullOrEmpty(_symbol_cache_path))
-                    throw new ArgumentException("Must specify a cache path to store downloaded symbols.");
+                    throw new ArgumentException("Must specify an existing local path in the symbol path to store downloaded symbols.");
                 options |= SymOptions.DEBUG;
             }
             if (flags.HasFlagSet(SymbolResolverFlags.DisableExportSymbols))

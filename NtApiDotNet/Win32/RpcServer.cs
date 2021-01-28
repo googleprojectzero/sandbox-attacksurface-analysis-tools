@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Utilities.Memory;
+using NtApiDotNet.Win32.Debugger;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -282,8 +283,10 @@ namespace NtApiDotNet.Win32
                 var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, flags.HasFlagSet(RpcServerParserFlags.ParseClients)));
                 if (offsets.Any())
                 {
+                    SymbolResolverFlags symbol_flags = flags.HasFlagSet(RpcServerParserFlags.SymSrvFallback) ? SymbolResolverFlags.SymSrvFallback : SymbolResolverFlags.None;
+
                     using (var sym_resolver = !flags.HasFlagSet(RpcServerParserFlags.IgnoreSymbols) ? SymbolResolver.Create(NtProcess.Current,
-                            dbghelp_path, symbol_path) : null)
+                            dbghelp_path, symbol_path, symbol_flags, null) : null)
                     {
                         NdrParserFlags parser_flags = NdrParserFlags.IgnoreUserMarshal;
                         if (flags.HasFlagSet(RpcServerParserFlags.ResolveStructureNames))
