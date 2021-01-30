@@ -12,13 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.DirectoryService
 {
+    internal class DirectoryServiceNtFakeTypeFactory : NtFakeTypeFactory
+    {
+        public override IEnumerable<NtType> CreateTypes()
+        {
+            return new NtType[] { new NtType(DirectoryServiceUtils.DS_NT_TYPE_NAME, DirectoryServiceUtils.GenericMapping,
+                        typeof(DirectoryServiceAccessRights), typeof(DirectoryServiceAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp) };
+        }
+    }
+
     /// <summary>
     /// Class implementing various utilities for directory services.
     /// </summary>
     public static class DirectoryServiceUtils
     {
+        /// <summary>
+        /// Name for the fake Directory Service NT type.
+        /// </summary>
+        public const string DS_NT_TYPE_NAME = "DirectoryService";
+
         /// <summary>
         /// Get the generic mapping for directory services.
         /// </summary>
@@ -42,8 +60,6 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// Get a fake NtType for Directory Services.
         /// </summary>
         /// <returns>The fake Directory Services NtType</returns>
-        public static NtType NtType => new NtType("DirectoryService", GenericMapping,
-                        typeof(DirectoryServiceAccessRights), typeof(DirectoryServiceAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp);
+        public static NtType NtType => NtType.GetTypeByName(DS_NT_TYPE_NAME);
     }
 }

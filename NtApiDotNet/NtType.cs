@@ -17,6 +17,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace NtApiDotNet
 {
@@ -143,18 +144,15 @@ namespace NtApiDotNet
         /// Get implemented object type for this NT type.
         /// </summary>
         public Type ObjectType => _type_factory.ObjectType;
-
         /// <summary>
         /// Get the access rights enumerated type for this NT type.
         /// </summary>
         public Type AccessRightsType => _type_factory.AccessRightsType;
-
         /// <summary>
         /// Get the access rights enumerated type for this NT type if it's a container.
         /// </summary>
         /// <remarks>There's only one known type at the moment which uses this, File.</remarks>
         public Type ContainerAccessRightsType => _type_factory.ContainerAccessRightsType;
-
         /// <summary>
         /// Can this type of open be opened by name
         /// </summary>
@@ -515,6 +513,7 @@ namespace NtApiDotNet
                 throw new ArgumentException("Specify an enumerated type", "access_rights_type");
             }
             _type_factory = new NtTypeFactory(access_rights_type, container_access_rights_type, typeof(object), false, default_policy);
+            Index = -1;
             Name = name;
             ValidAccess = CalculateValidAccess(access_rights_type) | CalculateValidAccess(container_access_rights_type);
             GenericMapping = generic_mapping;
@@ -525,15 +524,14 @@ namespace NtApiDotNet
             DefaultMandatoryAccess = NtSecurity.AccessMaskToString(GetDefaultMandatoryAccess(), access_rights_type);
         }
 
-        internal NtType(int id, string name)
+        internal NtType(int index, string name)
         {
-            Index = id;
+            Index = index;
             Name = name;
             if (Name == null)
             {
-                Name = $"Unknown {id}";
+                Name = $"Unknown {index}";
             }
-            System.Diagnostics.Debug.WriteLine($"Generating Fake Type for {Name}");
             _type_factory = _generic_factory;
             GenericRead = string.Empty;
             GenericWrite = string.Empty;
@@ -628,11 +626,13 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a type object by index
         /// </summary>
-        /// <param name="index">The index</param>
+        /// <param name="index">The index, must be >= 0.</param>
         /// <param name="cached">True to get a cached type, false to return a live types.</param>
         /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByIndex(int index, bool cached)
         {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException($"The {nameof(index)} parameter be greater or equal to 0.");
             foreach (NtType info in GetTypes(cached))
             {
                 if (info.Index == index)
@@ -661,6 +661,11 @@ namespace NtApiDotNet
                 return types[name];
             }
 
+            if (_fake_types.Value.ContainsKey(name))
+            {
+                return _fake_types.Value[name];
+            }
+
             if (create_fake_type)
             {
                 return new NtType(-1, name);
@@ -677,6 +682,16 @@ namespace NtApiDotNet
         public static NtType GetTypeByName(string name, bool create_fake_type)
         {
             return GetTypeByName(name, create_fake_type, true);
+        }
+
+        /// <summary>
+        /// Get a type object by name
+        /// </summary>
+        /// <param name="name">The name of the type</param>
+        /// <returns>The object type, null if not found</returns>
+        public static NtType GetTypeByName(string name)
+        {
+            return GetTypeByName(name, false);
         }
 
         /// <summary>
@@ -728,10 +743,25 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The GENERIC_MAPPING for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
         /// <param name="container_access_rights_type">The access rights enumeration type of the object is a container.</param>
+        /// <param name="policy">The mandatory label policy.</param>
+        /// <returns>The fake NT type object.</returns>
+        public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type, MandatoryLabelPolicy policy)
+        {
+            return new NtType(name, generic_mapping, access_rights_type, container_access_rights_type, policy);
+        }
+
+        /// <summary>
+        /// Get a fake type object. This can be used in access checking for operations which need an NtType object
+        /// but there's no real NT object.
+        /// </summary>
+        /// <param name="name">The name of the fake type. Informational only.</param>
+        /// <param name="generic_mapping">The GENERIC_MAPPING for security checking.</param>
+        /// <param name="access_rights_type">The access rights enumeration type.</param>
+        /// <param name="container_access_rights_type">The access rights enumeration type of the object is a container.</param>
         /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type)
         {
-            return new NtType(name, generic_mapping, access_rights_type, container_access_rights_type, MandatoryLabelPolicy.NoWriteUp);
+            return GetFakeType(name, generic_mapping, access_rights_type, container_access_rights_type, MandatoryLabelPolicy.NoWriteUp);
         }
 
         /// <summary>
@@ -762,9 +792,13 @@ namespace NtApiDotNet
         public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write,
             AccessMask generic_exec, AccessMask generic_all, Type access_rights_type, Type container_access_rights_type)
         {
-            return new NtType(name, new GenericMapping() { GenericRead = generic_read, GenericWrite = generic_write, 
-                GenericExecute = generic_exec, GenericAll = generic_all }, access_rights_type, container_access_rights_type,
-                MandatoryLabelPolicy.NoWriteUp);
+            return GetFakeType(name, new GenericMapping()
+            {
+                GenericRead = generic_read,
+                GenericWrite = generic_write,
+                GenericExecute = generic_exec,
+                GenericAll = generic_all
+            }, access_rights_type, container_access_rights_type);
         }
 
         /// <summary>
@@ -791,6 +825,30 @@ namespace NtApiDotNet
         public static IEnumerable<NtType> GetTypes()
         {
             return GetTypes(true);
+        }
+
+        /// <summary>
+        /// Get a list of all types.
+        /// </summary>
+        /// <param name="cached">True to get the cached list of types, false to return a live list of all types.</param>
+        /// <param name="include_fake_types">True to include fake types such as WNF or Service</param>
+        /// <returns>The list of types.</returns>
+        public static IEnumerable<NtType> GetTypes(bool cached, bool include_fake_types)
+        {
+            IEnumerable<NtType> ret;
+            if (cached)
+            {
+                ret = _types.Values;
+            }
+            else
+            {
+                ret = LoadTypes().Values;
+            }
+            if (include_fake_types)
+            {
+                ret = ret.Concat(_fake_types.Value.Values);
+            }
+            return ret;
         }
 
         /// <summary>
@@ -855,6 +913,8 @@ namespace NtApiDotNet
         #region Private Members
         private static readonly NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
         private static readonly Dictionary<string, NtType> _types = LoadTypes();
+        private static readonly Lazy<Dictionary<string, NtType>> _fake_types =
+            new Lazy<Dictionary<string, NtType>>(LoadFakeTypes);
         private readonly NtTypeFactory _type_factory;
         private IEnumerable<AccessMaskEntry> _access_rights;
         private Dictionary<string, int> _set_info_class;
@@ -921,6 +981,12 @@ namespace NtApiDotNet
 
             // raise exception if the candidate buffer is over a MB.
             throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
+        }
+
+        private static Dictionary<string, NtType> LoadFakeTypes()
+        {
+            var types = NtFakeTypeFactory.GetAssemblyFakeTypes(Assembly.GetExecutingAssembly()).SelectMany(f => f.CreateTypes());
+            return types.ToDictionary(t => t.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         private static uint CalculateValidAccess(Type access_type)

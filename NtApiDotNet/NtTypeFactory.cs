@@ -30,6 +30,17 @@ namespace NtApiDotNet
         }
     }
 
+    internal abstract class NtFakeTypeFactory
+    {
+        public abstract IEnumerable<NtType> CreateTypes();
+
+        public static IEnumerable<NtFakeTypeFactory> GetAssemblyFakeTypes(Assembly assembly)
+        {
+            return assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract 
+                && typeof(NtFakeTypeFactory).IsAssignableFrom(t)).Select(t => (NtFakeTypeFactory)Activator.CreateInstance(t));
+        }
+    }
+
     internal class NtTypeFactory
     {
         private const string FACTORY_TYPE_NAME = "NtTypeFactoryImpl";
@@ -69,22 +80,22 @@ namespace NtApiDotNet
 
         public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)
         {
-            Dictionary<string, NtTypeFactory> _factories = new Dictionary<string, NtTypeFactory>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, NtTypeFactory> factories = new Dictionary<string, NtTypeFactory>(StringComparer.OrdinalIgnoreCase);
             foreach (Type type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && typeof(NtObject).IsAssignableFrom(t)))
             {
                 IEnumerable<NtTypeAttribute> attrs = type.GetCustomAttributes<NtTypeAttribute>(false);
                 foreach (NtTypeAttribute attr in attrs)
                 {
-                    System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
+                    System.Diagnostics.Debug.Assert(!factories.ContainsKey(attr.TypeName));
                     TypeInfo factory_type = type.GetTypeInfo().GetDeclaredNestedType(FACTORY_TYPE_NAME);
                     System.Diagnostics.Debug.Assert(factory_type != null);
                     var factory = (NtTypeFactory)Activator.CreateInstance(factory_type);
                     if (attr.DisableOpen)
                         factory.CanOpen = false;
-                    _factories.Add(attr.TypeName, factory);
+                    factories.Add(attr.TypeName, factory);
                 }
             }
-            return _factories;
+            return factories;
         }
     }
 }

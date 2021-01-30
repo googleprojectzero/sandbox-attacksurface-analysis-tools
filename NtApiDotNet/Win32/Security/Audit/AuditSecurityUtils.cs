@@ -21,11 +21,26 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Audit
 {
+    internal class AuditNtFakeTypeFactory : NtFakeTypeFactory
+    {
+        public override IEnumerable<NtType> CreateTypes()
+        {
+            return new NtType[] { new NtType(AuditSecurityUtils.AUDIT_NT_TYPE_NAME, 
+                    AuditSecurityUtils.GenericMapping, typeof(AuditAccessRights), 
+                    typeof(AuditAccessRights), MandatoryLabelPolicy.NoWriteUp) };
+        }
+    }
+
     /// <summary>
     /// Utilities for security auditing policy.
     /// </summary>
     public static class AuditSecurityUtils
     {
+        /// <summary>
+        /// Name for the fake Audit NT type.
+        /// </summary>
+        public const string AUDIT_NT_TYPE_NAME = "Audit";
+
         /// <summary>
         /// Get the generic mapping for directory services.
         /// </summary>
@@ -50,9 +65,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// Get a fake NtType for System Audit Policy.
         /// </summary>
         /// <returns>The fake Directory Services NtType</returns>
-        public static NtType NtType => new NtType("Audit", GenericMapping,
-                        typeof(AuditAccessRights), typeof(AuditAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp);
+        public static NtType NtType => NtType.GetTypeByName(AUDIT_NT_TYPE_NAME);
 
         /// <summary>
         /// Query the Auditing Security Descriptor.

@@ -63,7 +63,7 @@ namespace NtObjectManager.Cmdlets.Object
                     return NtType.GetTypeByType<NtAlpc>();
             }
 
-            return NtType.GetTypeByName(type.ToString(), false);
+            return NtType.GetTypeByName(type.ToString());
         }
 
         private AccessMask MapGeneric(SpecificAccessType specific_type, AccessMask access_mask)

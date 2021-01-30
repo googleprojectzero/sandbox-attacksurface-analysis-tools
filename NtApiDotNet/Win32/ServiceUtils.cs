@@ -304,6 +304,21 @@ namespace NtApiDotNet.Win32
         public IntPtr lpDisplayName;
     }
 
+    internal class ServiceFakeTypeFactory : NtFakeTypeFactory
+    {
+        public override IEnumerable<NtType> CreateTypes()
+        {
+            return new NtType[] {
+                new NtType(ServiceUtils.SERVICE_NT_TYPE_NAME, ServiceUtils.GetServiceGenericMapping(),
+                        typeof(ServiceAccessRights), typeof(ServiceAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp),
+                new NtType(ServiceUtils.SCM_NT_TYPE_NAME, ServiceUtils.GetScmGenericMapping(),
+                        typeof(ServiceControlManagerAccessRights), typeof(ServiceControlManagerAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp)
+            };
+        }
+    }
+
 #pragma warning restore
     /// <summary>
     /// Utilities for accessing services.
@@ -367,7 +382,7 @@ namespace NtApiDotNet.Win32
             byte[] sd = new byte[8192];
             return Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information,
                 sd, sd.Length, out _).CreateWin32Result(throw_on_error, 
-                () => new SecurityDescriptor(sd, GetServiceNtType(type_name)));
+                () => new SecurityDescriptor(sd, NtType.GetTypeByName(type_name)));
         }
 
         private static NtStatus SetServiceSecurityDescriptor(SafeServiceHandle handle,
@@ -490,7 +505,7 @@ namespace NtApiDotNet.Win32
                 }
 
                 return new ServiceInformation(name, 
-                    GetServiceSecurityDescriptor(service, "service", security_information, false).GetResultOrDefault(),
+                    GetServiceSecurityDescriptor(service, SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
                     QueryConfig(service, false).GetResultOrDefault(), GetDelayedStart(service)).CreateResult();
@@ -607,6 +622,17 @@ namespace NtApiDotNet.Win32
 
         #endregion
 
+        #region Static Properties
+        /// <summary>
+        /// The name of the fake NT type for a service.
+        /// </summary>
+        public const string SERVICE_NT_TYPE_NAME = "Service";
+        /// <summary>
+        /// The name of the fake NT type for the SCM.
+        /// </summary>
+        public const string SCM_NT_TYPE_NAME = "SCM";
+        #endregion
+
         #region Static Methods
         /// <summary>
         /// Get the generic mapping for the SCM.
@@ -666,7 +692,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
-                return GetServiceSecurityDescriptor(scm, "scm", security_information, throw_on_error);
+                return GetServiceSecurityDescriptor(scm, SCM_NT_TYPE_NAME, security_information, throw_on_error);
             }
         }
 
@@ -696,7 +722,7 @@ namespace NtApiDotNet.Win32
             {
                 if (!service.IsSuccess)
                     return service.Cast<SecurityDescriptor>();
-                return GetServiceSecurityDescriptor(service.Result, "service", security_information, throw_on_error);
+                return GetServiceSecurityDescriptor(service.Result, SERVICE_NT_TYPE_NAME, security_information, throw_on_error);
             }
         }
 
@@ -992,20 +1018,13 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="type_name">Service returns the service type, SCM returns SCM type.</param>
         /// <returns>The fake service NtType. Returns null if not a recognized type.</returns>
+        [Obsolete("Use NtType.GetTypeByName with SERVICE_NT_TYPE_NAME or SCM_NT_TYPE_NAME")]
         public static NtType GetServiceNtType(string type_name)
         {
-            switch (type_name.ToLower())
-            {
-                case "service":
-                    return new NtType("Service", GetServiceGenericMapping(),
-                        typeof(ServiceAccessRights), typeof(ServiceAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp);
-                case "scm":
-                    return new NtType("SCM", GetScmGenericMapping(),
-                        typeof(ServiceControlManagerAccessRights), typeof(ServiceControlManagerAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp);
-            }
-            return null;
+            if (!type_name.Equals(SERVICE_NT_TYPE_NAME, StringComparison.OrdinalIgnoreCase)
+                && !type_name.Equals(SCM_NT_TYPE_NAME, StringComparison.OrdinalIgnoreCase))
+                return null;
+            return NtType.GetTypeByName(type_name);
         }
 
         /// <summary>

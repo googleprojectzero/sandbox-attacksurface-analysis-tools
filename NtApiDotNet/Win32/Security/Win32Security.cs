@@ -460,12 +460,12 @@ namespace NtApiDotNet.Win32.Security
                 case SeObjectType.RegistryWow6464Key:
                     return NtType.GetTypeByType<NtKey>();
                 case SeObjectType.Service:
-                    return ServiceUtils.GetServiceNtType("Service");
+                    return NtType.GetTypeByName(ServiceUtils.SERVICE_NT_TYPE_NAME);
                 case SeObjectType.WmiGuid:
                     return NtType.GetTypeByType<NtEtwRegistration>();
                 case SeObjectType.Ds:
                 case SeObjectType.DsAll:
-                    return DirectoryServiceUtils.NtType;
+                    return NtType.GetTypeByName(DirectoryServiceUtils.DS_NT_TYPE_NAME);
             }
             return null;
         }

@@ -50,6 +50,10 @@ namespace NtObjectManager.Cmdlets.Object
         ResourceManager,
         Enlistment,
         TransactionManager,
+        Service,
+        SCM,
+        DirectoryService,
+        Audit,
     }
 #pragma warning restore 1591
 }

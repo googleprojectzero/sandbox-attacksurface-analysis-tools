@@ -81,7 +81,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             ServiceAccessRights trigger_granted_access, 
             ServiceAccessRights original_granted_access,
             RunningService service) 
-            : base(name, "Service", granted_access,
+            : base(name, ServiceUtils.SERVICE_NT_TYPE_NAME, granted_access,
                 ServiceUtils.GetServiceGenericMapping(), sd, 
                 typeof(ServiceAccessRights), false, token_info)
         {

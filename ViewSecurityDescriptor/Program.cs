@@ -44,7 +44,7 @@ namespace ViewSecurityDescriptor
                     if (args.Length < 3)
                     {
                         var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
-                        bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
+                        bool read_only = args.Length > 1 && args[1].Equals("--readonly");
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
                             Application.Run(new SecurityDescriptorViewerForm(obj.ToTypedObject(), read_only));
@@ -52,19 +52,7 @@ namespace ViewSecurityDescriptor
                     }
                     else
                     {
-                        NtType type = null;
-                        if (args[2].Equals("DirectoryService", StringComparison.OrdinalIgnoreCase))
-                        {
-                            type = DirectoryServiceUtils.NtType;
-                        }
-                        else if (args[2].Equals("Audit", StringComparison.OrdinalIgnoreCase))
-                        {
-                            type = AuditSecurityUtils.NtType;
-                        }
-                        else
-                        {
-                            type = ServiceUtils.GetServiceNtType(args[2]) ?? new NtType(args[2]);
-                        }
+                        NtType type = new NtType(args[2]);
                         SecurityDescriptor sd;
                         if (args[1].StartsWith("-"))
                         {

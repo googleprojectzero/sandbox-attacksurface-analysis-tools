@@ -913,7 +913,7 @@ namespace TokenViewer
                     if (service.Service.SecurityDescriptor != null)
                     {
                         var viewer = new SecurityDescriptorViewerForm(service.Service.Name,
-                            service.Service.SecurityDescriptor, ServiceUtils.GetServiceNtType("Service"), false);
+                            service.Service.SecurityDescriptor, NtType.GetTypeByName(ServiceUtils.SERVICE_NT_TYPE_NAME, false), false);
                         viewer.ShowDialog(this);
                     }
                 }
