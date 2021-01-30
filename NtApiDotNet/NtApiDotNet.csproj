@@ -407,6 +407,7 @@
     <Compile Include="Win32\SafeHandles\SafeRpcIfIdVectorHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeRpcInquiryHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeRpcStringHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeServiceHandle.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />

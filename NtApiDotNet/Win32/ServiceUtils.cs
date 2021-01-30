@@ -12,13 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -148,39 +146,6 @@ namespace NtApiDotNet.Win32
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    internal class SafeServiceHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeServiceHandle() : base(true)
-        {
-        }
-
-        public SafeServiceHandle(IntPtr handle, bool owns_handle)
-            : base(owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.CloseServiceHandle(handle);
-        }
-
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
-        public SafeServiceHandle Detach()
-        {
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try // Needed for constrained region.
-            {
-                IntPtr handle = DangerousGetHandle();
-                SetHandleAsInvalid();
-                return new SafeServiceHandle(handle, true);
-            }
-            finally
-            {
-            }
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
