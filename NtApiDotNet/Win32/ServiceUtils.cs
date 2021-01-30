@@ -1204,6 +1204,35 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        /// <summary>
+        /// Start a service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="args">Optional arguments to pass to the service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code for the service.</returns>
+        public static NtStatus StartService(string name, string[] args, bool throw_on_error)
+        {
+            using (var service = OpenService(name, ServiceAccessRights.Start, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return Win32NativeMethods.StartService(service.Result, 
+                    args?.Length ?? 0, args).GetLastWin32Error().ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Start a service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="args">Optional arguments to pass to the service.</param>
+        /// <returns>The status code for the service.</returns>
+        public static void StartService(string name, string[] args)
+        {
+            StartService(name, args, true);
+        }
+
         #endregion
     }
 }

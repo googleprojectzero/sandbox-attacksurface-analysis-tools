@@ -13265,3 +13265,35 @@ function Get-RpcStringBinding {
 
     [NtApiDotNet.Win32.Rpc.RpcUtils]::ComposeStringBinding($objuuid_str, $ProtocolSequence, $NetworkAddress, $Endpoint, $Options)
 }
+
+<#
+.SYNOPSIS
+Start a Win32 service.
+.DESCRIPTION
+This cmdlet starts a Win32 service. This is basically the same as Start-Service
+but allows the user to specify the arguments to pass to the start callback.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ArgumentList
+Specify the list of arguments to the service.
+.PARAMETER PassThru
+Query for the service status after starting.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RunningService
+#>
+function Start-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [string[]]$ArgumentList,
+        [switch]$PassThru
+    )
+
+    [NtApiDotNet.Win32.ServiceUtils]::StartService($Name, $ArgumentList)
+    if ($PassThru) {
+        Get-Win32Service -Name $Name
+    }
+}

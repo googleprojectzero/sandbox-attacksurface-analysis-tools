@@ -1022,7 +1022,7 @@ namespace NtApiDotNet.Win32
         internal static extern bool StartService(
           SafeServiceHandle hService,
           int dwNumServiceArgs,
-          [MarshalAs(UnmanagedType.LPArray)] string[] lpServiceArgVectors
+          [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] lpServiceArgVectors
         );
 
         [DllImport("kernel32.dll", SetLastError = true)]
