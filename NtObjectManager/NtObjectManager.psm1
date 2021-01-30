@@ -9177,6 +9177,8 @@ Specify to not print the security descriptor header.
 Specify to format the security descriptor as SDDL.
 .PARAMETER Container
 Specify to display the access mask from Container Access Rights.
+.PARAMETER MapGeneric
+Specify to map access masks back to generic access rights for the object type.
 .OUTPUTS
 None
 .EXAMPLE
@@ -9203,13 +9205,14 @@ function Format-Win32SecurityDescriptor {
         [switch]$ToSddl,
         [switch]$Summary,
         [switch]$ShowAll,
-        [switch]$HideHeader
+        [switch]$HideHeader,
+        [switch]$MapGeneric
     )
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
         -Container:$Container -ToSddl:$ToSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
-        -DisplayPath $Name
+        -DisplayPath $Name -MapGeneric:$MapGeneric
 }
 
 <#
