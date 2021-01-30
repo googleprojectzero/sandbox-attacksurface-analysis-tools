@@ -199,7 +199,7 @@ namespace NtApiDotNet.Win32
         public static string GetImagePathFromCommandLine(string command_line)
         {
             command_line = command_line.Trim();
-            if (File.Exists(command_line))
+            if (command_line.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && File.Exists(command_line))
             {
                 return command_line;
             }
