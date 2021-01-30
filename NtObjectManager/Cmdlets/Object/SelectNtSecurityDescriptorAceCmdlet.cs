@@ -80,7 +80,6 @@ namespace NtObjectManager.Cmdlets.Object
         public SelectNtSecurityDescriptorAceCmdlet()
         {
             AclType = SecurityDescriptorAclType.Both;
-            _sid = new Lazy<Sid>(() => KnownSid.HasValue ? KnownSids.GetKnownSid(KnownSid.Value) : Sid);
         }
         #endregion
 
@@ -101,31 +100,45 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify to select ACE with a Known SID. Overrides the Sid parameter.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        public KnownSidValue? KnownSid { get; set; }
+        [Parameter(Mandatory = true, ParameterSetName = "FromKnownSid")]
+        public KnownSidValue KnownSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to select ACE with a user name. Overrides the Sid and KnownSid parameter.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromName")]
+        public string Name { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the type of ACE.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSid")]
+        [Parameter(ParameterSetName = "FromKnownSid")]
+        [Parameter(ParameterSetName = "FromName")]
         public AceType? Type { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the ACE flags.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSid")]
+        [Parameter(ParameterSetName = "FromKnownSid")]
+        [Parameter(ParameterSetName = "FromName")]
         public AceFlags? Flags { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the ACE flags must all match. The default is to select on a partial match.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSid")]
+        [Parameter(ParameterSetName = "FromKnownSid")]
+        [Parameter(ParameterSetName = "FromName")]
         public SwitchParameter AllFlags { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the access.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSid")]
+        [Parameter(ParameterSetName = "FromKnownSid")]
+        [Parameter(ParameterSetName = "FromName")]
         public AccessMask? Access { get; set; }
 
         /// <summary>
@@ -150,13 +163,13 @@ namespace NtObjectManager.Cmdlets.Object
 
         #region Protected Members
 
-        private Lazy<Sid> _sid;
-
         private protected IEnumerable<Ace> SelectAces(Action<Acl, Predicate<Ace>> run_on_acl)
         {
             switch (ParameterSetName)
             {
                 case "FromSid":
+                case "FromKnownSid":
+                case "FromName":
                     return FilterFromSid(run_on_acl);
                 case "FromFilter":
                     return FilterFromFilter(run_on_acl);
@@ -178,11 +191,27 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 selector = (a, p) => a.FindAll(p);
             }
-            WriteObject(SelectAces(selector));
+            WriteObject(SelectAces(selector), true);
         }
         #endregion
 
         #region Private Members
+
+        private Sid GetSid()
+        {
+            switch (ParameterSetName)
+            {
+                case "FromSid":
+                    return Sid;
+                case "FromKnownSid":
+                    return KnownSids.GetKnownSid(KnownSid);
+                case "FromName":
+                    return NtSecurity.LookupAccountName(Name);
+                default:
+                    throw new InvalidOperationException("Unknown parameter set");
+            }
+        }
+
         private bool ProcessAce(List<Ace> list, Ace ace, bool dacl, Func<Ace, bool> filter)
         {
             if (!filter(ace))
@@ -234,9 +263,9 @@ namespace NtObjectManager.Cmdlets.Object
             return FilterWithFilter(a => Filter.InvokeWithArg(false, a), run_on_acl);
         }
 
-        private bool CheckSid(Ace ace)
+        private bool CheckSid(Sid sid, Ace ace)
         {
-            if (_sid.Value != null && ace.Sid != _sid.Value)
+            if (sid != null && ace.Sid != sid)
             {
                 return false;
             }
@@ -270,13 +299,14 @@ namespace NtObjectManager.Cmdlets.Object
 
         private IEnumerable<Ace> FilterFromSid(Action<Acl, Predicate<Ace>> run_on_acl)
         {
-            if (_sid.Value == null && !Type.HasValue && !Access.HasValue && !Flags.HasValue)
+            var sid = GetSid();
+            if (sid == null && !Type.HasValue && !Access.HasValue && !Flags.HasValue)
             {
                 WriteWarning("No filter parameters specified. Not selecting any ACEs.");
                 return new Ace[0];
             }
 
-            return FilterWithFilter(CheckSid, run_on_acl);
+            return FilterWithFilter(ace => CheckSid(sid, ace), run_on_acl);
         }
 
         #endregion
