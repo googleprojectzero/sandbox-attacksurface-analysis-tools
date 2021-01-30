@@ -13,8 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32;
 using NtObjectManager.Utils;
-using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -193,6 +193,16 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "FromEnlistment", Mandatory = true)]
         public EnlistmentAccessRights EnlistmentAccess { get; set; }
         /// <summary>
+        /// <para type="description">Specify service access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromService", Mandatory = true)]
+        public ServiceAccessRights ServiceAccess { get; set; }
+        /// <summary>
+        /// <para type="description">Specify service control manager access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromServiceControlManager", Mandatory = true)]
+        public ServiceControlManagerAccessRights ServiceControlManagerAccess { get; set; }
+        /// <summary>
         /// <para type="description">Specify mandatory label policy.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromMandatoryLabel", Mandatory = true)]
@@ -300,6 +310,8 @@ namespace NtObjectManager.Cmdlets.Object
                     mask |= MapGeneric(SpecificAccessType.TransactionManager, TransactionManagerAccess);
                     mask |= MapGeneric(SpecificAccessType.ResourceManager, ResourceManagerAccess);
                     mask |= MapGeneric(SpecificAccessType.Enlistment, EnlistmentAccess);
+                    mask |= MapGeneric(SpecificAccessType.Service, ServiceAccess);
+                    mask |= MapGeneric(SpecificAccessType.SCM, ServiceControlManagerAccess);
                     mask |= (uint)ManadatoryLabelPolicy;
                     break;
             }
