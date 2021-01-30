@@ -145,6 +145,10 @@ namespace NtApiDotNet.Win32
         /// Type of service host when using Win32Share.
         /// </summary>
         public string ServiceHostType { get; }
+        /// <summary>
+        /// Service main function when using Win32Share.
+        /// </summary>
+        public string ServiceMain { get; }
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -216,6 +220,7 @@ namespace NtApiDotNet.Win32
             ImagePath = string.Empty;
             CommandLine = string.Empty;
             ServiceHostType = string.Empty;
+            ServiceMain = string.Empty;
 
             using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
             {
@@ -236,12 +241,16 @@ namespace NtApiDotNet.Win32
                         }
                     }
                     ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
-
                     if (string.IsNullOrEmpty(ServiceDll))
                     {
                         ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
                     }
                     UserName = ReadStringFromKey(key, null, "ObjectName");
+                    ServiceMain = ReadStringFromKey(key, "Parameters", "ServiceMain");
+                    if (string.IsNullOrEmpty(ServiceMain))
+                    {
+                        ServiceMain = "ServiceMain";
+                    }
                 }
             }
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
