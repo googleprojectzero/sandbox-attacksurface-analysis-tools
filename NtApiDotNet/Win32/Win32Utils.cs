@@ -316,6 +316,16 @@ namespace NtApiDotNet.Win32
             return GetLastWin32Error();
         }
 
+        internal static NtResult<T> CreateResultFromDosError<T>(bool throw_on_error)
+        {
+            return GetLastWin32Error().CreateResultFromDosError<T>(throw_on_error);
+        }
+
+        internal static NtStatus ToNtException(this bool result, bool throw_on_error)
+        {
+            return GetLastWin32Error(result).ToNtException(throw_on_error);
+        }
+
         internal static NtStatus ToHresult(this Win32Error error)
         {
             return NtObjectUtils.BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, NtStatusFacility.FACILITY_NTWIN32, (int)error);
