@@ -195,7 +195,7 @@ namespace NtApiDotNet.Win32
             ServiceStartName = result.lpServiceStartName.GetString();
             DelayedAutoStart = delayed_auto_start;
             MachineName = machine_name ?? string.Empty;
-            ImagePath = Win32Utils.GetImagePathFromCommandLine(BinaryPathName);
+            ImagePath = string.Empty;
             ServiceDll = string.Empty;
             ServiceHostType = string.Empty;
             ServiceMain = string.Empty;
@@ -203,6 +203,7 @@ namespace NtApiDotNet.Win32
             // TODO: Maybe try and query using remote registry service?
             if (!string.IsNullOrEmpty(MachineName))
                 return;
+            ImagePath = Win32Utils.GetImagePathFromCommandLine(BinaryPathName);
             using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
             {
                 if (key != null)
