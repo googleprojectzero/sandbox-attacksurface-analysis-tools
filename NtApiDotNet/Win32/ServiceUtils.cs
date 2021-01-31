@@ -1454,6 +1454,7 @@ namespace NtApiDotNet.Win32
         /// <param name="error_control">Error control.</param>
         /// <param name="binary_path_name">Path to the service executable.</param>
         /// <param name="load_order_group">Load group order.</param>
+        /// <param name="tag_id">The tag ID.</param>
         /// <param name="dependencies">List of service dependencies.</param>
         /// <param name="service_start_name">The username for the service.</param>
         /// <param name="password">Password for the username if needed.</param>
@@ -1467,6 +1468,7 @@ namespace NtApiDotNet.Win32
             ServiceStartType? start_type,
             ServiceErrorControl? error_control,
             string binary_path_name,
+            int? tag_id,
             string load_order_group,
             IEnumerable<string> dependencies,
             string service_start_name,
@@ -1477,18 +1479,13 @@ namespace NtApiDotNet.Win32
             {
                 if (!service.IsSuccess)
                     return service.Status;
-                IntPtr pwd = password != null ? Marshal.SecureStringToBSTR(password) : IntPtr.Zero;
-                try
+                using (var pwd = new SecureStringMarshalBuffer(password))
                 {
                     return Win32NativeMethods.ChangeServiceConfig(service.Result,
                         service_type ?? (ServiceType)(-1), start_type ?? (ServiceStartType)(-1),
                         error_control ?? (ServiceErrorControl)(-1), binary_path_name, load_order_group,
-                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).ToNtException(throw_on_error);
-                }
-                finally
-                {
-                    if (pwd != IntPtr.Zero)
-                        Marshal.ZeroFreeBSTR(pwd);
+                        tag_id.HasValue ? new OptionalInt32(tag_id.Value) : null, dependencies.ToMultiString(), 
+                        service_start_name, pwd, display_name).ToNtException(throw_on_error);
                 }
             }
         }
@@ -1503,6 +1500,7 @@ namespace NtApiDotNet.Win32
         /// <param name="start_type">The service start type.</param>
         /// <param name="error_control">Error control.</param>
         /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="tag_id">The tag ID.</param>
         /// <param name="load_order_group">Load group order.</param>
         /// <param name="dependencies">List of service dependencies.</param>
         /// <param name="service_start_name">The username for the service.</param>
@@ -1515,13 +1513,14 @@ namespace NtApiDotNet.Win32
             ServiceStartType? start_type,
             ServiceErrorControl? error_control,
             string binary_path_name,
+            int? tag_id,
             string load_order_group,
             IEnumerable<string> dependencies,
             string service_start_name,
             SecureString password)
         {
             ChangeServiceConfig(machine_name, name, display_name, service_type, start_type, error_control,
-                binary_path_name, load_order_group, dependencies, service_start_name, password, true);
+                binary_path_name, tag_id, load_order_group, dependencies, service_start_name, password, true);
         }
 
         /// <summary>
@@ -1533,6 +1532,7 @@ namespace NtApiDotNet.Win32
         /// <param name="start_type">The service start type.</param>
         /// <param name="error_control">Error control.</param>
         /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="tag_id">The tag ID.</param>
         /// <param name="load_order_group">Load group order.</param>
         /// <param name="dependencies">List of service dependencies.</param>
         /// <param name="service_start_name">The username for the service.</param>
@@ -1546,6 +1546,7 @@ namespace NtApiDotNet.Win32
             ServiceStartType? start_type,
             ServiceErrorControl? error_control,
             string binary_path_name,
+            int? tag_id,
             string load_order_group,
             IEnumerable<string> dependencies,
             string service_start_name,
@@ -1553,7 +1554,7 @@ namespace NtApiDotNet.Win32
             bool throw_on_error)
         {
             return ChangeServiceConfig(null, name, display_name, service_type, start_type, error_control,
-                binary_path_name, load_order_group, dependencies, service_start_name, password, throw_on_error);
+                binary_path_name, tag_id, load_order_group, dependencies, service_start_name, password, throw_on_error);
         }
 
         /// <summary>
@@ -1565,6 +1566,7 @@ namespace NtApiDotNet.Win32
         /// <param name="start_type">The service start type.</param>
         /// <param name="error_control">Error control.</param>
         /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="tag_id">The tag ID.</param>
         /// <param name="load_order_group">Load group order.</param>
         /// <param name="dependencies">List of service dependencies.</param>
         /// <param name="service_start_name">The username for the service.</param>
@@ -1575,6 +1577,7 @@ namespace NtApiDotNet.Win32
             ServiceType? service_type,
             ServiceStartType? start_type,
             ServiceErrorControl? error_control,
+            int? tag_id,
             string binary_path_name,
             string load_order_group,
             IEnumerable<string> dependencies,
@@ -1582,7 +1585,7 @@ namespace NtApiDotNet.Win32
             SecureString password)
         {
             ChangeServiceConfig(null, name, display_name, service_type, start_type, error_control,
-                binary_path_name, load_order_group, dependencies, service_start_name, password);
+                binary_path_name, tag_id, load_order_group, dependencies, service_start_name, password);
         }
 
         /// <summary>
