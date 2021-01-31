@@ -379,6 +379,8 @@ namespace NtApiDotNet.Win32
             SafeServiceHandle handle, string type_name, SecurityInformation security_information,
             bool throw_on_error)
         {
+            if (handle == null || handle.IsInvalid)
+                return NtStatus.STATUS_INVALID_HANDLE.CreateResultFromError<SecurityDescriptor>(throw_on_error);
             byte[] sd = new byte[8192];
             return Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information,
                 sd, sd.Length, out _).CreateWin32Result(throw_on_error, 
@@ -496,19 +498,22 @@ namespace NtApiDotNet.Win32
         private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name,
             SecurityInformation security_information, bool throw_on_error)
         {
-            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name,
-                ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
+            using (var service_result = OpenService(scm, name, ServiceAccessRights.QueryConfig, throw_on_error))
             {
-                if (service.IsInvalid)
+                if (!service_result.IsSuccess)
                 {
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
+                    return service_result.Cast<ServiceInformation>();
                 }
 
-                return new ServiceInformation(name, 
-                    GetServiceSecurityDescriptor(service, SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
-                    GetTriggersForService(service), GetServiceSidType(service),
-                    GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
-                    QueryConfig(service, false).GetResultOrDefault(), GetDelayedStart(service)).CreateResult();
+                var service = service_result.Result;
+                using (var service_sec = OpenService(scm, name, ServiceAccessRights.ReadControl, false))
+                {
+                    return new ServiceInformation(name,
+                        GetServiceSecurityDescriptor(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
+                        GetTriggersForService(service), GetServiceSidType(service),
+                        GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
+                        QueryConfig(service, false).GetResultOrDefault(), GetDelayedStart(service)).CreateResult();
+                }
             }
         }
 
@@ -599,6 +604,18 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private static NtResult<SafeServiceHandle> OpenService(SafeServiceHandle scm, string name, ServiceAccessRights desired_access, bool throw_on_error)
+        {
+            using (var service = Win32NativeMethods.OpenService(scm, name, desired_access))
+            {
+                if (service.IsInvalid)
+                {
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
+                }
+                return service.Detach().CreateResult();
+            }
+        }
+
         private static NtResult<SafeServiceHandle> OpenService(string name, ServiceAccessRights desired_access, bool throw_on_error)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
@@ -608,15 +625,7 @@ namespace NtApiDotNet.Win32
                 {
                     return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
                 }
-
-                using (var service = Win32NativeMethods.OpenService(scm, name, desired_access))
-                {
-                    if (service.IsInvalid)
-                    {
-                        return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
-                    }
-                    return service.Detach().CreateResult();
-                }
+                return OpenService(scm, name, desired_access, throw_on_error);
             }
         }
 
