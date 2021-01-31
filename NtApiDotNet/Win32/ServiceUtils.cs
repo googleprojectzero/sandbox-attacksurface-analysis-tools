@@ -97,54 +97,94 @@ namespace NtApiDotNet.Win32
     [Flags]
     public enum ServiceControlManagerAccessRights : uint
     {
+        [SDKName("SC_MANAGER_CREATE_SERVICE")]
         CreateService = 0x0002,
+        [SDKName("SC_MANAGER_CONNECT")]
         Connect = 0x0001,
+        [SDKName("SC_MANAGER_ENUMERATE_SERVICE")]
         EnumerateService = 0x0004,
+        [SDKName("SC_MANAGER_LOCK")]
         Lock = 0x0008,
+        [SDKName("SC_MANAGER_MODIFY_BOOT_CONFIG")]
         ModifyBootConfig = 0x0020,
+        [SDKName("SC_QUERY_LOCK_STATUS")]
         QueryLockStatus = 0x0010,
+        [SDKName("SC_MANAGER_ALL_ACCESS")]
         All = CreateService | Connect | EnumerateService
             | Lock | ModifyBootConfig | QueryLockStatus | ReadControl
             | Delete | WriteDac | WriteOwner,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
     [Flags]
     public enum ServiceAccessRights : uint
     {
-        ChangeConfig = 0x0002,
-        EnumerateDependents = 0x0008,
-        Interrogate = 0x0080,
-        PauseContinue = 0x0040,
+        [SDKName("SERVICE_QUERY_CONFIG")]
         QueryConfig = 0x0001,
+        [SDKName("SERVICE_CHANGE_CONFIG")]
+        ChangeConfig = 0x0002,
+        [SDKName("SERVICE_QUERY_STATUS")]
         QueryStatus = 0x0004,
+        [SDKName("SERVICE_ENUMERATE_DEPENDENTS")]
+        EnumerateDependents = 0x0008,
+        [SDKName("SERVICE_START")]
         Start = 0x0010,
+        [SDKName("SERVICE_STOP")]
         Stop = 0x0020,
+        [SDKName("SERVICE_PAUSE_CONTINUE")]
+        PauseContinue = 0x0040,
+        [SDKName("SERVICE_INTERROGATE")]
+        Interrogate = 0x0080,
+        [SDKName("SERVICE_USER_DEFINED_CONTROL")]
         UserDefinedControl = 0x0100,
+        [SDKName("SERVICE_SET_STATUS")]
         SetStatus = 0x8000,
+        [SDKName("SERVICE_ALL_ACCESS")]
         All = ChangeConfig | EnumerateDependents | Interrogate | PauseContinue
             | QueryStatus | QueryConfig | Start | Stop | UserDefinedControl | ReadControl
             | Delete | WriteDac | WriteOwner,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 

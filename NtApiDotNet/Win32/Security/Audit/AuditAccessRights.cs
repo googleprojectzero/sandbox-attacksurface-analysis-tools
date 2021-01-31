@@ -37,17 +37,30 @@ namespace NtApiDotNet.Win32.Security.Audit
         SetMiscPolicy = 0x0020,
         [SDKName("AUDIT_QUERY_MISC_POLICY")]
         QueryMiscPolicy = 0x0040,
+        [SDKName("AUDIT_ALL_ACCESS")]
         All = WriteOwner | WriteDac | ReadControl | Delete | SetSystemPolicy | QuerySystemPolicy |
             SetUserPolicy | QueryUserPolicy | EnumerateUsers | SetMiscPolicy | QueryMiscPolicy,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
+        Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 }

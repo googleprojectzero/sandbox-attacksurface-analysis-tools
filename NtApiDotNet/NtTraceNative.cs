@@ -25,18 +25,31 @@ namespace NtApiDotNet
     public enum TraceAccessRights : uint
     {
         None = 0,
+        [SDKName("WMIGUID_QUERY")]
         Query = 0x0001,
+        [SDKName("WMIGUID_SET")]
         Set = 0x0002,
+        [SDKName("WMIGUID_NOTIFICATION")]
         Notification = 0x0004,
+        [SDKName("WMIGUID_READ_DESCRIPTION")]
         ReadDescription = 0x0008,
+        [SDKName("WMIGUID_EXECUTE")]
         Execute = 0x0010,
+        [SDKName("TRACELOG_CREATE_REALTIME")]
         CreateRealtime = 0x0020,
+        [SDKName("TRACELOG_CREATE_ONDISK")]
         CreateOnDisk = 0x0040,
+        [SDKName("TRACELOG_GUID_ENABLE")]
         GuidEnable = 0x0080,
+        [SDKName("TRACELOG_ACCESS_KERNEL_LOGGER")]
         AccessKernelLogger = 0x0100,
-        CreateInproc = 0x0200,
+        [SDKName("TRACELOG_LOG_EVENT")]
+        LogEvent = 0x0200,
+        [SDKName("TRACELOG_ACCESS_REALTIME")]
         AccessRealtime = 0x0400,
+        [SDKName("TRACELOG_REGISTER_GUIDS")]
         RegisterGuids = 0x0800,
+        [SDKName("TRACELOG_JOIN_GROUP")]
         JoinGroup = 0x1000,
         [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,

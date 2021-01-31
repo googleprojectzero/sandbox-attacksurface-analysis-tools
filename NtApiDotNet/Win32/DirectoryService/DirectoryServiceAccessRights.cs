@@ -24,27 +24,48 @@ namespace NtApiDotNet.Win32.DirectoryService
     public enum DirectoryServiceAccessRights : uint
     {
         None = 0,
+        [SDKName("ACTRL_DS_CREATE_CHILD")]
         CreateChild = 0x1,
+        [SDKName("ACTRL_DS_DELETE_CHILD")]
         DeleteChild = 0x2,
+        [SDKName("ACTRL_DS_LIST")]
         List = 0x4,
+        [SDKName("ACTRL_DS_SELF")]
         Self = 0x8,
+        [SDKName("ACTRL_DS_READ_PROP")]
         ReadProp = 0x10,
+        [SDKName("ACTRL_DS_WRITE_PROP")]
         WriteProp = 0x20,
+        [SDKName("ACTRL_DS_DELETE_TREE")]
         DeleteTree = 0x40,
+        [SDKName("ACTRL_DS_LIST_OBJECT")]
         ListObject = 0x80,
+        [SDKName("ACTRL_DS_CONTROL_ACCESS")]
         ControlAccess = 0x100,
+        [SDKName("ACTRL_DS_ALL_ACCESS")]
         All = WriteOwner | WriteDac | ReadControl | Delete | ControlAccess | ListObject |
             DeleteTree | WriteProp | ReadProp | Self | List | CreateChild | DeleteChild,
+        [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
+        [SDKName("GENERIC_WRITE")]
         GenericWrite = GenericAccessRights.GenericWrite,
+        [SDKName("GENERIC_EXECUTE")]
         GenericExecute = GenericAccessRights.GenericExecute,
+        [SDKName("GENERIC_ALL")]
         GenericAll = GenericAccessRights.GenericAll,
+        [SDKName("DELETE")]
         Delete = GenericAccessRights.Delete,
+        [SDKName("READ_CONTROL")]
         ReadControl = GenericAccessRights.ReadControl,
+        [SDKName("WRITE_DAC")]
         WriteDac = GenericAccessRights.WriteDac,
+        [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
+        [SDKName("SYNCHRONIZE")]
         Synchronize = GenericAccessRights.Synchronize,
+        [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity,
+        [SDKName("ACCESS_SYSTEM_SECURITY")]
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 }

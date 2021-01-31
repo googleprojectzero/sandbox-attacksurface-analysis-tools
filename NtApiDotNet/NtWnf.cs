@@ -17,6 +17,16 @@ using System.Collections.Generic;
 
 namespace NtApiDotNet
 {
+    internal class WnfNtFakeTypeFactory : NtFakeTypeFactory
+    {
+        public override IEnumerable<NtType> CreateTypes()
+        {
+            return new NtType[] { new NtType(NtWnf.WNF_NT_TYPE_NAME, NtWnf.GenericMapping,
+                        typeof(WnfAccessRights), typeof(WnfAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp) };
+        }
+    }
+
     /// <summary>
     /// NT WNF object.
     /// </summary>
@@ -39,13 +49,9 @@ namespace NtApiDotNet
             }
         }
 
-        private static NtType _wnf_type = new NtType("Wnf", NtWnf.GenericMapping,
-                        typeof(WnfAccessRights), typeof(WnfAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp);
-
         private void ReadStateData(NtKeyValue value)
         {
-            _security_descriptor = new SecurityDescriptor(value.Data, _wnf_type);
+            _security_descriptor = new SecurityDescriptor(value.Data, NtType.GetTypeByName(WNF_NT_TYPE_NAME));
         }
 
         private void ReadStateData()
@@ -93,6 +99,11 @@ namespace NtApiDotNet
                 };
             }
         }
+
+        /// <summary>
+        /// Fake NT type name for WNF.
+        /// </summary>
+        public const string WNF_NT_TYPE_NAME = "Wnf";
 
         /// <summary>
         /// Create a new WNF state name.
