@@ -1250,9 +1250,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>RunningService</Name>
+      <Name>Win32Service</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.RunningService</TypeName>
+        <TypeName>NtApiDotNet.Win32.Win32Service</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>

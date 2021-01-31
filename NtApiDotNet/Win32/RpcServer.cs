@@ -378,9 +378,9 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static Dictionary<string, RunningService> GetExesToServices()
+        private static Dictionary<string, Win32Service> GetExesToServices()
         {
-            Dictionary<string, RunningService> services = new Dictionary<string, RunningService>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, Win32Service> services = new Dictionary<string, Win32Service>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in ServiceUtils.GetServices())
             {
                 services[entry.ImagePath] = entry;
@@ -393,7 +393,7 @@ namespace NtApiDotNet.Win32
             return services;
         }
 
-        private static Lazy<Dictionary<string, RunningService>> _exes_to_service = new Lazy<Dictionary<string, RunningService>>(GetExesToServices);
+        private static Lazy<Dictionary<string, Win32Service>> _exes_to_service = new Lazy<Dictionary<string, Win32Service>>(GetExesToServices);
 
         private RpcServer(NdrRpcServerInterface server, IEnumerable<NdrComplexTypeReference> complex_types, string filepath, long offset, bool client)
         {

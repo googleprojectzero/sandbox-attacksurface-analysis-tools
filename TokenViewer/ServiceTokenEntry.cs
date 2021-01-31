@@ -20,10 +20,10 @@ namespace TokenViewer
 {
     internal class ServiceTokenEntry : IDisposable
     {
-        public RunningService Service { get; }
+        public Win32Service Service { get; }
         public NtToken ProcessToken { get; }
 
-        public ServiceTokenEntry(RunningService service, NtToken token)
+        public ServiceTokenEntry(Win32Service service, NtToken token)
         {
             Service = service;
             ProcessToken = token.Duplicate();

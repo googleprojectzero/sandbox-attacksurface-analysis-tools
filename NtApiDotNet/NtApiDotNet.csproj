@@ -401,6 +401,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcTcpClientTransport.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportException.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurity.cs" />
+    <Compile Include="Win32\RunningService.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaLogonHandle.cs" />
     <Compile Include="Utilities\ASN1\DERParser.cs" />
     <Compile Include="Win32\SafeHandles\SafeRpcBindingHandle.cs" />
@@ -521,7 +522,7 @@
     <Compile Include="Win32\Rpc\Transport\ExtendedErrorInfo.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
-    <Compile Include="Win32\RunningService.cs" />
+    <Compile Include="Win32\Win32Service.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuditBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuthZClientContextHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuthZResourceManagerHandle.cs" />

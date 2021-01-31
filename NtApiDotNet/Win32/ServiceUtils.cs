@@ -563,7 +563,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state, ServiceType service_types)
+        private static IEnumerable<Win32Service> GetServices(SERVICE_STATE service_state, ServiceType service_types)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
@@ -592,7 +592,7 @@ namespace NtApiDotNet.Win32
                         buffer.ReadArray(0, services, 0, services_returned);
                         foreach (var service in services)
                         {
-                            yield return new RunningService(service);
+                            yield return new Win32Service(service);
                         }
 
                         if (ret)
@@ -895,7 +895,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the service.</param>
         /// <returns>The running service.</returns>
         /// <remarks>This will return active and non-active services as well as drivers.</remarks>
-        public static RunningService GetService(string name)
+        public static Win32Service GetService(string name)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect))
@@ -912,7 +912,7 @@ namespace NtApiDotNet.Win32
                     {
                         throw new SafeWin32Exception();
                     }
-                    return new RunningService(name, GetServiceDisplayName(service), QueryStatus(service));
+                    return new Win32Service(name, GetServiceDisplayName(service), QueryStatus(service));
                 }
             }
         }
@@ -923,7 +923,7 @@ namespace NtApiDotNet.Win32
         /// <param name="state">Specify state of services to get.</param>
         /// <param name="service_types">Specify the type filter for services.</param>
         /// <returns>A list of registered services.</returns>
-        public static IEnumerable<RunningService> GetServices(ServiceState state, ServiceType service_types)
+        public static IEnumerable<Win32Service> GetServices(ServiceState state, ServiceType service_types)
         {
             SERVICE_STATE state_flags;
             switch (state)
@@ -970,7 +970,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all registered services.
         /// </summary>
         /// <returns>A list of registered services.</returns>
-        public static IEnumerable<RunningService> GetServices()
+        public static IEnumerable<Win32Service> GetServices()
         {
             return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetServiceTypes());
         }
@@ -979,7 +979,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all active running services with their process IDs.
         /// </summary>
         /// <returns>A list of all active running services with process IDs.</returns>
-        public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
+        public static IEnumerable<Win32Service> GetRunningServicesWithProcessIds()
         {
             return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetServiceTypes());
         }
@@ -988,7 +988,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all drivers.
         /// </summary>
         /// <returns>A list of all drivers.</returns>
-        public static IEnumerable<RunningService> GetDrivers()
+        public static IEnumerable<Win32Service> GetDrivers()
         {
             return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetDriverTypes());
         }
@@ -997,7 +997,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all active running drivers.
         /// </summary>
         /// <returns>A list of all active running drivers.</returns>
-        public static IEnumerable<RunningService> GetRunningDrivers()
+        public static IEnumerable<Win32Service> GetRunningDrivers()
         {
             return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetDriverTypes());
         }
@@ -1006,7 +1006,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all services and drivers.
         /// </summary>
         /// <returns>A list of all services and drivers.</returns>
-        public static IEnumerable<RunningService> GetServicesAndDrivers()
+        public static IEnumerable<Win32Service> GetServicesAndDrivers()
         {
             return GetServices(SERVICE_STATE.SERVICE_STATE_ALL,
                 GetDriverTypes() | GetServiceTypes());
@@ -1016,7 +1016,7 @@ namespace NtApiDotNet.Win32
         /// Get a list of all services and drivers.
         /// </summary>
         /// <returns>A list of all services and drivers.</returns>
-        public static IEnumerable<RunningService> GetRunningServicesAndDrivers()
+        public static IEnumerable<Win32Service> GetRunningServicesAndDrivers()
         {
             return GetServices(SERVICE_STATE.SERVICE_ACTIVE,
                 GetDriverTypes() | GetServiceTypes());
@@ -1051,7 +1051,7 @@ namespace NtApiDotNet.Win32
         /// <param name="password">Password for the username if needed.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The registered service information.</returns>
-        public static NtResult<RunningService> CreateService(
+        public static NtResult<Win32Service> CreateService(
             string name,
             string display_name,
             ServiceType service_type,
@@ -1078,7 +1078,7 @@ namespace NtApiDotNet.Win32
                 ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.CreateService))
             {
                 if (scm.IsInvalid)
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<RunningService>(throw_on_error);
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Win32Service>(throw_on_error);
 
                 using (var pwd = new SecureStringMarshalBuffer(password))
                 {
@@ -1087,8 +1087,8 @@ namespace NtApiDotNet.Win32
                             string.IsNullOrEmpty(service_start_name) ? null : service_start_name, pwd))
                     {
                         if (service.IsInvalid)
-                            return Win32Utils.GetLastWin32Error().CreateResultFromDosError<RunningService>(throw_on_error);
-                        return new RunningService(name, display_name ?? string.Empty, QueryStatus(service)).CreateResult();
+                            return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Win32Service>(throw_on_error);
+                        return new Win32Service(name, display_name ?? string.Empty, QueryStatus(service)).CreateResult();
                     }
                 }
             }
@@ -1108,7 +1108,7 @@ namespace NtApiDotNet.Win32
         /// <param name="service_start_name">The username for the service.</param>
         /// <param name="password">Password for the username if needed.</param>
         /// <returns>The registered service information.</returns>
-        public static RunningService CreateService(
+        public static Win32Service CreateService(
             string name,
             string display_name,
             ServiceType service_type,

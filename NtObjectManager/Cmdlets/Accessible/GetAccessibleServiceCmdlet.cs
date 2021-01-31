@@ -64,7 +64,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Indicates the service information.
         /// </summary>
-        public RunningService Service { get; }
+        public Win32Service Service { get; }
 
         /// <summary>
         /// Indicates the service image path.
@@ -80,7 +80,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             SecurityDescriptor sd, TokenInformation token_info,
             ServiceAccessRights trigger_granted_access, 
             ServiceAccessRights original_granted_access,
-            RunningService service) 
+            Win32Service service) 
             : base(name, ServiceUtils.SERVICE_NT_TYPE_NAME, granted_access,
                 ServiceUtils.GetServiceGenericMapping(), sd, 
                 typeof(ServiceAccessRights), false, token_info)
@@ -143,7 +143,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private RunningService GetServiceByName(string name)
+        private Win32Service GetServiceByName(string name)
         {
             try
             {
@@ -156,7 +156,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             return null;
         }
 
-        private IEnumerable<RunningService> GetServices()
+        private IEnumerable<Win32Service> GetServices()
         {
             if (Name != null && Name.Length > 0)
             {
@@ -187,7 +187,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             return result.Result.GrantedAccess.HasAccess;
         }
 
-        private ServiceAccessRights GetTriggerAccess(RunningService service, NtToken token)
+        private ServiceAccessRights GetTriggerAccess(Win32Service service, NtToken token)
         {
             if (IgnoreTrigger)
                 return 0;
@@ -290,7 +290,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
             else
             {
-                IEnumerable<RunningService> services = GetServices();
+                IEnumerable<Win32Service> services = GetServices();
                 InternalGetAccessibleFileCmdlet file_cmdlet = null;
                 HashSet<string> checked_files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (CheckFiles)

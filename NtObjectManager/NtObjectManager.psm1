@@ -5030,7 +5030,7 @@ Specify names to lookup.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RunningService[]
+NtApiDotNet.Win32.Win32Service[]
 .EXAMPLE
 Get-RunningService
 Get all running services.
@@ -5103,7 +5103,7 @@ Specify names to lookup.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RunningService[]
+NtApiDotNet.Win32.Win32Service[]
 .EXAMPLE
 Get-Win32Service
 Get all services.
@@ -13068,7 +13068,7 @@ Specify to return information about the service.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RunningService
+NtApiDotNet.Win32.Win32Service
 #>
 function New-Win32Service {
     [CmdletBinding()]
@@ -13284,7 +13284,7 @@ Query for the service status after starting.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RunningService
+NtApiDotNet.Win32.Win32Service
 #>
 function Start-Win32Service {
     [CmdletBinding()]
