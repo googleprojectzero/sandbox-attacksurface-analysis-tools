@@ -44,8 +44,8 @@ namespace NtApiDotNet.Win32.Device
 
         private ServiceInformation GetServiceInformation()
         {
-            return ServiceUtils.GetServiceInformation(Service, 
-                false).GetResultOrDefault(new ServiceInformation(Service));
+            return ServiceUtils.GetServiceInformation(null, Service, 
+                false).GetResultOrDefault(new ServiceInformation(null, Service));
         }
 
         private DeviceNode GetParent()

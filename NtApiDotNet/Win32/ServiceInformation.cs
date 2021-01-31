@@ -107,6 +107,10 @@ namespace NtApiDotNet.Win32
         /// Service DLL if a shared process server.
         /// </summary>
         public string ServiceDll { get; }
+        /// <summary>
+        /// The name of the machine this service was found on.
+        /// </summary>
+        public string MachineName { get; }
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -152,7 +156,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        internal ServiceInformation(string name, SecurityDescriptor sd, 
+        internal ServiceInformation(string machine_name, string name, SecurityDescriptor sd, 
             IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
             ServiceLaunchProtectedType launch_protected, IEnumerable<string> required_privileges,
             SafeStructureInOutBuffer<QUERY_SERVICE_CONFIG> config, bool delayed_auto_start)
@@ -185,12 +189,16 @@ namespace NtApiDotNet.Win32
             DisplayName = result.lpDisplayName.GetString();
             ServiceStartName = result.lpServiceStartName.GetString();
             DelayedAutoStart = delayed_auto_start;
+            MachineName = machine_name ?? string.Empty;
 
             ServiceDll = string.Empty;
             ImagePath = string.Empty;
             ServiceHostType = string.Empty;
             ServiceMain = string.Empty;
 
+            // TODO: Maybe try and query using remote registry service?
+            if (!string.IsNullOrEmpty(MachineName))
+                return;
             using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
             {
                 if (key != null)
@@ -225,7 +233,8 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        internal ServiceInformation(string name) : this(name, null,
+        internal ServiceInformation(string machine_name, string name) 
+            : this(machine_name, name, null,
                 new ServiceTriggerInformation[0], ServiceSidType.None,
                 ServiceLaunchProtectedType.None, new string[0], null, false)
         {

@@ -25,8 +25,8 @@ namespace NtApiDotNet.Win32
     {
         private ServiceInformation GetServiceInformation()
         {
-            return ServiceUtils.GetServiceInformation(Name, 
-                false).GetResultOrDefault(new ServiceInformation(Name));
+            return ServiceUtils.GetServiceInformation(MachineName, Name, 
+                false).GetResultOrDefault(new ServiceInformation(MachineName, Name));
         }
 
         private readonly Lazy<ServiceInformation> _service_information;
@@ -147,6 +147,10 @@ namespace NtApiDotNet.Win32
         /// Service main function when using Win32Share.
         /// </summary>
         public string ServiceMain => _service_information.Value.ServiceMain;
+        /// <summary>
+        /// The name of the machine this service was found on.
+        /// </summary>
+        public string MachineName { get; }
 
         private static string GetString(IntPtr ptr)
         {
@@ -157,7 +161,7 @@ namespace NtApiDotNet.Win32
             return Marshal.PtrToStringUni(ptr);
         }
 
-        internal Win32Service(string name, string display_name, SERVICE_STATUS_PROCESS status)
+        internal Win32Service(string name, string display_name, string machine_name, SERVICE_STATUS_PROCESS status)
         {
             Name = name;
             DisplayName = display_name;
@@ -170,12 +174,13 @@ namespace NtApiDotNet.Win32
             CheckPoint = status.dwCheckPoint;
             WaitHint = status.dwWaitHint;
             ServiceFlags = status.dwServiceFlags;
+            MachineName = machine_name ?? string.Empty;
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
         }
 
-        internal Win32Service(ENUM_SERVICE_STATUS_PROCESS process) 
+        internal Win32Service(string machine_name, ENUM_SERVICE_STATUS_PROCESS process) 
             : this(GetString(process.lpServiceName), GetString(process.lpDisplayName), 
-                  process.ServiceStatusProcess)
+                  machine_name, process.ServiceStatusProcess)
         {
         }
     }

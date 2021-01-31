@@ -375,7 +375,7 @@ namespace NtApiDotNet.Win32
                 | SecurityInformation.Label
                 | SecurityInformation.Group;
 
-        private static NtResult<SecurityDescriptor> GetServiceSecurityDescriptor(
+        private static NtResult<SecurityDescriptor> GetServiceSecurityDescriptorInternal(
             SafeServiceHandle handle, string type_name, SecurityInformation security_information,
             bool throw_on_error)
         {
@@ -495,7 +495,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static NtResult<ServiceInformation> GetServiceSecurityInformation(SafeServiceHandle scm, string name,
+        private static NtResult<ServiceInformation> GetServiceSecurityInformation(string machine_name, SafeServiceHandle scm, string name,
             SecurityInformation security_information, bool throw_on_error)
         {
             using (var service_result = OpenService(scm, name, ServiceAccessRights.QueryConfig, throw_on_error))
@@ -510,8 +510,8 @@ namespace NtApiDotNet.Win32
                 {
                     using (var config = QueryConfig(service, false).GetResultOrDefault())
                     {
-                        return new ServiceInformation(name,
-                            GetServiceSecurityDescriptor(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
+                        return new ServiceInformation(machine_name, name,
+                            GetServiceSecurityDescriptorInternal(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
                             GetTriggersForService(service), GetServiceSidType(service),
                             GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
                             config, GetDelayedStart(service)).CreateResult();
@@ -566,9 +566,9 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static IEnumerable<Win32Service> GetServices(SERVICE_STATE service_state, ServiceType service_types)
+        private static IEnumerable<Win32Service> GetServices(string machine_name, SERVICE_STATE service_state, ServiceType service_types)
         {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
             {
                 if (scm.IsInvalid)
@@ -595,7 +595,7 @@ namespace NtApiDotNet.Win32
                         buffer.ReadArray(0, services, 0, services_returned);
                         foreach (var service in services)
                         {
-                            yield return new Win32Service(service);
+                            yield return new Win32Service(machine_name, service);
                         }
 
                         if (ret)
@@ -619,9 +619,9 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static NtResult<SafeServiceHandle> OpenService(string name, ServiceAccessRights desired_access, bool throw_on_error)
+        private static NtResult<SafeServiceHandle> OpenService(string machine_name, string name, ServiceAccessRights desired_access, bool throw_on_error)
         {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
                             ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
@@ -689,6 +689,38 @@ namespace NtApiDotNet.Win32
             return GetScmSecurityDescriptor(DEFAULT_SECURITY_INFORMATION);
         }
 
+
+        /// <summary>
+        /// Get the security descriptor of the SCM.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SCM security descriptor.</returns>
+        public static NtResult<SecurityDescriptor> GetScmSecurityDescriptor(string machine_name, SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
+
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
+                            ServiceControlManagerAccessRights.Connect | desired_access))
+            {
+                if (scm.IsInvalid)
+                    return Win32Utils.CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
+                return GetServiceSecurityDescriptorInternal(scm, SCM_NT_TYPE_NAME, security_information, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Get the security descriptor of the SCM.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <returns>The SCM security descriptor.</returns>
+        public static SecurityDescriptor GetScmSecurityDescriptor(string machine_name, SecurityInformation security_information)
+        {
+            return GetScmSecurityDescriptor(machine_name, security_information, true).Result;
+        }
+
         /// <summary>
         /// Get the security descriptor of the SCM.
         /// </summary>
@@ -697,15 +729,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The SCM security descriptor.</returns>
         public static NtResult<SecurityDescriptor> GetScmSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
-            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
-
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | desired_access))
-            {
-                if (scm.IsInvalid)
-                    return Win32Utils.CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
-                return GetServiceSecurityDescriptor(scm, SCM_NT_TYPE_NAME, security_information, throw_on_error);
-            }
+            return GetScmSecurityDescriptor(null, security_information, throw_on_error);
         }
 
         /// <summary>
@@ -724,18 +748,45 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the service.</param>
         /// <param name="security_information">Parts of the security descriptor to return.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <returns>The security descriptor.</returns>
+        public static NtResult<SecurityDescriptor> GetServiceSecurityDescriptor(
+            string machine_name, string name, SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
+
+            using (var service = OpenService(machine_name, name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Cast<SecurityDescriptor>();
+                return GetServiceSecurityDescriptorInternal(service.Result, SERVICE_NT_TYPE_NAME, security_information, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Get the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <returns>The security descriptor.</returns>
+        public static SecurityDescriptor GetServiceSecurityDescriptor(
+            string machine_name, string name, SecurityInformation security_information)
+        {
+            return GetServiceSecurityDescriptor(machine_name, name, security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Get the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="security_information">Parts of the security descriptor to return.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The security descriptor.</returns>
         public static NtResult<SecurityDescriptor> GetServiceSecurityDescriptor(string name, 
             SecurityInformation security_information, bool throw_on_error)
         {
-            var desired_access = NtSecurity.QuerySecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
-
-            using (var service = OpenService(name, desired_access, throw_on_error))
-            {
-                if (!service.IsSuccess)
-                    return service.Cast<SecurityDescriptor>();
-                return GetServiceSecurityDescriptor(service.Result, SERVICE_NT_TYPE_NAME, security_information, throw_on_error);
-            }
+            return GetServiceSecurityDescriptor(null, name, security_information, throw_on_error);
         }
 
         /// <summary>
@@ -753,22 +804,48 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Set the SCM security descriptor.
         /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
         /// <param name="security_descriptor">The security descriptor to set.</param>
         /// <param name="security_information">The parts of the security descriptor to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public static NtStatus SetScmSecurityDescriptor(SecurityDescriptor security_descriptor, 
+        public static NtStatus SetScmSecurityDescriptor(string machine_name, SecurityDescriptor security_descriptor, 
             SecurityInformation security_information, bool throw_on_error)
         {
             var desired_access = NtSecurity.SetSecurityAccessMask(security_information).ToSpecificAccess<ServiceControlManagerAccessRights>();
 
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
                             ServiceControlManagerAccessRights.Connect | desired_access))
             {
                 if (scm.IsInvalid)
                     return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
                 return SetServiceSecurityDescriptor(scm, security_information, security_descriptor, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Set the SCM security descriptor.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The parts of the security descriptor to set.</param>
+        public static void SetScmSecurityDescriptor(string machine_name, SecurityDescriptor security_descriptor,
+            SecurityInformation security_information)
+        {
+            SetScmSecurityDescriptor(machine_name, security_descriptor, security_information, true);
+        }
+
+        /// <summary>
+        /// Set the SCM security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The parts of the security descriptor to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetScmSecurityDescriptor(SecurityDescriptor security_descriptor,
+            SecurityInformation security_information, bool throw_on_error)
+        {
+            return SetScmSecurityDescriptor(null, security_descriptor, security_information, throw_on_error);
         }
 
         /// <summary>
@@ -786,11 +863,12 @@ namespace NtApiDotNet.Win32
         /// Get the information about a service.
         /// </summary>
         /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The service information.</returns>
-        public static NtResult<ServiceInformation> GetServiceInformation(string name, bool throw_on_error)
+        public static NtResult<ServiceInformation> GetServiceInformation(string machine_name, string name, bool throw_on_error)
         {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
                             ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
@@ -798,8 +876,64 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return GetServiceSecurityInformation(scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
+                return GetServiceSecurityInformation(machine_name, scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Get the information about a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <returns>The service information.</returns>
+        public static ServiceInformation GetServiceInformation(string machine_name, string name)
+        {
+            return GetServiceInformation(machine_name, name, true).Result;
+        }
+
+        /// <summary>
+        /// Get the information about a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The service information.</returns>
+        public static NtResult<ServiceInformation> GetServiceInformation(string name, bool throw_on_error)
+        {
+            return GetServiceInformation(null, name, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The security information to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public static NtStatus SetServiceSecurityDescriptor(string machine_name, 
+            string name, SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error)
+        {
+            var desired_access = NtSecurity.SetSecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
+            using (var service = OpenService(machine_name, name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return SetServiceSecurityDescriptor(service.Result, security_information, security_descriptor, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set the security descriptor for a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">The security information to set.</param>
+        public static void SetServiceSecurityDescriptor(string machine_name,
+            string name, SecurityDescriptor security_descriptor, SecurityInformation security_information)
+        {
+            SetServiceSecurityDescriptor(machine_name, name, security_descriptor, security_information, true);
         }
 
         /// <summary>
@@ -813,13 +947,7 @@ namespace NtApiDotNet.Win32
         public static NtStatus SetServiceSecurityDescriptor(string name, SecurityDescriptor security_descriptor, 
             SecurityInformation security_information, bool throw_on_error)
         {
-            var desired_access = NtSecurity.SetSecurityAccessMask(security_information).ToSpecificAccess<ServiceAccessRights>();
-            using (var service = OpenService(name, desired_access, throw_on_error))
-            {
-                if (!service.IsSuccess)
-                    return service.Status;
-                return SetServiceSecurityDescriptor(service.Result, security_information, security_descriptor, throw_on_error);
-            }
+            return SetServiceSecurityDescriptor(null, name, security_descriptor, security_information, throw_on_error);
         }
 
         /// <summary>
@@ -847,12 +975,23 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get the information about all services.
         /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="service_types">The types of services to return.</param>
+        /// <returns>The list of service information.</returns>
+        public static IEnumerable<ServiceInformation> GetServiceInformation(string machine_name, ServiceType service_types)
+        {
+            return GetServices(machine_name, ServiceState.All, service_types).Select(s => GetServiceInformation(s.Name,
+                false).GetResultOrDefault()).Where(s => s != null && s.ServiceType.HasFlagSet(service_types)).ToArray();
+        }
+
+        /// <summary>
+        /// Get the information about all services.
+        /// </summary>
         /// <param name="service_types">The types of services to return.</param>
         /// <returns>The list of service information.</returns>
         public static IEnumerable<ServiceInformation> GetServiceInformation(ServiceType service_types)
         {
-            return GetServices(ServiceState.All, service_types).Select(s => GetServiceInformation(s.Name, 
-                false).GetResultOrDefault()).Where(s => s != null && s.ServiceType.HasFlagSet(service_types)).ToArray();
+            return GetServiceInformation(null, service_types);
         }
 
         /// <summary>
@@ -907,16 +1046,18 @@ namespace NtApiDotNet.Win32
         /// Get a running service by name.
         /// </summary>
         /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The running service.</returns>
         /// <remarks>This will return active and non-active services as well as drivers.</remarks>
-        public static Win32Service GetService(string name)
+        public static NtResult<Win32Service> GetService(string machine_name, string name, bool throw_on_error)
         {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
                             ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
                 {
-                    throw new SafeWin32Exception();
+                    return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
                 }
 
                 using (var service = Win32NativeMethods.OpenService(scm, name,
@@ -924,20 +1065,56 @@ namespace NtApiDotNet.Win32
                 {
                     if (service.IsInvalid)
                     {
-                        throw new SafeWin32Exception();
+                        return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
                     }
-                    return new Win32Service(name, GetServiceDisplayName(service), QueryStatus(service));
+                    return new Win32Service(name, GetServiceDisplayName(service), machine_name, QueryStatus(service)).CreateResult();
                 }
             }
         }
 
         /// <summary>
+        /// Get a running service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <returns>The running service.</returns>
+        /// <remarks>This will return active and non-active services as well as drivers.</remarks>
+        public static Win32Service GetService(string machine_name, string name)
+        {
+            return GetService(machine_name, name, true).Result;
+        }
+
+        /// <summary>
+        /// Get a running service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The running service.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <remarks>This will return active and non-active services as well as drivers.</remarks>
+        public static NtResult<Win32Service> GetService(string name, bool throw_on_error)
+        {
+            return GetService(null, name, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a running service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The running service.</returns>
+        /// <remarks>This will return active and non-active services as well as drivers.</remarks>
+        public static Win32Service GetService(string name)
+        {
+            return GetService(null, name, true).Result;
+        }
+
+        /// <summary>
         /// Get a list of all registered services.
         /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
         /// <param name="state">Specify state of services to get.</param>
         /// <param name="service_types">Specify the type filter for services.</param>
         /// <returns>A list of registered services.</returns>
-        public static IEnumerable<Win32Service> GetServices(ServiceState state, ServiceType service_types)
+        public static IEnumerable<Win32Service> GetServices(string machine_name, ServiceState state, ServiceType service_types)
         {
             SERVICE_STATE state_flags;
             switch (state)
@@ -954,7 +1131,18 @@ namespace NtApiDotNet.Win32
                 default:
                     throw new ArgumentException("Invalid state.", nameof(state));
             }
-            return GetServices(state_flags, service_types);
+            return GetServices(machine_name, state_flags, service_types);
+        }
+
+        /// <summary>
+        /// Get a list of all registered services.
+        /// </summary>
+        /// <param name="state">Specify state of services to get.</param>
+        /// <param name="service_types">Specify the type filter for services.</param>
+        /// <returns>A list of registered services.</returns>
+        public static IEnumerable<Win32Service> GetServices(ServiceState state, ServiceType service_types)
+        {
+            return GetServices(null, state, service_types);
         }
 
         /// <summary>
@@ -986,7 +1174,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of registered services.</returns>
         public static IEnumerable<Win32Service> GetServices()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetServiceTypes());
+            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL, GetServiceTypes());
         }
 
         /// <summary>
@@ -995,7 +1183,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running services with process IDs.</returns>
         public static IEnumerable<Win32Service> GetRunningServicesWithProcessIds()
         {
-            return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetServiceTypes());
+            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE, GetServiceTypes());
         }
 
         /// <summary>
@@ -1004,7 +1192,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all drivers.</returns>
         public static IEnumerable<Win32Service> GetDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetDriverTypes());
+            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL, GetDriverTypes());
         }
 
         /// <summary>
@@ -1013,7 +1201,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running drivers.</returns>
         public static IEnumerable<Win32Service> GetRunningDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetDriverTypes());
+            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE, GetDriverTypes());
         }
 
         /// <summary>
@@ -1022,7 +1210,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all services and drivers.</returns>
         public static IEnumerable<Win32Service> GetServicesAndDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL,
+            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL,
                 GetDriverTypes() | GetServiceTypes());
         }
 
@@ -1032,7 +1220,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all services and drivers.</returns>
         public static IEnumerable<Win32Service> GetRunningServicesAndDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_ACTIVE,
+            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE,
                 GetDriverTypes() | GetServiceTypes());
         }
 
@@ -1048,6 +1236,99 @@ namespace NtApiDotNet.Win32
                 && !type_name.Equals(SCM_NT_TYPE_NAME, StringComparison.OrdinalIgnoreCase))
                 return null;
             return NtType.GetTypeByName(type_name);
+        }
+
+        /// <summary>
+        /// Create a new service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The registered service information.</returns>
+        public static NtResult<Win32Service> CreateService(
+            string machine_name,
+            string name,
+            string display_name,
+            ServiceType service_type,
+            ServiceStartType start_type,
+            ServiceErrorControl error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password,
+            bool throw_on_error)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException($"'{nameof(name)}' cannot be null or empty", nameof(name));
+            }
+
+            if (string.IsNullOrEmpty(binary_path_name))
+            {
+                throw new ArgumentException($"'{nameof(binary_path_name)}' cannot be null or empty", nameof(binary_path_name));
+            }
+
+            using (var scm = Win32NativeMethods.OpenSCManager(machine_name, null,
+                ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.CreateService))
+            {
+                if (scm.IsInvalid)
+                    return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
+
+                using (var pwd = new SecureStringMarshalBuffer(password))
+                {
+                    using (var service = Win32NativeMethods.CreateService(scm, name, display_name, ServiceAccessRights.MaximumAllowed,
+                            service_type, start_type, error_control, binary_path_name, load_order_group, null, dependencies.ToMultiString(),
+                            string.IsNullOrEmpty(service_start_name) ? null : service_start_name, pwd))
+                    {
+                        if (service.IsInvalid)
+                            return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
+                        return new Win32Service(name, display_name ?? string.Empty, machine_name, QueryStatus(service)).CreateResult();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create a new service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        /// <returns>The registered service information.</returns>
+        public static Win32Service CreateService(
+            string machine_name,
+            string name,
+            string display_name,
+            ServiceType service_type,
+            ServiceStartType start_type,
+            ServiceErrorControl error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password)
+        {
+            return CreateService(machine_name, name, display_name, service_type,
+                start_type, error_control, binary_path_name, load_order_group,
+                dependencies, service_start_name, password, true).Result;
         }
 
         /// <summary>
@@ -1078,34 +1359,9 @@ namespace NtApiDotNet.Win32
             SecureString password,
             bool throw_on_error)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException($"'{nameof(name)}' cannot be null or empty", nameof(name));
-            }
-
-            if (string.IsNullOrEmpty(binary_path_name))
-            {
-                throw new ArgumentException($"'{nameof(binary_path_name)}' cannot be null or empty", nameof(binary_path_name));
-            }
-
-            using (var scm = Win32NativeMethods.OpenSCManager(null, null,
-                ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.CreateService))
-            {
-                if (scm.IsInvalid)
-                    return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
-
-                using (var pwd = new SecureStringMarshalBuffer(password))
-                {
-                    using (var service = Win32NativeMethods.CreateService(scm, name, display_name, ServiceAccessRights.MaximumAllowed,
-                            service_type, start_type, error_control, binary_path_name, load_order_group, null, dependencies.ToMultiString(),
-                            string.IsNullOrEmpty(service_start_name) ? null : service_start_name, pwd))
-                    {
-                        if (service.IsInvalid)
-                            return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
-                        return new Win32Service(name, display_name ?? string.Empty, QueryStatus(service)).CreateResult();
-                    }
-                }
-            }
+            return CreateService(null, name, display_name, service_type,
+                start_type, error_control, binary_path_name, load_order_group,
+                dependencies, service_start_name, password, throw_on_error);
         }
 
         /// <summary>
@@ -1142,18 +1398,42 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Delete a service.
         /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
         /// <param name="name">The name of the service.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status.</returns>
-        public static NtStatus DeleteService(string name, bool throw_on_error)
+        public static NtStatus DeleteService(string machine_name, string name, bool throw_on_error)
         {
-            using (var service = OpenService(name, ServiceAccessRights.Delete, throw_on_error))
+            using (var service = OpenService(machine_name, name, ServiceAccessRights.Delete, throw_on_error))
             {
                 if (!service.IsSuccess)
                     return service.Status;
                 return Win32NativeMethods.DeleteService(service.Result).ToNtException(throw_on_error);
             }
         }
+
+        /// <summary>
+        /// Delete a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The NT status.</returns>
+        public static void DeleteService(string machine_name, string name)
+        {
+            DeleteService(machine_name, name, true);
+        }
+
+        /// <summary>
+        /// Delete a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public static NtStatus DeleteService(string name, bool throw_on_error)
+        {
+            return DeleteService(null, name, throw_on_error);
+        }
+
         /// <summary>
         /// Delete a service.
         /// </summary>
@@ -1161,6 +1441,87 @@ namespace NtApiDotNet.Win32
         public static void DeleteService(string name)
         {
             DeleteService(name, true);
+        }
+
+        /// <summary>
+        /// Change service configuration.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ChangeServiceConfig(
+            string machine_name,
+            string name,
+            string display_name,
+            ServiceType? service_type,
+            ServiceStartType? start_type,
+            ServiceErrorControl? error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password,
+            bool throw_on_error)
+        {
+            using (var service = OpenService(machine_name, name, ServiceAccessRights.ChangeConfig, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                IntPtr pwd = password != null ? Marshal.SecureStringToBSTR(password) : IntPtr.Zero;
+                try
+                {
+                    return Win32NativeMethods.ChangeServiceConfig(service.Result,
+                        service_type ?? (ServiceType)(-1), start_type ?? (ServiceStartType)(-1),
+                        error_control ?? (ServiceErrorControl)(-1), binary_path_name, load_order_group,
+                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).ToNtException(throw_on_error);
+                }
+                finally
+                {
+                    if (pwd != IntPtr.Zero)
+                        Marshal.ZeroFreeBSTR(pwd);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Change service configuration.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        public static void ChangeServiceConfig(
+            string machine_name,
+            string name,
+            string display_name,
+            ServiceType? service_type,
+            ServiceStartType? start_type,
+            ServiceErrorControl? error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password)
+        {
+            ChangeServiceConfig(machine_name, name, display_name, service_type, start_type, error_control,
+                binary_path_name, load_order_group, dependencies, service_start_name, password, true);
         }
 
         /// <summary>
@@ -1191,24 +1552,67 @@ namespace NtApiDotNet.Win32
             SecureString password,
             bool throw_on_error)
         {
-            using (var service = OpenService(name, ServiceAccessRights.ChangeConfig, throw_on_error))
+            return ChangeServiceConfig(null, name, display_name, service_type, start_type, error_control,
+                binary_path_name, load_order_group, dependencies, service_start_name, password, throw_on_error);
+        }
+
+        /// <summary>
+        /// Change service configuration.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="display_name">The display name for the service.</param>
+        /// <param name="service_type">The service type.</param>
+        /// <param name="start_type">The service start type.</param>
+        /// <param name="error_control">Error control.</param>
+        /// <param name="binary_path_name">Path to the service executable.</param>
+        /// <param name="load_order_group">Load group order.</param>
+        /// <param name="dependencies">List of service dependencies.</param>
+        /// <param name="service_start_name">The username for the service.</param>
+        /// <param name="password">Password for the username if needed.</param>
+        public static void ChangeServiceConfig(
+            string name,
+            string display_name,
+            ServiceType? service_type,
+            ServiceStartType? start_type,
+            ServiceErrorControl? error_control,
+            string binary_path_name,
+            string load_order_group,
+            IEnumerable<string> dependencies,
+            string service_start_name,
+            SecureString password)
+        {
+            ChangeServiceConfig(null, name, display_name, service_type, start_type, error_control,
+                binary_path_name, load_order_group, dependencies, service_start_name, password);
+        }
+
+        /// <summary>
+        /// Start a service by name.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="args">Optional arguments to pass to the service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code for the service.</returns>
+        public static NtStatus StartService(string machine_name, string name, string[] args, bool throw_on_error)
+        {
+            using (var service = OpenService(machine_name, name, ServiceAccessRights.Start, throw_on_error))
             {
                 if (!service.IsSuccess)
                     return service.Status;
-                IntPtr pwd = password != null ? Marshal.SecureStringToBSTR(password) : IntPtr.Zero;
-                try
-                {
-                    return Win32NativeMethods.ChangeServiceConfig(service.Result,
-                        service_type ?? (ServiceType)(-1), start_type ?? (ServiceStartType)(-1),
-                        error_control ?? (ServiceErrorControl)(-1), binary_path_name, load_order_group,
-                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).ToNtException(throw_on_error);
-                }
-                finally
-                {
-                    if (pwd != IntPtr.Zero)
-                        Marshal.FreeBSTR(pwd);
-                }
+                return Win32NativeMethods.StartService(service.Result,
+                    args?.Length ?? 0, args).ToNtException(throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Start a service by name.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="args">Optional arguments to pass to the service.</param>
+        public static void StartService(string machine_name, string name, string[] args)
+        {
+            StartService(machine_name, name, args, true);
         }
 
         /// <summary>
@@ -1220,13 +1624,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The status code for the service.</returns>
         public static NtStatus StartService(string name, string[] args, bool throw_on_error)
         {
-            using (var service = OpenService(name, ServiceAccessRights.Start, throw_on_error))
-            {
-                if (!service.IsSuccess)
-                    return service.Status;
-                return Win32NativeMethods.StartService(service.Result, 
-                    args?.Length ?? 0, args).ToNtException(throw_on_error);
-            }
+            return StartService(null, name, args, throw_on_error);
         }
 
         /// <summary>

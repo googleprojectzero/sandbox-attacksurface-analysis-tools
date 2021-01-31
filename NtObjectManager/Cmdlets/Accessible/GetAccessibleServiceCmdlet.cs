@@ -145,14 +145,11 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private Win32Service GetServiceByName(string name)
         {
-            try
-            {
-                return ServiceUtils.GetService(name);
-            }
-            catch (SafeWin32Exception ex)
-            {
-                WriteError(new ErrorRecord(ex, "OpenService", ErrorCategory.OpenError, name));
-            }
+            var result = ServiceUtils.GetService(name, false);
+            if (result.IsSuccess)
+                return result.Result;
+
+            WriteError(new ErrorRecord(new NtException(result.Status), "OpenService", ErrorCategory.OpenError, name));
             return null;
         }
 

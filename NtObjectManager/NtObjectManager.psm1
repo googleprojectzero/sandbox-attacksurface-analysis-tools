@@ -5100,6 +5100,8 @@ Specify the state of the services to get.
 Specify to filter the services to specific types only.
 .PARAMETER Name
 Specify names to lookup.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -5130,7 +5132,8 @@ function Get-Win32Service {
         [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
         [string[]]$Name,
         [parameter(Mandatory, ParameterSetName = "FromPid", Position = 0)]
-        [int[]]$ProcessId
+        [int[]]$ProcessId,
+        [string]$MachineName
     )
 
     PROCESS {
@@ -5139,15 +5142,15 @@ function Get-Win32Service {
                 if ($Type -eq 0) {
                     $Type = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
                 }
-                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $Type) | Write-Output
+                [NtApiDotNet.Win32.ServiceUtils]::GetServices($MachineName, $State, $Type) | Write-Output
             }
             "FromName" {
                 foreach ($n in $Name) {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetService($n) | Write-Output
+                    [NtApiDotNet.Win32.ServiceUtils]::GetService($MachineName, $n) | Write-Output
                 }
             }
             "FromPid" {
-                Get-Win32Service -State Active | Where-Object {$_.ProcessId -in $ProcessId}
+                Get-Win32Service -State Active -MachineName $MachineName | Where-Object {$_.ProcessId -in $ProcessId}
             }
         }
     }
@@ -13065,6 +13068,8 @@ Specify the username for the service.
 Specify the password for the username.
 .PARAMETER PassThru
 Specify to return information about the service.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13085,10 +13090,12 @@ function New-Win32Service {
         [string[]]$Dependencies,
         [string]$Username,
         [System.Security.SecureString]$Password,
-        [switch]$PassThru
+        [switch]$PassThru,
+        [string]$MachineName
     )
 
-    $service = [NtApiDotNet.Win32.ServiceUtils]::CreateService($Name, $DisplayName, $Type, $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $Password)
+    $service = [NtApiDotNet.Win32.ServiceUtils]::CreateService($MachineName, $Name, $DisplayName, $Type, `
+        $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $Password)
     if ($PassThru) {
         $service
     }
@@ -13099,9 +13106,11 @@ function New-Win32Service {
 Delete a Win32 service.
 .DESCRIPTION
 This cmdlet deletes a Win32 service. This is basically the same as Remove-Service
-but is available on PowerShell 5.1.
+but is available on PowerShell 5.1. Also directly supports specifying the machine name.
 .PARAMETER Name
 Specify the name of the service.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13111,10 +13120,11 @@ function Remove-Win32Service {
     [CmdletBinding()]
     param (
         [parameter(Mandatory, Position = 0)]
-        [string]$Name
+        [string]$Name,
+        [string]$MachineName
     )
 
-    [NtApiDotNet.Win32.ServiceUtils]::DeleteService($Name)
+    [NtApiDotNet.Win32.ServiceUtils]::DeleteService($MachineName, $Name)
 }
 
 <#
@@ -13157,6 +13167,8 @@ Specify the name of the service.
 Specify to query the service control manager security descriptor.
 .PARAMETER SecurityInformation
 Specify the parts of the security descriptor to return.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13170,15 +13182,16 @@ function Get-Win32ServiceSecurityDescriptor {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromScm")]
         [switch]$ServiceControlManager,
         [parameter(Position = 1)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation = "Owner, Group, Dacl, Label"
+        [NtApiDotNet.SecurityInformation]$SecurityInformation = "Owner, Group, Dacl, Label",
+        [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceSecurityDescriptor($Name, $SecurityInformation)
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceSecurityDescriptor($MachineName, $Name, $SecurityInformation)
         }
         "FromScm" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetScmSecurityDescriptor($SecurityInformation)
+            [NtApiDotNet.Win32.ServiceUtils]::GetScmSecurityDescriptor($MachineName, $SecurityInformation)
         }
     }
 }
@@ -13196,6 +13209,8 @@ Specify to set the service control manager security descriptor.
 Specify the parts of the security descriptor to set.
 .PARAMETER SecurityDescriptor 
 The security descriptor to set.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13211,15 +13226,16 @@ function Set-Win32ServiceSecurityDescriptor {
         [parameter(Mandatory, Position = 1)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [parameter(Mandatory, Position = 2)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation
+        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::SetServiceSecurityDescriptor($Name, $SecurityDescriptor, $SecurityInformation)
+            [NtApiDotNet.Win32.ServiceUtils]::SetServiceSecurityDescriptor($MachineName, $Name, $SecurityDescriptor, $SecurityInformation)
         }
         "FromScm" {
-            [NtApiDotNet.Win32.ServiceUtils]::SetScmSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
+            [NtApiDotNet.Win32.ServiceUtils]::SetScmSecurityDescriptor($MachineName, $SecurityDescriptor, $SecurityInformation)
         }
     }
 }
@@ -13282,6 +13298,8 @@ Specify the name of the service.
 Specify the list of arguments to the service.
 .PARAMETER PassThru
 Query for the service status after starting.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13293,12 +13311,13 @@ function Start-Win32Service {
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
         [string[]]$ArgumentList,
-        [switch]$PassThru
+        [switch]$PassThru,
+        [string]$MachineName
     )
 
-    [NtApiDotNet.Win32.ServiceUtils]::StartService($Name, $ArgumentList)
+    [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
     if ($PassThru) {
-        Get-Win32Service -Name $Name
+        Get-Win32Service -Name $Name -MachineName $MachineName
     }
 }
 
@@ -13311,6 +13330,8 @@ This cmdlet gets the configuration for a service or all services.
 Specify the name of the service.
 .PARAMETER ServiceType
 Specify the types of services to return when querying all services. Defaults to all user services.
+.PARAMETER MachineName
+Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
@@ -13322,15 +13343,16 @@ function Get-Win32ServiceConfig {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes(),
+        [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($Name)
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $Name)
         }
         "All" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($ServiceType) | Write-Output
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $ServiceType) | Write-Output
         }
     }
 }
