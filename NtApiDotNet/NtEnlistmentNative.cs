@@ -53,6 +53,7 @@ namespace NtApiDotNet
         [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         [SDKName("ACCESS_SYSTEM_SECURITY")]
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
     [Flags]
