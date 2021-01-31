@@ -14,6 +14,7 @@
 
 using Microsoft.Win32;
 using System.Collections.Generic;
+using System.IO;
 using System.Security;
 
 namespace NtApiDotNet.Win32
@@ -104,6 +105,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string ImagePath { get; }
         /// <summary>
+        /// Get name of the target image, either the ServiceDll or ImagePath.
+        /// </summary>
+        public string ImageName => string.IsNullOrEmpty(ServiceDll) ? Path.GetFileName(ImagePath) : Path.GetFileName(ServiceDll);
+        /// <summary>
         /// Service DLL if a shared process server.
         /// </summary>
         public string ServiceDll { get; }
@@ -190,9 +195,8 @@ namespace NtApiDotNet.Win32
             ServiceStartName = result.lpServiceStartName.GetString();
             DelayedAutoStart = delayed_auto_start;
             MachineName = machine_name ?? string.Empty;
-
+            ImagePath = Win32Utils.GetImagePathFromCommandLine(BinaryPathName);
             ServiceDll = string.Empty;
-            ImagePath = string.Empty;
             ServiceHostType = string.Empty;
             ServiceMain = string.Empty;
 
@@ -204,8 +208,6 @@ namespace NtApiDotNet.Win32
                 if (key != null)
                 {
                     UserName = ReadStringFromKey(key, null, "ObjectName");
-                    ImagePath = Win32Utils.GetImagePathFromCommandLine(BinaryPathName);
-                    string[] args = Win32Utils.ParseCommandLine(BinaryPathName);
                     ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
                     if (string.IsNullOrEmpty(ServiceDll))
                     {
@@ -214,6 +216,7 @@ namespace NtApiDotNet.Win32
 
                     if (!string.IsNullOrEmpty(ServiceDll))
                     {
+                        string[] args = Win32Utils.ParseCommandLine(BinaryPathName);
                         for (int i = 0; i < args.Length - 1; ++i)
                         {
                             if (args[i] == "-k")

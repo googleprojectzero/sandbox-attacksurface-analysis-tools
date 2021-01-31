@@ -4241,10 +4241,17 @@
           <TableColumnHeader>
             <Label>Name</Label>
             <Alignment>left</Alignment>
+            <Width>30</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ImageName</Label>
+            <Alignment>left</Alignment>
+            <Width>30</Width>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>StartType</Label>
             <Alignment>left</Alignment>
+            <Width>10</Width>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ServiceType</Label>
@@ -4256,6 +4263,9 @@
             <TableColumnItems>
               <TableColumnItem>
                 <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ImageName</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>StartType</PropertyName>
