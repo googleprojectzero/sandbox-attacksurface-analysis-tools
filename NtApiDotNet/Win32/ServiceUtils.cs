@@ -847,10 +847,12 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get the information about all services.
         /// </summary>
+        /// <param name="service_types">The types of services to return.</param>
         /// <returns>The list of service information.</returns>
-        public static IEnumerable<ServiceInformation> GetServiceInformation()
+        public static IEnumerable<ServiceInformation> GetServiceInformation(ServiceType service_types)
         {
-            return GetServices().Select(s => GetServiceInformation(s.Name, false).GetResultOrDefault()).Where(s => s != null);
+            return GetServices(ServiceState.All, service_types).Select(s => GetServiceInformation(s.Name, 
+                false).GetResultOrDefault()).Where(s => s != null && s.ServiceType.HasFlagSet(service_types)).ToArray();
         }
 
         /// <summary>

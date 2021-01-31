@@ -13309,6 +13309,8 @@ Get the configuration for a service or all services.
 This cmdlet gets the configuration for a service or all services.
 .PARAMETER Name
 Specify the name of the service.
+.PARAMETER ServiceType
+Specify the types of services to return when querying all services. Defaults to all user services.
 .INPUTS
 None
 .OUTPUTS
@@ -13318,7 +13320,9 @@ function Get-Win32ServiceConfig {
     [CmdletBinding(DefaultParameterSetName="All")]
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
-        [string]$Name
+        [string]$Name,
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -13326,7 +13330,7 @@ function Get-Win32ServiceConfig {
             [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($Name)
         }
         "All" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation() | Write-Output
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($ServiceType) | Write-Output
         }
     }
 }

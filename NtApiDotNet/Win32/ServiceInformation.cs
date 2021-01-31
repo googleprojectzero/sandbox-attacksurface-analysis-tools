@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Security;
 
 namespace NtApiDotNet.Win32
 {
@@ -85,6 +87,70 @@ namespace NtApiDotNet.Win32
         /// Indicates this service is set to delayed automatic start.
         /// </summary>
         public bool DelayedAutoStart { get; }
+        /// <summary>
+        /// The user name this service runs under.
+        /// </summary>
+        public string UserName { get; }
+        /// <summary>
+        /// Type of service host when using Win32Share.
+        /// </summary>
+        public string ServiceHostType { get; }
+        /// <summary>
+        /// Service main function when using Win32Share.
+        /// </summary>
+        public string ServiceMain { get; }
+        /// <summary>
+        /// Image path for the service.
+        /// </summary>
+        public string ImagePath { get; }
+        /// <summary>
+        /// Service DLL if a shared process server.
+        /// </summary>
+        public string ServiceDll { get; }
+
+        private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
+        {
+            try
+            {
+                return rootKey.OpenSubKey(path);
+            }
+            catch (SecurityException)
+            {
+                return null;
+            }
+        }
+
+        private static string ReadStringFromKey(RegistryKey rootKey, string keyName, string valueName)
+        {
+            RegistryKey key = rootKey;
+
+            try
+            {
+                if (keyName != null)
+                {
+                    key = OpenKeySafe(rootKey, keyName);
+                }
+
+                string valueString = string.Empty;
+                if (key != null)
+                {
+                    object valueObject = key.GetValue(valueName);
+                    if (valueObject != null)
+                    {
+                        valueString = valueObject.ToString();
+                    }
+                }
+
+                return valueString.TrimEnd('\0');
+            }
+            finally
+            {
+                if (key != null && key != rootKey)
+                {
+                    key.Close();
+                }
+            }
+        }
 
         internal ServiceInformation(string name, SecurityDescriptor sd, 
             IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
@@ -119,6 +185,44 @@ namespace NtApiDotNet.Win32
             DisplayName = result.lpDisplayName.GetString();
             ServiceStartName = result.lpServiceStartName.GetString();
             DelayedAutoStart = delayed_auto_start;
+
+            ServiceDll = string.Empty;
+            ImagePath = string.Empty;
+            ServiceHostType = string.Empty;
+            ServiceMain = string.Empty;
+
+            using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
+            {
+                if (key != null)
+                {
+                    UserName = ReadStringFromKey(key, null, "ObjectName");
+                    ImagePath = Win32Utils.GetImagePathFromCommandLine(BinaryPathName);
+                    string[] args = Win32Utils.ParseCommandLine(BinaryPathName);
+                    ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
+                    if (string.IsNullOrEmpty(ServiceDll))
+                    {
+                        ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
+                    }
+
+                    if (!string.IsNullOrEmpty(ServiceDll))
+                    {
+                        for (int i = 0; i < args.Length - 1; ++i)
+                        {
+                            if (args[i] == "-k")
+                            {
+                                ServiceHostType = args[i + 1];
+                                break;
+                            }
+                        }
+
+                        ServiceMain = ReadStringFromKey(key, "Parameters", "ServiceMain");
+                        if (string.IsNullOrEmpty(ServiceMain))
+                        {
+                            ServiceMain = "ServiceMain";
+                        }
+                    }
+                }
+            }
         }
 
         internal ServiceInformation(string name) : this(name, null,

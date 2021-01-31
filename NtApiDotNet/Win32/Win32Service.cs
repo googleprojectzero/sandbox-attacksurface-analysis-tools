@@ -12,11 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace NtApiDotNet.Win32
 {
@@ -48,15 +46,15 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Image path for the service.
         /// </summary>
-        public string ImagePath { get; }
+        public string ImagePath => _service_information.Value.ImagePath;
         /// <summary>
         /// Command line for the service.
         /// </summary>
-        public string CommandLine { get; }
+        public string CommandLine => _service_information.Value.BinaryPathName;
         /// <summary>
         /// Service DLL if a shared process server.
         /// </summary>
-        public string ServiceDll { get; }
+        public string ServiceDll => _service_information.Value.ServiceDll;
         /// <summary>
         /// Current service status.
         /// </summary>
@@ -65,6 +63,10 @@ namespace NtApiDotNet.Win32
         /// What controls are accepted by the service.
         /// </summary>
         public ServiceControlsAccepted ControlsAccepted { get; }
+        /// <summary>
+        /// Whether the service can be stopped.
+        /// </summary>
+        public bool CanStop => ControlsAccepted.HasFlagSet(ServiceControlsAccepted.Stop);
         /// <summary>
         /// The Win32 exit code.
         /// </summary>
@@ -136,63 +138,15 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The user name this service runs under.
         /// </summary>
-        public string UserName { get; }
-        /// <summary>
-        /// Whether the service can be stopped.
-        /// </summary>
-        public bool CanStop => ControlsAccepted.HasFlagSet(ServiceControlsAccepted.Stop);
+        public string UserName => _service_information.Value.UserName;
         /// <summary>
         /// Type of service host when using Win32Share.
         /// </summary>
-        public string ServiceHostType { get; }
+        public string ServiceHostType => _service_information.Value.ServiceHostType;
         /// <summary>
         /// Service main function when using Win32Share.
         /// </summary>
-        public string ServiceMain { get; }
-
-        private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
-        {
-            try
-            {
-                return rootKey.OpenSubKey(path);
-            }
-            catch (SecurityException)
-            {
-                return null;
-            }
-        }
-
-        private static string ReadStringFromKey(RegistryKey rootKey, string keyName, string valueName)
-        {
-            RegistryKey key = rootKey;
-
-            try
-            {
-                if (keyName != null)
-                {
-                    key = OpenKeySafe(rootKey, keyName);
-                }
-
-                string valueString = string.Empty;
-                if (key != null)
-                {
-                    object valueObject = key.GetValue(valueName);
-                    if (valueObject != null)
-                    {
-                        valueString = valueObject.ToString();
-                    }
-                }
-
-                return valueString.TrimEnd('\0');
-            }
-            finally
-            {
-                if (key != null && key != rootKey)
-                {
-                    key.Close();
-                }
-            }
-        }
+        public string ServiceMain => _service_information.Value.ServiceMain;
 
         private static string GetString(IntPtr ptr)
         {
@@ -216,43 +170,6 @@ namespace NtApiDotNet.Win32
             CheckPoint = status.dwCheckPoint;
             WaitHint = status.dwWaitHint;
             ServiceFlags = status.dwServiceFlags;
-            ServiceDll = string.Empty;
-            ImagePath = string.Empty;
-            CommandLine = string.Empty;
-            ServiceHostType = string.Empty;
-            ServiceMain = string.Empty;
-
-            using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
-            {
-                if (key != null)
-                {
-                    CommandLine = ReadStringFromKey(key, null, "ImagePath");
-                    ImagePath = Win32Utils.GetImagePathFromCommandLine(CommandLine);
-                    string[] args = Win32Utils.ParseCommandLine(CommandLine);
-                    if (ServiceType.HasFlagSet(ServiceType.Win32ShareProcess))
-                    {
-                        for (int i = 0; i < args.Length - 1; ++i)
-                        {
-                            if (args[i] == "-k")
-                            {
-                                ServiceHostType = args[i + 1];
-                                break;
-                            }
-                        }
-                    }
-                    ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
-                    if (string.IsNullOrEmpty(ServiceDll))
-                    {
-                        ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
-                    }
-                    UserName = ReadStringFromKey(key, null, "ObjectName");
-                    ServiceMain = ReadStringFromKey(key, "Parameters", "ServiceMain");
-                    if (string.IsNullOrEmpty(ServiceMain))
-                    {
-                        ServiceMain = "ServiceMain";
-                    }
-                }
-            }
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
         }
 
