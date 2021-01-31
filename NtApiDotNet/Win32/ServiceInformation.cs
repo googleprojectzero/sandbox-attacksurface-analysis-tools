@@ -91,37 +91,34 @@ namespace NtApiDotNet.Win32
             ServiceLaunchProtectedType launch_protected, IEnumerable<string> required_privileges,
             SafeStructureInOutBuffer<QUERY_SERVICE_CONFIG> config, bool delayed_auto_start)
         {
-            using (config)
+            Name = name;
+            SecurityDescriptor = sd;
+            Triggers = triggers;
+            SidType = sid_type;
+            LaunchProtected = launch_protected;
+            RequiredPrivileges = required_privileges;
+
+            if (config == null)
             {
-                Name = name;
-                SecurityDescriptor = sd;
-                Triggers = triggers;
-                SidType = sid_type;
-                LaunchProtected = launch_protected;
-                RequiredPrivileges = required_privileges;
-
-                if (config == null)
-                {
-                    BinaryPathName = string.Empty;
-                    LoadOrderGroup = string.Empty;
-                    Dependencies = new string[0];
-                    DisplayName = string.Empty;
-                    ServiceStartName = string.Empty;
-                    return;
-                }
-
-                var result = config.Result;
-                ServiceType = result.dwServiceType;
-                StartType = result.dwStartType;
-                ErrorControl = result.dwErrorControl;
-                BinaryPathName = result.lpBinaryPathName.GetString();
-                LoadOrderGroup = result.lpLoadOrderGroup.GetString();
-                TagId = result.dwTagId;
-                Dependencies = result.lpLoadOrderGroup.GetMultiString();
-                DisplayName = result.lpDisplayName.GetString();
-                ServiceStartName = result.lpServiceStartName.GetString();
-                DelayedAutoStart = delayed_auto_start;
+                BinaryPathName = string.Empty;
+                LoadOrderGroup = string.Empty;
+                Dependencies = new string[0];
+                DisplayName = string.Empty;
+                ServiceStartName = string.Empty;
+                return;
             }
+
+            var result = config.Result;
+            ServiceType = result.dwServiceType;
+            StartType = result.dwStartType;
+            ErrorControl = result.dwErrorControl;
+            BinaryPathName = result.lpBinaryPathName.GetString();
+            LoadOrderGroup = result.lpLoadOrderGroup.GetString();
+            TagId = result.dwTagId;
+            Dependencies = result.lpLoadOrderGroup.GetMultiString();
+            DisplayName = result.lpDisplayName.GetString();
+            ServiceStartName = result.lpServiceStartName.GetString();
+            DelayedAutoStart = delayed_auto_start;
         }
 
         internal ServiceInformation(string name) : this(name, null,

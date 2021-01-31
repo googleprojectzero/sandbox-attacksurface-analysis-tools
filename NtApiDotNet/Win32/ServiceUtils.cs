@@ -508,11 +508,14 @@ namespace NtApiDotNet.Win32
                 var service = service_result.Result;
                 using (var service_sec = OpenService(scm, name, ServiceAccessRights.ReadControl, false))
                 {
-                    return new ServiceInformation(name,
-                        GetServiceSecurityDescriptor(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
-                        GetTriggersForService(service), GetServiceSidType(service),
-                        GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
-                        QueryConfig(service, false).GetResultOrDefault(), GetDelayedStart(service)).CreateResult();
+                    using (var config = QueryConfig(service, false).GetResultOrDefault())
+                    {
+                        return new ServiceInformation(name,
+                            GetServiceSecurityDescriptor(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
+                            GetTriggersForService(service), GetServiceSidType(service),
+                            GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
+                            config, GetDelayedStart(service)).CreateResult();
+                    }
                 }
             }
         }
@@ -610,7 +613,7 @@ namespace NtApiDotNet.Win32
             {
                 if (service.IsInvalid)
                 {
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
+                    return Win32Utils.CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
                 }
                 return service.Detach().CreateResult();
             }
@@ -623,7 +626,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                 {
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
+                    return Win32Utils.CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
                 }
                 return OpenService(scm, name, desired_access, throw_on_error);
             }
@@ -700,7 +703,7 @@ namespace NtApiDotNet.Win32
                             ServiceControlManagerAccessRights.Connect | desired_access))
             {
                 if (scm.IsInvalid)
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
+                    return Win32Utils.CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
                 return GetServiceSecurityDescriptor(scm, SCM_NT_TYPE_NAME, security_information, throw_on_error);
             }
         }
@@ -792,7 +795,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                 {
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<ServiceInformation>(throw_on_error);
+                    return Win32Utils.CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
                 return GetServiceSecurityInformation(scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
@@ -839,6 +842,15 @@ namespace NtApiDotNet.Win32
         public static ServiceInformation GetServiceInformation(string name)
         {
             return GetServiceInformation(name, true).Result;
+        }
+
+        /// <summary>
+        /// Get the information about all services.
+        /// </summary>
+        /// <returns>The list of service information.</returns>
+        public static IEnumerable<ServiceInformation> GetServiceInformation()
+        {
+            return GetServices().Select(s => GetServiceInformation(s.Name, false).GetResultOrDefault()).Where(s => s != null);
         }
 
         /// <summary>
@@ -1078,7 +1090,7 @@ namespace NtApiDotNet.Win32
                 ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.CreateService))
             {
                 if (scm.IsInvalid)
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Win32Service>(throw_on_error);
+                    return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
 
                 using (var pwd = new SecureStringMarshalBuffer(password))
                 {
@@ -1087,7 +1099,7 @@ namespace NtApiDotNet.Win32
                             string.IsNullOrEmpty(service_start_name) ? null : service_start_name, pwd))
                     {
                         if (service.IsInvalid)
-                            return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Win32Service>(throw_on_error);
+                            return Win32Utils.CreateResultFromDosError<Win32Service>(throw_on_error);
                         return new Win32Service(name, display_name ?? string.Empty, QueryStatus(service)).CreateResult();
                     }
                 }
@@ -1137,7 +1149,7 @@ namespace NtApiDotNet.Win32
             {
                 if (!service.IsSuccess)
                     return service.Status;
-                return Win32NativeMethods.DeleteService(service.Result).GetLastWin32Error().ToNtException(throw_on_error);
+                return Win32NativeMethods.DeleteService(service.Result).ToNtException(throw_on_error);
             }
         }
         /// <summary>
@@ -1187,7 +1199,7 @@ namespace NtApiDotNet.Win32
                     return Win32NativeMethods.ChangeServiceConfig(service.Result,
                         service_type ?? (ServiceType)(-1), start_type ?? (ServiceStartType)(-1),
                         error_control ?? (ServiceErrorControl)(-1), binary_path_name, load_order_group,
-                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).GetLastWin32Error().ToNtException(throw_on_error);
+                        null, dependencies.ToMultiString(), service_start_name, pwd, display_name).ToNtException(throw_on_error);
                 }
                 finally
                 {
@@ -1211,7 +1223,7 @@ namespace NtApiDotNet.Win32
                 if (!service.IsSuccess)
                     return service.Status;
                 return Win32NativeMethods.StartService(service.Result, 
-                    args?.Length ?? 0, args).GetLastWin32Error().ToNtException(throw_on_error);
+                    args?.Length ?? 0, args).ToNtException(throw_on_error);
             }
         }
 

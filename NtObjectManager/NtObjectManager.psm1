@@ -13195,6 +13195,7 @@ Specify to set the service control manager security descriptor.
 .PARAMETER SecurityInformation
 Specify the parts of the security descriptor to set.
 .PARAMETER SecurityDescriptor 
+The security descriptor to set.
 .INPUTS
 None
 .OUTPUTS
@@ -13298,5 +13299,34 @@ function Start-Win32Service {
     [NtApiDotNet.Win32.ServiceUtils]::StartService($Name, $ArgumentList)
     if ($PassThru) {
         Get-Win32Service -Name $Name
+    }
+}
+
+<#
+.SYNOPSIS
+Get the configuration for a service or all services.
+.DESCRIPTION
+This cmdlet gets the configuration for a service or all services.
+.PARAMETER Name
+Specify the name of the service.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.ServiceInformation[]
+#>
+function Get-Win32ServiceConfig {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($Name)
+        }
+        "All" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation() | Write-Output
+        }
     }
 }
