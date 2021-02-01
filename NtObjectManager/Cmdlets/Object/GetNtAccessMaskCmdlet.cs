@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Win32;
 using NtObjectManager.Utils;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -239,7 +240,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Return access as specific access type based on the type enumeration.</para>
         /// </summary>
         [Parameter]
-        public SpecificAccessType ToSpecificAccess { get; set; }
+        [Alias("ToSpecificAccess")]
+        public SpecificAccessType AsSpecificAccess { get; set; }
         /// <summary>
         /// <para type="description">Return access as specific access type based on the NtType object.</para>
         /// </summary>
@@ -256,13 +258,47 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter]
         public GenericMapping? GenericMapping { get; set; }
+        /// <summary>
+        /// <para type="description">Specify to output the access mask a string.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AsString { get; set; }
+        /// <summary>
+        /// <para type="description">Specify to output the access mask a string, using SDK names if available.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AsSDKString { get; set; }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtAccessMaskCmdlet()
         {
-            ToSpecificAccess = SpecificAccessType.None;
+            AsSpecificAccess = SpecificAccessType.None;
+        }
+
+        private void WriteAccessMask(AccessMask mask)
+        {
+            if (AsString)
+            {
+                WriteObject($"0x{mask.Access:X08}");
+            }
+            else
+            {
+                WriteObject(mask);
+            }
+        }
+
+        private void WriteEnumMask(Enum mask)
+        {
+            if (AsString || AsSDKString)
+            {
+                WriteObject(NtSecurity.AccessMaskToString(mask, AsSDKString));
+            }
+            else
+            {
+                WriteObject(mask);
+            }
         }
 
         /// <summary>
@@ -323,20 +359,20 @@ namespace NtObjectManager.Cmdlets.Object
 
             if (AsGenericAccess)
             {
-                WriteObject(mask.ToGenericAccess());
+                WriteEnumMask(mask.ToGenericAccess());
             }
             else if (AsMandatoryLabelPolicy)
             {
-                WriteObject(mask.ToMandatoryLabelPolicy());
+                WriteEnumMask(mask.ToMandatoryLabelPolicy());
             }
-            else if (ToSpecificAccess == SpecificAccessType.None && AsTypeAccess == null)
+            else if (AsSpecificAccess == SpecificAccessType.None && AsTypeAccess == null)
             {
-                WriteObject(mask);
+                WriteAccessMask(mask);
             }
             else
             {
-                NtType type = AsTypeAccess ?? GetTypeObject(ToSpecificAccess);
-                WriteObject(mask.ToSpecificAccess(type.AccessRightsType));
+                NtType type = AsTypeAccess ?? GetTypeObject(AsSpecificAccess);
+                WriteEnumMask(mask.ToSpecificAccess(type.AccessRightsType));
             }
         }
     }
