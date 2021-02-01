@@ -2253,18 +2253,27 @@ function Format-NtAce {
         [NtApiDotNet.NtType]$Type,
         [switch]$MapGeneric,
         [switch]$Summary,
-        [switch]$Container
+        [switch]$Container,
+        [switch]$SDKName
     )
 
     PROCESS {
         $mask = $ace.Mask
         $access_name = "Access"
         $mask_str = if ($ace.Type -eq "MandatoryLabel") {
-            [NtApiDotNet.NtSecurity]::AccessMaskToString($mask.ToMandatoryLabelPolicy())
+            [NtApiDotNet.NtSecurity]::AccessMaskToString($mask.ToMandatoryLabelPolicy(), $SDKName)
             $access_name = "Policy"
         }
         else {
-            $Type.AccessMaskToString($Container, $mask, $MapGeneric)
+            $Type.AccessMaskToString($Container, $mask, $MapGeneric, $SDKName)
+        }
+
+        if ($SDKName) {
+            $ace_type = [NtApiDotNet.NtSecurity]::AceTypeToSDKName($ace.Type)
+            $ace_flags = [NtApiDotNet.NtSecurity]::AceFlagsToSDKName($ace.Flags)
+        } else {
+            $ace_type = $ace.Type
+            $ace_flags = $ace.Flags
         }
 
         if ($Summary) {
@@ -2287,10 +2296,10 @@ function Format-NtAce {
                 }
             }
 
-            Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)$cond"
+            Write-Output "$($ace.Sid.Name): ($ace_type)($ace_flags)($mask_str)$cond"
         }
         else {
-            Write-Output " - Type  : $($ace.Type)"
+            Write-Output " - Type  : $ace_type"
             Write-Output " - Name  : $($ace.Sid.Name)"
             Write-Output " - SID   : $($ace.Sid)"
             if ($ace.IsCompoundAce) {
@@ -2299,7 +2308,7 @@ function Format-NtAce {
             }
             Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
             Write-Output " - $($access_name): $mask_str"
-            Write-Output " - Flags : $($ace.Flags)"
+            Write-Output " - Flags : $ace_flags"
             if ($ace.IsConditionalAce) {
                 Write-Output " - Condition: $($ace.Condition)"
             }
@@ -2331,7 +2340,8 @@ function Format-NtAcl {
         [switch]$MapGeneric,
         [switch]$AuditOnly,
         [switch]$Summary,
-        [switch]$Container
+        [switch]$Container,
+        [switch]$SDKName
     )
 
     $flags = @()
@@ -2378,10 +2388,10 @@ function Format-NtAcl {
     else {
         Write-Output $Name
         if ($AuditOnly) {
-            $Acl | Where-Object IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
+            $Acl | Where-Object IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
         }
         else {
-            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
+            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
         }
     }
 }
@@ -2421,6 +2431,8 @@ Specify to format all security descriptor information including the SACL.
 Specify to not print the security descriptor header.
 .PARAMETER DisplayPath
 Specify to display a path when using SecurityDescriptor or Acl formatting.
+.PARAMETER SDKName
+Specify to format the security descriptor using SDK names where available.
 .OUTPUTS
 None
 .EXAMPLE
@@ -2475,7 +2487,8 @@ function Format-NtSecurityDescriptor {
         [switch]$HideHeader,
         [Parameter(ParameterSetName = "FromSecurityDescriptor")]
         [Parameter(ParameterSetName = "FromAcl")]
-        [string]$DisplayPath = ""
+        [string]$DisplayPath = "",
+        [switch]$SDKName
     )
 
     PROCESS {
@@ -2549,7 +2562,11 @@ function Format-NtSecurityDescriptor {
                     Write-Output "Path: $n"
                 }
                 Write-Output "Type: $($t.Name)"
-                Write-Output "Control: $($sd.Control)"
+                $sd_control = $sd.Control
+                if ($SDKName) {
+                    $sd_control = [NtApiDotNet.NtSecurity]::ControlFlagsToSDKName($sd_control)
+                }
+                Write-Output "Control: $sd_control"
                 if ($null -ne $sd.RmControl) {
                     Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
                 }
@@ -2597,27 +2614,27 @@ function Format-NtSecurityDescriptor {
                 }
             }
             if ($sd.DaclPresent -and (($si -band "Dacl") -ne 0)) {
-                Format-NtAcl -Acl $sd.Dacl -Type $t -Name "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
+                Format-NtAcl -Acl $sd.Dacl -Type $t -Name "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
             }
             if (($sd.HasAuditAce -or $sd.SaclNull) -and (($si -band "Sacl") -ne 0)) {
-                Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
+                Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container -SDKName:$SDKName
             }
             $label = $sd.GetMandatoryLabel()
             if ($null -ne $label -and (($si -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>"
-                Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container
+                Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
             }
             $trust = $sd.ProcessTrustLabel
             if ($null -ne $trust -and (($si -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
-                Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container
+                Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
             }
             if (($si -band "Attribute") -ne 0) {
                 $attrs = $sd.ResourceAttributes
                 if ($attrs.Count -gt 0) {
                     Write-Output "<Resource Attributes>"
                     foreach ($attr in $attrs) {
-                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary -Container:$Container
+                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                     }
                 }
             }
@@ -2626,7 +2643,7 @@ function Format-NtSecurityDescriptor {
                 if ($filters.Count -gt 0) {
                     Write-Output "<Access Filters>"
                     foreach ($filter in $filters) {
-                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary -Container:$Container
+                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                     }
                 }
             }
@@ -2634,7 +2651,7 @@ function Format-NtSecurityDescriptor {
                 $scope = $sd.ScopedPolicyID
                 if ($null -ne $scope) {
                     Write-Output "<Scoped Policy ID>"
-                    Format-NtAce -Ace $scope -Type $t -Summary:$Summary -Container:$Container
+                    Format-NtAce -Ace $scope -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                 }
             }
         }
@@ -9182,6 +9199,8 @@ Specify to format the security descriptor as SDDL.
 Specify to display the access mask from Container Access Rights.
 .PARAMETER MapGeneric
 Specify to map access masks back to generic access rights for the object type.
+.PARAMETER SDKName
+Specify to format the security descriptor using SDK names where available.
 .OUTPUTS
 None
 .EXAMPLE
@@ -9209,13 +9228,14 @@ function Format-Win32SecurityDescriptor {
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
-        [switch]$MapGeneric
+        [switch]$MapGeneric,
+        [switch]$SDKName
     )
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
         -Container:$Container -ToSddl:$ToSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
-        -DisplayPath $Name -MapGeneric:$MapGeneric
+        -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName
 }
 
 <#

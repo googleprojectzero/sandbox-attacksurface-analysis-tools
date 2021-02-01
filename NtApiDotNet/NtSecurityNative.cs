@@ -1002,27 +1002,49 @@ namespace NtApiDotNet
 
     public enum AceType : byte
     {
+        [SDKName("ACCESS_ALLOWED_ACE_TYPE")]
         Allowed = 0x0,
+        [SDKName("ACCESS_DENIED_ACE_TYPE")]
         Denied = 0x1,
+        [SDKName("SYSTEM_AUDIT_ACE_TYPE")]
         Audit = 0x2,
+        [SDKName("SYSTEM_ALARM_ACE_TYPE")]
         Alarm = 0x3,
+        [SDKName("ACCESS_ALLOWED_COMPOUND_ACE_TYPE")]
         AllowedCompound = 0x4,
+        [SDKName("ACCESS_ALLOWED_OBJECT_ACE_TYPE")]
         AllowedObject = 0x5,
+        [SDKName("ACCESS_DENIED_OBJECT_ACE_TYPE")]
         DeniedObject = 0x6,
+        [SDKName("SYSTEM_AUDIT_OBJECT_ACE_TYPE")]
         AuditObject = 0x7,
+        [SDKName("SYSTEM_ALARM_OBJECT_ACE_TYPE")]
         AlarmObject = 0x8,
+        [SDKName("ACCESS_ALLOWED_CALLBACK_ACE_TYPE")]
         AllowedCallback = 0x9,
+        [SDKName("ACCESS_DENIED_CALLBACK_ACE_TYPE")]
         DeniedCallback = 0xA,
+        [SDKName("ACCESS_ALLOWED_CALLBACK_OBJECT_ACE_TYPE")]
         AllowedCallbackObject = 0xB,
+        [SDKName("ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE")]
         DeniedCallbackObject = 0xC,
+        [SDKName("SYSTEM_AUDIT_CALLBACK_ACE_TYPE")]
         AuditCallback = 0xD,
+        [SDKName("SYSTEM_ALARM_CALLBACK_ACE_TYPE")]
         AlarmCallback = 0xE,
+        [SDKName("SYSTEM_AUDIT_CALLBACK_OBJECT_ACE_TYPE")]
         AuditCallbackObject = 0xF,
+        [SDKName("SYSTEM_ALARM_CALLBACK_OBJECT_ACE_TYPE")]
         AlarmCallbackObject = 0x10,
+        [SDKName("SYSTEM_MANDATORY_LABEL_ACE_TYPE")]
         MandatoryLabel = 0x11,
+        [SDKName("SYSTEM_RESOURCE_ATTRIBUTE_ACE_TYPE")]
         ResourceAttribute = 0x12,
+        [SDKName("SYSTEM_SCOPED_POLICY_ID_ACE_TYPE")]
         ScopedPolicyId = 0x13,
+        [SDKName("SYSTEM_PROCESS_TRUST_LABEL_ACE_TYPE")]
         ProcessTrustLabel = 0x14,
+        [SDKName("SYSTEM_ACCESS_FILTER_ACE_TYPE")]
         AccessFilter = 0x15,
     }
 
@@ -1031,20 +1053,29 @@ namespace NtApiDotNet
     /// the real flags.
     /// </summary>
     [Flags]
-    public enum AceFlags
+    public enum AceFlags : uint
     {
         None = 0,
+        [SDKName("OBJECT_INHERIT_ACE")]
         ObjectInherit = 0x1,
+        [SDKName("CONTAINER_INHERIT_ACE")]
         ContainerInherit = 0x2,
+        [SDKName("NO_PROPAGATE_INHERIT_ACE")]
         NoPropagateInherit = 0x4,
+        [SDKName("INHERIT_ONLY_ACE")]
         InheritOnly = 0x8,
+        [SDKName("INHERITED_ACE")]
         Inherited = 0x10,
         // Used only for Allow ACEs.
+        [SDKName("CRITICAL_ACE_FLAG")]
         Critical = 0x20,
         // Used only for Audit/Alarm ACEs.
+        [SDKName("SUCCESSFUL_ACCESS_ACE_FLAG")]
         SuccessfulAccess = 0x40,
+        [SDKName("FAILED_ACCESS_ACE_FLAG")]
         FailedAccess = 0x80,
         // Used only for AccessFilter ACE.
+        [SDKName("TRUST_PROTECTED_FILTER_ACE_FLAG")]
         TrustProtected = 0x100,
     }
 
@@ -1058,8 +1089,11 @@ namespace NtApiDotNet
     public enum MandatoryLabelPolicy : uint
     {
         None = 0x0,
+        [SDKName("SYSTEM_MANDATORY_LABEL_NO_WRITE_UP")]
         NoWriteUp = 0x1,
+        [SDKName("SYSTEM_MANDATORY_LABEL_NO_READ_UP")]
         NoReadUp = 0x2,
+        [SDKName("SYSTEM_MANDATORY_LABEL_NO_EXECUTE_UP")]
         NoExecuteUp = 0x4,
     }
 

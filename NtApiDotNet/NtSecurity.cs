@@ -1753,6 +1753,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert an access rights type to a string.
+        /// </summary>
+        /// <param name="access">The access mask to convert</param>
+        /// <param name="sdk_names">Set to true to use SDK style names.</param>
+        /// <returns>The string version of the access</returns>
+        public static string AccessMaskToString(Enum access, bool sdk_names)
+        {
+            return AccessMaskToString(access, access.GetType(), sdk_names);
+        }
+
+        /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
         /// <param name="access">The access mask.</param>
@@ -1787,6 +1798,41 @@ namespace NtApiDotNet
             }
 
             return AccessMaskToString(access, enum_type, sdk_names);
+        }
+
+        /// <summary>
+        /// Convert an ACE type to an SDK type string.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>The ACE type as an SDK type string.</returns>
+        public static string AceTypeToSDKName(AceType type)
+        {
+            return GetSDKName(type);
+        }
+
+        /// <summary>
+        /// Convert the ACE flags to an SDK type string.
+        /// </summary>
+        /// <returns>The ACE type as an SDK type string.</returns>
+        public static string AceFlagsToSDKName(AceFlags flags)
+        {
+            return AccessMaskToString(new AccessMask((byte)flags), typeof(AceFlags), true);
+        }
+
+        /// <summary>
+        /// Convert the security descriptor control flags to an SDK type string.
+        /// </summary>
+        /// <returns>The security descriptor control as an SDK type string.</returns>
+        public static string ControlFlagsToSDKName(SecurityDescriptorControl flags)
+        {
+            if (flags == 0)
+            {
+                return "NONE";
+            }
+
+            var names = flags.ToString().Split(',')
+                .Select(n => GetEnumAttribute<SDKNameAttribute>(typeof(SecurityDescriptorControl), n.Trim()).Name);
+            return string.Join("|", names);
         }
 
         /// <summary>

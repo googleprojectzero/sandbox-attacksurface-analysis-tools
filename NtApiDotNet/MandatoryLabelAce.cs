@@ -50,14 +50,8 @@ namespace NtApiDotNet
         /// </summary>
         public MandatoryLabelPolicy Policy
         {
-            get
-            {
-                return Mask.ToMandatoryLabelPolicy();
-            }
-            set
-            {
-                Mask = value;
-            }
+            get => Mask.ToMandatoryLabelPolicy();
+            set => Mask = value;
         }
 
         /// <summary>
@@ -65,14 +59,8 @@ namespace NtApiDotNet
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel
         {
-            get
-            {
-                return NtSecurity.GetIntegrityLevel(Sid);
-            }
-            set
-            {
-                Sid = NtSecurity.GetIntegritySid(value);
-            }
+            get => NtSecurity.GetIntegrityLevel(Sid);
+            set => Sid = NtSecurity.GetIntegritySid(value);
         }
 
         /// <summary>

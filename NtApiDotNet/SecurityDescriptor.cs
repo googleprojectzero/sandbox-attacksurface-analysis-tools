@@ -28,21 +28,37 @@ namespace NtApiDotNet
     {
 #pragma warning disable 1591
         None = 0,
+        [SDKName("SE_OWNER_DEFAULTED")]
         OwnerDefaulted = 0x0001,
+        [SDKName("SE_GROUP_DEFAULTED")]
         GroupDefaulted = 0x0002,
+        [SDKName("SE_DACL_PRESENT")]
         DaclPresent = 0x0004,
+        [SDKName("SE_DACL_DEFAULTED")]
         DaclDefaulted = 0x0008,
+        [SDKName("SE_SACL_PRESENT")]
         SaclPresent = 0x0010,
+        [SDKName("SE_SACL_DEFAULTED")]
         SaclDefaulted = 0x0020,
+        [SDKName("SE_DACL_UNTRUSTED")]
         DaclUntrusted = 0x0040,
+        [SDKName("SE_SERVER_SECURITY")]
         ServerSecurity = 0x0080,
+        [SDKName("SE_DACL_AUTO_INHERIT_REQ")]
         DaclAutoInheritReq = 0x0100,
+        [SDKName("SE_SACL_AUTO_INHERIT_REQ")]
         SaclAutoInheritReq = 0x0200,
+        [SDKName("SE_DACL_AUTO_INHERITED")]
         DaclAutoInherited = 0x0400,
+        [SDKName("SE_SACL_AUTO_INHERITED")]
         SaclAutoInherited = 0x0800,
+        [SDKName("SE_DACL_PROTECTED ")]
         DaclProtected = 0x1000,
+        [SDKName("SE_SACL_PROTECTED")]
         SaclProtected = 0x2000,
+        [SDKName("SE_RM_CONTROL_VALID")]
         RmControlValid = 0x4000,
+        [SDKName("SE_SELF_RELATIVE")]
         SelfRelative = 0x8000,
         ValidControlSetMask = DaclAutoInheritReq | SaclAutoInheritReq
         | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected 

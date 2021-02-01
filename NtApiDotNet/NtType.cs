@@ -367,11 +367,24 @@ namespace NtApiDotNet
         /// <param name="container">True to use the container access type.</param>
         /// <param name="granted_access">The granted access mask.</param>
         /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <param name="sdk_names">Set to true to use SDK style names.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string AccessMaskToString(bool container, AccessMask granted_access, bool map_to_generic, bool sdk_names)
+        {
+            return NtSecurity.AccessMaskToString(granted_access, container ? ContainerAccessRightsType : AccessRightsType,
+                GenericMapping, map_to_generic, sdk_names);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <param name="container">True to use the container access type.</param>
+        /// <param name="granted_access">The granted access mask.</param>
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
         /// <returns>The string format of the access rights</returns>
         public string AccessMaskToString(bool container, AccessMask granted_access, bool map_to_generic)
         {
-            return NtSecurity.AccessMaskToString(granted_access, container ? ContainerAccessRightsType : AccessRightsType,
-                GenericMapping, map_to_generic);
+            return AccessMaskToString(container, granted_access, map_to_generic, false);
         }
 
         /// <summary>
