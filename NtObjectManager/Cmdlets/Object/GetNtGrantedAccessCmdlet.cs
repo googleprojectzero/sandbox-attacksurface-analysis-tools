@@ -93,7 +93,14 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify whether to return a string rather than an enumeration value.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter ConvertToString { get; set; }
+        [Alias("ConvertToString")]
+        public SwitchParameter AsString { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify whether to return a string using SDK style names.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AsSDKString { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a principal SID to user when checking security descriptors with SELF SID.</para>
@@ -218,9 +225,10 @@ namespace NtObjectManager.Cmdlets.Object
                 }
 
                 var masks = results.Select(r =>  MapToGeneric ? r.SpecificGenericGrantedAccess : r.SpecificGrantedAccess);
-                if (ConvertToString)
+                if (AsString || AsSDKString)
                 {
-                    WriteObject(masks.Select(m => NtSecurity.AccessMaskToString(m, type.AccessRightsType, type.GenericMapping, false)), true);
+                    WriteObject(masks.Select(m => NtSecurity.AccessMaskToString(m, type.AccessRightsType, 
+                        type.GenericMapping, false, AsSDKString)), true);
                 }
                 else
                 {

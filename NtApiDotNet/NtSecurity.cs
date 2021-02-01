@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -1670,22 +1671,23 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access">The access mask to convert</param>
         /// <param name="enum_type">The enumeration type for the string conversion</param>
+        /// <param name="sdk_names">Set to true to use SDK style names.</param>
         /// <returns>The string version of the access</returns>
-        public static string AccessMaskToString(AccessMask access, Type enum_type)
+        public static string AccessMaskToString(AccessMask access, Type enum_type, bool sdk_names)
         {
             if (!enum_type.IsEnum)
                 throw new ArgumentException("Type must be an enum", nameof(enum_type));
 
             if (access.IsEmpty)
-                return "None";
+                return sdk_names ? "NONE" : "None";
 
             List<string> names = new List<string>();
             uint remaining = access.Access;
 
-            // If the valid is explicitly defined return it.
+            // If the value is explicitly defined return it.
             if (Enum.IsDefined(enum_type, remaining))
             {
-                return Enum.GetName(enum_type, remaining);
+                return sdk_names ? GetSDKName(enum_type, remaining) : Enum.GetName(enum_type, remaining);
             }
 
             for (int i = 0; i < 32; ++i)
@@ -1712,7 +1714,7 @@ namespace NtApiDotNet
                     continue;
                 }
 
-                names.Add(Enum.GetName(enum_type, mask));
+                names.Add(sdk_names ? GetSDKName(enum_type, mask) : Enum.GetName(enum_type, mask));
                 remaining &= ~mask;
             }
 
@@ -1723,10 +1725,21 @@ namespace NtApiDotNet
 
             if (names.Count == 0)
             {
-                names.Add("None");
+                names.Add("NONE");
             }
 
             return string.Join("|", names);
+        }
+
+        /// <summary>
+        /// Convert an access rights type to a string.
+        /// </summary>
+        /// <param name="access">The access mask to convert</param>
+        /// <param name="enum_type">The enumeration type for the string conversion</param>
+        /// <returns>The string version of the access</returns>
+        public static string AccessMaskToString(AccessMask access, Type enum_type)
+        {
+            return AccessMaskToString(access, enum_type, false);
         }
 
         /// <summary>
@@ -1749,6 +1762,20 @@ namespace NtApiDotNet
         /// <returns>The string format of the access rights. Will return Full Access if not a generic access and has all rights and None if no access.</returns>
         public static string AccessMaskToString(AccessMask access, Type enum_type, GenericMapping generic_mapping, bool map_to_generic)
         {
+            return AccessMaskToString(access, enum_type, generic_mapping, map_to_generic, false);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <param name="access">The access mask.</param>
+        /// <param name="enum_type">Enum type to convert to string.</param>
+        /// <param name="generic_mapping">Generic mapping for object type.</param>
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <param name="sdk_names">Set to true to use SDK style names.</param>
+        /// <returns>The string format of the access rights. Will return Full Access if not a generic access and has all rights and None if no access.</returns>
+        public static string AccessMaskToString(AccessMask access, Type enum_type, GenericMapping generic_mapping, bool map_to_generic, bool sdk_names)
+        {
             if (map_to_generic)
             {
                 // Map mask then unmap back to Generic Rights.
@@ -1756,10 +1783,10 @@ namespace NtApiDotNet
             }
             else if (!access.HasGenericAccess && generic_mapping.HasAll(access))
             {
-                return "Full Access";
+                return sdk_names ? "GENERIC_ALL" : "Full Access";
             }
 
-            return AccessMaskToString(access, enum_type);
+            return AccessMaskToString(access, enum_type, sdk_names);
         }
 
         /// <summary>
@@ -2133,6 +2160,20 @@ namespace NtApiDotNet
         #endregion
 
         #region Internal Members
+
+        internal static string GetSDKName(this Enum value)
+        {
+            return GetEnumAttribute<SDKNameAttribute>(value)?.Name ?? string.Empty;
+        }
+
+        internal static string GetSDKName(Type enum_type, uint value)
+        {
+            string name = Enum.GetName(enum_type, value);
+            if (name == null)
+                throw new ArgumentException("Value is not a member of the enumerated type.");
+            return GetEnumAttribute<SDKNameAttribute>(enum_type, Enum.GetName(enum_type, value))?.Name ?? name;
+        }
+
         internal static Sid CacheSidName(Sid sid, string domain, string username, SidNameSource source, SidNameUse name_use)
         {
             _cached_names.GetOrAdd(sid, s =>
@@ -2187,6 +2228,19 @@ namespace NtApiDotNet
             // S-1-5-93-2-2
             { new Sid(SecurityAuthority.Nt, 93, 2, 2), Tuple.Create("User Manager", "ContainerUser") },
         };
+
+        private static T GetEnumAttribute<T>(Type enum_type, string name) where T : Attribute
+        {
+            MemberInfo member = enum_type.GetMember(name).FirstOrDefault();
+            if (member == null)
+                return null;
+            return member.GetCustomAttribute<T>();
+        }
+
+        private static T GetEnumAttribute<T>(this Enum value) where T : Attribute
+        {
+            return GetEnumAttribute<T>(value.GetType(), value.ToString());
+        }
 
         private static string UpperCaseString(string name)
         {
