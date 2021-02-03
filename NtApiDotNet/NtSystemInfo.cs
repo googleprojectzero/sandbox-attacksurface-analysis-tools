@@ -176,6 +176,17 @@ namespace NtApiDotNet
             return cache[pid];
         }
 
+        private static Lazy<OSVersionInfo> _os_version = new Lazy<OSVersionInfo>(GetOSVersion);
+
+        private static OSVersionInfo GetOSVersion()
+        {
+            RTL_OSVERSIONINFOEXW info_ex = new RTL_OSVERSIONINFOEXW();
+            info_ex.dwOSVersionInfoSize = Marshal.SizeOf(info_ex);
+            info_ex.szCSDVersion = new string(' ', 128);
+            NtRtl.RtlGetVersion(ref info_ex).ToNtException();
+            return new OSVersionInfo(info_ex);
+        }
+
         #endregion
 
         #region Static Methods
@@ -1295,6 +1306,11 @@ namespace NtApiDotNet
                 return result;
             }
         }
+
+        /// <summary>
+        /// Get OS version info,
+        /// </summary>
+        public static OSVersionInfo OSVersion => _os_version.Value;
 
         /// <summary>
         /// Get whether this is a multi-session SKU.

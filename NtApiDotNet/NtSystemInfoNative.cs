@@ -114,17 +114,53 @@ namespace NtApiDotNet
         public byte wReserved;
     }
 
-    public struct RtlOSVersionInfo
+    [Flags]
+    public enum OSVersionSuiteMask
+    {
+        SmallBusiness = 0x0001,
+        Enterprise = 0x0002,
+        BackOffice = 0x0004,
+        Communications = 0x0008,
+        Terminal = 0x0010,
+        SmallBusinessRestricted = 0x0020,
+        EmbeddedNT = 0x0040,
+        DataCenter = 0x0080,
+        SingeUserTS = 0x0100,
+        Personal = 0x0200,
+        Blade = 0x0400,
+        EmbeddedRestricted = 0x0800,
+        SecurityAppliance = 0x1000,
+        StorageServer = 0x2000,
+        ComputeServer = 0x4000,
+        WHServer = 0x8000
+    }
+
+    public struct OSVersionInfo
     {
         public int MajorVersion { get; }
         public int MinorVersion { get; }
         public int BuildNumber { get; }
-        public int PlatformId { get; }
+        public PlatformID PlatformId { get; }
         public string CSDVersion { get; }
         public int ServicePackMajor { get; }
         public int ServicePackMinor { get; }
-        public int SuiteMask { get; }
-        public int ProductType { get; }
+        public OSVersionSuiteMask SuiteMask { get; }
+        public NtProductType ProductType { get; }
+        public Version Version { get; }
+
+        internal OSVersionInfo(RTL_OSVERSIONINFOEXW version)
+        {
+            MajorVersion = version.dwMajorVersion;
+            MinorVersion = version.dwMinorVersion;
+            BuildNumber = version.dwBuildNumber;
+            PlatformId = (PlatformID)version.dwPlatformId;
+            CSDVersion = version.szCSDVersion;
+            ServicePackMajor = version.wServicePackMajor;
+            ServicePackMinor = version.wServicePackMinor;
+            SuiteMask = (OSVersionSuiteMask)version.wSuiteMask;
+            ProductType = (NtProductType)version.wProductType;
+            Version = new Version(MajorVersion, MinorVersion, BuildNumber, ServicePackMajor << 16 | ServicePackMinor);
+        }
     }
 
     public static partial class NtRtl

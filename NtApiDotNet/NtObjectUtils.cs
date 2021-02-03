@@ -612,11 +612,11 @@ namespace NtApiDotNet
             return new CachedEnumerable<T>(enumerable);
         }
 
-        internal static bool IsWindows7OrLess => Environment.OSVersion.Version < new Version(6, 2);
+        internal static bool IsWindows7OrLess => NtSystemInfo.OSVersion.Version < new Version(6, 2);
 
-        internal static bool IsWindows8OrLess => Environment.OSVersion.Version < new Version(6, 3);
+        internal static bool IsWindows8OrLess => NtSystemInfo.OSVersion.Version < new Version(6, 3);
 
-        internal static bool IsWindows81OrLess => Environment.OSVersion.Version < new Version(6, 4);
+        internal static bool IsWindows81OrLess => NtSystemInfo.OSVersion.Version < new Version(6, 4);
 
         internal static SupportedVersion SupportedVersion
         {
@@ -628,7 +628,7 @@ namespace NtApiDotNet
                     return SupportedVersion.Windows8;
                 if (IsWindows81OrLess)
                     return SupportedVersion.Windows81;
-                Version ver = Environment.OSVersion.Version;
+                Version ver = NtSystemInfo.OSVersion.Version;
                 if (ver.Major != 10)
                 {
                     return SupportedVersion.Unknown;
