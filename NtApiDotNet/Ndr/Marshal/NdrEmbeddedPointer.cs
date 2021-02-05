@@ -20,7 +20,7 @@ namespace NtApiDotNet.Ndr.Marshal
     /// A class which represents an embedded pointer.
     /// </summary>
     /// <typeparam name="T">The underlying type.</typeparam>
-    public class NdrEmbeddedPointer<T>
+    public sealed class NdrEmbeddedPointer<T>
     {
         private T _value;
 
@@ -35,6 +35,10 @@ namespace NtApiDotNet.Ndr.Marshal
         /// <param name="value">The value to point to.</param>
         public static implicit operator NdrEmbeddedPointer<T>(T value)
         {
+            object obj = value;
+            if (obj is null)
+                return null;
+
             return new NdrEmbeddedPointer<T>(value);
         }
 
