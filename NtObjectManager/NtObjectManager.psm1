@@ -13413,6 +13413,80 @@ function Get-Win32ServiceConfig {
     }
 }
 
+<#
+.SYNOPSIS
+Get a signature from an authentication context for some data.
+.DESCRIPTION
+This cmdlet uses an authentication context to generate a data signature. It can be verified using Test-LsaContextSignature.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Data
+Specify data to sign.
+.PARAMETER SequenceNumber
+Specify the sequence number for the signature to prevent replay.
+.INPUTS
+byte[]
+.OUTPUTS
+byte[]
+#>
+function Get-LsaContextSignature {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [byte[]]$Data,
+        [parameter(Position = 2)]
+        [int]$SequenceNumber = 0
+    )
+
+    BEGIN {
+        $sig_data = New-Object byte[] -ArgumentList 0
+    }
+
+    PROCESS {
+        $sig_data += $Data
+    }
+
+    END {
+        $Context.MakeSignature($sig_data, $SequenceNumber)
+    }
+}
+
+<#
+.SYNOPSIS
+Verify a signature from an authentication context for some data.
+.DESCRIPTION
+This cmdlet uses an authentication context to verify a data signature.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Data
+Specify data to verify.
+.PARAMETER Signature
+Specify data to verify.
+.PARAMETER SequenceNumber
+Specify the sequence number for the signature to prevent replay.
+.INPUTS
+None
+.OUTPUTS
+bool
+#>
+function Test-LsaContextSignature {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1)]
+        [byte[]]$Data,
+        [parameter(Mandatory, Position = 2)]
+        [byte[]]$Signature,
+        [parameter(Position = 3)]
+        [int]$SequenceNumber = 0
+    )
+
+    $Context.VerifySignature($Data, $Signature, $SequenceNumber)
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
