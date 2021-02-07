@@ -6464,7 +6464,7 @@ function Start-AccessibleScheduledTask {
         [parameter(Mandatory, Position = 0)]
         [NtObjectManager.Cmdlets.Accessible.ScheduledTaskAccessCheckResult]$Task,
         [string]$User,
-        [NtObjectManager.Cmdlets.Accessible.TaskRunFlags]$Flags = 0,
+        [NtObjectManager.Utils.ScheduledTask.TaskRunFlags]$Flags = 0,
         [int]$SessionId,
         [string[]]$Arguments
     )
@@ -7494,13 +7494,13 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage
 .EXAMPLE
-Get-AuthPackage
+Get-LsaPackage
 Get all authentication packages.
 .EXAMPLE
-Get-AuthPackage -Name NTLM
+Get-LsaPackage -Name NTLM
 Get the NTLM authentication package.
 #>
-function Get-AuthPackage {
+function Get-LsaPackage {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName")]
@@ -7533,10 +7533,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
-$user_creds = Read-UserCredentials
+$user_creds = Read-LsaCredential
 Read user credentials from the shell.
 #>
-function Read-AuthCredential {
+function Read-LsaCredential {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0)]
@@ -7583,10 +7583,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
-$user_creds = Get-UserCredentials -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
+$user_creds = Get-LsaCredential -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
 Get user credentials from components.
 #>
-function Get-AuthCredential {
+function Get-LsaCredential {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0)]
@@ -7647,16 +7647,16 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.CredentialHandle
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both
 Get a credential handle for the NTLM package for both directions.
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both -UserName "user" -Password "pwd"
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both -UserName "user" -Password "pwd"
 Get a credential handle for the NTLM package for both directions with a username password.
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Inbound -ReadCredential
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Inbound -ReadCredential
 Get a credential handle for the NTLM package for outbound directions and read credentials from the shell.
 #>
-function Get-AuthCredentialHandle {
+function New-LsaCredentialHandle {
     [CmdletBinding(DefaultParameterSetName="FromCreds")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7681,10 +7681,10 @@ function Get-AuthCredentialHandle {
 
     if ($PSCmdlet.ParameterSetName -EQ "FromParts") {
         if ($ReadCredential) {
-            $Credential = Read-AuthCredential -UserName $UserName -Domain $Domain `
+            $Credential = Read-LsaCredential -UserName $UserName -Domain $Domain `
                     -Password $Password
         } else {
-            $Credential = Get-AuthCredential -UserName $UserName -Domain $Domain `
+            $Credential = Get-LsaCredential -UserName $UserName -Domain $Domain `
                     -Password $Password -SecurePassword $SecurePassword
         }
     }
@@ -7712,7 +7712,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
 #>
-function Get-AuthClientContext {
+function New-LsaClientContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7745,7 +7745,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.ServerAuthenticationContext
 #>
-function Get-AuthServerContext {
+function New-LsaServerContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7773,7 +7773,7 @@ None
 .OUTPUTS
 bool
 #>
-function Update-AuthClientContext {
+function Update-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7806,7 +7806,7 @@ None
 .OUTPUTS
 bool
 #>
-function Update-AuthServerContext {
+function Update-LsaServerContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7836,7 +7836,7 @@ None
 .OUTPUTS
 NtApiDotNet.NtToken
 #>
-function Get-AuthAccessToken {
+function Get-LsaAccessToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7861,7 +7861,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Get-AuthToken {
+function Get-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromBytes")]
@@ -7891,7 +7891,7 @@ None
 .OUTPUTS
 bool
 #>
-function Test-AuthContext {
+function Test-LsaContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7920,7 +7920,7 @@ None
 .OUTPUTS
 string
 #>
-function Format-AuthToken {
+function Format-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ParameterSetName="FromToken")]
@@ -7967,7 +7967,7 @@ None
 .OUTPUTS
 None
 #>
-function Export-AuthToken {
+function Export-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken")]
@@ -7997,7 +7997,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Import-AuthToken {
+function Import-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -10374,7 +10374,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Unprotect-AuthToken {
+function Unprotect-LsaAuthToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -13376,3 +13376,56 @@ function Get-Win32ServiceConfig {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the configuration for a service or all services.
+.DESCRIPTION
+This cmdlet gets the configuration for a service or all services.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ServiceType
+Specify the types of services to return when querying all services. Defaults to all user services.
+.PARAMETER MachineName
+Specify the target computer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.ServiceInformation[]
+#>
+function Get-Win32ServiceConfig {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes(),
+        [string]$MachineName
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $Name)
+        }
+        "All" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $ServiceType) | Write-Output
+        }
+    }
+}
+
+# Alias old functions. Remove eventually.
+Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
+Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
+Set-Alias -Name Get-AuthCredential -Value Get-LsaCredential
+Set-Alias -Name Get-AuthCredentialHandle -Value New-LsaCredentialHandle
+Set-Alias -Name Get-AuthClientContext -Value New-LsaClientContext
+Set-Alias -Name Get-AuthServerContext -Value New-LsaServerContext
+Set-Alias -Name Update-AuthClientContext -Value Update-LsaClientContext
+Set-Alias -Name Update-AuthServerContext -Value Update-LsaServerContext
+Set-Alias -Name Get-AuthAccessToken -Value Get-LsaAccessToken
+Set-Alias -Name Get-AuthToken -Value Get-LsaAuthToken
+Set-Alias -Name Test-AuthContext -Value Test-LsaContext
+Set-Alias -Name Format-AuthToken -Value Format-LsaAuthToken
+Set-Alias -Name Export-AuthToken -Value Export-LsaAuthToken
+Set-Alias -Name Import-AuthToken -Value Import-LsaAuthToken
+Set-Alias -Name Unprotect-AuthToken -Value Unprotect-LsaAuthToken
