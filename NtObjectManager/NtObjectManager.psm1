@@ -13415,13 +13415,13 @@ function Get-Win32ServiceConfig {
 
 <#
 .SYNOPSIS
-Get a signature from an authentication context for some data.
+Get a signature from an authentication context for some message.
 .DESCRIPTION
-This cmdlet uses an authentication context to generate a data signature. It can be verified using Test-LsaContextSignature.
+This cmdlet uses an authentication context to generate a message signature. It can be verified using Test-LsaContextSignature.
 .PARAMETER Context
 Specify the authentication context to use.
-.PARAMETER Data
-Specify data to sign.
+.PARAMETER Message
+Specify message to sign.
 .PARAMETER SequenceNumber
 Specify the sequence number for the signature to prevent replay.
 .INPUTS
@@ -13435,7 +13435,7 @@ function Get-LsaContextSignature {
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ValueFromPipeline)]
-        [byte[]]$Data,
+        [byte[]]$Message,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0
     )
@@ -13445,7 +13445,7 @@ function Get-LsaContextSignature {
     }
 
     PROCESS {
-        $sig_data += $Data
+        $sig_data += $Message
     }
 
     END {
@@ -13455,15 +13455,15 @@ function Get-LsaContextSignature {
 
 <#
 .SYNOPSIS
-Verify a signature from an authentication context for some data.
+Verify a signature from an authentication context for some message.
 .DESCRIPTION
-This cmdlet uses an authentication context to verify a data signature.
+This cmdlet uses an authentication context to verify a  signature.
 .PARAMETER Context
 Specify the authentication context to use.
-.PARAMETER Data
-Specify data to verify.
+.PARAMETER Message
+Specify message to verify.
 .PARAMETER Signature
-Specify data to verify.
+Specify signature to verify.
 .PARAMETER SequenceNumber
 Specify the sequence number for the signature to prevent replay.
 .INPUTS
@@ -13477,14 +13477,90 @@ function Test-LsaContextSignature {
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1)]
-        [byte[]]$Data,
+        [byte[]]$Message,
         [parameter(Mandatory, Position = 2)]
         [byte[]]$Signature,
         [parameter(Position = 3)]
         [int]$SequenceNumber = 0
     )
 
-    $Context.VerifySignature($Data, $Signature, $SequenceNumber)
+    $Context.VerifySignature($Message, $Signature, $SequenceNumber)
+}
+
+<#
+.SYNOPSIS
+Encrypt some message for an authentication context.
+.DESCRIPTION
+This cmdlet uses an authentication context to encrypt some message. It returns both the encrypted message and a signature.
+t can be decrypted using Unprotect-LsaContextData.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to encrypt.
+.PARAMETER SequenceNumber
+Specify the sequence number for the encryption to prevent replay.
+.INPUTS
+byte[]
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.EncryptedMessage
+#>
+function Protect-LsaContextMessage {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [byte[]]$Message,
+        [parameter(Position = 2)]
+        [int]$SequenceNumber = 0
+    )
+
+    BEGIN {
+        $enc_data = New-Object byte[] -ArgumentList 0
+    }
+
+    PROCESS {
+        $enc_data += $Message
+    }
+
+    END {
+        $Context.EncryptMessage($enc_data, $SequenceNumber)
+    }
+}
+
+<#
+.SYNOPSIS
+Descrypt some message from an authentication context.
+.DESCRIPTION
+This cmdlet uses an authentication context to decrypt some message as well as verify a signature.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to decrypt.
+.PARAMETER Signature
+Specify signature to verify.
+.PARAMETER SequenceNumber
+Specify the sequence number for the encryption to prevent replay.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+#>
+function Unprotect-LsaContextMessage {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1)]
+        [byte[]]$Message,
+        [parameter(Mandatory, Position = 2)]
+        [byte[]]$Signature,
+        [parameter(Position = 3)]
+        [int]$SequenceNumber = 0
+    )
+
+    $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
+    $Context.DecryptMessage($msg, $SequenceNumber)
 }
 
 # Alias old functions. Remove eventually.
