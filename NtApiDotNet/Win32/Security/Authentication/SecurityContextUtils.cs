@@ -183,5 +183,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbSecurityTrailer;
         }
+
+        internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package)
+        {
+            using (SecBuffer buffer = new SecBuffer(SecurityBufferType.Empty, 64 * 1024))
+            {
+                SecurityNativeMethods.ExportSecurityContext(context, SecPkgContextExportFlags.None,
+                    buffer, out SafeKernelObjectHandle token).CheckResult();
+                return new ExportedSecurityContext(package, buffer.ToArray(), NtToken.FromHandle(token));
+            }
+        }
     }
 }

@@ -189,6 +189,22 @@ namespace NtApiDotNet.Win32.Security.Native
             SecHandle phContext
         );
 
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ExportSecurityContext(
+          SecHandle phContext,
+          SecPkgContextExportFlags fFlags,
+          [In, Out] SecBuffer pPackedContext,
+          out SafeKernelObjectHandle pToken
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ImportSecurityContext(
+            string pszPackage,
+            SecBuffer pPackedContext,
+            SafeKernelObjectHandle Token,
+            [Out] SecHandle phContext
+        );
+
         [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error DsMakeSpn(
             string ServiceClass,

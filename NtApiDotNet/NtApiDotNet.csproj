@@ -412,6 +412,7 @@
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
+    <Compile Include="Win32\Security\Authentication\ExportedSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />
     <Compile Include="Win32\Security\Authentication\IClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\IServerAuthenticationContext.cs" />
@@ -485,6 +486,7 @@
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ERROR.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_TYPE.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContextExportFlags.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_LastClientTokenStatus.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_PackageInfo.cs" />

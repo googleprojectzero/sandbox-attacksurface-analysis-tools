@@ -252,6 +252,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Export the security context.
+        /// </summary>
+        /// <returns>The exported security context.</returns>
+        public ExportedSecurityContext Export()
+        {
+            return SecurityContextUtils.ExportContext(_context, SecPkgContextExportFlags.None, _creds.PackageName);
+        }
+
         private bool GenServerContext(AuthenticationToken token)
         {
             bool new_context = _new_context;
