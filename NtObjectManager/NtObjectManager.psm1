@@ -6999,9 +6999,9 @@ function Send-NtWindowMessage {
 
 <#
 .SYNOPSIS
-Outputs a hex dump for a byte array.
+Formats a hex dump for a byte array.
 .DESCRIPTION
-This cmdlet converts a byte array to a hex dump.
+This cmdlet converts a byte array to a hex dump string. If invoked as Out-HexDump will write the to the console.
 .PARAMETER Bytes
 The bytes to convert.
 .PARAMETER ShowHeader
@@ -7025,11 +7025,13 @@ byte[]
 .OUTPUTS
 String
 #>
-function Out-HexDump {
+function Format-HexDump {
     [CmdletBinding(DefaultParameterSetName = "FromBytes")]
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromBytes")]
-        [byte[]]$Bytes,
+        [Alias("Bytes")]
+        [AllowEmptyCollection()]
+        [byte[]]$Byte,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
         [string]$Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
@@ -7055,7 +7057,10 @@ function Out-HexDump {
             $ShowAscii = $true
             $ShowAddress = $true
         }
-        switch ($PsCmdlet.ParameterSetName) {
+
+        $WriteToHost = $PSCmdlet.MyInvocation.InvocationName -eq "Out-HexDump"
+
+        switch ($PSCmdlet.ParameterSetName) {
             "FromBytes" {
                 $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
             }
@@ -7069,9 +7074,9 @@ function Out-HexDump {
     }
 
     PROCESS {
-        switch ($PsCmdlet.ParameterSetName) {
+        switch ($PSCmdlet.ParameterSetName) {
             "FromBytes" {
-                $builder.Append($Bytes)
+                $builder.Append($Byte)
             }
             "FromFile" {
                 $Path = Resolve-Path $Path -ErrorAction Stop
@@ -7082,9 +7087,16 @@ function Out-HexDump {
 
     END {
         $builder.Complete()
-        $builder.ToString() | Write-Output
+        $output = $builder.ToString()
+        if ($WriteToHost) {
+            $output | Write-Host
+        } else {
+            $output | Write-Output
+        }
     }
 }
+
+Set-Alias -Name Out-HexDump -Value Format-HexDump
 
 <#
 .SYNOPSIS

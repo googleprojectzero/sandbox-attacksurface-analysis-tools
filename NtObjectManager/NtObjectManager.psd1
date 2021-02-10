@@ -68,7 +68,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Suspend-NtProcess', 'Resume-NtProcess', 'Stop-NtProcess', 'Suspend-NtThread', 'Resume-NtThread', 'Stop-NtThread',
           'Format-NtToken', 'Remove-NtTokenPrivilege', 'Get-NtTokenPrivilege', 'Get-NtLocallyUniqueId', 'Get-NtTokenGroup',
           'Get-NtTokenSid', 'Set-NtTokenSid', 'Set-NtTokenGroup', 'Get-NtDesktopName', 'Get-NtWindowStationName',
-          'Get-NtWindow', 'Out-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
+          'Get-NtWindow', 'Format-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
           'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport', 'Get-NtDirectoryEntry',
           'Remove-NtKeyValue', 'Read-LsaCredential', 'Get-LsaPackage', 'New-LsaCredentialHandle', 'New-LsaServerContext',
           'New-LsaClientContext', 'Update-LsaServerContext', 'Update-LsaClientContext', 'Get-LsaAccessToken', 'Get-NtKernelModule',
@@ -169,7 +169,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer', 'Get-AuthPackage', 'Read-AuthCredential', 'Get-AuthCredential', 
                 'Get-AuthCredentialHandle', 'Get-AuthClientContext', 'Get-AuthServerContext', 'Update-AuthClientContext', 
                 'Update-AuthServerContext', 'Get-AuthAccessToken', 'Get-AuthToken', 'Test-AuthContext', 'Format-AuthToken', 
-                'Export-AuthToken', 'Import-AuthToken', 'Unprotect-AuthToken'
+                'Export-AuthToken', 'Import-AuthToken', 'Unprotect-AuthToken', 'Out-HexDump'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
