@@ -156,6 +156,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         AllowNonUserLogons = 0x00200000,
         AllowContextReplay = 0x00400000,
         FragmentToFit = 0x00800000,
+        NoToken = 0x01000000,
+        ProxyBindings = 0x04000000,
+        AllowMissingBindings = 0x10000000
     }
 
     /// <summary>
