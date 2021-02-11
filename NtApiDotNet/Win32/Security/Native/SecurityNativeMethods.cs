@@ -70,6 +70,65 @@ namespace NtApiDotNet.Win32.Security.Native
         WrapNoEncrypt = 0x80000001
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_TRUST_INFORMATION
+    {
+        public UnicodeStringOut Name;
+        public IntPtr Sid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_REFERENCED_DOMAIN_LIST
+    {
+        public int Entries;
+        public IntPtr Domains; // PLSA_TRUST_INFORMATION 
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_TRANSLATED_NAME
+    {
+        public SidNameUse Use;
+        public UnicodeStringOut Name;
+        public int DomainIndex;
+
+        public string GetName()
+        {
+            switch (Use)
+            {
+                case SidNameUse.Domain:
+                case SidNameUse.Invalid:
+                case SidNameUse.Unknown:
+                    return string.Empty;
+                default:
+                    return Name.ToString();
+            }
+        }
+
+        public string GetDomain(LSA_TRUST_INFORMATION[] domains)
+        {
+            switch (Use)
+            {
+                case SidNameUse.WellKnownGroup:
+                case SidNameUse.Invalid:
+                case SidNameUse.Unknown:
+                    return string.Empty;
+            }
+            if (DomainIndex >= domains.Length)
+            {
+                return string.Empty;
+            }
+            return domains[DomainIndex].Name.ToString();
+        }
+    }
+
+    [Flags]
+    internal enum LsaLookupOptions : uint
+    {
+        LSA_LOOKUP_RETURN_LOCAL_NAMES = 0,
+        LSA_LOOKUP_PREFER_INTERNET_NAMES = 0x40000000,
+        LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID = 0x80000000
+    }
+
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -694,6 +753,16 @@ namespace NtApiDotNet.Win32.Security.Native
           SECPKG_ATTR ulAttribute,
           SafeBuffer pBuffer,
           int cbBuffer
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaLookupSids2(
+            SafeLsaHandle PolicyHandle,
+            LsaLookupOptions LookupOptions,
+            int Count,
+            IntPtr[] Sids,
+            out SafeLsaMemoryBuffer ReferencedDomains,
+            out SafeLsaMemoryBuffer Names
         );
 
         public static SecStatusCode CheckResult(this SecStatusCode result)
