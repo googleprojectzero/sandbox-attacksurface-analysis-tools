@@ -77,7 +77,7 @@ namespace NtApiDotNet.Win32.Security.Native
             using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
             {
                 binding.Data.WriteBytes(channel_binding_token);
-                return new SecBuffer(SecurityBufferType.ChannelBindings, binding.ToArray());
+                return new SecBuffer(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, binding.ToArray());
             }
         }
     }

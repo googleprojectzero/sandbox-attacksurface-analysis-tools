@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     /// <remarks>If you create with the ReadOnly or ReadOnlyWithCheck types then the 
     /// array will not be updated.</remarks>
-    public class SecurityBufferInOut : SecurityBuffer
+    public sealed class SecurityBufferInOut : SecurityBuffer
     {
         private ArraySegment<byte> _array;
 
