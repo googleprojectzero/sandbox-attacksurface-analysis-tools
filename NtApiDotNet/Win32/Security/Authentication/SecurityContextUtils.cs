@@ -36,6 +36,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return new AuthenticationPackage(pkg_info.PackageInfo);
         }
 
+        internal static string GetPackageName(SecHandle context)
+        {
+            try
+            {
+                return GetAuthenticationPackage(context).Name;
+            }
+            catch (NtException)
+            {
+                return null;
+            }
+        }
+
         internal static List<SecBuffer> ToBufferList(this List<SecurityBuffer> buffers, DisposableList list)
         {
             return buffers.Select(b => list.AddResource(b.ToBuffer())).ToList();

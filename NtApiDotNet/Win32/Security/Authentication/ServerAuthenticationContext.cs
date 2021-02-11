@@ -74,6 +74,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(_context);
 
         /// <summary>
+        /// Get the name of the authentication package.
+        /// </summary>
+        public string PackageName => SecurityContextUtils.GetPackageName(_context) ?? _creds.PackageName;
+
+        /// <summary>
         /// Get an access token for the authenticated user.
         /// </summary>
         /// <returns>The user's access token.</returns>

@@ -439,8 +439,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (_transport_security.AuthenticationType == RpcAuthenticationType.Negotiate)
             {
-                var package_info = _auth_context.GetAuthenticationPackage();
-                _negotiated_auth_type = AuthenticationPackage.CheckKerberos(package_info.Name) 
+                var package_name = _auth_context.PackageName;
+                _negotiated_auth_type = AuthenticationPackage.CheckKerberos(package_name) 
                     ? RpcAuthenticationType.Kerberos : RpcAuthenticationType.WinNT;
             }
             else

@@ -239,6 +239,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return SecurityContextUtils.GetAuthenticationPackage(_context);
         }
 
+        /// <summary>
+        /// Get the name of the authentication package.
+        /// </summary>
+        public string PackageName => SecurityContextUtils.GetPackageName(_context) ?? _creds.PackageName;
+
         private bool GenClientContext(AuthenticationToken token)
         {
             using (DisposableList list = new DisposableList())

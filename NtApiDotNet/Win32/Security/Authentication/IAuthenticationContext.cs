@@ -118,6 +118,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         AuthenticationPackage GetAuthenticationPackage();
 
         /// <summary>
+        /// Get the name of the authentication package.
+        /// </summary>
+        string PackageName { get; }
+
+        /// <summary>
         /// Continue the authentication with the token.
         /// </summary>
         /// <param name="token">The token to continue authentication.</param>
