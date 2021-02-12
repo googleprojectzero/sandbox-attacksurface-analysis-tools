@@ -13436,18 +13436,22 @@ Specify the authentication context to use.
 Specify message to sign.
 .PARAMETER SequenceNumber
 Specify the sequence number for the signature to prevent replay.
+.PARAMETER Buffer
+Specify the list of buffers to sign.
 .INPUTS
 byte[]
 .OUTPUTS
 byte[]
 #>
 function Get-LsaContextSignature {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
-        [parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
         [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0
     )
@@ -13457,11 +13461,20 @@ function Get-LsaContextSignature {
     }
 
     PROCESS {
-        $sig_data += $Message
+        if ($PSCmdlet.ParameterSetName -eq "FromBytes") {
+            $sig_data += $Message
+        }
     }
 
     END {
-        $Context.MakeSignature($sig_data, $SequenceNumber)
+        switch($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $Context.MakeSignature($sig_data, $SequenceNumber)
+            } 
+            "FromBuffers" {
+                $Context.MakeSignature($Buffer, $SequenceNumber)
+            }
+        }
     }
 }
 
@@ -13478,25 +13491,36 @@ Specify message to verify.
 Specify signature to verify.
 .PARAMETER SequenceNumber
 Specify the sequence number for the signature to prevent replay.
+.PARAMETER Buffer
+Specify the list of buffers to sign.
 .INPUTS
 None
 .OUTPUTS
 bool
 #>
 function Test-LsaContextSignature {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
-        [parameter(Mandatory, Position = 1)]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Mandatory, Position = 2)]
         [byte[]]$Signature,
         [parameter(Position = 3)]
         [int]$SequenceNumber = 0
     )
 
-    $Context.VerifySignature($Message, $Signature, $SequenceNumber)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            $Context.VerifySignature($Message, $Signature, $SequenceNumber)
+        }
+        "FromBuffers" {
+            $Context.VerifySignature($Buffer, $Signature, $SequenceNumber)
+        }
+    }
 }
 
 <#
@@ -13504,7 +13528,8 @@ function Test-LsaContextSignature {
 Encrypt some message for an authentication context.
 .DESCRIPTION
 This cmdlet uses an authentication context to encrypt some message. It returns both the encrypted message and a signature.
-t can be decrypted using Unprotect-LsaContextData.
+It can be decrypted using Unprotect-LsaContextData. If you use buffers only the signature is returned from the command
+and the encrypted data is updated in place.
 .PARAMETER Context
 Specify the authentication context to use.
 .PARAMETER Message
@@ -13517,12 +13542,14 @@ byte[]
 NtApiDotNet.Win32.Security.Authentication.EncryptedMessage
 #>
 function Protect-LsaContextMessage {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
-        [parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
         [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0
     )
@@ -13532,11 +13559,20 @@ function Protect-LsaContextMessage {
     }
 
     PROCESS {
-        $enc_data += $Message
+        if ($PSCmdlet.ParameterSetName -eq "FromBytes") {
+            $enc_data += $Message
+        }
     }
 
     END {
-        $Context.EncryptMessage($enc_data, $SequenceNumber)
+        switch($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $Context.EncryptMessage($enc_data, $SequenceNumber)
+            }
+            "FromBuffers" {
+                $Context.EncryptMessage($Buffer, $SequenceNumber)
+            }
+        }
     }
 }
 
@@ -13545,6 +13581,7 @@ function Protect-LsaContextMessage {
 Decrypt some message from an authentication context.
 .DESCRIPTION
 This cmdlet uses an authentication context to decrypt some message as well as verify a signature.
+If using buffers the data is decrypted in place.
 .PARAMETER Context
 Specify the authentication context to use.
 .PARAMETER Message
@@ -13559,20 +13596,29 @@ None
 byte[]
 #>
 function Unprotect-LsaContextMessage {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
-        [parameter(Mandatory, Position = 1)]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Mandatory, Position = 2)]
         [byte[]]$Signature,
         [parameter(Position = 3)]
         [int]$SequenceNumber = 0
     )
 
-    $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
-    $Context.DecryptMessage($msg, $SequenceNumber)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
+            $Context.DecryptMessage($msg, $SequenceNumber)
+        }
+        "FromBuffers" {
+            $Context.DecryptMessage($Buffer, $Signature, $SequenceNumber)
+        }
+    }
 }
 
 <#
@@ -13604,7 +13650,7 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
         [int]$Size,
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
-        [byte[]]$ChannelBinding,
+        [byte[]]$ChannelBinding
     )
 
     switch($PSCmdlet.ParameterSetName) {
