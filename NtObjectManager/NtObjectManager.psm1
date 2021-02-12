@@ -13542,7 +13542,7 @@ function Protect-LsaContextMessage {
 
 <#
 .SYNOPSIS
-Descrypt some message from an authentication context.
+Decrypt some message from an authentication context.
 .DESCRIPTION
 This cmdlet uses an authentication context to decrypt some message as well as verify a signature.
 .PARAMETER Context
@@ -13573,6 +13573,51 @@ function Unprotect-LsaContextMessage {
 
     $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
     $Context.DecryptMessage($msg, $SequenceNumber)
+}
+
+<#
+.SYNOPSIS
+Create a new security buffer based on existing data or for output.
+.DESCRIPTION
+This cmdlet creates a new security object either containing existing data for input/output or and output only buffer.
+.PARAMETER Type
+Specify the type of the buffer.
+.PARAMETER Byte
+Specify the existing bytes for the buffer.
+.PARAMETER Size
+Specify the size of a buffer for an output buffer.
+.PARAMETER ChannelBinding
+Specify a channel binding token.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+#>
+function New-LsaSecurityBuffer {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
+        [byte[]]$Byte,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
+        [int]$Size,
+        [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
+        [byte[]]$ChannelBinding,
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($Type, $Byte)
+        }
+        "FromSize" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($Type, $Size)
+        }
+        "FromChannelBinding" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
+        }
+    }
 }
 
 # Alias old functions. Remove eventually.
