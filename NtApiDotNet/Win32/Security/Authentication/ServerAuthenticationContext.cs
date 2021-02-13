@@ -26,11 +26,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
     public sealed class ServerAuthenticationContext : IDisposable, IAuthenticationContext, IServerAuthenticationContext
     {
         private readonly CredentialHandle _creds;
-        private readonly SecHandle _context;
         private readonly AcceptContextReqFlags _req_flags;
         private readonly SecDataRep _data_rep;
         private readonly byte[] _channel_binding;
-        private bool _new_context;
+        private SecHandle _context;
         private int _token_count;
 
         /// <summary>
@@ -61,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Get the Session Key for this context.
         /// </summary>
-        public byte[] SessionKey => GetSessionKey(_context);
+        public byte[] SessionKey => SecurityContextUtils.GetSessionKey(_context);
 
         /// <summary>
         /// Get the maximum signature size of this context.
@@ -109,10 +108,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             byte[] channel_binding, SecDataRep data_rep)
         {
             _creds = creds;
-            _context = new SecHandle();
             _req_flags = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
             _data_rep = data_rep;
-            _new_context = true;
             _token_count = 0;
             _channel_binding = channel_binding;
         }
@@ -268,8 +265,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         private bool GenServerContext(AuthenticationToken token)
         {
-            bool new_context = _new_context;
-            _new_context = false;
             using (DisposableList list = new DisposableList())
             {
                 SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, 64*1024));
@@ -284,8 +279,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(buffers.ToArray()));
 
                 LargeInteger expiry = new LargeInteger();
-                SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, new_context ? null : _context,
-                    in_buffer_desc, _req_flags, _data_rep, _context, out_buffer_desc, out AcceptContextRetFlags context_attr, expiry).CheckResult();
+                SecHandle new_context = _context ?? new SecHandle();
+                SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, _context,
+                    in_buffer_desc, _req_flags, _data_rep, new_context, out_buffer_desc, out AcceptContextRetFlags context_attr, expiry).CheckResult();
+                _context = new_context;
                 Flags = context_attr;
                 Expiry = expiry.QuadPart;
                 if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
@@ -300,8 +297,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         private void Dispose(bool _)
         {
-            if (!_new_context)
+            if (_context != null)
+            {
                 SecurityNativeMethods.DeleteSecurityContext(_context);
+            }
         }
 
         /// <summary>
@@ -321,21 +320,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     return Marshal.PtrToStringUni(buffer.Result.sTargetName);
             }
             return string.Empty;
-        }
-
-        internal static byte[] GetSessionKey(SecHandle context)
-        {
-            using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_SessionKey>())
-            {
-                var result = SecurityNativeMethods.QueryContextAttributesEx(context, SECPKG_ATTR.SESSION_KEY, buffer, buffer.Length);
-                if (result == SecStatusCode.Success)
-                {
-                    byte[] ret = new byte[buffer.Result.SessionKeyLength];
-                    Marshal.Copy(buffer.Result.SessionKey, ret, 0, ret.Length);
-                    return ret;
-                }
-            }
-            return new byte[0];
         }
     }
 }
