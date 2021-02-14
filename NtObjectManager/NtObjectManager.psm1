@@ -7719,6 +7719,8 @@ Optional SPN target.
 Data representation format.
 .PARAMETER ChannelBinding
 Optional channel binding token.
+.PARAMETER NoInit
+Don't initialize the client authentication context.
 .INPUTS
 None
 .OUTPUTS
@@ -7732,11 +7734,12 @@ function New-LsaClientContext {
         [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
         [string]$Target,
         [byte[]]$ChannelBinding,
-        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
+        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
+        [switch]$NoInit
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
 }
 
 <#
@@ -7768,7 +7771,7 @@ function New-LsaServerContext {
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $ChannelBinding, $DataRepresentation)
 }
 
 <#
@@ -7783,7 +7786,7 @@ The next authentication token.
 .INPUTS
 None
 .OUTPUTS
-bool
+None
 #>
 function Update-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
@@ -7793,13 +7796,24 @@ function Update-LsaClientContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server
+        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
-        $Token = $Server.Token
+    $next_token = switch($PSCmdlet.ParameterSetName) {
+        "FromContext" {
+            $Server.Token
+        }
+        "FromToken" {
+            $Token
+        }
+        "FromBuffers" {
+            $Buffers
+        }
     }
-    $Client.Continue($Token)
+
+    $Client.Continue($next_token)
 }
 
 <#
@@ -13634,6 +13648,8 @@ Specify the existing bytes for the buffer.
 Specify the size of a buffer for an output buffer.
 .PARAMETER ChannelBinding
 Specify a channel binding token.
+.PARAMETER Token
+Specify a buffer which is an authentication token.
 .INPUTS
 None
 .OUTPUTS
@@ -13650,7 +13666,9 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
         [int]$Size,
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
-        [byte[]]$ChannelBinding
+        [byte[]]$ChannelBinding,
+        [Parameter(Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -13662,6 +13680,9 @@ function New-LsaSecurityBuffer {
         }
         "FromChannelBinding" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
+        }
+        "FromToken" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new("Token", $Token.ToArray())
         }
     }
 }

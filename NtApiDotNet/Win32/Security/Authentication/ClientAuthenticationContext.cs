@@ -16,6 +16,7 @@ using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -84,9 +85,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="target">Target SPN (optional).</param>
         /// <param name="data_rep">Data representation.</param>
         /// <param name="channel_binding">Optional channel binding token.</param>
-        public ClientAuthenticationContext(CredentialHandle creds, 
+        /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        public ClientAuthenticationContext(CredentialHandle creds,
             InitializeContextReqFlags req_attributes,
-            string target, byte[] channel_binding, SecDataRep data_rep)
+            string target, byte[] channel_binding, SecDataRep data_rep, bool initialize)
         {
             _creds = creds;
             _req_attributes = req_attributes & ~InitializeContextReqFlags.AllocateMemory;
@@ -94,7 +96,25 @@ namespace NtApiDotNet.Win32.Security.Authentication
             _data_rep = data_rep;
             _token_count = 0;
             _channel_binding = channel_binding;
-            Continue(null);
+            if (initialize)
+            {
+                CallInitialize(new List<SecurityBuffer>());
+            }
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        public ClientAuthenticationContext(CredentialHandle creds,
+            InitializeContextReqFlags req_attributes,
+            string target, byte[] channel_binding, SecDataRep data_rep) 
+            : this(creds, req_attributes, target, channel_binding, data_rep, true)
+        {
         }
 
         /// <summary>
@@ -117,8 +137,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="creds">Credential handle.</param>
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="data_rep">Data representation.</param>
-        public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes, SecDataRep data_rep)
-            : this(creds, req_attributes, null, null, data_rep)
+        public ClientAuthenticationContext(CredentialHandle creds, 
+            InitializeContextReqFlags req_attributes, SecDataRep data_rep)
+            : this(creds, req_attributes, null, data_rep)
         {
         }
 
@@ -127,7 +148,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         /// <param name="creds">Credential handle.</param>
         public ClientAuthenticationContext(CredentialHandle creds)
-            : this(creds, InitializeContextReqFlags.None, null, SecDataRep.Native)
+            : this(creds, InitializeContextReqFlags.None, SecDataRep.Native)
         {
         }
 
@@ -137,7 +158,31 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="token">The server token to continue authentication.</param>
         public void Continue(AuthenticationToken token)
         {
-            Done = GenClientContext(token);
+            if (token is null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            var input_buffers = new List<SecurityBuffer>
+            {
+                new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray())
+            };
+            Done = CallInitialize(input_buffers);
+        }
+
+        /// <summary>
+        /// Continue the authentication..
+        /// </summary>
+        /// <param name="input_buffers">The input buffers for the continue.</param>
+        /// <remarks>This won't use the specified channel bindings, you'll need to </remarks>
+        public void Continue(IEnumerable<SecurityBuffer> input_buffers)
+        {
+            if (input_buffers is null)
+            {
+                throw new ArgumentNullException(nameof(input_buffers));
+            }
+
+            Done = CallInitialize(input_buffers.ToList());
         }
 
         /// <summary>
@@ -258,16 +303,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
 
-        private bool GenClientContext(AuthenticationToken token)
+        private bool CallInitialize(List<SecurityBuffer> input_buffers)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
-            var output_buffers = new [] { token_buffer };
-            var input_buffers = new List<SecurityBuffer>();
-
-            if (token != null)
-            {
-                input_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray()));
-            }
+            var output_buffers = new[] { token_buffer };
 
             if (_channel_binding != null)
             {
@@ -276,8 +315,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
             LargeInteger expiry = new LargeInteger();
             SecHandle new_context = _context ?? new SecHandle();
-            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target, 
-                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context, 
+            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target,
+                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context,
                 output_buffers, out InitializeContextRetFlags flags, expiry);
             _context = new_context;
             Expiry = expiry.QuadPart;
