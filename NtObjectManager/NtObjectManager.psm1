@@ -7704,6 +7704,13 @@ function New-LsaCredentialHandle {
     [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credential) | Write-Output
 }
 
+$package_completer = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    (Get-LsaPackage).Name | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { "'$_'" }
+}
+
+Register-ArgumentCompleter -CommandName New-LsaCredentialHandle -ParameterName Package -ScriptBlock $package_completer
+
 <#
 .SYNOPSIS
 Create a new authentication client.
@@ -7779,10 +7786,16 @@ function New-LsaServerContext {
 Update an authentication client.
 .DESCRIPTION
 This cmdlet updates an authentication client. Returns true if the authentication is complete.
-.PARAMETER Server
+.PARAMETER Client
 The authentication client.
+.PARAMETER Server
+The authentication server to extract token from.
 .PARAMETER Token
 The next authentication token.
+.PARAMETER Buffers
+A list of input buffers.
+.PARAMETER Empty
+Specify to update with no input buffers.
 .INPUTS
 None
 .OUTPUTS
@@ -7798,7 +7811,9 @@ function Update-LsaClientContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers,
+        [Parameter(Mandatory, ParameterSetName="FromEmpty")]
+        [switch]$Empty
     )
 
     $next_token = switch($PSCmdlet.ParameterSetName) {
@@ -7813,7 +7828,11 @@ function Update-LsaClientContext {
         }
     }
 
-    $Client.Continue($next_token)
+    if ($null -eq $next_token) {
+        $Client.Continue()
+    } else {
+        $Client.Continue($next_token)
+    }
 }
 
 <#
@@ -7827,10 +7846,14 @@ The authentication server.
 The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
+.PARAMETER Buffers
+A list of input buffers.
+.PARAMETER Empty
+Specify to update with no input buffers.
 .INPUTS
 None
 .OUTPUTS
-bool
+None
 #>
 function Update-LsaServerContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
@@ -7840,14 +7863,30 @@ function Update-LsaServerContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers,
+        [Parameter(Mandatory, ParameterSetName="FromEmpty")]
+        [switch]$Empty
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
-        $Token = $Client.Token
+    $next_token = switch($PSCmdlet.ParameterSetName) {
+        "FromContext" {
+            $Client.Token
+        }
+        "FromToken" {
+            $Token
+        }
+        "FromBuffers" {
+            $Buffers
+        }
     }
 
-    $Server.Continue($Token)
+    if ($null -eq $next_token) {
+        $Server.Continue()
+    } else {
+        $Server.Continue($next_token)
+    }
 }
 
 <#
