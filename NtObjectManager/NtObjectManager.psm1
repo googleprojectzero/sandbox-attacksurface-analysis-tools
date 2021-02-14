@@ -13550,6 +13550,8 @@ Specify the authentication context to use.
 Specify message to encrypt.
 .PARAMETER SequenceNumber
 Specify the sequence number for the encryption to prevent replay.
+.PARAMETER QualityOfProtection
+Specify flags for the encryption operation. For example wrap but don't encrypt.
 .INPUTS
 byte[]
 .OUTPUTS
@@ -13565,7 +13567,8 @@ function Protect-LsaContextMessage {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
-        [int]$SequenceNumber = 0
+        [int]$SequenceNumber = 0,
+        [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0
     )
 
     BEGIN {
@@ -13581,10 +13584,10 @@ function Protect-LsaContextMessage {
     END {
         switch($PSCmdlet.ParameterSetName) {
             "FromBytes" {
-                $Context.EncryptMessage($enc_data, $SequenceNumber)
+                $Context.EncryptMessage($enc_data, $QualityOfProtection, $SequenceNumber)
             }
             "FromBuffers" {
-                $Context.EncryptMessage($Buffer, $SequenceNumber)
+                $Context.EncryptMessage($Buffer, $QualityOfProtection, $SequenceNumber)
             }
         }
     }

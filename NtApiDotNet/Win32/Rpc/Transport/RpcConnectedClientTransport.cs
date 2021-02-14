@@ -195,7 +195,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
             else
             {
-                signature = _auth_context.EncryptMessage(buffers, _send_sequence_no);
+                signature = _auth_context.EncryptMessage(buffers, SecurityQualityOfProtectionFlags.None, _send_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
                 RpcUtils.DumpBuffer(true, "Send Encrypted Data", stub_data);
             }

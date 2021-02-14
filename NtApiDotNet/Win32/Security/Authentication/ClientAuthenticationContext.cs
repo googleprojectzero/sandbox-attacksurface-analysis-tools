@@ -279,23 +279,25 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Encrypt a message for this context.
         /// </summary>
         /// <param name="message">The message to encrypt.</param>
-        /// <param name="sequence_no">The sequence number.</param>
+        /// <param name="quality_of_protection">Quality of protection flags.</param>
         /// <returns>The encrypted message.</returns>
-        public EncryptedMessage EncryptMessage(byte[] message, int sequence_no)
+        /// <param name="sequence_no">The sequence number.</param>
+        public EncryptedMessage EncryptMessage(byte[] message, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            return SecurityContextUtils.EncryptMessage(Context, 0, message, sequence_no);
+            return SecurityContextUtils.EncryptMessage(Context, quality_of_protection, message, sequence_no);
         }
 
         /// <summary>
         /// Encrypt a message for this context.
         /// </summary>
         /// <param name="messages">The messages to encrypt.</param>
-        /// <param name="sequence_no">The sequence number.</param>
+        /// <param name="quality_of_protection">Quality of protection flags.</param>
         /// <returns>The signature for the messages.</returns>
         /// <remarks>The messages are encrypted in place. You can add buffers with the ReadOnly flag to prevent them being encrypted.</remarks>
-        public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, int sequence_no)
+        /// <param name="sequence_no">The sequence number.</param>
+        public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            return SecurityContextUtils.EncryptMessage(Context, 0, messages, sequence_no);
+            return SecurityContextUtils.EncryptMessage(Context, quality_of_protection, messages, sequence_no);
         }
 
         /// <summary>

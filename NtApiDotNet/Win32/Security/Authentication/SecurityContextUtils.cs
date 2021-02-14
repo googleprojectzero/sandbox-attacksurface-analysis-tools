@@ -128,10 +128,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     message) }, signature, sequence_no);
         }
 
-
         internal static EncryptedMessage EncryptMessage(
             SecHandle context,
-            SecQopFlags flags,
+            SecurityQualityOfProtectionFlags flags,
             byte[] message,
             int sequence_no)
         {
@@ -142,7 +141,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static byte[] EncryptMessage(
             SecHandle context,
-            SecQopFlags flags,
+            SecurityQualityOfProtectionFlags flags,
             IEnumerable<SecurityBuffer> messages,
             int sequence_no)
         {

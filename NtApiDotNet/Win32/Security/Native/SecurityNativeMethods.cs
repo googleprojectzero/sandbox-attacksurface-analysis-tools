@@ -63,13 +63,6 @@ namespace NtApiDotNet.Win32.Security.Native
         Virtual = 4
     }
 
-    [Flags]
-    internal enum SecQopFlags : uint
-    {
-        None = 0,
-        WrapNoEncrypt = 0x80000001
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct LSA_TRUST_INFORMATION
     {
@@ -219,7 +212,7 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode EncryptMessage(
             [In] SecHandle phContext,
-            SecQopFlags fQOP,
+            SecurityQualityOfProtectionFlags fQOP,
             SecBufferDesc pMessage,
             int MessageSeqNo
         );
@@ -229,7 +222,7 @@ namespace NtApiDotNet.Win32.Security.Native
             [In] SecHandle phContext,
             SecBufferDesc pMessage,
             int MessageSeqNo,
-            out SecQopFlags pfQOP
+            out SecurityQualityOfProtectionFlags pfQOP
         );
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]

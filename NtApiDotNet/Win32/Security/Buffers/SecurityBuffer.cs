@@ -39,8 +39,10 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// <returns>The buffer as a string.</returns>
         public override string ToString()
         {
-            List<string> type_names = new List<string>();
-            type_names.Add((Type & SecurityBufferType.Mask).ToString());
+            List<string> type_names = new List<string>
+            {
+                (Type & SecurityBufferType.Mask).ToString()
+            };
             if (Type.HasFlagSet(SecurityBufferType.ReadOnly))
             {
                 type_names.Add("ReadOnly");
