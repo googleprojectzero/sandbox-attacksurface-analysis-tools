@@ -140,7 +140,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             _channel_binding = channel_binding;
             if (initialize)
             {
-                CallInitialize(new List<SecurityBuffer>());
+                Continue();
             }
         }
 
@@ -218,7 +218,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Continue the authentication..
         /// </summary>
         /// <param name="input_buffers">The input buffers for the continue.</param>
-        /// <remarks>This won't use the specified channel bindings, you'll need to </remarks>
         public void Continue(IEnumerable<SecurityBuffer> input_buffers)
         {
             if (input_buffers is null)
@@ -227,6 +226,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
 
             Done = CallInitialize(input_buffers.ToList());
+        }
+
+        /// <summary>
+        /// Continue the authentication. Will not pass any buffers to the initialize call.
+        /// </summary>
+        public void Continue()
+        {
+            Continue(new SecurityBuffer[0]);
         }
 
         /// <summary>

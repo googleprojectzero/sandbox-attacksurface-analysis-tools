@@ -134,6 +134,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             byte[] message,
             int sequence_no)
         {
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
             SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message);
             var signature = EncryptMessage(context, flags, new[] { buffer }, sequence_no);
             return new EncryptedMessage(buffer.ToArray(), signature);
@@ -145,6 +150,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
             IEnumerable<SecurityBuffer> messages,
             int sequence_no)
         {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
             List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
             var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
             var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, sizes.cbSecurityTrailer);
@@ -165,6 +180,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             EncryptedMessage message,
             int sequence_no)
         {
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
             SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message.Message);
             DecryptMessage(context, new[] { buffer }, message.Signature, sequence_no);
             return buffer.ToArray();
@@ -176,6 +196,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
             byte[] signature,
             int sequence_no)
         {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
             List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
             sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
 
@@ -200,6 +235,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package, bool client)
         {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             SecBuffer buffer = new SecBuffer() { BufferType = SecurityBufferType.Empty };
             try
             {
