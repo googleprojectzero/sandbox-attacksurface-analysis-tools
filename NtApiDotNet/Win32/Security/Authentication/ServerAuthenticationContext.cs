@@ -16,6 +16,7 @@ using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -33,17 +34,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private SecHandle _context;
         private int _token_count;
 
-        private bool GenServerContext(AuthenticationToken token)
+        private void CallAccept(List<SecurityBuffer> input_buffers)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             var output_buffers = new[] { token_buffer };
-            var input_buffers = new List<SecurityBuffer>();
-
-            if (token != null)
-            {
-                input_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray()));
-            }
-
+            
             if (_channel_binding != null)
             {
                 input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
@@ -59,8 +54,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             Expiry = expiry.QuadPart;
 
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, false, token_buffer.ToArray());
-            return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+            Done = !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
         }
+
 
         private void Dispose(bool _)
         {
@@ -157,7 +153,39 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="token">The client token to continue authentication.</param>
         public void Continue(AuthenticationToken token)
         {
-            Done = GenServerContext(token);
+            if (token is null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            var input_buffers = new List<SecurityBuffer>
+            {
+                new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray())
+            };
+
+            CallAccept(input_buffers);
+        }
+
+        /// <summary>
+        /// Continue the authentication..
+        /// </summary>
+        /// <param name="input_buffers">The input buffers for the continue.</param>
+        public void Continue(IEnumerable<SecurityBuffer> input_buffers)
+        {
+            if (input_buffers is null)
+            {
+                throw new ArgumentNullException(nameof(input_buffers));
+            }
+
+            CallAccept(input_buffers.ToList());
+        }
+
+        /// <summary>
+        /// Continue the authentication. Will not pass any buffers to the accept call.
+        /// </summary>
+        public void Continue()
+        {
+            Continue(new SecurityBuffer[0]);
         }
 
         /// <summary>

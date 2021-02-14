@@ -138,6 +138,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
         void Continue(AuthenticationToken token);
 
         /// <summary>
+        /// Continue the authentication..
+        /// </summary>
+        /// <param name="input_buffers">The input buffers for the continue.</param>
+        void Continue(IEnumerable<SecurityBuffer> input_buffers);
+
+        /// <summary>
+        /// Continue the authentication. Will not pass any buffers to the accept call.
+        /// </summary>
+        void Continue();
+
+        /// <summary>
         /// Get the maximum signature size of this context.
         /// </summary>
         int MaxSignatureSize { get; }

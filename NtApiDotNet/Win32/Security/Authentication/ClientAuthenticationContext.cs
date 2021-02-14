@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private int _token_count;
         private SecHandle _context;
 
-        private bool CallInitialize(List<SecurityBuffer> input_buffers)
+        private void CallInitialize(List<SecurityBuffer> input_buffers)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             var output_buffers = new[] { token_buffer };
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             Expiry = expiry.QuadPart;
             Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
-            return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+            Done = !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
         }
 
         private SecHandle Context => _context ?? throw new InvalidOperationException("Client authentication context hasn't been initialized.");
@@ -211,7 +211,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray())
             };
-            Done = CallInitialize(input_buffers);
+            CallInitialize(input_buffers);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(input_buffers));
             }
 
-            Done = CallInitialize(input_buffers.ToList());
+            CallInitialize(input_buffers.ToList());
         }
 
         /// <summary>
