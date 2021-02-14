@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -200,11 +201,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package)
         {
-            using (SecBuffer buffer = new SecBuffer(SecurityBufferType.Empty, 64 * 1024))
+            SecBuffer buffer = new SecBuffer() { BufferType = SecurityBufferType.Empty };
+            try
             {
                 SecurityNativeMethods.ExportSecurityContext(context, SecPkgContextExportFlags.None,
                     buffer, out SafeKernelObjectHandle token).CheckResult();
                 return new ExportedSecurityContext(package, buffer.ToArray(), NtToken.FromHandle(token));
+            }
+            finally
+            {
+                if (buffer.pvBuffer != IntPtr.Zero)
+                {
+                    SecurityNativeMethods.FreeContextBuffer(buffer.pvBuffer);
+                }
             }
         }
 

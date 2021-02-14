@@ -80,6 +80,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// a raw AuthenticationToken.</returns>
         internal static AuthenticationToken Parse(string package_name, int token_count, bool client, byte[] token)
         {
+            if (token.Length == 0)
+                return new AuthenticationToken(token);
+
             if (AuthenticationPackage.CheckNtlm(package_name) 
                 && NtlmAuthenticationToken.TryParse(token, token_count, client, out NtlmAuthenticationToken ntlm_token))
             {

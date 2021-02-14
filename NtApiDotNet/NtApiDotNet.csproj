@@ -478,6 +478,7 @@
     <Compile Include="Win32\Security\Authenticode\IMAGE_POLICY_METADATA.cs" />
     <Compile Include="Win32\Security\Authenticode\EnclaveConfiguration.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBuffer.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferAllocMem.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferChannelBinding.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferInOut.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferOut.cs" />

@@ -248,7 +248,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         private bool GenClientContext(AuthenticationToken token)
         {
-            var token_buffer = new SecurityBufferOut(SecurityBufferType.Token, 64 * 1024);
+            var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             var output_buffers = new [] { token_buffer };
             var input_buffers = new List<SecurityBuffer>();
 
@@ -264,11 +264,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
             LargeInteger expiry = new LargeInteger();
             SecHandle new_context = _context ?? new SecHandle();
-            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target, _req_attributes,
-                    _data_rep, input_buffers, new_context, output_buffers, out InitializeContextRetFlags flags, expiry);
+            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target, 
+                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context, 
+                output_buffers, out InitializeContextRetFlags flags, expiry);
             _context = new_context;
             Expiry = expiry.QuadPart;
-            Flags = flags;
+            Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
             return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
         }

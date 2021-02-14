@@ -25,7 +25,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// <summary>
         /// Type of the security buffer.
         /// </summary>
-        public SecurityBufferType Type { get; }
+        public SecurityBufferType Type { get; private protected set; }
 
         /// <summary>
         /// Convert to buffer back to an array.
