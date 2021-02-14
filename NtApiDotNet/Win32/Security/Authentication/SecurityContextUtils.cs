@@ -57,11 +57,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static SecBufferDesc ToDesc(this IEnumerable<SecBuffer> buffers, DisposableList list)
         {
-            return list.AddResource(new SecBufferDesc(buffers.ToArray()));
+            var arr = buffers.ToArray();
+            if (arr.Length == 0)
+                return null;
+            return list.AddResource(new SecBufferDesc(arr));
         }
 
         internal static void UpdateBuffers(this IList<SecurityBuffer> buffers, SecBufferDesc desc)
         {
+            if (desc == null)
+                return;
             var update_buffers = desc.ToArray();
             for (int i = 0; i < buffers.Count; ++i)
             {
