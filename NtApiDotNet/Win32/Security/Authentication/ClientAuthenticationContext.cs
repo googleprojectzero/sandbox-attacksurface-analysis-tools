@@ -25,6 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// </summary>
     public sealed class ClientAuthenticationContext : IDisposable, IAuthenticationContext, IClientAuthenticationContext
     {
+        #region Private Members
         private readonly CredentialHandle _creds;
         private readonly InitializeContextReqFlags _req_attributes;
         private readonly string _target;
@@ -33,6 +34,41 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private int _token_count;
         private SecHandle _context;
 
+        private bool CallInitialize(List<SecurityBuffer> input_buffers)
+        {
+            var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
+            var output_buffers = new[] { token_buffer };
+
+            if (_channel_binding != null)
+            {
+                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
+            }
+
+            LargeInteger expiry = new LargeInteger();
+            SecHandle new_context = _context ?? new SecHandle();
+            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target,
+                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context,
+                output_buffers, out InitializeContextRetFlags flags, expiry);
+            _context = new_context;
+            Expiry = expiry.QuadPart;
+            Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
+            Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
+            return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+        }
+
+        private SecHandle Context => _context ?? throw new InvalidOperationException("Client authentication context hasn't been initialized.");
+
+        private void Dispose(bool _)
+        {
+            if (_context != null)
+            {
+                SecurityNativeMethods.DeleteSecurityContext(_context);
+                _context = null;
+            }
+        }
+        #endregion
+
+        #region Public Properties
         /// <summary>
         /// The current authentication token.
         /// </summary>
@@ -75,8 +111,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityContextUtils.QueryContextAttribute<SecPkgContext_LastClientTokenStatus>(Context, 
             SECPKG_ATTR.LAST_CLIENT_TOKEN_STATUS).LastClientTokenStatus;
 
-        internal SecHandle Context => _context ?? throw new InvalidOperationException("Client authentication context hasn't been initialized.");
+        /// <summary>
+        /// Get the name of the authentication package.
+        /// </summary>
+        public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
 
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -151,7 +193,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             : this(creds, InitializeContextReqFlags.None, SecDataRep.Native)
         {
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Continue the authentication with the server token.
         /// </summary>
@@ -297,43 +341,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             Dispose();
             return context;
         }
+        #endregion
 
-        /// <summary>
-        /// Get the name of the authentication package.
-        /// </summary>
-        public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
-
-        private bool CallInitialize(List<SecurityBuffer> input_buffers)
-        {
-            var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
-            var output_buffers = new[] { token_buffer };
-
-            if (_channel_binding != null)
-            {
-                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
-            }
-
-            LargeInteger expiry = new LargeInteger();
-            SecHandle new_context = _context ?? new SecHandle();
-            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target,
-                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context,
-                output_buffers, out InitializeContextRetFlags flags, expiry);
-            _context = new_context;
-            Expiry = expiry.QuadPart;
-            Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
-            Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
-            return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
-        }
-
-        private void Dispose(bool _)
-        {
-            if (_context != null)
-            {
-                SecurityNativeMethods.DeleteSecurityContext(_context);
-                _context = null;
-            }
-        }
-
+        #region IDisposable Implementation
         /// <summary>
         /// Dispose the client context.
         /// </summary>
@@ -350,5 +360,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             Dispose(false);
         }
+        #endregion
     }
 }
