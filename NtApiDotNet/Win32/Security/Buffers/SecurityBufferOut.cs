@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
         public override byte[] ToArray()
         {
             if (_array == null)
-                throw new InvalidOperationException("Can't access return until it's been populated.");
+                throw new InvalidOperationException("Can't access buffer until it's been populated.");
             return _array;
         }
 
