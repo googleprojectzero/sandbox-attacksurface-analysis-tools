@@ -255,12 +255,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
-        /// Export the security context.
+        /// Export and delete the current security context.
         /// </summary>
         /// <returns>The exported security context.</returns>
+        /// <remarks>The security context will not longer be usable afterwards.</remarks>
         public ExportedSecurityContext Export()
         {
-            return SecurityContextUtils.ExportContext(_context, SecPkgContextExportFlags.None, _creds.PackageName);
+            var context = SecurityContextUtils.ExportContext(_context, SecPkgContextExportFlags.DeleteOld, _creds.PackageName, false);
+            Dispose();
+            return context;
         }
 
         private bool GenServerContext(AuthenticationToken token)

@@ -112,6 +112,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no);
 
         /// <summary>
+        /// Export and delete the current security context.
+        /// </summary>
+        /// <returns>The exported security context.</returns>
+        /// <remarks>The security context will not longer be usable afterwards.</remarks>
+        ExportedSecurityContext Export();
+
+        /// <summary>
         /// Query the context's package info.
         /// </summary>
         /// <returns>The authentication package info,</returns>

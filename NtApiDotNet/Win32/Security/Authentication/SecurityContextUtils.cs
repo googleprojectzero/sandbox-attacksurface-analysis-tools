@@ -199,14 +199,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbSecurityTrailer;
         }
 
-        internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package)
+        internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package, bool client)
         {
             SecBuffer buffer = new SecBuffer() { BufferType = SecurityBufferType.Empty };
             try
             {
-                SecurityNativeMethods.ExportSecurityContext(context, SecPkgContextExportFlags.None,
+                SecurityNativeMethods.ExportSecurityContext(context, export_flags,
                     buffer, out SafeKernelObjectHandle token).CheckResult();
-                return new ExportedSecurityContext(package, buffer.ToArray(), NtToken.FromHandle(token));
+                return new ExportedSecurityContext(package, buffer.ToArray(), !token.IsInvalid ? NtToken.FromHandle(token) : null, client);
             }
             finally
             {

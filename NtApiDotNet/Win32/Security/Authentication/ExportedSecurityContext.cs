@@ -21,6 +21,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// </summary>
     public sealed class ExportedSecurityContext : IDisposable
     {
+        private readonly bool _client;
+
         /// <summary>
         /// The name of the package for this security context.
         /// </summary>
@@ -34,11 +36,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public NtToken Token { get; }
 
-        internal ExportedSecurityContext(string package, byte[] context, NtToken token)
+        internal ExportedSecurityContext(string package, byte[] context, NtToken token, bool client)
         {
             Package = package;
             SerializedContext = context;
             Token = token;
+            _client = client;
         }
 
         /// <summary>

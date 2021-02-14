@@ -242,6 +242,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Export and delete the current security context.
+        /// </summary>
+        /// <returns>The exported security context.</returns>
+        /// <remarks>The security context will not longer be usable afterwards.</remarks>
+        public ExportedSecurityContext Export()
+        {
+            var context = SecurityContextUtils.ExportContext(_context, SecPkgContextExportFlags.DeleteOld, _creds.PackageName, true);
+            Dispose();
+            return context;
+        }
+
+        /// <summary>
         /// Get the name of the authentication package.
         /// </summary>
         public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
