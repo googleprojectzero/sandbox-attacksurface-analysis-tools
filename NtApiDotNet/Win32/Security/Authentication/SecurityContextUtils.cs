@@ -59,8 +59,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return list.AddResource(new SecBufferDesc(buffers.ToArray()));
         }
 
-        internal static void UpdateBuffers(this IList<SecurityBuffer> buffers, IList<SecBuffer> update_buffers)
+        internal static void UpdateBuffers(this IList<SecurityBuffer> buffers, SecBufferDesc desc)
         {
+            var update_buffers = desc.ToArray();
             for (int i = 0; i < buffers.Count; ++i)
             {
                 buffers[i].FromBuffer(update_buffers[i]);
@@ -83,7 +84,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 List<SecBuffer> buffers = sig_buffers.ToBufferList(list);
                 SecBufferDesc desc = buffers.ToDesc(list);
                 SecurityNativeMethods.MakeSignature(context, flags, desc, sequence_no).CheckResult();
-                sig_buffers.UpdateBuffers(desc.ToArray());
+                sig_buffers.UpdateBuffers(desc);
                 return signature_buffer.ToArray();
             }
         }
@@ -154,7 +155,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 var buffers = sig_buffers.ToBufferList(list);
                 var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
-                sig_buffers.UpdateBuffers(desc.ToArray());
+                sig_buffers.UpdateBuffers(desc);
                 return out_sig_buffer.ToArray();
             }
         }
@@ -183,7 +184,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 var buffers = sig_buffers.ToBufferList(list);
                 var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.DecryptMessage(context, desc, sequence_no, out _).CheckResult();
-                sig_buffers.UpdateBuffers(desc.ToArray());
+                sig_buffers.UpdateBuffers(desc);
             }
         }
 
@@ -238,7 +239,42 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
                 if (result >= 0)
                 {
-                    output?.UpdateBuffers(out_buffer_desc.ToArray());
+                    output?.UpdateBuffers(out_buffer_desc);
+                }
+
+                return result;
+            }
+        }
+
+        internal static SecStatusCode AcceptSecurityContext(
+            CredentialHandle credential,
+            SecHandle context,
+            AcceptContextReqFlags req_attributes,
+            SecDataRep data_rep,
+            IList<SecurityBuffer> input,
+            SecHandle new_context,
+            IList<SecurityBuffer> output,
+            out AcceptContextRetFlags ret_attributes,
+            LargeInteger expiry)
+        {
+            using (DisposableList list = new DisposableList())
+            {
+                var input_buffers = input?.ToBufferList(list);
+                var output_buffers = output?.ToBufferList(list);
+
+                var in_buffer_desc = input_buffers.ToDesc(list);
+                var out_buffer_desc = output_buffers.ToDesc(list);
+
+                SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(credential.CredHandle, context,
+                    in_buffer_desc, req_attributes, data_rep, new_context, out_buffer_desc, out ret_attributes, expiry).CheckResult();
+                if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
+                {
+                    SecurityNativeMethods.CompleteAuthToken(context, out_buffer_desc).CheckResult();
+                }
+
+                if (result >= 0)
+                {
+                    output?.UpdateBuffers(out_buffer_desc);
                 }
 
                 return result;

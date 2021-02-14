@@ -265,34 +265,31 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         private bool GenServerContext(AuthenticationToken token)
         {
-            using (DisposableList list = new DisposableList())
+            var token_buffer = new SecurityBufferOut(SecurityBufferType.Token, 64 * 1024);
+            var output_buffers = new[] { token_buffer };
+            var input_buffers = new List<SecurityBuffer>();
+
+            if (token != null)
             {
-                SecBuffer out_sec_buffer = list.AddResource(new SecBuffer(SecurityBufferType.Token, 64*1024));
-                SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
-
-                List<SecBuffer> buffers = new List<SecBuffer>();
-                buffers.Add(list.AddResource(new SecBuffer(SecurityBufferType.Token, token.ToArray())));
-                if (_channel_binding != null)
-                {
-                    buffers.Add(list.AddResource(SecBuffer.CreateForChannelBinding(_channel_binding)));
-                }
-                SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(buffers.ToArray()));
-
-                LargeInteger expiry = new LargeInteger();
-                SecHandle new_context = _context ?? new SecHandle();
-                SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, _context,
-                    in_buffer_desc, _req_flags, _data_rep, new_context, out_buffer_desc, out AcceptContextRetFlags context_attr, expiry).CheckResult();
-                _context = new_context;
-                Flags = context_attr;
-                Expiry = expiry.QuadPart;
-                if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
-                {
-                    SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();
-                }
-
-                Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, false, out_buffer_desc.ToArray()[0].ToArray());
-                return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+                input_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray()));
             }
+
+            if (_channel_binding != null)
+            {
+                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
+            }
+
+            LargeInteger expiry = new LargeInteger();
+            SecHandle new_context = _context ?? new SecHandle();
+            SecStatusCode result = SecurityContextUtils.AcceptSecurityContext(_creds, _context,
+                _req_flags, _data_rep, input_buffers, new_context, output_buffers, 
+                out AcceptContextRetFlags context_attr, expiry).CheckResult();
+            _context = new_context;
+            Flags = context_attr;
+            Expiry = expiry.QuadPart;
+
+            Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, false, token_buffer.ToArray());
+            return !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
         }
 
         private void Dispose(bool _)
