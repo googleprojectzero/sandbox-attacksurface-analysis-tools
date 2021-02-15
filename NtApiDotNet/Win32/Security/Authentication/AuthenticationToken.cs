@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Digest;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
@@ -100,6 +101,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 client, out NegotiateAuthenticationToken nego_token))
             {
                 return nego_token;
+            }
+
+            if (AuthenticationPackage.CheckDigest(package_name) &&
+                DigestAuthenticationToken.TryParse(token, out DigestAuthenticationToken digest_token))
+            {
+                return digest_token;
             }
 
             if (ASN1AuthenticationToken.TryParse(token, token_count, 

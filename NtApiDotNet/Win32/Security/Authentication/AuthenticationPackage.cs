@@ -154,5 +154,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return package_name.Equals(NEGOSSP_NAME, StringComparison.OrdinalIgnoreCase);
         }
+
+        internal static bool CheckDigest(string package_name)
+        {
+            return package_name.Equals(DIGEST_NAME, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

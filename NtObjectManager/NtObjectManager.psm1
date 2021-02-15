@@ -7792,7 +7792,7 @@ The authentication client.
 The authentication server to extract token from.
 .PARAMETER Token
 The next authentication token.
-.PARAMETER Buffers
+.PARAMETER Buffer
 A list of input buffers.
 .PARAMETER Empty
 Specify to update with no input buffers.
@@ -7811,27 +7811,24 @@ function Update-LsaClientContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [Parameter(Mandatory, ParameterSetName="FromEmpty")]
         [switch]$Empty
     )
 
-    $next_token = switch($PSCmdlet.ParameterSetName) {
+    switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
-            $Server.Token
+            $Client.Continue($Server.Token)
         }
         "FromToken" {
-            $Token
+            $Client.Continue($Token)
         }
         "FromBuffers" {
-            $Buffers
+            $Client.Continue($Buffer)
         }
-    }
-
-    if ($null -eq $next_token) {
-        $Client.Continue()
-    } else {
-        $Client.Continue($next_token)
+        "FromEmpty" {
+            $Client.Continue()
+        }
     }
 }
 
@@ -7846,7 +7843,7 @@ The authentication server.
 The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
-.PARAMETER Buffers
+.PARAMETER Buffer
 A list of input buffers.
 .PARAMETER Empty
 Specify to update with no input buffers.
@@ -7865,27 +7862,24 @@ function Update-LsaServerContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffers,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [Parameter(Mandatory, ParameterSetName="FromEmpty")]
         [switch]$Empty
     )
 
-    $next_token = switch($PSCmdlet.ParameterSetName) {
+    switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
-            $Client.Token
+            $Server.Continue($Client.Token)
         }
         "FromToken" {
-            $Token
+            $Server.Continue($Token)
         }
         "FromBuffers" {
-            $Buffers
+            $Server.Continue($Buffer)
         }
-    }
-
-    if ($null -eq $next_token) {
-        $Server.Continue()
-    } else {
-        $Server.Continue($next_token)
+        "FromEmpty" {
+            $Server.Continue()
+        }
     }
 }
 
