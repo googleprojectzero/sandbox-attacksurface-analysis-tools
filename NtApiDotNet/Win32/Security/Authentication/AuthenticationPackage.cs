@@ -51,6 +51,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public const string DIGEST_NAME = "WDigest";
 
         /// <summary>
+        /// Authentication package name for SChannel.
+        /// </summary>
+        public const string SCHANNEL_NAME = "SChannel";
+
+        /// <summary>
+        /// Authentication package name for CredSSP.
+        /// </summary>
+        public const string CREDSSP_NAME = "CredSSP";
+
+        /// <summary>
         /// Capabilities of the package.
         /// </summary>
         public SecPkgCapabilityFlag Capabilities { get; }
@@ -158,6 +168,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         internal static bool CheckDigest(string package_name)
         {
             return package_name.Equals(DIGEST_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckSChannel(string package_name)
+        {
+            return package_name.Equals(SCHANNEL_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckCredSSP(string package_name)
+        {
+            return package_name.Equals(CREDSSP_NAME, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

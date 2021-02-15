@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.Security.Authentication.Digest;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+using NtApiDotNet.Win32.Security.Authentication.SChannel;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -107,6 +108,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 DigestAuthenticationToken.TryParse(token, out DigestAuthenticationToken digest_token))
             {
                 return digest_token;
+            }
+
+            if ((AuthenticationPackage.CheckSChannel(package_name) || AuthenticationPackage.CheckCredSSP(package_name))
+                && SChannelAuthenticationToken.TryParse(token, token_count, client, out SChannelAuthenticationToken schannel_token))
+            {
+                return schannel_token;
             }
 
             if (ASN1AuthenticationToken.TryParse(token, token_count, 
