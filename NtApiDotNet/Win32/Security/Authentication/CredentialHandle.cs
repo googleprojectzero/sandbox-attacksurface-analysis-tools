@@ -81,8 +81,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             using (var list = new DisposableList())
             {
-                var buffer = credentials?.ToBuffer(list, package);
-                return new CredentialHandle(principal, package, auth_id, cred_use_flag, buffer);
+                using (var buffer = credentials?.ToBuffer(list, package))
+                {
+                    return new CredentialHandle(principal, package, auth_id, cred_use_flag, buffer);
+                }
             }
         }
 
