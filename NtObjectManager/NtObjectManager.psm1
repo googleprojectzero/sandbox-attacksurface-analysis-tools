@@ -7794,6 +7794,8 @@ The authentication server to extract token from.
 The next authentication token.
 .PARAMETER Buffer
 A list of input buffers.
+.PARAMETER OutputBuffer
+A list of additional output buffers. Does not include token buffer.
 .PARAMETER Empty
 Specify to update with no input buffers.
 .INPUTS
@@ -7812,6 +7814,8 @@ function Update-LsaClientContext {
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [Parameter(ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [Parameter(Mandatory, ParameterSetName="FromEmpty")]
         [switch]$Empty
     )
@@ -7824,7 +7828,7 @@ function Update-LsaClientContext {
             $Client.Continue($Token)
         }
         "FromBuffers" {
-            $Client.Continue($Buffer)
+            $Client.Continue($Buffer, $OutputBuffer)
         }
         "FromEmpty" {
             $Client.Continue()
@@ -7845,6 +7849,8 @@ The authentication client to extract token from.
 The next authentication token.
 .PARAMETER Buffer
 A list of input buffers.
+.PARAMETER OutputBuffer
+A list of additional output buffers. Does not include token buffer.
 .PARAMETER Empty
 Specify to update with no input buffers.
 .INPUTS
@@ -7863,6 +7869,8 @@ function Update-LsaServerContext {
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [Parameter(ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [Parameter(Mandatory, ParameterSetName="FromEmpty")]
         [switch]$Empty
     )
@@ -7875,7 +7883,7 @@ function Update-LsaServerContext {
             $Server.Continue($Token)
         }
         "FromBuffers" {
-            $Server.Continue($Buffer)
+            $Server.Continue($Buffer, $OutputBuffer)
         }
         "FromEmpty" {
             $Server.Continue()
