@@ -13696,6 +13696,8 @@ function New-LsaSecurityBuffer {
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromEmpty")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Byte,
@@ -13704,7 +13706,13 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
         [byte[]]$ChannelBinding,
         [Parameter(Mandatory, ParameterSetName="FromToken")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [parameter(Mandatory, ParameterSetName="FromEmpty")]
+        [switch]$Empty,
+        [parameter(Mandatory, ParameterSetName="FromString")]
+        [string]$String,
+        [parameter(ParameterSetName="FromString")]
+        [string]$Encoding = "Unicode"
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -13719,6 +13727,12 @@ function New-LsaSecurityBuffer {
         }
         "FromToken" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new("Token", $Token.ToArray())
+        }
+        "FromEmpty" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferEmpty]::new($Type)
+        }
+        "FromString" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($Type, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
         }
     }
 }
