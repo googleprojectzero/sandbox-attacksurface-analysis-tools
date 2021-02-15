@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             var output_buffers = new[] { token_buffer };
-            
+
             if (_channel_binding != null)
             {
                 input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
