@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System.IO;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -61,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 token = new ASN1AuthenticationToken(data);
                 return true;
             }
-            catch (EndOfStreamException)
+            catch (Exception)
             {
                 return false;
             }
