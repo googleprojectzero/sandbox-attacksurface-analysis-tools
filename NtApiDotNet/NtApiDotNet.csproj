@@ -413,8 +413,12 @@
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
     <Compile Include="Win32\Security\Authentication\Digest\DigestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
-    <Compile Include="Win32\Security\Authentication\SChannel\SChannelAuthenticationToken.cs" />
-    <Compile Include="Win32\Security\Authentication\SChannel\TlsRecordType.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\NativeStructs.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentialsFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\TlsRecord.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\TlsRecordType.cs" />
     <Compile Include="Win32\Security\Authentication\SecurityQualityOfProtectionFlags.cs" />
     <Compile Include="Win32\Security\Authentication\ExportedSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />

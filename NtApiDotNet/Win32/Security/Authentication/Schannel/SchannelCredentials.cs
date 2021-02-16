@@ -1,0 +1,86 @@
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+
+namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+{
+    /// <summary>
+    /// Credentials for the Schannel package.
+    /// </summary>
+    public sealed class SchannelCredentials : AuthenticationCredentials, IDisposable
+    {
+        private readonly List<X509Certificate2> _certs = new List<X509Certificate2>();
+
+        /// <summary>
+        /// Lifespan of a session in milliseconds.
+        /// </summary>
+        public int SessionLifespan { get; set; }
+
+        /// <summary>
+        /// Specify flags for credentials.
+        /// </summary>
+        public SchannelCredentialsFlags Flags { get; set; }
+
+        /// <summary>
+        /// Add a certificate the the credentials. This should contain a private key.
+        /// </summary>
+        /// <param name="certificate">The certificate to add.</param>
+        public void AddCertificate(X509Certificate certificate)
+        {
+            X509Certificate2 cert2 = new X509Certificate2(certificate);
+            if (!cert2.HasPrivateKey)
+                throw new ArgumentException("Must provide a certificate with a private key.", nameof(certificate));
+            _certs.Add(new X509Certificate2(certificate));
+        }
+
+        /// <summary>
+        /// Dispose the credentials.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var cert in _certs)
+            {
+                // X509Certificate only supports IDisposable from 4.6. Try manually.
+                if (cert is IDisposable dispose)
+                {
+                    dispose.Dispose();
+                }
+            }
+        }
+
+        internal override SafeBuffer ToBuffer(DisposableList list, string package)
+        {
+            SCHANNEL_CRED creds = new SCHANNEL_CRED
+            {
+                dwVersion = SCHANNEL_CRED.SCHANNEL_CRED_VERSION,
+                dwSessionLifespan = SessionLifespan,
+                dwFlags = Flags
+            };
+            if (_certs.Count > 0)
+            {
+                IntPtr[] cred_handles = _certs.Select(c => c.Handle).ToArray();
+                var array_buffer = cred_handles.ToBuffer();
+                creds.cCreds = cred_handles.Length;
+                creds.paCred = array_buffer.DangerousGetHandle();
+            }
+
+            return creds.ToBuffer();
+        }
+    }
+}

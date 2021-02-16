@@ -7626,7 +7626,43 @@ function Get-LsaCredential {
     else {
         $creds.Password = $SecurePassword
     }
-    $creds | Write-Output
+    $creds
+}
+
+<#
+.SYNOPSIS
+Get Schannel credentials.
+.DESCRIPTION
+This cmdlet gets Schannel credentials.
+.PARAMETER Flags
+The flags for the credentials.
+.PARAMETER SessionLifespan
+The lifespan of a session in milliseconds.
+.PARAMETER Certificate
+The list of certificates to use. Needs to have a private key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials
+.EXAMPLE
+$creds = Get-LsaSchannelCredential -Certificate $cert
+Get credentials with a certificate.
+#>
+function Get-LsaSchannelCredential {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentialsFlags]$Flags = 0,
+        [int]$SessionLifespan = 0,
+        [X509Certificate[]]$Certificate
+    )
+
+    $creds = [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]::new()
+    $creds.Flags = $Flags
+    $creds.SessionLifespan = $SessionLifespan
+    foreach($cert in $Certificate) {
+        $creds.AddCertificate($cert)
+    }
+    $creds
 }
 
 <#

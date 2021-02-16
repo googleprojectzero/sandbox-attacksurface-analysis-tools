@@ -1,39 +1,35 @@
-﻿using NtApiDotNet.Utilities.Text;
-using System;
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using NtApiDotNet.Utilities.Text;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace NtApiDotNet.Win32.Security.Authentication.SChannel
+namespace NtApiDotNet.Win32.Security.Authentication.Schannel
 {
     /// <summary>
-    /// Authentication token for SChannel and CredSSP.
+    /// Authentication token for Schannel and CredSSP.
     /// </summary>
     /// <remarks>This is a simple parser for the TLS record format.</remarks>
-    public class SChannelAuthenticationToken : AuthenticationToken
+    public class SchannelAuthenticationToken : AuthenticationToken
     {
         #region Public Properties
         /// <summary>
-        /// TLS record type.
+        /// List of TLS records.
         /// </summary>
-        public TlsRecordType RecordType { get; }
-        
-        /// <summary>
-        /// Major version of protocol.
-        /// </summary>
-        public int MajorVersion { get; }
-
-        /// <summary>
-        /// Minor version of protocol.
-        /// </summary>
-        public int MinorVersion { get; }
-
-        /// <summary>
-        /// The record data.
-        /// </summary>
-        public byte[] RecordData { get; }
+        public IReadOnlyList<TlsRecord> Records { get; }
         #endregion
 
         #region Public Methods
@@ -44,26 +40,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.SChannel
         public override string Format()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine($"SChannel: {RecordType}");
-            builder.AppendLine($"Version: {MajorVersion}.{MinorVersion}");
-            builder.AppendLine("Record Data:");
-            HexDumpBuilder hex_builder = new HexDumpBuilder(true, true, true, false, 0);
-            hex_builder.Append(RecordData);
-            hex_builder.Complete();
-            builder.AppendLine(hex_builder.ToString());
+            int index = 0;
+            foreach (var record in Records)
+            {
+                builder.AppendLine($"SChannel Record {index++}");
+                builder.AppendLine($"Type   : {record.Type}");
+                builder.AppendLine($"Version: {record.Version}");
+                builder.AppendLine("Data    :");
+                HexDumpBuilder hex_builder = new HexDumpBuilder(true, true, true, false, 0);
+                hex_builder.Append(record.Data);
+                hex_builder.Complete();
+                builder.AppendLine(hex_builder.ToString());
+            }
             return builder.ToString();
         }
         #endregion
 
         #region Constructors
 
-        internal SChannelAuthenticationToken(byte[] data, TlsRecordType record_type, 
-            int major_version, int minor_version, byte[] record_data) : base(data)
+        internal SchannelAuthenticationToken(byte[] data, List<TlsRecord> records) : base(data)
         {
-            RecordType = record_type;
-            MajorVersion = major_version;
-            MinorVersion = minor_version;
-            RecordData = record_data;
+            Records = records.AsReadOnly();
         }
 
         #endregion
@@ -77,19 +74,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.SChannel
         /// <param name="client">True if this is a token from a client.</param>
         /// <param name="token_count">The token count number.</param>
         /// <returns>True if parsed successfully.</returns>
-        internal static bool TryParse(byte[] data, int token_count, bool client, out SChannelAuthenticationToken token)
+        internal static bool TryParse(byte[] data, int token_count, bool client, out SchannelAuthenticationToken token)
         {
             token = null;
-            if (data.Length < 5)
-                return false;
-
-            int length = (data[3] << 8) | data[4];
-            if (data.Length != (length + 5))
-                return false;
-            byte[] record_data = new byte[length];
-            Buffer.BlockCopy(data, 5, record_data, 0, record_data.Length);
-            token = new SChannelAuthenticationToken(data, (TlsRecordType)data[0],
-                data[1], data[2], record_data);
+            MemoryStream stm = new MemoryStream(data);
+            BinaryReader reader = new BinaryReader(stm);
+            List<TlsRecord> records = new List<TlsRecord>();
+            while (stm.RemainingLength() > 0)
+            {
+                if (!TlsRecord.TryParse(reader, out TlsRecord record))
+                {
+                    return false;
+                }
+                records.Add(record);
+            }
+            token = new SchannelAuthenticationToken(data, records);
             return true;
         }
         #endregion
