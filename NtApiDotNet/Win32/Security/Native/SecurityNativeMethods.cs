@@ -758,6 +758,11 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeLsaMemoryBuffer Names
         );
 
+        [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]
+        internal static extern bool CertFreeCertificateContext(
+            IntPtr pCertContext
+        );
+
         public static SecStatusCode CheckResult(this SecStatusCode result)
         {
             ((NtStatus)(uint)result).ToNtException();

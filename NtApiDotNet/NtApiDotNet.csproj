@@ -415,7 +415,10 @@
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentials.cs" />
-    <Compile Include="Win32\Security\Authentication\Schannel\NativeStructs.cs" />
+    <Compile Include="Win32\Security\Native\CredSspExFlags.cs" />
+    <Compile Include="Win32\Security\Native\CREDSSP_CRED.cs" />
+    <Compile Include="Win32\Security\Native\CREDSSP_SUBMIT_TYPE.cs" />
+    <Compile Include="Win32\Security\Native\CREDSSP_CRED_EX.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentialsFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\TlsRecord.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\TlsRecordType.cs" />
@@ -497,6 +500,8 @@
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ERROR.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_TYPE.cs" />
+    <Compile Include="Win32\Security\Native\SCHANNEL_CRED.cs" />
+    <Compile Include="Win32\Security\Native\SCH_CREDENTIALS.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextExportFlags.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_LastClientTokenStatus.cs" />

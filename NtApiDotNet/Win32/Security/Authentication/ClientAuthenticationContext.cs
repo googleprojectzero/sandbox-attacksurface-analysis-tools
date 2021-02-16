@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -102,6 +103,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the size of the security trailer for this context.
         /// </summary>
         public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(Context);
+
+        /// <summary>
+        /// Get the remote certificate. Only used for Schannel related authentication.
+        /// </summary>
+        public X509Certificate2 RemoteCertificate => SecurityContextUtils.GetRemoteCertificate(Context);
 
         /// <summary>
         /// Get the last token status for the client context.

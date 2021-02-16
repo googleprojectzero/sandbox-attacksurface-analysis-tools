@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -348,6 +349,22 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 }
             }
             return new byte[0];
+        }
+
+        internal static X509Certificate2 GetRemoteCertificate(SecHandle context)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<IntPtr>())
+            {
+                SecurityNativeMethods.QueryContextAttributesEx(context, SECPKG_ATTR.REMOTE_CERT_CONTEXT, buffer, buffer.Length).CheckResult();
+                try
+                {
+                    return new X509Certificate2(buffer.Result);
+                }
+                finally
+                {
+                    SecurityNativeMethods.CertFreeCertificateContext(buffer.Result);
+                }
+            }
         }
     }
 }
