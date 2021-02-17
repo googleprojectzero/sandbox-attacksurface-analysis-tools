@@ -28,10 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         #region Private Members
         private readonly CredentialHandle _creds;
-        private readonly InitializeContextReqFlags _req_attributes;
-        private readonly string _target;
-        private readonly SecDataRep _data_rep;
-        private readonly byte[] _channel_binding;
         private int _token_count;
         private SecHandle _context;
 
@@ -39,21 +35,23 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
-            if (_channel_binding != null)
+            if (ChannelBinding != null)
             {
-                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
+                input_buffers.Add(new SecurityBufferChannelBinding(ChannelBinding));
             }
+
+            string target_name = string.IsNullOrEmpty(Target) ? null : Target;
 
             LargeInteger expiry = new LargeInteger();
             SecHandle new_context = _context ?? new SecHandle();
-            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target,
-                _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context,
+            SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, target_name,
+                RequestAttributes | InitializeContextReqFlags.AllocateMemory, DataRepresentation, input_buffers, new_context,
                 output_buffers, out InitializeContextRetFlags flags, expiry, throw_on_error);
             if (!result.IsSuccess())
                 return result;
             _context = new_context;
             Expiry = expiry.QuadPart;
-            Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
+            ReturnAttributes = flags & ~InitializeContextRetFlags.AllocatedMemory;
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
             Done = !(result == SecStatusCode.SEC_I_CONTINUE_NEEDED || result == SecStatusCode.SEC_I_COMPLETE_AND_CONTINUE);
             return result;
@@ -83,9 +81,35 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool Done { get; private set; }
 
         /// <summary>
+        /// Current request attribute flags.
+        /// </summary>
+        public InitializeContextReqFlags RequestAttributes { get; set; }
+
+        /// <summary>
+        /// Current return attribute flags.
+        /// </summary>
+        public InitializeContextRetFlags ReturnAttributes { get; private set; }
+
+        /// <summary>
+        /// Current data representation.
+        /// </summary>
+        public SecDataRep DataRepresentation { get; set; }
+
+        /// <summary>
+        /// Current target name.
+        /// </summary>
+        public string Target { get; set; }
+
+        /// <summary>
+        /// Current channel binding.
+        /// </summary>
+        public byte[] ChannelBinding { get; set; }
+
+        /// <summary>
         /// Current status flags.
         /// </summary>
-        public InitializeContextRetFlags Flags { get; private set; }
+        [Obsolete("Use ReturnAttributes")]
+        public InitializeContextRetFlags Flags => ReturnAttributes;
 
         /// <summary>
         /// Expiry of the authentication.
@@ -141,11 +165,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             string target, byte[] channel_binding, SecDataRep data_rep, bool initialize)
         {
             _creds = creds;
-            _req_attributes = req_attributes & ~InitializeContextReqFlags.AllocateMemory;
-            _target = target == string.Empty ? null : target;
-            _data_rep = data_rep;
             _token_count = 0;
-            _channel_binding = channel_binding;
+            RequestAttributes = req_attributes;
+            Target = target;
+            DataRepresentation = data_rep;
+            ChannelBinding = channel_binding;
             if (initialize)
             {
                 Continue();
@@ -255,8 +279,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         /// <param name="input_buffers">Input buffers for the continue. Does not contain a token.</param>
         /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <remarks>This sends the input buffers directly to the initialize call, it does not contain any token.</remarks>
-        public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
+        public SecStatusCode Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output, bool throw_on_error)
         {
             if (input_buffers is null)
             {
@@ -268,7 +293,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(additional_output));
             }
 
-            CallInitialize(input_buffers.ToList(), additional_output.ToList(), true);
+            return CallInitialize(input_buffers.ToList(), additional_output.ToList(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Continue the authentication without any token.
+        /// </summary>
+        /// <param name="input_buffers">Input buffers for the continue. Does not contain a token.</param>
+        /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
+        /// <remarks>This sends the input buffers directly to the initialize call, it does not contain any token.</remarks>
+        public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
+        {
+            Continue(input_buffers, additional_output, true);
         }
 
         /// <summary>
