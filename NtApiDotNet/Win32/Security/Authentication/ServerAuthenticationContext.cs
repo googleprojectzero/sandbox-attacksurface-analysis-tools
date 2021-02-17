@@ -220,8 +220,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         /// <param name="input_buffers">Additional input buffers for the continue. Does not contain a token.</param>
         /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <remarks>This sends the input buffers directly to the initialize call, it does not contain any token.</remarks>
-        public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
+        public SecStatusCode Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output, bool throw_on_error)
         {
             if (input_buffers is null)
             {
@@ -233,7 +234,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(additional_output));
             }
 
-            CallAccept(input_buffers.ToList(), additional_output.ToList(), true);
+            return CallAccept(input_buffers.ToList(), additional_output.ToList(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Continue the authentication.
+        /// </summary>
+        /// <param name="input_buffers">Additional input buffers for the continue. Does not contain a token.</param>
+        /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
+        /// <remarks>This sends the input buffers directly to the initialize call, it does not contain any token.</remarks>
+        public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
+        {
+            Continue(input_buffers, additional_output, true);
         }
 
         /// <summary>
@@ -241,7 +253,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public void Continue()
         {
-            CallAccept(new List<SecurityBuffer>(), new List<SecurityBuffer>(), true);
+            Continue(new SecurityBuffer[0], new SecurityBuffer[0]);
         }
 
         /// <summary>
