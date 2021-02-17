@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private int _token_count;
         private SecHandle _context;
 
-        private void CallInitialize(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers)
+        private SecStatusCode CallInitialize(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers, bool throw_on_error)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
@@ -48,12 +48,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecHandle new_context = _context ?? new SecHandle();
             SecStatusCode result = SecurityContextUtils.InitializeSecurityContext(_creds, _context, _target,
                 _req_attributes | InitializeContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context,
-                output_buffers, out InitializeContextRetFlags flags, expiry);
+                output_buffers, out InitializeContextRetFlags flags, expiry, throw_on_error);
+            if (!result.IsSuccess())
+                return result;
             _context = new_context;
             Expiry = expiry.QuadPart;
             Flags = flags & ~InitializeContextRetFlags.AllocatedMemory;
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, true, token_buffer.ToArray());
-            Done = !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+            Done = !(result == SecStatusCode.SEC_I_CONTINUE_NEEDED || result == SecStatusCode.SEC_I_COMPLETE_AND_CONTINUE);
+            return result;
         }
 
         private SecHandle Context => _context ?? throw new InvalidOperationException("Client authentication context hasn't been initialized.");
@@ -265,7 +268,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(additional_output));
             }
 
-            CallInitialize(input_buffers.ToList(), additional_output.ToList());
+            CallInitialize(input_buffers.ToList(), additional_output.ToList(), true);
         }
 
         /// <summary>
@@ -273,7 +276,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public void Continue()
         {
-            CallInitialize(new List<SecurityBuffer>(), new List<SecurityBuffer>());
+            CallInitialize(new List<SecurityBuffer>(), new List<SecurityBuffer>(), true);
         }
 
         /// <summary>

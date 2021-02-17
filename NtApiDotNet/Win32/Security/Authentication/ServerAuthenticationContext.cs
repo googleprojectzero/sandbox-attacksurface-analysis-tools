@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private SecHandle _context;
         private int _token_count;
 
-        private void CallAccept(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers)
+        private SecStatusCode CallAccept(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers, bool throw_on_error)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
@@ -48,13 +48,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecHandle new_context = _context ?? new SecHandle();
             SecStatusCode result = SecurityContextUtils.AcceptSecurityContext(_creds, _context,
                 _req_flags | AcceptContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context, output_buffers,
-                out AcceptContextRetFlags context_attr, expiry).CheckResult();
+                out AcceptContextRetFlags context_attr, expiry, throw_on_error);
+            if (!result.IsSuccess())
+                return result;
             _context = new_context;
             Flags = context_attr & ~AcceptContextRetFlags.AllocatedMemory;
             Expiry = expiry.QuadPart;
 
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, false, token_buffer.ToArray());
-            Done = !(result == SecStatusCode.ContinueNeeded || result == SecStatusCode.CompleteAndContinue);
+            Done = !(result == SecStatusCode.SEC_I_CONTINUE_NEEDED || result == SecStatusCode.SEC_I_COMPLETE_AND_CONTINUE);
+            return result;
         }
 
 
@@ -71,7 +74,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_ClientSpecifiedTarget>())
             {
                 var result = SecurityNativeMethods.QueryContextAttributesEx(_context, SECPKG_ATTR.CLIENT_SPECIFIED_TARGET, buffer, buffer.Length);
-                if (result == SecStatusCode.Success)
+                if (result == SecStatusCode.SUCCESS)
                     return Marshal.PtrToStringUni(buffer.Result.sTargetName);
             }
             return string.Empty;
@@ -211,7 +214,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(additional_output));
             }
 
-            CallAccept(input_buffers.ToList(), additional_output.ToList());
+            CallAccept(input_buffers.ToList(), additional_output.ToList(), true);
         }
 
         /// <summary>
@@ -219,7 +222,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public void Continue()
         {
-            CallAccept(new List<SecurityBuffer>(), new List<SecurityBuffer>());
+            CallAccept(new List<SecurityBuffer>(), new List<SecurityBuffer>(), true);
         }
 
         /// <summary>

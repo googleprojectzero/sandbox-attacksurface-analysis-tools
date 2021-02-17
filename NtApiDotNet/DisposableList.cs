@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -134,6 +135,16 @@ namespace NtApiDotNet
         /// <param name="collection">A collection to initialize the list</param>
         public DisposableList(IEnumerable<IDisposable> collection) : base(collection)
         {
+        }
+
+        /// <summary>
+        /// Adds a delegate which will be called when the list is disposed.
+        /// </summary>
+        /// <param name="action">The delegate to call on dispose.</param>
+        /// <remarks>This can be used to add more complex disposable.</remarks>
+        public void CallOnDispose(Action action)
+        {
+            Add(new CallOnDispose(action));
         }
 
         internal SidAndAttributes[] CreateSidAndAttributes(IEnumerable<Sid> sids)

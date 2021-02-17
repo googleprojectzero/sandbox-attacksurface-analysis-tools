@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             List<AuthenticationPackage> packages = new List<AuthenticationPackage>();
             if (SecurityNativeMethods.EnumerateSecurityPackages(out int count,
-                out IntPtr ppPackageInfo) == SecStatusCode.Success)
+                out IntPtr ppPackageInfo) == SecStatusCode.SUCCESS)
             {
                 try
                 {

@@ -763,9 +763,14 @@ namespace NtApiDotNet.Win32.Security.Native
             IntPtr pCertContext
         );
 
-        public static SecStatusCode CheckResult(this SecStatusCode result)
+        internal static bool IsSuccess(this SecStatusCode result)
         {
-            ((NtStatus)(uint)result).ToNtException();
+            return (int)result >= 0;
+        }
+
+        internal static SecStatusCode CheckResult(this SecStatusCode result, bool throw_on_error = true)
+        {
+            ((NtStatus)(uint)result).ToNtException(throw_on_error);
             return result;
         }
     }
