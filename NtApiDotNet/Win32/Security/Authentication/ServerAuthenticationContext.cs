@@ -28,9 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         #region Private Members
         private readonly CredentialHandle _creds;
-        private readonly AcceptContextReqFlags _req_flags;
-        private readonly SecDataRep _data_rep;
-        private readonly byte[] _channel_binding;
         private SecHandle _context;
         private int _token_count;
 
@@ -39,20 +36,20 @@ namespace NtApiDotNet.Win32.Security.Authentication
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
 
-            if (_channel_binding != null)
+            if (ChannelBinding != null)
             {
-                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
+                input_buffers.Add(new SecurityBufferChannelBinding(ChannelBinding));
             }
 
             LargeInteger expiry = new LargeInteger();
             SecHandle new_context = _context ?? new SecHandle();
             SecStatusCode result = SecurityContextUtils.AcceptSecurityContext(_creds, _context,
-                _req_flags | AcceptContextReqFlags.AllocateMemory, _data_rep, input_buffers, new_context, output_buffers,
+                RequestAttributes | AcceptContextReqFlags.AllocateMemory, DataRepresentation, input_buffers, new_context, output_buffers,
                 out AcceptContextRetFlags context_attr, expiry, throw_on_error);
             if (!result.IsSuccess())
                 return result;
             _context = new_context;
-            Flags = context_attr & ~AcceptContextRetFlags.AllocatedMemory;
+            ReturnAttributes = context_attr & ~AcceptContextRetFlags.AllocatedMemory;
             Expiry = expiry.QuadPart;
 
             Token = AuthenticationToken.Parse(_creds.PackageName, _token_count++, false, token_buffer.ToArray());
@@ -94,9 +91,30 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool Done { get; private set; }
 
         /// <summary>
+        /// Current request attributes.
+        /// </summary>
+        public AcceptContextReqFlags RequestAttributes { get; set; }
+
+        /// <summary>
+        /// Current data representation.
+        /// </summary>
+        public SecDataRep DataRepresentation { get; set; }
+
+        /// <summary>
+        /// Current channel bindings.
+        /// </summary>
+        public byte[] ChannelBinding { get; set; }
+
+        /// <summary>
+        /// Current return attributes.
+        /// </summary>
+        public AcceptContextRetFlags ReturnAttributes { get; private set; }
+
+        /// <summary>
         /// Current status flags.
         /// </summary>
-        public AcceptContextRetFlags Flags { get; private set; }
+        [Obsolete("Use ReturnAttributes")]
+        public AcceptContextRetFlags Flags => ReturnAttributes;
 
         /// <summary>
         /// Expiry of the authentication.
@@ -127,6 +145,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the name of the authentication package.
         /// </summary>
         public string PackageName => SecurityContextUtils.GetPackageName(_context) ?? _creds.PackageName;
+
         #endregion
 
         #region Public Methods
@@ -354,10 +373,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
             byte[] channel_binding, SecDataRep data_rep)
         {
             _creds = creds;
-            _req_flags = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
-            _data_rep = data_rep;
+            RequestAttributes = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
+            DataRepresentation = data_rep;
             _token_count = 0;
-            _channel_binding = channel_binding;
+            ChannelBinding = channel_binding;
         }
 
         /// <summary>
