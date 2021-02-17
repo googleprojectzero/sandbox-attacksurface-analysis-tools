@@ -7921,7 +7921,7 @@ function Update-LsaServerContext {
             $Server.Continue($Token, $InputBuffer, $OutputBuffer)
         }
         "FromNoToken" {
-            $Server.Continue()
+            $Server.Continue($InputBuffer, $OutputBuffer)
         }
     }
     if ($PassThru) {
