@@ -153,43 +153,35 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="token">The client token to continue authentication.</param>
         public void Continue(AuthenticationToken token)
         {
-            if (token is null)
-            {
-                throw new ArgumentNullException(nameof(token));
-            }
-
-            var input_buffers = new List<SecurityBuffer>
-            {
-                new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray())
-            };
-
-            Continue(input_buffers);
+            Continue(token, new SecurityBuffer[0]);
         }
 
         /// <summary>
         /// Continue the authentication..
         /// </summary>
-        /// <param name="input_buffers">The input buffers for the continue.</param>
-        public void Continue(IEnumerable<SecurityBuffer> input_buffers)
+        /// <param name="token">The client token to continue authentication.</param>
+        /// <param name="additional_input">Specify additional input buffers, does not need to include the token.</param>
+        public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input)
         {
-            if (input_buffers is null)
-            {
-                throw new ArgumentNullException(nameof(input_buffers));
-            }
-
-            Continue(input_buffers.ToList(), new SecurityBuffer[0]);
+            Continue(token, additional_input, new SecurityBuffer[0]);
         }
 
         /// <summary>
         /// Continue the authentication.
         /// </summary>
-        /// <param name="input_buffers">The input buffers for the continue.</param>
+        /// <param name="token">The client token to continue authentication.</param>
+        /// <param name="additional_input">Specify additional input buffers, does not need to include the token.</param>
         /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
-        public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
+        public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input, IEnumerable<SecurityBuffer> additional_output)
         {
-            if (input_buffers is null)
+            if (token is null)
             {
-                throw new ArgumentNullException(nameof(input_buffers));
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            if (additional_input is null)
+            {
+                throw new ArgumentNullException(nameof(additional_input));
             }
 
             if (additional_output is null)
@@ -197,7 +189,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(additional_output));
             }
 
-            CallAccept(input_buffers.ToList(), additional_output.ToList());
+            var input_buffers = new List<SecurityBuffer>
+            {
+                new SecurityBufferInOut(SecurityBufferType.Token, token.ToArray())
+            };
+            input_buffers.AddRange(additional_input);
+
+            CallAccept(input_buffers, additional_output.ToList());
         }
 
         /// <summary>
@@ -205,7 +203,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public void Continue()
         {
-            Continue(new SecurityBuffer[0]);
+            CallAccept(new List<SecurityBuffer>(), new List<SecurityBuffer>());
         }
 
         /// <summary>

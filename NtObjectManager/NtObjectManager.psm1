@@ -7828,16 +7828,18 @@ The authentication client.
 The authentication server to extract token from.
 .PARAMETER Token
 The next authentication token.
-.PARAMETER Buffer
-A list of input buffers.
+.PARAMETER InputBuffer
+A list of additional input buffers. Does not include token buffer.
 .PARAMETER OutputBuffer
 A list of additional output buffers. Does not include token buffer.
-.PARAMETER Empty
-Specify to update with no input buffers.
+.PARAMETER NoToken
+Specify to update with no token or other buffers.
+.PARAMETER PassThru
+Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-None
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
 function Update-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
@@ -7848,27 +7850,30 @@ function Update-LsaClientContext {
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
-        [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
-        [Parameter(ParameterSetName="FromBuffers")]
+        [Parameter(ParameterSetName="FromToken")]
+        [Parameter(ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [Parameter(ParameterSetName="FromToken")]
+        [Parameter(ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
-        [Parameter(Mandatory, ParameterSetName="FromEmpty")]
-        [switch]$Empty
+        [Parameter(Mandatory, ParameterSetName="FromNoToken")]
+        [switch]$NoToken,
+        [switch]$PassThru
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
-            $Client.Continue($Server.Token)
+            $Client.Continue($Server.Token, $InputBuffer, $OutputBuffer)
         }
         "FromToken" {
-            $Client.Continue($Token)
+            $Client.Continue($Token, $InputBuffer, $OutputBuffer)
         }
-        "FromBuffers" {
-            $Client.Continue($Buffer, $OutputBuffer)
-        }
-        "FromEmpty" {
+        "FromNoToken" {
             $Client.Continue()
         }
+    }
+    if ($PassThru) {
+        $Client.Token
     }
 }
 
@@ -7883,16 +7888,18 @@ The authentication server.
 The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
-.PARAMETER Buffer
-A list of input buffers.
+.PARAMETER InputBuffer
+A list of additional input buffers. Does not include token buffer.
 .PARAMETER OutputBuffer
 A list of additional output buffers. Does not include token buffer.
-.PARAMETER Empty
-Specify to update with no input buffers.
+.PARAMETER NoToken
+Specify to update with no token or other buffers.
+.PARAMETER PassThru
+Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-None
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
 function Update-LsaServerContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
@@ -7903,27 +7910,30 @@ function Update-LsaServerContext {
         [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
-        [Parameter(Position = 1, Mandatory, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
-        [Parameter(ParameterSetName="FromBuffers")]
+        [Parameter(ParameterSetName="FromToken")]
+        [Parameter(ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [Parameter(ParameterSetName="FromToken")]
+        [Parameter(ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
-        [Parameter(Mandatory, ParameterSetName="FromEmpty")]
-        [switch]$Empty
+        [Parameter(Mandatory, ParameterSetName="FromNoToken")]
+        [switch]$NoToken,
+        [switch]$PassThru
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
-            $Server.Continue($Client.Token)
+            $Server.Continue($Client.Token, $InputBuffer, $OutputBuffer)
         }
         "FromToken" {
-            $Server.Continue($Token)
+            $Server.Continue($Token, $InputBuffer, $OutputBuffer)
         }
-        "FromBuffers" {
-            $Server.Continue($Buffer, $OutputBuffer)
-        }
-        "FromEmpty" {
+        "FromNoToken" {
             $Server.Continue()
         }
+    }
+    if ($PassThru) {
+        $Server.Token
     }
 }
 
