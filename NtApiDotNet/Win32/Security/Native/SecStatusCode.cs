@@ -15,7 +15,10 @@
 namespace NtApiDotNet.Win32.Security.Native
 {
 #pragma warning disable 1591
-    internal enum SecStatusCode : uint
+    /// <summary>
+    /// Status code for SSPI interface calls.
+    /// </summary>
+    public enum SecStatusCode : uint
     {
         SUCCESS = 0,
         SEC_I_CONTINUE_NEEDED = 0x00090312,
