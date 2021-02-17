@@ -153,6 +153,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input, IEnumerable<SecurityBuffer> additional_output);
 
         /// <summary>
+        /// Continue the authentication.
+        /// </summary>
+        /// <param name="input_buffers">Additional input buffers for the continue. Does not contain a token.</param>
+        /// <param name="additional_output">Specify additional output buffers, does not need to include the token.</param>
+        /// <remarks>This sends the input buffers directly to the initialize call, it does not contain any token.</remarks>
+        void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output);
+
+        /// <summary>
         /// Continue the authentication. Will not pass any buffers to the accept call.
         /// </summary>
         void Continue();

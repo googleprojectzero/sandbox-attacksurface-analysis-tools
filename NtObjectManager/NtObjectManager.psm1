@@ -7829,11 +7829,11 @@ The authentication server to extract token from.
 .PARAMETER Token
 The next authentication token.
 .PARAMETER InputBuffer
-A list of additional input buffers. Does not include token buffer.
+A list of additional input buffers.
 .PARAMETER OutputBuffer
-A list of additional output buffers. Does not include token buffer.
+A list of additional output buffers.
 .PARAMETER NoToken
-Specify to update with no token or other buffers.
+Specify to update with no token in the input buffer.
 .PARAMETER PassThru
 Specify to passthrough the new context token.
 .INPUTS
@@ -7850,14 +7850,10 @@ function Update-LsaClientContext {
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
-        [Parameter(ParameterSetName="FromToken")]
-        [Parameter(ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
-        [Parameter(ParameterSetName="FromToken")]
-        [Parameter(ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [Parameter(Mandatory, ParameterSetName="FromNoToken")]
         [switch]$NoToken,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [switch]$PassThru
     )
 
@@ -7869,7 +7865,7 @@ function Update-LsaClientContext {
             $Client.Continue($Token, $InputBuffer, $OutputBuffer)
         }
         "FromNoToken" {
-            $Client.Continue()
+            $Client.Continue($InputBuffer, $OutputBuffer)
         }
     }
     if ($PassThru) {
@@ -7889,11 +7885,11 @@ The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
 .PARAMETER InputBuffer
-A list of additional input buffers. Does not include token buffer.
+A list of additional input buffers.
 .PARAMETER OutputBuffer
-A list of additional output buffers. Does not include token buffer.
+A list of additional output buffers.
 .PARAMETER NoToken
-Specify to update with no token or other buffers.
+Specify to update with no token in the input buffer.
 .PARAMETER PassThru
 Specify to passthrough the new context token.
 .INPUTS
@@ -7910,14 +7906,10 @@ function Update-LsaServerContext {
         [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
-        [Parameter(ParameterSetName="FromToken")]
-        [Parameter(ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
-        [Parameter(ParameterSetName="FromToken")]
-        [Parameter(ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [Parameter(Mandatory, ParameterSetName="FromNoToken")]
         [switch]$NoToken,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [switch]$PassThru
     )
 
