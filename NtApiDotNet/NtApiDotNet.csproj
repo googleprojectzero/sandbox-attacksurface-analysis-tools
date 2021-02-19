@@ -412,6 +412,7 @@
     <Compile Include="Win32\SafeHandles\SafeServiceHandle.cs" />
     <Compile Include="Win32\Security\Authentication\ASN1AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationKey.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\CredSSPCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Digest\DigestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelAuthenticationToken.cs" />
@@ -495,6 +496,7 @@
     <Compile Include="Win32\Security\Buffers\SecurityBufferEmpty.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferInOut.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferOut.cs" />
+    <Compile Include="Win32\Security\Native\KERB_INTERACTIVE_LOGON.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_LOGON.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT.cs" />
     <Compile Include="Win32\Security\Native\LSA_SID_NAME_MAPPING_OPERATION_ADD_MULTIPLE_INPUT.cs" />

@@ -67,6 +67,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
 
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
+            if (!AuthenticationPackage.CheckSChannel(package) 
+                && !AuthenticationPackage.CheckCredSSP(package))
+            {
+                throw new ArgumentException("Can only use SchannelCredentials for the Schannel or CredSSP package.", nameof(package));
+            }
             SCHANNEL_CRED creds = new SCHANNEL_CRED
             {
                 dwVersion = SCHANNEL_CRED.SCHANNEL_CRED_VERSION,
@@ -76,7 +81,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
             if (_certs.Count > 0)
             {
                 IntPtr[] cred_handles = _certs.Select(c => c.Handle).ToArray();
-                var array_buffer = cred_handles.ToBuffer();
+                var array_buffer = list.AddResource(cred_handles.ToBuffer());
                 creds.cCreds = cred_handles.Length;
                 creds.paCred = array_buffer.DangerousGetHandle();
             }

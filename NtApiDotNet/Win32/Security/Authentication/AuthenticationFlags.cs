@@ -52,6 +52,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Default.
         /// </summary>
         Default = 0x00000004,
+        /// <summary>
+        /// Auto logon restricted. Don't use automatic credentials.
+        /// </summary>
+        AutoLogonRestricted = 0x00000010,
+        /// <summary>
+        /// Only process policy.
+        /// </summary>
+        ProcessPolicyOnly = 0x00000020,
     }
 
 #pragma warning disable 1591

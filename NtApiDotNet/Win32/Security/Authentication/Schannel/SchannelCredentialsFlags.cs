@@ -12,11 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Win32.Security.Authentication.Schannel
 {
     /// <summary>
     /// Flags for the Schannel credentials.
     /// </summary>
+    [Flags]
     public enum SchannelCredentialsFlags
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member

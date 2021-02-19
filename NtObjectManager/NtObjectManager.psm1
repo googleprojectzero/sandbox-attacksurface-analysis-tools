@@ -7667,6 +7667,36 @@ function Get-LsaSchannelCredential {
 
 <#
 .SYNOPSIS
+Get CredSSP credentials.
+.DESCRIPTION
+This cmdlet gets CredSSP credentials. This is only needed if you want both Schannel and user credentials. Otherwise
+just use Get-LsaSchannelCredential or Get-LsaCredential.
+.PARAMETER Schannel
+The Schannel credentials.
+.PARAMETER User
+The user credentials.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials
+.EXAMPLE
+$creds = Get-LsaCredSSPCredential -Schannel $schannel -User $user
+Get credentials from a schannel and user credentials object.
+#>
+function Get-LsaCredSSPCredential {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position=0)]
+        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]$Schannel,
+        [Parameter(Mandatory, Position=1)]
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$User
+    )
+
+    [NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials]::new($Schannel, $User)
+}
+
+<#
+.SYNOPSIS
 Create a new credentials handle.
 .DESCRIPTION
 This cmdlet creates a new authentication credentials handle.
