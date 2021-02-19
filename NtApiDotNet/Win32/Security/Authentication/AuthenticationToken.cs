@@ -97,11 +97,24 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 return kerb_token;
             }
 
-            if (AuthenticationPackage.CheckNegotiate(package_name) 
-                && NegotiateAuthenticationToken.TryParse(token, token_count, 
-                client, out NegotiateAuthenticationToken nego_token))
+            if (AuthenticationPackage.CheckNegotiate(package_name))
             {
-                return nego_token;
+                if (NegotiateAuthenticationToken.TryParse(token, token_count,
+                client, out NegotiateAuthenticationToken nego_token))
+                {
+                    return nego_token;
+                }
+                if (NtlmAuthenticationToken.TryParse(token, token_count, client, 
+                    out NtlmAuthenticationToken nego_ntlm_token))
+                {
+                    return nego_ntlm_token;
+                }
+                if (KerberosAuthenticationToken.TryParse(token, token_count, client, 
+                    out KerberosAuthenticationToken nego_kerb_token))
+                {
+                    return nego_kerb_token;
+                }
+                return new AuthenticationToken(token);
             }
 
             if (AuthenticationPackage.CheckDigest(package_name) &&
