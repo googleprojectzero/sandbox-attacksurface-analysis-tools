@@ -77,6 +77,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return string.Empty;
         }
 
+        private SecHandle Context => _context ?? throw new InvalidOperationException("Server authentication context hasn't been initialized.");
+
         #endregion
 
         #region Public Properties
@@ -129,17 +131,37 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Get the Session Key for this context.
         /// </summary>
-        public byte[] SessionKey => SecurityContextUtils.GetSessionKey(_context);
+        public byte[] SessionKey => SecurityContextUtils.GetSessionKey(Context);
 
         /// <summary>
         /// Get the maximum signature size of this context.
         /// </summary>
-        public int MaxSignatureSize => SecurityContextUtils.GetMaxSignatureSize(_context);
+        public int MaxSignatureSize => SecurityContextUtils.GetMaxSignatureSize(Context);
 
         /// <summary>
         /// Get the size of the security trailer for this context.
         /// </summary>
-        public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(_context);
+        public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(Context);
+        /// <summary>
+        /// Size of any header when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamHeaderSize => SecurityContextUtils.GetStreamSizes(Context).cbHeader;
+        /// <summary>
+        /// Size of any trailer when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamTrailerSize => SecurityContextUtils.GetStreamSizes(Context).cbTrailer;
+        /// <summary>
+        /// Number of buffers needed when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamBufferCount => SecurityContextUtils.GetStreamSizes(Context).cBuffers;
+        /// <summary>
+        /// Maximum message size when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamMaxMessageSize => SecurityContextUtils.GetStreamSizes(Context).cbMaximumMessage;
+        /// <summary>
+        /// Preferred block size when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamBlockSize => SecurityContextUtils.GetStreamSizes(Context).cbBlockSize;
 
         /// <summary>
         /// Get the name of the authentication package.
@@ -155,7 +177,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The user's access token.</returns>
         public NtToken GetAccessToken()
         {
-            SecurityNativeMethods.QuerySecurityContextToken(_context, out SafeKernelObjectHandle token).CheckResult();
+            SecurityNativeMethods.QuerySecurityContextToken(Context, out SafeKernelObjectHandle token).CheckResult();
             return NtToken.FromHandle(token);
         }
 
@@ -165,8 +187,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The disposable context to revert the impersonation.</returns>
         public AuthenticationImpersonationContext Impersonate()
         {
-            SecurityNativeMethods.ImpersonateSecurityContext(_context).CheckResult();
-            return new AuthenticationImpersonationContext(_context);
+            SecurityNativeMethods.ImpersonateSecurityContext(Context).CheckResult();
+            return new AuthenticationImpersonationContext(Context);
         }
 
         /// <summary>
@@ -287,7 +309,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>True if the signature is valid, otherwise false.</returns>
         public bool VerifySignature(byte[] message, byte[] signature, int sequence_no)
         {
-            return SecurityContextUtils.VerifySignature(_context, message, signature, sequence_no);
+            return SecurityContextUtils.VerifySignature(Context, message, signature, sequence_no);
         }
 
         /// <summary>
@@ -299,7 +321,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>True if the signature is valid, otherwise false.</returns>
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            return SecurityContextUtils.VerifySignature(_context, messages, signature, sequence_no);
+            return SecurityContextUtils.VerifySignature(Context, messages, signature, sequence_no);
         }
 
         /// <summary>
@@ -311,7 +333,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="sequence_no">The sequence number.</param>
         public EncryptedMessage EncryptMessage(byte[] message, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            return SecurityContextUtils.EncryptMessage(_context, quality_of_protection, message, sequence_no);
+            return SecurityContextUtils.EncryptMessage(Context, quality_of_protection, message, sequence_no);
         }
 
         /// <summary>
@@ -324,7 +346,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="sequence_no">The sequence number.</param>
         public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            return SecurityContextUtils.EncryptMessage(_context, quality_of_protection, messages, sequence_no);
+            return SecurityContextUtils.EncryptMessage(Context, quality_of_protection, messages, sequence_no);
         }
 
         /// <summary>
@@ -336,7 +358,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <remarks>The messages are decrypted in place. You can add buffers with the ReadOnly flag to prevent them being decrypted.</remarks>
         public void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            SecurityContextUtils.DecryptMessage(_context, messages, signature, sequence_no);
+            SecurityContextUtils.DecryptMessage(Context, messages, signature, sequence_no);
         }
 
         /// <summary>
@@ -347,7 +369,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The decrypted message.</returns>
         public byte[] DecryptMessage(EncryptedMessage message, int sequence_no)
         {
-            return SecurityContextUtils.DecryptMessage(_context, message, sequence_no);
+            return SecurityContextUtils.DecryptMessage(Context, message, sequence_no);
         }
 
         /// <summary>
@@ -356,7 +378,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The authentication package info,</returns>
         public AuthenticationPackage GetAuthenticationPackage()
         {
-            return SecurityContextUtils.GetAuthenticationPackage(_context);
+            return SecurityContextUtils.GetAuthenticationPackage(Context);
         }
 
         /// <summary>
@@ -366,7 +388,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <remarks>The security context will not longer be usable afterwards.</remarks>
         public ExportedSecurityContext Export()
         {
-            var context = SecurityContextUtils.ExportContext(_context, SecPkgContextExportFlags.DeleteOld, _creds.PackageName, false);
+            var context = SecurityContextUtils.ExportContext(Context, SecPkgContextExportFlags.DeleteOld, _creds.PackageName, false);
             Dispose();
             return context;
         }

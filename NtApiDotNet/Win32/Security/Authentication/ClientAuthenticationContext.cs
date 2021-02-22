@@ -132,6 +132,27 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public int SecurityTrailerSize => SecurityContextUtils.GetSecurityTrailerSize(Context);
 
         /// <summary>
+        /// Size of any header when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamHeaderSize => SecurityContextUtils.GetStreamSizes(Context).cbHeader;
+        /// <summary>
+        /// Size of any trailer when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamTrailerSize => SecurityContextUtils.GetStreamSizes(Context).cbTrailer;
+        /// <summary>
+        /// Number of buffers needed when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamBufferCount => SecurityContextUtils.GetStreamSizes(Context).cBuffers;
+        /// <summary>
+        /// Maximum message size when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamMaxMessageSize => SecurityContextUtils.GetStreamSizes(Context).cbMaximumMessage;
+        /// <summary>
+        /// Preferred block size when using a stream protocol such as Schannel.
+        /// </summary>
+        public int StreamBlockSize => SecurityContextUtils.GetStreamSizes(Context).cbBlockSize;
+
+        /// <summary>
         /// Get the remote certificate. Only used for Schannel related authentication.
         /// </summary>
         public X509Certificate2 RemoteCertificate => SecurityContextUtils.GetRemoteCertificate(Context);
@@ -381,9 +402,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The signature for the messages.</returns>
         /// <remarks>The messages are encrypted in place. You can add buffers with the ReadOnly flag to prevent them being encrypted.</remarks>
         /// <param name="sequence_no">The sequence number.</param>
-        public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
+        public void EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            return SecurityContextUtils.EncryptMessage(Context, quality_of_protection, messages, sequence_no);
+            SecurityContextUtils.EncryptMessage(Context, quality_of_protection, messages, sequence_no);
         }
 
         /// <summary>

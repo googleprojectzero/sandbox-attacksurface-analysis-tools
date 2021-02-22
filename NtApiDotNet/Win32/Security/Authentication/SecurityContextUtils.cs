@@ -239,6 +239,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES).cbSecurityTrailer;
         }
 
+        internal static SecPkgContext_StreamSizes GetStreamSizes(SecHandle context)
+        {
+            return QueryContextAttribute<SecPkgContext_StreamSizes>(context, SECPKG_ATTR.STREAM_SIZES);
+        }
+
         internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package, bool client)
         {
             if (context is null)
