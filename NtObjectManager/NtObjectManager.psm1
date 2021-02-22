@@ -7988,7 +7988,8 @@ Gets an authentication token.
 This cmdlet gets an authentication token from a context or from 
 an array of bytes.
 .PARAMETER Context
-The authentication context to extract token from.
+The authentication context to extract token from. If combined with Token will parse according to
+the type of context.
 .PARAMETER Token
 The array of bytes for the new token.
 .INPUTS
@@ -8002,6 +8003,7 @@ function Get-LsaAuthToken {
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromBytes")]
         [byte[]]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [Parameter(ParameterSetName="FromBytes")]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
     )
 
@@ -8009,7 +8011,11 @@ function Get-LsaAuthToken {
         if ($PSCmdlet.ParameterSetName -eq "FromContext") {
             $Context.Token | Write-Output
         } else {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Token)
+            if ($null -ne $Context) {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $Token)
+            } else {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($Token)
+            }
         }
     }
 }
