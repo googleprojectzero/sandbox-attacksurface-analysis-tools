@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtApiDotNet.Net.Tls
 {
     /// <summary>
     /// Type for a TLS record.

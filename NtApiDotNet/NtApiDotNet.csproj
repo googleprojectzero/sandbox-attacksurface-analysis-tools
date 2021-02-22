@@ -422,8 +422,8 @@
     <Compile Include="Win32\Security\Native\CREDSSP_SUBMIT_TYPE.cs" />
     <Compile Include="Win32\Security\Native\CREDSSP_CRED_EX.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentialsFlags.cs" />
-    <Compile Include="Win32\Security\Authentication\Schannel\TlsRecord.cs" />
-    <Compile Include="Win32\Security\Authentication\Schannel\TlsRecordType.cs" />
+    <Compile Include="Net\Tls\TlsRecord.cs" />
+    <Compile Include="Net\Tls\TlsRecordType.cs" />
     <Compile Include="Win32\Security\Authentication\SecurityQualityOfProtectionFlags.cs" />
     <Compile Include="Win32\Security\Authentication\ExportedSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\GSSAPIUtils.cs" />

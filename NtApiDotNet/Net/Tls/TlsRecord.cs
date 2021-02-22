@@ -15,7 +15,7 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtApiDotNet.Net.Tls
 {
     /// <summary>
     /// A class to represent a TLS record.
@@ -51,6 +51,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
 
         #endregion
 
+        #region Static Methods
+        /// <summary>
+        /// Parse a TLS record from a binary reader.
+        /// </summary>
+        /// <param name="reader">The reader to read from.</param>
+        /// <returns></returns>
+        public TlsRecord Parse(BinaryReader reader)
+        {
+            if (!TryParse(reader, out TlsRecord record))
+            {
+                throw new ArgumentException("Invalid TLS record.");
+            }
+            return record;
+        }
+        #endregion
+
+        #region Internal Members
         internal static bool TryParse(BinaryReader reader, out TlsRecord record)
         {
             record = null;
@@ -59,15 +76,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
                 TlsRecordType type = (TlsRecordType)reader.ReadByte();
                 int major_version = reader.ReadByte();
                 int minor_version = reader.ReadByte();
-                int length = (reader.ReadByte() << 8) | reader.ReadByte();
+                int length = reader.ReadByte() << 8 | reader.ReadByte();
                 byte[] data = reader.ReadAllBytes(length);
                 record = new TlsRecord(data, type, major_version, minor_version, data);
                 return true;
             }
-            catch(EndOfStreamException)
+            catch (EndOfStreamException)
             {
                 return false;
             }
         }
+        #endregion
     }
 }
