@@ -493,7 +493,6 @@
     <Compile Include="Win32\Security\Buffers\SecurityBuffer.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferAllocMem.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferChannelBinding.cs" />
-    <Compile Include="Win32\Security\Buffers\SecurityBufferEmpty.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferInOut.cs" />
     <Compile Include="Win32\Security\Buffers\SecurityBufferOut.cs" />
     <Compile Include="Win32\Security\Native\KERB_INTERACTIVE_LOGON.cs" />

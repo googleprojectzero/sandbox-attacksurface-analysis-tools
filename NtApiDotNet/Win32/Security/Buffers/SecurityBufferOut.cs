@@ -55,6 +55,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
         {
             _array = buffer.ToArray();
             _size = _array.Length;
+            Type = buffer.BufferType;
         }
     }
 }

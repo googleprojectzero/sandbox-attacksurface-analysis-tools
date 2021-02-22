@@ -13657,7 +13657,7 @@ function Test-LsaContextSignature {
 Encrypt some message for an authentication context.
 .DESCRIPTION
 This cmdlet uses an authentication context to encrypt some message. It returns both the encrypted message and a signature.
-It can be decrypted using Unprotect-LsaContextData. If you use buffers only the signature is returned from the command
+It can be decrypted using Unprotect-LsaContextMessage. If you use buffers only the signature is returned from the command
 and the encrypted data is updated in place.
 .PARAMETER Context
 Specify the authentication context to use.
@@ -13667,6 +13667,8 @@ Specify message to encrypt.
 Specify the sequence number for the encryption to prevent replay.
 .PARAMETER QualityOfProtection
 Specify flags for the encryption operation. For example wrap but don't encrypt.
+.PARAMETER NoSignature
+Specify to not automatically generate a signature buffer.
 .INPUTS
 byte[]
 .OUTPUTS
@@ -13683,7 +13685,9 @@ function Protect-LsaContextMessage {
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0,
-        [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0
+        [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0,
+        [parameter(ParameterSetName="FromBuffers")]
+        [switch]$NoSignature
     )
 
     BEGIN {
@@ -13702,7 +13706,11 @@ function Protect-LsaContextMessage {
                 $Context.EncryptMessage($enc_data, $QualityOfProtection, $SequenceNumber)
             }
             "FromBuffers" {
-                $Context.EncryptMessage($Buffer, $QualityOfProtection, $SequenceNumber)
+                if ($NoSignature) {
+                    $Context.EncryptMessageNoSignature($Buffer, $QualityOfProtection, $SequenceNumber)
+                } else {
+                    $Context.EncryptMessage($Buffer, $QualityOfProtection, $SequenceNumber)
+                }
             }
         }
     }
@@ -13722,6 +13730,8 @@ Specify message to decrypt.
 Specify signature to verify.
 .PARAMETER SequenceNumber
 Specify the sequence number for the encryption to prevent replay.
+.PARAMETER NoSignature
+Specify to no include a signature automatically in the buffers.
 .INPUTS
 None
 .OUTPUTS
@@ -13735,9 +13745,13 @@ function Unprotect-LsaContextMessage {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffersNoSig")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
-        [parameter(Mandatory, Position = 2)]
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromBuffers")]
         [byte[]]$Signature,
+        [parameter(Mandatory, ParameterSetName="FromBuffersNoSig")]
+        [switch]$NoSignature,
         [parameter(Position = 3)]
         [int]$SequenceNumber = 0
     )
@@ -13749,6 +13763,9 @@ function Unprotect-LsaContextMessage {
         }
         "FromBuffers" {
             $Context.DecryptMessage($Buffer, $Signature, $SequenceNumber)
+        }
+        "FromBuffersNoSig" {
+            $Context.DecryptMessageNoSignature($Buffer, $SequenceNumber)
         }
     }
 }
@@ -13768,6 +13785,10 @@ Specify the size of a buffer for an output buffer.
 Specify a channel binding token.
 .PARAMETER Token
 Specify a buffer which is an authentication token.
+.PARAMETER String
+Specify a buffer derived from a string.
+.PARAMETER Encoding
+Specify the character encoding when making a buffer from a string.
 .INPUTS
 None
 .OUTPUTS
@@ -13789,8 +13810,6 @@ function New-LsaSecurityBuffer {
         [byte[]]$ChannelBinding,
         [Parameter(Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
-        [parameter(Mandatory, ParameterSetName="FromEmpty")]
-        [switch]$Empty,
         [parameter(Mandatory, ParameterSetName="FromString")]
         [string]$String,
         [parameter(ParameterSetName="FromString")]
@@ -13809,9 +13828,6 @@ function New-LsaSecurityBuffer {
         }
         "FromToken" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new("Token", $Token.ToArray())
-        }
-        "FromEmpty" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferEmpty]::new($Type)
         }
         "FromString" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($Type, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))

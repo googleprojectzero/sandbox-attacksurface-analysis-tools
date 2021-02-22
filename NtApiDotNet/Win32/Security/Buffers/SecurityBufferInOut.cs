@@ -70,6 +70,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
                 return;
             }
             _array = new ArraySegment<byte>(buffer.ToArray());
+            Type = buffer.BufferType;
         }
     }
 }
