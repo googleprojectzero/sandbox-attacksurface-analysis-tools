@@ -36,13 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Digest
         /// <returns></returns>
         public override string Format()
         {
-            StringBuilder builder = new StringBuilder();
-            foreach (var p in _split_token.Value)
-            {
-                builder.AppendLine(p);
-            }
-
-            return builder.ToString();
+            return string.Join("," + Environment.NewLine, _split_token.Value);
         }
 
         private DigestAuthenticationToken(byte[] data) : base(data)
