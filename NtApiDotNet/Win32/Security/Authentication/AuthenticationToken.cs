@@ -49,6 +49,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Get the length of the token in bytes.
+        /// </summary>
+        public virtual int Length => _data.Length;
+
+        /// <summary>
         /// Format the authentication token.
         /// </summary>
         /// <returns>The token as a formatted string.</returns>
@@ -74,12 +79,25 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Parse a structured authentication token.
         /// </summary>
-        /// <param name="package_name">Name of the authentication package.</param>
-        /// <param name="token_count">The count of the tokens before this one.</param>
+        /// <param name="context">The authentication context.</param>
         /// <param name="token">The token to parse.</param>
-        /// <param name="client">Parse operation from a client.</param>
         /// <returns>The parsed authentication token. If can't parse any other format returns
         /// a raw AuthenticationToken.</returns>
+        public static AuthenticationToken Parse(IAuthenticationContext context, byte[] token)
+        {
+            if (context is null)
+            {
+                throw new System.ArgumentNullException(nameof(context));
+            }
+
+            if (token is null)
+            {
+                throw new System.ArgumentNullException(nameof(token));
+            }
+
+            return Parse(context.PackageName, 0, context is IClientAuthenticationContext, token);
+        }
+
         internal static AuthenticationToken Parse(string package_name, int token_count, bool client, byte[] token)
         {
             if (token.Length == 0)
