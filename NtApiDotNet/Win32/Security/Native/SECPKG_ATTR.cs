@@ -52,6 +52,7 @@ namespace NtApiDotNet.Win32.Security.Native
         APPLICATION_PROTOCOL = 35,
         NEGOTIATED_TLS_EXTENSIONS = 36,
         IS_LOOPBACK = 37,
-        REMOTE_CERT_CONTEXT = 83
+        REMOTE_CERT_CONTEXT = 83,
+        CONNECTION_INFO = 90,
     }
 }

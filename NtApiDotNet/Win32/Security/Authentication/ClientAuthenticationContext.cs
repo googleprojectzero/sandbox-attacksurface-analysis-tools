@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Schannel;
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -168,6 +169,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the name of the authentication package.
         /// </summary>
         public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
+
+        /// <summary>
+        /// Get connection information for the schannel connection.
+        /// </summary>
+        public SchannelConnectionInfo ConnectionInfo => SecurityContextUtils.GetConnectionInfo(Context);
 
         #endregion
 

@@ -415,8 +415,11 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\CredSSPCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Digest\DigestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\EncryptedMessage.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelAlgorithmType.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelConnectionInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelProtocolType.cs" />
     <Compile Include="Win32\Security\Native\CredSspExFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDSSP_CRED.cs" />
     <Compile Include="Win32\Security\Native\CREDSSP_SUBMIT_TYPE.cs" />
@@ -506,6 +509,7 @@
     <Compile Include="Win32\Security\Native\SCH_CREDENTIALS.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextExportFlags.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContextStructs.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_ConnectionInfo.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_LastClientTokenStatus.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_PackageInfo.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_SessionKey.cs" />

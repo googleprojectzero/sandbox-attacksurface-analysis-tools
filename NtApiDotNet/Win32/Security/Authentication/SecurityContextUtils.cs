@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Schannel;
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -429,6 +430,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     SecurityNativeMethods.CertFreeCertificateContext(buffer.Result);
                 }
             }
+        }
+
+        internal static SchannelConnectionInfo GetConnectionInfo(SecHandle context)
+        {
+            return new SchannelConnectionInfo(QueryContextAttribute<SecPkgContext_ConnectionInfo>(context, SECPKG_ATTR.CONNECTION_INFO));
         }
     }
 }
