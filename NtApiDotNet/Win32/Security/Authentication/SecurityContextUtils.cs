@@ -75,6 +75,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
+        internal static void UpdateBuffers(this IEnumerable<SecurityBuffer> buffers, SecBufferDesc desc)
+        {
+            UpdateBuffers(buffers.ToArray(), desc);
+        }
+
         internal static byte[] MakeSignature(
             SecHandle context,
             int flags,
@@ -167,17 +172,34 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
 
             List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
-            var sizes = QueryContextAttribute<SecPkgContext_Sizes>(context, SECPKG_ATTR.SIZES);
-            var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, sizes.cbSecurityTrailer);
+            var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, GetSecurityTrailerSize(context));
             sig_buffers.Add(out_sig_buffer);
+            EncryptMessageNoSignature(context, flags, sig_buffers, sequence_no);
+            return out_sig_buffer.ToArray();
+        }
+
+        internal static void EncryptMessageNoSignature(
+            SecHandle context,
+            SecurityQualityOfProtectionFlags flags,
+            IEnumerable<SecurityBuffer> messages,
+            int sequence_no)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
 
             using (var list = new DisposableList())
             {
-                var buffers = sig_buffers.ToBufferList(list);
+                var buffers = messages.ToBufferList(list);
                 var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
-                sig_buffers.UpdateBuffers(desc);
-                return out_sig_buffer.ToArray();
+                messages.UpdateBuffers(desc);
             }
         }
 
@@ -219,13 +241,30 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
             List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
             sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
+            DecryptMessageNoSignature(context, sig_buffers, sequence_no);
+        }
+
+        internal static void DecryptMessageNoSignature(
+            SecHandle context,
+            IEnumerable<SecurityBuffer> messages,
+            int sequence_no)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
 
             using (var list = new DisposableList())
             {
-                var buffers = sig_buffers.ToBufferList(list);
+                var buffers = messages.ToBufferList(list);
                 var desc = buffers.ToDesc(list);
                 SecurityNativeMethods.DecryptMessage(context, desc, sequence_no, out _).CheckResult();
-                sig_buffers.UpdateBuffers(desc);
+                messages.UpdateBuffers(desc);
             }
         }
 

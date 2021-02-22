@@ -97,6 +97,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no);
 
         /// <summary>
+        /// Encrypt a message for this context with no specific signature.
+        /// </summary>
+        /// <param name="messages">The messages to encrypt.</param>
+        /// <param name="quality_of_protection">Quality of protection flags.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <remarks>The messages are encrypted in place. You can add buffers with the ReadOnly flag to prevent them being encrypted. 
+        /// If you need to return a signature then it must be specified in a buffer.</remarks>
+        void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no);
+
+        /// <summary>
         /// Decrypt a message for this context.
         /// </summary>
         /// <param name="message">The message to decrypt.</param>
@@ -112,6 +122,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="sequence_no">The sequence number.</param>
         /// <remarks>The messages are decrypted in place. You can add buffers with the ReadOnly flag to prevent them being decrypted.</remarks>
         void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no);
+
+        /// <summary>
+        /// Decrypt a message for this context.
+        /// </summary>
+        /// <param name="messages">The messages to decrypt.</param>
+        /// <param name="sequence_no">The sequence number.</param>
+        /// <remarks>The messages are decrypted in place. You can add buffers with the ReadOnly flag to prevent them being decrypted.
+        /// If you need to specify a signature you need to add a buffer.</remarks>
+        void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no);
 
         /// <summary>
         /// Export and delete the current security context.
