@@ -55,12 +55,12 @@ namespace NtApiDotNet.Win32.Security.Buffers
             Marshal.Copy(buffer.pvBuffer, _array, 0, _array.Length);
             SecurityNativeMethods.FreeContextBuffer(buffer.pvBuffer);
             buffer.pvBuffer = IntPtr.Zero;
-            Type = buffer.BufferType;
+            _type = buffer.BufferType;
         }
 
         internal override SecBuffer ToBuffer()
         {
-            return new SecBuffer() { BufferType = Type };
+            return new SecBuffer() { BufferType = _type };
         }
     }
 }

@@ -48,14 +48,14 @@ namespace NtApiDotNet.Win32.Security.Buffers
 
         internal override SecBuffer ToBuffer()
         {
-            return new SecBuffer(Type, _size);
+            return new SecBuffer(_type, _size);
         }
 
         internal override void FromBuffer(SecBuffer buffer)
         {
             _array = buffer.ToArray();
             _size = _array.Length;
-            Type = buffer.BufferType;
+            _type = buffer.BufferType;
         }
     }
 }
