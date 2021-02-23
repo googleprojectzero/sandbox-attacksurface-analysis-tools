@@ -176,17 +176,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private byte[] ProtectPDU(byte[] header, ref byte[] stub_data, int auth_padding_length)
         {
             List<SecurityBuffer> buffers = new List<SecurityBuffer>();
-            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
-            {
-                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum, header));
-            }
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly, header));
             var stub_data_buffer = new SecurityBufferInOut(SecurityBufferType.Data, stub_data);
             buffers.Add(stub_data_buffer);
-            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
-            {
-                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum,
-                    AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
-            }
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
+                AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
 
             byte[] signature;
             if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
