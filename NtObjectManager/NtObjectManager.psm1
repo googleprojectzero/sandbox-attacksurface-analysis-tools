@@ -13686,7 +13686,6 @@ function Protect-LsaContextMessage {
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0,
         [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0,
-        [parameter(ParameterSetName="FromBuffers")]
         [switch]$NoSignature
     )
 
@@ -13703,7 +13702,12 @@ function Protect-LsaContextMessage {
     END {
         switch($PSCmdlet.ParameterSetName) {
             "FromBytes" {
-                $Context.EncryptMessage($enc_data, $QualityOfProtection, $SequenceNumber)
+                if ($NoSignature) {
+                    $buf = New-LsaSecurityBuffer -Type Data -Byte $enc_data
+                    $Context.EncryptMessageNoSignature([NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]@($buf), $QualityOfProtection, $SequenceNumber)
+                } else {
+                    $Context.EncryptMessage($enc_data, $QualityOfProtection, $SequenceNumber)
+                }
             }
             "FromBuffers" {
                 if ($NoSignature) {
@@ -13731,7 +13735,7 @@ Specify signature to verify.
 .PARAMETER SequenceNumber
 Specify the sequence number for the encryption to prevent replay.
 .PARAMETER NoSignature
-Specify to no include a signature automatically in the buffers.
+Specify to not include a signature automatically in the buffers.
 .INPUTS
 None
 .OUTPUTS
@@ -13743,6 +13747,7 @@ function Unprotect-LsaContextMessage {
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytesNoSig")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffersNoSig")]
@@ -13751,6 +13756,7 @@ function Unprotect-LsaContextMessage {
         [parameter(Mandatory, Position = 2, ParameterSetName="FromBuffers")]
         [byte[]]$Signature,
         [parameter(Mandatory, ParameterSetName="FromBuffersNoSig")]
+        [parameter(Mandatory, ParameterSetName="FromBytesNoSig")]
         [switch]$NoSignature,
         [parameter(Position = 3)]
         [int]$SequenceNumber = 0
@@ -13766,6 +13772,11 @@ function Unprotect-LsaContextMessage {
         }
         "FromBuffersNoSig" {
             $Context.DecryptMessageNoSignature($Buffer, $SequenceNumber)
+        }
+        "FromBytesNoSig" {
+            $buf = New-LsaSecurityBuffer -Type Data -Byte $Message
+            $Context.DecryptMessageNoSignature([NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]@($buf), $SequenceNumber)
+            $buf.ToArray() | Write-Output -NoEnumerate
         }
     }
 }
