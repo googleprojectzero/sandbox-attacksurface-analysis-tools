@@ -13811,7 +13811,7 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type = 0,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Byte,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
@@ -13823,24 +13823,42 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, ParameterSetName="FromString")]
         [string]$String,
         [parameter(ParameterSetName="FromString")]
-        [string]$Encoding = "Unicode"
+        [string]$Encoding = "Unicode",
+        [parameter(ParameterSetName="FromBytes")]
+        [parameter(ParameterSetName="FromSize")]
+        [parameter(ParameterSetName="FromString")]
+        [Parameter(ParameterSetName="FromToken")]
+        [switch]$ReadOnly,
+        [switch]$ReadOnlyWithChecksum
     )
+
+    $type_flags = if ($PSCmdlet.ParameterSetName -eq "FromToken") {
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::Token
+    } else {
+        $Type
+    }
+    if ($ReadOnly) {
+        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnly
+    }
+    if ($ReadOnlyWithChecksum) {
+        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnlyWithChecksum
+    }
 
     switch($PSCmdlet.ParameterSetName) {
         "FromBytes" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($Type, $Byte)
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Byte)
         }
         "FromSize" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($Type, $Size)
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, $Size)
         }
         "FromChannelBinding" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
         }
         "FromToken" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new("Token", $Token.ToArray())
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Token.ToArray())
         }
         "FromString" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($Type, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
         }
     }
 }
