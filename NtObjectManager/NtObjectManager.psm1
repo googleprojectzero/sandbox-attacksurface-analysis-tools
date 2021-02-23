@@ -13825,7 +13825,6 @@ function New-LsaSecurityBuffer {
         [parameter(ParameterSetName="FromString")]
         [string]$Encoding = "Unicode",
         [parameter(ParameterSetName="FromBytes")]
-        [parameter(ParameterSetName="FromSize")]
         [parameter(ParameterSetName="FromString")]
         [Parameter(ParameterSetName="FromToken")]
         [switch]$ReadOnly,
