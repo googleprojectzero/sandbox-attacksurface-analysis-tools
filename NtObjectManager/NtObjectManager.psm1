@@ -13799,7 +13799,6 @@ function New-LsaSecurityBuffer {
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromEmpty")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
