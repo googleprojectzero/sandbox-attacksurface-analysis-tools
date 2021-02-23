@@ -13828,6 +13828,9 @@ function New-LsaSecurityBuffer {
         [parameter(ParameterSetName="FromString")]
         [Parameter(ParameterSetName="FromToken")]
         [switch]$ReadOnly,
+        [parameter(ParameterSetName="FromBytes")]
+        [parameter(ParameterSetName="FromString")]
+        [Parameter(ParameterSetName="FromToken")]
         [switch]$ReadOnlyWithChecksum
     )
 
