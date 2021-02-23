@@ -13811,11 +13811,14 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
+        [parameter(ParameterSetName="FromEmpty")]
         [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type = 0,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Byte,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
         [int]$Size,
+        [parameter(Mandatory, ParameterSetName="FromEmpty")]
+        [switch]$Empty,
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
         [byte[]]$ChannelBinding,
         [Parameter(Mandatory, ParameterSetName="FromToken")]
@@ -13853,6 +13856,9 @@ function New-LsaSecurityBuffer {
         "FromSize" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, $Size)
         }
+        "FromEmpty" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, 0)
+        }
         "FromChannelBinding" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
         }
@@ -13861,6 +13867,54 @@ function New-LsaSecurityBuffer {
         }
         "FromString" {
             [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Convert a security buffer to another format.
+.DESCRIPTION
+This cmdlet converts a security buffer to another format, either a byte array, string or authentication token.
+.PARAMETER Buffer
+The buffer to convert.
+.PARAMETER AsString
+Specify to convert the string as bytes.
+.PARAMETER Encoding
+Specify the character encoding when converting to a string.
+.PARAMETER AsToken
+Specify to convert the buffer to an authentication token.
+.INPUTS
+NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+.OUTPUTS
+byte[]
+string
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+#>
+function ConvertFrom-LsaSecurityBuffer {
+    [CmdletBinding(DefaultParameterSetName="ToBytes")]
+    param (
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer]$Buffer,
+        [parameter(Mandatory, ParameterSetName="ToString")]
+        [switch]$AsString,
+        [parameter(ParameterSetName="ToString")]
+        [string]$Encoding = "Unicode",
+        [parameter(Mandatory, ParameterSetName="ToToken")]
+        [switch]$AsToken
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "ToBytes" {
+                $Buffer.ToArray() | Write-Output -NoEnumerate
+            }
+            "ToString" {
+                [System.Text.Encoding]::GetEncoding($Encoding).GetString($Buffer.ToArray())
+            }
+            "ToToken" {
+                Get-LsaAuthToken -Token $Buffer.ToArray()
+            }
         }
     }
 }

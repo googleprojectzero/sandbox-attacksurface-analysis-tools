@@ -113,7 +113,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Disconnect-RpcClient', 'Enable-NtTokenPrivilege', 'Disable-NtTokenPrivilege', 'Get-Win32ModuleSymbolFile',
           'Get-RpcStringBinding', 'Start-Win32Service', 'Get-Win32ServiceConfig', 'Get-LsaContextSignature',
           'Test-LsaContextSignature', 'Protect-LsaContextMessage', 'Unprotect-LsaContextMessage',
-          'New-LsaSecurityBuffer', 'Get-LsaSchannelCredential', 'Get-LsaCredSSPCredential'
+          'New-LsaSecurityBuffer', 'Get-LsaSchannelCredential', 'Get-LsaCredSSPCredential',
+          'ConvertFrom-LsaSecurityBuffer'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
