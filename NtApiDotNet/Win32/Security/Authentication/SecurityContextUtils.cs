@@ -416,11 +416,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return new byte[0];
         }
 
-        internal static X509Certificate2 GetRemoteCertificate(SecHandle context)
+        private static X509Certificate2 GetCertificate(SecHandle context, SECPKG_ATTR attr)
         {
             using (var buffer = new SafeStructureInOutBuffer<IntPtr>())
             {
-                SecurityNativeMethods.QueryContextAttributesEx(context, SECPKG_ATTR.REMOTE_CERT_CONTEXT, buffer, buffer.Length).CheckResult();
+                SecurityNativeMethods.QueryContextAttributesEx(context, attr, buffer, buffer.Length).CheckResult();
                 try
                 {
                     return new X509Certificate2(buffer.Result);
@@ -430,6 +430,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
                     SecurityNativeMethods.CertFreeCertificateContext(buffer.Result);
                 }
             }
+        }
+
+        internal static X509Certificate2 GetRemoteCertificate(SecHandle context)
+        {
+            return GetCertificate(context, SECPKG_ATTR.REMOTE_CERT_CONTEXT);
+        }
+
+        internal static X509Certificate2 GetLocalCertificate(SecHandle context)
+        {
+            return GetCertificate(context, SECPKG_ATTR.LOCAL_CERT_CONTEXT);
         }
 
         internal static SchannelConnectionInfo GetConnectionInfo(SecHandle context)

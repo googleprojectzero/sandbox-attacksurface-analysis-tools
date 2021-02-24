@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -173,6 +174,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get connection information for the schannel connection.
         /// </summary>
         public SchannelConnectionInfo ConnectionInfo => SecurityContextUtils.GetConnectionInfo(Context);
+
+        /// <summary>
+        /// Get the local certificate. Only used for Schannel related authentication.
+        /// </summary>
+        public X509Certificate2 LocalCertificate => SecurityContextUtils.GetLocalCertificate(Context);
+
+        /// <summary>
+        /// Get the remote certificate. Only used for Schannel related authentication.
+        /// </summary>
+        public X509Certificate2 RemoteCertificate => SecurityContextUtils.GetRemoteCertificate(Context);
 
         #endregion
 

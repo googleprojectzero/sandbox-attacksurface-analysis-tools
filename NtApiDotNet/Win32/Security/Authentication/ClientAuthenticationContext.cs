@@ -154,6 +154,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public int StreamBlockSize => SecurityContextUtils.GetStreamSizes(Context).cbBlockSize;
 
         /// <summary>
+        /// Get the local certificate. Only used for Schannel related authentication.
+        /// </summary>
+        public X509Certificate2 LocalCertificate => SecurityContextUtils.GetLocalCertificate(Context);
+
+        /// <summary>
         /// Get the remote certificate. Only used for Schannel related authentication.
         /// </summary>
         public X509Certificate2 RemoteCertificate => SecurityContextUtils.GetRemoteCertificate(Context);
