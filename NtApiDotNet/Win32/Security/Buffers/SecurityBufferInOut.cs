@@ -58,9 +58,9 @@ namespace NtApiDotNet.Win32.Security.Buffers
             return _array.ToArray();
         }
 
-        internal override SecBuffer ToBuffer()
+        internal override SecBuffer ToBuffer(DisposableList list)
         {
-            return new SecBuffer(_type, ToArray());
+            return SecBuffer.Create(_type, ToArray(), list);
         }
 
         internal override void FromBuffer(SecBuffer buffer)

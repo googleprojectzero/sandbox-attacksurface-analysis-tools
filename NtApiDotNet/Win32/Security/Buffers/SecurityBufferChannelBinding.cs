@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Buffers
 {
@@ -48,9 +49,16 @@ namespace NtApiDotNet.Win32.Security.Buffers
             return;
         }
 
-        internal override SecBuffer ToBuffer()
+        internal override SecBuffer ToBuffer(DisposableList list)
         {
-            return SecBuffer.CreateForChannelBinding(_channel_binding_token);
+            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
+            sec_channel_bind.cbApplicationDataLength = _channel_binding_token.Length;
+            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
+            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, _channel_binding_token.Length, true))
+            {
+                binding.Data.WriteBytes(_channel_binding_token);
+                return SecBuffer.Create(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, binding.ToArray(), list);
+            }
         }
     }
 }

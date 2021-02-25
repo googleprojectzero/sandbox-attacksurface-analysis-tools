@@ -68,7 +68,12 @@ namespace NtApiDotNet.Win32.Security.Buffers
         }
 
         internal abstract void FromBuffer(SecBuffer buffer);
-        internal abstract SecBuffer ToBuffer();
+        internal abstract SecBuffer ToBuffer(DisposableList list);
+
+        internal virtual void ReleaseBuffer(SecBuffer buffer)
+        {
+            // Do nothing.
+        }
 
         private protected SecurityBuffer(SecurityBufferType type)
         {

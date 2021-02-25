@@ -78,14 +78,9 @@ namespace NtApiDotNet.Win32.Security.Buffers
             _type = buffer.BufferType;
         }
 
-        internal override SecBuffer ToBuffer()
+        internal override SecBuffer ToBuffer(DisposableList list)
         {
-            return new SecBuffer()
-            {
-                BufferType = Type,
-                pvBuffer = Pointer,
-                cbBuffer = Size
-            };
+            return new SecBuffer(Type, Pointer, Size);
         }
     }
 }

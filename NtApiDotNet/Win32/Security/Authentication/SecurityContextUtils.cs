@@ -54,7 +54,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static List<SecBuffer> ToBufferList(this IEnumerable<SecurityBuffer> buffers, DisposableList list)
         {
-            return buffers.Select(b => list.AddResource(b.ToBuffer())).ToList();
+            return buffers.Select(b => b.ToBuffer(list)).ToList();
         }
 
         internal static SecBufferDesc ToDesc(this IEnumerable<SecBuffer> buffers, DisposableList list)
@@ -291,7 +291,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(context));
             }
 
-            SecBuffer buffer = new SecBuffer() { BufferType = SecurityBufferType.Empty };
+            SecBuffer buffer = new SecBuffer(SecurityBufferType.Empty);
             try
             {
                 SecurityNativeMethods.ExportSecurityContext(context, export_flags,
