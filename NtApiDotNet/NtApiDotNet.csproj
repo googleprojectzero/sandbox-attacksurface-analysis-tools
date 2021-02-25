@@ -420,6 +420,7 @@
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelConnectionInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelProtocolType.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferPointer.cs" />
     <Compile Include="Win32\Security\Native\CredSspExFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDSSP_CRED.cs" />
     <Compile Include="Win32\Security\Native\CREDSSP_SUBMIT_TYPE.cs" />
