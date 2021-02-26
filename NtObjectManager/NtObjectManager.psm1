@@ -9247,7 +9247,7 @@ Converts a security descriptor to a self-relative byte array or base64 string.
 This cmdlet converts a security descriptor to a self-relative byte array or a base64 string.
 .PARAMETER SecurityDescriptor
 The security descriptor to convert.
-.PARAMETER Base64
+.PARAMETER AsBase64
 Converts the self-relative SD to base64 string.
 .INPUTS
 None
@@ -9257,10 +9257,10 @@ byte[]
 ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)"
 Converts security descriptor to byte array.
 .EXAMPLE
-ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -AsBase64
 Converts security descriptor to a base64 string.
 .EXAMPLE
-ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64 -InsertLineBreaks
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -AsBase64 -InsertLineBreaks
 Converts security descriptor to a base64 string with line breaks.
 #>
 function ConvertFrom-NtSecurityDescriptor {
@@ -9269,17 +9269,45 @@ function ConvertFrom-NtSecurityDescriptor {
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Mandatory, ParameterSetName = "ToBase64")]
-        [switch]$Base64,
+        [alias("Base64")]
+        [switch]$AsBase64,
         [switch]$InsertLineBreaks
     )
 
     PROCESS {
-        if ($Base64) {
+        if ($AsBase64) {
             $SecurityDescriptor.ToBase64($InsertLineBreaks) | Write-Output
         }
         else {
             $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Converts a SID to a byte array.
+.DESCRIPTION
+This cmdlet converts a SID to a byte array.
+.PARAMETER Sid
+The SID to convert.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+ConvertFrom-NtSid -Sid "S-1-1-0"
+Converts SID to byte array.
+#>
+function ConvertFrom-NtSid {
+    [CmdletBinding(DefaultParameterSetName = "ToBytes")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$Sid
+    )
+
+    PROCESS {
+        $Sid.ToArray() | Write-Output -NoEnumerate
     }
 }
 
