@@ -3619,6 +3619,8 @@ The process to write to, defaults to current process.
 Specify a mapped section object.
 .PARAMETER Offset
 Specify the offset into the mapped section.
+.PARAMETER Win32
+Specify to use the Win32 WriteProcessMemory API which will automatically change page permissions.
 .OUTPUTS
 int - The length of bytes successfully written.
 .EXAMPLE
@@ -3643,14 +3645,20 @@ function Write-NtVirtualMemory {
         [parameter(Mandatory, Position = 1)]
         [byte[]]$Data,
         [parameter(ParameterSetName="FromAddress")]
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
+        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [switch]$Win32
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromMapping") {
         $Address = $Mapping.BaseAddress + $Offset
         $Process = $Mapping.Process
     }
-    $Process.WriteMemory($Address, $Data)
+
+    if ($Win32) {
+        [NtApiDotNet.Win32.Memory.Win32MemoryUtils]::WriteMemory($Process, $Address, $Data)
+    } else {
+        $Process.WriteMemory($Address, $Data)
+    }
 }
 
 <#

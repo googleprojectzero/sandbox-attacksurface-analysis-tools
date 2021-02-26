@@ -314,6 +314,8 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
+    <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
+    <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />
     <Compile Include="Win32\Net\TcpListenerInformation.cs" />
     <Compile Include="Win32\Net\Win32NetworkNativeMethods.cs" />
     <Compile Include="Win32\Net\Win32NetworkUtils.cs" />
@@ -644,7 +646,9 @@
   <ItemGroup>
     <None Include="Readme.txt" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Utilities\Reflection\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
