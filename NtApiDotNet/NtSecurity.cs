@@ -2217,7 +2217,7 @@ namespace NtApiDotNet
             string name = Enum.GetName(enum_type, value);
             if (name == null)
                 throw new ArgumentException("Value is not a member of the enumerated type.");
-            return GetEnumAttribute<SDKNameAttribute>(enum_type, Enum.GetName(enum_type, value))?.Name ?? name;
+            return GetEnumAttribute<SDKNameAttribute>(enum_type, name)?.Name ?? name;
         }
 
         internal static Sid CacheSidName(Sid sid, string domain, string username, SidNameSource source, SidNameUse name_use)

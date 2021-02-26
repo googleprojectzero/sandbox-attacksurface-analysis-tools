@@ -50,7 +50,7 @@ namespace NtApiDotNet.Win32
             return true;
         }
 
-        private static void AddEnumToDictionary(Dictionary<uint, String> access, Type enumType, uint valid_mask)
+        private static void AddEnumToDictionary(Dictionary<uint, string> access, Type enumType, uint valid_mask, bool sdk_names)
         {
             Regex re = new Regex("([A-Z])");
 
@@ -58,7 +58,9 @@ namespace NtApiDotNet.Win32
             {
                 if (IsValidMask(mask, valid_mask))
                 {
-                    access.Add(mask, re.Replace(Enum.GetName(enumType, mask), " $1").Trim());
+                    string name = sdk_names ? NtSecurity.GetSDKName(enumType, mask) 
+                        : re.Replace(Enum.GetName(enumType, mask), " $1").Trim();
+                    access.Add(mask, name);
                 }
             }
         }
@@ -90,8 +92,20 @@ namespace NtApiDotNet.Win32
         /// <returns>A dictionary mapping a mask value to a name.</returns>
         public static Dictionary<uint, string> GetMaskDictionary(Type access_type, AccessMask valid_access)
         {
+            return GetMaskDictionary(access_type, valid_access, false);
+        }
+
+        /// <summary>
+        /// Get a mask dictionary for a type. 
+        /// </summary>
+        /// <param name="access_type">The enumerated type to query for names.</param>
+        /// <param name="valid_access">The valid access.</param>
+        /// <param name="sdk_names">Specify to get the SDK name instead of a formatting enumerated name.</param>
+        /// <returns>A dictionary mapping a mask value to a name.</returns>
+        public static Dictionary<uint, string> GetMaskDictionary(Type access_type, AccessMask valid_access, bool sdk_names)
+        {
             Dictionary<uint, string> access = new Dictionary<uint, string>();
-            AddEnumToDictionary(access, access_type, valid_access.Access);
+            AddEnumToDictionary(access, access_type, valid_access.Access, sdk_names);
             return access;
         }
 
