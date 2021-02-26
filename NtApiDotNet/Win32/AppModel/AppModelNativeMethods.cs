@@ -64,5 +64,17 @@ namespace NtApiDotNet.Win32.AppModel
         public static extern Win32Error NetworkIsolationFreeAppContainers(
             IntPtr pPublicAppCs
         );
+
+        [DllImport("Firewallapi.dll", CharSet = CharSet.Unicode)]
+        public static extern Win32Error NetworkIsolationGetAppContainerConfig(
+            out int pdwNumPublicAppCs,
+            out SafeProcessHeapBuffer appContainerSids  // PSID_AND_ATTRIBUTES
+        );
+
+        [DllImport("Firewallapi.dll", CharSet = CharSet.Unicode)]
+        public static extern Win32Error NetworkIsolationSetAppContainerConfig(
+            int dwNumPublicAppCs,
+            SidAndAttributes[] appContainerSids
+        );
     }
 }
