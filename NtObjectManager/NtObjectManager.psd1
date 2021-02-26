@@ -114,7 +114,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-RpcStringBinding', 'Start-Win32Service', 'Get-Win32ServiceConfig', 'Get-LsaContextSignature',
           'Test-LsaContextSignature', 'Protect-LsaContextMessage', 'Unprotect-LsaContextMessage',
           'New-LsaSecurityBuffer', 'Get-LsaSchannelCredential', 'Get-LsaCredSSPCredential',
-          'ConvertFrom-LsaSecurityBuffer', 'ConvertFrom-NtSid'
+          'ConvertFrom-LsaSecurityBuffer', 'ConvertFrom-NtSid', 'ConvertFrom-LsaSecurityBuffer', 
+          'Get-AppModelLoopbackException', 'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

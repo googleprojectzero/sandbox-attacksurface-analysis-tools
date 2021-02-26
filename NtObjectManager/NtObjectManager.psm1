@@ -13947,6 +13947,74 @@ function ConvertFrom-LsaSecurityBuffer {
     }
 }
 
+<#
+.SYNOPSIS
+Get list of package SIDs granted loopback exceptions.
+.DESCRIPTION
+This cmdlet gets the list of package SIDs which have been granted loopback exceptions.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid[]
+.EXAMPLE
+Get-AppModelLoopbackException
+Get the list of loopback exception package SIDs.
+#>
+function Get-AppModelLoopbackException {
+    [NtApiDotNet.Win32.AppModel.AppModelUtils]::GetLoopbackException()
+}
+
+<#
+.SYNOPSIS
+Add a package SID to the list of granted loopback exceptions.
+.DESCRIPTION
+This cmdlet adds a package SID to the list of granted loopback exceptions.
+.PARAMETER PackageSid
+The package SID to add.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+None
+.EXAMPLE
+Add-AppModelLoopbackException -PackageSid $package_sid
+Add $package_sid to the list of loopback exceptions.
+#>
+function Add-AppModelLoopbackException {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$PackageSid
+    )
+    PROCESS {
+        [NtApiDotNet.Win32.AppModel.AppModelUtils]::AddLoopbackException($PackageSid)
+    }
+}
+
+<#
+.SYNOPSIS
+Remove a package SID from the list of granted loopback exceptions.
+.DESCRIPTION
+This cmdlet removes a package SID from the list of granted loopback exceptions.
+.PARAMETER PackageSid
+The package SID to remove.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+None
+.EXAMPLE
+Remove-AppModelLoopbackException -PackageSid $package_sid
+Remove $package_sid from the list of loopback exceptions.
+#>
+function Remove-AppModelLoopbackException {
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$PackageSid
+    )
+    PROCESS {
+        [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($PackageSid)
+    }
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
