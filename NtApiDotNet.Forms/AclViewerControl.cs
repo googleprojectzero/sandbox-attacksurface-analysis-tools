@@ -40,6 +40,7 @@ namespace NtApiDotNet.Forms
         private Type _current_access_type;
         private bool _generic_access_mask;
         private bool _read_only_checks;
+        private bool _sdk_names;
 
         /// <summary>
         /// Constructor.
@@ -69,13 +70,15 @@ namespace NtApiDotNet.Forms
         /// <param name="mapping">Generic mapping for the type.</param>
         /// <param name="valid_access">The valid bit mask for access for this type.</param>
         /// <param name="is_container">True to indicate this object is a container.</param>
-        public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
+        /// <param name="sdk_names">Show the ACEs using SDK style names.</param>
+        public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container, bool sdk_names)
         {
             _acl = acl;
             _access_type = access_type;
             _mapping = mapping;
             _valid_access = valid_access;
             _is_container = is_container;
+            _sdk_names = sdk_names;
 
             bool has_conditional_ace = false;
             bool has_inherited_object_ace = false;
@@ -160,26 +163,26 @@ namespace NtApiDotNet.Forms
 
             foreach (var ace in acl)
             {
-                var item = listViewAcl.Items.Add(ace.Type.ToString());
+                var item = listViewAcl.Items.Add(sdk_names ? NtSecurity.AceTypeToSDKName(ace.Type) : ace.Type.ToString());
                 item.SubItems.Add(ace.Sid.Name);
                 string access;
                 if (ace.Type == AceType.MandatoryLabel)
                 {
-                    access = ace.Mask.ToMandatoryLabelPolicy().ToString();
+                    access = NtSecurity.AccessMaskToString(ace.Mask.ToMandatoryLabelPolicy(), sdk_names);
                 }
                 else if (ace.Flags.HasFlag(AceFlags.InheritOnly))
                 {
-                    access = ace.Mask.ToSpecificAccess(access_type).ToString();
+                    access = NtSecurity.AccessMaskToString(ace.Mask.ToSpecificAccess(access_type), sdk_names);
                 }
                 else
                 {
                     AccessMask mapped_mask = mapping.MapMask(ace.Mask);
                     mapped_mask = mapping.UnmapMask(mapped_mask);
-                    access = mapped_mask.ToSpecificAccess(access_type).ToString();
+                    access = NtSecurity.AccessMaskToString(mapped_mask.ToSpecificAccess(access_type), sdk_names);
                 }
 
                 item.SubItems.Add(access);
-                item.SubItems.Add(ace.Flags.ToString());
+                item.SubItems.Add(sdk_names ? NtSecurity.AceFlagsToSDKName(ace.Flags) : ace.Flags.ToString());
                 if (has_conditional_ace)
                 {
                     item.SubItems.Add(ace.Condition);
@@ -229,6 +232,20 @@ namespace NtApiDotNet.Forms
             listViewAcl.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        /// <summary>
+        /// Set ACL for control.
+        /// </summary>
+        /// <param name="acl">The ACL to view.</param>
+        /// <param name="access_type">The enum type for the view.</param>
+        /// <param name="mapping">Generic mapping for the type.</param>
+        /// <param name="valid_access">The valid bit mask for access for this type.</param>
+        /// <param name="is_container">True to indicate this object is a container.</param>
+        /// <param name="sdk_names">Show the ACEs using SDK style names.</param>
+        public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
+        {
+            SetAcl(acl, access_type, mapping, valid_access, is_container, false);
+        }
+
         private Ace GetSelectedAce()
         {
             if (_acl == null)
@@ -276,7 +293,7 @@ namespace NtApiDotNet.Forms
             {
                 _generic_access_mask = generic_access_mask;
                 _current_access_type = access_type;
-                var masks = Win32Utils.GetMaskDictionary(access_type, valid_access);
+                var masks = Win32Utils.GetMaskDictionary(access_type, valid_access, _sdk_names);
                 var ordered = generic_access_mask ? masks.OrderByDescending(p => p.Key) : masks.OrderBy(p => p.Key);
                 ListViewItem[] items = ordered.Select(pair =>
                     {
