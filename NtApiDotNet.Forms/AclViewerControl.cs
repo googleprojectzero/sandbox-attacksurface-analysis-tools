@@ -79,6 +79,7 @@ namespace NtApiDotNet.Forms
             _valid_access = valid_access;
             _is_container = is_container;
             _sdk_names = sdk_names;
+            showSDKNamesToolStripMenuItem.Checked = sdk_names;
 
             bool has_conditional_ace = false;
             bool has_inherited_object_ace = false;
@@ -121,8 +122,11 @@ namespace NtApiDotNet.Forms
                 return;
             }
 
+            listViewAcl.Items.Clear();
             listViewAcl.Visible = true;
             listViewAccess.Visible = true;
+            listViewAccess.Items.Clear();
+            _current_access_type = null;
             groupBoxAclEntries.Visible = true;
             groupBoxAccess.Visible = true;
 
@@ -396,6 +400,11 @@ namespace NtApiDotNet.Forms
 
             // Copy and remove the DACL prefix.
             CopyToClipboard(sd.ToSddl().Substring(2));
+        }
+
+        private void showSDKNamesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SetAcl(_acl, _access_type, _mapping, _valid_access, _is_container, !showSDKNamesToolStripMenuItem.Checked);
         }
     }
 }
