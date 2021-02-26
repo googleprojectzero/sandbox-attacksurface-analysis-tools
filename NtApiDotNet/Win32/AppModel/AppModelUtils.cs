@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.AppModel
 
             using (var list = new DisposableList())
             {
-                return AppModelNativeMethods.NetworkIsolationSetAppContainerConfig(list.Count, 
+                return AppModelNativeMethods.NetworkIsolationSetAppContainerConfig(sids.Count, 
                     list.CreateSidAndAttributes(sids)).ToNtException(throw_on_error);
             }
         }
