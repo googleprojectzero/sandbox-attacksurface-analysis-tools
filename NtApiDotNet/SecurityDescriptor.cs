@@ -444,17 +444,6 @@ namespace NtApiDotNet
             AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
-        private static SafeBuffer BuildObjectTypeList(DisposableList list, Guid[] object_types)
-        {
-            int total_size = object_types.Length * (IntPtr.Size + 16);
-            int guid_base = object_types.Length * IntPtr.Size;
-            var buffer = list.AddResource(new SafeHGlobalBuffer(total_size));
-            IntPtr[] ptrs = Enumerable.Range(0, object_types.Length).Select(i => buffer.DangerousGetHandle() + (i * 16 + guid_base)).ToArray();
-            buffer.WriteArray(0, ptrs, 0, ptrs.Length);
-            buffer.WriteArray((ulong)guid_base, object_types, 0, object_types.Length);
-            return buffer;
-        }
-
         private static NtResult<SafeProcessHeapBuffer> CreateBuffer(
             SecurityDescriptor parent,
             SecurityDescriptor creator,
