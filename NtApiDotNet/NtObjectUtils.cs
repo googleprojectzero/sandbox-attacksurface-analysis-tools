@@ -501,6 +501,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the last NT status code in this thread set for Win32 last error.
+        /// </summary>
+        /// <returns>The last NT status code.</returns>
+        public static NtStatus GetLastNtStatus()
+        {
+            return NtRtl.RtlGetLastNtStatus();
+        }
+
+        /// <summary>
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
