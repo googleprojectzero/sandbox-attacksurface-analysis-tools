@@ -433,6 +433,10 @@ Specify to get the logon SID.
 Specify to get the AppContainer package SID.
 .PARAMETER Token
 Optional token object to use to get SID. Must be accesible for Query right.
+.PARAMETER AsSddl
+Specify to convert the SID to SDDL.
+.PARAMETER AsName
+Specify to convert the SID to a name.
 .INPUTS
 None
 .OUTPUTS
@@ -467,8 +471,10 @@ function Get-NtTokenSid {
         [switch]$Integrity,
         [Parameter(Mandatory, ParameterSetName = "Package")]
         [switch]$Package,
-        [switch]$ToSddl,
-        [switch]$ToName
+        [alias("ToSddl")]
+        [switch]$AsSddl,
+        [alias("ToName")]
+        [switch]$AsName
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access Query
@@ -488,10 +494,10 @@ function Get-NtTokenSid {
             "Package" { $Token.AppContainerSid }
         }
 
-        if ($ToSddl) {
+        if ($AsSddl) {
             $sid.ToString() | Write-Output
         }
-        elseif ($ToName) {
+        elseif ($AsName) {
             $sid.Name | Write-Output
         }
         else {
@@ -2415,7 +2421,7 @@ Specify the path to an NT object for the security descriptor.
 Specify what parts of the security descriptor to format.
 .PARAMETER MapGeneric
 Specify to map access masks back to generic access rights for the object type.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Specify to format the security descriptor as SDDL.
 .PARAMETER Container
 Specify to display the access mask from Container Access Rights.
@@ -2451,10 +2457,10 @@ Format the security descriptor assuming it's a File type.
 Format-NtSecurityDescriptor -Path \BaseNamedObjects
 Format the security descriptor for an object from a path.
 .EXAMPLE
-Format-NtSecurityDescriptor -Object $obj -ToSddl
+Format-NtSecurityDescriptor -Object $obj -AsSddl
 Format the security descriptor of an object as SDDL.
 .EXAMPLE
-Format-NtSecurityDescriptor -Object $obj -ToSddl -SecurityInformation Dacl, Label
+Format-NtSecurityDescriptor -Object $obj -AsSddl -SecurityInformation Dacl, Label
 Format the security descriptor of an object as SDDL with only DACL and Label.
 #>
 function Format-NtSecurityDescriptor {
@@ -2481,7 +2487,8 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.NtObject]$Root,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
-        [switch]$ToSddl,
+        [alias("ToSddl")]
+        [switch]$AsSddl,
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
@@ -2543,7 +2550,7 @@ function Format-NtSecurityDescriptor {
                 $si = [NtApiDotNet.SecurityInformation]::All
             }
 
-            if ($ToSddl) {
+            if ($AsSddl) {
                 $sd.ToSddl($si) | Write-Output
                 return
             }
@@ -3184,7 +3191,7 @@ This cmdlet gets the security descriptor from an object with specified list of s
 The object to get the security descriptor from.
 .PARAMETER SecurityInformation
 The security information to get from the object.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Convert the security descriptor to an SDDL string.
 .PARAMETER Process
 Specify process to a read a security descriptor from memory.
@@ -3210,7 +3217,7 @@ Get the security descriptor with default security information.
 Get-NtSecurityDescriptor $obj Dacl,Owner,Group
 Get the security descriptor with DACL, OWNER and GROUP values.
 .EXAMPLE
-Get-NtSecurityDescriptor $obj Dacl -ToSddl
+Get-NtSecurityDescriptor $obj Dacl -AsSddl
 Get the security descriptor with DACL and output as an SDDL string.
 .EXAMPLE
 Get-NtSecurityDescriptor \BaseNamedObjects\ABC
@@ -3262,7 +3269,8 @@ function Get-NtSecurityDescriptor {
         [int]$ThreadId,
         [parameter(Mandatory, ParameterSetName = "FromNp")]
         [switch]$NamedPipeDefault,
-        [switch]$ToSddl
+        [alias("ToSddl")]
+        [switch]$AsSddl
     )
     PROCESS {
         $sd = switch ($PsCmdlet.ParameterSetName) {
@@ -3295,7 +3303,7 @@ function Get-NtSecurityDescriptor {
                 New-NtSecurityDescriptor -Dacl $dacl -Type File
             }
         }
-        if ($ToSddl) {
+        if ($AsSddl) {
             $sd.ToSddl($SecurityInformation)
         }
         else {
@@ -9370,7 +9378,7 @@ Specify to only print a shortened format removing redundant information.
 Specify to format all security descriptor information including the SACL.
 .PARAMETER HideHeader
 Specify to not print the security descriptor header.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Specify to format the security descriptor as SDDL.
 .PARAMETER Container
 Specify to display the access mask from Container Access Rights.
@@ -9384,10 +9392,10 @@ None
 Format-Win32SecurityDescriptor -Name "c:\windows".
 Format the security descriptor for the c:\windows folder..
 .EXAMPLE
-Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl
+Format-Win32SecurityDescriptor -Name "c:\windows" -AsSddl
 Format the security descriptor of an object as SDDL.
 .EXAMPLE
-Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl -SecurityInformation Dacl, Label
+Format-Win32SecurityDescriptor -Name "c:\windows" -AsSddl -SecurityInformation Dacl, Label
 Format the security descriptor of an object as SDDL with only DACL and Label.
 .EXAMPLE
 Format-Win32SecurityDescriptor -Name "Machine\Software" -Type RegistryKey
@@ -9401,7 +9409,8 @@ function Format-Win32SecurityDescriptor {
         [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$Container,
-        [switch]$ToSddl,
+        [alias("ToSddl")]
+        [switch]$AsSddl,
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
@@ -9411,7 +9420,7 @@ function Format-Win32SecurityDescriptor {
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
-        -Container:$Container -ToSddl:$ToSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
+        -Container:$Container -AsSddl:$AsSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
         -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName
 }
 

@@ -238,13 +238,15 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Output the SID in SDDL format.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter ToSddl { get; set; }
+        [Alias("ToSddl")]
+        public SwitchParameter AsSddl { get; set; }
 
         /// <summary>
         /// <para type="description">Output the name of the SID from LSASS.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter ToName { get; set; }
+        [Alias("ToName")]
+        public SwitchParameter AsName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a SIDs as a byte array.</para>
@@ -343,11 +345,11 @@ namespace NtObjectManager.Cmdlets.Object
                     throw new ArgumentException("No SID type specified");
             }
 
-            if (ToSddl)
+            if (AsSddl)
             {
                 WriteObject(sid.ToString());
             }
-            else if (ToName)
+            else if (AsName)
             {
                 WriteObject(sid.Name);
             }
