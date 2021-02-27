@@ -14023,12 +14023,39 @@ Remove-AppModelLoopbackException -PackageSid $package_sid
 Remove $package_sid from the list of loopback exceptions.
 #>
 function Remove-AppModelLoopbackException {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [NtApiDotNet.Sid]$PackageSid
     )
     PROCESS {
         [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($PackageSid)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the SDK name for an enumerated type or other type.
+.DESCRIPTION
+This cmdlet removes a package SID from the list of granted loopback exceptions.
+.PARAMETER InputObject
+The package SID to remove.
+.INPUTS
+object
+.OUTPUTS
+string
+.EXAMPLE
+Get-NtAccessMask 0x1 -AsSpecificAccess File | Get-SDKName 
+Get the SDK names for an access mask.
+#>
+function Get-SDKName { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        $InputObject
+    )
+    PROCESS {
+        [NtApiDotNet.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
     }
 }
 

@@ -56,6 +56,11 @@ namespace NtApiDotNet.Utilities.Reflection
         /// <returns>The SDK name. Returns the name of the type if not available.</returns>
         public static string GetSDKName(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             return GetSDKNameCached(type, string.Empty) ?? type.Name;
         }
 
@@ -66,6 +71,11 @@ namespace NtApiDotNet.Utilities.Reflection
         /// <returns>The SDK name. If the enum is a flags enum then will return the names joined with commas.</returns>
         public static string GetSDKName(Enum value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             var sdk_name = GetSDKNameCached(value);
             if (sdk_name != null)
                 return sdk_name;
@@ -73,6 +83,29 @@ namespace NtApiDotNet.Utilities.Reflection
             Type type = value.GetType();
             var parts = value.ToString().Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             return string.Join(", ", parts.Select(s => GetSDKNameCached(type, s) ?? s));
+        }
+
+        /// <summary>
+        /// Get the SDK name an object.
+        /// </summary>
+        /// <param name="value">The object to get the name from. If this isn't an Enum or Type then the Type of the object is used.</param>
+        /// <returns>The SDK name.</returns>
+        public static string GetSDKName(object value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (value is Type type)
+            {
+                return GetSDKName(type);
+            }
+            else if (value is Enum en)
+            {
+                return GetSDKName(en);
+            }
+            return GetSDKName(value.GetType());
         }
     }
 }
