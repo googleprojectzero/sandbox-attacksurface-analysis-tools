@@ -205,8 +205,11 @@ namespace NtApiDotNet
     public enum MemoryType
     {
         None = 0,
+        [SDKName("MEM_PRIVATE")]
         Private = 0x20000,
+        [SDKName("MEM_MAPPED")]
         Mapped = 0x40000,
+        [SDKName("MEM_IMAGE")]
         Image = 0x1000000,
         All = Private | Mapped | Image
     }
