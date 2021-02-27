@@ -317,14 +317,24 @@ namespace TokenViewer
         private static string GetChromeSandboxType(ProcessTokenEntry entry)
         {
             string[] args = Win32Utils.ParseCommandLine(entry.CommandLine);
+            string sandbox_type = null;
             foreach (var s in args)
             {
                 if (s.StartsWith("--type="))
                 {
-                    return $"Sandbox: {s.Substring(7)}";
+                    sandbox_type = s.Substring(7);
+                    if (!sandbox_type.Equals("utility", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                }
+                else if (s.StartsWith("--utility-sub-type="))
+                {
+                    sandbox_type = $"utility.{s.Substring(19)}";
+                    break;
                 }
             }
-            return "Unknown";
+            return $"Sandbox: {sandbox_type ?? "Unknown"}";
         }
 
         public MainForm()
