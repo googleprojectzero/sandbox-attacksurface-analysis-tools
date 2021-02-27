@@ -14,8 +14,9 @@
 
 using System;
 
-namespace NtApiDotNet
+namespace NtApiDotNet.Utilities.Reflection
 {
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     internal sealed class SDKNameAttribute : Attribute
     {
         public string Name { get; }

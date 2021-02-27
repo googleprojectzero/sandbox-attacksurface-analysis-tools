@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32;
 using System;

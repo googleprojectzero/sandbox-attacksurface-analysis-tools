@@ -111,7 +111,8 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
-    <Compile Include="SDKNameAttribute.cs" />
+    <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
+    <Compile Include="Utilities\Reflection\SDKNameAttribute.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
     <Compile Include="Security\Policy\CentralAccessPolicy.cs" />
     <Compile Include="Security\Policy\CentralAccessRule.cs" />
@@ -646,9 +647,7 @@
   <ItemGroup>
     <None Include="Readme.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Utilities\Reflection\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

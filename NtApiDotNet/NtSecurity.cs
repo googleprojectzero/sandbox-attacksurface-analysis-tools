@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Security.Policy;
+using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
