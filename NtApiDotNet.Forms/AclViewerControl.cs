@@ -250,6 +250,22 @@ namespace NtApiDotNet.Forms
             SetAcl(acl, access_type, mapping, valid_access, is_container, false);
         }
 
+        /// <summary>
+        /// Reset the existing ACL for the control.
+        /// </summary>
+        /// <param name="sdk_names">Show the ACEs using SDK style names.</param>
+        public void ResetAcl(bool sdk_names)
+        {
+            SetAcl(_acl, _access_type, _mapping, _valid_access, _is_container, sdk_names);
+        }
+
+        public bool ShowSDKName => showSDKNamesToolStripMenuItem.Checked;
+
+        /// <summary>
+        /// Event for when SDK name property is changed.
+        /// </summary>
+        public EventHandler ShowSDKNameChanged;
+
         private Ace GetSelectedAce()
         {
             if (_acl == null)
@@ -404,7 +420,8 @@ namespace NtApiDotNet.Forms
 
         private void showSDKNamesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SetAcl(_acl, _access_type, _mapping, _valid_access, _is_container, !showSDKNamesToolStripMenuItem.Checked);
+            ResetAcl(!showSDKNamesToolStripMenuItem.Checked);
+            ShowSDKNameChanged?.Invoke(this, new EventArgs());
         }
     }
 }

@@ -91,6 +91,11 @@ namespace NtApiDotNet.Forms
         {
             AddAclTab(tabPageDACL, aclViewerControlDacl, security_descriptor.Dacl, access_type, mapping, valid_access, is_container);
             AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, valid_access, is_container);
+            if (security_descriptor.Dacl != null && security_descriptor.Sacl != null)
+            {
+                aclViewerControlDacl.ShowSDKNameChanged += (o, e) => aclViewerControlSacl.ResetAcl(aclViewerControlDacl.ShowSDKName);
+                aclViewerControlSacl.ShowSDKNameChanged += (o, e) => aclViewerControlDacl.ResetAcl(aclViewerControlSacl.ShowSDKName);
+            }
             SetSidLabel(lblOwnerValue, security_descriptor.Owner);
             SetSidLabel(lblGroupValue, security_descriptor.Group);
             Ace label = security_descriptor.GetMandatoryLabel();
