@@ -236,7 +236,7 @@ namespace NtApiDotNet
         MemoryPhysicalContiguityInformation,
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("MEMORY_BASIC_INFORMATION")]
     public struct MemoryBasicInformation
     {
         public IntPtr BaseAddress;
@@ -248,7 +248,7 @@ namespace NtApiDotNet
         public MemoryType Type;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("MEMORY_WORKING_SET_EX_BLOCK")]
     public struct MemoryWorkSetExBlock
     {
         private IntPtr _flags;
@@ -262,14 +262,14 @@ namespace NtApiDotNet
         public bool Bad => Flags.GetBit(31);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("MEMORY_WORKING_SET_EX_LOCATION")]
     public struct MemoryWorkingSetExInformation
     {
         public IntPtr VirtualAddress;
         public MemoryWorkSetExBlock VirtualAttributes;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("MEMORY_IMAGE_INFORMATION")]
     public struct MemoryImageInformation
     {
         public IntPtr ImageBase;
@@ -296,7 +296,7 @@ namespace NtApiDotNet
         PlaceholderReservation = 0x100
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("MEMORY_REGION_INFORMATION")]
     public struct MemoryRegionInformation
     {
         public IntPtr AllocationBase;
