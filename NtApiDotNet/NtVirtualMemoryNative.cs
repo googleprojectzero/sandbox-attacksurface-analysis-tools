@@ -90,6 +90,12 @@ namespace NtApiDotNet
             IntPtr Mapped1,
             IntPtr Mapped2
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtFlushInstructionCache(
+            SafeKernelObjectHandle ProcessHandle,
+            IntPtr BaseAddress,
+            int NumberOfBytesToFlush);
     }
 
     [Flags]
