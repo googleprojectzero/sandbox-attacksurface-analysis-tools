@@ -47,7 +47,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// Create IUsr Service token.
         /// </summary>
-        IUser,
+        IUsr,
     }
 
     /// <summary>
@@ -731,7 +731,7 @@ namespace NtObjectManager.Cmdlets.Object
                 case ServiceAccountType.NetworkService:
                     user = "Network Service";
                     break;
-                case ServiceAccountType.IUser:
+                case ServiceAccountType.IUsr:
                     user = "IUsr";
                     break;
             }

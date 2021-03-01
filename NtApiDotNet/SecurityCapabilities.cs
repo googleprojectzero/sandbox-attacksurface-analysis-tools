@@ -518,6 +518,7 @@ namespace NtApiDotNet
             "ID_CAP_PRIV_ZMEDIAQUEUESVC",
             "ID_CAP_PRIV_ZMF",
             "ID_CAP_PRIV_ZMF_SERVICE",
+            "ID_CAP_PROVISIONING_PACKAGE_API_ADMIN",
             "ID_CAP_PROVISIONWPCERTIFICATE",
             "ID_CAP_PROXIMITY",
             "ID_CAP_PUBLIC_FOLDER_FULL",
