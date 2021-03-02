@@ -58,33 +58,56 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceStatus
     {
+        [SDKName("SERVICE_STOPPED")]
         Stopped = 1,
+        [SDKName("SERVICE_START_PENDING")]
         StartPending = 2,
+        [SDKName("SERVICE_STOP_PENDING")]
         StopPending = 3,
+        [SDKName("SERVICE_RUNNING")]
         Running = 4,
+        [SDKName("SERVICE_CONTINUE_PENDING")]
         ContinuePending = 5,
+        [SDKName("SERVICE_PAUSE_PENDING")]
         PausePending = 6,
+        [SDKName("SERVICE_PAUSED")]
         Paused = 7,
     }
 
     [Flags]
     public enum ServiceControlsAccepted
     {
+        [SDKName("NONE")]
         None = 0,
+        [SDKName("SERVICE_ACCEPT_STOP")]
         Stop = 1,
+        [SDKName("SERVICE_ACCEPT_PAUSE_CONTINUE")]
         PauseContinue = 2,
+        [SDKName("SERVICE_ACCEPT_SHUTDOWN")]
         Shutdown = 4,
+        [SDKName("SERVICE_ACCEPT_PARAMCHANGE")]
         ParamChange = 8,
+        [SDKName("SERVICE_ACCEPT_NETBINDCHANGE")]
         NetBindChange = 0x10,
+        [SDKName("SERVICE_ACCEPT_HARDWAREPROFILECHANGE")]
         HardwareProfileChange = 0x20,
+        [SDKName("SERVICE_ACCEPT_POWEREVENT")]
         PowerEvent = 0x40,
+        [SDKName("SERVICE_ACCEPT_SESSIONCHANGE")]
         SessionChange = 0x80,
+        [SDKName("SERVICE_ACCEPT_PRESHUTDOWN")]
         PreShutdown = 0x100,
+        [SDKName("SERVICE_ACCEPT_TIMECHANGE")]
         Timechange = 0x200,
+        [SDKName("SERVICE_ACCEPT_TRIGGEREVENT")]
         TriggerEvent = 0x400,
+        [SDKName("SERVICE_ACCEPT_USER_LOGOFF")]
         UserLogoff = 0x800,
+        [SDKName("SERVICE_ACCEPT_INTERNAL")]
         Internal = 0x1000,
+        [SDKName("SERVICE_ACCEPT_LOWRESOURCES")]
         LowResources = 0x2000,
+        [SDKName("SERVICE_ACCEPT_SYSTEMLOWRESOURCES")]
         SystemLowResources = 0x4000
     }
 
@@ -281,9 +304,12 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceSidType
     {
+        [SDKName("SERVICE_SID_TYPE_NONE")]
         None = 0,
+        [SDKName("SERVICE_SID_TYPE_UNRESTRICTED")]
         Unrestricted = 1,
-        Restricted = 3
+        [SDKName("SERVICE_SID_TYPE_RESTRICTED")]
+        Restricted = Unrestricted | 2
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -294,10 +320,15 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceLaunchProtectedType
     {
+        [SDKName("SERVICE_LAUNCH_PROTECTED_NONE")]
         None = 0,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_WINDOWS")]
         Windows = 1,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT")]
         WindowsLight = 2,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT")]
         AntimalwareLight = 3,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_APP_LIGHT")]
         AppLight = 4,
     }
 
@@ -360,6 +391,27 @@ namespace NtApiDotNet.Win32
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct SERVICE_REQUIRED_PRIVILEGES_INFO
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pmszRequiredPrivileges;
+    }
+
+    internal enum SERVICE_CONFIG_INFO_LEVEL
+    {
+        DESCRIPTION = 1,
+        FAILURE_ACTIONS = 2,
+        DELAYED_AUTO_START_INFO = 3,
+        FAILURE_ACTIONS_FLAG = 4,
+        SERVICE_SID_INFO = 5,
+        REQUIRED_PRIVILEGES_INFO = 6,
+        PRESHUTDOWN_INFO = 7,
+        TRIGGER_INFO = 8,
+        PREFERRED_NODE = 9,
+        LAUNCH_PROTECTED = 12,
+    }
+
 #pragma warning restore
     /// <summary>
     /// Utilities for accessing services.
@@ -367,12 +419,6 @@ namespace NtApiDotNet.Win32
     public static class ServiceUtils
     {
         #region Private Members
-        private const int SERVICE_CONFIG_TRIGGER_INFO = 8;
-        private const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
-        private const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
-        private const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
-        private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
-
         internal static string GetString(this IntPtr ptr)
         {
             if (ptr != IntPtr.Zero)
@@ -454,7 +500,7 @@ namespace NtApiDotNet.Win32
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.TRIGGER_INFO,
                     buf, buf.Length, out int required))
                 {
                     return triggers.AsReadOnly();
@@ -487,7 +533,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeHGlobalBuffer(8192))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.REQUIRED_PRIVILEGES_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return new string[0];
@@ -501,7 +547,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_SID_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_SERVICE_SID_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.SERVICE_SID_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return ServiceSidType.None;
@@ -514,7 +560,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_LAUNCH_PROTECTED_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_LAUNCH_PROTECTED,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.LAUNCH_PROTECTED,
                         buf, buf.Length, out int needed))
                 {
                     return ServiceLaunchProtectedType.None;
@@ -527,7 +573,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_DELAYED_AUTO_START_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.DELAYED_AUTO_START_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return false;
@@ -670,6 +716,24 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
                 }
                 return OpenService(scm, name, desired_access, throw_on_error);
+            }
+        }
+
+        private static NtStatus ChangeServiceConfig2(string machine_name, string name, SERVICE_CONFIG_INFO_LEVEL info_level, SafeBuffer buffer, bool throw_on_error)
+        {
+            using (var service = OpenService(machine_name, name, ServiceAccessRights.ChangeConfig, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return Win32NativeMethods.ChangeServiceConfig2(service.Result, info_level, buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        private static NtStatus ChangeServiceConfig2<T>(string machine_name, string name, SERVICE_CONFIG_INFO_LEVEL info_level, T value, bool throw_on_error) where T : struct
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                return ChangeServiceConfig2(machine_name, name, info_level, buffer, throw_on_error);
             }
         }
 
@@ -1680,6 +1744,147 @@ namespace NtApiDotNet.Win32
         public static void StartService(string name, string[] args)
         {
             StartService(name, args, true);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceSidType(string machine_name, string name, ServiceSidType sid_type, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.SERVICE_SID_INFO, 
+                new SERVICE_SID_INFO() { dwServiceSidType = sid_type }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        public static void SetServiceSidType(string machine_name, string name, ServiceSidType sid_type)
+        {
+            SetServiceSidType(machine_name, name, sid_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceSidType(string name, ServiceSidType sid_type, bool throw_on_error)
+        {
+            return SetServiceSidType(name, sid_type, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        public static void SetServiceSidType(string name, ServiceSidType sid_type)
+        {
+            SetServiceSidType(name, sid_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceRequiredPrivileges(string machine_name, string name, string[] privileges, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.REQUIRED_PRIVILEGES_INFO,
+                new SERVICE_REQUIRED_PRIVILEGES_INFO() { pmszRequiredPrivileges = privileges.ToMultiString() }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        public static void SetServiceRequiredPrivileges(string machine_name, string name, string[] privileges)
+        {
+            SetServiceRequiredPrivileges(machine_name, name, privileges, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceRequiredPrivileges(string name, string[] privileges, bool throw_on_error)
+        {
+            return SetServiceRequiredPrivileges(name, privileges, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        public static void SetServiceRequiredPrivileges(string name, string[] privileges)
+        {
+            SetServiceRequiredPrivileges(name, privileges, true);
+        }
+
+        /// <summary>
+        /// Set a service's launch protected type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceLaunchProtected(string machine_name, string name, ServiceLaunchProtectedType protected_type, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.LAUNCH_PROTECTED,
+                new SERVICE_LAUNCH_PROTECTED_INFO() { dwLaunchProtected = protected_type }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's launch protected type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        public static void SetServiceLaunchProtected(string machine_name, string name, ServiceLaunchProtectedType protected_type)
+        {
+            SetServiceLaunchProtected(machine_name, name, protected_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceLaunchProtected(string name, ServiceLaunchProtectedType protected_type, bool throw_on_error)
+        {
+            return SetServiceLaunchProtected(name, protected_type, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        public static void SetServiceLaunchProtected(string name, ServiceLaunchProtectedType protected_type)
+        {
+            SetServiceLaunchProtected(name, protected_type, true);
         }
 
         #endregion
