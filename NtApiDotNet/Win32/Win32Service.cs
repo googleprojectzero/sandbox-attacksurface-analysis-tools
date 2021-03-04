@@ -148,6 +148,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string ServiceMain => _service_information.Value.ServiceMain;
         /// <summary>
+        /// Indicates if this service process is grouped with others.
+        /// </summary>
+        public bool SvcHostSplitDisabled => _service_information.Value.SvcHostSplitDisabled;
+        /// <summary>
         /// The name of the machine this service was found on.
         /// </summary>
         public string MachineName { get; }
