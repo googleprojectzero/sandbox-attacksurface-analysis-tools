@@ -24,11 +24,11 @@ namespace NtObjectManager.Cmdlets.Win32
     /// or remotely.</para>
     /// </summary>
     /// <example>
-    ///   <code>Set-Win32Service -Name "DEMO" -Path "c:\target\path.exe"</code>
+    ///   <code>Set-Win32ServiceConfig -Name "DEMO" -Path "c:\target\path.exe"</code>
     ///   <para>Set the binary path for the service DEMO.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Set, "Win32Service")]
-    public sealed class SetWin32ServiceCmdlet : PSCmdlet
+    [Cmdlet(VerbsCommon.Set, "Win32ServiceConfig")]
+    public sealed class SetWin32ServiceConfigCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify the name of the service.</para>

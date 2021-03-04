@@ -61,7 +61,7 @@
     <Compile Include="Cmdlets\Accessible\GetAccessibleWnfCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\ProcessTokenInformation.cs" />
     <Compile Include="Cmdlets\Accessible\ScheduledTaskAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Win32\SetWin32ServiceCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\SetWin32ServiceConfigCmdlet.cs" />
     <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskEntry.cs" />
