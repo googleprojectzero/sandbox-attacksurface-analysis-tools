@@ -13506,6 +13506,8 @@ Specify the list of arguments to the service.
 Query for the service status after starting.
 .PARAMETER MachineName
 Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service to start.
 .INPUTS
 None
 .OUTPUTS
@@ -13518,13 +13520,76 @@ function Start-Win32Service {
         [string]$Name,
         [string[]]$ArgumentList,
         [switch]$PassThru,
-        [string]$MachineName
+        [string]$MachineName,
+        [switch]$NoWait
     )
 
-    [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
-    if ($PassThru) {
-        Get-Win32Service -Name $Name -MachineName $MachineName
+    try {
+        [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
+        if (!$NoWait) {
+            if (!(Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running)) {
+                Write-Error "Service didn't start in time"
+                return
+            }
+        }
+        if ($PassThru) {
+            Get-Win32Service -Name $Name -MachineName $MachineName
+        }
     }
+    catch {
+        Write-Error $_
+    }
+
+}
+
+<#
+.SYNOPSIS
+Wait for a Win32 service status.
+.DESCRIPTION
+This cmdlet waits for a Win32 service to reach a certain status. Returns true if the status was reached. False if timed out or other error.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Status
+Specify the status to wait for.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER TimeoutSec
+Specify the timeout in seconds.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+#>
+function Wait-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.ServiceStatus]$Status,
+        [string]$MachineName,
+        [int]$TimeoutSec = [int]::MaxValue
+    )
+
+    try {
+        if ($TimeoutSec -le 0) {
+            return (Get-Win32Service -Name $Name -MachineName $MachineName).Status -eq $Status
+        }
+
+        $timeout_ms = $TimeoutSec * 1000
+        while ($timeout_ms -gt 0) {
+            $service = Get-Win32Service -Name $Name -MachineName $MachineName
+            if ($service.Status -eq $Status) {
+                return $true
+            }
+
+            Start-Sleep -Milliseconds 250
+            $timeout_ms -= 250
+        }
+    } catch {
+        Write-Error $_
+    }
+    return $false
 }
 
 <#
