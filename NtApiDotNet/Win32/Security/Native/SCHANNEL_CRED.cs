@@ -18,6 +18,13 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
+    internal enum SCH_CRED_FORMAT
+    {
+        CERT = 0,
+        CERT_HASH = 1,
+        CERT_HASH_STORE = 2,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct SCHANNEL_CRED
     {
@@ -33,11 +40,11 @@ namespace NtApiDotNet.Win32.Security.Native
         public int cSupportedAlgs;
         public IntPtr palgSupportedAlgs; // ALG_ID*
 
-        public int grbitEnabledProtocols;
+        public SchannelProtocolType grbitEnabledProtocols;
         public int dwMinimumCipherStrength;
         public int dwMaximumCipherStrength;
         public int dwSessionLifespan;
         public SchannelCredentialsFlags dwFlags;
-        public int dwCredFormat;
+        public SCH_CRED_FORMAT dwCredFormat;
     }
 }

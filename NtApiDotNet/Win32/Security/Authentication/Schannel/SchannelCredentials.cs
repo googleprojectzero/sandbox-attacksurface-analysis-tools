@@ -27,6 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
     public sealed class SchannelCredentials : AuthenticationCredentials, IDisposable
     {
         private readonly List<X509Certificate2> _certs = new List<X509Certificate2>();
+        private readonly List<SchannelAlgorithmType> _alg_types = new List<SchannelAlgorithmType>();
 
         /// <summary>
         /// Lifespan of a session in milliseconds.
@@ -39,6 +40,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
         public SchannelCredentialsFlags Flags { get; set; }
 
         /// <summary>
+        /// Specify the supported protocols.
+        /// </summary>
+        public SchannelProtocolType Protocols { get; set; }
+
+        /// <summary>
+        /// Set the minimum cipher strength.
+        /// </summary>
+        public int MinimumCipherStrength { get; set; }
+
+        /// <summary>
+        /// Set the maximum cipher strength.
+        /// </summary>
+        public int MaximumCipherStrength { get; set; }
+
+        /// <summary>
         /// Add a certificate the the credentials. This should contain a private key.
         /// </summary>
         /// <param name="certificate">The certificate to add.</param>
@@ -48,6 +64,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
             if (!cert2.HasPrivateKey)
                 throw new ArgumentException("Must provide a certificate with a private key.", nameof(certificate));
             _certs.Add(new X509Certificate2(certificate));
+        }
+
+        /// <summary>
+        /// Add an algorithm type to the credentials.
+        /// </summary>
+        /// <param name="algorithm">The algorithm type.</param>
+        public void AddAlgorithm(SchannelAlgorithmType algorithm)
+        {
+            _alg_types.Add(algorithm);
         }
 
         /// <summary>
@@ -76,7 +101,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
             {
                 dwVersion = SCHANNEL_CRED.SCHANNEL_CRED_VERSION,
                 dwSessionLifespan = SessionLifespan,
-                dwFlags = Flags
+                dwFlags = Flags,
+                grbitEnabledProtocols = Protocols,
+                dwMinimumCipherStrength = MinimumCipherStrength,
+                dwMaximumCipherStrength = MaximumCipherStrength
             };
             if (_certs.Count > 0)
             {
@@ -84,6 +112,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
                 var array_buffer = list.AddResource(cred_handles.ToBuffer());
                 creds.cCreds = cred_handles.Length;
                 creds.paCred = array_buffer.DangerousGetHandle();
+            }
+            if (_alg_types.Count > 0)
+            {
+                creds.cSupportedAlgs = _alg_types.Count;
+                creds.palgSupportedAlgs = list.AddResource(_alg_types.Select(a => (int)a).ToArray().ToBuffer()).DangerousGetHandle();
             }
 
             return creds.ToBuffer();
