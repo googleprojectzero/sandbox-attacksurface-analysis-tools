@@ -30,29 +30,45 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public enum ServiceTriggerType
     {
+        [SDKName("SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL")]
         DeviceInterfaceArrival = 1,
+        [SDKName("SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY")]
         IPAddressAvailability = 2,
+        [SDKName("SERVICE_TRIGGER_TYPE_DOMAIN_JOIN")]
         DomainJoin = 3,
+        [SDKName("SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT")]
         FirewallPortEvent = 4,
+        [SDKName("SERVICE_TRIGGER_TYPE_GROUP_POLICY")]
         GroupPolicy = 5,
+        [SDKName("SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT")]
         NetworkEndpoint = 6,
+        [SDKName("SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE")]
         CustomSystemStateChange = 7,
+        [SDKName("SERVICE_TRIGGER_TYPE_CUSTOM")]
         Custom = 20,
+        [SDKName("SERVICE_TRIGGER_TYPE_AGGREGATE")]
         Aggregate = 30,
     }
 
     public enum ServiceTriggerDataType
     {
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_BINARY")]
         Binary = 1,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_STRING")]
         String = 2,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_LEVEL")]
         Level = 3,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY")]
         KeywordAny = 4,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL")]
         KeywordAll = 5,
     }
 
     public enum ServiceTriggerAction
     {
+        [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_START")]
         Start = 1,
+        [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_STOP")]
         Stop = 2
     }
 
@@ -115,24 +131,25 @@ namespace NtApiDotNet.Win32
     public enum ServiceFlags
     {
         None = 0,
+        [SDKName("SERVICE_RUNS_IN_SYSTEM_PROCESS")]
         RunsInSystemProcess
     }
 
     [Flags]
     public enum ServiceControlManagerAccessRights : uint
     {
-        [SDKName("SC_MANAGER_CREATE_SERVICE")]
-        CreateService = 0x0002,
         [SDKName("SC_MANAGER_CONNECT")]
         Connect = 0x0001,
+        [SDKName("SC_MANAGER_CREATE_SERVICE")]
+        CreateService = 0x0002,
         [SDKName("SC_MANAGER_ENUMERATE_SERVICE")]
         EnumerateService = 0x0004,
         [SDKName("SC_MANAGER_LOCK")]
         Lock = 0x0008,
-        [SDKName("SC_MANAGER_MODIFY_BOOT_CONFIG")]
-        ModifyBootConfig = 0x0020,
         [SDKName("SC_QUERY_LOCK_STATUS")]
         QueryLockStatus = 0x0010,
+        [SDKName("SC_MANAGER_MODIFY_BOOT_CONFIG")]
+        ModifyBootConfig = 0x0020,
         [SDKName("SC_MANAGER_ALL_ACCESS")]
         All = CreateService | Connect | EnumerateService
             | Lock | ModifyBootConfig | QueryLockStatus | ReadControl
@@ -254,17 +271,30 @@ namespace NtApiDotNet.Win32
     [Flags]
     public enum ServiceType
     {
+        [SDKName("SERVICE_KERNEL_DRIVER")]
         KernelDriver = 0x00000001,
+        [SDKName("SERVICE_FILE_SYSTEM_DRIVER")]
         FileSystemDriver = 0x00000002,
+        [SDKName("SERVICE_ADAPTER")]
         Adapter = 0x00000004,
+        [SDKName("SERVICE_RECOGNIZER_DRIVER")]
         RecognizerDriver = 0x00000008,
+        [SDKName("SERVICE_DRIVER")]
         Driver = KernelDriver | FileSystemDriver | Adapter | RecognizerDriver,
+        [SDKName("SERVICE_WIN32_OWN_PROCESS")]
         Win32OwnProcess = 0x00000010,
+        [SDKName("SERVICE_WIN32_SHARE_PROCESS")]
         Win32ShareProcess = 0x00000020,
+        [SDKName("SERVICE_WIN32")]
         Win32 = Win32OwnProcess | Win32ShareProcess,
+        [SDKName("SERVICE_USER_SERVICE")]
         UserService = 0x00000040,
+        [SDKName("SERVICE_USERSERVICE_INSTANCE")]
         UserServiceInstance = 0x00000080,
-        InteractiveProcess = 0x00000100
+        [SDKName("SERVICE_INTERACTIVE_PROCESS")]
+        InteractiveProcess = 0x00000100,
+        [SDKName("SERVICE_PKG_SERVICE")]
+        PkgService = 0x00000200
     }
 
     public enum ServiceState
@@ -359,18 +389,27 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceStartType
     {
+        [SDKName("SERVICE_BOOT_START")]
         Boot = 0,
+        [SDKName("SERVICE_SYSTEM_START")]
         System = 1,
+        [SDKName("SERVICE_AUTO_START")]
         Auto = 2,
+        [SDKName("SERVICE_DEMAND_START")]
         Demand = 3,
+        [SDKName("SERVICE_DISABLED")]
         Disabled = 4,
     }
 
     public enum ServiceErrorControl
     {
+        [SDKName("SERVICE_ERROR_IGNORE")]
         Ignore = 0,
+        [SDKName("SERVICE_ERROR_NORMAL")]
         Normal = 1,
+        [SDKName("SERVICE_ERROR_SEVERE")]
         Severe = 2,
+        [SDKName("SERVICE_ERROR_CRITICAL")]
         Critical = 3
     }
 
