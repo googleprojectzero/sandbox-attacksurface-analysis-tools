@@ -13527,8 +13527,8 @@ function Start-Win32Service {
     try {
         [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
         if (!$NoWait) {
-            if (!(Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running)) {
-                Write-Error "Service didn't start in time"
+            if (!(Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running -TimeoutSec 30)) {
+                Write-Error "Service didn't start in time."
                 return
             }
         }
@@ -13539,7 +13539,86 @@ function Start-Win32Service {
     catch {
         Write-Error $_
     }
+}
 
+<#
+.SYNOPSIS
+Send a control code to a Win32 service.
+.DESCRIPTION
+This cmdlet sends a control code to a Win32 service.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Control
+Specify the control code to send.
+.PARAMETER CustomControl
+Specify to send a custom control code. Typically in the range of 128 to 255.
+.PARAMETER PassThru
+Query for the service status after sending the code.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service control to be handled.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Win32Service
+#>
+function Send-Win32Service {
+    [CmdletBinding(DefaultParameterSetName="FromControl")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromControl")]
+        [NtApiDotNet.Win32.ServiceControlCode]$Control,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCustomControl")]
+        [int]$CustomControl,
+        [switch]$PassThru,
+        [string]$MachineName,
+        [parameter(ParameterSetName="FromControl")]
+        [switch]$NoWait
+    )
+
+    try {
+        $wait = switch($PSCmdlet.ParameterSetName) {
+            "FromControl" {
+                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $Control)
+                !$NoWait
+            }
+            "FromCustomControl" {
+                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $CustomControl)
+                $false
+            }
+        }
+
+        if ($wait) {
+            $wait_state = switch($Control) {
+                "Stop" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Stopped -TimeoutSec 30
+                }
+                "Pause" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Paused -TimeoutSec 30
+                }
+                "Continue" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running -TimeoutSec 30
+                }
+                default { 
+                    # Anything else we just return success.
+                    $true 
+                }
+            }
+
+            if (!$wait_state) {
+                Write-Error "Service didn't respond to control in time."
+                return
+            }
+        }
+        if ($PassThru) {
+            Get-Win32Service -Name $Name -MachineName $MachineName
+        }
+    }
+    catch {
+        Write-Error $_
+    }
 }
 
 <#

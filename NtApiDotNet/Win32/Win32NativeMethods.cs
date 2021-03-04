@@ -1025,6 +1025,13 @@ namespace NtApiDotNet.Win32
           [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] lpServiceArgVectors
         );
 
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool ControlService(
+          SafeServiceHandle hService,
+          ServiceControlCode dwControl,
+          out SERVICE_STATUS lpServiceStatus
+        );
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool InitializeProcThreadAttributeList(
             IntPtr lpAttributeList,

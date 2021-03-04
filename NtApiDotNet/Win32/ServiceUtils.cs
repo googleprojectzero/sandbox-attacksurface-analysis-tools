@@ -226,6 +226,18 @@ namespace NtApiDotNet.Win32
         public ServiceFlags dwServiceFlags;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_STATUS
+    {
+        public ServiceType dwServiceType;
+        public ServiceStatus dwCurrentState;
+        public ServiceControlsAccepted dwControlsAccepted;
+        public Win32Error dwWin32ExitCode;
+        public int dwServiceSpecificExitCode;
+        public int dwCheckPoint;
+        public int dwWaitHint;
+    }
+
     internal enum SC_ENUM_TYPE
     {
         SC_ENUM_PROCESS_INFO = 0
@@ -360,6 +372,54 @@ namespace NtApiDotNet.Win32
         Normal = 1,
         Severe = 2,
         Critical = 3
+    }
+
+    public enum ServiceControlCode
+    {
+        [SDKName("SERVICE_CONTROL_STOP")]
+        Stop = 0x00000001,
+        [SDKName("SERVICE_CONTROL_PAUSE")]
+        Pause = 0x00000002,
+        [SDKName("SERVICE_CONTROL_CONTINUE")]
+        Continue = 0x00000003,
+        [SDKName("SERVICE_CONTROL_INTERROGATE")]
+        Interrogate = 0x00000004,
+        [SDKName("SERVICE_CONTROL_SHUTDOWN")]
+        Shutdown = 0x00000005,
+        [SDKName("SERVICE_CONTROL_PARAMCHANGE")]
+        ParamChange = 0x00000006,
+        [SDKName("SERVICE_CONTROL_NETBINDADD")]
+        NetBindAdd = 0x00000007,
+        [SDKName("SERVICE_CONTROL_NETBINDREMOVE")]
+        NetBindRemove = 0x00000008,
+        [SDKName("SERVICE_CONTROL_NETBINDENABLE")]
+        NetBindEnable = 0x00000009,
+        [SDKName("SERVICE_CONTROL_NETBINDDISABLE")]
+        NetBindDisable = 0x0000000A,
+        [SDKName("SERVICE_CONTROL_DEVICEEVENT")]
+        DeviceEvent = 0x0000000B,
+        [SDKName("SERVICE_CONTROL_HARDWAREPROFILECHANGE")]
+        HardwareProfileChange = 0x0000000C,
+        [SDKName("SERVICE_CONTROL_POWEREVENT")]
+        PowerEvent = 0x0000000D,
+        [SDKName("SERVICE_CONTROL_SESSIONCHANGE")]
+        SessionChange = 0x0000000E,
+        [SDKName("SERVICE_CONTROL_PRESHUTDOWN")]
+        PreShutdown = 0x0000000F,
+        [SDKName("SERVICE_CONTROL_TIMECHANGE")]
+        TimeChange = 0x00000010,
+        [SDKName("SERVICE_CONTROL_USER_LOGOFF")]
+        UserLogoff = 0x00000011,
+        [SDKName("SERVICE_CONTROL_TRIGGEREVENT")]
+        TriggerEvent = 0x00000020,
+        [SDKName("SERVICE_CONTROL_INTERNAL21")]
+        Internal21 = 0x00000021,
+        [SDKName("SERVICE_CONTROL_INTERNAL50")]
+        Internal50 = 0x00000050,
+        [SDKName("SERVICE_CONTROL_LOWRESOURCES")]
+        LowResources = 0x00000060,
+        [SDKName("SERVICE_CONTROL_SYSTEMLOWRESOURCES")]
+        SystemLowResources = 0x00000061
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -734,6 +794,29 @@ namespace NtApiDotNet.Win32
             using (var buffer = value.ToBuffer())
             {
                 return ChangeServiceConfig2(machine_name, name, info_level, buffer, throw_on_error);
+            }
+        }
+
+        private static ServiceAccessRights ControlCodeToAccess(ServiceControlCode control_code)
+        {
+            switch (control_code)
+            {
+                case ServiceControlCode.Stop:
+                    return ServiceAccessRights.Stop;
+                case ServiceControlCode.Continue:
+                case ServiceControlCode.Pause:
+                case ServiceControlCode.ParamChange:
+                case ServiceControlCode.NetBindAdd:
+                case ServiceControlCode.NetBindDisable:
+                case ServiceControlCode.NetBindEnable:
+                case ServiceControlCode.NetBindRemove:
+                    return ServiceAccessRights.PauseContinue;
+                case ServiceControlCode.Interrogate:
+                    return ServiceAccessRights.Interrogate;
+                default:
+                    if ((int)control_code >= 128)
+                        return ServiceAccessRights.UserDefinedControl;
+                    return ServiceAccessRights.All;
             }
         }
 
@@ -1546,6 +1629,67 @@ namespace NtApiDotNet.Win32
         public static void DeleteService(string name)
         {
             DeleteService(name, true);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ControlService(string machine_name, string name, ServiceControlCode control_code, bool throw_on_error)
+        {
+            ServiceAccessRights desired_access = ControlCodeToAccess(control_code);
+            using (var service = OpenService(machine_name, name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return Win32NativeMethods.ControlService(service.Result, control_code, out _).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string machine_name, string name, ServiceControlCode control_code)
+        {
+            ControlService(machine_name, name, control_code, true);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string machine_name, string name, int control_code)
+        {
+            ControlService(machine_name, name, (ServiceControlCode)control_code, true);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string name, ServiceControlCode control_code)
+        {
+            ControlService(null, name, control_code);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string name, int control_code)
+        {
+            ControlService(null, name, control_code);
         }
 
         /// <summary>
