@@ -13508,24 +13508,42 @@ Query for the service status after starting.
 Specify the target computer.
 .PARAMETER NoWait
 Specify to not wait 30 seconds for the service to start.
+.PARAMETER Trigger
+Specify to try and use a service trigger to start the service.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Win32Service
 #>
 function Start-Win32Service {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromStart")]
     param (
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
+        [parameter(ParameterSetName="FromStart")]
         [string[]]$ArgumentList,
-        [switch]$PassThru,
+        [parameter(ParameterSetName="FromStart")]
         [string]$MachineName,
+        [parameter(Mandatory, ParameterSetName="FromTrigger")]
+        [switch]$Trigger,
+        [switch]$PassThru,
         [switch]$NoWait
     )
 
     try {
-        [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromStart" {
+                [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
+            }
+            "FromTrigger" {
+                $service_trigger = Get-Win32ServiceTrigger -Name $Name | Where-Object Action -eq "Start" | Select-Object -First 1
+                if ($null -eq $service_trigger) {
+                    throw "No service trigger available for $Name"
+                }
+                $service_trigger.Trigger()
+            }
+        }
+        
         if (!$NoWait) {
             if (!(Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running -TimeoutSec 30)) {
                 Write-Error "Service didn't start in time."
@@ -14200,6 +14218,36 @@ function Get-SDKName {
     )
     PROCESS {
         [NtApiDotNet.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the service triggers for a service.
+.DESCRIPTION
+This cmdlet gets the service triggers for a service.
+.PARAMETER Name
+The name of the service.
+.PARAMETER MachineName
+Specify the target computer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.ServiceTriggerInformation
+.EXAMPLE
+Get-Win32ServiceTrigger -Name "WebClient"
+Get the service triggers for the WebClient service.
+#>
+function Get-Win32ServiceTrigger { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [string]$MachineName
+    )
+    $service = Get-Win32Service -MachineName $MachineName -Name $Name
+    if ($null -ne $service) {
+        $service.Triggers | Write-Output
     }
 }
 

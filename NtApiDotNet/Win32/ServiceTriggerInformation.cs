@@ -20,29 +20,23 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
 {
-#pragma warning disable 1591
     /// <summary>
     /// Trigger information for a service.
     /// </summary>
     public class ServiceTriggerInformation
     {
-        public ServiceTriggerType TriggerType { get; }
-        public ServiceTriggerAction Action { get; }
-        public Guid SubType { get; }
-        public string SubTypeDescription { get; }
-        public IEnumerable<ServiceTriggerCustomData> CustomData { get; }
-
-        static Guid NETWORK_MANAGER_FIRST_IP_ADDRESS_ARRIVAL_GUID = new Guid("4f27f2de-14e2-430b-a549-7cd48cbc8245");
-        static Guid NETWORK_MANAGER_LAST_IP_ADDRESS_REMOVAL_GUID = new Guid("cc4ba62a-162e-4648-847a-b6bdf993e335");
-        static Guid DOMAIN_JOIN_GUID = new Guid("1ce20aba-9851-4421-9430-1ddeb766e809");
-        static Guid DOMAIN_LEAVE_GUID = new Guid("ddaf516e-58c2-4866-9574-c3b615d42ea1");
-        static Guid FIREWALL_PORT_OPEN_GUID = new Guid("b7569e07-8421-4ee0-ad10-86915afdad09");
-        static Guid FIREWALL_PORT_CLOSE_GUID = new Guid("a144ed38-8e12-4de4-9d96-e64740b1a524");
-        static Guid MACHINE_POLICY_PRESENT_GUID = new Guid("659FCAE6-5BDB-4DA9-B1FF-CA2A178D46E0");
-        static Guid USER_POLICY_PRESENT_GUID = new Guid("54FB46C8-F089-464C-B1FD-59D1B62C3B50");
-        static Guid RPC_INTERFACE_EVENT_GUID = new Guid("bc90d167-9470-4139-a9ba-be0bbbf5b74d");
-        static Guid NAMED_PIPE_EVENT_GUID = new Guid("1f81d131-3fac-4537-9e0c-7e7b0c2f4b55");
-        static Guid CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID = new Guid("2d7a2816-0c5e-45fc-9ce7-570e5ecde9c9");
+        #region Private Members
+        private static Guid NETWORK_MANAGER_FIRST_IP_ADDRESS_ARRIVAL_GUID = new Guid("4f27f2de-14e2-430b-a549-7cd48cbc8245");
+        private static Guid NETWORK_MANAGER_LAST_IP_ADDRESS_REMOVAL_GUID = new Guid("cc4ba62a-162e-4648-847a-b6bdf993e335");
+        private static Guid DOMAIN_JOIN_GUID = new Guid("1ce20aba-9851-4421-9430-1ddeb766e809");
+        private static Guid DOMAIN_LEAVE_GUID = new Guid("ddaf516e-58c2-4866-9574-c3b615d42ea1");
+        private static Guid FIREWALL_PORT_OPEN_GUID = new Guid("b7569e07-8421-4ee0-ad10-86915afdad09");
+        private static Guid FIREWALL_PORT_CLOSE_GUID = new Guid("a144ed38-8e12-4de4-9d96-e64740b1a524");
+        private static Guid MACHINE_POLICY_PRESENT_GUID = new Guid("659FCAE6-5BDB-4DA9-B1FF-CA2A178D46E0");
+        private static Guid USER_POLICY_PRESENT_GUID = new Guid("54FB46C8-F089-464C-B1FD-59D1B62C3B50");
+        private static Guid RPC_INTERFACE_EVENT_GUID = new Guid("bc90d167-9470-4139-a9ba-be0bbbf5b74d");
+        private static Guid NAMED_PIPE_EVENT_GUID = new Guid("1f81d131-3fac-4537-9e0c-7e7b0c2f4b55");
+        private static Guid CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID = new Guid("2d7a2816-0c5e-45fc-9ce7-570e5ecde9c9");
 
         private string GetSubTypeDescription()
         {
@@ -124,7 +118,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        static void ReadArray<T>(IntPtr ptr, int count, out T[] ret) where T : struct
+        private static void ReadArray<T>(IntPtr ptr, int count, out T[] ret) where T : struct
         {
             ret = new T[count];
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(ptr, count * Marshal.SizeOf(typeof(T)), false))
@@ -132,7 +126,32 @@ namespace NtApiDotNet.Win32
                 buffer.ReadArray(0, ret, 0, count);
             }
         }
+        #endregion
 
+        #region Public Properties
+        /// <summary>
+        /// The type of service trigger.
+        /// </summary>
+        public ServiceTriggerType TriggerType { get; }
+        /// <summary>
+        /// The service trigger action.
+        /// </summary>
+        public ServiceTriggerAction Action { get; }
+        /// <summary>
+        /// The sub-type GUID.
+        /// </summary>
+        public Guid SubType { get; }
+        /// <summary>
+        /// The description of the sub type.
+        /// </summary>
+        public string SubTypeDescription { get; }
+        /// <summary>
+        /// Custom data.
+        /// </summary>
+        public IEnumerable<ServiceTriggerCustomData> CustomData { get; }
+        #endregion
+
+        #region Internal Members
         internal ServiceTriggerInformation(SERVICE_TRIGGER trigger)
         {
             TriggerType = trigger.dwTriggerType;
@@ -153,6 +172,26 @@ namespace NtApiDotNet.Win32
             SubTypeDescription = GetSubTypeDescription();
         }
 
+        internal static ServiceTriggerInformation GetTriggerInformation(SERVICE_TRIGGER trigger)
+        {
+            if (trigger.dwTriggerType == ServiceTriggerType.Custom)
+            {
+                return new EtwServiceTriggerInformation(trigger);
+            }
+            else if (trigger.dwTriggerType == ServiceTriggerType.CustomSystemStateChange)
+            {
+                return new WnfServiceTriggerInformation(trigger);
+            }
+            return new ServiceTriggerInformation(trigger);
+        }
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The trigger as a string.</returns>
         public override string ToString()
         {
             string ret = $"{TriggerType} {Action} {SubTypeDescription}";
@@ -170,19 +209,7 @@ namespace NtApiDotNet.Win32
         {
             throw new NotImplementedException("This trigger type is not supported");
         }
-
-        internal static ServiceTriggerInformation GetTriggerInformation(SERVICE_TRIGGER trigger)
-        {
-            if (trigger.dwTriggerType == ServiceTriggerType.Custom)
-            {
-                return new EtwServiceTriggerInformation(trigger);
-            }
-            else if (trigger.dwTriggerType == ServiceTriggerType.CustomSystemStateChange)
-            {
-                return new WnfServiceTriggerInformation(trigger);
-            }
-            return new ServiceTriggerInformation(trigger);
-        }
+        #endregion
     }
 #pragma warning restore
 }

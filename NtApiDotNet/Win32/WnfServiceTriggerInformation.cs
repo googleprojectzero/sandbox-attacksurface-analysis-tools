@@ -17,9 +17,14 @@ using System.Linq;
 
 namespace NtApiDotNet.Win32
 {
-#pragma warning disable 1591
+    /// <summary>
+    /// Service trigger for a WNF event.
+    /// </summary>
     public class WnfServiceTriggerInformation : ServiceTriggerInformation
     {
+        /// <summary>
+        /// The WNF name.
+        /// </summary>
         public NtWnf Name { get; }
 
         internal WnfServiceTriggerInformation(SERVICE_TRIGGER trigger)
@@ -32,11 +37,6 @@ namespace NtApiDotNet.Win32
             }
 
             Name = NtWnf.Open(BitConverter.ToUInt64(data.RawData, 0), true, false).GetResultOrDefault();
-        }
-
-        public override string ToString()
-        {
-            return base.ToString();
         }
     }
 #pragma warning restore

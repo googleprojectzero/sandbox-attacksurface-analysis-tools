@@ -14,11 +14,19 @@
 
 namespace NtApiDotNet.Win32
 {
-#pragma warning disable 1591
+    /// <summary>
+    /// A service trigger for an ETW event.
+    /// </summary>
     public class EtwServiceTriggerInformation : ServiceTriggerInformation
     {
+        /// <summary>
+        /// The security descriptor for the ETW event. Needs administrator privileges.
+        /// </summary>
         public SecurityDescriptor SecurityDescriptor { get; }
 
+        /// <summary>
+        /// Trigger the service.
+        /// </summary>
         public override void Trigger()
         {
             using (var reg = EventTracing.Register(SubType))
@@ -35,11 +43,6 @@ namespace NtApiDotNet.Win32
             {
                 SecurityDescriptor = sd.Result;
             }
-        }
-
-        public override string ToString()
-        {
-            return base.ToString();
         }
     }
 #pragma warning restore
