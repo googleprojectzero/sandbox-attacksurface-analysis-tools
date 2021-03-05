@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Service
         /// <summary>
         /// The path to the named pipe.
         /// </summary>
-        public string Path { get; }
+        public string PipePath { get; }
 
         internal NamedPipeServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
@@ -30,13 +30,13 @@ namespace NtApiDotNet.Win32.Service
             if (CustomData.Count > 0
                 && CustomData[0].DataType == ServiceTriggerDataType.String)
             {
-                Path = $@"\??\pipe\{CustomData[0].Data}";
+                PipePath = $@"\??\pipe\{CustomData[0].Data}";
             }
         }
 
         private protected override string GetSubTypeDescription()
         {
-            return $"{base.GetSubTypeDescription()} {Path}";
+            return $"{base.GetSubTypeDescription()} {PipePath}";
         }
     }
 }

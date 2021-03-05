@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Service
     public class RpcInterfaceServiceTriggerInformation : ServiceTriggerInformation
     {
         /// <summary>
-        /// The interface ID for the RPC server.
+        /// List of interface ID for the RPC server.
         /// </summary>
         public IReadOnlyList<Guid> InterfaceId { get; }
 
