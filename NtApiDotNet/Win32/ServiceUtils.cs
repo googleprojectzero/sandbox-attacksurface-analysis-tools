@@ -66,6 +66,7 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceTriggerAction
     {
+        None = 0,
         [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_START")]
         Start = 1,
         [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_STOP")]

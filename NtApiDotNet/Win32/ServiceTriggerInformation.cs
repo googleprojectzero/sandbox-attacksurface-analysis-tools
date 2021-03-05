@@ -48,7 +48,7 @@ namespace NtApiDotNet.Win32
                     string intf_name = DeviceInterfaceClassGuids.GuidToName(SubType);
                     if (string.IsNullOrEmpty(intf_name))
                         intf_name = SubType.ToString("B");
-                    return $"[Interface Class GUID] {intf_name}";
+                    return $"[Interface Class] {intf_name}";
                 case ServiceTriggerType.GroupPolicy:
                     {
                         if (SubType == MACHINE_POLICY_PRESENT_GUID)

@@ -13536,7 +13536,7 @@ function Start-Win32Service {
                 [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
             }
             "FromTrigger" {
-                $service_trigger = Get-Win32ServiceTrigger -Name $Name | Where-Object Action -eq "Start" | Select-Object -First 1
+                $service_trigger = Get-Win32ServiceTrigger -Name $Name -Action Start | Select-Object -First 1
                 if ($null -eq $service_trigger) {
                     throw "No service trigger available for $Name"
                 }
@@ -14230,24 +14230,40 @@ This cmdlet gets the service triggers for a service.
 The name of the service.
 .PARAMETER MachineName
 Specify the target computer.
+.PARAMETER Action
+Specify an action to filter on.
+.PARAMETER Service
+Specify a service object.
 .INPUTS
-None
+NtApiDotNet.Win32.Win32Service[]
 .OUTPUTS
-NtApiDotNet.Win32.ServiceTriggerInformation
+NtApiDotNet.Win32.ServiceTriggerInformation[]
 .EXAMPLE
 Get-Win32ServiceTrigger -Name "WebClient"
 Get the service triggers for the WebClient service.
 #>
 function Get-Win32ServiceTrigger { 
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromName")]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromService", ValueFromPipeline)]
+        [NtApiDotNet.Win32.Win32Service]$Service,
+        [NtApiDotNet.Win32.ServiceTriggerAction]$Action = 0,
         [string]$MachineName
     )
-    $service = Get-Win32Service -MachineName $MachineName -Name $Name
-    if ($null -ne $service) {
-        $service.Triggers | Write-Output
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromName") {
+            $service = Get-Win32Service -MachineName $MachineName -Name $Name
+        }
+        if ($null -ne $service) {
+            $triggers = $service.Triggers
+            if ($Action -ne 0) {
+                $triggers = $triggers | Where-Object Action -eq $Action
+            }
+            $triggers | Write-Output
+        }
     }
 }
 
