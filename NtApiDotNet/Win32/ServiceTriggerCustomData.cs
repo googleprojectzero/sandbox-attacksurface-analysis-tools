@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Class to represent custom data for a service trigger.
     /// </summary>
-    public class ServiceTriggerCustomData
+    public sealed class ServiceTriggerCustomData
     {
         /// <summary>
         /// The type of data.

@@ -4338,7 +4338,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Description</Label>
+            <Label>SubTypeDescription</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
