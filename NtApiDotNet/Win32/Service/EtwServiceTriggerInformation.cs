@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Win32.Service
 {
     /// <summary>
@@ -19,10 +21,12 @@ namespace NtApiDotNet.Win32.Service
     /// </summary>
     public sealed class EtwServiceTriggerInformation : ServiceTriggerInformation
     {
+        private Lazy<SecurityDescriptor> _security_descriptor;
+
         /// <summary>
         /// The security descriptor for the ETW event. Needs administrator privileges.
         /// </summary>
-        public SecurityDescriptor SecurityDescriptor { get; }
+        public SecurityDescriptor SecurityDescriptor => _security_descriptor.Value;
 
         /// <summary>
         /// Trigger the service.
@@ -43,11 +47,7 @@ namespace NtApiDotNet.Win32.Service
         internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
         {
-            var sd = EventTracing.QueryTraceSecurity(SubType, false);
-            if (sd.IsSuccess)
-            {
-                SecurityDescriptor = sd.Result;
-            }
+            _security_descriptor = new Lazy<SecurityDescriptor>(() => EventTracing.QueryTraceSecurity(SubType, false).GetResultOrDefault());
         }
     }
 #pragma warning restore
