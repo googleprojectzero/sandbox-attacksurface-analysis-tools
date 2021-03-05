@@ -15,7 +15,7 @@
 using System;
 using System.Linq;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Service
 {
     /// <summary>
     /// Service trigger for a WNF event.

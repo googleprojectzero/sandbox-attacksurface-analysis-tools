@@ -315,13 +315,14 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
+    <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />
-    <Compile Include="Win32\NamedPipeServiceTriggerInformation.cs" />
+    <Compile Include="Win32\Service\NamedPipeServiceTriggerInformation.cs" />
     <Compile Include="Win32\Net\TcpListenerInformation.cs" />
     <Compile Include="Win32\Net\Win32NetworkNativeMethods.cs" />
     <Compile Include="Win32\Net\Win32NetworkUtils.cs" />
-    <Compile Include="Win32\RpcInterfaceServiceTriggerInformation.cs" />
+    <Compile Include="Win32\Service\RpcInterfaceServiceTriggerInformation.cs" />
     <Compile Include="Win32\Rpc\CrackedBindingString.cs" />
     <Compile Include="Win32\Debugger\ArrayTypeInformation.cs" />
     <Compile Include="Win32\Debugger\BaseTypeInformation.cs" />
@@ -363,7 +364,7 @@
     <Compile Include="Win32\Device\IDevicePropertyProvider.cs" />
     <Compile Include="Win32\Device\SafeDeviceInfoSetHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceUtils.cs" />
-    <Compile Include="Win32\EtwServiceTriggerInformation.cs" />
+    <Compile Include="Win32\Service\EtwServiceTriggerInformation.cs" />
     <Compile Include="Win32\EventTrace.cs" />
     <Compile Include="Win32\EventTraceLog.cs" />
     <Compile Include="Win32\EventTraceProvider.cs" />
@@ -644,7 +645,7 @@
     <Compile Include="SafeAlpcPortMessageBuffer.cs" />
     <Compile Include="NtWaitTimeout.cs" />
     <Compile Include="NtWaitHandle.cs" />
-    <Compile Include="Win32\WnfServiceTriggerInformation.cs" />
+    <Compile Include="Win32\Service\WnfServiceTriggerInformation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />

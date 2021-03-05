@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Service
 {
     /// <summary>
     /// A service trigger for an ETW event.
     /// </summary>
-    public class EtwServiceTriggerInformation : ServiceTriggerInformation
+    public sealed class EtwServiceTriggerInformation : ServiceTriggerInformation
     {
         /// <summary>
         /// The security descriptor for the ETW event. Needs administrator privileges.
@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32
             return $"{base.GetSubTypeDescription()} {EventTracing.GetProviderName(SubType) ?? SubType.ToString("B")}";
         }
 
-        internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger) 
+        internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
         {
             var sd = EventTracing.QueryTraceSecurity(SubType, false);

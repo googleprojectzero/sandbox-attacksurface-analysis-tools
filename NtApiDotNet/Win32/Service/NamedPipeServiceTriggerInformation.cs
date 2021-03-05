@@ -12,22 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Service
 {
     /// <summary>
     /// Service trigger for a named pipe.
     /// </summary>
-    public class NamedPipeServiceTriggerInformation : ServiceTriggerInformation
+    public sealed class NamedPipeServiceTriggerInformation : ServiceTriggerInformation
     {
         /// <summary>
         /// The path to the named pipe.
         /// </summary>
         public string Path { get; }
 
-        internal NamedPipeServiceTriggerInformation(SERVICE_TRIGGER trigger) 
+        internal NamedPipeServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
         {
-            if (CustomData.Count > 0 
+            if (CustomData.Count > 0
                 && CustomData[0].DataType == ServiceTriggerDataType.String)
             {
                 Path = $@"\??\pipe\{CustomData[0].Data}";

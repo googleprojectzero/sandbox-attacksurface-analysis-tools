@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Service
 {
     /// <summary>
     /// Service trigger for an RPC interface.
@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32
         {
             if (CustomData.Count > 0 && CustomData[0].DataType == ServiceTriggerDataType.String)
             {
-                InterfaceId = CustomData[0].Data.Split(':').Where(s => Guid.TryParse(s, 
+                InterfaceId = CustomData[0].Data.Split(':').Where(s => Guid.TryParse(s,
                     out Guid _)).Select(s => Guid.Parse(s)).ToList().AsReadOnly();
             }
         }

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Device;
+using NtApiDotNet.Win32.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -178,26 +179,29 @@ namespace NtApiDotNet.Win32
 
         internal static ServiceTriggerInformation GetTriggerInformation(SERVICE_TRIGGER trigger)
         {
-            if (trigger.dwTriggerType == ServiceTriggerType.Custom)
+            switch (trigger.dwTriggerType)
             {
-                return new EtwServiceTriggerInformation(trigger);
+                case ServiceTriggerType.Custom:
+                    return new EtwServiceTriggerInformation(trigger);
+                case ServiceTriggerType.CustomSystemStateChange:
+                    return new WnfServiceTriggerInformation(trigger);
+                case ServiceTriggerType.NetworkEndpoint:
+                    {
+                        Guid sub_type = trigger.GetSubType();
+                        if (sub_type == NAMED_PIPE_EVENT_GUID)
+                        {
+                            return new NamedPipeServiceTriggerInformation(trigger);
+                        }
+                        else if (sub_type == RPC_INTERFACE_EVENT_GUID)
+                        {
+                            return new RpcInterfaceServiceTriggerInformation(trigger);
+                        }
+                    }
+                    break;
+                case ServiceTriggerType.FirewallPortEvent:
+                    return new FirewallServiceTriggerInformation(trigger);
             }
-            else if (trigger.dwTriggerType == ServiceTriggerType.CustomSystemStateChange)
-            {
-                return new WnfServiceTriggerInformation(trigger);
-            }
-            else if (trigger.dwTriggerType == ServiceTriggerType.NetworkEndpoint)
-            {
-                Guid sub_type = trigger.GetSubType();
-                if (sub_type == NAMED_PIPE_EVENT_GUID)
-                {
-                    return new NamedPipeServiceTriggerInformation(trigger);
-                }
-                else if (sub_type == RPC_INTERFACE_EVENT_GUID)
-                {
-                    return new RpcInterfaceServiceTriggerInformation(trigger);
-                }
-            }
+
             return new ServiceTriggerInformation(trigger);
         }
         #endregion
