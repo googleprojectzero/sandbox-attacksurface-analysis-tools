@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -13,40 +13,33 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Service trigger for a WNF event.
+    /// Service trigger for an RPC interface.
     /// </summary>
-    public class WnfServiceTriggerInformation : ServiceTriggerInformation
+    public class RpcInterfaceServiceTriggerInformation : ServiceTriggerInformation
     {
         /// <summary>
-        /// The WNF name.
+        /// The interface ID for the RPC server.
         /// </summary>
-        public NtWnf Name { get; }
+        public IReadOnlyList<Guid> InterfaceId { get; }
 
         private protected override string GetSubTypeDescription()
         {
-            if (SubType == CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID && Name != null)
-            {
-                return $"{base.GetSubTypeDescription()} {Name.Name}";
-            }
-            return base.GetSubTypeDescription();
+            return $"{base.GetSubTypeDescription()} {string.Join(", ", InterfaceId)}";
         }
 
-        internal WnfServiceTriggerInformation(SERVICE_TRIGGER trigger)
-            : base(trigger)
+        internal RpcInterfaceServiceTriggerInformation(SERVICE_TRIGGER trigger) : base(trigger)
         {
-            var data = CustomData.FirstOrDefault();
-            if (data?.RawData?.Length != 8)
+            if (CustomData.Count > 0 && CustomData[0].DataType == ServiceTriggerDataType.String)
             {
-                return;
+                InterfaceId = CustomData[0].Data.Split(':').Where(s => Guid.TryParse(s, 
+                    out Guid _)).Select(s => Guid.Parse(s)).ToList().AsReadOnly();
             }
-
-            Name = NtWnf.Open(BitConverter.ToUInt64(data.RawData, 0), true, false).GetResultOrDefault();
         }
     }
-#pragma warning restore
 }
