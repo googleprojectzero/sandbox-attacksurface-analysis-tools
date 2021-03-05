@@ -35,6 +35,11 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private protected override string GetSubTypeDescription()
+        {
+            return $"{base.GetSubTypeDescription()} {EventTracing.GetProviderName(SubType) ?? SubType.ToString("B")}";
+        }
+
         internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger) 
             : base(trigger)
         {

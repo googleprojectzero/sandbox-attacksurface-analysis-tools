@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32
             switch (TriggerType)
             {
                 case ServiceTriggerType.Custom:
-                    return $"[ETW] {SubType:B}";
+                    return $"[ETW]";
                 case ServiceTriggerType.DeviceInterfaceArrival:
                     string intf_name = DeviceInterfaceClassGuids.GuidToName(SubType);
                     if (string.IsNullOrEmpty(intf_name))
