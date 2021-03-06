@@ -156,6 +156,15 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string MachineName { get; }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the service.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+
         private static string GetString(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
