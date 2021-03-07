@@ -2943,7 +2943,9 @@ When getting the name/command line only display at most this number of tokens.
 .PARAMETER All
 Show dialog with all access tokens.
 .PARAMETER RunAsAdmin
-When showing all tokens elevate the process to admin.
+Specify to elevate the process to admin.
+.PARAMETER ServiceName
+Specify the name of a service to display the token for.
 .INPUTS
 None
 .OUTPUTS
@@ -2972,26 +2974,36 @@ Display up to 5 primary tokens from accessible processes named notepad.exe.
 .EXAMPLE
 Show-NtToken -All
 Show a list of all accessible tokens to choose from.
+.EXAMPLE
+Show-NtToken -All -RunAsAdmin
+Show a list of all accessible tokens to choose from and run as an administrator.
+.EXAMPLE
+Show-NtToken -ServiceName "AppInfo"
+Display the primary token for the AppInfo service.
 #>
 function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
     param(
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromToken", ValueFromPipeline = $true)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromToken", ValueFromPipeline)]
         [NtApiDotNet.NtToken]$Token,
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline = $true)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline)]
         [NtApiDotNet.NtProcess]$Process,
         [Parameter(Position = 0, ParameterSetName = "FromPid")]
         [int]$ProcessId = $pid,
-        [Parameter(Mandatory = $true, ParameterSetName = "FromName")]
+        [Parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name,
-        [Parameter(Mandatory = $true, ParameterSetName = "FromCommandLine")]
+        [Parameter(Mandatory, ParameterSetName = "FromCommandLine")]
         [string]$CommandLine,
         [Parameter(ParameterSetName = "FromName")]
         [Parameter(ParameterSetName = "FromCommandLine")]
         [int]$MaxTokens = 0,
+        [Parameter(Mandatory, ParameterSetName = "FromServiceName")]
+        [string]$ServiceName,
         [Parameter(ParameterSetName = "All")]
         [switch]$All,
         [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromPid")]
+        [Parameter(ParameterSetName = "FromServiceName")]
         [switch]$RunAsAdmin
     )
 
@@ -3000,6 +3012,12 @@ function Show-NtToken {
             Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
             return
         }
+
+        $verb = "open"
+        if ($RunAsAdmin) {
+            $verb = "runas"
+        }
+
         switch ($PSCmdlet.ParameterSetName) {
             "FromProcess" {
                 $text = "$($Process.Name):$($Process.ProcessId)"
@@ -3024,19 +3042,17 @@ function Show-NtToken {
                 }
             }
             "FromPid" {
-                $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
-                $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-                Use-NtObject(New-Win32Process -Config $config) {
-                }
+                $cmdline = "--pid={0}" -f $ProcessId
+                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
+            }
+            "FromServiceName" {
+                $cmdline = """--service={0}""" -f $ServiceName
+                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
             }
             "FromToken" {
                 Start-NtTokenViewer $Token
             }
             "All" {
-                $verb = "open"
-                if ($RunAsAdmin) {
-                    $verb = "runas"
-                }
                 Start-Process "$PSScriptRoot\TokenViewer.exe" -Verb $verb
             }
         }
