@@ -337,6 +337,11 @@ namespace TokenViewer
             return $"Sandbox: {sandbox_type ?? "Unknown"}";
         }
 
+        private static string GetLogonSid(NtToken token)
+        {
+            return token.GetLogonSids(false).GetResultOrDefault()?.Name ?? "Unknown Logon SID";
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -367,6 +372,7 @@ namespace TokenViewer
             AddGrouping("Trust Level", p => p.ProcessToken.TrustLevel?.Name ?? "Untrusted");
             AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
             AddGrouping("Chrome Sandbox Type", p => GetChromeSandboxType(p));
+            AddGrouping("Logon SID", p => GetLogonSid(p.ProcessToken));
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
