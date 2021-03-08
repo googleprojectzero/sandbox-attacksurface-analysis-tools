@@ -1990,7 +1990,7 @@ namespace NtApiDotNet.Win32
         public static NtStatus SetServiceRequiredPrivileges(string machine_name, string name, string[] privileges, bool throw_on_error)
         {
             return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.REQUIRED_PRIVILEGES_INFO,
-                new SERVICE_REQUIRED_PRIVILEGES_INFO() { pmszRequiredPrivileges = privileges.ToMultiString() }, throw_on_error);
+                new SERVICE_REQUIRED_PRIVILEGES_INFO() { pmszRequiredPrivileges = privileges.ToMultiString() ?? "\0" }, throw_on_error);
         }
 
         /// <summary>

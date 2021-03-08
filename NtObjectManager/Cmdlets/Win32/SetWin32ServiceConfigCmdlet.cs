@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using NtApiDotNet.Win32;
+using System.Linq;
 using System.Management.Automation;
 using System.Security;
 
@@ -105,20 +107,21 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <summary>
         /// <para type="description">Specify the service protected type.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "ChangeProtected")]
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeProtected")]
         public ServiceLaunchProtectedType LaunchProtected { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the service restricted SID type.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "ChangeSid")]
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeSid")]
         public ServiceSidType SidType { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the service required privilege.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "ChangeRequiredPrivilege")]
-        public string[] RequiredPrivilege { get; set; }
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeRequiredPrivilege")]
+        [AllowEmptyCollection]
+        public TokenPrivilegeValue[] RequiredPrivilege { get; set; }
 
         /// <summary>
         /// Process record.
@@ -139,7 +142,7 @@ namespace NtObjectManager.Cmdlets.Win32
                     ServiceUtils.SetServiceSidType(MachineName, Name, SidType);
                     break;
                 case "ChangeRequiredPrivilege":
-                    ServiceUtils.SetServiceRequiredPrivileges(MachineName, Name, RequiredPrivilege);
+                    ServiceUtils.SetServiceRequiredPrivileges(MachineName, Name, RequiredPrivilege.Select(p => p.ToString()).ToArray());
                     break;
             }
         }
