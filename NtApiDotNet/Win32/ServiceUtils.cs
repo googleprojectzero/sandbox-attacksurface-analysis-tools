@@ -509,6 +509,8 @@ namespace NtApiDotNet.Win32
         PRESHUTDOWN_INFO = 7,
         TRIGGER_INFO = 8,
         PREFERRED_NODE = 9,
+        UNKNOWN10 = 10,
+        MANAGED_ACCOUNT = 11,
         LAUNCH_PROTECTED = 12,
     }
 

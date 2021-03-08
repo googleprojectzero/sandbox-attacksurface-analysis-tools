@@ -106,13 +106,13 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <para type="description">Specify the service protected type.</para>
         /// </summary>
         [Parameter(ParameterSetName = "ChangeProtected")]
-        public ServiceLaunchProtectedType Protected { get; set; }
+        public ServiceLaunchProtectedType LaunchProtected { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the service restricted SID type.</para>
         /// </summary>
         [Parameter(ParameterSetName = "ChangeSid")]
-        public ServiceSidType RestrictedSid { get; set; }
+        public ServiceSidType SidType { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the service required privilege.</para>
@@ -133,10 +133,10 @@ namespace NtObjectManager.Cmdlets.Win32
                         Path, TagId, LoadOrderGroup, Dependencies, UserName, Password);
                     break;
                 case "ChangeProtected":
-                    ServiceUtils.SetServiceLaunchProtected(MachineName, Name, Protected);
+                    ServiceUtils.SetServiceLaunchProtected(MachineName, Name, LaunchProtected);
                     break;
                 case "ChangeSid":
-                    ServiceUtils.SetServiceSidType(MachineName, Name, RestrictedSid);
+                    ServiceUtils.SetServiceSidType(MachineName, Name, SidType);
                     break;
                 case "ChangeRequiredPrivilege":
                     ServiceUtils.SetServiceRequiredPrivileges(MachineName, Name, RequiredPrivilege);
