@@ -13577,6 +13577,87 @@ function Start-Win32Service {
 
 <#
 .SYNOPSIS
+Tests a Win32 service state.
+.DESCRIPTION
+This cmdlet tests if a win32 service is in a fixed state.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Status
+Specify the status to test.
+.PARAMETER MachineName
+Specify the target computer.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+#>
+function Test-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [string]$MachineName,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.ServiceStatus]$Status
+    )
+
+    try {
+        $service = Get-Win32Service -Name $Name -MachineName $MachineName
+        return $service.Status -eq $Status
+    }
+    catch {
+        Write-Error $_
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Restart a Win32 service.
+.DESCRIPTION
+This cmdlet restarts a Win32 service.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ArgumentList
+Specify the list of arguments to the service.
+.PARAMETER PassThru
+Query for the service status after starting.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service to start.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Win32Service
+#>
+function Restart-Win32Service {
+    [CmdletBinding(DefaultParameterSetName="FromStart")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(ParameterSetName="FromStart")]
+        [string[]]$ArgumentList,
+        [parameter(ParameterSetName="FromStart")]
+        [string]$MachineName,
+        [switch]$PassThru,
+        [switch]$NoWait
+    )
+
+    try {
+        if (!(Test-Win32Service -Name $Name -MachineName $MachineName -Status Stopped)) {
+            Send-Win32Service -Name $Name -MachineName $MachineName -Control Stop -ErrorAction Stop
+        }
+
+        Start-Win32Service -Name $Name -MachineName $MachineName -ArgumentList $ArgumentList -PassThru:$PassThru -NoWait:$NoWait
+    }
+    catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
 Send a control code to a Win32 service.
 .DESCRIPTION
 This cmdlet sends a control code to a Win32 service.
@@ -13685,8 +13766,12 @@ function Wait-Win32Service {
     )
 
     try {
+        if (Test-Win32Service -Name $Name -MachineName $MachineName -Status $Status) {
+            return $true
+        }
+
         if ($TimeoutSec -le 0) {
-            return (Get-Win32Service -Name $Name -MachineName $MachineName).Status -eq $Status
+            return $false
         }
 
         $timeout_ms = $TimeoutSec * 1000
