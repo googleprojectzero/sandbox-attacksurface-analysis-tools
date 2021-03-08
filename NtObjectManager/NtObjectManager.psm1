@@ -7185,13 +7185,15 @@ function Get-NtTypeAccess {
 
 <#
 .SYNOPSIS
-Get an ATOM objects.
+Get an ATOM object.
 .DESCRIPTION
 This cmdlet gets all ATOM objects or by name or atom.
 .PARAMETER Atom
 Specify the ATOM to get.
 .PARAMETER Name
 Specify the name of the ATOM to get.
+.PARAMETER User
+Specify to get a user atom rather than a global.
 .INPUTS
 None
 .OUTPUTS
@@ -7203,12 +7205,15 @@ function Get-NtAtom {
         [Parameter(Mandatory, ParameterSetName = "FromAtom")]
         [uint16]$Atom,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
-        [string]$Name
+        [string]$Name,
+        [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromAtom")]
+        [switch]$User
     )
 
     switch ($PSCmdlet.ParameterSetName) {
-        "All" { [NtApiDotNet.NtAtom]::GetAtoms() | Write-Output }
-        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom) | Write-Output }
+        "All" { [NtApiDotNet.NtAtom]::GetAtoms(!$User) | Write-Output }
+        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom, $true, !$User, $true).Result | Write-Output }
         "FromName" { [NtApiDotNet.NtAtom]::Find($Name) | Write-Output }
     }
 }

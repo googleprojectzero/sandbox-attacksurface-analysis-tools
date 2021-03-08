@@ -69,6 +69,9 @@ namespace NtApiDotNet
             int AtomInformationLength,
             out int ReturnLength
         );
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern int NtUserGetAtomName(ushort Atom,  UnicodeStringAllocated Name);
     }
 #pragma warning restore 1591
 }
