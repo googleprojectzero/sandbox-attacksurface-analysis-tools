@@ -46,7 +46,7 @@ namespace NtApiDotNet.Utilities.ASN1
                 case SPNEGO:
                     return "SPNEGO";
                 default:
-                    return "UNKNOWN OID";
+                    return $"UNKNOWN OID {oid}";
             }
         }
     }

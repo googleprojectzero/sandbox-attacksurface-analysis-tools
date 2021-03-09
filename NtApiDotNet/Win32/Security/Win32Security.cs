@@ -683,6 +683,34 @@ namespace NtApiDotNet.Win32.Security
             }
         }
 
+        /// <summary>
+        /// Lookup a SID's internet name.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The name of the sid as an internet account.</returns>
+        /// <remarks>This still might return the normal NT4 style account name if the user is not an internet user.</remarks>
+        [SupportedVersion(SupportedVersion.Windows8)]
+        public static NtResult<SidName> LookupInternetName(Sid sid, bool throw_on_error)
+        {
+            if (NtObjectUtils.IsWindows7OrLess)
+                throw new NotSupportedException($"{nameof(LookupInternetName)} isn't supported until Windows 8");
+
+            return LookupSids2(null, new Sid[] { sid }, LsaLookupOptions.LSA_LOOKUP_PREFER_INTERNET_NAMES, throw_on_error).Map(e => e.First());
+        }
+
+        /// <summary>
+        /// Lookup a SID's internet name.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <returns>The name of the sid as an internet account.</returns>
+        /// <remarks>This still might return the normal NT4 style account name if the user is not an internet user.</remarks>
+        [SupportedVersion(SupportedVersion.Windows8)]
+        public static SidName LookupInternetName(Sid sid)
+        {
+            return LookupInternetName(sid, true).Result;
+        }
+
         #endregion
 
         #region Private Members
@@ -695,6 +723,55 @@ namespace NtApiDotNet.Win32.Security
                         => p = progress_function(n, s, p, t);
             }
             return null;
+        }
+
+        private static IEnumerable<SidName> GetSidNames(Sid[] sids, SafeLsaMemoryBuffer domains, SafeLsaMemoryBuffer names)
+        {
+            List<SidName> ret = new List<SidName>();
+            domains.Initialize<LSA_REFERENCED_DOMAIN_LIST>(1);
+            names.Initialize<LSA_TRANSLATED_NAME>((uint)sids.Length);
+
+            var domain_list = domains.Read<LSA_REFERENCED_DOMAIN_LIST>(0);
+            var domains_entries = NtProcess.Current.ReadMemoryArray<LSA_TRUST_INFORMATION>(domain_list.Domains.ToInt64(), domain_list.Entries);
+            var name_list = names.ReadArray<LSA_TRANSLATED_NAME>(0, sids.Length);
+
+            for (int i = 0; i < sids.Length; ++i)
+            {
+                var name = name_list[i];
+
+                ret.Add(new SidName(sids[i], name.GetDomain(domains_entries),
+                    name.GetName(), SidNameSource.Account, name.Use, false));
+            }
+            return ret.AsReadOnly();
+        }
+
+        private static NtResult<IEnumerable<SidName>> LookupSids2(string system_name, Sid[] sids, LsaLookupOptions options, bool throw_on_error)
+        {
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.LookupNames, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                {
+                    return policy.Cast<IEnumerable<SidName>>();
+                }
+
+                using (var list = new DisposableList())
+                {
+                    var sid_ptrs = sids.Select(s => list.AddSid(s).DangerousGetHandle()).ToArray();
+                    var status = SecurityNativeMethods.LsaLookupSids2(policy.Result, options, sid_ptrs.Length, sid_ptrs, 
+                        out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
+                    if (!status.IsSuccess())
+                    {
+                        if (status == NtStatus.STATUS_NONE_MAPPED)
+                        {
+                            list.Add(domains);
+                            list.Add(names);
+                        }
+                        return status.CreateResultFromError<IEnumerable<SidName>>(throw_on_error);
+                    }
+
+                    return GetSidNames(sids, domains, names).CreateResult();
+                }
+            }
         }
 
         #endregion

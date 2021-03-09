@@ -967,7 +967,7 @@ namespace NtApiDotNet.Win32
         [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool QueryServiceConfig2(
           SafeServiceHandle hService,
-          int dwInfoLevel,
+          SERVICE_CONFIG_INFO_LEVEL dwInfoLevel,
           SafeBuffer lpBuffer,
           int cbBufSize,
           out int pcbBytesNeeded
@@ -991,7 +991,7 @@ namespace NtApiDotNet.Win32
         [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool ChangeServiceConfig2(
             SafeServiceHandle hService,
-            int dwInfoLevel,
+            SERVICE_CONFIG_INFO_LEVEL dwInfoLevel,
             SafeBuffer lpInfo
         );
 
@@ -1023,6 +1023,13 @@ namespace NtApiDotNet.Win32
           SafeServiceHandle hService,
           int dwNumServiceArgs,
           [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] lpServiceArgVectors
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool ControlService(
+          SafeServiceHandle hService,
+          ServiceControlCode dwControl,
+          out SERVICE_STATUS lpServiceStatus
         );
 
         [DllImport("kernel32.dll", SetLastError = true)]

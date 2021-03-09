@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -445,21 +446,33 @@ namespace NtApiDotNet
 
     public enum FileDisposition
     {
+        [SDKName("FILE_SUPERSEDE")]
         Supersede = 0x00000000,
+        [SDKName("FILE_OPEN")]
         Open = 0x00000001,
+        [SDKName("FILE_CREATE")]
         Create = 0x00000002,
+        [SDKName("FILE_OPEN_IF")]
         OpenIf = 0x00000003,
+        [SDKName("FILE_OVERWRITE")]
         Overwrite = 0x00000004,
+        [SDKName("FILE_OVERWRITE_IF")]
         OverwriteIf = 0x00000005,
     }
 
     public enum FileOpenResult
     {
+        [SDKName("FILE_SUPERSEDED")]
         Superseded = 0x00000000,
+        [SDKName("FILE_OPENED")]
         Opened = 0x00000001,
+        [SDKName("FILE_CREATED")]
         Created = 0x00000002,
+        [SDKName("FILE_OVERWRITTEN")]
         Overwritten = 0x00000003,
+        [SDKName("FILE_EXISTS")]
         Exists = 0x00000004,
+        [SDKName("FILE_DOES_NOT_EXIST")]
         DoesNotExist = 0x00000005
     }
 
@@ -1301,7 +1314,7 @@ namespace NtApiDotNet
         public int Reserved;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("IO_STATUS_BLOCK")]
     public class IoStatus
     {
         public UIntPtr Pointer;
@@ -1327,7 +1340,7 @@ namespace NtApiDotNet
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("IO_STATUS_BLOCK")]
     public struct IoStatusStruct
     {
         public UIntPtr Pointer;
@@ -1337,9 +1350,13 @@ namespace NtApiDotNet
     [Flags]
     public enum FileShareMode
     {
+        [SDKName("FILE_SHARE_NONE")]
         None = 0,
+        [SDKName("FILE_SHARE_READ")]
         Read = 0x00000001,
+        [SDKName("FILE_SHARE_WRITE")]
         Write = 0x00000002,
+        [SDKName("FILE_SHARE_DELETE")]
         Delete = 0x00000004,
         All = Read | Write | Delete,
     }
@@ -1348,28 +1365,51 @@ namespace NtApiDotNet
     public enum FileOpenOptions
     {
         None = 0,
+        [SDKName("FILE_DIRECTORY_FILE")]
         DirectoryFile = 0x00000001,
+        [SDKName("FILE_WRITE_THROUGH")]
         WriteThrough = 0x00000002,
+        [SDKName("FILE_SEQUENTIAL_ONLY")]
         SequentialOnly = 0x00000004,
+        [SDKName("FILE_NO_INTERMEDIATE_BUFFERING")]
         NoIntermediateBuffering = 0x00000008,
+        [SDKName("FILE_SYNCHRONOUS_IO_ALERT")]
         SynchronousIoAlert = 0x00000010,
+        [SDKName("FILE_SYNCHRONOUS_IO_NONALERT")]
         SynchronousIoNonAlert = 0x00000020,
+        [SDKName("FILE_NON_DIRECTORY_FILE")]
         NonDirectoryFile = 0x00000040,
+        [SDKName("FILE_CREATE_TREE_CONNECTION")]
         CreateTreeConnection = 0x00000080,
+        [SDKName("FILE_COMPLETE_IF_OPLOCKED")]
         CompleteIfOplocked = 0x00000100,
+        [SDKName("FILE_NO_EA_KNOWLEDGE")]
         NoEaKnowledge = 0x00000200,
+        [SDKName("FILE_OPEN_REMOTE_INSTANCE")]
         OpenRemoteInstance = 0x00000400,
+        [SDKName("FILE_RANDOM_ACCESS")]
         RandomAccess = 0x00000800,
+        [SDKName("FILE_DELETE_ON_CLOSE")]
         DeleteOnClose = 0x00001000,
+        [SDKName("FILE_OPEN_BY_FILE_ID")]
         OpenByFileId = 0x00002000,
+        [SDKName("FILE_OPEN_FOR_BACKUP_INTENT")]
         OpenForBackupIntent = 0x00004000,
+        [SDKName("FILE_NO_COMPRESSION")]
         NoCompression = 0x00008000,
+        [SDKName("FILE_OPEN_REQUIRING_OPLOCK")]
         OpenRequiringOplock = 0x00010000,
+        [SDKName("FILE_DISALLOW_EXCLUSIVE")]
         DisallowExclusive = 0x00020000,
+        [SDKName("FILE_SESSION_AWARE")]
         SessionAware = 0x00040000,
+        [SDKName("FILE_RESERVE_OPFILTER")]
         ReserveOpfilter = 0x00100000,
+        [SDKName("FILE_OPEN_REPARSE_POINT")]
         OpenReparsePoint = 0x00200000,
+        [SDKName("FILE_OPEN_NO_RECALL")]
         OpenNoRecall = 0x00400000,
+        [SDKName("FILE_OPEN_FOR_FREE_SPACE_QUERY")]
         OpenForFreeSpaceQuery = 0x00800000
     }
 

@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using NtApiDotNet.Win32;
+using System.Linq;
 using System.Management.Automation;
 using System.Security;
 
@@ -45,71 +47,104 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <summary>
         /// <para type="description">Specify the display name of the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public string DisplayName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the type of the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public ServiceType? Type { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the start type of the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public ServiceStartType? Start { get; set; }
 
         /// <summary>
         /// <para type="description">Specify error control of the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public ServiceErrorControl? ErrorControl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the binary path to the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public string Path { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the load order tag id.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public int? TagId { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the load order group.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public string LoadOrderGroup { get; set; }
 
         /// <summary>
         /// <para type="description">Specify list of dependencies.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public string[] Dependencies { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the user name for the service.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public string UserName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify password for the service user.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "ChangeConfig")]
         public SecureString Password { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the service protected type.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeProtected")]
+        public ServiceLaunchProtectedType LaunchProtected { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the service restricted SID type.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeSid")]
+        public ServiceSidType SidType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the service required privilege.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "ChangeRequiredPrivilege")]
+        [AllowEmptyCollection]
+        public TokenPrivilegeValue[] RequiredPrivilege { get; set; }
 
         /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
         {
-            ServiceUtils.ChangeServiceConfig(MachineName, Name,
-                DisplayName, Type, Start, ErrorControl,
-                Path, TagId, LoadOrderGroup, Dependencies, UserName, Password);
+            switch (ParameterSetName)
+            {
+                case "ChangeConfig":
+                    ServiceUtils.ChangeServiceConfig(MachineName, Name,
+                        DisplayName, Type, Start, ErrorControl,
+                        Path, TagId, LoadOrderGroup, Dependencies, UserName, Password);
+                    break;
+                case "ChangeProtected":
+                    ServiceUtils.SetServiceLaunchProtected(MachineName, Name, LaunchProtected);
+                    break;
+                case "ChangeSid":
+                    ServiceUtils.SetServiceSidType(MachineName, Name, SidType);
+                    break;
+                case "ChangeRequiredPrivilege":
+                    ServiceUtils.SetServiceRequiredPrivileges(MachineName, Name, RequiredPrivilege.Select(p => p.ToString()).ToArray());
+                    break;
+            }
         }
     }
 }

@@ -14,6 +14,7 @@
 
 using NDesk.Options;
 using NtApiDotNet;
+using NtApiDotNet.Win32;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -95,6 +96,7 @@ namespace TokenViewer
                 int pid = -1;
                 int handle = -1;
                 string text = string.Empty;
+                string service_name = string.Empty;
                 bool show_help = false;
 
                 OptionSet opts = new OptionSet() {
@@ -104,13 +106,15 @@ namespace TokenViewer
                             v => handle = int.Parse(v) },
                         { "text=", "Specify a text string for the token window.",
                             v => text = v },
+                        { "service=", "Specify a service name to view.", 
+                            v => service_name = v },
                         { "h|help",  "Show this message and exit",
                            v => show_help = v != null },
                     };
 
                 opts.Parse(args);
 
-                if (show_help || (handle <= 0 && pid <= 0))
+                if (show_help)
                 {
                     ShowHelp(opts);
                 }
@@ -136,6 +140,19 @@ namespace TokenViewer
                         return new TokenForm(new ProcessTokenEntry(process),
                             $"{process.Name}:{pid}", false);
                     }
+                }
+                else if (service_name != string.Empty)
+                {
+                    using (NtProcess process = NtProcess.Open(ServiceUtils.GetServiceProcessId(service_name),
+                        ProcessAccessRights.QueryLimitedInformation))
+                    {
+                        return new TokenForm(new ProcessTokenEntry(process),
+                            service_name, false);
+                    }
+                }
+                else
+                {
+                    ShowHelp(opts);
                 }
             }
             catch (Exception ex)

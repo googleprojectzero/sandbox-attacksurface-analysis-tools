@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Memory;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace NtApiDotNet
@@ -48,6 +50,24 @@ namespace NtApiDotNet
         public override string ToString()
         {
             return Buffer;
+        }
+    }
+
+    /// <summary>
+    /// Standard UNICODE_STRING class based on a SecureString class.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal sealed class UnicodeStringSecure
+    {
+        ushort Length;
+        ushort MaximumLength;
+        SecureStringMarshalBuffer Buffer;
+
+        public UnicodeStringSecure(SecureStringMarshalBuffer str, int length)
+        {
+            Length = (ushort)(length * 2);
+            MaximumLength = (ushort)((length + 1) * 2);
+            Buffer = str;
         }
     }
 

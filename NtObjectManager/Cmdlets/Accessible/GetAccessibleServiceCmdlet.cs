@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Service;
 using System;
 using System.Collections.Generic;
 using System.IO;

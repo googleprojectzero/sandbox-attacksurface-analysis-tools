@@ -43,6 +43,9 @@ namespace NtApiDotNet
         public static extern int RtlNtStatusToDosErrorNoTeb(NtStatus status);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGetLastNtStatus();
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus RtlGetCompressionWorkSpaceSize(
           RtlCompressionFormat CompressionFormatAndEngine,
           out int CompressBufferWorkSpaceSize,

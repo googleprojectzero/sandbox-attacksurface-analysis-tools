@@ -507,5 +507,29 @@ namespace NtApiDotNet
         {
             return AreMappedFilesTheSame(address_1, address_2, true).Result;
         }
+
+        /// <summary>
+        /// Flush instruction cache.
+        /// </summary>
+        /// <param name="process">The process to flush the cache in.</param>
+        /// <param name="address">The address to flush.</param>
+        /// <param name="count">The number of bytes to flush/</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus FlushInstructionCache(SafeKernelObjectHandle process, long address, int count, bool throw_on_error)
+        {
+            return NtSystemCalls.NtFlushInstructionCache(process, new IntPtr(address), count).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Flush instruction cache.
+        /// </summary>
+        /// <param name="process">The process to flush the cache in.</param>
+        /// <param name="address">The address to flush.</param>
+        /// <param name="count">The number of bytes to flush/</param>
+        public static void FlushInstructionCache(SafeKernelObjectHandle process, long address, int count)
+        {
+            FlushInstructionCache(process, address, count, true);
+        }
     }
 }

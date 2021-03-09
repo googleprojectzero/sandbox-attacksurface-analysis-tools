@@ -260,15 +260,16 @@ namespace NtApiDotNet
         public bool IsCanonical(bool dacl)
         {
             Acl acl = Clone();
+            var ace_order = acl.ToArray();
             acl.Canonicalize(dacl);
-            if (acl.Count != Count)
+            if (acl.Count != ace_order.Length)
             {
                 return false;
             }
 
             for (int i = 0; i < acl.Count; ++i)
             {
-                if (!ReferenceEquals(this[i], acl[i]))
+                if (!ReferenceEquals(ace_order[i], acl[i]))
                 {
                     return false;
                 }

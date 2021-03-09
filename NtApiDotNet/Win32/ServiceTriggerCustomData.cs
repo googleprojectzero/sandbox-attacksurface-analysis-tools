@@ -19,46 +19,53 @@ using System.Text;
 
 namespace NtApiDotNet.Win32
 {
-#pragma warning disable 1591
-    public class ServiceTriggerCustomData
+    /// <summary>
+    /// Class to represent custom data for a service trigger.
+    /// </summary>
+    public sealed class ServiceTriggerCustomData
     {
+        /// <summary>
+        /// The type of data.
+        /// </summary>
         public ServiceTriggerDataType DataType { get; }
+        /// <summary>
+        /// The raw custom data.
+        /// </summary>
         public byte[] RawData { get; }
-        public string Data { get; }
+        /// <summary>
+        /// The custom data as a string.
+        /// </summary>
+        public string Data => string.Join(", ", DataArray);
+        /// <summary>
+        /// The custom data as an array of strings (only useful for String type).
+        /// </summary>
+        public string[] DataArray { get; }
 
-        private string GetDataString()
+        private string[] ConvertDataToStrings()
         {
             switch (DataType)
             {
                 case ServiceTriggerDataType.Level:
                     if (RawData.Length == 1)
                     {
-                        return $"0x{RawData[0]:X02}";
+                        return new string[] { $"0x{RawData[0]:X02}" };
                     }
                     break;
                 case ServiceTriggerDataType.KeywordAny:
                 case ServiceTriggerDataType.KeywordAll:
                     if (RawData.Length == 8)
                     {
-                        return $"0x{BitConverter.ToUInt64(RawData, 0):X016}";
+                        return new string[] { $"0x{BitConverter.ToUInt64(RawData, 0):X016}" };
                     }
                     break;
                 case ServiceTriggerDataType.String:
                     if ((RawData.Length & 1) == 0)
                     {
-                        string[] ss = Encoding.Unicode.GetString(RawData).TrimEnd('\0').Split('\0');
-                        if (ss.Length == 1)
-                        {
-                            return ss[0];
-                        }
-                        else
-                        {
-                            return string.Join(", ", ss);
-                        }
+                        return Encoding.Unicode.GetString(RawData).TrimEnd('\0').Split('\0');
                     }
                     break;
             }
-            return string.Join(",", RawData.Select(b => $"0x{b:X02}"));
+            return new string[] { string.Join(",", RawData.Select(b => $"0x{b:X02}")) };
         }
 
         internal ServiceTriggerCustomData(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM data_item)
@@ -73,13 +80,16 @@ namespace NtApiDotNet.Win32
             {
                 RawData = new byte[0];
             }
-            Data = GetDataString();
+            DataArray = ConvertDataToStrings();
         }
 
+        /// <summary>
+        /// Overidden ToString method.
+        /// </summary>
+        /// <returns>The data as a string.</returns>
         public override string ToString()
         {
             return Data;
         }
     }
-#pragma warning restore
 }

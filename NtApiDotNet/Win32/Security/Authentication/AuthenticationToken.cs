@@ -13,9 +13,11 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Digest;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+using NtApiDotNet.Win32.Security.Authentication.Schannel;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -47,6 +49,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Get the length of the token in bytes.
+        /// </summary>
+        public virtual int Length => _data.Length;
+
+        /// <summary>
         /// Format the authentication token.
         /// </summary>
         /// <returns>The token as a formatted string.</returns>
@@ -72,14 +79,30 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Parse a structured authentication token.
         /// </summary>
-        /// <param name="package_name">Name of the authentication package.</param>
-        /// <param name="token_count">The count of the tokens before this one.</param>
+        /// <param name="context">The authentication context.</param>
         /// <param name="token">The token to parse.</param>
-        /// <param name="client">Parse operation from a client.</param>
         /// <returns>The parsed authentication token. If can't parse any other format returns
         /// a raw AuthenticationToken.</returns>
+        public static AuthenticationToken Parse(IAuthenticationContext context, byte[] token)
+        {
+            if (context is null)
+            {
+                throw new System.ArgumentNullException(nameof(context));
+            }
+
+            if (token is null)
+            {
+                throw new System.ArgumentNullException(nameof(token));
+            }
+
+            return Parse(context.PackageName, 0, context is IClientAuthenticationContext, token);
+        }
+
         internal static AuthenticationToken Parse(string package_name, int token_count, bool client, byte[] token)
         {
+            if (token.Length == 0)
+                return new AuthenticationToken(token);
+
             if (AuthenticationPackage.CheckNtlm(package_name) 
                 && NtlmAuthenticationToken.TryParse(token, token_count, client, out NtlmAuthenticationToken ntlm_token))
             {
@@ -92,11 +115,36 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 return kerb_token;
             }
 
-            if (AuthenticationPackage.CheckNegotiate(package_name) 
-                && NegotiateAuthenticationToken.TryParse(token, token_count, 
-                client, out NegotiateAuthenticationToken nego_token))
+            if (AuthenticationPackage.CheckNegotiate(package_name))
             {
-                return nego_token;
+                if (NegotiateAuthenticationToken.TryParse(token, token_count,
+                client, out NegotiateAuthenticationToken nego_token))
+                {
+                    return nego_token;
+                }
+                if (NtlmAuthenticationToken.TryParse(token, token_count, client, 
+                    out NtlmAuthenticationToken nego_ntlm_token))
+                {
+                    return nego_ntlm_token;
+                }
+                if (KerberosAuthenticationToken.TryParse(token, token_count, client, 
+                    out KerberosAuthenticationToken nego_kerb_token))
+                {
+                    return nego_kerb_token;
+                }
+                return new AuthenticationToken(token);
+            }
+
+            if (AuthenticationPackage.CheckDigest(package_name) &&
+                DigestAuthenticationToken.TryParse(token, out DigestAuthenticationToken digest_token))
+            {
+                return digest_token;
+            }
+
+            if ((AuthenticationPackage.CheckSChannel(package_name) || AuthenticationPackage.CheckCredSSP(package_name))
+                && SchannelAuthenticationToken.TryParse(token, token_count, client, out SchannelAuthenticationToken schannel_token))
+            {
+                return schannel_token;
             }
 
             if (ASN1AuthenticationToken.TryParse(token, token_count, 

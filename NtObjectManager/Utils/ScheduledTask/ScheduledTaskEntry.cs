@@ -14,129 +14,12 @@
 
 using NtApiDotNet;
 using NtObjectManager.Cmdlets.Accessible;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaskScheduler;
 
 namespace NtObjectManager.Utils.ScheduledTask
 {
-    /// <summary>
-    /// The type of logon used for the task.
-    /// </summary>
-    public enum TaskLogonType
-    {
-        /// <summary>
-        /// No logon type.
-        /// </summary>
-        None,
-        /// <summary>
-        /// Group activation.
-        /// </summary>
-        Group,
-        /// <summary>
-        /// User activation.
-        /// </summary>
-        User,
-        /// <summary>
-        /// Uses Services for User.
-        /// </summary>
-        S4U,
-        /// <summary>
-        /// Service account.
-        /// </summary>
-        ServiceAccount,
-    }
-
-    /// <summary>
-    /// The task run level to use.
-    /// </summary>
-    public enum TaskRunLevel
-    {
-        /// <summary>
-        /// Normal limited user.
-        /// </summary>
-        Limited,
-        /// <summary>
-        /// Highed run level available.
-        /// </summary>
-        Highest
-    }
-
-    /// <summary>
-    /// The type of action the task performs when run.
-    /// </summary>
-    public enum TaskActionType
-    {
-        /// <summary>
-        /// None or unknown.
-        /// </summary>
-        None,
-        /// <summary>
-        /// Execute a process.
-        /// </summary>
-        Execute,
-        /// <summary>
-        /// Load a COM object.
-        /// </summary>
-        ComObject,
-        /// <summary>
-        /// Send an email.
-        /// </summary>
-        SendEmail,
-        /// <summary>
-        /// Show a message.
-        /// </summary>
-        ShowMessage,
-    }
-
-    /// <summary>
-    /// Flags for running a task.
-    /// </summary>
-    [Flags]
-    public enum TaskRunFlags
-    {
-        /// <summary>
-        /// None
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Run as user calling Run.
-        /// </summary>
-        AsSelf = 1,
-        /// <summary>
-        /// Ignore task constraints.
-        /// </summary>
-        IgnoreConstrains = 2,
-        /// <summary>
-        /// Use the session ID for the terminal session.
-        /// </summary>
-        UseSessionId = 4,
-        /// <summary>
-        /// Run using a SID.
-        /// </summary>
-        UserSid = 8,
-    }
-
-    /// <summary>
-    /// Task process token SID type.
-    /// </summary>
-    public enum TaskProcessTokenSid
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Unrestricted task SID.
-        /// </summary>
-        Unrestricted = 1,
-        /// <summary>
-        /// Default task SID.
-        /// </summary>
-        Default = 2
-    }
-
     /// <summary>
     /// Schedled task entry.
     /// </summary>

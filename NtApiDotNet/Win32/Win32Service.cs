@@ -148,9 +148,22 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string ServiceMain => _service_information.Value.ServiceMain;
         /// <summary>
+        /// Indicates if this service process is grouped with others.
+        /// </summary>
+        public bool SvcHostSplitDisabled => _service_information.Value.SvcHostSplitDisabled;
+        /// <summary>
         /// The name of the machine this service was found on.
         /// </summary>
         public string MachineName { get; }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the service.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
 
         private static string GetString(IntPtr ptr)
         {

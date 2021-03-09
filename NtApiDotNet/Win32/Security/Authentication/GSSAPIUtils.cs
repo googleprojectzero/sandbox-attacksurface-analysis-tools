@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 token = reader.ReadAllBytes((int)reader.RemainingLength());
                 return true;
             }
-            catch (EndOfStreamException)
+            catch
             {
                 return false;
             }

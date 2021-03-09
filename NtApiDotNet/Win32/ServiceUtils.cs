@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -29,61 +30,101 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public enum ServiceTriggerType
     {
+        [SDKName("SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL")]
         DeviceInterfaceArrival = 1,
+        [SDKName("SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY")]
         IPAddressAvailability = 2,
+        [SDKName("SERVICE_TRIGGER_TYPE_DOMAIN_JOIN")]
         DomainJoin = 3,
+        [SDKName("SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT")]
         FirewallPortEvent = 4,
+        [SDKName("SERVICE_TRIGGER_TYPE_GROUP_POLICY")]
         GroupPolicy = 5,
+        [SDKName("SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT")]
         NetworkEndpoint = 6,
+        [SDKName("SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE")]
         CustomSystemStateChange = 7,
+        [SDKName("SERVICE_TRIGGER_TYPE_CUSTOM")]
         Custom = 20,
+        [SDKName("SERVICE_TRIGGER_TYPE_AGGREGATE")]
         Aggregate = 30,
     }
 
     public enum ServiceTriggerDataType
     {
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_BINARY")]
         Binary = 1,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_STRING")]
         String = 2,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_LEVEL")]
         Level = 3,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY")]
         KeywordAny = 4,
+        [SDKName("SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL")]
         KeywordAll = 5,
     }
 
     public enum ServiceTriggerAction
     {
+        None = 0,
+        [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_START")]
         Start = 1,
+        [SDKName("SERVICE_TRIGGER_ACTION_SERVICE_STOP")]
         Stop = 2
     }
 
     public enum ServiceStatus
     {
+        [SDKName("SERVICE_STOPPED")]
         Stopped = 1,
+        [SDKName("SERVICE_START_PENDING")]
         StartPending = 2,
+        [SDKName("SERVICE_STOP_PENDING")]
         StopPending = 3,
+        [SDKName("SERVICE_RUNNING")]
         Running = 4,
+        [SDKName("SERVICE_CONTINUE_PENDING")]
         ContinuePending = 5,
+        [SDKName("SERVICE_PAUSE_PENDING")]
         PausePending = 6,
+        [SDKName("SERVICE_PAUSED")]
         Paused = 7,
     }
 
     [Flags]
     public enum ServiceControlsAccepted
     {
+        [SDKName("NONE")]
         None = 0,
+        [SDKName("SERVICE_ACCEPT_STOP")]
         Stop = 1,
+        [SDKName("SERVICE_ACCEPT_PAUSE_CONTINUE")]
         PauseContinue = 2,
+        [SDKName("SERVICE_ACCEPT_SHUTDOWN")]
         Shutdown = 4,
+        [SDKName("SERVICE_ACCEPT_PARAMCHANGE")]
         ParamChange = 8,
+        [SDKName("SERVICE_ACCEPT_NETBINDCHANGE")]
         NetBindChange = 0x10,
+        [SDKName("SERVICE_ACCEPT_HARDWAREPROFILECHANGE")]
         HardwareProfileChange = 0x20,
+        [SDKName("SERVICE_ACCEPT_POWEREVENT")]
         PowerEvent = 0x40,
+        [SDKName("SERVICE_ACCEPT_SESSIONCHANGE")]
         SessionChange = 0x80,
+        [SDKName("SERVICE_ACCEPT_PRESHUTDOWN")]
         PreShutdown = 0x100,
+        [SDKName("SERVICE_ACCEPT_TIMECHANGE")]
         Timechange = 0x200,
+        [SDKName("SERVICE_ACCEPT_TRIGGEREVENT")]
         TriggerEvent = 0x400,
+        [SDKName("SERVICE_ACCEPT_USER_LOGOFF")]
         UserLogoff = 0x800,
+        [SDKName("SERVICE_ACCEPT_INTERNAL")]
         Internal = 0x1000,
+        [SDKName("SERVICE_ACCEPT_LOWRESOURCES")]
         LowResources = 0x2000,
+        [SDKName("SERVICE_ACCEPT_SYSTEMLOWRESOURCES")]
         SystemLowResources = 0x4000
     }
 
@@ -91,24 +132,25 @@ namespace NtApiDotNet.Win32
     public enum ServiceFlags
     {
         None = 0,
+        [SDKName("SERVICE_RUNS_IN_SYSTEM_PROCESS")]
         RunsInSystemProcess
     }
 
     [Flags]
     public enum ServiceControlManagerAccessRights : uint
     {
-        [SDKName("SC_MANAGER_CREATE_SERVICE")]
-        CreateService = 0x0002,
         [SDKName("SC_MANAGER_CONNECT")]
         Connect = 0x0001,
+        [SDKName("SC_MANAGER_CREATE_SERVICE")]
+        CreateService = 0x0002,
         [SDKName("SC_MANAGER_ENUMERATE_SERVICE")]
         EnumerateService = 0x0004,
         [SDKName("SC_MANAGER_LOCK")]
         Lock = 0x0008,
-        [SDKName("SC_MANAGER_MODIFY_BOOT_CONFIG")]
-        ModifyBootConfig = 0x0020,
         [SDKName("SC_QUERY_LOCK_STATUS")]
         QueryLockStatus = 0x0010,
+        [SDKName("SC_MANAGER_MODIFY_BOOT_CONFIG")]
+        ModifyBootConfig = 0x0020,
         [SDKName("SC_MANAGER_ALL_ACCESS")]
         All = CreateService | Connect | EnumerateService
             | Lock | ModifyBootConfig | QueryLockStatus | ReadControl
@@ -202,6 +244,18 @@ namespace NtApiDotNet.Win32
         public ServiceFlags dwServiceFlags;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_STATUS
+    {
+        public ServiceType dwServiceType;
+        public ServiceStatus dwCurrentState;
+        public ServiceControlsAccepted dwControlsAccepted;
+        public Win32Error dwWin32ExitCode;
+        public int dwServiceSpecificExitCode;
+        public int dwCheckPoint;
+        public int dwWaitHint;
+    }
+
     internal enum SC_ENUM_TYPE
     {
         SC_ENUM_PROCESS_INFO = 0
@@ -218,17 +272,30 @@ namespace NtApiDotNet.Win32
     [Flags]
     public enum ServiceType
     {
+        [SDKName("SERVICE_KERNEL_DRIVER")]
         KernelDriver = 0x00000001,
+        [SDKName("SERVICE_FILE_SYSTEM_DRIVER")]
         FileSystemDriver = 0x00000002,
+        [SDKName("SERVICE_ADAPTER")]
         Adapter = 0x00000004,
+        [SDKName("SERVICE_RECOGNIZER_DRIVER")]
         RecognizerDriver = 0x00000008,
+        [SDKName("SERVICE_DRIVER")]
         Driver = KernelDriver | FileSystemDriver | Adapter | RecognizerDriver,
+        [SDKName("SERVICE_WIN32_OWN_PROCESS")]
         Win32OwnProcess = 0x00000010,
+        [SDKName("SERVICE_WIN32_SHARE_PROCESS")]
         Win32ShareProcess = 0x00000020,
+        [SDKName("SERVICE_WIN32")]
         Win32 = Win32OwnProcess | Win32ShareProcess,
+        [SDKName("SERVICE_USER_SERVICE")]
         UserService = 0x00000040,
+        [SDKName("SERVICE_USERSERVICE_INSTANCE")]
         UserServiceInstance = 0x00000080,
-        InteractiveProcess = 0x00000100
+        [SDKName("SERVICE_INTERACTIVE_PROCESS")]
+        InteractiveProcess = 0x00000100,
+        [SDKName("SERVICE_PKG_SERVICE")]
+        PkgService = 0x00000200
     }
 
     public enum ServiceState
@@ -280,9 +347,12 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceSidType
     {
+        [SDKName("SERVICE_SID_TYPE_NONE")]
         None = 0,
+        [SDKName("SERVICE_SID_TYPE_UNRESTRICTED")]
         Unrestricted = 1,
-        Restricted = 3
+        [SDKName("SERVICE_SID_TYPE_RESTRICTED")]
+        Restricted = Unrestricted | 2
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -293,10 +363,15 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceLaunchProtectedType
     {
+        [SDKName("SERVICE_LAUNCH_PROTECTED_NONE")]
         None = 0,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_WINDOWS")]
         Windows = 1,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT")]
         WindowsLight = 2,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT")]
         AntimalwareLight = 3,
+        [SDKName("SERVICE_LAUNCH_PROTECTED_APP_LIGHT")]
         AppLight = 4,
     }
 
@@ -315,19 +390,76 @@ namespace NtApiDotNet.Win32
 
     public enum ServiceStartType
     {
+        [SDKName("SERVICE_BOOT_START")]
         Boot = 0,
+        [SDKName("SERVICE_SYSTEM_START")]
         System = 1,
+        [SDKName("SERVICE_AUTO_START")]
         Auto = 2,
+        [SDKName("SERVICE_DEMAND_START")]
         Demand = 3,
+        [SDKName("SERVICE_DISABLED")]
         Disabled = 4,
     }
 
     public enum ServiceErrorControl
     {
+        [SDKName("SERVICE_ERROR_IGNORE")]
         Ignore = 0,
+        [SDKName("SERVICE_ERROR_NORMAL")]
         Normal = 1,
+        [SDKName("SERVICE_ERROR_SEVERE")]
         Severe = 2,
+        [SDKName("SERVICE_ERROR_CRITICAL")]
         Critical = 3
+    }
+
+    public enum ServiceControlCode
+    {
+        [SDKName("SERVICE_CONTROL_STOP")]
+        Stop = 0x00000001,
+        [SDKName("SERVICE_CONTROL_PAUSE")]
+        Pause = 0x00000002,
+        [SDKName("SERVICE_CONTROL_CONTINUE")]
+        Continue = 0x00000003,
+        [SDKName("SERVICE_CONTROL_INTERROGATE")]
+        Interrogate = 0x00000004,
+        [SDKName("SERVICE_CONTROL_SHUTDOWN")]
+        Shutdown = 0x00000005,
+        [SDKName("SERVICE_CONTROL_PARAMCHANGE")]
+        ParamChange = 0x00000006,
+        [SDKName("SERVICE_CONTROL_NETBINDADD")]
+        NetBindAdd = 0x00000007,
+        [SDKName("SERVICE_CONTROL_NETBINDREMOVE")]
+        NetBindRemove = 0x00000008,
+        [SDKName("SERVICE_CONTROL_NETBINDENABLE")]
+        NetBindEnable = 0x00000009,
+        [SDKName("SERVICE_CONTROL_NETBINDDISABLE")]
+        NetBindDisable = 0x0000000A,
+        [SDKName("SERVICE_CONTROL_DEVICEEVENT")]
+        DeviceEvent = 0x0000000B,
+        [SDKName("SERVICE_CONTROL_HARDWAREPROFILECHANGE")]
+        HardwareProfileChange = 0x0000000C,
+        [SDKName("SERVICE_CONTROL_POWEREVENT")]
+        PowerEvent = 0x0000000D,
+        [SDKName("SERVICE_CONTROL_SESSIONCHANGE")]
+        SessionChange = 0x0000000E,
+        [SDKName("SERVICE_CONTROL_PRESHUTDOWN")]
+        PreShutdown = 0x0000000F,
+        [SDKName("SERVICE_CONTROL_TIMECHANGE")]
+        TimeChange = 0x00000010,
+        [SDKName("SERVICE_CONTROL_USER_LOGOFF")]
+        UserLogoff = 0x00000011,
+        [SDKName("SERVICE_CONTROL_TRIGGEREVENT")]
+        TriggerEvent = 0x00000020,
+        [SDKName("SERVICE_CONTROL_INTERNAL21")]
+        Internal21 = 0x00000021,
+        [SDKName("SERVICE_CONTROL_INTERNAL50")]
+        Internal50 = 0x00000050,
+        [SDKName("SERVICE_CONTROL_LOWRESOURCES")]
+        LowResources = 0x00000060,
+        [SDKName("SERVICE_CONTROL_SYSTEMLOWRESOURCES")]
+        SystemLowResources = 0x00000061
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -359,6 +491,29 @@ namespace NtApiDotNet.Win32
         }
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct SERVICE_REQUIRED_PRIVILEGES_INFO
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pmszRequiredPrivileges;
+    }
+
+    internal enum SERVICE_CONFIG_INFO_LEVEL
+    {
+        DESCRIPTION = 1,
+        FAILURE_ACTIONS = 2,
+        DELAYED_AUTO_START_INFO = 3,
+        FAILURE_ACTIONS_FLAG = 4,
+        SERVICE_SID_INFO = 5,
+        REQUIRED_PRIVILEGES_INFO = 6,
+        PRESHUTDOWN_INFO = 7,
+        TRIGGER_INFO = 8,
+        PREFERRED_NODE = 9,
+        UNKNOWN10 = 10,
+        MANAGED_ACCOUNT = 11,
+        LAUNCH_PROTECTED = 12,
+    }
+
 #pragma warning restore
     /// <summary>
     /// Utilities for accessing services.
@@ -366,12 +521,6 @@ namespace NtApiDotNet.Win32
     public static class ServiceUtils
     {
         #region Private Members
-        private const int SERVICE_CONFIG_TRIGGER_INFO = 8;
-        private const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
-        private const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
-        private const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
-        private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
-
         internal static string GetString(this IntPtr ptr)
         {
             if (ptr != IntPtr.Zero)
@@ -453,7 +602,7 @@ namespace NtApiDotNet.Win32
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.TRIGGER_INFO,
                     buf, buf.Length, out int required))
                 {
                     return triggers.AsReadOnly();
@@ -486,7 +635,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeHGlobalBuffer(8192))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.REQUIRED_PRIVILEGES_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return new string[0];
@@ -500,7 +649,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_SID_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_SERVICE_SID_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.SERVICE_SID_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return ServiceSidType.None;
@@ -513,7 +662,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_LAUNCH_PROTECTED_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_LAUNCH_PROTECTED,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.LAUNCH_PROTECTED,
                         buf, buf.Length, out int needed))
                 {
                     return ServiceLaunchProtectedType.None;
@@ -526,7 +675,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buf = new SafeStructureInOutBuffer<SERVICE_DELAYED_AUTO_START_INFO>())
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO,
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_INFO_LEVEL.DELAYED_AUTO_START_INFO,
                         buf, buf.Length, out int needed))
                 {
                     return false;
@@ -669,6 +818,47 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.CreateResultFromDosError<SafeServiceHandle>(throw_on_error);
                 }
                 return OpenService(scm, name, desired_access, throw_on_error);
+            }
+        }
+
+        private static NtStatus ChangeServiceConfig2(string machine_name, string name, SERVICE_CONFIG_INFO_LEVEL info_level, SafeBuffer buffer, bool throw_on_error)
+        {
+            using (var service = OpenService(machine_name, name, ServiceAccessRights.ChangeConfig, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return Win32NativeMethods.ChangeServiceConfig2(service.Result, info_level, buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        private static NtStatus ChangeServiceConfig2<T>(string machine_name, string name, SERVICE_CONFIG_INFO_LEVEL info_level, T value, bool throw_on_error) where T : struct
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                return ChangeServiceConfig2(machine_name, name, info_level, buffer, throw_on_error);
+            }
+        }
+
+        private static ServiceAccessRights ControlCodeToAccess(ServiceControlCode control_code)
+        {
+            switch (control_code)
+            {
+                case ServiceControlCode.Stop:
+                    return ServiceAccessRights.Stop;
+                case ServiceControlCode.Continue:
+                case ServiceControlCode.Pause:
+                case ServiceControlCode.ParamChange:
+                case ServiceControlCode.NetBindAdd:
+                case ServiceControlCode.NetBindDisable:
+                case ServiceControlCode.NetBindEnable:
+                case ServiceControlCode.NetBindRemove:
+                    return ServiceAccessRights.PauseContinue;
+                case ServiceControlCode.Interrogate:
+                    return ServiceAccessRights.Interrogate;
+                default:
+                    if ((int)control_code >= 128)
+                        return ServiceAccessRights.UserDefinedControl;
+                    return ServiceAccessRights.All;
             }
         }
 
@@ -1484,6 +1674,67 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ControlService(string machine_name, string name, ServiceControlCode control_code, bool throw_on_error)
+        {
+            ServiceAccessRights desired_access = ControlCodeToAccess(control_code);
+            using (var service = OpenService(machine_name, name, desired_access, throw_on_error))
+            {
+                if (!service.IsSuccess)
+                    return service.Status;
+                return Win32NativeMethods.ControlService(service.Result, control_code, out _).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string machine_name, string name, ServiceControlCode control_code)
+        {
+            ControlService(machine_name, name, control_code, true);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string machine_name, string name, int control_code)
+        {
+            ControlService(machine_name, name, (ServiceControlCode)control_code, true);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string name, ServiceControlCode control_code)
+        {
+            ControlService(null, name, control_code);
+        }
+
+        /// <summary>
+        /// Send a control code to a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="control_code">The control code to send. If >= 128 will be sent as a custom control code.</param>
+        public static void ControlService(string name, int control_code)
+        {
+            ControlService(null, name, control_code);
+        }
+
+        /// <summary>
         /// Change service configuration.
         /// </summary>
         /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
@@ -1679,6 +1930,147 @@ namespace NtApiDotNet.Win32
         public static void StartService(string name, string[] args)
         {
             StartService(name, args, true);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceSidType(string machine_name, string name, ServiceSidType sid_type, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.SERVICE_SID_INFO, 
+                new SERVICE_SID_INFO() { dwServiceSidType = sid_type }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        public static void SetServiceSidType(string machine_name, string name, ServiceSidType sid_type)
+        {
+            SetServiceSidType(machine_name, name, sid_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceSidType(string name, ServiceSidType sid_type, bool throw_on_error)
+        {
+            return SetServiceSidType(name, sid_type, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="sid_type">The SID type to set.</param>
+        public static void SetServiceSidType(string name, ServiceSidType sid_type)
+        {
+            SetServiceSidType(name, sid_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceRequiredPrivileges(string machine_name, string name, string[] privileges, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.REQUIRED_PRIVILEGES_INFO,
+                new SERVICE_REQUIRED_PRIVILEGES_INFO() { pmszRequiredPrivileges = privileges.ToMultiString() ?? "\0" }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        public static void SetServiceRequiredPrivileges(string machine_name, string name, string[] privileges)
+        {
+            SetServiceRequiredPrivileges(machine_name, name, privileges, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceRequiredPrivileges(string name, string[] privileges, bool throw_on_error)
+        {
+            return SetServiceRequiredPrivileges(name, privileges, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="privileges">The required privileges.</param>
+        public static void SetServiceRequiredPrivileges(string name, string[] privileges)
+        {
+            SetServiceRequiredPrivileges(name, privileges, true);
+        }
+
+        /// <summary>
+        /// Set a service's launch protected type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceLaunchProtected(string machine_name, string name, ServiceLaunchProtectedType protected_type, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.LAUNCH_PROTECTED,
+                new SERVICE_LAUNCH_PROTECTED_INFO() { dwLaunchProtected = protected_type }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's launch protected type.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        public static void SetServiceLaunchProtected(string machine_name, string name, ServiceLaunchProtectedType protected_type)
+        {
+            SetServiceLaunchProtected(machine_name, name, protected_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's required privileges.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceLaunchProtected(string name, ServiceLaunchProtectedType protected_type, bool throw_on_error)
+        {
+            return SetServiceLaunchProtected(name, protected_type, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a service's SID type.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="protected_type">The protected type.</param>
+        public static void SetServiceLaunchProtected(string name, ServiceLaunchProtectedType protected_type)
+        {
+            SetServiceLaunchProtected(name, protected_type, true);
         }
 
         #endregion

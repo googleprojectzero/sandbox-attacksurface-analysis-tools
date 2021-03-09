@@ -317,14 +317,29 @@ namespace TokenViewer
         private static string GetChromeSandboxType(ProcessTokenEntry entry)
         {
             string[] args = Win32Utils.ParseCommandLine(entry.CommandLine);
+            string sandbox_type = null;
             foreach (var s in args)
             {
                 if (s.StartsWith("--type="))
                 {
-                    return $"Sandbox: {s.Substring(7)}";
+                    sandbox_type = s.Substring(7);
+                    if (!sandbox_type.Equals("utility", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                }
+                else if (s.StartsWith("--utility-sub-type="))
+                {
+                    sandbox_type = $"utility.{s.Substring(19)}";
+                    break;
                 }
             }
-            return "Unknown";
+            return $"Sandbox: {sandbox_type ?? "Unknown"}";
+        }
+
+        private static string GetLogonSid(NtToken token)
+        {
+            return token.GetLogonSids(false).GetResultOrDefault()?.Name ?? "Unknown Logon SID";
         }
 
         public MainForm()
@@ -357,6 +372,7 @@ namespace TokenViewer
             AddGrouping("Trust Level", p => p.ProcessToken.TrustLevel?.Name ?? "Untrusted");
             AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
             AddGrouping("Chrome Sandbox Type", p => GetChromeSandboxType(p));
+            AddGrouping("Logon SID", p => GetLogonSid(p.ProcessToken));
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())

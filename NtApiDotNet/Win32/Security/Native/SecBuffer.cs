@@ -19,35 +19,43 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet.Win32.Security.Native
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class SecBuffer : IDisposable
+    internal sealed class SecBuffer
     {
         public int cbBuffer;
         public SecurityBufferType BufferType;
         public IntPtr pvBuffer;
 
-        void IDisposable.Dispose()
-        {
-            if (pvBuffer != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(pvBuffer);
-            }
-        }
-
         public SecBuffer()
         {
         }
 
-        public SecBuffer(SecurityBufferType type, byte[] data)
-            : this(type, data.Length)
+        public SecBuffer(SecurityBufferType type)
         {
-            Marshal.Copy(data, 0, pvBuffer, data.Length);
+            BufferType = type;
         }
 
-        public SecBuffer(SecurityBufferType type, int length)
+        public SecBuffer(SecurityBufferType type, IntPtr buffer, int size) 
+            : this(type)
         {
-            cbBuffer = length;
-            BufferType = type;
-            pvBuffer = Marshal.AllocHGlobal(length);
+            pvBuffer = buffer;
+            cbBuffer = size;
+        }
+
+        public SecBuffer(SecurityBufferType type, SafeBufferGeneric buffer) 
+            : this(type, buffer.DangerousGetHandle(), buffer.Length)
+        {
+        }
+
+        public static SecBuffer Create(SecurityBufferType type, byte[] data, DisposableList list)
+        {
+            return new SecBuffer(type, list.AddResource(new SafeHGlobalBuffer(data)));
+        }
+
+        public static SecBuffer Create(SecurityBufferType type, int length, DisposableList list)
+        {
+            var buffer = list.AddResource(new SafeHGlobalBuffer(length));
+            buffer.FillBuffer(0);
+            return new SecBuffer(type, buffer);
         }
 
         public byte[] ToArray()
@@ -55,30 +63,6 @@ namespace NtApiDotNet.Win32.Security.Native
             byte[] ret = new byte[cbBuffer];
             Marshal.Copy(pvBuffer, ret, 0, ret.Length);
             return ret;
-        }
-
-        public static byte[] GetChannelBinding(byte[] channel_binding_token)
-        {
-            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
-            sec_channel_bind.cbApplicationDataLength = channel_binding_token.Length;
-            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
-            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
-            {
-                binding.Data.WriteBytes(channel_binding_token);
-                return binding.ToArray();
-            }
-        }
-
-        public static SecBuffer CreateForChannelBinding(byte[] channel_binding_token)
-        {
-            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
-            sec_channel_bind.cbApplicationDataLength = channel_binding_token.Length;
-            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
-            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, channel_binding_token.Length, true))
-            {
-                binding.Data.WriteBytes(channel_binding_token);
-                return new SecBuffer(SecurityBufferType.ChannelBindings, binding.ToArray());
-            }
         }
     }
 }

@@ -1211,6 +1211,19 @@ namespace NtApiDotNet
             return base.QueryObject(info_class, throw_on_error);
         }
 
+        /// <summary>
+        /// Get the logon SID for the token.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The logon SID.</returns>
+        public NtResult<Sid> GetLogonSids(bool throw_on_error)
+        {
+            var sids = QueryGroupsInternal(TokenInformationClass.TokenLogonSid, throw_on_error);
+            if (!sids.IsSuccess)
+                return sids.Cast<Sid>();
+            return sids.Result.FirstOrDefault().Sid.CreateResult();
+        }
+
         #endregion
 
         #region Public Properties

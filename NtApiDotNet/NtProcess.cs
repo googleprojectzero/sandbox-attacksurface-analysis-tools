@@ -1385,6 +1385,28 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Flush instruction cache.
+        /// </summary>
+        /// <param name="address">The address to flush.</param>
+        /// <param name="count">The number of bytes to flush/</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus FlushInstructionCache(long address, int count, bool throw_on_error)
+        {
+            return NtVirtualMemory.FlushInstructionCache(Handle, address, count, throw_on_error);
+        }
+
+        /// <summary>
+        /// Flush instruction cache.
+        /// </summary>
+        /// <param name="address">The address to flush.</param>
+        /// <param name="count">The number of bytes to flush/</param>
+        public void FlushInstructionCache(long address, int count)
+        {
+            FlushInstructionCache(address, count, true);
+        }
+
+        /// <summary>
         /// Query working set information for an address in a process.
         /// </summary>
         /// <param name="base_address">The base address to query.</param>

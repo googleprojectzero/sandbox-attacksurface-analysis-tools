@@ -42,19 +42,20 @@ namespace NtApiDotNet.Win32.Security.Buffers
         public override byte[] ToArray()
         {
             if (_array == null)
-                throw new InvalidOperationException("Can't access return until it's been populated.");
+                throw new InvalidOperationException("Can't access buffer until it's been populated.");
             return _array;
         }
 
-        internal override SecBuffer ToBuffer()
+        internal override SecBuffer ToBuffer(DisposableList list)
         {
-            return new SecBuffer(Type, _size);
+            return SecBuffer.Create(_type, _size, list);
         }
 
         internal override void FromBuffer(SecBuffer buffer)
         {
             _array = buffer.ToArray();
             _size = _array.Length;
+            _type = buffer.BufferType;
         }
     }
 }

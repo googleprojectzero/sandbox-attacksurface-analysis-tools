@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32;
 using System;
@@ -28,19 +29,33 @@ namespace NtApiDotNet
     [Flags]
     public enum SecurityInformation : uint
     {
+        [SDKName("OWNER_SECURITY_INFORMATION")]
         Owner = 1,
+        [SDKName("GROUP_SECURITY_INFORMATION")]
         Group = 2,
+        [SDKName("DACL_SECURITY_INFORMATION")]
         Dacl = 4,
+        [SDKName("SACL_SECURITY_INFORMATION")]
         Sacl = 8,
+        [SDKName("LABEL_SECURITY_INFORMATION")]
         Label = 0x10,
+        [SDKName("ATTRIBUTE_SECURITY_INFORMATION")]
         Attribute = 0x20,
+        [SDKName("SCOPE_SECURITY_INFORMATION")]
         Scope = 0x40,
+        [SDKName("PROCESS_TRUST_LABEL_SECURITY_INFORMATION")]
         ProcessTrustLabel = 0x80,
+        [SDKName("ACCESS_FILTER_SECURITY_INFORMATION")]
         AccessFilter = 0x100,
+        [SDKName("BACKUP_SECURITY_INFORMATION")]
         Backup = 0x10000,
+        [SDKName("PROTECTED_DACL_SECURITY_INFORMATION")]
         ProtectedDacl = 0x80000000,
+        [SDKName("PROTECTED_SACL_SECURITY_INFORMATION")]
         ProtectedSacl = 0x40000000,
+        [SDKName("UNPROTECTED_DACL_SECURITY_INFORMATION")]
         UnprotectedDacl = 0x20000000,
+        [SDKName("UNPROTECTED_SACL_SECURITY_INFORMATION")]
         UnprotectedSacl = 0x10000000,
         AllBasic = Dacl | Owner | Group | Label | ProcessTrustLabel,
         AllNoSacl = AllBasic | Attribute | Scope | AccessFilter,
@@ -499,18 +514,31 @@ namespace NtApiDotNet
     public enum SecurityAutoInheritFlags
     {
         None = 0,
+        [SDKName("SEF_DACL_AUTO_INHERIT")]
         DaclAutoInherit = 0x1,
+        [SDKName("SEF_SACL_AUTO_INHERIT")]
         SaclAutoInherit = 0x2,
+        [SDKName("SEF_DEFAULT_DESCRIPTOR_FOR_OBJECT")]
         DefaultDescriptorForObject = 0x4,
+        [SDKName("SEF_AVOID_PRIVILEGE_CHECK")]
         AvoidPrivilegeCheck = 0x8,
+        [SDKName("SEF_AVOID_OWNER_CHECK")]
         AvoidOwnerCheck = 0x10,
+        [SDKName("SEF_DEFAULT_OWNER_FROM_PARENT")]
         DefaultOwnerFromParent = 0x20,
+        [SDKName("SEF_DEFAULT_GROUP_FROM_PARENT")]
         DefaultGroupFromParent = 0x40,
+        [SDKName("SEF_MACL_NO_WRITE_UP")]
         MaclNoWriteUp = 0x100,
+        [SDKName("SEF_MACL_NO_READ_UP")]
         MaclNoReadUp = 0x200,
+        [SDKName("SEF_MACL_NO_EXECUTE_UP")]
         MaclNoExecuteUp = 0x400,
+        [SDKName("SEF_AI_USE_EXTRA_PARAMS")]
         AiUseExtraParams = 0x800,
+        [SDKName("SEF_AVOID_OWNER_RESTRICTION")]
         AvoidOwnerRestriction = 0x1000,
+        [SDKName("SEF_FORCE_USER_MODE")]
         ForceUserMode = 0x2000,
     }
 
@@ -1101,14 +1129,19 @@ namespace NtApiDotNet
     public enum ObjectAceFlags : uint
     {
         None = 0,
+        [SDKName("ACE_OBJECT_TYPE_PRESENT")]
         ObjectTypePresent = 0x1,
+        [SDKName("ACE_INHERITED_OBJECT_TYPE_PRESENT")]
         InheritedObjectTypePresent = 0x2,
     }
 
     public enum AclRevision
     {
+        [SDKName("ACL_REVISION")]
         Revision = 2,
+        [SDKName("ACL_REVISION_COMPOUND")]
         RevisionCompound = 3,
+        [SDKName("ACL_REVISION_DS")]
         RevisionDS = 4,
     }
 

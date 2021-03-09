@@ -15,12 +15,26 @@
 using System;
 using System.Linq;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Service
 {
-#pragma warning disable 1591
+    /// <summary>
+    /// Service trigger for a WNF event.
+    /// </summary>
     public class WnfServiceTriggerInformation : ServiceTriggerInformation
     {
+        /// <summary>
+        /// The WNF name.
+        /// </summary>
         public NtWnf Name { get; }
+
+        private protected override string GetSubTypeDescription()
+        {
+            if (SubType == CUSTOM_SYSTEM_STATE_CHANGE_EVENT_GUID && Name != null)
+            {
+                return $"{base.GetSubTypeDescription()} {Name.Name}";
+            }
+            return base.GetSubTypeDescription();
+        }
 
         internal WnfServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
@@ -32,11 +46,6 @@ namespace NtApiDotNet.Win32
             }
 
             Name = NtWnf.Open(BitConverter.ToUInt64(data.RawData, 0), true, false).GetResultOrDefault();
-        }
-
-        public override string ToString()
-        {
-            return base.ToString();
         }
     }
 #pragma warning restore

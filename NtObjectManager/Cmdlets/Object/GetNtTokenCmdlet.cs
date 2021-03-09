@@ -47,7 +47,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// Create IUsr Service token.
         /// </summary>
-        IUser,
+        IUsr,
     }
 
     /// <summary>
@@ -445,6 +445,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "Linked", Mandatory = true)]
         public SwitchParameter Linked { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to get the linked token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "ServiceName", Mandatory = true)]
+        public string ServiceName { get; set; }
+
         private static IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
         {
             if (privs == null)
@@ -495,6 +501,19 @@ namespace NtObjectManager.Cmdlets.Object
             }
 
             return NtToken.OpenProcessToken(Process ?? NtProcess.Current, false, desired_access);
+        }
+
+        private NtToken GetServiceNameToken(TokenAccessRights desired_access)
+        {
+            int pid = ServiceUtils.GetServiceProcessId(ServiceName);
+            if (pid == 0)
+            {
+                throw new ArgumentException($"{ServiceName} is not current running.");
+            }
+            using (var process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
+            {
+                return NtToken.OpenProcessToken(process, false, desired_access);
+            }
         }
 
         private static NtToken GetClipboardToken(TokenAccessRights desired_access)
@@ -731,7 +750,7 @@ namespace NtObjectManager.Cmdlets.Object
                 case ServiceAccountType.NetworkService:
                     user = "Network Service";
                     break;
-                case ServiceAccountType.IUser:
+                case ServiceAccountType.IUsr:
                     user = "IUsr";
                     break;
             }
@@ -811,6 +830,10 @@ namespace NtObjectManager.Cmdlets.Object
             else if (Linked)
             {
                 return GetRelatedToken(desired_access, t => t.GetLinkedToken());
+            }
+            else if (ServiceName != null)
+            {
+                return GetServiceNameToken(desired_access);
             }
             else
             {

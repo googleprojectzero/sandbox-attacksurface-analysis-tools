@@ -176,17 +176,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private byte[] ProtectPDU(byte[] header, ref byte[] stub_data, int auth_padding_length)
         {
             List<SecurityBuffer> buffers = new List<SecurityBuffer>();
-            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
-            {
-                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum, header));
-            }
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly, header));
             var stub_data_buffer = new SecurityBufferInOut(SecurityBufferType.Data, stub_data);
             buffers.Add(stub_data_buffer);
-            if (_negotiated_auth_type != RpcAuthenticationType.Kerberos)
-            {
-                buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnlyWithChecksum,
-                    AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
-            }
+            buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
+                AuthData.ToArray(_transport_security, auth_padding_length, 0, new byte[0])));
 
             byte[] signature;
             if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
@@ -195,7 +189,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
             else
             {
-                signature = _auth_context.EncryptMessage(buffers, _send_sequence_no);
+                signature = _auth_context.EncryptMessage(buffers, SecurityQualityOfProtectionFlags.None, _send_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
                 RpcUtils.DumpBuffer(true, "Send Encrypted Data", stub_data);
             }
@@ -439,8 +433,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (_transport_security.AuthenticationType == RpcAuthenticationType.Negotiate)
             {
-                var package_info = _auth_context.GetAuthenticationPackage();
-                _negotiated_auth_type = AuthenticationPackage.CheckKerberos(package_info.Name) 
+                var package_name = _auth_context.PackageName;
+                _negotiated_auth_type = AuthenticationPackage.CheckKerberos(package_name) 
                     ? RpcAuthenticationType.Kerberos : RpcAuthenticationType.WinNT;
             }
             else

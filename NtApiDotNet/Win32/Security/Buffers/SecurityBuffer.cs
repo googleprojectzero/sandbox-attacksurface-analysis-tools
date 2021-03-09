@@ -22,10 +22,22 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     public abstract class SecurityBuffer
     {
+        private protected SecurityBufferType _type;
+
         /// <summary>
         /// Type of the security buffer.
         /// </summary>
-        public SecurityBufferType Type { get; }
+        public SecurityBufferType Type => _type & SecurityBufferType.Mask;
+
+        /// <summary>
+        /// Is the buffer read-only.
+        /// </summary>
+        public bool ReadOnly => _type.HasFlagSet(SecurityBufferType.ReadOnly) || WithChecksum;
+
+        /// <summary>
+        /// Is the buffer read-only with checksum.
+        /// </summary>
+        public bool WithChecksum => _type.HasFlagSet(SecurityBufferType.ReadOnlyWithChecksum);
 
         /// <summary>
         /// Convert to buffer back to an array.
@@ -39,26 +51,33 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// <returns>The buffer as a string.</returns>
         public override string ToString()
         {
-            List<string> type_names = new List<string>();
-            type_names.Add((Type & SecurityBufferType.Mask).ToString());
-            if (Type.HasFlagSet(SecurityBufferType.ReadOnly))
+            List<SecurityBufferType> types = new List<SecurityBufferType>
             {
-                type_names.Add("ReadOnly");
+                Type
+            };
+            if (WithChecksum)
+            {
+                types.Add(SecurityBufferType.ReadOnlyWithChecksum);
             }
-            if (Type.HasFlagSet(SecurityBufferType.ReadOnlyWithChecksum))
+            else if (ReadOnly)
             {
-                type_names.Add("ReadOnlyWithChecksum");
+                types.Add(SecurityBufferType.ReadOnly);
             }
 
-            return $"Buffer Type: {string.Join(",", type_names)}";
+            return $"Buffer Type: {string.Join(",", types)}";
         }
 
         internal abstract void FromBuffer(SecBuffer buffer);
-        internal abstract SecBuffer ToBuffer();
+        internal abstract SecBuffer ToBuffer(DisposableList list);
+
+        internal virtual void ReleaseBuffer(SecBuffer buffer)
+        {
+            // Do nothing.
+        }
 
         private protected SecurityBuffer(SecurityBufferType type)
         {
-            Type = type;
+            _type = type;
         }
     }
 }

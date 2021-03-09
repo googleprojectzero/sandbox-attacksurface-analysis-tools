@@ -68,10 +68,10 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Suspend-NtProcess', 'Resume-NtProcess', 'Stop-NtProcess', 'Suspend-NtThread', 'Resume-NtThread', 'Stop-NtThread',
           'Format-NtToken', 'Remove-NtTokenPrivilege', 'Get-NtTokenPrivilege', 'Get-NtLocallyUniqueId', 'Get-NtTokenGroup',
           'Get-NtTokenSid', 'Set-NtTokenSid', 'Set-NtTokenGroup', 'Get-NtDesktopName', 'Get-NtWindowStationName',
-          'Get-NtWindow', 'Out-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
+          'Get-NtWindow', 'Format-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
           'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport', 'Get-NtDirectoryEntry',
-          'Remove-NtKeyValue', 'Read-AuthCredential', 'Get-AuthPackage', 'Get-AuthCredentialHandle', 'Get-AuthServerContext',
-          'Get-AuthClientContext', 'Update-AuthServerContext', 'Update-AuthClientContext', 'Get-AuthAccessToken', 'Get-NtKernelModule',
+          'Remove-NtKeyValue', 'Read-LsaCredential', 'Get-LsaPackage', 'New-LsaCredentialHandle', 'New-LsaServerContext',
+          'New-LsaClientContext', 'Update-LsaServerContext', 'Update-LsaClientContext', 'Get-LsaAccessToken', 'Get-NtKernelModule',
           'Get-NtObjectInformationClass', 'Add-NtSection', 'Remove-NtSection', 'Compare-NtObject', 'Edit-NtSecurityDescriptor',
           'Set-NtSecurityDescriptorOwner', 'Set-NtSecurityDescriptorGroup', 'Set-NtSecurityDescriptorIntegrityLevel',
           'ConvertFrom-NtAceCondition', 'ConvertFrom-NtSecurityDescriptor', 'Remove-NtSecurityDescriptorOwner',
@@ -85,11 +85,11 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Clear-NtSecurityDescriptorDacl', 'Clear-NtSecurityDescriptorSacl', 'Get-CentralAccessPolicy',
           'Remove-ObjectTypeTree', 'Set-ObjectTypeTreeAccess', 'Revoke-ObjectTypeTreeAccess', 'Select-ObjectTypeTree',
           'Test-NtObject', 'Get-NtTokenIntegrityLevel', 'Get-NtAuditPolicy', 'Set-NtAuditPolicy', 'Get-NtAuditSecurity',
-          'Set-NtAuditSecurity', 'Format-AuthToken', 'Get-AuthToken', 'Test-AuthContext', 'Get-NtLogonSession',
+          'Set-NtAuditSecurity', 'Format-LsaAuthToken', 'Get-LsaAuthToken', 'Test-LsaContext', 'Get-NtLogonSession',
           'Get-NtAccountRight', 'Get-NtAccountRightSid', 'Get-NtConsoleSession', 'Get-ServicePrincipalName',
-          'Get-NtTokenId', 'Get-AuthCredential', 'Export-AuthToken', 'Import-AuthToken', 'Get-MD4Hash',
+          'Get-NtTokenId', 'Get-LsaCredential', 'Export-LsaAuthToken', 'Import-LsaAuthToken', 'Get-MD4Hash',
           'Format-ASN1DER', 'Import-KerberosKeyTab', 'Export-KerberosKeyTab', 'New-KerberosKey', 'Get-KerberosKey',
-          'Unprotect-AuthToken', 'Get-KerberosTicket', 'Get-NdrComplexType', 'Get-NtProcessUser',
+          'Unprotect-LsaAuthToken', 'Get-KerberosTicket', 'Get-NdrComplexType', 'Get-NtProcessUser',
           'Get-NtProcessEnvironment', 'Split-Win32CommandLine', 'Send-NtWindowMessage', 'Get-NtKeyHive',
           'Backup-NtKey', 'Restore-NtKey', 'Enable-NtTokenVirtualization', 'Disable-NtTokenVirtualization',
           'Read-NtFile', 'Write-NtFile', 'Get-FilterConnectionPort', 'Get-FilterDriver', 
@@ -111,7 +111,13 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Remove-NtSidName', 'New-Win32Service', 'Remove-Win32Service', 'Test-NtTokenCapability',
           'New-Win32DebugConsole', 'Read-Win32DebugConsole', 'Get-Win32ServiceSecurityDescriptor',
           'Disconnect-RpcClient', 'Enable-NtTokenPrivilege', 'Disable-NtTokenPrivilege', 'Get-Win32ModuleSymbolFile',
-          'Get-RpcStringBinding', 'Start-Win32Service', 'Get-Win32ServiceConfig'
+          'Get-RpcStringBinding', 'Start-Win32Service', 'Get-Win32ServiceConfig', 'Get-LsaContextSignature',
+          'Test-LsaContextSignature', 'Protect-LsaContextMessage', 'Unprotect-LsaContextMessage',
+          'New-LsaSecurityBuffer', 'Get-LsaSchannelCredential', 'Get-LsaCredSSPCredential',
+          'ConvertFrom-LsaSecurityBuffer', 'ConvertFrom-NtSid', 'Get-AppModelLoopbackException', 
+          'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException', 'Get-SDKName',
+          'Wait-Win32Service', 'Send-Win32Service', 'Get-Win32ServiceTrigger', 'Set-Win32ServiceSecurityDescriptor',
+          'Restart-Win32Service', 'Test-Win32Service'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -165,7 +171,10 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Get-RunningScheduledTask', 'Set-Win32ServiceConfig'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer'
+AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer', 'Get-AuthPackage', 'Read-AuthCredential', 'Get-AuthCredential', 
+                'Get-AuthCredentialHandle', 'Get-AuthClientContext', 'Get-AuthServerContext', 'Update-AuthClientContext', 
+                'Update-AuthServerContext', 'Get-AuthAccessToken', 'Get-AuthToken', 'Test-AuthContext', 'Format-AuthToken', 
+                'Export-AuthToken', 'Import-AuthToken', 'Unprotect-AuthToken', 'Out-HexDump'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

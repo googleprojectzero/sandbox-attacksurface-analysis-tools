@@ -63,11 +63,63 @@ namespace NtApiDotNet.Win32.Security.Native
         Virtual = 4
     }
 
-    [Flags]
-    internal enum SecQopFlags : uint
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_TRUST_INFORMATION
     {
-        None = 0,
-        WrapNoEncrypt = 0x80000001
+        public UnicodeStringOut Name;
+        public IntPtr Sid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_REFERENCED_DOMAIN_LIST
+    {
+        public int Entries;
+        public IntPtr Domains; // PLSA_TRUST_INFORMATION 
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSA_TRANSLATED_NAME
+    {
+        public SidNameUse Use;
+        public UnicodeStringOut Name;
+        public int DomainIndex;
+
+        public string GetName()
+        {
+            switch (Use)
+            {
+                case SidNameUse.Domain:
+                case SidNameUse.Invalid:
+                case SidNameUse.Unknown:
+                    return string.Empty;
+                default:
+                    return Name.ToString();
+            }
+        }
+
+        public string GetDomain(LSA_TRUST_INFORMATION[] domains)
+        {
+            switch (Use)
+            {
+                case SidNameUse.WellKnownGroup:
+                case SidNameUse.Invalid:
+                case SidNameUse.Unknown:
+                    return string.Empty;
+            }
+            if (DomainIndex >= domains.Length)
+            {
+                return string.Empty;
+            }
+            return domains[DomainIndex].Name.ToString();
+        }
+    }
+
+    [Flags]
+    internal enum LsaLookupOptions : uint
+    {
+        LSA_LOOKUP_RETURN_LOCAL_NAMES = 0,
+        LSA_LOOKUP_PREFER_INTERNET_NAMES = 0x40000000,
+        LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID = 0x80000000
     }
 
     internal static class SecurityNativeMethods
@@ -160,7 +212,7 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode EncryptMessage(
             [In] SecHandle phContext,
-            SecQopFlags fQOP,
+            SecurityQualityOfProtectionFlags fQOP,
             SecBufferDesc pMessage,
             int MessageSeqNo
         );
@@ -170,7 +222,7 @@ namespace NtApiDotNet.Win32.Security.Native
             [In] SecHandle phContext,
             SecBufferDesc pMessage,
             int MessageSeqNo,
-            out SecQopFlags pfQOP
+            out SecurityQualityOfProtectionFlags pfQOP
         );
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -187,6 +239,22 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode RevertSecurityContext(
             SecHandle phContext
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ExportSecurityContext(
+          SecHandle phContext,
+          SecPkgContextExportFlags fFlags,
+          [In, Out] SecBuffer pPackedContext,
+          out SafeKernelObjectHandle pToken
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ImportSecurityContext(
+            string pszPackage,
+            SecBuffer pPackedContext,
+            SafeKernelObjectHandle Token,
+            [Out] SecHandle phContext
         );
 
         [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
@@ -680,9 +748,29 @@ namespace NtApiDotNet.Win32.Security.Native
           int cbBuffer
         );
 
-        public static SecStatusCode CheckResult(this SecStatusCode result)
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaLookupSids2(
+            SafeLsaHandle PolicyHandle,
+            LsaLookupOptions LookupOptions,
+            int Count,
+            IntPtr[] Sids,
+            out SafeLsaMemoryBuffer ReferencedDomains,
+            out SafeLsaMemoryBuffer Names
+        );
+
+        [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]
+        internal static extern bool CertFreeCertificateContext(
+            IntPtr pCertContext
+        );
+
+        internal static bool IsSuccess(this SecStatusCode result)
         {
-            ((NtStatus)(uint)result).ToNtException();
+            return (int)result >= 0;
+        }
+
+        internal static SecStatusCode CheckResult(this SecStatusCode result, bool throw_on_error = true)
+        {
+            ((NtStatus)(uint)result).ToNtException(throw_on_error);
             return result;
         }
     }

@@ -195,6 +195,11 @@
     <Compile Include="Utils\InfoClassCompleter.cs" />
     <Compile Include="Utils\NtTypeArgumentCompleter.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskTrigger.cs" />
+    <Compile Include="Utils\ScheduledTask\TaskActionType.cs" />
+    <Compile Include="Utils\ScheduledTask\TaskLogonType.cs" />
+    <Compile Include="Utils\ScheduledTask\TaskProcessTokenSid.cs" />
+    <Compile Include="Utils\ScheduledTask\TaskRunFlags.cs" />
+    <Compile Include="Utils\ScheduledTask\TaskRunLevel.cs" />
     <Compile Include="Utils\SecurityDescriptorTransformAttribute.cs" />
     <Compile Include="Utils\SidTransformAttribute.cs" />
     <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />

@@ -52,6 +52,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Default.
         /// </summary>
         Default = 0x00000004,
+        /// <summary>
+        /// Auto logon restricted. Don't use automatic credentials.
+        /// </summary>
+        AutoLogonRestricted = 0x00000010,
+        /// <summary>
+        /// Only process policy.
+        /// </summary>
+        ProcessPolicyOnly = 0x00000020,
     }
 
 #pragma warning disable 1591
@@ -156,6 +164,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         AllowNonUserLogons = 0x00200000,
         AllowContextReplay = 0x00400000,
         FragmentToFit = 0x00800000,
+        NoToken = 0x01000000,
+        ProxyBindings = 0x04000000,
+        AllowMissingBindings = 0x10000000
     }
 
     /// <summary>

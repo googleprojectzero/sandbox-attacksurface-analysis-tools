@@ -116,6 +116,10 @@ namespace NtApiDotNet.Win32
         /// The name of the machine this service was found on.
         /// </summary>
         public string MachineName { get; }
+        /// <summary>
+        /// Indicates if this service process is grouped with others.
+        /// </summary>
+        public bool SvcHostSplitDisabled { get; }
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -232,6 +236,11 @@ namespace NtApiDotNet.Win32
                         {
                             ServiceMain = "ServiceMain";
                         }
+                    }
+
+                    if (key.GetValue("SvcHostSplitDisable") is int disable)
+                    {
+                        SvcHostSplitDisabled = disable != 0;
                     }
                 }
             }

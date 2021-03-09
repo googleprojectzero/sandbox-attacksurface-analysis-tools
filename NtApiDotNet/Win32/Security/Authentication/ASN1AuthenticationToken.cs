@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using System.IO;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -49,7 +49,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Try and parse data into an ASN1 authentication token.
         /// </summary>
         /// <param name="data">The data to parse.</param>
-        /// <param name="token">The Negotiate authentication token.</param>
+        /// <param name="token">The ASN1 authentication token.</param>
         /// <param name="client">True if this is a token from a client.</param>
         /// <param name="token_count">The token count number.</param>
         /// <returns>True if parsed successfully.</returns>
@@ -61,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 token = new ASN1AuthenticationToken(data);
                 return true;
             }
-            catch (EndOfStreamException)
+            catch (Exception)
             {
                 return false;
             }

@@ -433,6 +433,10 @@ Specify to get the logon SID.
 Specify to get the AppContainer package SID.
 .PARAMETER Token
 Optional token object to use to get SID. Must be accesible for Query right.
+.PARAMETER AsSddl
+Specify to convert the SID to SDDL.
+.PARAMETER AsName
+Specify to convert the SID to a name.
 .INPUTS
 None
 .OUTPUTS
@@ -467,8 +471,10 @@ function Get-NtTokenSid {
         [switch]$Integrity,
         [Parameter(Mandatory, ParameterSetName = "Package")]
         [switch]$Package,
-        [switch]$ToSddl,
-        [switch]$ToName
+        [alias("ToSddl")]
+        [switch]$AsSddl,
+        [alias("ToName")]
+        [switch]$AsName
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access Query
@@ -488,10 +494,10 @@ function Get-NtTokenSid {
             "Package" { $Token.AppContainerSid }
         }
 
-        if ($ToSddl) {
+        if ($AsSddl) {
             $sid.ToString() | Write-Output
         }
-        elseif ($ToName) {
+        elseif ($AsName) {
             $sid.Name | Write-Output
         }
         else {
@@ -2415,7 +2421,7 @@ Specify the path to an NT object for the security descriptor.
 Specify what parts of the security descriptor to format.
 .PARAMETER MapGeneric
 Specify to map access masks back to generic access rights for the object type.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Specify to format the security descriptor as SDDL.
 .PARAMETER Container
 Specify to display the access mask from Container Access Rights.
@@ -2451,10 +2457,10 @@ Format the security descriptor assuming it's a File type.
 Format-NtSecurityDescriptor -Path \BaseNamedObjects
 Format the security descriptor for an object from a path.
 .EXAMPLE
-Format-NtSecurityDescriptor -Object $obj -ToSddl
+Format-NtSecurityDescriptor -Object $obj -AsSddl
 Format the security descriptor of an object as SDDL.
 .EXAMPLE
-Format-NtSecurityDescriptor -Object $obj -ToSddl -SecurityInformation Dacl, Label
+Format-NtSecurityDescriptor -Object $obj -AsSddl -SecurityInformation Dacl, Label
 Format the security descriptor of an object as SDDL with only DACL and Label.
 #>
 function Format-NtSecurityDescriptor {
@@ -2481,7 +2487,8 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.NtObject]$Root,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
-        [switch]$ToSddl,
+        [alias("ToSddl")]
+        [switch]$AsSddl,
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
@@ -2543,7 +2550,7 @@ function Format-NtSecurityDescriptor {
                 $si = [NtApiDotNet.SecurityInformation]::All
             }
 
-            if ($ToSddl) {
+            if ($AsSddl) {
                 $sd.ToSddl($si) | Write-Output
                 return
             }
@@ -2936,7 +2943,9 @@ When getting the name/command line only display at most this number of tokens.
 .PARAMETER All
 Show dialog with all access tokens.
 .PARAMETER RunAsAdmin
-When showing all tokens elevate the process to admin.
+Specify to elevate the process to admin.
+.PARAMETER ServiceName
+Specify the name of a service to display the token for.
 .INPUTS
 None
 .OUTPUTS
@@ -2965,26 +2974,36 @@ Display up to 5 primary tokens from accessible processes named notepad.exe.
 .EXAMPLE
 Show-NtToken -All
 Show a list of all accessible tokens to choose from.
+.EXAMPLE
+Show-NtToken -All -RunAsAdmin
+Show a list of all accessible tokens to choose from and run as an administrator.
+.EXAMPLE
+Show-NtToken -ServiceName "AppInfo"
+Display the primary token for the AppInfo service.
 #>
 function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
     param(
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromToken", ValueFromPipeline = $true)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromToken", ValueFromPipeline)]
         [NtApiDotNet.NtToken]$Token,
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline = $true)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline)]
         [NtApiDotNet.NtProcess]$Process,
         [Parameter(Position = 0, ParameterSetName = "FromPid")]
         [int]$ProcessId = $pid,
-        [Parameter(Mandatory = $true, ParameterSetName = "FromName")]
+        [Parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name,
-        [Parameter(Mandatory = $true, ParameterSetName = "FromCommandLine")]
+        [Parameter(Mandatory, ParameterSetName = "FromCommandLine")]
         [string]$CommandLine,
         [Parameter(ParameterSetName = "FromName")]
         [Parameter(ParameterSetName = "FromCommandLine")]
         [int]$MaxTokens = 0,
+        [Parameter(Mandatory, ParameterSetName = "FromServiceName")]
+        [string]$ServiceName,
         [Parameter(ParameterSetName = "All")]
         [switch]$All,
         [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromPid")]
+        [Parameter(ParameterSetName = "FromServiceName")]
         [switch]$RunAsAdmin
     )
 
@@ -2993,6 +3012,12 @@ function Show-NtToken {
             Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
             return
         }
+
+        $verb = "open"
+        if ($RunAsAdmin) {
+            $verb = "runas"
+        }
+
         switch ($PSCmdlet.ParameterSetName) {
             "FromProcess" {
                 $text = "$($Process.Name):$($Process.ProcessId)"
@@ -3017,19 +3042,17 @@ function Show-NtToken {
                 }
             }
             "FromPid" {
-                $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
-                $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-                Use-NtObject(New-Win32Process -Config $config) {
-                }
+                $cmdline = "--pid={0}" -f $ProcessId
+                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
+            }
+            "FromServiceName" {
+                $cmdline = """--service={0}""" -f $ServiceName
+                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
             }
             "FromToken" {
                 Start-NtTokenViewer $Token
             }
             "All" {
-                $verb = "open"
-                if ($RunAsAdmin) {
-                    $verb = "runas"
-                }
                 Start-Process "$PSScriptRoot\TokenViewer.exe" -Verb $verb
             }
         }
@@ -3184,7 +3207,7 @@ This cmdlet gets the security descriptor from an object with specified list of s
 The object to get the security descriptor from.
 .PARAMETER SecurityInformation
 The security information to get from the object.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Convert the security descriptor to an SDDL string.
 .PARAMETER Process
 Specify process to a read a security descriptor from memory.
@@ -3210,7 +3233,7 @@ Get the security descriptor with default security information.
 Get-NtSecurityDescriptor $obj Dacl,Owner,Group
 Get the security descriptor with DACL, OWNER and GROUP values.
 .EXAMPLE
-Get-NtSecurityDescriptor $obj Dacl -ToSddl
+Get-NtSecurityDescriptor $obj Dacl -AsSddl
 Get the security descriptor with DACL and output as an SDDL string.
 .EXAMPLE
 Get-NtSecurityDescriptor \BaseNamedObjects\ABC
@@ -3262,7 +3285,8 @@ function Get-NtSecurityDescriptor {
         [int]$ThreadId,
         [parameter(Mandatory, ParameterSetName = "FromNp")]
         [switch]$NamedPipeDefault,
-        [switch]$ToSddl
+        [alias("ToSddl")]
+        [switch]$AsSddl
     )
     PROCESS {
         $sd = switch ($PsCmdlet.ParameterSetName) {
@@ -3295,7 +3319,7 @@ function Get-NtSecurityDescriptor {
                 New-NtSecurityDescriptor -Dacl $dacl -Type File
             }
         }
-        if ($ToSddl) {
+        if ($AsSddl) {
             $sd.ToSddl($SecurityInformation)
         }
         else {
@@ -3619,6 +3643,8 @@ The process to write to, defaults to current process.
 Specify a mapped section object.
 .PARAMETER Offset
 Specify the offset into the mapped section.
+.PARAMETER Win32
+Specify to use the Win32 WriteProcessMemory API which will automatically change page permissions.
 .OUTPUTS
 int - The length of bytes successfully written.
 .EXAMPLE
@@ -3643,14 +3669,20 @@ function Write-NtVirtualMemory {
         [parameter(Mandatory, Position = 1)]
         [byte[]]$Data,
         [parameter(ParameterSetName="FromAddress")]
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
+        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [switch]$Win32
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromMapping") {
         $Address = $Mapping.BaseAddress + $Offset
         $Process = $Mapping.Process
     }
-    $Process.WriteMemory($Address, $Data)
+
+    if ($Win32) {
+        [NtApiDotNet.Win32.Memory.Win32MemoryUtils]::WriteMemory($Process, $Address, $Data)
+    } else {
+        $Process.WriteMemory($Address, $Data)
+    }
 }
 
 <#
@@ -6464,7 +6496,7 @@ function Start-AccessibleScheduledTask {
         [parameter(Mandatory, Position = 0)]
         [NtObjectManager.Cmdlets.Accessible.ScheduledTaskAccessCheckResult]$Task,
         [string]$User,
-        [NtObjectManager.Cmdlets.Accessible.TaskRunFlags]$Flags = 0,
+        [NtObjectManager.Utils.ScheduledTask.TaskRunFlags]$Flags = 0,
         [int]$SessionId,
         [string[]]$Arguments
     )
@@ -6999,9 +7031,9 @@ function Send-NtWindowMessage {
 
 <#
 .SYNOPSIS
-Outputs a hex dump for a byte array.
+Formats a hex dump for a byte array.
 .DESCRIPTION
-This cmdlet converts a byte array to a hex dump.
+This cmdlet converts a byte array to a hex dump string. If invoked as Out-HexDump will write the to the console.
 .PARAMETER Bytes
 The bytes to convert.
 .PARAMETER ShowHeader
@@ -7025,11 +7057,13 @@ byte[]
 .OUTPUTS
 String
 #>
-function Out-HexDump {
+function Format-HexDump {
     [CmdletBinding(DefaultParameterSetName = "FromBytes")]
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromBytes")]
-        [byte[]]$Bytes,
+        [Alias("Bytes")]
+        [AllowEmptyCollection()]
+        [byte[]]$Byte,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
         [string]$Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
@@ -7055,7 +7089,10 @@ function Out-HexDump {
             $ShowAscii = $true
             $ShowAddress = $true
         }
-        switch ($PsCmdlet.ParameterSetName) {
+
+        $WriteToHost = $PSCmdlet.MyInvocation.InvocationName -eq "Out-HexDump"
+
+        switch ($PSCmdlet.ParameterSetName) {
             "FromBytes" {
                 $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
             }
@@ -7069,9 +7106,9 @@ function Out-HexDump {
     }
 
     PROCESS {
-        switch ($PsCmdlet.ParameterSetName) {
+        switch ($PSCmdlet.ParameterSetName) {
             "FromBytes" {
-                $builder.Append($Bytes)
+                $builder.Append($Byte)
             }
             "FromFile" {
                 $Path = Resolve-Path $Path -ErrorAction Stop
@@ -7082,9 +7119,16 @@ function Out-HexDump {
 
     END {
         $builder.Complete()
-        $builder.ToString() | Write-Output
+        $output = $builder.ToString()
+        if ($WriteToHost) {
+            $output | Write-Host
+        } else {
+            $output | Write-Output
+        }
     }
 }
+
+Set-Alias -Name Out-HexDump -Value Format-HexDump
 
 <#
 .SYNOPSIS
@@ -7141,13 +7185,15 @@ function Get-NtTypeAccess {
 
 <#
 .SYNOPSIS
-Get an ATOM objects.
+Get an ATOM object.
 .DESCRIPTION
 This cmdlet gets all ATOM objects or by name or atom.
 .PARAMETER Atom
 Specify the ATOM to get.
 .PARAMETER Name
 Specify the name of the ATOM to get.
+.PARAMETER User
+Specify to get a user atom rather than a global.
 .INPUTS
 None
 .OUTPUTS
@@ -7159,12 +7205,15 @@ function Get-NtAtom {
         [Parameter(Mandatory, ParameterSetName = "FromAtom")]
         [uint16]$Atom,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
-        [string]$Name
+        [string]$Name,
+        [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromAtom")]
+        [switch]$User
     )
 
     switch ($PSCmdlet.ParameterSetName) {
-        "All" { [NtApiDotNet.NtAtom]::GetAtoms() | Write-Output }
-        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom) | Write-Output }
+        "All" { [NtApiDotNet.NtAtom]::GetAtoms(!$User) | Write-Output }
+        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom, $true, !$User, $true).Result | Write-Output }
         "FromName" { [NtApiDotNet.NtAtom]::Find($Name) | Write-Output }
     }
 }
@@ -7494,13 +7543,13 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage
 .EXAMPLE
-Get-AuthPackage
+Get-LsaPackage
 Get all authentication packages.
 .EXAMPLE
-Get-AuthPackage -Name NTLM
+Get-LsaPackage -Name NTLM
 Get the NTLM authentication package.
 #>
-function Get-AuthPackage {
+function Get-LsaPackage {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName")]
@@ -7533,10 +7582,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
-$user_creds = Read-UserCredentials
+$user_creds = Read-LsaCredential
 Read user credentials from the shell.
 #>
-function Read-AuthCredential {
+function Read-LsaCredential {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0)]
@@ -7583,10 +7632,10 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
-$user_creds = Get-UserCredentials -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
+$user_creds = Get-LsaCredential -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
 Get user credentials from components.
 #>
-function Get-AuthCredential {
+function Get-LsaCredential {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0)]
@@ -7614,7 +7663,73 @@ function Get-AuthCredential {
     else {
         $creds.Password = $SecurePassword
     }
-    $creds | Write-Output
+    $creds
+}
+
+<#
+.SYNOPSIS
+Get Schannel credentials.
+.DESCRIPTION
+This cmdlet gets Schannel credentials.
+.PARAMETER Flags
+The flags for the credentials.
+.PARAMETER SessionLifespan
+The lifespan of a session in milliseconds.
+.PARAMETER Certificate
+The list of certificates to use. Needs to have a private key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials
+.EXAMPLE
+$creds = Get-LsaSchannelCredential -Certificate $cert
+Get credentials with a certificate.
+#>
+function Get-LsaSchannelCredential {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentialsFlags]$Flags = 0,
+        [int]$SessionLifespan = 0,
+        [X509Certificate[]]$Certificate
+    )
+
+    $creds = [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]::new()
+    $creds.Flags = $Flags
+    $creds.SessionLifespan = $SessionLifespan
+    foreach($cert in $Certificate) {
+        $creds.AddCertificate($cert)
+    }
+    $creds
+}
+
+<#
+.SYNOPSIS
+Get CredSSP credentials.
+.DESCRIPTION
+This cmdlet gets CredSSP credentials. This is only needed if you want both Schannel and user credentials. Otherwise
+just use Get-LsaSchannelCredential or Get-LsaCredential.
+.PARAMETER Schannel
+The Schannel credentials.
+.PARAMETER User
+The user credentials.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials
+.EXAMPLE
+$creds = Get-LsaCredSSPCredential -Schannel $schannel -User $user
+Get credentials from a schannel and user credentials object.
+#>
+function Get-LsaCredSSPCredential {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position=0)]
+        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]$Schannel,
+        [Parameter(Mandatory, Position=1)]
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$User
+    )
+
+    [NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials]::new($Schannel, $User)
 }
 
 <#
@@ -7647,16 +7762,16 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.CredentialHandle
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both
 Get a credential handle for the NTLM package for both directions.
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Both -UserName "user" -Password "pwd"
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both -UserName "user" -Password "pwd"
 Get a credential handle for the NTLM package for both directions with a username password.
 .EXAMPLE
-$h = Get-AuthCredentialHandle -Package "NTLM" -UseFlag Inbound -ReadCredential
+$h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Inbound -ReadCredential
 Get a credential handle for the NTLM package for outbound directions and read credentials from the shell.
 #>
-function Get-AuthCredentialHandle {
+function New-LsaCredentialHandle {
     [CmdletBinding(DefaultParameterSetName="FromCreds")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7681,16 +7796,23 @@ function Get-AuthCredentialHandle {
 
     if ($PSCmdlet.ParameterSetName -EQ "FromParts") {
         if ($ReadCredential) {
-            $Credential = Read-AuthCredential -UserName $UserName -Domain $Domain `
+            $Credential = Read-LsaCredential -UserName $UserName -Domain $Domain `
                     -Password $Password
         } else {
-            $Credential = Get-AuthCredential -UserName $UserName -Domain $Domain `
+            $Credential = Get-LsaCredential -UserName $UserName -Domain $Domain `
                     -Password $Password -SecurePassword $SecurePassword
         }
     }
 
     [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credential) | Write-Output
 }
+
+$package_completer = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    (Get-LsaPackage).Name | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { "'$_'" }
+}
+
+Register-ArgumentCompleter -CommandName New-LsaCredentialHandle -ParameterName Package -ScriptBlock $package_completer
 
 <#
 .SYNOPSIS
@@ -7707,12 +7829,14 @@ Optional SPN target.
 Data representation format.
 .PARAMETER ChannelBinding
 Optional channel binding token.
+.PARAMETER NoInit
+Don't initialize the client authentication context.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
 #>
-function Get-AuthClientContext {
+function New-LsaClientContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7720,11 +7844,12 @@ function Get-AuthClientContext {
         [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
         [string]$Target,
         [byte[]]$ChannelBinding,
-        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native"
+        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
+        [switch]$NoInit
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
 }
 
 <#
@@ -7745,7 +7870,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.ServerAuthenticationContext
 #>
-function Get-AuthServerContext {
+function New-LsaServerContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7756,7 +7881,7 @@ function Get-AuthServerContext {
     )
 
     [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $ChannelBinding, $DataRepresentation) | Write-Output
+            $RequestAttribute, $ChannelBinding, $DataRepresentation)
 }
 
 <#
@@ -7764,16 +7889,26 @@ function Get-AuthServerContext {
 Update an authentication client.
 .DESCRIPTION
 This cmdlet updates an authentication client. Returns true if the authentication is complete.
-.PARAMETER Server
+.PARAMETER Client
 The authentication client.
+.PARAMETER Server
+The authentication server to extract token from.
 .PARAMETER Token
 The next authentication token.
+.PARAMETER InputBuffer
+A list of additional input buffers.
+.PARAMETER OutputBuffer
+A list of additional output buffers.
+.PARAMETER NoToken
+Specify to update with no token in the input buffer.
+.PARAMETER PassThru
+Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-bool
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Update-AuthClientContext {
+function Update-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7781,13 +7916,28 @@ function Update-AuthClientContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server
+        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server,
+        [Parameter(Mandatory, ParameterSetName="FromNoToken")]
+        [switch]$NoToken,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
+        [switch]$PassThru
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
-        $Token = $Server.Token
+    switch($PSCmdlet.ParameterSetName) {
+        "FromContext" {
+            $Client.Continue($Server.Token, $InputBuffer, $OutputBuffer)
+        }
+        "FromToken" {
+            $Client.Continue($Token, $InputBuffer, $OutputBuffer)
+        }
+        "FromNoToken" {
+            $Client.Continue($InputBuffer, $OutputBuffer)
+        }
     }
-    $Client.Continue($Token)
+    if ($PassThru) {
+        $Client.Token
+    }
 }
 
 <#
@@ -7801,12 +7951,20 @@ The authentication server.
 The authentication client to extract token from.
 .PARAMETER Token
 The next authentication token.
+.PARAMETER InputBuffer
+A list of additional input buffers.
+.PARAMETER OutputBuffer
+A list of additional output buffers.
+.PARAMETER NoToken
+Specify to update with no token in the input buffer.
+.PARAMETER PassThru
+Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-bool
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Update-AuthServerContext {
+function Update-LsaServerContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7814,14 +7972,28 @@ function Update-AuthServerContext {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Mandatory, ParameterSetName="FromNoToken")]
+        [switch]$NoToken,
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
+        [switch]$PassThru
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
-        $Token = $Client.Token
+    switch($PSCmdlet.ParameterSetName) {
+        "FromContext" {
+            $Server.Continue($Client.Token, $InputBuffer, $OutputBuffer)
+        }
+        "FromToken" {
+            $Server.Continue($Token, $InputBuffer, $OutputBuffer)
+        }
+        "FromNoToken" {
+            $Server.Continue($InputBuffer, $OutputBuffer)
+        }
     }
-
-    $Server.Continue($Token)
+    if ($PassThru) {
+        $Server.Token
+    }
 }
 
 <#
@@ -7836,7 +8008,7 @@ None
 .OUTPUTS
 NtApiDotNet.NtToken
 #>
-function Get-AuthAccessToken {
+function Get-LsaAccessToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7853,7 +8025,8 @@ Gets an authentication token.
 This cmdlet gets an authentication token from a context or from 
 an array of bytes.
 .PARAMETER Context
-The authentication context to extract token from.
+The authentication context to extract token from. If combined with Token will parse according to
+the type of context.
 .PARAMETER Token
 The array of bytes for the new token.
 .INPUTS
@@ -7861,12 +8034,13 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Get-AuthToken {
+function Get-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromBytes")]
         [byte[]]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [Parameter(ParameterSetName="FromBytes")]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
     )
 
@@ -7874,7 +8048,11 @@ function Get-AuthToken {
         if ($PSCmdlet.ParameterSetName -eq "FromContext") {
             $Context.Token | Write-Output
         } else {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Token)
+            if ($null -ne $Context) {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $Token)
+            } else {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($Token)
+            }
         }
     }
 }
@@ -7891,7 +8069,7 @@ None
 .OUTPUTS
 bool
 #>
-function Test-AuthContext {
+function Test-LsaContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -7920,7 +8098,7 @@ None
 .OUTPUTS
 string
 #>
-function Format-AuthToken {
+function Format-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ParameterSetName="FromToken")]
@@ -7967,7 +8145,7 @@ None
 .OUTPUTS
 None
 #>
-function Export-AuthToken {
+function Export-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken")]
@@ -7997,7 +8175,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Import-AuthToken {
+function Import-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -9106,7 +9284,7 @@ Converts a security descriptor to a self-relative byte array or base64 string.
 This cmdlet converts a security descriptor to a self-relative byte array or a base64 string.
 .PARAMETER SecurityDescriptor
 The security descriptor to convert.
-.PARAMETER Base64
+.PARAMETER AsBase64
 Converts the self-relative SD to base64 string.
 .INPUTS
 None
@@ -9116,10 +9294,10 @@ byte[]
 ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)"
 Converts security descriptor to byte array.
 .EXAMPLE
-ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -AsBase64
 Converts security descriptor to a base64 string.
 .EXAMPLE
-ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64 -InsertLineBreaks
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -AsBase64 -InsertLineBreaks
 Converts security descriptor to a base64 string with line breaks.
 #>
 function ConvertFrom-NtSecurityDescriptor {
@@ -9128,17 +9306,45 @@ function ConvertFrom-NtSecurityDescriptor {
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Mandatory, ParameterSetName = "ToBase64")]
-        [switch]$Base64,
+        [alias("Base64")]
+        [switch]$AsBase64,
         [switch]$InsertLineBreaks
     )
 
     PROCESS {
-        if ($Base64) {
+        if ($AsBase64) {
             $SecurityDescriptor.ToBase64($InsertLineBreaks) | Write-Output
         }
         else {
             $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Converts a SID to a byte array.
+.DESCRIPTION
+This cmdlet converts a SID to a byte array.
+.PARAMETER Sid
+The SID to convert.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+ConvertFrom-NtSid -Sid "S-1-1-0"
+Converts SID to byte array.
+#>
+function ConvertFrom-NtSid {
+    [CmdletBinding(DefaultParameterSetName = "ToBytes")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$Sid
+    )
+
+    PROCESS {
+        $Sid.ToArray() | Write-Output -NoEnumerate
     }
 }
 
@@ -9193,7 +9399,7 @@ Specify to only print a shortened format removing redundant information.
 Specify to format all security descriptor information including the SACL.
 .PARAMETER HideHeader
 Specify to not print the security descriptor header.
-.PARAMETER ToSddl
+.PARAMETER AsSddl
 Specify to format the security descriptor as SDDL.
 .PARAMETER Container
 Specify to display the access mask from Container Access Rights.
@@ -9207,10 +9413,10 @@ None
 Format-Win32SecurityDescriptor -Name "c:\windows".
 Format the security descriptor for the c:\windows folder..
 .EXAMPLE
-Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl
+Format-Win32SecurityDescriptor -Name "c:\windows" -AsSddl
 Format the security descriptor of an object as SDDL.
 .EXAMPLE
-Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl -SecurityInformation Dacl, Label
+Format-Win32SecurityDescriptor -Name "c:\windows" -AsSddl -SecurityInformation Dacl, Label
 Format the security descriptor of an object as SDDL with only DACL and Label.
 .EXAMPLE
 Format-Win32SecurityDescriptor -Name "Machine\Software" -Type RegistryKey
@@ -9224,7 +9430,8 @@ function Format-Win32SecurityDescriptor {
         [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$Container,
-        [switch]$ToSddl,
+        [alias("ToSddl")]
+        [switch]$AsSddl,
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
@@ -9234,7 +9441,7 @@ function Format-Win32SecurityDescriptor {
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
-        -Container:$Container -ToSddl:$ToSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
+        -Container:$Container -AsSddl:$AsSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
         -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName
 }
 
@@ -10374,7 +10581,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
-function Unprotect-AuthToken {
+function Unprotect-LsaAuthToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
@@ -13320,24 +13527,307 @@ Specify the list of arguments to the service.
 Query for the service status after starting.
 .PARAMETER MachineName
 Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service to start.
+.PARAMETER Trigger
+Specify to try and use a service trigger to start the service.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Win32Service
 #>
 function Start-Win32Service {
+    [CmdletBinding(DefaultParameterSetName="FromStart")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(ParameterSetName="FromStart")]
+        [string[]]$ArgumentList,
+        [parameter(ParameterSetName="FromStart")]
+        [string]$MachineName,
+        [parameter(Mandatory, ParameterSetName="FromTrigger")]
+        [switch]$Trigger,
+        [switch]$PassThru,
+        [switch]$NoWait
+    )
+
+    try {
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromStart" {
+                [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
+            }
+            "FromTrigger" {
+                $service_trigger = Get-Win32ServiceTrigger -Name $Name -Action Start | Select-Object -First 1
+                if ($null -eq $service_trigger) {
+                    throw "No service trigger available for $Name"
+                }
+                $service_trigger.Trigger()
+            }
+        }
+        
+        if (!$NoWait) {
+            if (!(Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running -TimeoutSec 30)) {
+                Write-Error "Service didn't start in time."
+                return
+            }
+        }
+        if ($PassThru) {
+            Get-Win32Service -Name $Name -MachineName $MachineName
+        }
+    }
+    catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Tests a Win32 service state.
+.DESCRIPTION
+This cmdlet tests if a win32 service is in a fixed state.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Status
+Specify the status to test.
+.PARAMETER MachineName
+Specify the target computer.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+#>
+function Test-Win32Service {
     [CmdletBinding()]
     param (
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
+        [string]$MachineName,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.ServiceStatus]$Status
+    )
+
+    try {
+        $service = Get-Win32Service -Name $Name -MachineName $MachineName
+        return $service.Status -eq $Status
+    }
+    catch {
+        Write-Error $_
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Restart a Win32 service.
+.DESCRIPTION
+This cmdlet restarts a Win32 service.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ArgumentList
+Specify the list of arguments to the service.
+.PARAMETER PassThru
+Query for the service status after starting.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service to start.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Win32Service
+#>
+function Restart-Win32Service {
+    [CmdletBinding(DefaultParameterSetName="FromStart")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(ParameterSetName="FromStart")]
         [string[]]$ArgumentList,
+        [parameter(ParameterSetName="FromStart")]
+        [string]$MachineName,
         [switch]$PassThru,
+        [switch]$NoWait
+    )
+
+    try {
+        if (!(Test-Win32Service -Name $Name -MachineName $MachineName -Status Stopped)) {
+            Send-Win32Service -Name $Name -MachineName $MachineName -Control Stop -ErrorAction Stop
+        }
+
+        Start-Win32Service -Name $Name -MachineName $MachineName -ArgumentList $ArgumentList -PassThru:$PassThru -NoWait:$NoWait
+    }
+    catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Send a control code to a Win32 service.
+.DESCRIPTION
+This cmdlet sends a control code to a Win32 service.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Control
+Specify the control code to send.
+.PARAMETER CustomControl
+Specify to send a custom control code. Typically in the range of 128 to 255.
+.PARAMETER PassThru
+Query for the service status after sending the code.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER NoWait
+Specify to not wait 30 seconds for the service control to be handled.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Win32Service
+#>
+function Send-Win32Service {
+    [CmdletBinding(DefaultParameterSetName="FromControl")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromControl")]
+        [NtApiDotNet.Win32.ServiceControlCode]$Control,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCustomControl")]
+        [int]$CustomControl,
+        [switch]$PassThru,
+        [string]$MachineName,
+        [parameter(ParameterSetName="FromControl")]
+        [switch]$NoWait
+    )
+
+    try {
+        $wait = switch($PSCmdlet.ParameterSetName) {
+            "FromControl" {
+                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $Control)
+                !$NoWait
+            }
+            "FromCustomControl" {
+                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $CustomControl)
+                $false
+            }
+        }
+
+        if ($wait) {
+            $wait_state = switch($Control) {
+                "Stop" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Stopped -TimeoutSec 30
+                }
+                "Pause" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Paused -TimeoutSec 30
+                }
+                "Continue" {
+                    Wait-Win32Service -MachineName $MachineName -Name $Name -Status Running -TimeoutSec 30
+                }
+                default { 
+                    # Anything else we just return success.
+                    $true 
+                }
+            }
+
+            if (!$wait_state) {
+                Write-Error "Service didn't respond to control in time."
+                return
+            }
+        }
+        if ($PassThru) {
+            Get-Win32Service -Name $Name -MachineName $MachineName
+        }
+    }
+    catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Wait for a Win32 service status.
+.DESCRIPTION
+This cmdlet waits for a Win32 service to reach a certain status. Returns true if the status was reached. False if timed out or other error.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER Status
+Specify the status to wait for.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER TimeoutSec
+Specify the timeout in seconds.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+#>
+function Wait-Win32Service {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.ServiceStatus]$Status,
+        [string]$MachineName,
+        [int]$TimeoutSec = [int]::MaxValue
+    )
+
+    try {
+        if (Test-Win32Service -Name $Name -MachineName $MachineName -Status $Status) {
+            return $true
+        }
+
+        if ($TimeoutSec -le 0) {
+            return $false
+        }
+
+        $timeout_ms = $TimeoutSec * 1000
+        while ($timeout_ms -gt 0) {
+            $service = Get-Win32Service -Name $Name -MachineName $MachineName
+            if ($service.Status -eq $Status) {
+                return $true
+            }
+
+            Start-Sleep -Milliseconds 250
+            $timeout_ms -= 250
+        }
+    } catch {
+        Write-Error $_
+    }
+    return $false
+}
+
+<#
+.SYNOPSIS
+Get the configuration for a service or all services.
+.DESCRIPTION
+This cmdlet gets the configuration for a service or all services.
+.PARAMETER Name
+Specify the name of the service.
+.PARAMETER ServiceType
+Specify the types of services to return when querying all services. Defaults to all user services.
+.PARAMETER MachineName
+Specify the target computer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.ServiceInformation[]
+#>
+function Get-Win32ServiceConfig {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes(),
         [string]$MachineName
     )
 
-    [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
-    if ($PassThru) {
-        Get-Win32Service -Name $Name -MachineName $MachineName
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $Name)
+        }
+        "All" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $ServiceType) | Write-Output
+        }
     }
 }
 
@@ -13376,3 +13866,526 @@ function Get-Win32ServiceConfig {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get a signature from an authentication context for some message.
+.DESCRIPTION
+This cmdlet uses an authentication context to generate a message signature. It can be verified using Test-LsaContextSignature.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to sign.
+.PARAMETER SequenceNumber
+Specify the sequence number for the signature to prevent replay.
+.PARAMETER Buffer
+Specify the list of buffers to sign.
+.INPUTS
+byte[]
+.OUTPUTS
+byte[]
+#>
+function Get-LsaContextSignature {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
+        [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [parameter(Position = 2)]
+        [int]$SequenceNumber = 0
+    )
+
+    BEGIN {
+        $sig_data = New-Object byte[] -ArgumentList 0
+    }
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromBytes") {
+            $sig_data += $Message
+        }
+    }
+
+    END {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $Context.MakeSignature($sig_data, $SequenceNumber)
+            } 
+            "FromBuffers" {
+                $Context.MakeSignature($Buffer, $SequenceNumber)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Verify a signature from an authentication context for some message.
+.DESCRIPTION
+This cmdlet uses an authentication context to verify a  signature.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to verify.
+.PARAMETER Signature
+Specify signature to verify.
+.PARAMETER SequenceNumber
+Specify the sequence number for the signature to prevent replay.
+.PARAMETER Buffer
+Specify the list of buffers to sign.
+.INPUTS
+None
+.OUTPUTS
+bool
+#>
+function Test-LsaContextSignature {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
+        [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [parameter(Mandatory, Position = 2)]
+        [byte[]]$Signature,
+        [parameter(Position = 3)]
+        [int]$SequenceNumber = 0
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            $Context.VerifySignature($Message, $Signature, $SequenceNumber)
+        }
+        "FromBuffers" {
+            $Context.VerifySignature($Buffer, $Signature, $SequenceNumber)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Encrypt some message for an authentication context.
+.DESCRIPTION
+This cmdlet uses an authentication context to encrypt some message. It returns both the encrypted message and a signature.
+It can be decrypted using Unprotect-LsaContextMessage. If you use buffers only the signature is returned from the command
+and the encrypted data is updated in place.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to encrypt.
+.PARAMETER SequenceNumber
+Specify the sequence number for the encryption to prevent replay.
+.PARAMETER QualityOfProtection
+Specify flags for the encryption operation. For example wrap but don't encrypt.
+.PARAMETER NoSignature
+Specify to not automatically generate a signature buffer.
+.INPUTS
+byte[]
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.EncryptedMessage
+#>
+function Protect-LsaContextMessage {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
+        [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [parameter(Position = 2)]
+        [int]$SequenceNumber = 0,
+        [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0,
+        [switch]$NoSignature
+    )
+
+    BEGIN {
+        $enc_data = New-Object byte[] -ArgumentList 0
+    }
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromBytes") {
+            $enc_data += $Message
+        }
+    }
+
+    END {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                if ($NoSignature) {
+                    $buf = New-LsaSecurityBuffer -Type Data -Byte $enc_data
+                    $Context.EncryptMessageNoSignature([NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]@($buf), $QualityOfProtection, $SequenceNumber)
+                } else {
+                    $Context.EncryptMessage($enc_data, $QualityOfProtection, $SequenceNumber)
+                }
+            }
+            "FromBuffers" {
+                if ($NoSignature) {
+                    $Context.EncryptMessageNoSignature($Buffer, $QualityOfProtection, $SequenceNumber)
+                } else {
+                    $Context.EncryptMessage($Buffer, $QualityOfProtection, $SequenceNumber)
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Decrypt some message from an authentication context.
+.DESCRIPTION
+This cmdlet uses an authentication context to decrypt some message as well as verify a signature.
+If using buffers the data is decrypted in place.
+.PARAMETER Context
+Specify the authentication context to use.
+.PARAMETER Message
+Specify message to decrypt.
+.PARAMETER Signature
+Specify signature to verify.
+.PARAMETER SequenceNumber
+Specify the sequence number for the encryption to prevent replay.
+.PARAMETER NoSignature
+Specify to not include a signature automatically in the buffers.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+#>
+function Unprotect-LsaContextMessage {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytesNoSig")]
+        [byte[]]$Message,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffersNoSig")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromBuffers")]
+        [byte[]]$Signature,
+        [parameter(Mandatory, ParameterSetName="FromBuffersNoSig")]
+        [parameter(Mandatory, ParameterSetName="FromBytesNoSig")]
+        [switch]$NoSignature,
+        [parameter(Position = 3)]
+        [int]$SequenceNumber = 0
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
+            $Context.DecryptMessage($msg, $SequenceNumber)
+        }
+        "FromBuffers" {
+            $Context.DecryptMessage($Buffer, $Signature, $SequenceNumber)
+        }
+        "FromBuffersNoSig" {
+            $Context.DecryptMessageNoSignature($Buffer, $SequenceNumber)
+        }
+        "FromBytesNoSig" {
+            $buf = New-LsaSecurityBuffer -Type Data -Byte $Message
+            $Context.DecryptMessageNoSignature([NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]@($buf), $SequenceNumber)
+            $buf.ToArray() | Write-Output -NoEnumerate
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new security buffer based on existing data or for output.
+.DESCRIPTION
+This cmdlet creates a new security object either containing existing data for input/output or and output only buffer.
+.PARAMETER Type
+Specify the type of the buffer.
+.PARAMETER Byte
+Specify the existing bytes for the buffer.
+.PARAMETER Size
+Specify the size of a buffer for an output buffer.
+.PARAMETER ChannelBinding
+Specify a channel binding token.
+.PARAMETER Token
+Specify a buffer which is an authentication token.
+.PARAMETER String
+Specify a buffer derived from a string.
+.PARAMETER Encoding
+Specify the character encoding when making a buffer from a string.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+#>
+function New-LsaSecurityBuffer {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
+        [parameter(ParameterSetName="FromEmpty")]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type = 0,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
+        [byte[]]$Byte,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
+        [int]$Size,
+        [parameter(Mandatory, ParameterSetName="FromEmpty")]
+        [switch]$Empty,
+        [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
+        [byte[]]$ChannelBinding,
+        [Parameter(Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [parameter(Mandatory, ParameterSetName="FromString")]
+        [string]$String,
+        [parameter(ParameterSetName="FromString")]
+        [string]$Encoding = "Unicode",
+        [parameter(ParameterSetName="FromBytes")]
+        [parameter(ParameterSetName="FromString")]
+        [Parameter(ParameterSetName="FromToken")]
+        [switch]$ReadOnly,
+        [parameter(ParameterSetName="FromBytes")]
+        [parameter(ParameterSetName="FromString")]
+        [Parameter(ParameterSetName="FromToken")]
+        [switch]$ReadOnlyWithChecksum
+    )
+
+    $type_flags = if ($PSCmdlet.ParameterSetName -eq "FromToken") {
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::Token
+    } else {
+        $Type
+    }
+    if ($ReadOnly) {
+        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnly
+    }
+    if ($ReadOnlyWithChecksum) {
+        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnlyWithChecksum
+    }
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromBytes" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Byte)
+        }
+        "FromSize" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, $Size)
+        }
+        "FromEmpty" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, 0)
+        }
+        "FromChannelBinding" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
+        }
+        "FromToken" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Token.ToArray())
+        }
+        "FromString" {
+            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Convert a security buffer to another format.
+.DESCRIPTION
+This cmdlet converts a security buffer to another format, either a byte array, string or authentication token.
+.PARAMETER Buffer
+The buffer to convert.
+.PARAMETER AsString
+Specify to convert the string as bytes.
+.PARAMETER Encoding
+Specify the character encoding when converting to a string.
+.PARAMETER AsToken
+Specify to convert the buffer to an authentication token.
+.INPUTS
+NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+.OUTPUTS
+byte[]
+string
+NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+#>
+function ConvertFrom-LsaSecurityBuffer {
+    [CmdletBinding(DefaultParameterSetName="ToBytes")]
+    param (
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer]$Buffer,
+        [parameter(Mandatory, ParameterSetName="ToString")]
+        [switch]$AsString,
+        [parameter(ParameterSetName="ToString")]
+        [string]$Encoding = "Unicode",
+        [parameter(Mandatory, ParameterSetName="ToToken")]
+        [switch]$AsToken
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "ToBytes" {
+                $Buffer.ToArray() | Write-Output -NoEnumerate
+            }
+            "ToString" {
+                [System.Text.Encoding]::GetEncoding($Encoding).GetString($Buffer.ToArray())
+            }
+            "ToToken" {
+                Get-LsaAuthToken -Token $Buffer.ToArray()
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get list of package SIDs granted loopback exceptions.
+.DESCRIPTION
+This cmdlet gets the list of package SIDs which have been granted loopback exceptions.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid[]
+.EXAMPLE
+Get-AppModelLoopbackException
+Get the list of loopback exception package SIDs.
+#>
+function Get-AppModelLoopbackException {
+    [NtApiDotNet.Win32.AppModel.AppModelUtils]::GetLoopbackException()
+}
+
+<#
+.SYNOPSIS
+Add a package SID to the list of granted loopback exceptions.
+.DESCRIPTION
+This cmdlet adds a package SID to the list of granted loopback exceptions.
+.PARAMETER PackageSid
+The package SID to add.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+None
+.EXAMPLE
+Add-AppModelLoopbackException -PackageSid $package_sid
+Add $package_sid to the list of loopback exceptions.
+#>
+function Add-AppModelLoopbackException {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$PackageSid
+    )
+    PROCESS {
+        [NtApiDotNet.Win32.AppModel.AppModelUtils]::AddLoopbackException($PackageSid)
+    }
+}
+
+<#
+.SYNOPSIS
+Remove a package SID from the list of granted loopback exceptions.
+.DESCRIPTION
+This cmdlet removes a package SID from the list of granted loopback exceptions.
+.PARAMETER PackageSid
+The package SID to remove.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+None
+.EXAMPLE
+Remove-AppModelLoopbackException -PackageSid $package_sid
+Remove $package_sid from the list of loopback exceptions.
+#>
+function Remove-AppModelLoopbackException {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$PackageSid
+    )
+    PROCESS {
+        [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($PackageSid)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the SDK name for an enumerated type or other type.
+.DESCRIPTION
+This cmdlet removes a package SID from the list of granted loopback exceptions.
+.PARAMETER InputObject
+The package SID to remove.
+.INPUTS
+object
+.OUTPUTS
+string
+.EXAMPLE
+Get-NtAccessMask 0x1 -AsSpecificAccess File | Get-SDKName 
+Get the SDK names for an access mask.
+#>
+function Get-SDKName { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        $InputObject
+    )
+    PROCESS {
+        [NtApiDotNet.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the service triggers for a service.
+.DESCRIPTION
+This cmdlet gets the service triggers for a service.
+.PARAMETER Name
+The name of the service.
+.PARAMETER MachineName
+Specify the target computer.
+.PARAMETER Action
+Specify an action to filter on.
+.PARAMETER Service
+Specify a service object.
+.INPUTS
+NtApiDotNet.Win32.Win32Service[]
+.OUTPUTS
+NtApiDotNet.Win32.ServiceTriggerInformation[]
+.EXAMPLE
+Get-Win32ServiceTrigger -Name "WebClient"
+Get the service triggers for the WebClient service.
+#>
+function Get-Win32ServiceTrigger { 
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromService", ValueFromPipeline)]
+        [NtApiDotNet.Win32.Win32Service]$Service,
+        [NtApiDotNet.Win32.ServiceTriggerAction]$Action = 0,
+        [string]$MachineName
+    )
+
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromName") {
+            $service = Get-Win32Service -MachineName $MachineName -Name $Name
+        }
+        if ($null -ne $service) {
+            $triggers = $service.Triggers
+            if ($Action -ne 0) {
+                $triggers = $triggers | Where-Object Action -eq $Action
+            }
+            $triggers | Write-Output
+        }
+    }
+}
+
+# Alias old functions. Remove eventually.
+Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
+Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
+Set-Alias -Name Get-AuthCredential -Value Get-LsaCredential
+Set-Alias -Name Get-AuthCredentialHandle -Value New-LsaCredentialHandle
+Set-Alias -Name Get-AuthClientContext -Value New-LsaClientContext
+Set-Alias -Name Get-AuthServerContext -Value New-LsaServerContext
+Set-Alias -Name Update-AuthClientContext -Value Update-LsaClientContext
+Set-Alias -Name Update-AuthServerContext -Value Update-LsaServerContext
+Set-Alias -Name Get-AuthAccessToken -Value Get-LsaAccessToken
+Set-Alias -Name Get-AuthToken -Value Get-LsaAuthToken
+Set-Alias -Name Test-AuthContext -Value Test-LsaContext
+Set-Alias -Name Format-AuthToken -Value Format-LsaAuthToken
+Set-Alias -Name Export-AuthToken -Value Export-LsaAuthToken
+Set-Alias -Name Import-AuthToken -Value Import-LsaAuthToken
+Set-Alias -Name Unprotect-AuthToken -Value Unprotect-LsaAuthToken

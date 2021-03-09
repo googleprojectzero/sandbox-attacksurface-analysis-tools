@@ -274,10 +274,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                     return false;
                 }
             }
-            catch (EndOfStreamException)
-            {
-            }
-            catch (InvalidDataException)
+            catch
             {
             }
             return false;
