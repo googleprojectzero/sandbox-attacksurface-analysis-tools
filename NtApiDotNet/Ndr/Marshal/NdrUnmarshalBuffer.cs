@@ -390,7 +390,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 return ReadConformantCharArray().Cast<char, T>();
             }
-            else if (typeof(T) == typeof(INdrStructure))
+            else if (typeof(INdrStructure).IsAssignableFrom(typeof(T)))
             {
                 using (var queue = _deferred_reads.Push())
                 {
