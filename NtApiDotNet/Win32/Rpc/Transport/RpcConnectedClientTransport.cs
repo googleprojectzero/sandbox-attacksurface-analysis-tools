@@ -488,6 +488,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public RpcAuthenticationLevel AuthenticationLevel => Authenticated ? _transport_security.AuthenticationLevel : RpcAuthenticationLevel.None;
 
+        public IClientAuthenticationContext AuthenticationContext => _auth_context;
+
         /// <summary>
         /// Get the current Call ID.
         /// </summary>
