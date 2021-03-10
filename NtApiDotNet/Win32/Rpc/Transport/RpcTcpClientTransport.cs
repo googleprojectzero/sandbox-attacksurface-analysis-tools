@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             socket.DualMode = true;
             // Enable no delay.
-            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.Debug, 1);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, 1);
             socket.Connect(hostname, port);
             return socket;
         }
