@@ -553,6 +553,7 @@
     <Compile Include="Win32\Rpc\Transport\ExtendedErrorInfo.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
+    <Compile Include="Win32\Service\ServiceControlManager.cs" />
     <Compile Include="Win32\Win32Service.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuditBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuthZClientContextHandle.cs" />
