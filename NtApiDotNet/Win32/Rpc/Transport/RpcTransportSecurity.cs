@@ -78,11 +78,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (AuthenticationType)
             {
                 case RpcAuthenticationType.Negotiate:
-                    return "Negotiate";
+                    return AuthenticationPackage.NEGOSSP_NAME;
                 case RpcAuthenticationType.Kerberos:
-                    return "Kerberos";
+                    return AuthenticationPackage.KERBEROS_NAME;
                 case RpcAuthenticationType.WinNT:
-                    return "NTLM";
+                    return AuthenticationPackage.NTLM_NAME;
                 case RpcAuthenticationType.None:
                     throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
                 default:
