@@ -254,6 +254,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         public SwitchParameter CheckScmAccess { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify access mask for access to the SCM.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "CheckScm")]
+        public ServiceControlManagerAccessRights ScmAccess { get; set; }
+
+        /// <summary>
         /// <para type="description">Check mode for accessible services.</para>
         /// </summary>
         [Parameter(ParameterSetName = "All")]
@@ -267,7 +273,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         public SwitchParameter IgnoreTrigger { get; set; }
 
         /// <summary>
-        /// <para type="description">Generate access check results for the service files.</para>
+        /// <para type="description">Check for writable service files and directories.</para>
         /// </summary>
         [Parameter(ParameterSetName = "All")]
         [Parameter(ParameterSetName = "FromName")]
@@ -279,11 +285,15 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 SecurityDescriptor sd = ServiceUtils.GetScmSecurityDescriptor();
                 GenericMapping scm_mapping = ServiceUtils.GetScmGenericMapping();
+                AccessMask access_rights = scm_mapping.MapMask(ScmAccess);
                 foreach (TokenEntry token in tokens)
                 {
                     AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, scm_mapping);
-                    WriteAccessCheckResult("SCM", "SCM", granted_access, scm_mapping, sd,
+                    if (IsAccessGranted(granted_access, access_rights))
+                    {
+                        WriteAccessCheckResult("SCM", "SCM", granted_access, scm_mapping, sd,
                         typeof(ServiceControlManagerAccessRights), false, token.Information);
+                    }
                 }
             }
             else
@@ -295,7 +305,10 @@ namespace NtObjectManager.Cmdlets.Accessible
                 {
                     file_cmdlet = new InternalGetAccessibleFileCmdlet(this)
                     {
-                        FormatWin32Path = true
+                        FormatWin32Path = true,
+                        Access = FileAccessRights.WriteData | FileAccessRights.WriteDac | FileAccessRights.WriteOwner | FileAccessRights.AppendData | FileAccessRights.Delete,
+                        DirectoryAccess = FileDirectoryAccessRights.AddFile | FileDirectoryAccessRights.WriteDac | FileDirectoryAccessRights.WriteOwner,
+                        AllowPartialAccess = true
                     };
                 }
 
@@ -323,6 +336,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                             && checked_files.Add(service.ImagePath))
                         {
                             file_cmdlet.RunAccessCheckPathInternal(tokens, service.ImagePath);
+                            file_cmdlet.RunAccessCheckPathInternal(tokens, Path.GetDirectoryName(service.ImagePath));
                         }
 
                         if (!string.IsNullOrWhiteSpace(service.ServiceDll) 
@@ -330,6 +344,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                             && checked_files.Add(service.ServiceDll))
                         {
                             file_cmdlet.RunAccessCheckPathInternal(tokens, service.ServiceDll);
+                            file_cmdlet.RunAccessCheckPathInternal(tokens, Path.GetDirectoryName(service.ServiceDll));
                         }
                     }
                 }
