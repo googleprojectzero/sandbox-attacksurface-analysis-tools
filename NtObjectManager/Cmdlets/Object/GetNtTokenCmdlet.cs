@@ -281,6 +281,7 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "Logon")]
         [Parameter(ParameterSetName = "Service")]
         [Parameter(ParameterSetName = "S4U")]
+        [Parameter(ParameterSetName = "Session")]
         public SwitchParameter WithTcb { get; set; }
 
         /// <summary>
@@ -312,7 +313,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(ParameterSetName = "Logon"), 
             Parameter(ParameterSetName = "Service")]
-        public Sid[] AdditionalGroups { get; set; }
+        [Alias("AdditionalGroups")]
+        public Sid[] AdditionalGroup { get; set; }
 
         /// <summary>
         /// <para type="description">Specify domain for logon token.</para>
@@ -605,9 +607,9 @@ namespace NtObjectManager.Cmdlets.Object
             string domain, SecureString password, SecurityLogonType logon_type)
         {
             IEnumerable<UserGroup> groups = null;
-            if (AdditionalGroups != null && AdditionalGroups.Length > 0)
+            if (AdditionalGroup != null && AdditionalGroup.Length > 0)
             {
-                groups = AdditionalGroups.Select(s => new UserGroup(s,
+                groups = AdditionalGroup.Select(s => new UserGroup(s,
                     GetAttributes(s)));
             }
             using (NtToken token = Win32Security.LsaLogonUser(user, domain, password, logon_type, LogonProvider, groups))
@@ -762,22 +764,25 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtToken GetSessionToken(TokenAccessRights desired_access, int session_id)
         {
-            if (!NtToken.EnableEffectivePrivilege(TokenPrivilegeValue.SeTcbPrivilege))
+            using (var imp = GetTcbPrivilege())
             {
-                WriteWarning("Getting session token requires SeTcbPrivilege");
-            }
-
-            if (session_id < 0)
-            {
-                session_id = NtProcess.Current.SessionId;
-            }
-            using (var token = TokenUtils.GetSessionToken(session_id))
-            {
-                if (desired_access == TokenAccessRights.MaximumAllowed)
+                if (imp == null)
                 {
-                    return token.Duplicate();
+                    WriteWarning("Getting session token requires SeTcbPrivilege");
                 }
-                return token.Duplicate(desired_access);
+
+                if (session_id < 0)
+                {
+                    session_id = NtProcess.Current.SessionId;
+                }
+                using (var token = TokenUtils.GetSessionToken(session_id))
+                {
+                    if (desired_access == TokenAccessRights.MaximumAllowed)
+                    {
+                        return token.Duplicate();
+                    }
+                    return token.Duplicate(desired_access);
+                }
             }
         }
 
