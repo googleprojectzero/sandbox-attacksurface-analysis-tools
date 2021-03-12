@@ -62,7 +62,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleObjectCmdlet : GetAccessiblePathCmdlet<GenericAccessRights>
     {
-        private static string _base_named_objects = NtDirectory.GetBasedNamedObjects();
+        private static readonly string _base_named_objects = NtDirectory.GetBasedNamedObjects();
 
         /// <summary>
         /// <para type="description">Specify list of NT object types to filter on.</para>
@@ -74,7 +74,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify to find objects based on handles rather than enumerating named paths.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "handles")]
-        public SwitchParameter FromHandles { get; set; }
+        [Alias("FromHandles")]
+        public SwitchParameter FromHandle { get; set; }
 
         /// <summary>
         /// <para type="description">Specify when enumerating handles to also check unnamed objects.</para>
@@ -88,12 +89,11 @@ namespace NtObjectManager.Cmdlets.Accessible
         [Parameter(ParameterSetName = "handles")]
         public SwitchParameter QueryAllDevicePaths { get; set; }
 
-
         private string GetObjectName(NtObject obj)
         {
             try
             {
-                if (FromHandles && !QueryAllDevicePaths)
+                if (FromHandle && !QueryAllDevicePaths)
                 {
                     if (obj is NtGeneric generic && obj.NtTypeName == "File")
                     {
@@ -376,10 +376,15 @@ namespace NtObjectManager.Cmdlets.Accessible
                     return;
                 }
 
+                if (!IsTypeFiltered(handle.ObjectType, type_filter))
+                {
+                    continue;
+                }
+
                 using (var obj = NtGeneric.DuplicateFrom(process, new IntPtr(handle.Handle), 0, DuplicateObjectOptions.SameAccess, false))
                 {
-                    // We double check type here to ensure we've duplicated a similar handle.
-                    if (!obj.IsSuccess)
+                    // We double check type here to ensure we've duplicated a valid handle handle.
+                    if (!obj.IsSuccess || !IsTypeFiltered(obj.Result.NtTypeName, type_filter))
                     {
                         continue;
                     }
@@ -439,7 +444,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            if (FromHandles)
+            if (FromHandle)
             {
                 RunAccessCheckHandles(tokens);
             }

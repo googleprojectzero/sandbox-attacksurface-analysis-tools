@@ -22,38 +22,6 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Accessible
 {
     /// <summary>
-    /// <para type="description">Access check result for an event trace.</para>
-    /// </summary>
-    public class EventTraceAccessCheckResult : CommonAccessCheckResult
-    {
-        /// <summary>
-        /// The ID of the event trace provider.
-        /// </summary>
-        public Guid Id => Provider.Id;
-
-        /// <summary>
-        /// The source of the event trace provider.
-        /// </summary>
-        public EventTraceProviderSource Source => Provider.Source;
-
-        /// <summary>
-        /// The event trace provider.
-        /// </summary>
-        public EventTraceProvider Provider { get; }
-
-        internal EventTraceAccessCheckResult(EventTraceProvider provider, 
-            NtType type, AccessMask granted_access,
-            SecurityDescriptor sd, TokenInformation token_info)
-            : base(string.IsNullOrEmpty(provider.Name) ? provider.Id.ToString() : provider.Name, 
-                  type.Name, granted_access,
-                    type.GenericMapping, sd,
-                    type.AccessRightsType, false, token_info)
-        {
-            Provider = provider;
-        }
-    }
-
-    /// <summary>
     /// <para type="synopsis">Get a list of ETW providers accessible by a specified token.</para>
     /// <para type="description">This cmdlet checks all ETW providers and tries to determine
     /// if one or more specified tokens can access them. If no tokens are specified then the 
