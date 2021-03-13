@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
+using NtApiDotNet.Win32.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -755,47 +756,6 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static IEnumerable<Win32Service> GetServices(string machine_name, SERVICE_STATE service_state, ServiceType service_types)
-        {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
-            {
-                if (scm.IsInvalid)
-                {
-                    throw new SafeWin32Exception();
-                }
-
-                const int Length = 32 * 1024;
-                using (var buffer = new SafeHGlobalBuffer(Length))
-                {
-                    int resume_handle = 0;
-                    while (true)
-                    {
-                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO,
-                            service_types, service_state, buffer,
-                            buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
-                        Win32Error error = Win32Utils.GetLastWin32Error();
-                        if (!ret && error != Win32Error.ERROR_MORE_DATA)
-                        {
-                            throw new SafeWin32Exception(error);
-                        }
-
-                        ENUM_SERVICE_STATUS_PROCESS[] services = new ENUM_SERVICE_STATUS_PROCESS[services_returned];
-                        buffer.ReadArray(0, services, 0, services_returned);
-                        foreach (var service in services)
-                        {
-                            yield return new Win32Service(machine_name, service);
-                        }
-
-                        if (ret)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
         private static NtResult<SafeServiceHandle> OpenService(SafeServiceHandle scm, string name, ServiceAccessRights desired_access, bool throw_on_error)
         {
             using (var service = Win32NativeMethods.OpenService(scm, name, desired_access))
@@ -1346,22 +1306,11 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of registered services.</returns>
         public static IEnumerable<Win32Service> GetServices(string machine_name, ServiceState state, ServiceType service_types)
         {
-            SERVICE_STATE state_flags;
-            switch (state)
+            using (var scm = ServiceControlManager.Open(machine_name, null,
+                ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
             {
-                case ServiceState.All:
-                    state_flags = SERVICE_STATE.SERVICE_STATE_ALL;
-                    break;
-                case ServiceState.Active:
-                    state_flags = SERVICE_STATE.SERVICE_ACTIVE;
-                    break;
-                case ServiceState.InActive:
-                    state_flags = SERVICE_STATE.SERVICE_INACTIVE;
-                    break;
-                default:
-                    throw new ArgumentException("Invalid state.", nameof(state));
+                return scm.GetServices(state, service_types);
             }
-            return GetServices(machine_name, state_flags, service_types);
         }
 
         /// <summary>
@@ -1404,7 +1353,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of registered services.</returns>
         public static IEnumerable<Win32Service> GetServices()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL, GetServiceTypes());
+            return GetServices(null, ServiceState.All, GetServiceTypes());
         }
 
         /// <summary>
@@ -1413,7 +1362,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running services with process IDs.</returns>
         public static IEnumerable<Win32Service> GetRunningServicesWithProcessIds()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE, GetServiceTypes());
+            return GetServices(null, ServiceState.Active, GetServiceTypes());
         }
 
         /// <summary>
@@ -1422,7 +1371,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all drivers.</returns>
         public static IEnumerable<Win32Service> GetDrivers()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL, GetDriverTypes());
+            return GetServices(null, ServiceState.All, GetDriverTypes());
         }
 
         /// <summary>
@@ -1431,7 +1380,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running drivers.</returns>
         public static IEnumerable<Win32Service> GetRunningDrivers()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE, GetDriverTypes());
+            return GetServices(null, ServiceState.Active, GetDriverTypes());
         }
 
         /// <summary>
@@ -1440,7 +1389,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all services and drivers.</returns>
         public static IEnumerable<Win32Service> GetServicesAndDrivers()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_STATE_ALL,
+            return GetServices(null, ServiceState.All,
                 GetDriverTypes() | GetServiceTypes());
         }
 
@@ -1450,7 +1399,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all services and drivers.</returns>
         public static IEnumerable<Win32Service> GetRunningServicesAndDrivers()
         {
-            return GetServices(null, SERVICE_STATE.SERVICE_ACTIVE,
+            return GetServices(null, ServiceState.Active,
                 GetDriverTypes() | GetServiceTypes());
         }
 

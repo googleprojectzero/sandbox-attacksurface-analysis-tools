@@ -83,6 +83,18 @@ namespace NtApiDotNet.Win32.Service
         {
             return Open(machine_name, database_name, desired_access, true).Result;
         }
+
+        /// <summary>
+        /// Open an instance of the SCM.
+        /// </summary>
+        /// <param name="machine_name">The machine name for the SCM.</param>
+        /// <param name="desired_access">The desired access for the SCM connection.</param>
+        /// <returns>The SCM instance.</returns>
+        public static ServiceControlManager Open(string machine_name, 
+            ServiceControlManagerAccessRights desired_access)
+        {
+            return Open(machine_name, null, desired_access);
+        }
         #endregion
 
         #region Public Methods
@@ -159,6 +171,10 @@ namespace NtApiDotNet.Win32.Service
         {
             _scm.Close();
         }
+        #endregion
+
+        #region Internal Members
+        internal SafeServiceHandle Handle => _scm;
         #endregion
     }
 }
