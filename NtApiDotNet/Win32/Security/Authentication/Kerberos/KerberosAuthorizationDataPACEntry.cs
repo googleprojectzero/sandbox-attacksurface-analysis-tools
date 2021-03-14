@@ -32,7 +32,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         UserPrincipalName = 0xC,
         UserClaims = 0xD,
         Device = 0xE,
-        DeviceClaims = 0xF
+        DeviceClaims = 0xF,
+        TicketChecksum = 0x10,
     }
 #pragma warning restore 1591
 

@@ -35,8 +35,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public int? RODCIdentifier { get; }
 
-        private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, byte[] data, KerberosChecksumType sig_type,
-            byte[] signature, int? rodc_id)
+        private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
+            byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)
             : base(type, data)
         {
             SignatureType = sig_type;
@@ -60,9 +60,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (data.Length < 4)
                 return false;
-
-            int signature_length = 0;
             KerberosChecksumType signature_type = (KerberosChecksumType)BitConverter.ToInt32(data, 0);
+
+            int signature_length;
             switch (signature_type)
             {
                 case KerberosChecksumType.HMAC_MD5:
@@ -85,7 +85,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 rodc_id = BitConverter.ToUInt16(data, total_size);
             }
-                
             entry = new KerberosAuthorizationDataPACSignature(type, data, signature_type, signature, rodc_id);
             return true;
         }

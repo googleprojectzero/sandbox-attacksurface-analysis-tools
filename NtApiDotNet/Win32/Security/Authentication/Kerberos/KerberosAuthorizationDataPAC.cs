@@ -86,6 +86,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         break;
                     case KerberosAuthorizationDataPACEntryType.KDCChecksum:
                     case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+                    case KerberosAuthorizationDataPACEntryType.TicketChecksum:
                         if (!KerberosAuthorizationDataPACSignature.Parse(entry_type, entry_data, out pac_entry))
                             pac_entry = null;
                         break;
