@@ -244,7 +244,6 @@ namespace NtApiDotNet.Forms
         /// <param name="mapping">Generic mapping for the type.</param>
         /// <param name="valid_access">The valid bit mask for access for this type.</param>
         /// <param name="is_container">True to indicate this object is a container.</param>
-        /// <param name="sdk_names">Show the ACEs using SDK style names.</param>
         public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
         {
             SetAcl(acl, access_type, mapping, valid_access, is_container, false);
@@ -259,6 +258,9 @@ namespace NtApiDotNet.Forms
             SetAcl(_acl, _access_type, _mapping, _valid_access, _is_container, sdk_names);
         }
 
+        /// <summary>
+        /// Query whether SDK names are being shown in the control.
+        /// </summary>
         public bool ShowSDKName => showSDKNamesToolStripMenuItem.Checked;
 
         /// <summary>
