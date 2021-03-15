@@ -90,8 +90,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             builder.AppendLine("<NTLMv2 Challenge Response>");
             builder.AppendLine($"NT Response          : {NtObjectUtils.ToHexString(NTProofResponse)}");
-            builder.AppendLine($"Challenge Verison    : {ChallengeVersion}");
-            builder.AppendLine($"Max Challenge Verison: {MaxChallengeVersion}");
+            builder.AppendLine($"Challenge Version    : {ChallengeVersion}");
+            builder.AppendLine($"Max Challenge Version: {MaxChallengeVersion}");
             builder.AppendLine($"Reserved 1           : 0x{Reserved1:X04}");
             builder.AppendLine($"Reserved 2           : 0x{Reserved2:X08}");
             try
