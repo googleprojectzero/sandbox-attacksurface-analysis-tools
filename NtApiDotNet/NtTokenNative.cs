@@ -192,27 +192,49 @@ namespace NtApiDotNet
     [Flags]
     public enum TokenFlags
     {
+        [SDKName("TOKEN_HAS_TRAVERSE_PRIVILEGE")]
         HasTraversePrivilege = 1,
+        [SDKName("TOKEN_HAS_BACKUP_PRIVILEGE")]
         HasBackupPrivilege = 2,
+        [SDKName("TOKEN_HAS_RESTORE_PRIVILEGE")]
         HasRestorePrivilege = 4,
+        [SDKName("TOKEN_WRITE_RESTRICTED")]
         WriteRestricted = 8,
+        [SDKName("TOKEN_IS_RESTRICTED")]
         IsRestricted = 0x10,
+        [SDKName("TOKEN_SESSION_NOT_REFERENCED")]
         SessionNotReferenced = 0x20,
+        [SDKName("TOKEN_SANDBOX_INERT")]
         SandboxInert = 0x40,
+        [SDKName("TOKEN_HAS_IMPERSONATE_PRIVILEGE")]
         HasImpersonatePrivilege = 0x80,
+        [SDKName("SE_BACKUP_PRIVILEGES_CHECKED")]
         BackupPrivilegesChecked = 0x100,
+        [SDKName("TOKEN_VIRTUALIZE_ALLOWED")]
         VirtualizeAllowed = 0x200,
+        [SDKName("TOKEN_VIRTUALIZE_ENABLED")]
         VirtualizeEnabled = 0x400,
+        [SDKName("TOKEN_IS_FILTERED")]
         IsFiltered = 0x800,
+        [SDKName("TOKEN_UIACCESS")]
         UiAccess = 0x1000,
+        [SDKName("TOKEN_NOT_LOW")]
         NotLow = 0x2000,
+        [SDKName("TOKEN_LOWBOX")]
         LowBox = 0x4000,
+        [SDKName("TOKEN_HAS_OWN_CLAIM_ATTRIBUTES")]
         HasOwnClaimAttributes = 0x8000,
+        [SDKName("TOKEN_PRIVATE_NAMESPACE")]
         PrivateNamespace = 0x10000,
+        [SDKName("TOKEN_DO_NOT_USE_GLOBAL_ATTRIBS_FOR_QUERY")]
         DoNotUseGlobalAttributesForQuery = 0x20000,
+        [SDKName("SPECIAL_ENCRYPTED_OPEN")]
         SpecialEncryptedOpen = 0x40000,
+        [SDKName("TOKEN_NO_CHILD_PROCESS")]
         NoChildProcess = 0x80000,
+        [SDKName("TOKEN_NO_CHILD_PROCESS_UNLESS_SECURE")]
         NoChildProcessUnlessSecure = 0x100000,
+        [SDKName("TOKEN_AUDIT_NO_CHILD_PROCESS")]
         AuditNoChildProcess = 0x200000
     }
 
@@ -399,23 +421,38 @@ namespace NtApiDotNet
     public enum ClaimSecurityValueType : ushort
     {
         None = 0,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64")]
         Int64 = 0x0001,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64")]
         UInt64 = 0x0002,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING")]
         String = 0x0003,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_FQBN")]
         Fqbn = 0x0004,
-        Sid = 0x0005, // CLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE 
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_SID")]
+        Sid = 0x0005, // CLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN")]
         Boolean = 0x0006, // Actually UInt64
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING")]
         OctetString = 0x0010,
     }
 
     [Flags]
     public enum ClaimSecurityFlags
     {
+        [SDKName("NONE")]
+        None = 0,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_NON_INHERITABLE")]
         NonInheritable = 0x0001,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE")]
         CaseSensitive = 0x0002,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_USE_FOR_DENY_ONLY")]
         UseForDenyOnly = 0x0004,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_DISABLED_BY_DEFAULT")]
         DisabledByDefault = 0x0008,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_DISABLED")]
         Disabled = 0x0010,
+        [SDKName("CLAIM_SECURITY_ATTRIBUTE_MANDATORY")]
         Mandatory = 0x0020,
         Unique = 0x0040,
         InheritOnce = 0x0080,
@@ -613,35 +650,55 @@ namespace NtApiDotNet
     [Flags]
     public enum PrivilegeAttributes : uint
     {
+        [SDKName("DISABLED")]
         Disabled = 0,
+        [SDKName("SE_PRIVILEGE_ENABLED_BY_DEFAULT")]
         EnabledByDefault = 1,
+        [SDKName("SE_PRIVILEGE_ENABLED")]
         Enabled = 2,
+        [SDKName("SE_PRIVILEGE_REMOVED")]
         Removed = 4,
+        [SDKName("SE_PRIVILEGE_USED_FOR_ACCESS")]
         UsedForAccess = 0x80000000U,
     }
 
     [Flags]
     public enum GroupAttributes : uint
     {
+        [SDKName("NONE")]
         None = 0,
+        [SDKName("SE_GROUP_MANDATORY")]
         Mandatory = 0x00000001,
+        [SDKName("SE_GROUP_ENABLED_BY_DEFAULT")]
         EnabledByDefault = 0x00000002,
+        [SDKName("SE_GROUP_ENABLED")]
         Enabled = 0x00000004,
+        [SDKName("SE_GROUP_OWNER")]
         Owner = 0x00000008,
+        [SDKName("SE_GROUP_USE_FOR_DENY_ONLY")]
         UseForDenyOnly = 0x00000010,
+        [SDKName("SE_GROUP_INTEGRITY")]
         Integrity = 0x00000020,
+        [SDKName("SE_GROUP_INTEGRITY_ENABLED")]
         IntegrityEnabled = 0x00000040,
+        [SDKName("SE_GROUP_LOGON_ID")]
         LogonId = 0xC0000000,
+        [SDKName("SE_GROUP_RESOURCE")]
         Resource = 0x20000000,
     };
 
     [Flags]
     public enum FilterTokenFlags
     {
+        [SDKName("NONE")]
         None = 0,
+        [SDKName("DISABLE_MAX_PRIVILEGE")]
         DisableMaxPrivileges = 0x1,
+        [SDKName("SANDBOX_INERT")]
         SandboxInert = 0x2,
+        [SDKName("LUA_TOKEN")]
         LuaToken = 0x4,
+        [SDKName("WRITE_RESTRICTED")]
         WriteRestricted = 0x8,
     }
 
