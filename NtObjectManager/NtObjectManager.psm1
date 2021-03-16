@@ -14313,10 +14313,10 @@ object
 .OUTPUTS
 string
 .EXAMPLE
-Get-NtAccessMask 0x1 -AsSpecificAccess File | Get-SDKName 
+Get-NtAccessMask 0x1 -AsSpecificAccess File | Get-NtSDKName
 Get the SDK names for an access mask.
 #>
-function Get-SDKName { 
+function Get-NtSDKName { 
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]

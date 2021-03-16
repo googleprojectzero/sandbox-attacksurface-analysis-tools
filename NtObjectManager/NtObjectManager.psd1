@@ -115,7 +115,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Test-LsaContextSignature', 'Protect-LsaContextMessage', 'Unprotect-LsaContextMessage',
           'New-LsaSecurityBuffer', 'Get-LsaSchannelCredential', 'Get-LsaCredSSPCredential',
           'ConvertFrom-LsaSecurityBuffer', 'ConvertFrom-NtSid', 'Get-AppModelLoopbackException', 
-          'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException', 'Get-SDKName',
+          'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException', 'Get-NtSDKName',
           'Wait-Win32Service', 'Send-Win32Service', 'Get-Win32ServiceTrigger', 'Set-Win32ServiceSecurityDescriptor',
           'Restart-Win32Service', 'Test-Win32Service'
 
