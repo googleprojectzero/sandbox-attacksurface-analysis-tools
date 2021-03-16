@@ -37,6 +37,26 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.31
+--------
+* Added signing and encryption to SSPI.
+* Added Get-LsaContextSignature and Test-LsaContextSignature.
+* Added Protect-LsaContextMessage and Unprotect-LsaContextMessage
+* Named auth commands to Lsa.
+* Added TCP/IP RPC transport and add signing/encryption.
+* Added Disconnect-RpcClient.
+* Added server information for local RPC connection.
+* Added Enable-NtTokenPrivilege and Disable-NtTokenPrivilege.
+* Added native ARM/ARM64 support.
+* Added Get-Win32ServiceConfig and Set-Win32ServiceConfig.
+* Fixed bug in ACL canonicalization.
+* Added support for SDK names of enumerations/structures. 
+* Added Get-NtSDKName.
+* Added support for Win32 WriteProcessMemory.
+* Added Get-Win32ServiceTrigger and support for triggers in Start-Win32Service.
+* Added Set-Win32ServiceSecurityDescriptor.
+* Fixed INdrStructure unmarshaling #35
+
 1.1.30
 --------
 * Fixed issue when displaying only a SACL with Format-NtSecurityDescriptor.

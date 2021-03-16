@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.30'
+ModuleVersion = '1.1.31'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -191,16 +191,25 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.30
+        ReleaseNotes = '1.1.31
 --------
-* Fixed issue when displaying only a SACL with Format-NtSecurityDescriptor.
-* Added basic named pipe support for RPC clients.
-* Fixed issue enumerating per-user audit rules.
-* Added view accessor for safe buffers.
-* Improved debug tracing for RPC clients.
-* Improved handling of paths with local files commands.
-* Fixed path issue with Set-Win32SecurityDescriptor.
-* Added querying trace providers from the WMI security key.
+* Added signing and encryption to SSPI.
+* Added Get-LsaContextSignature and Test-LsaContextSignature.
+* Added Protect-LsaContextMessage and Unprotect-LsaContextMessage
+* Named auth commands to Lsa.
+* Added TCP/IP RPC transport and add signing/encryption.
+* Added Disconnect-RpcClient.
+* Added server information for local RPC connection.
+* Added Enable-NtTokenPrivilege and Disable-NtTokenPrivilege.
+* Added native ARM/ARM64 support.
+* Added Get-Win32ServiceConfig and Set-Win32ServiceConfig.
+* Fixed bug in ACL canonicalization.
+* Added support for SDK names of enumerations/structures. 
+* Added Get-NtSDKName.
+* Added support for Win32 WriteProcessMemory.
+* Added Get-Win32ServiceTrigger and support for triggers in Start-Win32Service.
+* Added Set-Win32ServiceSecurityDescriptor.
+* Fixed INdrStructure unmarshaling #35
 '
 
         # External dependent modules of this module
