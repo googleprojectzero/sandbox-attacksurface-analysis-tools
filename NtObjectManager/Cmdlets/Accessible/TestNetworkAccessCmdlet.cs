@@ -62,6 +62,10 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             if (Token != null)
             {
+                if (Token.TokenType == TokenType.Impersonation)
+                {
+                    return Token.Duplicate();
+                }
                 return Token.DuplicateToken(SecurityImpersonationLevel.Impersonation);
             }
 
