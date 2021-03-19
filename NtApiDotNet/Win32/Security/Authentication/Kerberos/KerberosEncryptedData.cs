@@ -70,7 +70,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToString();
         }
 
-        private bool DecryptRC4WithKey(KerberosAuthenticationKey key, KeyUsage key_usage, out byte[] decrypted)
+        private bool DecryptRC4WithKey(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
             HMACMD5 hmac = new HMACMD5(key.Key);
             byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
@@ -127,7 +127,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private const byte EncryptionKey = 0xAA;
         private const byte VerificationKey = 0x55;
 
-        private byte[] DeriveTempKey(KerberosAuthenticationKey key, KeyUsage key_usage, byte key_type)
+        private byte[] DeriveTempKey(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, byte key_type)
         {
             byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
             Array.Resize(ref r, 5);
@@ -135,7 +135,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return NFold.Compute(r, 16);
         }
 
-        private bool DecryptAESWithKey(KerberosAuthenticationKey key, KeyUsage key_usage, out byte[] decrypted)
+        private bool DecryptAESWithKey(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
             byte[] derive_enc_key = DeriveTempKey(key, key_usage, EncryptionKey);
             byte[] derive_mac_key = DeriveTempKey(key, key_usage, VerificationKey);
@@ -176,7 +176,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return true;
         }
 
-        private bool DecryptRC4(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KeyUsage key_usage, out byte[] decrypted)
+        private bool DecryptRC4(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
             KerberosAuthenticationKey key = keyset.FindKey(EncryptionType, server_name.NameType, server_name.GetPrincipal(realm), KeyVersion ?? 0);
             if (key != null)
@@ -193,7 +193,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return false;
         }
 
-        private bool DecryptAES(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KeyUsage key_usage, out byte[] decrypted)
+        private bool DecryptAES(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
             KerberosAuthenticationKey key = keyset.FindKey(EncryptionType, server_name.NameType, server_name.GetPrincipal(realm), KeyVersion ?? 0);
             if (key != null)
@@ -210,7 +210,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return false;
         }
 
-        internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KeyUsage key_usage, out byte[] decrypted)
+        internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
             if (EncryptionType == KerberosEncryptionType.ARCFOUR_HMAC_MD5)
             {

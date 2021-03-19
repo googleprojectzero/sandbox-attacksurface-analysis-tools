@@ -72,7 +72,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             bool decrypted_ticket = false;
             foreach (var ticket in Tickets)
             {
-                if (ticket.Decrypt(tmp_keys, KeyUsage.AsRepTgsRepTicket, out KerberosTicket dec_ticket))
+                if (ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket dec_ticket))
                 {
                     dec_tickets.Add(dec_ticket);
                     decrypted_ticket = true;
@@ -83,7 +83,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
 
-            if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KeyUsage.KrbCred, out byte[] decrypted))
+            if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.KrbCred, out byte[] decrypted))
             {
                 // Needs session key from TGT request which we don't necessarily have.
             }

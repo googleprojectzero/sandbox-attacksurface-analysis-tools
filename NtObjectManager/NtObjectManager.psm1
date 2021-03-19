@@ -10645,6 +10645,30 @@ function Get-KerberosTicket {
 
 <#
 .SYNOPSIS
+Format a Kerberos Ticket.
+.DESCRIPTION
+This cmdlet formats a kerberos Ticket, or multiple tickets.
+.PARAMETER Ticket
+Specify the ticket to format.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Format-KerberosTicket {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket
+    )
+
+    PROCESS {
+        $Ticket.Format()
+    }
+}
+
+<#
+.SYNOPSIS
 Get NDR complex types from memory.
 .DESCRIPTION
 This cmdlet parses NDR complex type information from a location in memory.

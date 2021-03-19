@@ -14,8 +14,12 @@
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
-    internal enum KeyUsage
+    /// <summary>
+    /// Key usage for kernel encryption.
+    /// </summary>
+    public enum KerberosKeyUsage
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         AsReqPaEncTimestamp = 1,
         AsRepTgsRepTicket = 2,
         AsRepEncryptedPart = 3,
@@ -31,5 +35,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         KrbPriv = 13,
         KrbCred = 14,
         KrbSafe = 15
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

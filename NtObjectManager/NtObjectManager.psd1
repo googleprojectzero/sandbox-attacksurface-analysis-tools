@@ -117,7 +117,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'ConvertFrom-LsaSecurityBuffer', 'ConvertFrom-NtSid', 'Get-AppModelLoopbackException', 
           'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException', 'Get-NtSDKName',
           'Wait-Win32Service', 'Send-Win32Service', 'Get-Win32ServiceTrigger', 'Set-Win32ServiceSecurityDescriptor',
-          'Restart-Win32Service', 'Test-Win32Service'
+          'Restart-Win32Service', 'Test-Win32Service', 'Format-KerberosTicket'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

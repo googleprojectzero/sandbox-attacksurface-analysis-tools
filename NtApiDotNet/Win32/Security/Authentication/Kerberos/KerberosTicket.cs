@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using System;
 using System.IO;
 using System.Text;
 
@@ -43,10 +44,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Get the principal for the ticket.
         /// </summary>
         public string Principal => ServerName.GetPrincipal(Realm);
+        /// <summary>
+        /// Indicates that the ticket has been decrypted.
+        /// </summary>
+        public bool Decrypted => this is KerberosTicketDecrypted;
 
         internal byte[] TicketData { get; }
 
-        internal bool Decrypt(KerberosKeySet keyset, KeyUsage key_usage, out KerberosTicket ticket)
+        internal bool Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
         {
             if (this is KerberosTicketDecrypted)
             {
@@ -66,7 +71,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.Append(EncryptedData.Format());
         }
 
-        internal string Format()
+        /// <summary>
+        /// Decrypt the kerberos ticket.
+        /// </summary>
+        /// <param name="keyset">The Kerberos key set containing the keys.</param>
+        /// <param name="key_usage">The key usage for the decryption.</param>
+        /// <returns>The decrypted kerberos ticket.</returns>
+        public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage)
+        {
+            if (!Decrypt(keyset, key_usage, out KerberosTicket ticket))
+                throw new ArgumentException("Couldn't decrypt the kerberos ticket.");
+            return ticket;
+        }
+
+        /// <summary>
+        /// Format the ticket to a string.
+        /// </summary>
+        /// <returns>The ticket as a string.</returns>
+        public string Format()
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"Ticket Version  : {TicketVersion}");

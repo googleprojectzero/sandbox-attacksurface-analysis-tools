@@ -57,7 +57,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             KerberosEncryptedData authenticator = null;
 
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
-            if (!Ticket.Decrypt(tmp_keys, KeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
+            if (!Ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
             {
                 ticket = null;
             }

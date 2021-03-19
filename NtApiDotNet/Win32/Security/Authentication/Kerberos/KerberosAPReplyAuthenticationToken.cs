@@ -58,7 +58,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             KerberosEncryptedData encrypted_part = null;
             KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
-            if (EncryptedPart.Decrypt(tmp_keyset, string.Empty, new KerberosPrincipalName(), KeyUsage.ApRepEncryptedPart, out byte[] auth_decrypt))
+            if (EncryptedPart.Decrypt(tmp_keyset, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.ApRepEncryptedPart, out byte[] auth_decrypt))
             {
                 if (!KerberosAPReplyEncryptedPart.Parse(EncryptedPart, auth_decrypt, out encrypted_part))
                 {

@@ -97,12 +97,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             KerberosEncryptedData authenticator = null;
 
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
-            if (!Ticket.Decrypt(tmp_keys, KeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
+            if (!Ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
             {
                 ticket = null;
             }
 
-            if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, KeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
+            if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, KerberosKeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
             {
                 if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, tmp_keys, out authenticator))
                 {
