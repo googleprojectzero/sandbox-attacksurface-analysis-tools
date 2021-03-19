@@ -15,14 +15,13 @@
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Net
 {
     /// <summary>
     /// Class to represent a TCP listener with process ID.
     /// </summary>
-    public class TcpListenerInformation : TcpConnectionInformation
+    public sealed class TcpListenerInformation : TcpConnectionInformation
     {
         /// <summary>Gets the local endpoint of a Transmission Control Protocol (TCP) connection.</summary>
         /// <returns>An <see cref="T:System.Net.IPEndPoint" /> instance that contains the IP address and port on the local computer.</returns>
@@ -35,6 +34,26 @@ namespace NtApiDotNet.Win32.Net
         /// <summary>Gets the state of this Transmission Control Protocol (TCP) connection.</summary>
         /// <returns>One of the <see cref="T:System.Net.NetworkInformation.TcpState" /> enumeration values.</returns>
         public override TcpState State { get; }
+
+        /// <summary>
+        /// Get local address.
+        /// </summary>
+        public IPAddress LocalAddress => LocalEndPoint.Address;
+
+        /// <summary>
+        /// Get local port.
+        /// </summary>
+        public int LocalPort => LocalEndPoint.Port;
+
+        /// <summary>
+        /// Get remote address.
+        /// </summary>
+        public IPAddress RemoteAddress => RemoteEndPoint.Address;
+
+        /// <summary>
+        /// Get remote port.
+        /// </summary>
+        public int RemotePort => RemoteEndPoint.Port;
 
         /// <summary>
         /// Gets the process ID of the listener on the local system.
@@ -51,69 +70,26 @@ namespace NtApiDotNet.Win32.Net
         /// </summary>
         public string OwnerModule { get; }
 
-        private static int ConvertPort(int port)
-        {
-            return ((port & 0xFF) << 8) | ((port >> 8) & 0xFF);
-        }
-
-        private static string GetOwnerModule<T>(GetOwnerModuleDelegate<T> func, T entry, int process_id)
-        {
-            using (var buffer = new SafeStructureInOutBuffer<TCPIP_OWNER_MODULE_BASIC_INFO>(64 * 1024, true))
-            {
-                int size = buffer.Length;
-                Win32Error error = func(entry, TCPIP_OWNER_MODULE_INFO_CLASS.TCPIP_OWNER_MODULE_INFO_BASIC, buffer, ref size);
-                string ret;
-                if (error == Win32Error.SUCCESS)
-                {
-                    ret = Marshal.PtrToStringUni(buffer.Result.pModulePath);
-                }
-                else
-                {
-                    ret = NtSystemInfo.GetProcessIdImagePath(process_id, false).GetResultOrDefault(string.Empty);
-                }
-                return ret;
-            }
-        }
-
-        internal TcpListenerInformation(MIB_TCPROW_OWNER_PID entry)
-        {
-            LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, ConvertPort(entry.dwLocalPort));
-            RemoteEndPoint = new IPEndPoint(entry.dwRemoteAddr, ConvertPort(entry.dwRemotePort));
-            State = (TcpState)entry.dwState;
-            ProcessId = entry.dwOwningPid;
-            OwnerModule = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
-        }
-
         internal TcpListenerInformation(MIB_TCPROW_OWNER_MODULE entry)
         {
-            LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, ConvertPort(entry.dwLocalPort));
-            RemoteEndPoint = new IPEndPoint(entry.dwRemoteAddr, ConvertPort(entry.dwRemotePort));
+            LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
+            RemoteEndPoint = new IPEndPoint(entry.dwRemoteAddr, Win32NetworkUtils.ConvertPort(entry.dwRemotePort));
             State = (TcpState)entry.dwState;
             ProcessId = entry.dwOwningPid;
             CreateTime = entry.liCreateTimestamp.ToDateTime();
-            OwnerModule = GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcpEntry, entry, ProcessId);
-        }
-
-        internal TcpListenerInformation(MIB_TCP6ROW_OWNER_PID entry)
-        {
-            LocalEndPoint = new IPEndPoint(new IPAddress(entry.ucLocalAddr.ToArray(), entry.dwLocalScopeId),
-                ConvertPort(entry.dwLocalPort));
-            RemoteEndPoint = new IPEndPoint(new IPAddress(entry.ucRemoteAddr.ToArray(), entry.dwRemoteScopeId),
-                ConvertPort(entry.dwRemotePort));
-            State = (TcpState)entry.dwState;
-            ProcessId = entry.dwOwningPid;
+            OwnerModule = Win32NetworkUtils.GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcpEntry, entry, ProcessId);
         }
 
         internal TcpListenerInformation(MIB_TCP6ROW_OWNER_MODULE entry)
         {
             LocalEndPoint = new IPEndPoint(new IPAddress(entry.ucLocalAddr.ToArray(), entry.dwLocalScopeId),
-                ConvertPort(entry.dwLocalPort));
+                Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
             RemoteEndPoint = new IPEndPoint(new IPAddress(entry.ucRemoteAddr.ToArray(), entry.dwRemoteScopeId),
-                ConvertPort(entry.dwRemotePort));
+                Win32NetworkUtils.ConvertPort(entry.dwRemotePort));
             State = (TcpState)entry.dwState;
             ProcessId = entry.dwOwningPid;
             CreateTime = entry.liCreateTimestamp.ToDateTime();
-            OwnerModule = GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcp6Entry, entry, ProcessId);
+            OwnerModule = Win32NetworkUtils.GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromTcp6Entry, entry, ProcessId);
         }
     }
 }
