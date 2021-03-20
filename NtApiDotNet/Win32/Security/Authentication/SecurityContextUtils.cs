@@ -25,11 +25,29 @@ namespace NtApiDotNet.Win32.Security.Authentication
 {
     internal static class SecurityContextUtils
     {
-        internal static T QueryContextAttribute<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
+        internal static T QueryContextAttributeEx<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 SecurityNativeMethods.QueryContextAttributesEx(context, attribute, buffer, buffer.Length).CheckResult();
+                return buffer.Result;
+            }
+        }
+
+        internal static Tuple<T, SecStatusCode> QueryContextAttributeNoThrow<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                var result = SecurityNativeMethods.QueryContextAttributes(context, attribute, buffer);
+                return Tuple.Create(result != SecStatusCode.SUCCESS ? default : buffer.Result, result);
+            }
+        }
+
+        internal static T QueryContextAttribute<T>(SecHandle context, SECPKG_ATTR attribute) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                SecurityNativeMethods.QueryContextAttributes(context, attribute, buffer).CheckResult();
                 return buffer.Result;
             }
         }
@@ -402,33 +420,35 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static byte[] GetSessionKey(SecHandle context)
         {
-            using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_SessionKey>())
+            var result = QueryContextAttributeNoThrow<SecPkgContext_SessionKey>(context, SECPKG_ATTR.SESSION_KEY);
+            if (result.Item2 != SecStatusCode.SUCCESS)
             {
-                var result = SecurityNativeMethods.QueryContextAttributesEx(context, SECPKG_ATTR.SESSION_KEY, buffer, buffer.Length);
-                if (result == SecStatusCode.SUCCESS)
-                {
-                    byte[] ret = new byte[buffer.Result.SessionKeyLength];
-                    Marshal.Copy(buffer.Result.SessionKey, ret, 0, ret.Length);
-                    SecurityNativeMethods.FreeContextBuffer(buffer.Result.SessionKey);
-                    return ret;
-                }
+                return new byte[0];
             }
-            return new byte[0];
+
+            var key = result.Item1;
+            try
+            {
+                byte[] ret = new byte[key.SessionKeyLength];
+                Marshal.Copy(key.SessionKey, ret, 0, ret.Length);
+                return ret;
+            }
+            finally
+            {
+                SecurityNativeMethods.FreeContextBuffer(key.SessionKey);
+            }
         }
 
         private static X509Certificate2 GetCertificate(SecHandle context, SECPKG_ATTR attr)
         {
-            using (var buffer = new SafeStructureInOutBuffer<IntPtr>())
+            var cert = QueryContextAttribute<IntPtr>(context, attr);
+            try
             {
-                SecurityNativeMethods.QueryContextAttributesEx(context, attr, buffer, buffer.Length).CheckResult();
-                try
-                {
-                    return new X509Certificate2(buffer.Result);
-                }
-                finally
-                {
-                    SecurityNativeMethods.CertFreeCertificateContext(buffer.Result);
-                }
+                return new X509Certificate2(cert);
+            }
+            finally
+            {
+                SecurityNativeMethods.CertFreeCertificateContext(cert);
             }
         }
 

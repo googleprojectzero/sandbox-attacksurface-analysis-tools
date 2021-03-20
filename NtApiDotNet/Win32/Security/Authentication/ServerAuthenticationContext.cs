@@ -70,11 +70,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         private string GetTargetName()
         {
-            using (var buffer = new SafeStructureInOutBuffer<SecPkgContext_ClientSpecifiedTarget>())
+            var target = SecurityContextUtils.QueryContextAttributeNoThrow<SecPkgContext_ClientSpecifiedTarget>(_context, SECPKG_ATTR.CLIENT_SPECIFIED_TARGET);
+            if (target.Item2 == SecStatusCode.SUCCESS)
             {
-                var result = SecurityNativeMethods.QueryContextAttributesEx(_context, SECPKG_ATTR.CLIENT_SPECIFIED_TARGET, buffer, buffer.Length);
-                if (result == SecStatusCode.SUCCESS)
-                    return Marshal.PtrToStringUni(buffer.Result.sTargetName);
+                try
+                {
+                    return Marshal.PtrToStringUni(target.Item1.sTargetName);
+                }
+                finally
+                {
+                    SecurityNativeMethods.FreeContextBuffer(target.Item1.sTargetName);
+                }
             }
             return string.Empty;
         }

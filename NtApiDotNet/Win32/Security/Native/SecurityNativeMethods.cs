@@ -748,6 +748,13 @@ namespace NtApiDotNet.Win32.Security.Native
           int cbBuffer
         );
 
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode QueryContextAttributes(
+          SecHandle phContext,
+          SECPKG_ATTR ulAttribute,
+          SafeBuffer pBuffer
+        );
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaLookupSids2(
             SafeLsaHandle PolicyHandle,
