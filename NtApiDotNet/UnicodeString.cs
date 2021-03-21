@@ -119,6 +119,20 @@ namespace NtApiDotNet
             return string.Empty;
         }
 
+        /// <summary>
+        /// Convert unicode string to an array.
+        /// </summary>
+        /// <returns>The unicode string data as an array.</returns>
+        public byte[] ToArray()
+        {
+            if (Buffer == IntPtr.Zero || Length == 0)
+                return new byte[0];
+
+            byte[] ret = new byte[Length];
+            Marshal.Copy(Buffer, ret, 0, ret.Length);
+            return ret;
+        }
+
         internal string ToString(NtProcess process)
         {
             if (Length == 0 || Buffer == IntPtr.Zero)

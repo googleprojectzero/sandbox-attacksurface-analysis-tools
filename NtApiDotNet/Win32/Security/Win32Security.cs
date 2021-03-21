@@ -711,6 +711,126 @@ namespace NtApiDotNet.Win32.Security
             return LookupInternetName(sid, true).Result;
         }
 
+        /// <summary>
+        /// Retried LSA privilege data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The private data as bytes.</returns>
+        public static NtResult<byte[]> LsaRetrievePrivateData(string system_name, string keyname, bool throw_on_error)
+        {
+            if (keyname is null)
+            {
+                throw new ArgumentNullException(nameof(keyname));
+            }
+
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.GetPrivateInformation, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Cast<byte[]>();
+                NtStatus status = SecurityNativeMethods.LsaRetrievePrivateData(policy.Result,
+                    new UnicodeString(keyname), out SafeLsaMemoryBuffer data);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<byte[]>(throw_on_error);
+                using (data)
+                {
+                    data.Initialize<UnicodeStringOut>(1);
+                    return data.Read<UnicodeStringOut>(0).ToArray().CreateResult();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retried LSA privilege data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        /// <returns>The private data as bytes.</returns>
+        public static byte[] LsaRetrievePrivateData(string system_name, string keyname)
+        {
+            return LsaRetrievePrivateData(system_name, keyname, true).Result;
+        }
+
+        /// <summary>
+        /// Retrieve LSA privilege data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <returns>The private data as bytes.</returns>
+        public static byte[] LsaRetrievePrivateData(string keyname)
+        {
+            return LsaRetrievePrivateData(null, keyname);
+        }
+
+        /// <summary>
+        /// Store LSA private data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="data">The data to store.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus LsaStorePrivateData(string system_name, string keyname, byte[] data, bool throw_on_error)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+            return LsaStorePrivateDataInternal(system_name, keyname, data, throw_on_error);
+        }
+
+        /// <summary>
+        /// Store LSA private data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="data">The data to store.</param>
+        public static void LsaStorePrivateData(string system_name, string keyname, byte[] data)
+        {
+            LsaStorePrivateData(system_name, keyname, data, true);
+        }
+
+        /// <summary>
+        /// Store LSA private data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="data">The data to store.</param>
+        public static void LsaStorePrivateData(string keyname, byte[] data)
+        {
+            LsaStorePrivateData(null, keyname, data);
+        }
+
+        /// <summary>
+        /// Delete LSA private data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus LsaDeletePrivateData(string system_name, string keyname, bool throw_on_error)
+        {
+            return LsaStorePrivateDataInternal(system_name, keyname, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete LSA private data.
+        /// </summary>
+        /// <param name="system_name">The system containing the LSA instance.</param>
+        /// <param name="keyname">The name of the key.</param>
+        public static void LsaDeletePrivateData(string system_name, string keyname)
+        {
+            LsaDeletePrivateData(system_name, keyname, true);
+        }
+
+        /// <summary>
+        /// Delete LSA private data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        public static void LsaDeletePrivateData(string keyname)
+        {
+            LsaDeletePrivateData(null, keyname);
+        }
+
         #endregion
 
         #region Private Members
@@ -770,6 +890,25 @@ namespace NtApiDotNet.Win32.Security
                     }
 
                     return GetSidNames(sids, domains, names).CreateResult();
+                }
+            }
+        }
+
+        private static NtStatus LsaStorePrivateDataInternal(string system_name, string keyname, byte[] data, bool throw_on_error)
+        {
+            if (keyname is null)
+            {
+                throw new ArgumentNullException(nameof(keyname));
+            }
+
+            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.CreateSecret, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Status;
+
+                using (var data_buffer = data == null ? UnicodeStringBytesSafeBuffer.Null : new UnicodeStringBytesSafeBuffer(data))
+                {
+                    return SecurityNativeMethods.LsaStorePrivateData(policy.Result, new UnicodeString(keyname), data_buffer);
                 }
             }
         }

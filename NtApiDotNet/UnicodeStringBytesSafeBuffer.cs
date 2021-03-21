@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet
 {
     /// <summary>
@@ -19,6 +21,11 @@ namespace NtApiDotNet
     /// </summary>
     public class UnicodeStringBytesSafeBuffer : SafeStructureInOutBuffer<UnicodeStringOut>
     {
+        private UnicodeStringBytesSafeBuffer() 
+            : base(IntPtr.Zero, 0, false)
+        {
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -34,5 +41,10 @@ namespace NtApiDotNet
                 Buffer = Data.DangerousGetHandle()
             };
         }
+
+        /// <summary>
+        /// Get a null safe buffer.
+        /// </summary>
+        public static new UnicodeStringBytesSafeBuffer Null => new UnicodeStringBytesSafeBuffer();
     }
 }
