@@ -12,23 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Credential
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+    /// <summary>
+    /// Flags for enumeration credentials.
+    /// </summary>
+    [Flags]
+    public enum CredentialEnumerateFlags
     {
-        protected override bool ReleaseHandle()
-        {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
-        }
-
-        public SafeLsaMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        /// <summary>
+        /// None.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Get all credentials.
+        /// </summary>
+        [SDKName("CRED_ENUMERATE_ALL_CREDENTIALS")]
+        AllCredentials = 1,
     }
 }

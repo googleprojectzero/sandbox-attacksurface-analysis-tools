@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,23 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
 using System;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Credential
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+    /// <summary>
+    /// Flags for a credential attribute.
+    /// </summary>
+    [Flags]
+    public enum CredentialAttributeFlags
     {
-        protected override bool ReleaseHandle()
-        {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
-        }
-
-        public SafeLsaMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        /// <summary>
+        /// No flags.
+        /// </summary>
+        None = 0,
     }
 }

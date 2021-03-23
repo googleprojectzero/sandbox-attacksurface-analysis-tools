@@ -508,6 +508,21 @@ namespace NtApiDotNet
     {
         public uint DateTimeLow;
         public uint DateTimeHigh;
+
+        internal DateTime ToDateTime()
+        {
+            long time = DateTimeHigh;
+            time <<= 32;
+            time |= DateTimeLow;
+            try
+            {
+                return DateTime.FromFileTime(time);
+            }
+            catch (ArgumentException)
+            {
+                return DateTime.MinValue;
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

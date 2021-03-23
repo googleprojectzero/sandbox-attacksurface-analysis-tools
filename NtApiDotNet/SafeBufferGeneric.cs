@@ -247,6 +247,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read an array of complex structures which can contain references. Doing this from a buffer is a dangerous operation.
+        /// </summary>
+        /// <typeparam name="T">The buffer type.</typeparam>
+        /// <param name="offset">The offset into the buffer.</param>
+        /// <param name="count">The number of elements.</param>
+        /// <returns>The array structures.</returns>
+        /// <remarks>This doesn't bounds check the buffer size for the array or embedded structures so could easily crash the application.</remarks>
+        public T[] DangerousReadArray<T>(int offset, int count) where T : new()
+        {
+            int size = Marshal.SizeOf(typeof(T));
+            IntPtr ptr = DangerousGetHandle() + offset;
+            T[] ret = new T[count];
+            for (int i = 0; i < count; ++i)
+            {
+                ret[i] = (T)Marshal.PtrToStructure(ptr, typeof(T));
+                ptr += size;
+            }
+            return ret;
+        }
+
+        /// <summary>
         /// Zero an entire buffer.
         /// </summary>
         public void ZeroBuffer()

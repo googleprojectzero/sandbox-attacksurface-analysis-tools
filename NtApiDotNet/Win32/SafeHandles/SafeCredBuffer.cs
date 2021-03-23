@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@ using System;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
+    internal class SafeCredBuffer : SafeBufferGeneric
     {
         protected override bool ReleaseHandle()
         {
-            return SecurityNativeMethods.LsaFreeMemory(handle).IsSuccess();
+            SecurityNativeMethods.CredFree(handle);
+            return true;
         }
 
-        public SafeLsaMemoryBuffer()
+        public SafeCredBuffer()
             : base(IntPtr.Zero, 0, true)
         {
         }

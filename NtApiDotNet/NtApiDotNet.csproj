@@ -316,6 +316,17 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
     <Compile Include="Win32\Net\UdpListenerInformation.cs" />
+    <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
+    <Compile Include="Win32\Security\Credential\Credential.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialAttribute.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialAttributeFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialManager.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialPersistence.cs" />
+    <Compile Include="Win32\Security\Native\CREDENTIAL.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialType.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
+    <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Audit;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authorization;
+using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Policy;
 using System;
 using System.Runtime.InteropServices;
@@ -782,6 +783,20 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool CertFreeCertificateContext(
             IntPtr pCertContext
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CredEnumerate(
+            string Filter,
+            CredentialEnumerateFlags Flags,
+            out int Count,
+            out SafeCredBuffer Credential
+        );
+
+        [DllImport("advapi32.dll")]
+        internal static extern void CredFree(
+            IntPtr Buffer
         );
 
         internal static bool IsSuccess(this SecStatusCode result)
