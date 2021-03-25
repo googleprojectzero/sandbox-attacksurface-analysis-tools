@@ -12,29 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+
+    [SDKName("SECURITY_IMPERSONATION_LEVEL")]
     public enum SecurityImpersonationLevel
     {
+        [SDKName("SecurityAnonymous")]
         Anonymous = 0,
+        [SDKName("SecurityIdentification")]
         Identification = 1,
+        [SDKName("SecurityImpersonation")]
         Impersonation = 2,
+        [SDKName("SecurityDelegation")]
         Delegation = 3
     }
 
+    [SDKName("SECURITY_CONTEXT_TRACKING_MODE")]
     public enum SecurityContextTrackingMode : byte
     {
+        [SDKName("SECURITY_STATIC_TRACKING")]
         Static = 0,
+        [SDKName("SECURITY_DYNAMIC_TRACKING")]
         Dynamic = 1
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("SECURITY_QUALITY_OF_SERVICE")]
     public sealed class SecurityQualityOfService
     {
-        private int _length;
+        private readonly int _length;
         private SecurityImpersonationLevel _imp_level;
         private SecurityContextTrackingMode _tracking_mode;
         [MarshalAs(UnmanagedType.U1)]
@@ -64,7 +74,7 @@ namespace NtApiDotNet
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), SDKName("SECURITY_QUALITY_OF_SERVICE")]
     public struct SecurityQualityOfServiceStruct
     {
         public int Length;

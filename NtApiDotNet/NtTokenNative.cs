@@ -321,7 +321,7 @@ namespace NtApiDotNet
     public class TokenSource
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-        private byte[] _sourcename;
+        private readonly byte[] _sourcename;
         private Luid _sourceidentifier;
 
         public TokenSource()
@@ -716,6 +716,28 @@ namespace NtApiDotNet
         public bool IsolationEnabled;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("Groups"), SDKName("TOKEN_GROUPS")]
+    public class TokenGroups
+    {
+        public int GroupCount;
+        public SidAndAttributes Groups;
+    }
+
+    [StructLayout(LayoutKind.Sequential), SDKName("TOKEN_STATISTICS")]
+    public class TokenStatistics
+    {
+        public Luid TokenId;
+        public Luid AuthenticationId;
+        public LargeIntegerStruct ExpirationTime;
+        public TokenType TokenType;
+        public SecurityImpersonationLevel ImpersonationLevel;
+        public uint DynamicCharged;
+        public uint DynamicAvailable;
+        public uint GroupCount;
+        public uint PrivilegeCount;
+        public Luid ModifiedId;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
@@ -861,28 +883,6 @@ namespace NtApiDotNet
             SafeKernelObjectHandle SecondTokenHandle,
             out bool Equal
         );
-    }
-
-    [StructLayout(LayoutKind.Sequential), DataStart("Groups")]
-    public class TokenGroups
-    {
-        public int GroupCount;
-        public SidAndAttributes Groups;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public class TokenStatistics
-    {
-        public Luid TokenId;
-        public Luid AuthenticationId;
-        public LargeIntegerStruct ExpirationTime;
-        public TokenType TokenType;
-        public SecurityImpersonationLevel ImpersonationLevel;
-        public uint DynamicCharged;
-        public uint DynamicAvailable;
-        public uint GroupCount;
-        public uint PrivilegeCount;
-        public Luid ModifiedId;
     }
 #pragma warning restore 1591
 }
