@@ -103,7 +103,7 @@ namespace NtApiDotNet
         Unknown1000 = 0x1000,
         ContinuationRequired = 0x2000,
         Unknown4000 = 0x4000,
-        Unknown8000 = 0x8000,
+        KernelModeCaller = 0x8000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
