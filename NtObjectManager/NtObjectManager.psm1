@@ -14397,6 +14397,33 @@ function Get-Win32ServiceTrigger {
     }
 }
 
+<#
+.SYNOPSIS
+Converts a text hexdump into bytes.
+.DESCRIPTION
+This cmdlet tries to convert a hexdump into the original bytes.
+.PARAMETER Hex
+The hex dump.
+.INPUTS
+string
+.OUTPUTS
+byte[]
+.EXAMPLE
+1, 2, 3, 4 | Format-HexDump | ConvertFrom-HexDump
+Convert some bytes to a hex dump and back again.
+#>
+function ConvertFrom-HexDump { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [string]$Hex
+    )
+
+    PROCESS {
+        [NtApiDotNet.Utilities.Text.HexDumpBuilder]::ParseHexDump($Hex)
+    }
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential

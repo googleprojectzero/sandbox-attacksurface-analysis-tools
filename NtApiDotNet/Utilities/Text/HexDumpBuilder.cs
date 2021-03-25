@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NtApiDotNet.Utilities.Text
 {
@@ -370,5 +371,71 @@ namespace NtApiDotNet.Utilities.Text
             : this(false, false, false, false, 0)
         {
         }
+
+
+        /// <summary>
+        /// Parse a hex dump into a byte array.
+        /// </summary>
+        /// <param name="str">The hex string. Can contain non-hex characters.</param>
+        /// <returns>The parsed string as a byte array.</returns>
+        /// <remarks>This won't necessarily parse correctly an arbitary hex dump, but it will if you just use the hex of the bytes.</remarks>
+        public static byte[] ParseHexDump(string str)
+        {
+            if (str.Length == 0)
+                return new byte[0];
+            Regex re = new Regex("[^a-fA-F0-9]*", RegexOptions.Multiline);
+            str = re.Replace(str, "");
+            if ((str.Length & 1) != 0)
+            {
+                throw new FormatException("Invalid hex string length. Must be a multiple of 2.");
+            }
+
+            byte[] ret = new byte[str.Length / 2];
+            for (int i = 0; i < ret.Length; ++i)
+            {
+                ret[i] = (byte)((GetHexValue(str[i * 2]) << 4) | GetHexValue(str[i * 2 + 1]));
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Parse a hex string into a byte array.
+        /// </summary>
+        /// <param name="str">The hex string. Can contain non-hex characters.</param>
+        /// <param name="data">The parsed string as a byte array.</param>
+        /// <returns>True if the parse was successful.</returns>
+        /// <remarks>This won't necessarily parse correctly an arbitary hex dump, but it will if you just use the hex of the bytes.</remarks>
+        public static bool TryParseHexDump(string str, out byte[] data)
+        {
+            data = null;
+            try
+            {
+                data = ParseHexDump(str);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
+        #region Private Members
+        private static int GetHexValue(char c)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                return c - '0';
+            }
+            else if (c >= 'a' && c <= 'f')
+            {
+                return (c - 'a') + 10;
+            }
+            else if (c >= 'A' && c <= 'F')
+            {
+                return (c - 'A') + 10;
+            }
+            throw new FormatException($"Invalid hex character {c}.");
+        }
+        #endregion
     }
 }
