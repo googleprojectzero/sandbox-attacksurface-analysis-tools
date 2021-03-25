@@ -476,6 +476,10 @@ namespace NtApiDotNet
             {
                 return NtStatus.STATUS_SUCCESS;
             }
+            else if (dos_error < 0 || dos_error > 0xFFFF)
+            {
+                return (NtStatus)dos_error;
+            }
             return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, 
                 NtStatusFacility.FACILITY_NTWIN32, dos_error);
         }
