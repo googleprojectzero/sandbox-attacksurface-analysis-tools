@@ -14,6 +14,8 @@
 
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -700,6 +702,40 @@ namespace NtApiDotNet
         public NtStatus Wait()
         {
             return Wait(false, NtWaitTimeout.Infinite);
+        }
+
+        /// <summary>
+        /// Wait on the object to become signaled.
+        /// </summary>
+        /// <param name="timeout_sec">Timeout in seconds.</param>
+        /// <param name="cancellation_token">Cancellation token for wait.</param>
+        /// <returns>A task to wait on. If result is true then event was signaled.</returns>
+        public async Task<bool> WaitAsync(int timeout_sec, CancellationToken cancellation_token)
+        {
+            using (var wait_handle = DuplicateAsWaitHandle())
+            {
+                return await wait_handle.WaitAsync(timeout_sec < 0 ? -1 : timeout_sec * 1000, cancellation_token);
+            }
+        }
+
+        /// <summary>
+        /// Wait on the object to become signaled.
+        /// </summary>
+        /// <param name="timeout_sec">Timeout in seconds.</param>
+        /// <returns>A task to wait on. If result is true then event was signaled.</returns>
+        public Task<bool> WaitAsync(int timeout_sec)
+        {
+            return WaitAsync(timeout_sec, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Wait on the object to become signaled.
+        /// Will wait an infinite time.
+        /// </summary>
+        /// <returns>A task to wait on.</returns>
+        public Task WaitAsync()
+        {
+            return WaitAsync(-1);
         }
 
         /// <summary>
