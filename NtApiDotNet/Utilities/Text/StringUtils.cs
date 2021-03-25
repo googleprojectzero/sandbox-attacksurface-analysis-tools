@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Utilities.Text
 {
     /// <summary>
@@ -19,6 +21,7 @@ namespace NtApiDotNet.Utilities.Text
     /// </summary>
     public static class StringUtils
     {
+        #region Static Members
         /// <summary>
         /// Upper case a character according to the internal NTDLL string routines.
         /// </summary>
@@ -96,5 +99,68 @@ namespace NtApiDotNet.Utilities.Text
         {
             return Upcase(str, true).Result;
         }
+
+        /// <summary>
+        /// Parse a hex string into a byte array.
+        /// </summary>
+        /// <param name="str">The hex string. Can contain spaces.</param>
+        /// <returns>The parsed string as a byte array.</returns>
+        public static byte[] ParseHex(string str)
+        {
+            if (str.Length == 0)
+                return new byte[0];
+            str = str.Replace(" ", "");
+            if ((str.Length & 1) != 0)
+            {
+                throw new FormatException("Invalid hex string length. Must be a multiple of 2.");
+            }
+
+            byte[] ret = new byte[str.Length / 2];
+            for (int i = 0; i < ret.Length; ++i)
+            {
+                ret[i] = (byte)((GetHexValue(str[i * 2]) << 4) | GetHexValue(str[i * 2 + 1]));
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Parse a hex string into a byte array.
+        /// </summary>
+        /// <param name="str">The hex string. Can contain spaces.</param>
+        /// <param name="data">The parsed string as a byte array.</param>
+        /// <returns>True if the parse was successful.</returns>
+        public static bool TryParseHex(string str, out byte[] data)
+        {
+            data = null;
+            try
+            {
+                data = ParseHex(str);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+        #endregion
+
+        #region Private Members
+        private static int GetHexValue(char c)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                return c - '0';
+            }
+            else if (c >= 'a' && c <= 'f')
+            {
+                return (c - 'a') + 10;
+            }
+            else if (c >= 'A' && c <= 'F')
+            {
+                return (c - 'A') + 10;
+            }
+            throw new FormatException($"Invalid hex character {c}.");
+        }
+        #endregion
     }
 }
