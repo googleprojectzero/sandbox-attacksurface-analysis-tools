@@ -22,7 +22,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// </summary>
     public struct RpcTransportSecurity
     {
-        private Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
+        private readonly Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
+        private RpcAuthenticationType _auth_type;
 
         /// <summary>
         /// Security quality of service.
@@ -37,7 +38,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Authentication type.
         /// </summary>
-        public RpcAuthenticationType AuthenticationType { get; set; }
+        public RpcAuthenticationType AuthenticationType
+        {
+            get => _auth_type;
+            set => _auth_type = value == RpcAuthenticationType.Default ? RpcAuthenticationType.WinNT : value;
+        }
 
         /// <summary>
         /// Authentication credentials.
@@ -75,7 +80,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private string GetAuthPackageName()
         {
-            switch (AuthenticationType)
+            switch (_auth_type)
             {
                 case RpcAuthenticationType.Negotiate:
                     return AuthenticationPackage.NEGOSSP_NAME;
@@ -86,7 +91,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 case RpcAuthenticationType.None:
                     throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
                 default:
-                    throw new ArgumentException($"Unknown authentication type: {AuthenticationType}");
+                    throw new ArgumentException($"Unknown authentication type: {_auth_type}");
             }
         }
 
