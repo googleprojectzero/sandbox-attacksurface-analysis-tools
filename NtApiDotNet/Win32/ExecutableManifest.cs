@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Image;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
@@ -25,49 +27,12 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// Contains information about a manifest file.
     /// </summary>
-    public class ExecutableManifest
+    public sealed class ExecutableManifest
     {
         const string MANIFEST_ASMV1_NS = "urn:schemas-microsoft-com:asm.v1";
         const string MANIFEST_ASMV3_NS = "urn:schemas-microsoft-com:asm.v3";
         const string MANIFEST_WS_NS = "http://schemas.microsoft.com/SMI/2005/WindowsSettings";
         const string MANIFEST_WS2_NS = "http://schemas.microsoft.com/SMI/2016/WindowsSettings";
-
-        enum ResType
-        {
-            CURSOR = 1,
-            BITMAP = 2,
-            ICON = 3,
-            MENU = 4,
-            DIALOG = 5,
-            STRING = 6,
-            FONTDIR = 7,
-            FONT = 8,
-            ACCELERATOR = 9,
-            RCDATA = 10,
-            MESSAGETABLE = 11,
-            GROUP_CURSOR = 12,
-            GROUP_ICON = 14,
-            VERSION = 16,
-            DLGINCLUDE = 17,
-            PLUGPLAY = 19,
-            VXD = 20,
-            ANICURSOR = 21,
-            ANIICON = 22,
-            HTML = 23,
-            MANIFEST = 24
-        }
-
-        private static string FormatTypeName(IntPtr p)
-        {
-            if (p.ToInt64() < 0x10000)
-            {
-                return p.ToString();
-            }
-            else
-            {
-                return Marshal.PtrToStringUni(p);
-            }
-        }
 
         private static XmlNamespaceManager CreateNSMgr(XmlNameTable nt)
         {
@@ -153,27 +118,15 @@ namespace NtApiDotNet.Win32
             return doc;
         }
         
-        internal ExecutableManifest(SafeLoadLibraryHandle hModule, string fullpath, IntPtr hName)
+        internal ExecutableManifest(string fullpath, byte[] manifest)
         {
             FullPath = fullpath;
 
-            IntPtr hResHandle = Win32NativeMethods.FindResource(hModule, hName, new IntPtr((int)ResType.MANIFEST));
-            if (hResHandle == IntPtr.Zero)
-            {
-                throw new ArgumentException("Can't find manifest resource");
-            }
-
-            IntPtr hResource = Win32NativeMethods.LoadResource(hModule, hResHandle);
-            IntPtr buf = Win32NativeMethods.LockResource(hResource);
-            int size = Win32NativeMethods.SizeofResource(hModule, hResHandle);
-
-            if (size <= 0)
+            if (manifest.Length <= 0)
             {
                 throw new ArgumentException("Invalid manifest size");
             }
-            byte[] manifest = new byte[size];
 
-            Marshal.Copy(buf, manifest, 0, size);
             MemoryStream stm = new MemoryStream(manifest);
             try
             {
@@ -215,13 +168,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The name of the manifest.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return Path.GetFileName(FullPath);
-            }
-        }
+        public string Name => Path.GetFileName(FullPath);
 
         /// <summary>
         /// True if the manifest indicates UI access.
@@ -260,24 +207,8 @@ namespace NtApiDotNet.Win32
             using (SafeLoadLibraryHandle library =
                 SafeLoadLibraryHandle.LoadLibrary(fullpath, LoadLibraryFlags.LoadLibraryAsImageResource | LoadLibraryFlags.LoadLibraryAsDataFile))
             {
-                List<ExecutableManifest> manifests = new List<ExecutableManifest>();
-
-                Win32NativeMethods.EnumResourceNames(library, new IntPtr((int)ResType.MANIFEST), (a, b, c, d) =>
-                {
-                    try
-                    {
-                        manifests.Add(new ExecutableManifest(library, fullpath, c));
-                    }
-                    catch (Win32Exception)
-                    {
-                    }
-                    catch (ArgumentException)
-                    {
-                    }
-                    return true;
-                }, IntPtr.Zero);
-
-                return manifests;
+                return library.GetResources(WellKnownImageResourceType.Manifest).Where(m => m.Size > 0)
+                    .Select(m => new ExecutableManifest(fullpath, m.ToArray())).ToArray();
             }
         }
 

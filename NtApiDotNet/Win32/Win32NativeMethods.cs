@@ -885,7 +885,11 @@ namespace NtApiDotNet.Win32
         internal static extern IntPtr LocalFree(IntPtr hMem);
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        internal static extern bool EnumResourceTypes(IntPtr hModule, EnumResTypeProc lpEnumFunc, IntPtr lParam);
+        internal static extern bool EnumResourceTypes(SafeLoadLibraryHandle hModule, EnumResTypeProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern bool EnumResourceNames(SafeLoadLibraryHandle hModule, string lpszType,
+            EnumResNameProcDelegate lpEnumFunc, IntPtr lParam);
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern bool EnumResourceNames(SafeLoadLibraryHandle hModule, IntPtr lpszType,
@@ -905,6 +909,9 @@ namespace NtApiDotNet.Win32
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, string lpName, string lpType);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, string lpName, IntPtr lpType);
 
         [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool CloseServiceHandle(IntPtr hSCObject);

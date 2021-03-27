@@ -14,6 +14,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.ApiSet;
+using NtApiDotNet.Win32.Image;
 using NtApiDotNet.Win32.Security.Authenticode;
 using System;
 using System.Collections.Generic;
@@ -538,11 +539,218 @@ namespace NtApiDotNet.Win32
         /// Get the image sections from a loaded library.
         /// </summary>
         /// <returns>The list of image sections.</returns>
-        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
         public IEnumerable<ImageSection> GetImageSections()
         {
             SetupValues();
             return _image_sections.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type">The type of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<byte[]> LoadResource(string name, ImageResourceType type, bool throw_on_error)
+        {
+            IntPtr resinfo;
+            if (type.WellKnownType != WellKnownImageResourceType.Unknown)
+            {
+                resinfo = Win32NativeMethods.FindResource(this, name, type.NamePtr);
+            }
+            else
+            {
+                resinfo = Win32NativeMethods.FindResource(this, name, type.Name);
+            }
+
+            if (resinfo == IntPtr.Zero)
+            {
+                return Win32Utils.GetLastWin32Error().CreateResultFromDosError<byte[]>(throw_on_error);
+            }
+
+            int size = Win32NativeMethods.SizeofResource(this, resinfo);
+            if (size == 0)
+            {
+                return new byte[0].CreateResult();
+            }
+
+            IntPtr resource = Win32NativeMethods.LoadResource(this, resinfo);
+            if (resource == IntPtr.Zero)
+            {
+                return Win32Utils.GetLastWin32Error().CreateResultFromDosError<byte[]>(throw_on_error);
+            }
+
+            IntPtr ptr = Win32NativeMethods.LockResource(resource);
+            if (ptr == IntPtr.Zero)
+            {
+                return Win32Utils.GetLastWin32Error().CreateResultFromDosError<byte[]>(throw_on_error);
+            }
+
+            byte[] ret = new byte[size];
+            Marshal.Copy(ptr, ret, 0, size);
+            return ret.CreateResult();
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type_name">The type name of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<byte[]> LoadResource(string name, string type_name, bool throw_on_error)
+        {
+            return LoadResource(name, new ImageResourceType(type_name), throw_on_error);
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="well_known_type">The well known type of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<byte[]> LoadResource(string name, WellKnownImageResourceType well_known_type, bool throw_on_error)
+        {
+            return LoadResource(name, new ImageResourceType(well_known_type), throw_on_error);
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type">The type of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResource(string name, ImageResourceType type)
+        {
+            return LoadResource(name, type, true).Result;
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type_name">The type name of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResource(string name, string type_name)
+        {
+            return LoadResource(name, new ImageResourceType(type_name));
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="well_known_type">The well known type of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResource(string name, WellKnownImageResourceType well_known_type)
+        {
+            return LoadResource(name, new ImageResourceType(well_known_type));
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <returns>The list of resource types.</returns>
+        public IEnumerable<ImageResourceType> GetResourceTypes()
+        {
+            List<ImageResourceType> types = new List<ImageResourceType>();
+
+            Win32NativeMethods.EnumResourceTypes(this, (hModule, lpszType, lParam) =>
+                {
+                    types.Add(new ImageResourceType(lpszType));
+                    return true;
+                }, IntPtr.Zero);
+            return types.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="type">The type for the resources.</param>
+        /// <param name="load_resource">True to load the resource data.</param>
+        /// <returns>The list of resource types.</returns>
+        public IEnumerable<ImageResource> GetResources(ImageResourceType type, bool load_resource)
+        {
+            List<ImageResource> resources = new List<ImageResource>();
+            Win32NativeMethods.EnumResourceNames(this, type.Name, (hModule, lpszType, lpszName, lParam) =>
+            {
+                resources.Add(new ImageResource(lpszName, type, load_resource ? this : null));
+                return true;
+            }, IntPtr.Zero);
+
+            return resources.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="type">The type for the resources.</param>
+        /// <returns>The list of resource types.</returns>
+        /// <remarks>This always loads resource data into memory.</remarks>
+        public IEnumerable<ImageResource> GetResources(ImageResourceType type)
+        {
+            return GetResources(type, true);
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="type_name">The typename for the resources.</param>
+        /// <param name="load_resource">True to load the resource data.</param>
+        /// <returns>The list of resource types.</returns>
+        public IEnumerable<ImageResource> GetResources(string type_name, bool load_resource)
+        {
+            return GetResources(new ImageResourceType(type_name), load_resource);
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="type_name">The typename for the resources.</param>
+        /// <returns>The list of resource types.</returns>
+        /// <remarks>This always loads resource data into memory.</remarks>
+        public IEnumerable<ImageResource> GetResources(string type_name)
+        {
+            return GetResources(new ImageResourceType(type_name));
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="well_known_type">The well known type for the resources.</param>
+        /// <param name="load_resource">True to load the resource data.</param>
+        /// <returns>The list of resource types.</returns>
+        public IEnumerable<ImageResource> GetResources(WellKnownImageResourceType well_known_type, bool load_resource)
+        {
+            return GetResources(new ImageResourceType(well_known_type), load_resource);
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <param name="well_known_type">The well known type for the resources.</param>
+        /// <returns>The list of resource types.</returns>
+        /// <remarks>This always loads resource data into memory.</remarks>
+        public IEnumerable<ImageResource> GetResources(WellKnownImageResourceType well_known_type)
+        {
+            return GetResources(new ImageResourceType(well_known_type));
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <returns>The list of resource types.</returns>
+        public IEnumerable<ImageResource> GetResources()
+        {
+            List<ImageResource> resources = new List<ImageResource>();
+            foreach (var type in GetResourceTypes())
+            {
+                resources.AddRange(GetResources(type));
+            }
+
+            return resources.AsReadOnly();
         }
 
         #endregion

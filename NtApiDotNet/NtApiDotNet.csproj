@@ -323,6 +323,10 @@
     <Compile Include="Win32\DllImportFunction.cs" />
     <Compile Include="Win32\ImageSection.cs" />
     <Compile Include="Win32\ImageSectionCharacteristics.cs" />
+    <Compile Include="Win32\Image\ImageResource.cs" />
+    <Compile Include="Win32\Image\ImageResourceType.cs" />
+    <Compile Include="Win32\Image\ImageUtils.cs" />
+    <Compile Include="Win32\Image\WellKnownImageResourceType.cs" />
     <Compile Include="Win32\LoadLibraryFlags.cs" />
     <Compile Include="Win32\Net\UdpListenerInformation.cs" />
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
