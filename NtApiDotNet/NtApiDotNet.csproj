@@ -111,6 +111,7 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
+    <Compile Include="Security\INtObjectSecurity.cs" />
     <Compile Include="Utilities\Collections\CollectionUtils.cs" />
     <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
     <Compile Include="Utilities\Reflection\SDKNameAttribute.cs" />
@@ -340,6 +341,9 @@
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
+    <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
+    <Compile Include="Win32\Security\Policy\LsaPolicy.cs" />
+    <Compile Include="Win32\Security\Policy\LsaPolicyUtils.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

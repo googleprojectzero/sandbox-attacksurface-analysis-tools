@@ -42,5 +42,24 @@ namespace NtApiDotNet.Win32.SafeHandles
             return SecurityNativeMethods.LsaOpenPolicy(str, new ObjectAttributes(),
                 desired_access, out SafeLsaHandle policy).CreateResult(throw_on_error, () => policy);
         }
+
+        internal NtResult<SecurityDescriptor> QuerySecurity(SecurityInformation security_information, NtType type, bool throw_on_error)
+        {
+            var status = SecurityNativeMethods.LsaQuerySecurityObject(this, security_information, out SafeLsaMemoryBuffer sd);
+            if (!status.IsSuccess())
+                return status.CreateResultFromError<SecurityDescriptor>(throw_on_error);
+            using (sd)
+            {
+                return SecurityDescriptor.Parse(sd, type, throw_on_error);
+            }
+        }
+
+        internal NtStatus SetSecurity(SecurityInformation security_information, SecurityDescriptor security_descriptor, bool throw_on_error)
+        {
+            using (var sd = security_descriptor.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaSetSecurityObject(this, security_information, sd);
+            }
+        }
     }
 }

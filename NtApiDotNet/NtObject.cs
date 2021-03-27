@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Security;
 using System;
 using System.Linq;
 using System.Threading;
@@ -22,7 +23,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Base class for all NtObject types we handle
     /// </summary>
-    public abstract class NtObject : IDisposable
+    public abstract class NtObject : IDisposable, INtObjectSecurity
     {
         #region Private Members
         private ObjectBasicInformation _basic_information;
@@ -103,6 +104,8 @@ namespace NtApiDotNet
         #endregion
 
         #region Internal Members
+
+        string INtObjectSecurity.ObjectName => FullPath;
 
         internal void SetHandle(SafeKernelObjectHandle handle, bool query_basic_info)
         {

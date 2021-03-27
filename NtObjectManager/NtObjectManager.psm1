@@ -2467,7 +2467,7 @@ function Format-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.NtObject]$Object,
+        [NtApiDotNet.Security.INtObjectSecurity]$Object,
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory, ValueFromPipeline)]
@@ -2507,7 +2507,7 @@ function Format-NtSecurityDescriptor {
                         Write-Error "Object doesn't have $access access."
                         return
                     }
-                    ($Object.GetSecurityDescriptor($SecurityInformation), $Object.NtType, $Object.FullPath)
+                    ($Object.GetSecurityDescriptor($SecurityInformation), $Object.NtType, $Object.ObjectName)
                 }
                 "FromPath" {
                     $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
@@ -3261,7 +3261,7 @@ function Get-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromObject")]
-        [NtApiDotNet.NtObject]$Object,
+        [NtApiDotNet.Security.INtObjectSecurity]$Object,
         [parameter(Position = 1, ParameterSetName = "FromObject")]
         [parameter(Position = 1, ParameterSetName = "FromPath")]
         [parameter(ParameterSetName = "FromPid")]
@@ -3360,7 +3360,7 @@ function Set-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "ToObject")]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "ToObject")]
-        [NtApiDotNet.NtObject]$Object,
+        [NtApiDotNet.Security.INtObjectSecurity]$Object,
         [parameter(Mandatory, Position = 0, ParameterSetName = "ToPath")]
         [string]$Path,
         [parameter(ParameterSetName = "ToPath")]

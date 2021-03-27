@@ -794,6 +794,20 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeCredBuffer Credential
         );
 
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQuerySecurityObject(
+            SafeLsaHandle ObjectHandle,
+            SecurityInformation SecurityInformation,
+            out SafeLsaMemoryBuffer SecurityDescriptor
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaSetSecurityObject(
+            SafeLsaHandle ObjectHandle,
+            SecurityInformation SecurityInformation,
+            SafeBuffer SecurityDescriptor
+        );
+
         [DllImport("advapi32.dll")]
         internal static extern void CredFree(
             IntPtr Buffer

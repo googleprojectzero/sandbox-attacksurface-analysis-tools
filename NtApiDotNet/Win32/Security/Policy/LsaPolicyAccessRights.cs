@@ -17,9 +17,13 @@ using System;
 
 namespace NtApiDotNet.Win32.Security.Policy
 {
+    /// <summary>
+    /// Access rights for the LSA policy.
+    /// </summary>
     [Flags]
-    internal enum LsaPolicyAccessRights : uint
+    public enum LsaPolicyAccessRights : uint
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         [SDKName("POLICY_VIEW_LOCAL_INFORMATION")]
         ViewLocalInformation = 0x00000001,
         [SDKName("POLICY_VIEW_AUDIT_INFORMATION")]
@@ -68,5 +72,6 @@ namespace NtApiDotNet.Win32.Security.Policy
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
