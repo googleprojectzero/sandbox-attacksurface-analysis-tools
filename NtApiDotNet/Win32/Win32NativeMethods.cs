@@ -913,6 +913,14 @@ namespace NtApiDotNet.Win32
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, string lpName, IntPtr lpType);
 
+        [DllImport("user32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern int LoadString(
+            SafeLoadLibraryHandle hInstance,
+            int uID,
+            StringBuilder lpBuffer,
+            int cchBufferMax
+        );
+
         [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool CloseServiceHandle(IntPtr hSCObject);
 

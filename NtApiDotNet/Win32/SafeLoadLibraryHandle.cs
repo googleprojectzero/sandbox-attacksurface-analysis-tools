@@ -753,6 +753,34 @@ namespace NtApiDotNet.Win32
             return resources.AsReadOnly();
         }
 
+        /// <summary>
+        /// Load a string for the library's string resource table.
+        /// </summary>
+        /// <param name="id">The ID of the string.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The loaded string.</returns>
+        public NtResult<string> LoadString(int id, bool throw_on_error)
+        {
+            StringBuilder builder = new StringBuilder(1024);
+            int result = Win32NativeMethods.LoadString(this, id, builder, builder.Capacity);
+            if (result <= 0)
+            {
+                return Win32Utils.GetLastWin32Error().CreateResultFromDosError<string>(throw_on_error);
+            }
+            builder.Length = result;
+            return builder.ToString().CreateResult();
+        }
+
+        /// <summary>
+        /// Load a string for the library's string resource table.
+        /// </summary>
+        /// <param name="id">The ID of the string.</param>
+        /// <returns>The loaded string.</returns>
+        public string LoadString(int id)
+        {
+            return LoadString(id, true).Result;
+        }
+
         #endregion
 
         #region Public Properties

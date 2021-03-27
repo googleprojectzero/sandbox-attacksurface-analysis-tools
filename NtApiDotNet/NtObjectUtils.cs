@@ -613,11 +613,7 @@ namespace NtApiDotNet
 
         internal static SafeKernelObjectHandle ToSafeKernelHandle(this SafeHandle handle)
         {
-            if (handle is SafeKernelObjectHandle)
-            {
-                return (SafeKernelObjectHandle)handle;
-            }
-            return new SafeKernelObjectHandle(handle.DangerousGetHandle(), false);
+            return handle is SafeKernelObjectHandle handle1 ? handle1 : new SafeKernelObjectHandle(handle.DangerousGetHandle(), false);
         }
 
         internal static IEnumerable<T> ToCached<T>(this IEnumerable<T> enumerable)
