@@ -47,13 +47,21 @@ namespace NtApiDotNet.Win32.Image
             return _data == null ? throw new InvalidOperationException("Resource data wasn't loaded.") : (byte[])_data.Clone();
         }
 
+        internal ImageResource(string name, ImageResourceType type, byte[] data)
+        {
+            Name = name;
+            Type = type;
+            _data = data;
+            Size = data.Length;
+        }
+
         internal ImageResource(IntPtr name, ImageResourceType type, SafeLoadLibraryHandle library)
         {
             Name = ImageUtils.GetResourceString(name);
             Type = type;
             if (library != null)
             {
-                _data = library.LoadResource(Name, type, false).GetResultOrDefault();
+                _data = library.LoadResourceData(Name, type, false).GetResultOrDefault();
                 Size = _data.Length;
             }
             else

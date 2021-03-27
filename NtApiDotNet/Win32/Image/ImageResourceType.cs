@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
 using System;
 
 namespace NtApiDotNet.Win32.Image
@@ -43,10 +42,10 @@ namespace NtApiDotNet.Win32.Image
 
         internal ImageResourceType(string name)
         {
-            if (name.StartsWith("#") && int.TryParse(name.Substring(1), out int type_id))
+            if (ImageUtils.TryParseId(name, out int type_id))
             {
                 NamePtr = new IntPtr(type_id);
-                Name = name;
+                Name = $"#{type_id}";
                 if (Enum.IsDefined(typeof(WellKnownImageResourceType), type_id))
                 {
                     WellKnownType = (WellKnownImageResourceType)type_id;
@@ -77,7 +76,7 @@ namespace NtApiDotNet.Win32.Image
         /// <returns>The name of the type.</returns>
         public override string ToString()
         {
-            return WellKnownType != WellKnownImageResourceType.Unknown ? ReflectionUtils.GetSDKName(WellKnownType) : Name;
+            return WellKnownType != WellKnownImageResourceType.Unknown ? $"{Name} ({WellKnownType})": Name;
         }
     }
 }

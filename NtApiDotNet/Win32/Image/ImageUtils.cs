@@ -13,11 +13,7 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Image
 {
@@ -40,6 +36,25 @@ namespace NtApiDotNet.Win32.Image
             }
 
             return WellKnownImageResourceType.Unknown;
+        }
+
+        public static bool TryParseId(string name, out int type_id)
+        {
+            type_id = 0;
+            if (!name.StartsWith("#") || name.Length < 2 || !char.IsDigit(name[1])) 
+                return false;
+
+            int index = name.IndexOf(' ');
+            if (index > 0)
+            {
+                name = name.Substring(1, index - 1);
+            }
+            else
+            {
+                name = name.Substring(1);
+            }
+            
+            return int.TryParse(name, out type_id);
         }
     }
 }

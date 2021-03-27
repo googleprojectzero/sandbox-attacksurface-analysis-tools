@@ -114,7 +114,7 @@ namespace NtApiDotNet.Win32.Security.Authenticode
                 if (!lib.IsSuccess)
                     return lib.Cast<IReadOnlyList<ElamInformation>>();
 
-                var result = lib.Result.LoadResource("MicrosoftElamCertificateInfo", "MSElamCertInfoID", throw_on_error);
+                var result = lib.Result.LoadResourceData("MicrosoftElamCertificateInfo", "MSElamCertInfoID", throw_on_error);
                 if (!result.IsSuccess)
                     return result.Cast<IReadOnlyList<ElamInformation>>();
                 byte[] elam_info = result.Result;

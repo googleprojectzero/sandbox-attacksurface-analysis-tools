@@ -552,7 +552,7 @@ namespace NtApiDotNet.Win32
         /// <param name="type">The type of the resource.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The bytes for the resource.</returns>
-        public NtResult<byte[]> LoadResource(string name, ImageResourceType type, bool throw_on_error)
+        public NtResult<byte[]> LoadResourceData(string name, ImageResourceType type, bool throw_on_error)
         {
             IntPtr resinfo;
             if (type.WellKnownType != WellKnownImageResourceType.Unknown)
@@ -599,7 +599,82 @@ namespace NtApiDotNet.Win32
         /// <param name="type_name">The type name of the resource.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The bytes for the resource.</returns>
-        public NtResult<byte[]> LoadResource(string name, string type_name, bool throw_on_error)
+        public NtResult<byte[]> LoadResourceData(string name, string type_name, bool throw_on_error)
+        {
+            return LoadResourceData(name, new ImageResourceType(type_name), throw_on_error);
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="well_known_type">The well known type of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<byte[]> LoadResourceData(string name, WellKnownImageResourceType well_known_type, bool throw_on_error)
+        {
+            return LoadResourceData(name, new ImageResourceType(well_known_type), throw_on_error);
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type">The type of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResourceData(string name, ImageResourceType type)
+        {
+            return LoadResourceData(name, type, true).Result;
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type_name">The type name of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResourceData(string name, string type_name)
+        {
+            return LoadResourceData(name, new ImageResourceType(type_name));
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="well_known_type">The well known type of the resource.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public byte[] LoadResourceData(string name, WellKnownImageResourceType well_known_type)
+        {
+            return LoadResourceData(name, new ImageResourceType(well_known_type));
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type">The type of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<ImageResource> LoadResource(string name, ImageResourceType type, bool throw_on_error)
+        {
+            var data = LoadResourceData(name, type, throw_on_error);
+            if (!data.IsSuccess)
+            {
+                return data.Cast<ImageResource>();
+            }
+
+            return new ImageResource(name, type, data.Result).CreateResult();
+        }
+
+        /// <summary>
+        /// Load the resource's bytes from the module.
+        /// </summary>
+        /// <param name="name">The name of the resource.</param>
+        /// <param name="type_name">The type name of the resource.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The bytes for the resource.</returns>
+        public NtResult<ImageResource> LoadResource(string name, string type_name, bool throw_on_error)
         {
             return LoadResource(name, new ImageResourceType(type_name), throw_on_error);
         }
@@ -611,7 +686,7 @@ namespace NtApiDotNet.Win32
         /// <param name="well_known_type">The well known type of the resource.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The bytes for the resource.</returns>
-        public NtResult<byte[]> LoadResource(string name, WellKnownImageResourceType well_known_type, bool throw_on_error)
+        public NtResult<ImageResource> LoadResource(string name, WellKnownImageResourceType well_known_type, bool throw_on_error)
         {
             return LoadResource(name, new ImageResourceType(well_known_type), throw_on_error);
         }
@@ -622,7 +697,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the resource.</param>
         /// <param name="type">The type of the resource.</param>
         /// <returns>The bytes for the resource.</returns>
-        public byte[] LoadResource(string name, ImageResourceType type)
+        public ImageResource LoadResource(string name, ImageResourceType type)
         {
             return LoadResource(name, type, true).Result;
         }
@@ -633,7 +708,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the resource.</param>
         /// <param name="type_name">The type name of the resource.</param>
         /// <returns>The bytes for the resource.</returns>
-        public byte[] LoadResource(string name, string type_name)
+        public ImageResource LoadResource(string name, string type_name)
         {
             return LoadResource(name, new ImageResourceType(type_name));
         }
@@ -644,7 +719,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the resource.</param>
         /// <param name="well_known_type">The well known type of the resource.</param>
         /// <returns>The bytes for the resource.</returns>
-        public byte[] LoadResource(string name, WellKnownImageResourceType well_known_type)
+        public ImageResource LoadResource(string name, WellKnownImageResourceType well_known_type)
         {
             return LoadResource(name, new ImageResourceType(well_known_type));
         }
@@ -741,16 +816,27 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get list of resource types from the loaded library.
         /// </summary>
+        /// <param name="load_resource">True to load the resource data.</param>
         /// <returns>The list of resource types.</returns>
-        public IEnumerable<ImageResource> GetResources()
+        public IEnumerable<ImageResource> GetResources(bool load_resource)
         {
             List<ImageResource> resources = new List<ImageResource>();
             foreach (var type in GetResourceTypes())
             {
-                resources.AddRange(GetResources(type));
+                resources.AddRange(GetResources(type, load_resource));
             }
 
             return resources.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get list of resource types from the loaded library.
+        /// </summary>
+        /// <returns>The list of resource types.</returns>
+        /// <remarks>This always loads resource data into memory.</remarks>
+        public IEnumerable<ImageResource> GetResources()
+        {
+            return GetResources(true);
         }
 
         /// <summary>
@@ -779,6 +865,15 @@ namespace NtApiDotNet.Win32
         public string LoadString(int id)
         {
             return LoadString(id, true).Result;
+        }
+
+        /// <summary>
+        /// Increases the reference count and returns a new instance.
+        /// </summary>
+        /// <returns></returns>
+        public SafeLoadLibraryHandle AddRef()
+        {
+            return GetModuleHandle(DangerousGetHandle());
         }
 
         #endregion

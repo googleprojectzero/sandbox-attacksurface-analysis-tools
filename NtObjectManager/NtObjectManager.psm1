@@ -7508,6 +7508,72 @@ function Get-Win32ModuleSymbolFile {
 
 <#
 .SYNOPSIS
+Gets the resources from a loaded DLL.
+.DESCRIPTION
+This cmdlet gets the list of resources from a loaded DLL.
+.PARAMETER Module
+Specify the DLL.
+.PARAMETER Path
+Specify the path to the DLL.
+.PARAMETER DontLoadResource
+Specify to not load the resource data. Ignored if getting a specific type.
+.PARAMETER Type
+Specify the type of resource to get.
+.PARAMETER Name
+Specify the name of resource tot get. Must be combined with the Type.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Image.ImageResource
+#>
+function Get-Win32ModuleResource {
+    [CmdletBinding(DefaultParameterSetName = "FromModule")]
+    Param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
+        [string]$Path,
+        [switch]$DontLoadResource,
+        [ValidateNotNullOrEmpty()]
+        [string]$Type,
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+                if ($PSBoundParameters.Keys -contains 'Type') {
+                        $true
+                }
+                else {
+                    throw "Must specify a type when using a name."
+                }
+            })]
+        [string]$Name
+    )
+
+    try {
+        $lib = if ($PSCmdlet.ParameterSetName -eq "FromPath") {
+            Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile
+        } else {
+            $Module.AddRef()
+        }
+
+        Use-NtObject($lib) {
+            if ("" -ne $Type) {
+                if ("" -ne $Name) {
+                    $lib.LoadResource($Name, $Type)
+                } else {
+                    $lib.GetResources($Type, !$DontLoadResource) | Write-Output
+                }
+            } else {
+                $lib.GetResources(!$DontLoadResource) | Write-Output
+            }
+        }
+    }
+    catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
 Gets entries from an object directory.
 .DESCRIPTION
 This cmdlet gets the list entries in an object directory.
