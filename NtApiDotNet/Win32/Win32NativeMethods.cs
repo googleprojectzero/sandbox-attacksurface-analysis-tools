@@ -892,10 +892,6 @@ namespace NtApiDotNet.Win32
             EnumResNameProcDelegate lpEnumFunc, IntPtr lParam);
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        internal static extern bool EnumResourceNames(SafeLoadLibraryHandle hModule, IntPtr lpszType,
-            EnumResNameProcDelegate lpEnumFunc, IntPtr lParam);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
@@ -903,9 +899,6 @@ namespace NtApiDotNet.Win32
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern int SizeofResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, IntPtr lpName, IntPtr lpType);
 
         [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, string lpName, string lpType);

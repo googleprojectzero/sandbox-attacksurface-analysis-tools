@@ -113,20 +113,15 @@ namespace NtApiDotNet.Win32.Security.Authenticode
             {
                 if (!lib.IsSuccess)
                     return lib.Cast<IReadOnlyList<ElamInformation>>();
-                var ptr =  Win32NativeMethods.FindResource(lib.Result, "MicrosoftElamCertificateInfo", "MSElamCertInfoID");
-                if (ptr == IntPtr.Zero)
-                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<IReadOnlyList<ElamInformation>>(throw_on_error);
 
-                IntPtr hResource = Win32NativeMethods.LoadResource(lib.Result, ptr);
-                IntPtr buf = Win32NativeMethods.LockResource(hResource);
-                int size = Win32NativeMethods.SizeofResource(lib.Result, ptr);
+                var result = lib.Result.LoadResource("MicrosoftElamCertificateInfo", "MSElamCertInfoID", throw_on_error);
+                if (!result.IsSuccess)
+                    return result.Cast<IReadOnlyList<ElamInformation>>();
+                byte[] elam_info = result.Result;
 
-                if (size <= 0)
+                if (elam_info.Length == 0)
                     return NtStatus.STATUS_INVALID_BUFFER_SIZE.CreateResultFromError<IReadOnlyList<ElamInformation>>(throw_on_error);
 
-                byte[] elam_info = new byte[size];
-
-                Marshal.Copy(buf, elam_info, 0, size);
                 MemoryStream stm = new MemoryStream(elam_info);
                 BinaryReader reader = new BinaryReader(stm, Encoding.Unicode);
                 try
