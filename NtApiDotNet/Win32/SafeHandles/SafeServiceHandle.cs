@@ -50,5 +50,44 @@ namespace NtApiDotNet.Win32.SafeHandles
             {
             }
         }
+
+        internal static SecurityInformation DEFAULT_SECURITY_INFORMATION = SecurityInformation.Dacl
+                | SecurityInformation.Owner
+                | SecurityInformation.Label
+                | SecurityInformation.Group;
+
+        internal NtResult<SecurityDescriptor> GetSecurityDescriptor(
+            string type_name, SecurityInformation security_information, bool throw_on_error)
+        {
+            security_information &= DEFAULT_SECURITY_INFORMATION;
+
+            if (IsInvalid || IsClosed)
+                return NtStatus.STATUS_INVALID_HANDLE.CreateResultFromError<SecurityDescriptor>(throw_on_error);
+
+            byte[] sd = new byte[8192];
+            return Win32NativeMethods.QueryServiceObjectSecurity(this, security_information,
+                sd, sd.Length, out _).CreateWin32Result(throw_on_error,
+                () => new SecurityDescriptor(sd, NtType.GetTypeByName(type_name)));
+        }
+
+        internal NtStatus SetSecurityDescriptor(SecurityInformation security_information, SecurityDescriptor security_descriptor, bool throw_on_error)
+        {
+            security_information &= DEFAULT_SECURITY_INFORMATION;
+
+            if (IsInvalid || IsClosed)
+                return NtStatus.STATUS_INVALID_HANDLE.ToNtException(throw_on_error);
+
+            if (security_descriptor is null)
+            {
+                throw new ArgumentNullException(nameof(security_descriptor));
+            }
+
+            if (!Win32NativeMethods.SetServiceObjectSecurity(this, security_information, security_descriptor.ToByteArray()))
+            {
+                return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
+            }
+
+            return NtStatus.STATUS_SUCCESS;
+        }
     }
 }

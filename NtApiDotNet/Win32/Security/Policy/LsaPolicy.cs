@@ -34,14 +34,12 @@ namespace NtApiDotNet.Win32.Security.Policy
         }
         #endregion
 
-        #region Public Methods
+        #region INtObjectSecurity Implementation
+        NtType INtObjectSecurity.NtType => NtType.GetTypeByName(LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME);
 
-        /// <summary>
-        /// Check if access is granted to a set of rights
-        /// </summary>
-        /// <param name="access">The access rights to check</param>
-        /// <returns>True if all the access rights are granted</returns>
-        public bool IsAccessMaskGranted(AccessMask access)
+        string INtObjectSecurity.ObjectName => "LSA Policy";
+
+        bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)
         {
             // We can't tell if we really have access or not, so just assume we do.
             if (_granted_access.HasFlagSet(LsaPolicyAccessRights.MaximumAllowed))
@@ -50,31 +48,31 @@ namespace NtApiDotNet.Win32.Security.Policy
         }
 
         /// <summary>
-        /// Get the security descriptor for the policy.
+        /// Get the security descriptor specifying which parts to retrieve
         /// </summary>
-        /// <param name="security_information">The security information to query.</param>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The security descriptor.</returns>
-        public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        /// <returns>The security descriptor</returns>
+        public NtResult <SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
             return _handle.QuerySecurity(security_information, LsaPolicyUtils.LsaPolicyNtType, throw_on_error);
         }
 
         /// <summary>
-        /// Get the security descriptor for the policy.
+        /// Get the security descriptor specifying which parts to retrieve
         /// </summary>
-        /// <param name="security_information">The security information to query.</param>
-        /// <returns>The security descriptor.</returns>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
         public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
         {
             return GetSecurityDescriptor(security_information, true).Result;
         }
 
         /// <summary>
-        /// Set the security descriptor for the policy.
+        /// Set the object's security descriptor
         /// </summary>
-        /// <param name="security_descriptor">The security descriptor.</param>
-        /// <param name="security_information">The security information to set.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public NtStatus SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error)
@@ -83,29 +81,14 @@ namespace NtApiDotNet.Win32.Security.Policy
         }
 
         /// <summary>
-        /// Set the security descriptor for the policy.
+        /// Set the object's security descriptor
         /// </summary>
-        /// <param name="security_descriptor">The security descriptor.</param>
-        /// <param name="security_information">The security information to set.</param>
-        /// <returns>The NT status code.</returns>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
         public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information)
         {
-            SetSecurityDescriptor(security_descriptor, security_information);
+            SetSecurityDescriptor(security_descriptor, security_information, true);
         }
-
-        #endregion
-
-        #region Public Properties
-        /// <summary>
-        /// Get the NtType for this object.
-        /// </summary>
-        /// <returns>The NtType for the object.</returns>
-        public NtType NtType => NtType.GetTypeByName(LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME);
-
-        /// <summary>
-        /// Get the name of the object.
-        /// </summary>
-        string INtObjectSecurity.ObjectName => "LSA Policy";
 
         #endregion
 

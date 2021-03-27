@@ -41,7 +41,7 @@ namespace NtApiDotNet.Win32.Security.Policy
                 GenericAll = LsaPolicyAccessRights.ReadControl | LsaPolicyAccessRights.WriteDac | LsaPolicyAccessRights.WriteOwner | LsaPolicyAccessRights.Delete |
                     LsaPolicyAccessRights.ViewAuditInformation | LsaPolicyAccessRights.GetPrivateInformation | LsaPolicyAccessRights.TrustAdmin | LsaPolicyAccessRights.CreateAccount | LsaPolicyAccessRights.CreateSecret |
                     LsaPolicyAccessRights.CreatePrivilege | LsaPolicyAccessRights.SetDefaultQuotaLimits | LsaPolicyAccessRights.SetAuditRequirements | LsaPolicyAccessRights.AuditLogAdmin |
-                    LsaPolicyAccessRights.ServerAdmin | LsaPolicyAccessRights.ViewLocalInformation | LsaPolicyAccessRights.LookupNames
+                    LsaPolicyAccessRights.ServerAdmin | LsaPolicyAccessRights.ViewLocalInformation | LsaPolicyAccessRights.LookupNames | LsaPolicyAccessRights.Notification
             };
         }
 

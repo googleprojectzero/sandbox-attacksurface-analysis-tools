@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Security;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -22,16 +23,18 @@ namespace NtApiDotNet.Win32.Service
     /// <summary>
     /// Class to represent a handle to the SCM.
     /// </summary>
-    public sealed class ServiceControlManager : IDisposable
+    public sealed class ServiceControlManager : IDisposable, INtObjectSecurity
     {
         #region Private Members
-        private readonly SafeServiceHandle _scm;
+        private readonly SafeServiceHandle _handle;
         private readonly string _machine_name;
+        private readonly ServiceControlManagerAccessRights _granted_access;
 
-        private ServiceControlManager(SafeServiceHandle scm, string machine_name)
+        private ServiceControlManager(SafeServiceHandle handle, string machine_name, ServiceControlManagerAccessRights granted_access)
         {
-            _scm = scm;
+            _handle = handle;
             _machine_name = machine_name;
+            _granted_access = granted_access;
         }
         #endregion
 
@@ -66,7 +69,7 @@ namespace NtApiDotNet.Win32.Service
                 database_name = null;
             SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(machine_name, database_name, desired_access);
             if (!scm.IsInvalid)
-                return new ServiceControlManager(scm, machine_name).CreateResult();
+                return new ServiceControlManager(scm, machine_name, desired_access).CreateResult();
             return Win32Utils.CreateResultFromDosError<ServiceControlManager>(throw_on_error);
         }
 
@@ -131,7 +134,7 @@ namespace NtApiDotNet.Win32.Service
                 int resume_handle = 0;
                 while (true)
                 {
-                    bool ret = Win32NativeMethods.EnumServicesStatusEx(_scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO,
+                    bool ret = Win32NativeMethods.EnumServicesStatusEx(_handle, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO,
                         service_types, state, buffer, buffer.Length, out int bytes_needed, out int services_returned, 
                         ref resume_handle, null);
                     Win32Error error = Win32Utils.GetLastWin32Error();
@@ -169,12 +172,69 @@ namespace NtApiDotNet.Win32.Service
         /// </summary>
         public void Dispose()
         {
-            _scm.Close();
+            _handle.Close();
         }
         #endregion
 
         #region Internal Members
-        internal SafeServiceHandle Handle => _scm;
+        internal SafeServiceHandle Handle => _handle;
+        #endregion
+
+        #region INtObjectSecurity Implementation
+        NtType INtObjectSecurity.NtType => NtType.GetTypeByName(ServiceUtils.SCM_NT_TYPE_NAME);
+
+        string INtObjectSecurity.ObjectName => string.IsNullOrEmpty(_machine_name) ? "SCM" : $@"SCM (\\{_machine_name})";
+
+        bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)
+        {
+            // We can't tell if we really have access or not, so just assume we do.
+            if (_granted_access.HasFlagSet(ServiceControlManagerAccessRights.MaximumAllowed))
+                return true;
+            return _granted_access.HasFlagAllSet(access.ToSpecificAccess<ServiceControlManagerAccessRights>());
+        }
+
+        /// <summary>
+        /// Get the security descriptor specifying which parts to retrieve
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor</returns>
+        public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        {
+            return _handle.GetSecurityDescriptor(ServiceUtils.SCM_NT_TYPE_NAME, security_information, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the security descriptor specifying which parts to retrieve
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
+        public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
+        {
+            return GetSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error)
+        {
+            return _handle.SetSecurityDescriptor(security_information, security_descriptor, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information)
+        {
+            SetSecurityDescriptor(security_descriptor, security_information, true);
+        }
+
         #endregion
     }
 }

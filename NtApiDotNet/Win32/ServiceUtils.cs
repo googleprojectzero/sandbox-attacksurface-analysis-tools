@@ -560,44 +560,6 @@ namespace NtApiDotNet.Win32
             return builder.ToString();
         }
 
-        private static SecurityInformation DEFAULT_SECURITY_INFORMATION = SecurityInformation.Dacl
-                | SecurityInformation.Owner
-                | SecurityInformation.Label
-                | SecurityInformation.Group;
-
-        private static NtResult<SecurityDescriptor> GetServiceSecurityDescriptorInternal(
-            SafeServiceHandle handle, string type_name, SecurityInformation security_information,
-            bool throw_on_error)
-        {
-            if (handle == null || handle.IsInvalid)
-                return NtStatus.STATUS_INVALID_HANDLE.CreateResultFromError<SecurityDescriptor>(throw_on_error);
-            byte[] sd = new byte[8192];
-            return Win32NativeMethods.QueryServiceObjectSecurity(handle, security_information,
-                sd, sd.Length, out _).CreateWin32Result(throw_on_error, 
-                () => new SecurityDescriptor(sd, NtType.GetTypeByName(type_name)));
-        }
-
-        private static NtStatus SetServiceSecurityDescriptor(SafeServiceHandle handle,
-            SecurityInformation security_information, SecurityDescriptor security_descriptor, bool throw_on_error)
-        {
-            if (handle is null)
-            {
-                throw new ArgumentNullException(nameof(handle));
-            }
-
-            if (security_descriptor is null)
-            {
-                throw new ArgumentNullException(nameof(security_descriptor));
-            }
-
-            if (!Win32NativeMethods.SetServiceObjectSecurity(handle, security_information, security_descriptor.ToByteArray()))
-            {
-                return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
-            }
-
-            return NtStatus.STATUS_SUCCESS;
-        }
-
         private static IEnumerable<ServiceTriggerInformation> GetTriggersForService(SafeServiceHandle service)
         {
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
@@ -700,9 +662,9 @@ namespace NtApiDotNet.Win32
                 {
                     using (var config = QueryConfig(service, false).GetResultOrDefault())
                     {
+                        var sd = service_sec.GetResultOrDefault()?.GetSecurityDescriptor(SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault();
                         return new ServiceInformation(machine_name, name,
-                            GetServiceSecurityDescriptorInternal(service_sec.GetResultOrDefault(), SERVICE_NT_TYPE_NAME, security_information, false).GetResultOrDefault(),
-                            GetTriggersForService(service), GetServiceSidType(service),
+                            sd, GetTriggersForService(service), GetServiceSidType(service),
                             GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service),
                             config, GetDelayedStart(service)).CreateResult();
                     }
@@ -876,9 +838,8 @@ namespace NtApiDotNet.Win32
         /// <returns>The SCM security descriptor.</returns>
         public static SecurityDescriptor GetScmSecurityDescriptor()
         {
-            return GetScmSecurityDescriptor(DEFAULT_SECURITY_INFORMATION);
+            return GetScmSecurityDescriptor(SafeServiceHandle.DEFAULT_SECURITY_INFORMATION);
         }
-
 
         /// <summary>
         /// Get the security descriptor of the SCM.
@@ -896,7 +857,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                     return Win32Utils.CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
-                return GetServiceSecurityDescriptorInternal(scm, SCM_NT_TYPE_NAME, security_information, throw_on_error);
+                return scm.GetSecurityDescriptor(SCM_NT_TYPE_NAME, security_information, throw_on_error);
             }
         }
 
@@ -949,7 +910,7 @@ namespace NtApiDotNet.Win32
             {
                 if (!service.IsSuccess)
                     return service.Cast<SecurityDescriptor>();
-                return GetServiceSecurityDescriptorInternal(service.Result, SERVICE_NT_TYPE_NAME, security_information, throw_on_error);
+                return service.Result.GetSecurityDescriptor(SERVICE_NT_TYPE_NAME, security_information, throw_on_error);
             }
         }
 
@@ -1009,7 +970,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                     return Win32Utils.GetLastWin32Error().ToNtException(throw_on_error);
-                return SetServiceSecurityDescriptor(scm, security_information, security_descriptor, throw_on_error);
+                return scm.SetSecurityDescriptor(security_information, security_descriptor, throw_on_error);
             }
         }
 
@@ -1066,7 +1027,7 @@ namespace NtApiDotNet.Win32
                     return Win32Utils.CreateResultFromDosError<ServiceInformation>(throw_on_error);
                 }
 
-                return GetServiceSecurityInformation(machine_name, scm, name, DEFAULT_SECURITY_INFORMATION, throw_on_error);
+                return GetServiceSecurityInformation(machine_name, scm, name, SafeServiceHandle.DEFAULT_SECURITY_INFORMATION, throw_on_error);
             }
         }
 
@@ -1109,7 +1070,7 @@ namespace NtApiDotNet.Win32
             {
                 if (!service.IsSuccess)
                     return service.Status;
-                return SetServiceSecurityDescriptor(service.Result, security_information, security_descriptor, throw_on_error);
+                return service.Result.SetSecurityDescriptor(security_information, security_descriptor, throw_on_error);
             }
         }
 

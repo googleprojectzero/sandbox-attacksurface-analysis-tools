@@ -40,18 +40,18 @@ namespace NtApiDotNet.Security
         /// <summary>
         /// Set the object's security descriptor
         /// </summary>
-        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
         /// <param name="security_information">What parts of the security descriptor to set</param>
-        void SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information);
+        void SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information);
 
         /// <summary>
         /// Set the object's security descriptor
         /// </summary>
-        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
         /// <param name="security_information">What parts of the security descriptor to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        NtStatus SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information, bool throw_on_error);
+        NtStatus SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error);
 
         /// <summary>
         /// Get the security descriptor specifying which parts to retrieve
