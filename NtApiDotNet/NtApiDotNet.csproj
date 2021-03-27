@@ -111,6 +111,7 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
+    <Compile Include="Utilities\Collections\CollectionUtils.cs" />
     <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
     <Compile Include="Utilities\Reflection\SDKNameAttribute.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />

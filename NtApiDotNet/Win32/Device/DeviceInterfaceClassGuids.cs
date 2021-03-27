@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Collections;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace NtApiDotNet.Win32.Device
 {
@@ -163,16 +163,7 @@ namespace NtApiDotNet.Win32.Device
         /// <returns>The list of known interface guids.</returns>
         public static IDictionary<Guid, string> GetInterfaceGuids()
         {
-            Dictionary<Guid, string> dict = new Dictionary<Guid, string>();
-            foreach (var f in typeof(DeviceInterfaceClassGuids).GetFields(BindingFlags.Public | BindingFlags.Static))
-            {
-                if (f.FieldType == typeof(Guid))
-                {
-                    Guid key = (Guid)f.GetValue(null);
-                    dict[key] = f.Name;
-                }
-            }
-            return dict;
+            return CollectionUtils.GetGuidNamesFromType(typeof(DeviceInterfaceClassGuids));
         }
 
         private static Lazy<ConcurrentDictionary<Guid, string>> _guid_to_names 
