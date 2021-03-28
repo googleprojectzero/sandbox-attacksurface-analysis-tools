@@ -18,17 +18,21 @@ using System;
 namespace NtApiDotNet.Win32.Security.Policy
 {
     /// <summary>
-    /// Access rights for an LSA secret.
+    /// Access rights for an LSA account.
     /// </summary>
     [Flags]
-    public enum LsaSecretAccessRights : uint
+    public enum LsaAccountAccessRights : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("SECRET_SET_VALUE")]
-        SetValue = 0x00000001,
-        [SDKName("SECRET_QUERY_VALUE")]
-        QueryValue = 0x00000002,
+        [SDKName("ACCOUNT_VIEW")]
+        View = 0x00000001,
+        [SDKName("ACCOUNT_ADJUST_PRIVILEGES")]
+        AdjustPrivileges = 0x00000002,
+        [SDKName("ACCOUNT_ADJUST_QUOTAS")]
+        AdjustQuotas = 0x00000004,
+        [SDKName("ACCOUNT_ADJUST_SYSTEM_ACCESS")]
+        AdjustSystemAccess = 0x00000008,
         [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
         [SDKName("GENERIC_WRITE")]

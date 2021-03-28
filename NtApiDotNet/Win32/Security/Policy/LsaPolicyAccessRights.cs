@@ -24,6 +24,7 @@ namespace NtApiDotNet.Win32.Security.Policy
     public enum LsaPolicyAccessRights : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        None = 0,
         [SDKName("POLICY_VIEW_LOCAL_INFORMATION")]
         ViewLocalInformation = 0x00000001,
         [SDKName("POLICY_VIEW_AUDIT_INFORMATION")]

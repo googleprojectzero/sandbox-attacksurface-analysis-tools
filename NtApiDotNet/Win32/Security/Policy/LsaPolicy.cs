@@ -81,6 +81,26 @@ namespace NtApiDotNet.Win32.Security.Policy
             }
         }
 
+        private static IReadOnlyList<Sid> ParseSids(SafeLsaMemoryBuffer buffer, int count)
+        {
+            using (buffer)
+            {
+                buffer.Initialize<LSA_ENUMERATION_INFORMATION>((uint)count);
+                LSA_ENUMERATION_INFORMATION[] ss = new LSA_ENUMERATION_INFORMATION[count];
+                buffer.ReadArray(0, ss, 0, count);
+                return ss.Select(s => new Sid(s.Sid)).ToList().AsReadOnly();
+            }
+        }
+
+        private static IReadOnlyList<string> ParseRights(SafeLsaMemoryBuffer buffer, int count)
+        {
+            using (buffer)
+            {
+                buffer.Initialize<UnicodeStringOut>((uint)count);
+                return buffer.ReadArray<UnicodeStringOut>(0, count).Select(n => n.ToString()).ToList().AsReadOnly();
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -134,6 +154,67 @@ namespace NtApiDotNet.Win32.Security.Policy
         public IReadOnlyList<SidName> LookupSids2(IEnumerable<Sid> sids, LsaLookupOptionFlags options)
         {
             return LookupSids2(sids, options, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate accounts with a user right.
+        /// </summary>
+        /// <param name="user_right">The name of the user right.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SIDs with the user right.</returns>
+        public NtResult<IReadOnlyList<Sid>> EnumerateAccountsWithUserRight(string user_right, bool throw_on_error)
+        {
+            if (user_right is null)
+            {
+                throw new ArgumentNullException(nameof(user_right));
+            }
+
+            NtStatus status = SecurityNativeMethods.LsaEnumerateAccountsWithUserRight(_handle, 
+                new UnicodeString(user_right), out SafeLsaMemoryBuffer buffer, out int count);
+            if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                return new List<Sid>().AsReadOnly().CreateResult<IReadOnlyList<Sid>>();
+            return status.CreateResult(throw_on_error, () => ParseSids(buffer, count));
+        }
+
+        /// <summary>
+        /// Enumerate accounts with a user right.
+        /// </summary>
+        /// <param name="user_right">The name of the user right.</param>
+        /// <returns>The list of SIDs with the user right.</returns>
+        public IReadOnlyList<Sid> EnumerateAccountsWithUserRight(string user_right)
+        {
+            return EnumerateAccountsWithUserRight(user_right, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate account rights for a SID.
+        /// </summary>
+        /// <param name="sid">The SID to enumerate for.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of assigned account rights.</returns>
+        public NtResult<IReadOnlyList<string>> EnumerateAccountRights(Sid sid, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            using (var sid_buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaEnumerateAccountRights(_handle, sid_buffer,
+                    out SafeLsaMemoryBuffer buffer, out int count)
+                    .CreateResult(throw_on_error, () => ParseRights(buffer, count));
+            }
+        }
+
+        /// <summary>
+        /// Enumerate account rights for a SID.
+        /// </summary>
+        /// <param name="sid">The SID to enumerate for.</param>
+        /// <returns>The list of assigned account rights.</returns>
+        public IReadOnlyList<string> EnumerateAccountRights(Sid sid)
+        {
+            return EnumerateAccountRights(sid, true).Result;
         }
 
         #endregion
