@@ -26,6 +26,11 @@ namespace NtApiDotNet.Win32.Security.Policy
         public const string LSA_POLICY_NT_TYPE_NAME = "LsaPolicy";
 
         /// <summary>
+        /// The name of the fake NT type for a LSA secret.
+        /// </summary>
+        public const string LSA_SECRET_NT_TYPE_NAME = "LsaSecret";
+
+        /// <summary>
         /// Generic generic mapping for LSA policy security.
         /// </summary>
         /// <returns>The generic mapping for the LSA policy.</returns>
@@ -45,7 +50,20 @@ namespace NtApiDotNet.Win32.Security.Policy
             };
         }
 
+        public static GenericMapping GetLsaSecretGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = LsaSecretAccessRights.ReadControl | LsaSecretAccessRights.QueryValue,
+                GenericWrite = LsaSecretAccessRights.ReadControl | LsaSecretAccessRights.SetValue,
+                GenericExecute = LsaPolicyAccessRights.ReadControl,
+                GenericAll = LsaSecretAccessRights.ReadControl | LsaSecretAccessRights.WriteDac | LsaSecretAccessRights.WriteOwner | LsaSecretAccessRights.Delete |
+                    LsaSecretAccessRights.QueryValue | LsaSecretAccessRights.SetValue
+            };
+        }
+
         public static NtType LsaPolicyNtType => NtType.GetTypeByName(LSA_POLICY_NT_TYPE_NAME);
+        public static NtType LsaSecretNtType => NtType.GetTypeByName(LSA_SECRET_NT_TYPE_NAME);
 
         #endregion
     }

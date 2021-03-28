@@ -344,6 +344,7 @@
     <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
     <Compile Include="Win32\Security\Policy\LsaPolicy.cs" />
     <Compile Include="Win32\Security\Policy\LsaPolicyUtils.cs" />
+    <Compile Include="Win32\Security\Policy\LsaSecretAccessRights.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

@@ -23,6 +23,9 @@ namespace NtApiDotNet.Win32.Security.Policy
             return new NtType[] {
                 new NtType(LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME, LsaPolicyUtils.GetLsaPolicyGenericMapping(),
                         typeof(LsaPolicyAccessRights), typeof(LsaPolicyAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp),
+                new NtType(LsaPolicyUtils.LSA_SECRET_NT_TYPE_NAME, LsaPolicyUtils.GetLsaSecretGenericMapping(),
+                        typeof(LsaSecretAccessRights), typeof(LsaSecretAccessRights),
                         MandatoryLabelPolicy.NoWriteUp)
             };
         }
