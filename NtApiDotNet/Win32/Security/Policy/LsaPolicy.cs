@@ -214,6 +214,89 @@ namespace NtApiDotNet.Win32.Security.Policy
             return EnumerateAccountRights(sid, true).Result;
         }
 
+        /// <summary>
+        /// Add account rights to an account.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="account_rights">The list of account rights to add.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus AddAccountRights(Sid sid, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            if (account_rights is null)
+            {
+                throw new ArgumentNullException(nameof(account_rights));
+            }
+
+            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
+            if (!account_rights.Any())
+                return NtStatus.STATUS_SUCCESS;
+
+            using (var sid_buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaAddAccountRights(Handle, sid_buffer,
+                    rights, rights.Length).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Add account rights to an account.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="account_rights">The list of account rights to add.</param>
+        public void AddAccountRights(Sid sid, IEnumerable<string> account_rights)
+        {
+            AddAccountRights(sid, account_rights, true);
+        }
+
+        /// <summary>
+        /// Remove account rights from an account.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="remove_all">True to remove all rights.</param>
+        /// <param name="account_rights">The account rights to add.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus RemoveAccountRights(Sid sid, bool remove_all, IEnumerable<string> account_rights, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            if (account_rights is null)
+            {
+                throw new ArgumentNullException(nameof(account_rights));
+            }
+
+            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
+
+            if (!account_rights.Any() && !remove_all)
+                return NtStatus.STATUS_SUCCESS;
+
+            using (var sid_buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaRemoveAccountRights(Handle,
+                    sid_buffer, remove_all, rights, rights.Length).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Remove account rights from an account.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="remove_all">True to remove all rights.</param>
+        /// <param name="account_rights">The account rights to add.</param>
+        public void RemoveAccountRights(Sid sid, bool remove_all, IEnumerable<string> account_rights)
+        {
+            RemoveAccountRights(sid, remove_all, account_rights, true);
+        }
+
         #endregion
 
         #region Static Methods

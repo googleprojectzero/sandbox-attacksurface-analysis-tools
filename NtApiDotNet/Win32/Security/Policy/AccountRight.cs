@@ -95,21 +95,12 @@ namespace NtApiDotNet.Win32.Security.Policy
                 throw new ArgumentNullException(nameof(account_rights));
             }
 
-            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
-
-            if (!account_rights.Any())
-                return NtStatus.STATUS_SUCCESS;
-
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, 
+            using (var policy = LsaPolicy.Open(system_name, 
                 LsaPolicyAccessRights.LookupNames | LsaPolicyAccessRights.CreateAccount, throw_on_error))
             {
                 if (!policy.IsSuccess)
                     return policy.Status;
-                using (var sid_buffer = sid.ToSafeBuffer())
-                {
-                    return SecurityNativeMethods.LsaAddAccountRights(policy.Result, sid_buffer,
-                        rights, rights.Length).ToNtException(throw_on_error);
-                }
+                return policy.Result.AddAccountRights(sid, account_rights, throw_on_error);
             }
         }
 
@@ -125,20 +116,11 @@ namespace NtApiDotNet.Win32.Security.Policy
                 throw new ArgumentNullException(nameof(account_rights));
             }
 
-            var rights = account_rights.Select(s => new UnicodeStringIn(s)).ToArray();
-
-            if (!account_rights.Any())
-                return NtStatus.STATUS_SUCCESS;
-
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.LookupNames, throw_on_error))
+            using (var policy = LsaPolicy.Open(system_name, LsaPolicyAccessRights.LookupNames, throw_on_error))
             {
                 if (!policy.IsSuccess)
                     return policy.Status;
-                using (var sid_buffer = sid.ToSafeBuffer())
-                {
-                    return SecurityNativeMethods.LsaRemoveAccountRights(policy.Result, 
-                        sid_buffer, remove_all, rights, rights.Length).ToNtException(throw_on_error);
-                }
+                return policy.Result.RemoveAccountRights(sid, remove_all, account_rights, throw_on_error);
             }
         }
 
