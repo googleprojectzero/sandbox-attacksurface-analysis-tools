@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.DirectoryService;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authorization;
 using NtApiDotNet.Win32.Security.Native;
+using NtApiDotNet.Win32.Security.Policy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -693,10 +694,15 @@ namespace NtApiDotNet.Win32.Security
         [SupportedVersion(SupportedVersion.Windows8)]
         public static NtResult<SidName> LookupInternetName(Sid sid, bool throw_on_error)
         {
-            if (NtObjectUtils.IsWindows7OrLess)
-                throw new NotSupportedException($"{nameof(LookupInternetName)} isn't supported until Windows 8");
+            using (var policy = LsaPolicy.Open(LsaPolicyAccessRights.LookupNames, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                {
+                    return policy.Cast<SidName>();
+                }
 
-            return LookupSids2(null, new Sid[] { sid }, LsaLookupOptions.LSA_LOOKUP_PREFER_INTERNET_NAMES, throw_on_error).Map(e => e.First());
+                return policy.Result.LookupSids2(new Sid[] { sid }, LsaLookupOptionFlags.PreferInternetNames, throw_on_error).Map(e => e.First());
+            }
         }
 
         /// <summary>
@@ -843,55 +849,6 @@ namespace NtApiDotNet.Win32.Security
                         => p = progress_function(n, s, p, t);
             }
             return null;
-        }
-
-        private static IEnumerable<SidName> GetSidNames(Sid[] sids, SafeLsaMemoryBuffer domains, SafeLsaMemoryBuffer names)
-        {
-            List<SidName> ret = new List<SidName>();
-            domains.Initialize<LSA_REFERENCED_DOMAIN_LIST>(1);
-            names.Initialize<LSA_TRANSLATED_NAME>((uint)sids.Length);
-
-            var domain_list = domains.Read<LSA_REFERENCED_DOMAIN_LIST>(0);
-            var domains_entries = NtProcess.Current.ReadMemoryArray<LSA_TRUST_INFORMATION>(domain_list.Domains.ToInt64(), domain_list.Entries);
-            var name_list = names.ReadArray<LSA_TRANSLATED_NAME>(0, sids.Length);
-
-            for (int i = 0; i < sids.Length; ++i)
-            {
-                var name = name_list[i];
-
-                ret.Add(new SidName(sids[i], name.GetDomain(domains_entries),
-                    name.GetName(), SidNameSource.Account, name.Use, false));
-            }
-            return ret.AsReadOnly();
-        }
-
-        private static NtResult<IEnumerable<SidName>> LookupSids2(string system_name, Sid[] sids, LsaLookupOptions options, bool throw_on_error)
-        {
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.LookupNames, throw_on_error))
-            {
-                if (!policy.IsSuccess)
-                {
-                    return policy.Cast<IEnumerable<SidName>>();
-                }
-
-                using (var list = new DisposableList())
-                {
-                    var sid_ptrs = sids.Select(s => list.AddSid(s).DangerousGetHandle()).ToArray();
-                    var status = SecurityNativeMethods.LsaLookupSids2(policy.Result, options, sid_ptrs.Length, sid_ptrs, 
-                        out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
-                    if (!status.IsSuccess())
-                    {
-                        if (status == NtStatus.STATUS_NONE_MAPPED)
-                        {
-                            list.Add(domains);
-                            list.Add(names);
-                        }
-                        return status.CreateResultFromError<IEnumerable<SidName>>(throw_on_error);
-                    }
-
-                    return GetSidNames(sids, domains, names).CreateResult();
-                }
-            }
         }
 
         private static NtStatus LsaStorePrivateDataInternal(string system_name, string keyname, byte[] data, bool throw_on_error)

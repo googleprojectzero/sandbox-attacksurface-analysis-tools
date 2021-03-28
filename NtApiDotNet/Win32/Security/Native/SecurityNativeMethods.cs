@@ -115,14 +115,6 @@ namespace NtApiDotNet.Win32.Security.Native
         }
     }
 
-    [Flags]
-    internal enum LsaLookupOptions : uint
-    {
-        LSA_LOOKUP_RETURN_LOCAL_NAMES = 0,
-        LSA_LOOKUP_PREFER_INTERNET_NAMES = 0x40000000,
-        LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID = 0x80000000
-    }
-
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -757,9 +749,18 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaLookupSids(
+            SafeLsaHandle PolicyHandle,
+            int Count,
+            IntPtr[] Sids,
+            out SafeLsaMemoryBuffer ReferencedDomains,
+            out SafeLsaMemoryBuffer Names
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaLookupSids2(
             SafeLsaHandle PolicyHandle,
-            LsaLookupOptions LookupOptions,
+            LsaLookupOptionFlags LookupOptions,
             int Count,
             IntPtr[] Sids,
             out SafeLsaMemoryBuffer ReferencedDomains,

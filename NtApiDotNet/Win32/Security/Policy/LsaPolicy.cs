@@ -14,7 +14,10 @@
 
 using NtApiDotNet.Security;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Policy
 {
@@ -26,18 +29,119 @@ namespace NtApiDotNet.Win32.Security.Policy
         #region Private Members
         private readonly LsaPolicyAccessRights _granted_access;
         private readonly SafeLsaHandle _handle;
+        private readonly string _system_name;
+        private delegate NtStatus LookupSidsDelegate(IntPtr[] sid_ptrs, out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
 
-        private LsaPolicy(SafeLsaHandle handle, LsaPolicyAccessRights granted_access)
+        private LsaPolicy(SafeLsaHandle handle, LsaPolicyAccessRights granted_access, string system_name)
         {
             _handle = handle;
             _granted_access = LsaPolicyUtils.GetLsaPolicyGenericMapping().MapMask(granted_access).ToSpecificAccess<LsaPolicyAccessRights>();
+            _system_name = system_name;
         }
+
+        private static IReadOnlyList<SidName> GetSidNames(Sid[] sids, SafeLsaMemoryBuffer domains, SafeLsaMemoryBuffer names)
+        {
+            List<SidName> ret = new List<SidName>();
+            domains.Initialize<LSA_REFERENCED_DOMAIN_LIST>(1);
+            names.Initialize<LSA_TRANSLATED_NAME>((uint)sids.Length);
+
+            var domain_list = domains.Read<LSA_REFERENCED_DOMAIN_LIST>(0);
+            var domains_entries = NtProcess.Current.ReadMemoryArray<LSA_TRUST_INFORMATION>(domain_list.Domains.ToInt64(), domain_list.Entries);
+            var name_list = names.ReadArray<LSA_TRANSLATED_NAME>(0, sids.Length);
+
+            for (int i = 0; i < sids.Length; ++i)
+            {
+                var name = name_list[i];
+
+                ret.Add(new SidName(sids[i], name.GetDomain(domains_entries),
+                    name.GetName(), SidNameSource.Account, name.Use, false));
+            }
+            return ret.AsReadOnly();
+        }
+
+        private static NtResult<IReadOnlyList<SidName>> LookupSids(IEnumerable<Sid> sids, LookupSidsDelegate func, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var sid_ptrs = sids.Select(s => list.AddSid(s).DangerousGetHandle()).ToArray();
+                var status = func(sid_ptrs, out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
+                if (!status.IsSuccess())
+                {
+                    if (status == NtStatus.STATUS_NONE_MAPPED)
+                    {
+                        list.Add(domains);
+                        list.Add(names);
+                    }
+                    return status.CreateResultFromError<IReadOnlyList<SidName>>(throw_on_error);
+                }
+
+                list.Add(domains);
+                list.Add(names);
+                return GetSidNames(sids.ToArray(), domains, names).CreateResult();
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Lookup names for SIDs.
+        /// </summary>
+        /// <param name="sids">The list of SIDs to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public NtResult<IReadOnlyList<SidName>> LookupSids(IEnumerable<Sid> sids, bool throw_on_error)
+        {
+            return LookupSids(sids, (IntPtr[] s, out SafeLsaMemoryBuffer d, out SafeLsaMemoryBuffer n)
+                => SecurityNativeMethods.LsaLookupSids(_handle, s.Length, s, out d, out n), throw_on_error);
+        }
+
+        /// <summary>
+        /// Lookup names for SIDs.
+        /// </summary>
+        /// <param name="sids">The list of SIDs to lookup.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public IReadOnlyList<SidName> LookupSids(IEnumerable<Sid> sids)
+        {
+            return LookupSids(sids, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup names for SIDs.
+        /// </summary>
+        /// <param name="sids">The list of SIDs to lookup.</param>
+        /// <param name="options">Lookup options flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        [SupportedVersion(SupportedVersion.Windows8)]
+        public NtResult<IReadOnlyList<SidName>> LookupSids2(IEnumerable<Sid> sids, LsaLookupOptionFlags options, bool throw_on_error)
+        {
+            if (NtObjectUtils.IsWindows7OrLess)
+                throw new NotSupportedException($"{nameof(LookupSids2)} isn't supported until Windows 8");
+
+            return LookupSids(sids, (IntPtr[] s, out SafeLsaMemoryBuffer d, out SafeLsaMemoryBuffer n) 
+                => SecurityNativeMethods.LsaLookupSids2(_handle, options, s.Length, s, out d, out n), throw_on_error);
+        }
+
+        /// <summary>
+        /// Lookup names for SIDs.
+        /// </summary>
+        /// <param name="sids">The list of SIDs to lookup.</param>
+        /// <param name="options">Lookup options flags.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        [SupportedVersion(SupportedVersion.Windows8)]
+        public IReadOnlyList<SidName> LookupSids2(IEnumerable<Sid> sids, LsaLookupOptionFlags options)
+        {
+            return LookupSids2(sids, options, true).Result;
+        }
+
         #endregion
 
         #region INtObjectSecurity Implementation
         NtType INtObjectSecurity.NtType => NtType.GetTypeByName(LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME);
 
-        string INtObjectSecurity.ObjectName => "LSA Policy";
+        string INtObjectSecurity.ObjectName => string.IsNullOrEmpty(_system_name) ? "LSA Policy" : $@"LSA Policy (\\{_system_name}";
 
         bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)
         {
@@ -102,7 +206,10 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The opened policy.</returns>
         public static NtResult<LsaPolicy> Open(string system_name, LsaPolicyAccessRights desired_access, bool throw_on_error)
         {
-            return SafeLsaHandle.OpenPolicy(system_name, desired_access, throw_on_error).Map(h => new LsaPolicy(h, desired_access));
+            UnicodeString str = !string.IsNullOrEmpty(system_name) ? new UnicodeString(system_name) : null;
+
+            return SecurityNativeMethods.LsaOpenPolicy(str, new ObjectAttributes(),
+                desired_access, out SafeLsaHandle policy).CreateResult(throw_on_error, () => new LsaPolicy(policy, desired_access, system_name));
         }
 
         /// <summary>
