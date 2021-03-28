@@ -44,19 +44,32 @@ namespace NtApiDotNet
     internal class NtTypeFactory
     {
         private const string FACTORY_TYPE_NAME = "NtTypeFactoryImpl";
+        private readonly IEnumerable<Enum> _query_info_class;
+        private readonly IEnumerable<Enum> _set_info_class;
+
+        private static IEnumerable<Enum> GetEnumValues(Type enum_type)
+        {
+            if (enum_type == null)
+                return new Enum[0];
+            if (!enum_type.IsEnum)
+                throw new ArgumentException("Information class type must be an enumerated value.");
+
+            return Enum.GetValues(enum_type).Cast<Enum>().ToList().AsReadOnly();
+        }
 
         public Type ObjectType { get; }
         public Type AccessRightsType { get; }
         public Type ContainerAccessRightsType { get; }
         public bool CanOpen { get; private set; }
         public MandatoryLabelPolicy DefaultMandatoryPolicy { get; }
+
         public virtual IEnumerable<Enum> GetQueryInfoClass()
         {
-            return new Enum[0];
+            return _query_info_class;
         }
         public virtual IEnumerable<Enum> GetSetInfoClass()
         {
-            return new Enum[0];
+            return _set_info_class;
         }
 
         public virtual NtObject FromHandle(SafeKernelObjectHandle handle)
@@ -70,12 +83,21 @@ namespace NtApiDotNet
         }
 
         internal NtTypeFactory(Type access_rights_type, Type container_access_rights_type, Type object_type, bool can_open, MandatoryLabelPolicy default_policy)
+            : this(access_rights_type, container_access_rights_type, object_type, can_open, default_policy, null, null)
+        {
+        }
+
+        internal NtTypeFactory(Type access_rights_type, Type container_access_rights_type, Type object_type, bool can_open, 
+            MandatoryLabelPolicy default_policy, Type query_info_class_type, Type set_info_class_type) 
+            
         {
             AccessRightsType = access_rights_type;
             ContainerAccessRightsType = container_access_rights_type;
             ObjectType = object_type;
             CanOpen = can_open;
             DefaultMandatoryPolicy = default_policy;
+            _query_info_class = GetEnumValues(query_info_class_type);
+            _set_info_class = GetEnumValues(set_info_class_type);
         }
 
         public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)

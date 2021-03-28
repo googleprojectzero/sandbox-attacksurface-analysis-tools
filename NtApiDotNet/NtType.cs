@@ -13,11 +13,10 @@
 //  limitations under the License.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Reflection;
-using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
