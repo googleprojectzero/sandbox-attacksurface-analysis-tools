@@ -19,6 +19,17 @@ namespace NtApiDotNet.Win32.Security.Policy
     /// </summary>
     internal static class LsaPolicyUtils
     {
+        #region Internal Methods
+        internal static UnicodeStringBytesSafeBuffer ToUnicodeStringBuffer(this byte[] data)
+        {
+            if (data == null)
+            {
+                return UnicodeStringBytesSafeBuffer.Null;
+            }
+            return new UnicodeStringBytesSafeBuffer(data);
+        }
+        #endregion
+
         #region Static Methods
         /// <summary>
         /// The name of the fake NT type for a LSA policy.

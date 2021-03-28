@@ -123,6 +123,28 @@ namespace NtApiDotNet.Win32.Security.Policy
 
         #endregion
 
+        #region Public Methods
+
+        /// <summary>
+        /// Delete the object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Delete(bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaDeleteObject(Handle).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the object.
+        /// </summary>
+        public void Delete()
+        {
+            Delete(true);
+        }
+
+        #endregion
+
         #region IDisposable implementation.
         /// <summary>
         /// Dispose the policy.

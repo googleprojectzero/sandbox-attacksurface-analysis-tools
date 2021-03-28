@@ -29,6 +29,12 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
         }
 
+        public UnicodeStringOut GetUnicodeString()
+        {
+            Initialize<UnicodeStringOut>(1);
+            return Read<UnicodeStringOut>(0);
+        }
+
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

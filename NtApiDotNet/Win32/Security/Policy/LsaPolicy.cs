@@ -316,8 +316,7 @@ namespace NtApiDotNet.Win32.Security.Policy
                 return status.CreateResultFromError<byte[]>(throw_on_error);
             using (data)
             {
-                data.Initialize<UnicodeStringOut>(1);
-                return data.Read<UnicodeStringOut>(0).ToArray().CreateResult();
+                return data.GetUnicodeString().ToArray().CreateResult();
             }
         }
 
@@ -393,6 +392,65 @@ namespace NtApiDotNet.Win32.Security.Policy
         public LsaSecret OpenSecret(string name)
         {
             return OpenSecret(name, LsaSecretAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <param name="desired_access">The desired access for the secret.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created secret.</returns>
+        public NtResult<LsaSecret> CreateSecret(string name, LsaSecretAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaCreateSecret(Handle, new UnicodeString(name),
+                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name));
+        }
+
+        /// <summary>
+        /// Create an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <param name="desired_access">The desired access for the secret.</param>
+        /// <returns>The created secret.</returns>
+        public LsaSecret CreateSecret(string name, LsaSecretAccessRights desired_access)
+        {
+            return CreateSecret(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Create an LSA secret object with maximum access.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <returns>The created secret.</returns>
+        public LsaSecret CreateSecret(string name)
+        {
+            return CreateSecret(name, LsaSecretAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Delete an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus DeleteSecret(string name, bool throw_on_error)
+        {
+            using (var secret = OpenSecret(name, LsaSecretAccessRights.Delete, throw_on_error))
+            {
+                if (!secret.IsSuccess)
+                    return secret.Status;
+                return secret.Result.Delete(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Delete an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        public void DeleteSecret(string name)
+        {
+            DeleteSecret(name, true);
         }
 
         #endregion

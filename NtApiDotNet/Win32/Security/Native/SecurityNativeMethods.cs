@@ -789,6 +789,35 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeLsaHandle SecretHandle
         );
 
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQuerySecret(
+            SafeLsaHandle SecretHandle,
+            out SafeLsaMemoryBuffer CurrentValue,
+            LargeInteger CurrentValueSetTime,
+            out SafeLsaMemoryBuffer OldValue,
+            LargeInteger OldValueSetTime
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaCreateSecret(
+            SafeLsaHandle PolicyHandle,
+            [In] UnicodeString SecretName,
+            LsaSecretAccessRights DesiredAccess,
+            out SafeLsaHandle SecretHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaSetSecret(
+            SafeLsaHandle SecretHandle,
+            UnicodeStringBytesSafeBuffer CurrentValue,
+            UnicodeStringBytesSafeBuffer OldValue
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaDeleteObject(
+            SafeLsaHandle ObjectHandle
+        );
+
         [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool CertFreeCertificateContext(
             IntPtr pCertContext
