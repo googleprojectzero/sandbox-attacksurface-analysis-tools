@@ -29,11 +29,11 @@ namespace NtApiDotNet.Win32.Security.Policy
         #endregion
 
         #region Private Protected Members
-        private protected LsaObject(SafeLsaHandle handle, AccessMask granted_access, NtType nt_type, string object_name)
+        private protected LsaObject(SafeLsaHandle handle, AccessMask granted_access, string type_name, string object_name)
         {
             _handle = handle;
             _granted_access = granted_access;
-            NtType = nt_type;
+            NtType = NtType.GetTypeByName(type_name);
             ObjectName = object_name;
         }
         #endregion

@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Security;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -24,18 +23,16 @@ namespace NtApiDotNet.Win32.Security.Policy
     /// <summary>
     /// Class to represent the LSA policy.
     /// </summary>
-    public sealed class LsaPolicy : IDisposable, INtObjectSecurity
+    public sealed class LsaPolicy : LsaObject
     {
         #region Private Members
-        private readonly LsaPolicyAccessRights _granted_access;
-        private readonly SafeLsaHandle _handle;
         private readonly string _system_name;
         private delegate NtStatus LookupSidsDelegate(IntPtr[] sid_ptrs, out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
 
-        private LsaPolicy(SafeLsaHandle handle, LsaPolicyAccessRights granted_access, string system_name)
+        private LsaPolicy(SafeLsaHandle handle, LsaPolicyAccessRights granted_access, string system_name) 
+            : base(handle, granted_access, LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME, 
+                  string.IsNullOrEmpty(system_name) ? "LSA Policy" : $@"LSA Policy (\\{system_name}")
         {
-            _handle = handle;
-            _granted_access = LsaPolicyUtils.GetLsaPolicyGenericMapping().MapMask(granted_access).ToSpecificAccess<LsaPolicyAccessRights>();
             _system_name = system_name;
         }
 
@@ -114,7 +111,7 @@ namespace NtApiDotNet.Win32.Security.Policy
         public NtResult<IReadOnlyList<SidName>> LookupSids(IEnumerable<Sid> sids, bool throw_on_error)
         {
             return LookupSids(sids, (IntPtr[] s, out SafeLsaMemoryBuffer d, out SafeLsaMemoryBuffer n)
-                => SecurityNativeMethods.LsaLookupSids(_handle, s.Length, s, out d, out n), throw_on_error);
+                => SecurityNativeMethods.LsaLookupSids(Handle, s.Length, s, out d, out n), throw_on_error);
         }
 
         /// <summary>
@@ -141,7 +138,7 @@ namespace NtApiDotNet.Win32.Security.Policy
                 throw new NotSupportedException($"{nameof(LookupSids2)} isn't supported until Windows 8");
 
             return LookupSids(sids, (IntPtr[] s, out SafeLsaMemoryBuffer d, out SafeLsaMemoryBuffer n) 
-                => SecurityNativeMethods.LsaLookupSids2(_handle, options, s.Length, s, out d, out n), throw_on_error);
+                => SecurityNativeMethods.LsaLookupSids2(Handle, options, s.Length, s, out d, out n), throw_on_error);
         }
 
         /// <summary>
@@ -169,7 +166,7 @@ namespace NtApiDotNet.Win32.Security.Policy
                 throw new ArgumentNullException(nameof(user_right));
             }
 
-            NtStatus status = SecurityNativeMethods.LsaEnumerateAccountsWithUserRight(_handle, 
+            NtStatus status = SecurityNativeMethods.LsaEnumerateAccountsWithUserRight(Handle, 
                 new UnicodeString(user_right), out SafeLsaMemoryBuffer buffer, out int count);
             if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
                 return new List<Sid>().AsReadOnly().CreateResult<IReadOnlyList<Sid>>();
@@ -201,7 +198,7 @@ namespace NtApiDotNet.Win32.Security.Policy
 
             using (var sid_buffer = sid.ToSafeBuffer())
             {
-                return SecurityNativeMethods.LsaEnumerateAccountRights(_handle, sid_buffer,
+                return SecurityNativeMethods.LsaEnumerateAccountRights(Handle, sid_buffer,
                     out SafeLsaMemoryBuffer buffer, out int count)
                     .CreateResult(throw_on_error, () => ParseRights(buffer, count));
             }
@@ -215,64 +212,6 @@ namespace NtApiDotNet.Win32.Security.Policy
         public IReadOnlyList<string> EnumerateAccountRights(Sid sid)
         {
             return EnumerateAccountRights(sid, true).Result;
-        }
-
-        #endregion
-
-        #region INtObjectSecurity Implementation
-        NtType INtObjectSecurity.NtType => NtType.GetTypeByName(LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME);
-
-        string INtObjectSecurity.ObjectName => string.IsNullOrEmpty(_system_name) ? "LSA Policy" : $@"LSA Policy (\\{_system_name}";
-
-        bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)
-        {
-            // We can't tell if we really have access or not, so just assume we do.
-            if (_granted_access.HasFlagSet(LsaPolicyAccessRights.MaximumAllowed))
-                return true;
-            return _granted_access.HasFlagAllSet(access.ToSpecificAccess<LsaPolicyAccessRights>());
-        }
-
-        /// <summary>
-        /// Get the security descriptor specifying which parts to retrieve
-        /// </summary>
-        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The security descriptor</returns>
-        public NtResult <SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
-        {
-            return _handle.QuerySecurity(security_information, LsaPolicyUtils.LsaPolicyNtType, throw_on_error);
-        }
-
-        /// <summary>
-        /// Get the security descriptor specifying which parts to retrieve
-        /// </summary>
-        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
-        /// <returns>The security descriptor</returns>
-        public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
-        {
-            return GetSecurityDescriptor(security_information, true).Result;
-        }
-
-        /// <summary>
-        /// Set the object's security descriptor
-        /// </summary>
-        /// <param name="security_descriptor">The security descriptor to set.</param>
-        /// <param name="security_information">What parts of the security descriptor to set</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public NtStatus SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error)
-        {
-            return _handle.SetSecurity(security_information, security_descriptor, throw_on_error);
-        }
-
-        /// <summary>
-        /// Set the object's security descriptor
-        /// </summary>
-        /// <param name="security_descriptor">The security descriptor to set.</param>
-        /// <param name="security_information">What parts of the security descriptor to set</param>
-        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information)
-        {
-            SetSecurityDescriptor(security_descriptor, security_information, true);
         }
 
         #endregion
@@ -332,16 +271,6 @@ namespace NtApiDotNet.Win32.Security.Policy
         public static LsaPolicy Open()
         {
             return Open(LsaPolicyAccessRights.MaximumAllowed);
-        }
-        #endregion
-
-        #region IDisposable implementation.
-        /// <summary>
-        /// Dispose the policy.
-        /// </summary>
-        public void Dispose()
-        {
-            ((IDisposable)_handle).Dispose();
         }
         #endregion
     }
