@@ -65,6 +65,44 @@ namespace NtApiDotNet.Win32.Security.Policy
         }
 
         /// <summary>
+        /// Query the current value of the secret.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The current value of the secret.</returns>
+        public NtResult<byte[]> QueryCurrent(bool throw_on_error)
+        {
+            return Query(throw_on_error).Map(v => v.CurrentValue);
+        }
+
+        /// <summary>
+        /// Query the current value of the secret.
+        /// </summary>
+        /// <returns>The current value of the secret.</returns>
+        public byte[] QueryCurrent()
+        {
+            return QueryCurrent(true).Result;
+        }
+
+        /// <summary>
+        /// Query the old value of the secret.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The old value of the secret.</returns>
+        public NtResult<byte[]> QueryOld(bool throw_on_error)
+        {
+            return Query(throw_on_error).Map(v => v.OldValue);
+        }
+
+        /// <summary>
+        /// Query the old value of the secret.
+        /// </summary>
+        /// <returns>The old value of the secret.</returns>
+        public byte[] QueryOld()
+        {
+            return QueryCurrent(true).Result;
+        }
+
+        /// <summary>
         /// Set the value of the secret.
         /// </summary>
         /// <param name="current_value">The current value to set.</param>
