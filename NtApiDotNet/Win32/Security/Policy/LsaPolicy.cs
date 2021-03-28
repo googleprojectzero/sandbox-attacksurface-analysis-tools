@@ -453,6 +453,184 @@ namespace NtApiDotNet.Win32.Security.Policy
             DeleteSecret(name, true);
         }
 
+        /// <summary>
+        /// Open an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="desired_access">The desired access for the account.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened account.</returns>
+        public NtResult<LsaAccount> OpenAccount(Sid sid, LsaAccountAccessRights desired_access, bool throw_on_error)
+        {
+            using (var buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaOpenAccount(Handle, buffer,
+                    desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
+                    () => new LsaAccount(handle, desired_access, sid));
+            }
+        }
+
+        /// <summary>
+        /// Open an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="desired_access">The desired access for the account.</param>
+        /// <returns>The opened account.</returns>
+        public LsaAccount OpenAccount(Sid sid, LsaAccountAccessRights desired_access)
+        {
+            return OpenAccount(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an LSA account object with maximum access.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <returns>The opened account.</returns>
+        public LsaAccount OpenAccount(Sid sid)
+        {
+            return OpenAccount(sid, LsaAccountAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="desired_access">The desired access for the account.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created account.</returns>
+        public NtResult<LsaAccount> CreateAccount(Sid sid, LsaAccountAccessRights desired_access, bool throw_on_error)
+        {
+            using (var buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaCreateAccount(Handle, buffer,
+                    desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
+                    () => new LsaAccount(handle, desired_access, sid));
+            }
+        }
+
+        /// <summary>
+        /// Create an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="desired_access">The desired access for the account.</param>
+        /// <returns>The created account.</returns>
+        public LsaAccount CreateAccount(Sid sid, LsaAccountAccessRights desired_access)
+        {
+            return CreateAccount(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Create an LSA account object with maximum access.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <returns>The created account.</returns>
+        public LsaAccount CreateAccount(Sid sid)
+        {
+            return CreateAccount(sid, LsaAccountAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Delete an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus DeleteAccount(Sid sid, bool throw_on_error)
+        {
+            using (var account = OpenAccount(sid, LsaAccountAccessRights.Delete, throw_on_error))
+            {
+                if (!account.IsSuccess)
+                    return account.Status;
+                return account.Result.Delete(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Delete an LSA account object.
+        /// </summary>
+        /// <param name="sid">The SID of the account.</param>
+        public void DeleteAccount(Sid sid)
+        {
+            DeleteAccount(sid, true);
+        }
+
+        /// <summary>
+        /// Enumerate account SIDs in policy.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of account SIDs.</returns>
+        public NtResult<IReadOnlyList<Sid>> EnumerateAccounts(bool throw_on_error)
+        {
+            int context = 0;
+            List<Sid> ret = new List<Sid>();
+            NtStatus status;
+            do
+            {
+                status = SecurityNativeMethods.LsaEnumerateAccounts(Handle, ref context, out SafeLsaMemoryBuffer buffer, 1000, out int entries_read);
+                if (!status.IsSuccess())
+                {
+                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                    {
+                        break;
+                    }
+                    return status.CreateResultFromError<IReadOnlyList<Sid>>(throw_on_error);
+                }
+
+                using (buffer)
+                {
+                    buffer.Initialize<LSAPR_ACCOUNT_INFORMATION>((uint)entries_read);
+                    foreach (var account in buffer.ReadArray<LSAPR_ACCOUNT_INFORMATION>(0, entries_read))
+                    {
+                        var sid = Sid.Parse(account.Sid, true);
+                        if (!sid.IsSuccess)
+                            return sid.Cast<IReadOnlyList<Sid>>();
+                        ret.Add(sid.Result);
+                    }
+                }
+            }
+            while (true);
+
+            return ret.AsReadOnly().CreateResult<IReadOnlyList<Sid>>();
+        }
+
+        /// <summary>
+        /// Enumerate account SIDs in policy.
+        /// </summary>
+        /// <returns>The list of account SIDs.</returns>
+        public IReadOnlyList<Sid> EnumerateAccounts()
+        {
+            return EnumerateAccounts(true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible account objects in policy.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened accounts.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible accounts.</returns>
+        public NtResult<IReadOnlyList<LsaAccount>> OpenAccessibleAccounts(LsaAccountAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateAccounts(throw_on_error).Map<IReadOnlyList<LsaAccount>>(e => e.Select(
+                s => OpenAccount(s, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible account objects in policy.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened accounts.</param>
+        public IReadOnlyList<LsaAccount> OpenAccessibleAccounts(LsaAccountAccessRights desired_access)
+        {
+            return OpenAccessibleAccounts(desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible account objects in policy with maximum access.
+        /// </summary>
+        public IReadOnlyList<LsaAccount> OpenAccessibleAccounts()
+        {
+            return OpenAccessibleAccounts(LsaAccountAccessRights.MaximumAllowed);
+        }
+
         #endregion
 
         #region Static Methods

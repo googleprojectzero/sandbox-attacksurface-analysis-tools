@@ -341,6 +341,7 @@
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
+    <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
     <Compile Include="Win32\Security\Policy\LsaLookupOptionFlags.cs" />
@@ -350,6 +351,7 @@
     <Compile Include="Win32\Security\Policy\LsaSecret.cs" />
     <Compile Include="Win32\Security\Policy\LsaSecretAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaSecretValue.cs" />
+    <Compile Include="Win32\Security\Policy\LsaSystemAccessFlags.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

@@ -79,6 +79,19 @@ namespace NtApiDotNet.Win32.Security.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct LSAPR_ACCOUNT_ENUM_BUFFER
+    {
+        public int EntriesRead;
+        public IntPtr Information; // PLSAPR_ACCOUNT_INFORMATION 
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LSAPR_ACCOUNT_INFORMATION
+    {
+        public IntPtr Sid; // PRPC_SID
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct LSA_TRANSLATED_NAME
     {
         public SidNameUse Use;
@@ -811,6 +824,43 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeLsaHandle SecretHandle,
             UnicodeStringBytesSafeBuffer CurrentValue,
             UnicodeStringBytesSafeBuffer OldValue
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaCreateAccount(
+            SafeLsaHandle PolicyHandle,
+            SafeSidBufferHandle AccountSid,
+            LsaAccountAccessRights DesiredAccess,
+            out SafeLsaHandle AccountHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaOpenAccount(
+            SafeLsaHandle PolicyHandle,
+            SafeSidBufferHandle AccountSid,
+            LsaAccountAccessRights DesiredAccess,
+            out SafeLsaHandle AccountHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaGetSystemAccessAccount(
+            SafeLsaHandle AccountHandle,
+            out LsaSystemAccessFlags SystemAccess
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaSetSystemAccessAccount(
+            SafeLsaHandle AccountHandle,
+            LsaSystemAccessFlags SystemAccess
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumerateAccounts(
+            SafeLsaHandle PolicyHandle,
+            ref int EnumerationContext,
+            out SafeLsaMemoryBuffer EnumerationBuffer, // PLSAPR_ACCOUNT_INFORMATION
+            int PreferedMaximumLength,
+            out int EntriesRead
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
