@@ -770,15 +770,23 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaStorePrivateData(
             SafeLsaHandle PolicyHandle,
-            UnicodeString KeyName,
+            [In] UnicodeString KeyName,
             UnicodeStringBytesSafeBuffer PrivateData
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaRetrievePrivateData(
             SafeLsaHandle PolicyHandle,
-            UnicodeString KeyName,
+            [In] UnicodeString KeyName,
             out SafeLsaMemoryBuffer PrivateData // PLSA_UNICODE_STRING
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaOpenSecret(
+            SafeLsaHandle PolicyHandle,
+            [In] UnicodeString SecretName,
+            LsaSecretAccessRights DesiredAccess,
+            out SafeLsaHandle SecretHandle
         );
 
         [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]

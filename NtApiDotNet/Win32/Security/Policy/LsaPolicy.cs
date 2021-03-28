@@ -361,6 +361,40 @@ namespace NtApiDotNet.Win32.Security.Policy
             StorePrivateData(keyname, data, true);
         }
 
+        /// <summary>
+        /// Open an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <param name="desired_access">The desired access for the secret.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened secret.</returns>
+        public NtResult<LsaSecret> OpenSecret(string name, LsaSecretAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaOpenSecret(Handle, new UnicodeString(name), 
+                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name));
+        }
+
+        /// <summary>
+        /// Open an LSA secret object.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <param name="desired_access">The desired access for the secret.</param>
+        /// <returns>The opened secret.</returns>
+        public LsaSecret OpenSecret(string name, LsaSecretAccessRights desired_access)
+        {
+            return OpenSecret(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an LSA secret object with maximum access.
+        /// </summary>
+        /// <param name="name">The name of the secret.</param>
+        /// <returns>The opened secret.</returns>
+        public LsaSecret OpenSecret(string name)
+        {
+            return OpenSecret(name, LsaSecretAccessRights.MaximumAllowed);
+        }
+
         #endregion
 
         #region Static Methods
