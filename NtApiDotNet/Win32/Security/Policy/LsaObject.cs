@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Security;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 
 namespace NtApiDotNet.Win32.Security.Policy
@@ -76,7 +77,13 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The security descriptor</returns>
         public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
-            return _handle.QuerySecurity(security_information, LsaPolicyUtils.LsaPolicyNtType, throw_on_error);
+            var status = SecurityNativeMethods.LsaQuerySecurityObject(_handle, security_information, out SafeLsaMemoryBuffer sd);
+            if (!status.IsSuccess())
+                return status.CreateResultFromError<SecurityDescriptor>(throw_on_error);
+            using (sd)
+            {
+                return SecurityDescriptor.Parse(sd, NtType, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -98,7 +105,10 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The NT status code.</returns>
         public NtStatus SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information, bool throw_on_error)
         {
-            return _handle.SetSecurity(security_information, security_descriptor, throw_on_error);
+            using (var sd = security_descriptor.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaSetSecurityObject(_handle, security_information, sd);
+            }
         }
 
         /// <summary>

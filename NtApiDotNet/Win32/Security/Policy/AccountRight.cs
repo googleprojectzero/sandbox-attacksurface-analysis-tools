@@ -25,8 +25,8 @@ namespace NtApiDotNet.Win32.Security.Policy
     /// </summary>
     public sealed class AccountRight
     {
-        private readonly List<Sid> _cached_sids;
-        private readonly Lazy<List<Sid>> _sids;
+        private readonly IEnumerable<Sid> _cached_sids;
+        private readonly Lazy<IEnumerable<Sid>> _sids;
         private readonly Lazy<string> _display_name;
         private readonly string _system_name;
 
@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <summary>
         /// Get list of SIDS assigned to this access right.
         /// </summary>
-        public IEnumerable<Sid> Sids => (_cached_sids ?? _sids.Value).AsReadOnly();
+        public IEnumerable<Sid> Sids => _cached_sids ?? _sids.Value;
 
         /// <summary>
         /// ToString method.
@@ -51,50 +51,13 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The name of the account right.</returns>
         public override string ToString() => Name;
 
-        private static List<Sid> ParseSids(SafeLsaMemoryBuffer buffer, int count)
+        internal static NtResult<IReadOnlyList<Sid>> GetSids(string system_name, string name, bool throw_on_error)
         {
-            using (buffer)
-            {
-                buffer.Initialize<LSA_ENUMERATION_INFORMATION>((uint)count);
-                LSA_ENUMERATION_INFORMATION[] ss = new LSA_ENUMERATION_INFORMATION[count];
-                buffer.ReadArray(0, ss, 0, count);
-                return ss.Select(s => new Sid(s.Sid)).ToList();
-            }
-        }
-
-        private static NtResult<List<Sid>> GetSids(SafeLsaHandle policy, string name, bool throw_on_error)
-        {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            NtStatus status = SecurityNativeMethods.LsaEnumerateAccountsWithUserRight(policy, new UnicodeString(name),
-                out SafeLsaMemoryBuffer buffer, out int count);
-            if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
-                return new List<Sid>().CreateResult();
-            return status.CreateResult(throw_on_error, () => ParseSids(buffer, count));
-        }
-
-        internal static NtResult<List<Sid>> GetSids(string system_name, string name, bool throw_on_error)
-        {
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.GenericExecute, throw_on_error))
+            using (var policy = LsaPolicy.Open(system_name, LsaPolicyAccessRights.GenericExecute, throw_on_error))
             {
                 if (!policy.IsSuccess)
-                    return policy.Cast<List<Sid>>();
-                return GetSids(policy.Result, name, throw_on_error);
-            }
-        }
-
-        private static IEnumerable<AccountRight> ParseRights(SafeLsaHandle policy, string system_name, SafeLsaMemoryBuffer buffer, int count)
-        {
-            using (buffer)
-            {
-                buffer.Initialize<UnicodeStringOut>((uint)count);
-                UnicodeStringOut[] ss = new UnicodeStringOut[count];
-                buffer.ReadArray(0, ss, 0, count);
-                return ss.Select(s => new AccountRight(system_name, s.ToString(), 
-                    GetSids(policy, s.ToString(), false).GetResultOrDefault())).ToList();
+                    return policy.Cast<IReadOnlyList<Sid>>();
+                return policy.Result.EnumerateAccountsWithUserRight(name, throw_on_error);
             }
         }
 
@@ -105,16 +68,18 @@ namespace NtApiDotNet.Win32.Security.Policy
                 throw new ArgumentNullException(nameof(sid));
             }
 
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, LsaPolicyAccessRights.GenericExecute, throw_on_error))
+            using (var policy = LsaPolicy.Open(system_name, LsaPolicyAccessRights.GenericExecute, throw_on_error))
             {
                 if (!policy.IsSuccess)
                     return policy.Cast<IEnumerable<AccountRight>>();
-                using (var sid_buffer = sid.ToSafeBuffer())
-                {
-                    return SecurityNativeMethods.LsaEnumerateAccountRights(policy.Result, sid_buffer,
-                        out SafeLsaMemoryBuffer buffer, out int count)
-                        .CreateResult(throw_on_error, () => ParseRights(policy.Result, system_name, buffer, count));
-                }
+
+                var account_rights = policy.Result.EnumerateAccountRights(sid, throw_on_error);
+                if (!account_rights.IsSuccess)
+                    return account_rights.Cast<IEnumerable<AccountRight>>();
+
+                return account_rights.Result.Select(s => new AccountRight(system_name, s,
+                    policy.Result.EnumerateAccountsWithUserRight(s, false).GetResultOrDefault()))
+                    .ToList().AsReadOnly().CreateResult<IEnumerable<AccountRight>>();
             }
         }
 
@@ -177,12 +142,12 @@ namespace NtApiDotNet.Win32.Security.Policy
             }
         }
 
-        internal AccountRight(string system_name, string name, List<Sid> cached_sids)
+        internal AccountRight(string system_name, string name, IEnumerable<Sid> cached_sids)
         {
             Name = name;
             _display_name = new Lazy<string>(() => Win32Security.LookupPrivilegeDisplayName(system_name, name));
             _cached_sids = cached_sids;
-            _sids = new Lazy<List<Sid>>(() => GetSids(system_name, name, false).GetResultOrDefault(new List<Sid>()));
+            _sids = new Lazy<IEnumerable<Sid>>(() => GetSids(system_name, name, false).GetResultOrDefault(new Sid[0]));
             _system_name = system_name;
         }
     }

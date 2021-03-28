@@ -455,7 +455,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The list of SIDs assigned to the account right.</returns>
         public static NtResult<IEnumerable<Sid>> GetAccountRightSids(string account_right, bool throw_on_error)
         {
-            return AccountRight.GetSids(null, account_right, throw_on_error).Map<IEnumerable<Sid>>(s => s.AsReadOnly());
+            return AccountRight.GetSids(null, account_right, throw_on_error).Cast<IEnumerable<Sid>>();
         }
 
         /// <summary>
