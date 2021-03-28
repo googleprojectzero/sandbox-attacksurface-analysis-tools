@@ -14490,6 +14490,39 @@ function ConvertFrom-HexDump {
     }
 }
 
+<#
+.SYNOPSIS
+Get an LSA policy object.
+.DESCRIPTION
+This cmdlet gets an LSA policy object for a specified system and access rights.
+.PARAMETER SystemName
+Specify the target system.
+.PARAMETER Access
+Specify the access rights on the policy.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Policy.LsaPolicy
+.EXAMPLE
+Get-LsaPolicy
+Get the local LSA policy object with maximum access.
+.EXAMPLE
+Get-LsaPolicy -SystemName "PRIMARYDC"
+Get the LSA policy object on the system PRIMARYDC with maximum access.
+.EXAMPLE
+Get-LsaPolicy -Access LookupNames
+Get the local LSA policy object with LookupNames access.
+#>
+function Get-LsaPolicy { 
+    [CmdletBinding()]
+    param(
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicyAccessRights]$Access = "MaximumAllowed",
+        [string]$SystemName
+    )
+
+    [NtApiDotNet.Win32.Security.Policy.LsaPolicy]::Open($SystemName, $Access)
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
