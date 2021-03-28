@@ -297,6 +297,70 @@ namespace NtApiDotNet.Win32.Security.Policy
             RemoveAccountRights(sid, remove_all, account_rights, true);
         }
 
+        /// <summary>
+        /// Retrieve LSA privilege data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The private data as bytes.</returns>
+        public NtResult<byte[]> RetrievePrivateData(string keyname, bool throw_on_error)
+        {
+            if (keyname is null)
+            {
+                throw new ArgumentNullException(nameof(keyname));
+            }
+
+            NtStatus status = SecurityNativeMethods.LsaRetrievePrivateData(Handle,
+                new UnicodeString(keyname), out SafeLsaMemoryBuffer data);
+            if (!status.IsSuccess())
+                return status.CreateResultFromError<byte[]>(throw_on_error);
+            using (data)
+            {
+                data.Initialize<UnicodeStringOut>(1);
+                return data.Read<UnicodeStringOut>(0).ToArray().CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Retrieve LSA privilege data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <returns>The private data as bytes.</returns>
+        public byte[] RetrievePrivateData(string keyname)
+        {
+            return RetrievePrivateData(keyname, true).Result;
+        }
+
+        /// <summary>
+        /// Store LSA private data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="data">The data to store. If you pass null then the value will be deleted.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus StorePrivateData(string keyname, byte[] data, bool throw_on_error)
+        {
+            if (keyname is null)
+            {
+                throw new ArgumentNullException(nameof(keyname));
+            }
+
+            using (var data_buffer = data == null ? UnicodeStringBytesSafeBuffer.Null : new UnicodeStringBytesSafeBuffer(data))
+            {
+                return SecurityNativeMethods.LsaStorePrivateData(Handle, new UnicodeString(keyname), data_buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Store LSA private data.
+        /// </summary>
+        /// <param name="keyname">The name of the key.</param>
+        /// <param name="data">The data to store. If you pass null then the value will be deleted.</param>
+        public void StorePrivateData(string keyname, byte[] data)
+        {
+            StorePrivateData(keyname, data, true);
+        }
+
         #endregion
 
         #region Static Methods

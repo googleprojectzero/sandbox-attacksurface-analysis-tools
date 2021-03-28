@@ -718,7 +718,7 @@ namespace NtApiDotNet.Win32.Security
         }
 
         /// <summary>
-        /// Retried LSA privilege data.
+        /// Retrieve LSA privilege data.
         /// </summary>
         /// <param name="system_name">The system containing the LSA instance.</param>
         /// <param name="keyname">The name of the key.</param>
@@ -731,24 +731,16 @@ namespace NtApiDotNet.Win32.Security
                 throw new ArgumentNullException(nameof(keyname));
             }
 
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.GetPrivateInformation, throw_on_error))
+            using (var policy = LsaPolicy.Open(system_name, Policy.LsaPolicyAccessRights.GetPrivateInformation, throw_on_error))
             {
                 if (!policy.IsSuccess)
                     return policy.Cast<byte[]>();
-                NtStatus status = SecurityNativeMethods.LsaRetrievePrivateData(policy.Result,
-                    new UnicodeString(keyname), out SafeLsaMemoryBuffer data);
-                if (!status.IsSuccess())
-                    return status.CreateResultFromError<byte[]>(throw_on_error);
-                using (data)
-                {
-                    data.Initialize<UnicodeStringOut>(1);
-                    return data.Read<UnicodeStringOut>(0).ToArray().CreateResult();
-                }
+                return policy.Result.RetrievePrivateData(keyname, throw_on_error);
             }
         }
 
         /// <summary>
-        /// Retried LSA privilege data.
+        /// Retrieve LSA privilege data.
         /// </summary>
         /// <param name="system_name">The system containing the LSA instance.</param>
         /// <param name="keyname">The name of the key.</param>
@@ -782,7 +774,14 @@ namespace NtApiDotNet.Win32.Security
             {
                 throw new ArgumentNullException(nameof(data));
             }
-            return LsaStorePrivateDataInternal(system_name, keyname, data, throw_on_error);
+
+            using (var policy = LsaPolicy.Open(system_name, LsaPolicyAccessRights.CreateSecret, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Status;
+
+                return policy.Result.StorePrivateData(keyname, data, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -815,7 +814,13 @@ namespace NtApiDotNet.Win32.Security
         /// <returns>The NT status code.</returns>
         public static NtStatus LsaDeletePrivateData(string system_name, string keyname, bool throw_on_error)
         {
-            return LsaStorePrivateDataInternal(system_name, keyname, null, throw_on_error);
+            using (var policy = LsaPolicy.Open(system_name, LsaPolicyAccessRights.MaximumAllowed, throw_on_error))
+            {
+                if (!policy.IsSuccess)
+                    return policy.Status;
+
+                return policy.Result.StorePrivateData(keyname, null, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -850,26 +855,6 @@ namespace NtApiDotNet.Win32.Security
             }
             return null;
         }
-
-        private static NtStatus LsaStorePrivateDataInternal(string system_name, string keyname, byte[] data, bool throw_on_error)
-        {
-            if (keyname is null)
-            {
-                throw new ArgumentNullException(nameof(keyname));
-            }
-
-            using (var policy = SafeLsaHandle.OpenPolicy(system_name, Policy.LsaPolicyAccessRights.CreateSecret, throw_on_error))
-            {
-                if (!policy.IsSuccess)
-                    return policy.Status;
-
-                using (var data_buffer = data == null ? UnicodeStringBytesSafeBuffer.Null : new UnicodeStringBytesSafeBuffer(data))
-                {
-                    return SecurityNativeMethods.LsaStorePrivateData(policy.Result, new UnicodeString(keyname), data_buffer);
-                }
-            }
-        }
-
         #endregion
     }
 }
