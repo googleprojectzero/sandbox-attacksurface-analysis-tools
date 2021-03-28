@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Security;
 using NtApiDotNet.Utilities.Security;
 using NtObjectManager.Utils;
 using System;
@@ -72,10 +73,10 @@ namespace NtObjectManager.Cmdlets.Object
         public AccessMask? RawAccess { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a kernel object to get security descriptor from.</para>
+        /// <para type="description">Specify an object to get security descriptor from.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "obj")]
-        public NtObject Object { get; set; }
+        public INtObjectSecurity Object { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a token object to do the access check against. If not specified then current effective token is used.</para>
