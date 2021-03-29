@@ -349,6 +349,7 @@
     <Compile Include="Win32\Security\Native\LSA_REFERENCED_DOMAIN_LIST.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_NAME.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
+    <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
@@ -366,6 +367,7 @@
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />
+    <Compile Include="Win32\Security\Sam\SamDomainInformation.cs" />
     <Compile Include="Win32\Security\Sam\SamFakeTypeFactory.cs" />
     <Compile Include="Win32\Security\Sam\SamObject.cs" />
     <Compile Include="Win32\Security\Sam\SamServer.cs" />

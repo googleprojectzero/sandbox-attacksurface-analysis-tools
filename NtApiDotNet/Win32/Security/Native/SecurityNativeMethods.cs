@@ -851,6 +851,15 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeSamMemoryBuffer SecurityDescriptor
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamEnumerateDomainsInSamServer(
+            SafeSamHandle ServerHandle,
+            ref int EnumerationContext,
+            out SafeSamMemoryBuffer Buffer,
+            int PreferedMaximumLength,
+            out int CountReturned
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

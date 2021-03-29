@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Sam
 {
@@ -32,6 +33,61 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Enumerate domains in the SAM.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of domains.</returns>
+        public NtResult<IReadOnlyList<SamDomainInformation>> EnumerateDomains(bool throw_on_error)
+        {
+            int context = 0;
+            List<SamDomainInformation> ret = new List<SamDomainInformation>();
+            NtStatus status;
+            do
+            {
+                status = SecurityNativeMethods.SamEnumerateDomainsInSamServer(Handle, ref context, 
+                    out SafeSamMemoryBuffer buffer, 1000, out int entries_read);
+                if (!status.IsSuccess())
+                {
+                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                    {
+                        break;
+                    }
+                    return status.CreateResultFromError<IReadOnlyList<SamDomainInformation>>(throw_on_error);
+                }
+
+                if (entries_read == 0)
+                {
+                    break;
+                }
+
+                using (buffer)
+                {
+                    buffer.Initialize<SAM_RID_ENUMERATION>((uint)entries_read);
+                    foreach (var sid in buffer.ReadArray<SAM_RID_ENUMERATION>(0, entries_read))
+                    {
+                        ret.Add(new SamDomainInformation(sid));
+                    }
+                }
+            }
+            while (true);
+
+            return ret.AsReadOnly().CreateResult<IReadOnlyList<SamDomainInformation>>();
+        }
+
+        /// <summary>
+        /// Enumerate domains in the SAM.
+        /// </summary>
+        /// <returns>The list of domains.</returns>
+        public IReadOnlyList<SamDomainInformation> EnumerateDomains()
+        {
+            return EnumerateDomains(true).Result;
+        }
+
+        #endregion
+
+        #region Static Methods
         /// <summary>
         /// Connect to a SAM server.
         /// </summary>
@@ -76,5 +132,6 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return Connect(SamServerAccessRights.MaximumAllowed);
         }
+        #endregion
     }
 }

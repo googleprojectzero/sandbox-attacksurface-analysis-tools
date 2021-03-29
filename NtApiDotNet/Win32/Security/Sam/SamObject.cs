@@ -39,6 +39,10 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
         #endregion
 
+        #region Internal Members
+        internal SafeSamHandle Handle => _handle;
+        #endregion
+
         #region INtObjectSecurity Implementation
 
         /// <summary>
