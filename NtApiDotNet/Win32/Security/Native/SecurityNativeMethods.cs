@@ -20,6 +20,7 @@ using NtApiDotNet.Win32.Security.Authorization;
 using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Policy;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -36,6 +37,9 @@ namespace NtApiDotNet.Win32.Security.Native
         IntPtr pAce,
         IntPtr pArgs,
         [MarshalAs(UnmanagedType.Bool)] out bool pbAceApplicable);
+
+    internal delegate NtStatus SecurityEnumDelegate<H, B>(H handle, ref int context, 
+        out B buffer, int max_count, out int entries_read);
 
     internal static class SecurityNativeMethods
     {
@@ -860,6 +864,20 @@ namespace NtApiDotNet.Win32.Security.Native
             out int CountReturned
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamLookupDomainInSamServer(
+            SafeSamHandle ServerHandle,
+            UnicodeString Name,
+            out SafeSamMemoryBuffer DomainId
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamRidToSid(
+            SafeSamHandle ObjectHandle,
+            uint Rid,
+            out SafeSamMemoryBuffer Sid
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;
@@ -869,6 +887,43 @@ namespace NtApiDotNet.Win32.Security.Native
         {
             ((NtStatus)(uint)result).ToNtException(throw_on_error);
             return result;
+        }
+
+        internal static NtResult<IReadOnlyList<T>> EnumerateObjects<T, H, B, S>(H handle, SecurityEnumDelegate<H, B> func, Func<S, T> select_object,
+            bool throw_on_error) where H : SafeHandle where B : SafeBufferGeneric where S : struct
+        {
+            int context = 0;
+            List<T> ret = new List<T>();
+            NtStatus status;
+            do
+            {
+                status = func(handle, ref context, out B buffer, 1000, out int entries_read);
+                if (!status.IsSuccess())
+                {
+                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                    {
+                        break;
+                    }
+                    return status.CreateResultFromError<IReadOnlyList<T>>(throw_on_error);
+                }
+
+                if (entries_read == 0)
+                {
+                    break;
+                }
+
+                using (buffer)
+                {
+                    buffer.Initialize<S>((uint)entries_read);
+                    foreach (var value in buffer.ReadArray<S>(0, entries_read))
+                    {
+                        ret.Add(select_object(value));
+                    }
+                }
+            }
+            while (true);
+
+            return ret.AsReadOnly().CreateResult<IReadOnlyList<T>>();
         }
     }
 }

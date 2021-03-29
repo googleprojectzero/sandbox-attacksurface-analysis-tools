@@ -12,6 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
+using System;
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Security.Policy
 {
     /// <summary>
@@ -123,6 +128,13 @@ namespace NtApiDotNet.Win32.Security.Policy
         public static NtType LsaPolicyNtType => NtType.GetTypeByName(LSA_POLICY_NT_TYPE_NAME);
         public static NtType LsaSecretNtType => NtType.GetTypeByName(LSA_SECRET_NT_TYPE_NAME);
         public static NtType LsaAccountNtType => NtType.GetTypeByName(LSA_ACCOUNT_NT_TYPE_NAME);
+
+        public static NtResult<IReadOnlyList<T>> LsaEnumerateObjects<T, S>(SafeLsaHandle handle, 
+                SecurityEnumDelegate<SafeLsaHandle, SafeLsaMemoryBuffer> func, Func<S, T> select_object,
+                bool throw_on_error) where S : struct
+        {
+            return SecurityNativeMethods.EnumerateObjects(handle, func, select_object, throw_on_error);
+        }
 
         #endregion
     }

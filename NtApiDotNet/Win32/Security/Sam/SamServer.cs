@@ -39,50 +39,53 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of domains.</returns>
-        public NtResult<IReadOnlyList<SamDomainInformation>> EnumerateDomains(bool throw_on_error)
+        public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateDomains(bool throw_on_error)
         {
-            int context = 0;
-            List<SamDomainInformation> ret = new List<SamDomainInformation>();
-            NtStatus status;
-            do
-            {
-                status = SecurityNativeMethods.SamEnumerateDomainsInSamServer(Handle, ref context, 
-                    out SafeSamMemoryBuffer buffer, 1000, out int entries_read);
-                if (!status.IsSuccess())
-                {
-                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
-                    {
-                        break;
-                    }
-                    return status.CreateResultFromError<IReadOnlyList<SamDomainInformation>>(throw_on_error);
-                }
-
-                if (entries_read == 0)
-                {
-                    break;
-                }
-
-                using (buffer)
-                {
-                    buffer.Initialize<SAM_RID_ENUMERATION>((uint)entries_read);
-                    foreach (var sid in buffer.ReadArray<SAM_RID_ENUMERATION>(0, entries_read))
-                    {
-                        ret.Add(new SamDomainInformation(sid));
-                    }
-                }
-            }
-            while (true);
-
-            return ret.AsReadOnly().CreateResult<IReadOnlyList<SamDomainInformation>>();
+            return SamUtils.SamEnumerateObjects(Handle,
+                SecurityNativeMethods.SamEnumerateDomainsInSamServer, 
+                (SAM_RID_ENUMERATION s) => new SamRidEnumeration(s), throw_on_error);
         }
 
         /// <summary>
         /// Enumerate domains in the SAM.
         /// </summary>
         /// <returns>The list of domains.</returns>
-        public IReadOnlyList<SamDomainInformation> EnumerateDomains()
+        public IReadOnlyList<SamRidEnumeration> EnumerateDomains()
         {
             return EnumerateDomains(true).Result;
+        }
+
+        /// <summary>
+        /// Lookup the domain SID for a domain name.
+        /// </summary>
+        /// <param name="name">The name of the domain.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The domain SID.</returns>
+        public NtResult<Sid> LookupDomain(string name, bool throw_on_error)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new System.ArgumentException($"'{nameof(name)}' cannot be null or empty.", nameof(name));
+            }
+
+            return SecurityNativeMethods.SamLookupDomainInSamServer(Handle, new UnicodeString(name), 
+                out SafeSamMemoryBuffer domain_id).CreateResult(throw_on_error, () =>
+            {
+                using (domain_id)
+                {
+                    return new Sid(domain_id);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lookup the domain SID for a domain name.
+        /// </summary>
+        /// <param name="name">The name of the domain.</param>
+        /// <returns>The domain SID.</returns>
+        public Sid LookupDomain(string name)
+        {
+            return LookupDomain(name, true).Result;
         }
 
         #endregion

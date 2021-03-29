@@ -561,36 +561,8 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The list of account SIDs.</returns>
         public NtResult<IReadOnlyList<Sid>> EnumerateAccounts(bool throw_on_error)
         {
-            int context = 0;
-            List<Sid> ret = new List<Sid>();
-            NtStatus status;
-            do
-            {
-                status = SecurityNativeMethods.LsaEnumerateAccounts(Handle, ref context, out SafeLsaMemoryBuffer buffer, 1000, out int entries_read);
-                if (!status.IsSuccess())
-                {
-                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
-                    {
-                        break;
-                    }
-                    return status.CreateResultFromError<IReadOnlyList<Sid>>(throw_on_error);
-                }
-
-                using (buffer)
-                {
-                    buffer.Initialize<LSAPR_ACCOUNT_INFORMATION>((uint)entries_read);
-                    foreach (var account in buffer.ReadArray<LSAPR_ACCOUNT_INFORMATION>(0, entries_read))
-                    {
-                        var sid = Sid.Parse(account.Sid, true);
-                        if (!sid.IsSuccess)
-                            return sid.Cast<IReadOnlyList<Sid>>();
-                        ret.Add(sid.Result);
-                    }
-                }
-            }
-            while (true);
-
-            return ret.AsReadOnly().CreateResult<IReadOnlyList<Sid>>();
+            return LsaPolicyUtils.LsaEnumerateObjects(Handle, SecurityNativeMethods.LsaEnumerateAccounts, 
+                (LSAPR_ACCOUNT_INFORMATION s) => new Sid(s.Sid), throw_on_error);
         }
 
         /// <summary>
@@ -638,33 +610,8 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <returns>The list of trusted domain information.</returns>
         public NtResult<IReadOnlyList<LsaTrustedDomainInformation>> EnumerateTrustedDomains(bool throw_on_error)
         {
-            int context = 0;
-            List<LsaTrustedDomainInformation> ret = new List<LsaTrustedDomainInformation>();
-            NtStatus status;
-            do
-            {
-                status = SecurityNativeMethods.LsaEnumerateTrustedDomainsEx(Handle, ref context, out SafeLsaMemoryBuffer buffer, 1000, out int entries_read);
-                if (!status.IsSuccess())
-                {
-                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
-                    {
-                        break;
-                    }
-                    return status.CreateResultFromError<IReadOnlyList<LsaTrustedDomainInformation>>(throw_on_error);
-                }
-
-                using (buffer)
-                {
-                    buffer.Initialize<TRUSTED_DOMAIN_INFORMATION_EX>((uint)entries_read);
-                    foreach (var info in buffer.ReadArray<TRUSTED_DOMAIN_INFORMATION_EX>(0, entries_read))
-                    {
-                        ret.Add(new LsaTrustedDomainInformation(info));
-                    }
-                }
-            }
-            while (true);
-
-            return ret.AsReadOnly().CreateResult<IReadOnlyList<LsaTrustedDomainInformation>>();
+            return LsaPolicyUtils.LsaEnumerateObjects(Handle, SecurityNativeMethods.LsaEnumerateTrustedDomainsEx, 
+                (TRUSTED_DOMAIN_INFORMATION_EX s) => new LsaTrustedDomainInformation(s), throw_on_error);
         }
 
         /// <summary>

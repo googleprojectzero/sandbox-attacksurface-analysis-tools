@@ -12,6 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
+using System;
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Security.Sam
 {
     internal static class SamUtils
@@ -29,6 +34,13 @@ namespace NtApiDotNet.Win32.Security.Sam
                     SamServerAccessRights.EnumerateDomains | SamServerAccessRights.Shutdown | SamServerAccessRights.Initialize | SamServerAccessRights.CreateDomain |
                     SamServerAccessRights.Connect | SamServerAccessRights.LookupDomain
             };
+        }
+
+        public static NtResult<IReadOnlyList<T>> SamEnumerateObjects<T, S>(SafeSamHandle handle,
+                SecurityEnumDelegate<SafeSamHandle, SafeSamMemoryBuffer> func, Func<S, T> select_object,
+                bool throw_on_error) where S : struct
+        {
+            return SecurityNativeMethods.EnumerateObjects(handle, func, select_object, throw_on_error);
         }
     }
 }

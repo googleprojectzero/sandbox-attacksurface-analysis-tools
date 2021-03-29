@@ -17,9 +17,9 @@ using NtApiDotNet.Win32.Security.Native;
 namespace NtApiDotNet.Win32.Security.Sam
 {
     /// <summary>
-    /// Represents information for a SAM domain.
+    /// Represents information for a SAM relative value.
     /// </summary>
-    public struct SamDomainInformation
+    public struct SamRidEnumeration
     {
         /// <summary>
         /// The name of the domain.
@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// </summary>
         public uint RelativeId { get; }
 
-        internal SamDomainInformation(SAM_RID_ENUMERATION enum_info)
+        internal SamRidEnumeration(SAM_RID_ENUMERATION enum_info)
         {
             Name = enum_info.Name.ToString();
             RelativeId = enum_info.RelativeId;
