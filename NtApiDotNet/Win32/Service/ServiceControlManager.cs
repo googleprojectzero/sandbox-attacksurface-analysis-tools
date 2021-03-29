@@ -185,6 +185,8 @@ namespace NtApiDotNet.Win32.Service
 
         string INtObjectSecurity.ObjectName => string.IsNullOrEmpty(_machine_name) ? "SCM" : $@"SCM (\\{_machine_name})";
 
+        SecurityDescriptor INtObjectSecurity.SecurityDescriptor => GetSecurityDescriptor(SafeServiceHandle.DEFAULT_SECURITY_INFORMATION);
+
         bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)
         {
             // We can't tell if we really have access or not, so just assume we do.

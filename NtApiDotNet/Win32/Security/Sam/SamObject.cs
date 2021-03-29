@@ -94,6 +94,11 @@ namespace NtApiDotNet.Win32.Security.Sam
         public string ObjectName { get; }
 
         /// <summary>
+        /// Get the object's security descriptor.
+        /// </summary>
+        public SecurityDescriptor SecurityDescriptor => GetSecurityDescriptor(SecurityInformation.AllBasic);
+
+        /// <summary>
         /// Is an access mask granted to the object.
         /// </summary>
         /// <param name="access">The access to check.</param>

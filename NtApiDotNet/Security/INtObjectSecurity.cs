@@ -31,6 +31,11 @@ namespace NtApiDotNet.Security
         NtType NtType { get; }
 
         /// <summary>
+        /// Get the object's security descriptor.
+        /// </summary>
+        SecurityDescriptor SecurityDescriptor { get; }
+
+        /// <summary>
         /// Check if access is granted to a set of rights
         /// </summary>
         /// <param name="access">The access rights to check</param>

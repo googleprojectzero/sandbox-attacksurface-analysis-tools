@@ -2181,7 +2181,7 @@ function Show-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)]
-        [NtApiDotNet.NtObject]$Object,
+        [NtApiDotNet.Security.INtObjectSecurity]$Object,
         [Parameter(ParameterSetName = "FromObject")]
         [switch]$ReadOnly,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true)]
@@ -2203,9 +2203,9 @@ function Show-NtSecurityDescriptor {
                 Write-Error "Object doesn't have Read Control access."
                 return
             }
-            # For some reason ALPC ports can't be passed to child processes. So instead pass as an SD.
-            if ($Object.NtType.Name -eq "ALPC Port") {
-                Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.Name -Wait:$Wait
+            # If an ALPC Port or not an NtObject pass as an SD.
+            if (($Object.NtType.Name -eq "ALPC Port" ) -or !($Object -is [NtApiDotNet.NtObject])) {
+                Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.ObjectName -Wait:$Wait
                 return
             }
             Use-NtObject($obj = $Object.Duplicate()) {
