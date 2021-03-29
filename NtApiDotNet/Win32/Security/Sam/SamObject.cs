@@ -30,12 +30,13 @@ namespace NtApiDotNet.Win32.Security.Sam
         #endregion
 
         #region Private Protected Members
-        private protected SamObject(SafeSamHandle handle, AccessMask granted_access, string type_name, string object_name)
+        private protected SamObject(SafeSamHandle handle, AccessMask granted_access, string type_name, string object_name, string server_name)
         {
             _handle = handle;
             _granted_access = granted_access;
             NtType = NtType.GetTypeByName(type_name);
             ObjectName = object_name;
+            ServerName = server_name;
         }
         #endregion
 
@@ -67,6 +68,13 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return RidToSid(relative_id, true).Result;
         }
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// The name of the server that we've connected to.
+        /// </summary>
+        public string ServerName { get; }
         #endregion
 
         #region Internal Members

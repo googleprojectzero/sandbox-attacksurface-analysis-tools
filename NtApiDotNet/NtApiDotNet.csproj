@@ -367,6 +367,9 @@
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />
+    <Compile Include="Win32\Security\Sam\SamAliasAccessRights.cs" />
+    <Compile Include="Win32\Security\Sam\SamDomain.cs" />
+    <Compile Include="Win32\Security\Sam\SamDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamRidEnumeration.cs" />
     <Compile Include="Win32\Security\Sam\SamFakeTypeFactory.cs" />
     <Compile Include="Win32\Security\Sam\SamObject.cs" />

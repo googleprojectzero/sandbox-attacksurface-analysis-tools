@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Sam
 {
@@ -24,13 +25,22 @@ namespace NtApiDotNet.Win32.Security.Sam
     public sealed class SamServer : SamObject
     {
         #region Private Members
-        private readonly string _server_name;
-
         private SamServer(SafeSamHandle handle, SamServerAccessRights granted_access, string server_name)
-            : base(handle, granted_access, SamUtils.SAM_SERVER_NT_TYPE_NAME, string.IsNullOrEmpty(server_name) ? "SAM Server" : $"SAM Server ({server_name})")
+            : base(handle, granted_access, SamUtils.SAM_SERVER_NT_TYPE_NAME, 
+                  string.IsNullOrEmpty(server_name) ? "SAM Server" : $"SAM Server ({server_name})", server_name)
         {
-            _server_name = server_name;
         }
+
+        private NtResult<SamDomain> OpenDomain(string domain_name, Sid domain_id, SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            using (var buffer = domain_id.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.SamOpenDomain(Handle, desired_access, buffer,
+                    out SafeSamHandle domain_handle).CreateResult(throw_on_error,
+                    () => new SamDomain(domain_handle, desired_access, ServerName, domain_name, domain_id));
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -86,6 +96,78 @@ namespace NtApiDotNet.Win32.Security.Sam
         public Sid LookupDomain(string name)
         {
             return LookupDomain(name, true).Result;
+        }
+
+        /// <summary>
+        /// Open a SAM domain object.
+        /// </summary>
+        /// <param name="domain_id">The domain SID.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM domain object.</returns>
+        public NtResult<SamDomain> OpenDomain(Sid domain_id, SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            return OpenDomain(null, domain_id, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a SAM domain object.
+        /// </summary>
+        /// <param name="domain_id">The domain SID.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The SAM domain object.</returns>
+        public SamDomain OpenDomain(Sid domain_id, SamDomainAccessRights desired_access)
+        {
+            return OpenDomain(domain_id, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a SAM domain object.
+        /// </summary>
+        /// <param name="name">The name of the domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM domain object.</returns>
+        public NtResult<SamDomain> OpenDomain(string name, SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            var domain_id = LookupDomain(name, throw_on_error);
+            if (!domain_id.IsSuccess)
+                return domain_id.Cast<SamDomain>();
+
+            return OpenDomain(name.ToUpper(), domain_id.Result, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a SAM domain object.
+        /// </summary>
+        /// <param name="name">The name of the domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The SAM domain object.</returns>
+        public SamDomain OpenDomain(string name, SamDomainAccessRights desired_access)
+        {
+            return OpenDomain(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible domain objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened domains.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible domains.</returns>
+        public NtResult<IReadOnlyList<SamDomain>> OpenAccessibleDomains(SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateDomains(throw_on_error).Map<IReadOnlyList<SamDomain>>(e => e.Select(
+                s => OpenDomain(s.Name, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible domain objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened domains.</param>
+        /// <returns>The list of accessible domains.</returns>
+        public IReadOnlyList<SamDomain> OpenAccessibleDomains(SamDomainAccessRights desired_access)
+        {
+            return OpenAccessibleDomains(desired_access, true).Result;
         }
 
         #endregion

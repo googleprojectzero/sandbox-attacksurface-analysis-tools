@@ -22,7 +22,9 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return new NtType[] {
                 new NtType(SamUtils.SAM_SERVER_NT_TYPE_NAME, SamUtils.GetSamServerGenericMapping(),
-                        typeof(SamServerAccessRights), typeof(SamServerAccessRights), MandatoryLabelPolicy.NoWriteUp)
+                        typeof(SamServerAccessRights), typeof(SamServerAccessRights), MandatoryLabelPolicy.NoWriteUp),
+                 new NtType(SamUtils.SAM_DOMAIN_NT_TYPE_NAME, SamUtils.GetSamDomainGenericMapping(),
+                        typeof(SamDomainAccessRights), typeof(SamDomainAccessRights), MandatoryLabelPolicy.NoWriteUp)
             };
         }
     }

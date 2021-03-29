@@ -18,25 +18,23 @@ using System;
 namespace NtApiDotNet.Win32.Security.Sam
 {
     /// <summary>
-    /// Access rights for the SAM server.
+    /// Access rights for a SAM alias object.
     /// </summary>
     [Flags]
-    public enum SamServerAccessRights : uint
+    public enum SamAliasAccessRights : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("SAM_SERVER_CONNECT")]
-        Connect = 0x0001,
-        [SDKName("SAM_SERVER_SHUTDOWN")]
-        Shutdown = 0x0002,
-        [SDKName("SAM_SERVER_INITIALIZE")]
-        Initialize = 0x0004,
-        [SDKName("SAM_SERVER_CREATE_DOMAIN")]
-        CreateDomain = 0x0008,
-        [SDKName("SAM_SERVER_ENUMERATE_DOMAINS")]
-        EnumerateDomains = 0x0010,
-        [SDKName("SAM_SERVER_LOOKUP_DOMAIN")]
-        LookupDomain = 0x0020,
+        [SDKName("ALIAS_ADD_MEMBER")]
+        AddMember = 0x0001,
+        [SDKName("ALIAS_REMOVE_MEMBER")]
+        RemoveMember = 0x0002,
+        [SDKName("ALIAS_LIST_MEMBERS")]
+        ListMembers = 0x0004,
+        [SDKName("ALIAS_READ_INFORMATION")]
+        ReadInformation = 0x0008,
+        [SDKName("ALIAS_WRITE_ACCOUNT")]
+        WriteAccount = 0x0010,
         [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
         [SDKName("GENERIC_WRITE")]

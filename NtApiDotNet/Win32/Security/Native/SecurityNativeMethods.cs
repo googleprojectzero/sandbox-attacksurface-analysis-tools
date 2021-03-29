@@ -19,6 +19,7 @@ using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authorization;
 using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Policy;
+using NtApiDotNet.Win32.Security.Sam;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -876,6 +877,14 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeSamHandle ObjectHandle,
             uint Rid,
             out SafeSamMemoryBuffer Sid
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamOpenDomain(
+            SafeSamHandle ServerHandle,
+            SamDomainAccessRights DesiredAccess,
+            SafeSidBufferHandle DomainId,
+            out SafeSamHandle DomainHandle
         );
 
         internal static bool IsSuccess(this SecStatusCode result)

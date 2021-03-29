@@ -14523,6 +14523,82 @@ function Get-LsaPolicy {
     [NtApiDotNet.Win32.Security.Policy.LsaPolicy]::Open($SystemName, $Access)
 }
 
+<#
+.SYNOPSIS
+Connect to a SAM server.
+.DESCRIPTION
+This cmdlet connects to a SAM server for a specified system and access rights.
+.PARAMETER ServerName
+Specify the target system.
+.PARAMETER Access
+Specify the access rights on the server.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamServer
+.EXAMPLE
+Connect-SamServer
+Connect to the local SAM server with maximum access.
+.EXAMPLE
+Connect-SamServer -ServerName "PRIMARYDC"
+Connect to the SAM server on the system PRIMARYDC with maximum access.
+.EXAMPLE
+Connect-SamServer -Access EnumerateDomains
+Connect to the local SAM server with EnumerateDomains access.
+#>
+function Connect-SamServer { 
+    [CmdletBinding()]
+    param(
+        [NtApiDotNet.Win32.Security.Sam.SamServerAccessRights]$Access = "MaximumAllowed",
+        [string]$ServerName
+    )
+
+    [NtApiDotNet.Win32.Security.Sam.SamServer]::Connect($ServerName, $Access)
+}
+
+<#
+.SYNOPSIS
+Get a domain object from a SAM server.
+.DESCRIPTION
+This cmdlet opens a domain object from a SAM server.
+.PARAMETER Access
+Specify the access rights on the domain object.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamDomain
+.EXAMPLE
+Get-SamDomain -Server $server
+Get all accessible domain objects from the server.
+.EXAMPLE
+Get-SamDomain -Server $server -Name "FLUBBER"
+Get the FLIBBER domain object from the server.
+#>
+function Get-SamDomain { 
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamServer]$Server,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$DomainId,
+        [NtApiDotNet.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed"
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Server.OpenAccessibleDomains($Access) | Write-Output
+        }
+        "FromName" {
+            $Server.OpenDomain($Name, $Access)
+        }
+        "FromSid" {
+            $Server.OpenDomain($DomainId, $Access)
+        }
+    }
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential

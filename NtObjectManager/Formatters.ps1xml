@@ -4426,5 +4426,35 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>SamDomain</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.Security.Sam.SamDomain</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>DomainId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>DomainId</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

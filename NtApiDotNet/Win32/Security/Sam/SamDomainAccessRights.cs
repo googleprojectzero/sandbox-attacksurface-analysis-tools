@@ -18,25 +18,35 @@ using System;
 namespace NtApiDotNet.Win32.Security.Sam
 {
     /// <summary>
-    /// Access rights for the SAM server.
+    /// Access rights for a SAM domain object.
     /// </summary>
     [Flags]
-    public enum SamServerAccessRights : uint
+    public enum SamDomainAccessRights : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("SAM_SERVER_CONNECT")]
-        Connect = 0x0001,
-        [SDKName("SAM_SERVER_SHUTDOWN")]
-        Shutdown = 0x0002,
-        [SDKName("SAM_SERVER_INITIALIZE")]
-        Initialize = 0x0004,
-        [SDKName("SAM_SERVER_CREATE_DOMAIN")]
-        CreateDomain = 0x0008,
-        [SDKName("SAM_SERVER_ENUMERATE_DOMAINS")]
-        EnumerateDomains = 0x0010,
-        [SDKName("SAM_SERVER_LOOKUP_DOMAIN")]
-        LookupDomain = 0x0020,
+        [SDKName("DOMAIN_READ_PASSWORD_PARAMETERS")]
+        ReadPasswordParameters = 0x0001,
+        [SDKName("DOMAIN_WRITE_PASSWORD_PARAMS")]
+        WritePasswordParams = 0x0002,
+        [SDKName("DOMAIN_READ_OTHER_PARAMETERS")]
+        ReadOtherParameters = 0x0004,
+        [SDKName("DOMAIN_WRITE_OTHER_PARAMETERS")]
+        WriteOtherParameters = 0x0008,
+        [SDKName("DOMAIN_CREATE_USER")]
+        CreateUser = 0x0010,
+        [SDKName("DOMAIN_CREATE_GROUP")]
+        CreateGroup = 0x0020,
+        [SDKName("DOMAIN_CREATE_ALIAS")]
+        CreateAlias = 0x0040,
+        [SDKName("DOMAIN_GET_ALIAS_MEMBERSHIP")]
+        GetAliasMembership = 0x0080,
+        [SDKName("DOMAIN_LIST_ACCOUNTS")]
+        ListAccounts = 0x0100,
+        [SDKName("DOMAIN_LOOKUP")]
+        Lookup = 0x0200,
+        [SDKName("DOMAIN_ADMINISTER_SERVER")]
+        AdministerServer = 0x0400,
         [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
         [SDKName("GENERIC_WRITE")]

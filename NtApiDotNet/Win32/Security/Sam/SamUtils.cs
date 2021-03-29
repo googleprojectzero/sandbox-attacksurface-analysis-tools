@@ -22,6 +22,7 @@ namespace NtApiDotNet.Win32.Security.Sam
     internal static class SamUtils
     {
         public const string SAM_SERVER_NT_TYPE_NAME = "SamServer";
+        public const string SAM_DOMAIN_NT_TYPE_NAME = "SamDomain";
 
         public static GenericMapping GetSamServerGenericMapping()
         {
@@ -33,6 +34,20 @@ namespace NtApiDotNet.Win32.Security.Sam
                 GenericAll = SamServerAccessRights.ReadControl | SamServerAccessRights.WriteDac | SamServerAccessRights.WriteOwner | SamServerAccessRights.Delete |
                     SamServerAccessRights.EnumerateDomains | SamServerAccessRights.Shutdown | SamServerAccessRights.Initialize | SamServerAccessRights.CreateDomain |
                     SamServerAccessRights.Connect | SamServerAccessRights.LookupDomain
+            };
+        }
+
+        public static GenericMapping GetSamDomainGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = SamDomainAccessRights.ReadControl | SamDomainAccessRights.ReadOtherParameters | SamDomainAccessRights.GetAliasMembership,
+                GenericWrite = SamDomainAccessRights.ReadControl | SamDomainAccessRights.WriteOtherParameters | SamDomainAccessRights.WritePasswordParams | SamDomainAccessRights.CreateAlias 
+                | SamDomainAccessRights.CreateGroup | SamDomainAccessRights.CreateUser | SamDomainAccessRights.AdministerServer,
+                GenericExecute = SamDomainAccessRights.ReadControl | SamDomainAccessRights.ReadPasswordParameters | SamDomainAccessRights.ListAccounts | SamDomainAccessRights.Lookup,
+                GenericAll = SamDomainAccessRights.ReadControl | SamDomainAccessRights.WriteDac | SamDomainAccessRights.WriteOwner | SamDomainAccessRights.Delete |
+                    SamDomainAccessRights.ReadOtherParameters | SamDomainAccessRights.GetAliasMembership | SamDomainAccessRights.WriteOtherParameters | SamDomainAccessRights.WritePasswordParams | SamDomainAccessRights.CreateAlias
+                | SamDomainAccessRights.CreateGroup | SamDomainAccessRights.CreateUser | SamDomainAccessRights.AdministerServer | SamDomainAccessRights.ReadPasswordParameters | SamDomainAccessRights.ListAccounts | SamDomainAccessRights.Lookup
             };
         }
 
