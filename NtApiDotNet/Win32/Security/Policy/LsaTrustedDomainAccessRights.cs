@@ -18,21 +18,27 @@ using System;
 namespace NtApiDotNet.Win32.Security.Policy
 {
     /// <summary>
-    /// Access rights for an LSA account.
+    /// Access rights for an LSA trusted domain.
     /// </summary>
     [Flags]
-    public enum LsaAccountAccessRights : uint
+    public enum LsaTrustedDomainAccessRights : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("ACCOUNT_VIEW")]
-        View = 0x00000001,
-        [SDKName("ACCOUNT_ADJUST_PRIVILEGES")]
-        AdjustPrivileges = 0x00000002,
-        [SDKName("ACCOUNT_ADJUST_QUOTAS")]
-        AdjustQuotas = 0x00000004,
-        [SDKName("ACCOUNT_ADJUST_SYSTEM_ACCESS")]
-        AdjustSystemAccess = 0x00000008,
+        [SDKName("TRUSTED_QUERY_DOMAIN_NAME")]
+        QueryDomainName = 0x00000001,
+        [SDKName("TRUSTED_QUERY_CONTROLLERS")]
+        QueryControllers = 0x00000002,
+        [SDKName("TRUSTED_SET_CONTROLLERS")]
+        SetControllers = 0x00000004,
+        [SDKName("TRUSTED_QUERY_POSIX")]
+        QueryPosix = 0x00000008,
+        [SDKName("TRUSTED_SET_POSIX")]
+        SetPosix = 0x00000010,
+        [SDKName("TRUSTED_SET_AUTH")]
+        SetAuth = 0x00000020,
+        [SDKName("TRUSTED_QUERY_AUTH")]
+        QueryAuth = 0x00000040,
         [SDKName("GENERIC_READ")]
         GenericRead = GenericAccessRights.GenericRead,
         [SDKName("GENERIC_WRITE")]

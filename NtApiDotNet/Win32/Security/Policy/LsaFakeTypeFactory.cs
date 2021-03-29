@@ -29,6 +29,9 @@ namespace NtApiDotNet.Win32.Security.Policy
                         MandatoryLabelPolicy.NoWriteUp),
                 new NtType(LsaPolicyUtils.LSA_ACCOUNT_NT_TYPE_NAME, LsaPolicyUtils.GetLsaAccountGenericMapping(),
                         typeof(LsaAccountAccessRights), typeof(LsaAccountAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp),
+                new NtType(LsaPolicyUtils.LSA_TRUSTED_DOMAIN_NT_TYPE_NAME, LsaPolicyUtils.GetLsaTrustedDomainGenericMapping(),
+                        typeof(LsaTrustedDomainAccessRights), typeof(LsaTrustedDomainAccessRights),
                         MandatoryLabelPolicy.NoWriteUp)
             };
         }

@@ -631,6 +631,51 @@ namespace NtApiDotNet.Win32.Security.Policy
             return OpenAccessibleAccounts(LsaAccountAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Enumerate trusted domain information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of trusted domain information.</returns>
+        public NtResult<IReadOnlyList<LsaTrustedDomainInformation>> EnumerateTrustedDomains(bool throw_on_error)
+        {
+            int context = 0;
+            List<LsaTrustedDomainInformation> ret = new List<LsaTrustedDomainInformation>();
+            NtStatus status;
+            do
+            {
+                status = SecurityNativeMethods.LsaEnumerateTrustedDomainsEx(Handle, ref context, out SafeLsaMemoryBuffer buffer, 1000, out int entries_read);
+                if (!status.IsSuccess())
+                {
+                    if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                    {
+                        break;
+                    }
+                    return status.CreateResultFromError<IReadOnlyList<LsaTrustedDomainInformation>>(throw_on_error);
+                }
+
+                using (buffer)
+                {
+                    buffer.Initialize<TRUSTED_DOMAIN_INFORMATION_EX>((uint)entries_read);
+                    foreach (var info in buffer.ReadArray<TRUSTED_DOMAIN_INFORMATION_EX>(0, entries_read))
+                    {
+                        ret.Add(new LsaTrustedDomainInformation(info));
+                    }
+                }
+            }
+            while (true);
+
+            return ret.AsReadOnly().CreateResult<IReadOnlyList<LsaTrustedDomainInformation>>();
+        }
+
+        /// <summary>
+        /// Enumerate trusted domain information.
+        /// </summary>
+        /// <returns>The list of trusted domain information.</returns>
+        public IReadOnlyList<LsaTrustedDomainInformation> EnumerateTrustedDomains()
+        {
+            return EnumerateTrustedDomains(true).Result;
+        }
+
         #endregion
 
         #region Static Methods

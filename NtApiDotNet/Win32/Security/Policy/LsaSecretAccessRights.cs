@@ -45,8 +45,6 @@ namespace NtApiDotNet.Win32.Security.Policy
         WriteDac = GenericAccessRights.WriteDac,
         [SDKName("WRITE_OWNER")]
         WriteOwner = GenericAccessRights.WriteOwner,
-        [SDKName("SYNCHRONIZE")]
-        Synchronize = GenericAccessRights.Synchronize,
         [SDKName("MAXIMUM_ALLOWED")]
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         [SDKName("ACCESS_SYSTEM_SECURITY")]

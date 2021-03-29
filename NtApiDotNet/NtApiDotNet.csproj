@@ -352,6 +352,11 @@
     <Compile Include="Win32\Security\Policy\LsaSecretAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaSecretValue.cs" />
     <Compile Include="Win32\Security\Policy\LsaSystemAccessFlags.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustAttributes.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustDirection.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

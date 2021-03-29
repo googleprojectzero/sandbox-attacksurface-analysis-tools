@@ -42,9 +42,14 @@ namespace NtApiDotNet.Win32.Security.Policy
         public const string LSA_SECRET_NT_TYPE_NAME = "LsaSecret";
 
         /// <summary>
-        /// The name of the fake NT type for a LSA secret.
+        /// The name of the fake NT type for a LSA account.
         /// </summary>
         public const string LSA_ACCOUNT_NT_TYPE_NAME = "LsaAccount";
+
+        /// <summary>
+        /// The name of the fake NT type for a LSA trusted domain.
+        /// </summary>
+        public const string LSA_TRUSTED_DOMAIN_NT_TYPE_NAME = "LsaTrustedDomain";
 
         /// <summary>
         /// Generic generic mapping for LSA policy security.
@@ -95,6 +100,23 @@ namespace NtApiDotNet.Win32.Security.Policy
                 GenericExecute = LsaAccountAccessRights.ReadControl,
                 GenericAll = LsaAccountAccessRights.ReadControl | LsaAccountAccessRights.WriteDac | LsaAccountAccessRights.WriteOwner | LsaAccountAccessRights.Delete |
                     LsaAccountAccessRights.View | LsaAccountAccessRights.AdjustPrivileges | LsaAccountAccessRights.AdjustQuotas | LsaAccountAccessRights.AdjustSystemAccess
+            };
+        }
+
+        /// <summary>
+        /// Generic generic mapping for LSA trusted domain security.
+        /// </summary>
+        /// <returns>The generic mapping for the LSA trusted domain.</returns>
+        public static GenericMapping GetLsaTrustedDomainGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = LsaTrustedDomainAccessRights.ReadControl | LsaTrustedDomainAccessRights.QueryDomainName,
+                GenericWrite = LsaTrustedDomainAccessRights.ReadControl | LsaTrustedDomainAccessRights.SetControllers | LsaTrustedDomainAccessRights.SetPosix,
+                GenericExecute = LsaTrustedDomainAccessRights.ReadControl | LsaTrustedDomainAccessRights.QueryControllers | LsaTrustedDomainAccessRights.QueryPosix,
+                GenericAll = LsaTrustedDomainAccessRights.ReadControl | LsaTrustedDomainAccessRights.WriteDac | LsaTrustedDomainAccessRights.WriteOwner | LsaTrustedDomainAccessRights.Delete |
+                    LsaTrustedDomainAccessRights.QueryDomainName | LsaTrustedDomainAccessRights.SetControllers | LsaTrustedDomainAccessRights.SetPosix | LsaTrustedDomainAccessRights.SetAuth |
+                    LsaTrustedDomainAccessRights.QueryControllers | LsaTrustedDomainAccessRights.QueryPosix | LsaTrustedDomainAccessRights.QueryAuth
             };
         }
 

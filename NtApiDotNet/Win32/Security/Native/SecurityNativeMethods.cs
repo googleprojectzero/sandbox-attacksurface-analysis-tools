@@ -128,6 +128,17 @@ namespace NtApiDotNet.Win32.Security.Native
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct TRUSTED_DOMAIN_INFORMATION_EX
+    {
+        public UnicodeStringOut Name;
+        public UnicodeStringOut FlatName;
+        public IntPtr Sid;
+        public LsaTrustDirection TrustDirection;
+        public LsaTrustType TrustType;
+        public LsaTrustAttributes TrustAttributes;
+    }
+
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -861,6 +872,15 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeLsaMemoryBuffer EnumerationBuffer, // PLSAPR_ACCOUNT_INFORMATION
             int PreferedMaximumLength,
             out int EntriesRead
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumerateTrustedDomainsEx(
+            SafeLsaHandle PolicyHandle,
+            ref int EnumerationContext,
+            out SafeLsaMemoryBuffer Buffer,
+            int PreferedMaximumLength,
+            out int CountReturned
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
