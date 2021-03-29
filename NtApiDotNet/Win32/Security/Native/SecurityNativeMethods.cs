@@ -37,108 +37,6 @@ namespace NtApiDotNet.Win32.Security.Native
         IntPtr pArgs,
         [MarshalAs(UnmanagedType.Bool)] out bool pbAceApplicable);
 
-    /// <summary>
-    /// Logon32 provider
-    /// </summary>
-    public enum Logon32Provider
-    {
-        /// <summary>
-        /// Default.
-        /// </summary>
-        Default = 0,
-        /// <summary>
-        /// Windows NT 3.5.
-        /// </summary>
-        WinNT35 = 1,
-        /// <summary>
-        /// Windows NT 4.0.
-        /// </summary>
-        WinNT40 = 2,
-        /// <summary>
-        /// Windows NT 5.0.
-        /// </summary>
-        WinNT50 = 3,
-        /// <summary>
-        /// Virtual provider.
-        /// </summary>
-        Virtual = 4
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LSA_TRUST_INFORMATION
-    {
-        public UnicodeStringOut Name;
-        public IntPtr Sid;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LSA_REFERENCED_DOMAIN_LIST
-    {
-        public int Entries;
-        public IntPtr Domains; // PLSA_TRUST_INFORMATION 
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LSAPR_ACCOUNT_ENUM_BUFFER
-    {
-        public int EntriesRead;
-        public IntPtr Information; // PLSAPR_ACCOUNT_INFORMATION 
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LSAPR_ACCOUNT_INFORMATION
-    {
-        public IntPtr Sid; // PRPC_SID
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LSA_TRANSLATED_NAME
-    {
-        public SidNameUse Use;
-        public UnicodeStringOut Name;
-        public int DomainIndex;
-
-        public string GetName()
-        {
-            switch (Use)
-            {
-                case SidNameUse.Domain:
-                case SidNameUse.Invalid:
-                case SidNameUse.Unknown:
-                    return string.Empty;
-                default:
-                    return Name.ToString();
-            }
-        }
-
-        public string GetDomain(LSA_TRUST_INFORMATION[] domains)
-        {
-            switch (Use)
-            {
-                case SidNameUse.WellKnownGroup:
-                case SidNameUse.Invalid:
-                case SidNameUse.Unknown:
-                    return string.Empty;
-            }
-            if (DomainIndex >= domains.Length)
-            {
-                return string.Empty;
-            }
-            return domains[DomainIndex].Name.ToString();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct TRUSTED_DOMAIN_INFORMATION_EX
-    {
-        public UnicodeStringOut Name;
-        public UnicodeStringOut FlatName;
-        public IntPtr Sid;
-        public LsaTrustDirection TrustDirection;
-        public LsaTrustType TrustType;
-        public LsaTrustAttributes TrustAttributes;
-    }
-
     internal static class SecurityNativeMethods
     {
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
@@ -919,6 +817,38 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("advapi32.dll")]
         internal static extern void CredFree(
             IntPtr Buffer
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamConnect(
+            UnicodeString ServerName,
+            out SafeSamHandle ServerHandle,
+            AccessMask DesiredAccess,
+            ObjectAttributes ObjectAttributes
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamFreeMemory(
+            IntPtr Buffer
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamCloseHandle(
+            IntPtr SamHandle
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamSetSecurityObject(
+            SafeSamHandle ObjectHandle,
+            SecurityInformation SecurityInformation,
+            SafeBuffer SecurityDescriptor
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamQuerySecurityObject(
+            SafeSamHandle ObjectHandle,
+            SecurityInformation SecurityInformation,
+            out SafeSamMemoryBuffer SecurityDescriptor
         );
 
         internal static bool IsSuccess(this SecStatusCode result)

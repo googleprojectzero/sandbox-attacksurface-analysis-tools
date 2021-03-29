@@ -331,6 +331,8 @@
     <Compile Include="Win32\LoadLibraryFlags.cs" />
     <Compile Include="Win32\Net\UdpListenerInformation.cs" />
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
+    <Compile Include="Win32\SafeHandles\SafeSamHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
     <Compile Include="Win32\Security\Credential\Credential.cs" />
     <Compile Include="Win32\Security\Credential\CredentialAttribute.cs" />
     <Compile Include="Win32\Security\Credential\CredentialAttributeFlags.cs" />
@@ -341,6 +343,13 @@
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
+    <Compile Include="Win32\Security\Native\Logon32Provider.cs" />
+    <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_ENUM_BUFFER.cs" />
+    <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_INFORMATION.cs" />
+    <Compile Include="Win32\Security\Native\LSA_REFERENCED_DOMAIN_LIST.cs" />
+    <Compile Include="Win32\Security\Native\LSA_TRANSLATED_NAME.cs" />
+    <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
+    <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
@@ -357,6 +366,11 @@
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />
+    <Compile Include="Win32\Security\Sam\SamFakeTypeFactory.cs" />
+    <Compile Include="Win32\Security\Sam\SamObject.cs" />
+    <Compile Include="Win32\Security\Sam\SamServer.cs" />
+    <Compile Include="Win32\Security\Sam\SamServerAccessRights.cs" />
+    <Compile Include="Win32\Security\Sam\SamUtils.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />
