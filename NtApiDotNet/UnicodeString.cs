@@ -192,7 +192,7 @@ namespace NtApiDotNet
                 throw new ArgumentException("String too long for UnicodeString");
             }
             Length = (ushort)(str.Length * 2);
-            MaximumLength = (ushort)((str.Length * 2) + 1);
+            MaximumLength = (ushort)((str.Length + 1) * 2);
             Buffer = str;
         }
     }
