@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Sam
     /// <summary>
     /// Base class for a SAM object.
     /// </summary>
-    public class SamObject : IDisposable, INtObjectSecurity
+    public abstract class SamObject : IDisposable, INtObjectSecurity
     {
         #region Private Members
         private readonly AccessMask _granted_access;
