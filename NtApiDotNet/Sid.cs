@@ -68,7 +68,7 @@ namespace NtApiDotNet
         public IReadOnlyList<uint> SubAuthorities { get; private set; }
 
         /// <summary>
-        /// Get the account name of the SID or the SDDL form is no corresponding name.
+        /// Get the account name of the SID or the SDDL form if no corresponding name.
         /// </summary>
         public string Name => NtSecurity.GetNameForSid(this).QualifiedName;
         #endregion

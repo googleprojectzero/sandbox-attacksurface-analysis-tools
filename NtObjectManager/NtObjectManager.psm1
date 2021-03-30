@@ -14563,6 +14563,8 @@ Get a domain object from a SAM server.
 This cmdlet opens a domain object from a SAM server.
 .PARAMETER Access
 Specify the access rights on the domain object.
+.PARAMETER InfoOnly
+Specify to only get domain information not objects.
 .INPUTS
 None
 .OUTPUTS
@@ -14570,6 +14572,9 @@ NtApiDotNet.Win32.Security.Sam.SamDomain
 .EXAMPLE
 Get-SamDomain -Server $server
 Get all accessible domain objects from the server.
+.EXAMPLE
+Get-SamDomain -Server $server -InfoOnly
+Get all Information only domain from the server.
 .EXAMPLE
 Get-SamDomain -Server $server -Name "FLUBBER"
 Get the FLIBBER domain object from the server.
@@ -14580,21 +14585,39 @@ function Get-SamDomain {
         [Parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Sam.SamServer]$Server,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromNameInfoOnly")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
+        [Parameter(Mandatory, ParameterSetName="FromSidInfoOnly")]
         [NtApiDotNet.Sid]$DomainId,
-        [NtApiDotNet.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed"
+        [Parameter(ParameterSetName="All")]
+        [Parameter(ParameterSetName="FromName")]
+        [Parameter(ParameterSetName="FromSid")]
+        [NtApiDotNet.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed",
+        [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
+        [Parameter(Mandatory, ParameterSetName="FromNameInfoOnly")]
+        [Parameter(Mandatory, ParameterSetName="FromSidInfoOnly")]
+        [switch]$InfoOnly
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Server.OpenAccessibleDomains($Access) | Write-Output
+    if ($InfoOnly) {
+        $Server.EnumerateDomains() | ForEach-Object { 
+            [PSCustomObject]@{
+                Name = $_.Name
+                DomainId = $Server.LookupDomain($_.Name)
+            }
         }
-        "FromName" {
-            $Server.OpenDomain($Name, $Access)
-        }
-        "FromSid" {
-            $Server.OpenDomain($DomainId, $Access)
+    } else {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Server.OpenAccessibleDomains($Access) | Write-Output
+            }
+            "FromName" {
+                $Server.OpenDomain($Name, $Access)
+            }
+            "FromSid" {
+                $Server.OpenDomain($DomainId, $Access)
+            }
         }
     }
 }

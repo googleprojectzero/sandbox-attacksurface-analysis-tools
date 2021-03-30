@@ -4426,6 +4426,29 @@
             </TableRowEntries>
         </TableControl>
     </View>
+      <View>
+          <Name>SamServer</Name>
+          <ViewSelectedBy>
+              <TypeName>NtApiDotNet.Win32.Security.Sam.SamServer</TypeName>
+          </ViewSelectedBy>
+          <TableControl>
+              <TableHeaders>
+                  <TableColumnHeader>
+                      <Label>ServerName</Label>
+                      <Alignment>left</Alignment>
+                  </TableColumnHeader>
+              </TableHeaders>
+              <TableRowEntries>
+                  <TableRowEntry>
+                      <TableColumnItems>
+                          <TableColumnItem>
+                              <PropertyName>ServerName</PropertyName>
+                          </TableColumnItem>
+                      </TableColumnItems>
+                  </TableRowEntry>
+              </TableRowEntries>
+          </TableControl>
+      </View>
     <View>
         <Name>SamDomain</Name>
         <ViewSelectedBy>

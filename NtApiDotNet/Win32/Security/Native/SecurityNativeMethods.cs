@@ -887,6 +887,24 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeSamHandle DomainHandle
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamLookupNamesInDomain(
+            SafeSamHandle DomainHandle,
+            int Count,
+            [In] UnicodeStringIn[] Names,
+            out SafeSamMemoryBuffer RelativeIds, // PULONG
+            out SafeSamMemoryBuffer Use // PSID_NAME_USE
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamLookupIdsInDomain(
+            SafeSamHandle DomainHandle,
+            int Count,
+            uint[] RelativeIds,
+            out SafeSamMemoryBuffer Names, // PUNICODE_STRING *
+            out SafeSamMemoryBuffer Use // PSID_NAME_USE
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

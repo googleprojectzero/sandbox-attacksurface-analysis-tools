@@ -13,6 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Sam
 {
@@ -21,12 +25,61 @@ namespace NtApiDotNet.Win32.Security.Sam
     /// </summary>
     public sealed class SamDomain : SamObject
     {
+        #region Private Members
+        private readonly Lazy<string> _name;
+
+        private IReadOnlyList<SidName> MapNames(string[] names, SafeSamMemoryBuffer rid_buffer, SafeSamMemoryBuffer use_buffer)
+        {
+            using (rid_buffer)
+            {
+                using (use_buffer)
+                {
+                    rid_buffer.Initialize<uint>((uint)names.Length);
+                    use_buffer.Initialize<int>((uint)names.Length);
+                    uint[] rids = rid_buffer.ReadArray<uint>(0, names.Length);
+                    int[] use = use_buffer.ReadArray<int>(0, names.Length);
+
+                    return names.Select((n, i) => new SidName(DomainId.CreateRelative(rids[i]),
+                            Name, n.ToString(), SidNameSource.Account, (SidNameUse)use[i], false))
+                            .Where(n => n.NameUse != SidNameUse.Unknown).ToList().AsReadOnly();
+                }
+            }
+        }
+
+        private IReadOnlyList<SidName> MapIds(uint[] rids, SafeSamMemoryBuffer names_buffer, SafeSamMemoryBuffer use_buffer)
+        {
+            using (names_buffer)
+            {
+                using (use_buffer)
+                {
+                    names_buffer.Initialize<UnicodeStringOut>((uint)rids.Length);
+                    use_buffer.Initialize<int>((uint)rids.Length);
+
+                    UnicodeStringOut[] names = names_buffer.ReadArray<UnicodeStringOut>(0, rids.Length);
+                    int[] use = use_buffer.ReadArray<int>(0, rids.Length);
+
+                    return names.Select((n, i) => new SidName(DomainId.CreateRelative(rids[i]),
+                            Name, n.ToString(), SidNameSource.Account, (SidNameUse)use[i], false))
+                           .Where(n => n.NameUse != SidNameUse.Unknown).ToList().AsReadOnly();
+                }
+            }
+        }
+
+        #endregion
+
         #region Internal Members
         internal SamDomain(SafeSamHandle handle, SamDomainAccessRights granted_access, string server_name, string domain_name, Sid domain_sid)
             : base(handle, granted_access, SamUtils.SAM_DOMAIN_NT_TYPE_NAME, $"SAM Domain ({domain_name ?? domain_sid.ToString()})", server_name)
         {
             DomainId = domain_sid;
-            Name = domain_name ?? string.Empty;
+            if (domain_name != null)
+            {
+                _name = new Lazy<string>(() => domain_name);
+            }
+            else
+            {
+                _name = new Lazy<string>(() => string.Empty);
+            }
         }
         #endregion
 
@@ -34,11 +87,104 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// <summary>
         /// The domain name.
         /// </summary>
-        public string Name { get; }
+        public string Name => _name.Value;
         /// <summary>
         /// The domain SID.
         /// </summary>
         public Sid DomainId { get; }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Lookup names in a domain.
+        /// </summary>
+        /// <param name="names">The list of names to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public NtResult<IReadOnlyList<SidName>> LookupNames(IEnumerable<string> names, bool throw_on_error)
+        {
+            UnicodeStringIn[] lookup_names = names.Select(n => new UnicodeStringIn(n)).ToArray();
+            return SecurityNativeMethods.SamLookupNamesInDomain(Handle, lookup_names.Length, 
+                lookup_names, out SafeSamMemoryBuffer rids, out SafeSamMemoryBuffer use)
+                .CreateResult(throw_on_error, () => MapNames(names.ToArray(), rids, use));
+        }
+
+        /// <summary>
+        /// Lookup names in a domain.
+        /// </summary>
+        /// <param name="names">The list of names to lookup.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public IReadOnlyList<SidName> LookupNames(IEnumerable<string> names)
+        {
+            return LookupNames(names, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup a name in a domain.
+        /// </summary>
+        /// <param name="name">The name to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SID name.</returns>
+        public NtResult<SidName> LookupName(string name, bool throw_on_error)
+        {
+            return LookupNames(new string[] { name }, throw_on_error).Map(l => l.First());
+        }
+
+        /// <summary>
+        /// Lookup a name in a domain.
+        /// </summary>
+        /// <param name="name">The name to lookup.</param>
+        /// <returns>The SID name.</returns>
+        public SidName LookupName(string name)
+        {
+            return LookupName(name, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup relative IDs in a domain.
+        /// </summary>
+        /// <param name="rids">The list of relative IDs to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public NtResult<IReadOnlyList<SidName>> LookupIds(IEnumerable<uint> rids, bool throw_on_error)
+        {
+            uint[] rids_lookup = rids.ToArray();
+            return SecurityNativeMethods.SamLookupIdsInDomain(Handle, rids_lookup.Length,
+                rids_lookup, out SafeSamMemoryBuffer names, out SafeSamMemoryBuffer use)
+                .CreateResult(throw_on_error, () => MapIds(rids_lookup, names, use));
+        }
+
+        /// <summary>
+        /// Lookup relative IDs in a domain.
+        /// </summary>
+        /// <param name="rids">The list of relative IDs to lookup.</param>
+        /// <returns>The list of looked up SID names.</returns>
+        public IReadOnlyList<SidName> LookupIds(IEnumerable<uint> rids)
+        {
+            return LookupIds(rids, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup a rid in a domain.
+        /// </summary>
+        /// <param name="rid">The relative ID to lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SID name.</returns>
+        public NtResult<SidName> LookupId(uint rid, bool throw_on_error)
+        {
+            return LookupIds(new uint[] { rid }, throw_on_error).Map(l => l.First());
+        }
+
+        /// <summary>
+        /// Lookup a rid in a domain.
+        /// </summary>
+        /// <param name="rid">The relative ID to lookup.</param>
+        /// <returns>The SID name.</returns>
+        public SidName LookupId(uint rid)
+        {
+            return LookupId(rid, true).Result;
+        }
+
         #endregion
     }
 }
