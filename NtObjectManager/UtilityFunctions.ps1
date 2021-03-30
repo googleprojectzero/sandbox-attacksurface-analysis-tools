@@ -1,0 +1,414 @@
+﻿#  Copyright 2021 Google Inc. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+function Format-ObjectTable {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        $InputObject,
+        [switch]$HideTableHeaders
+    )
+
+    $output = $InputObject | Format-Table -HideTableHeaders:$HideTableHeaders | Out-String
+    $output -Split "`r`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Write-Output
+    Write-Output ""
+}
+
+<#
+.SYNOPSIS
+Get API set entries
+.DESCRIPTION
+This cmdlet gets API set entries for the current system.
+.PARAMETER Name
+Specify an API set name to lookup.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.ApiSet.ApiSetEntry[]
+.EXAMPLE
+Get-NtApiSet
+Get all API set entries.
+.EXAMPLE
+Get-NtApiSet -Name "api-ms-win-base-util-l1-1-0"
+Get an API set by name.
+#>
+function Get-NtApiSet {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromName") {
+        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.GetApiSet($Name)
+    } else {
+        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.Entries | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Get the SDK name for an enumerated type or other type.
+.DESCRIPTION
+This cmdlet removes a package SID from the list of granted loopback exceptions.
+.PARAMETER InputObject
+The package SID to remove.
+.INPUTS
+object
+.OUTPUTS
+string
+.EXAMPLE
+Get-NtAccessMask 0x1 -AsSpecificAccess File | Get-NtSDKName
+Get the SDK names for an access mask.
+#>
+function Get-NtSDKName { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        $InputObject
+    )
+    PROCESS {
+        [NtApiDotNet.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
+    }
+}
+
+<#
+.SYNOPSIS
+Converts a text hexdump into bytes.
+.DESCRIPTION
+This cmdlet tries to convert a hexdump into the original bytes.
+.PARAMETER Hex
+The hex dump.
+.INPUTS
+string
+.OUTPUTS
+byte[]
+.EXAMPLE
+1, 2, 3, 4 | Format-HexDump | ConvertFrom-HexDump
+Convert some bytes to a hex dump and back again.
+#>
+function ConvertFrom-HexDump { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [string]$Hex
+    )
+
+    PROCESS {
+        [NtApiDotNet.Utilities.Text.HexDumpBuilder]::ParseHexDump($Hex)
+    }
+}
+
+<#
+.SYNOPSIS
+Gets a certificate object.
+.DESCRIPTION
+This cmdlet gets a certificate object from a file.
+.PARAMETER Path
+Specify the path to the certificate or file.
+.INPUTS
+None
+.OUTPUTS
+System.Security.Cryptography.X509Certificates.X509Certificate2
+#>
+function Get-X509Certificate {
+    param(
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path
+    )
+
+    $Path = Resolve-Path -Path $Path
+    if ($null -ne $Path) {
+        [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+    }
+}
+
+<#
+.SYNOPSIS
+Waits on an async task and gets the result.
+.DESCRIPTION
+This cmdlet waits on a .net asynchronous task and returns any result.
+.PARAMETER Task
+Specify the asynchronous task to wait on.
+.PARAMETER TimeoutSec
+Specify the timeout in seconds to wait for.
+.INPUTS
+None
+.OUTPUTS
+object
+.EXAMPLE
+Wait-AsyncTaskResult -Task $task
+Wait on the task and result.
+.EXAMPLE
+Wait-AsyncTaskResult -Task $task -TimeoutSec 10
+Wait on the task and result for up to 10 seconds.
+#>
+function Wait-AsyncTaskResult {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [System.Threading.Tasks.Task]$Task,
+        [int]$TimeoutSec = [int]::MaxValue
+    )
+
+    while (-not $Task.Wait(1000)) {
+        $TimeoutSec--
+        if ($TimeoutSec -le 0) {
+            return
+        }
+    }
+
+    $Task.GetAwaiter().GetResult() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Formats a hex dump for a byte array.
+.DESCRIPTION
+This cmdlet converts a byte array to a hex dump string. If invoked as Out-HexDump will write the to the console.
+.PARAMETER Bytes
+The bytes to convert.
+.PARAMETER ShowHeader
+Display a header for the hex dump.
+.PARAMETER ShowAddress
+Display the address for the hex dump.
+.PARAMETER ShowAscii
+Display the ASCII dump along with the hex.
+.PARAMETER HideRepeating
+Hide repeating 16 byte patterns.
+.PARAMETER Buffer
+Show the contents of a safe buffer.
+.PARAMETER Offset
+Specify start offset into the safe buffer or the file.
+.PARAMETER Length
+Specify length of safe buffer or the file.
+.PARAMETER BaseAddress
+Specify base address for the display when ShowAddress is enabled.
+.INPUTS
+byte[]
+.OUTPUTS
+String
+#>
+function Format-HexDump {
+    [CmdletBinding(DefaultParameterSetName = "FromBytes")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromBytes")]
+        [Alias("Bytes")]
+        [AllowEmptyCollection()]
+        [byte[]]$Byte,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
+        [System.Runtime.InteropServices.SafeBuffer]$Buffer,
+        [Parameter(ParameterSetName = "FromBuffer")]
+        [Parameter(ParameterSetName = "FromFile")]
+        [int64]$Offset = 0,
+        [Parameter(ParameterSetName = "FromBuffer")]
+        [Parameter(ParameterSetName = "FromFile")]
+        [int64]$Length = 0,
+        [Parameter(ParameterSetName = "FromBytes")]
+        [int64]$BaseAddress = 0,
+        [switch]$ShowHeader,
+        [switch]$ShowAddress,
+        [switch]$ShowAscii,
+        [switch]$ShowAll,
+        [switch]$HideRepeating
+    )
+
+    BEGIN {
+        if ($ShowAll) {
+            $ShowHeader = $true
+            $ShowAscii = $true
+            $ShowAddress = $true
+        }
+
+        $WriteToHost = $PSCmdlet.MyInvocation.InvocationName -eq "Out-HexDump"
+
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
+            }
+            "FromBuffer" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
+            }
+            "FromFile" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $Offset);
+            }
+        }
+    }
+
+    PROCESS {
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $builder.Append($Byte)
+            }
+            "FromFile" {
+                $Path = Resolve-Path $Path -ErrorAction Stop
+                $builder.AppendFile($Path, $Offset, $Length)
+            }
+        }
+    }
+
+    END {
+        $builder.Complete()
+        $output = $builder.ToString()
+        if ($WriteToHost) {
+            $output | Write-Host
+        } else {
+            $output | Write-Output
+        }
+    }
+}
+
+Set-Alias -Name Out-HexDump -Value Format-HexDump
+
+<#
+.SYNOPSIS
+Get a service principal name.
+.DESCRIPTION
+This cmdlet gets SPN for a string.
+.PARAMETER Name
+Specify the SPN.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName
+.EXAMPLE
+Get-ServicePrincipalName -Name "HTTP/www.domain.com"
+Get the SPN from a string.
+#>
+function Get-ServicePrincipalName {
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [string]$Name
+    )
+    [NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName]::Parse($Name) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get a MD4 hash of a byte array or string.
+.DESCRIPTION
+This cmdlet calculates the MD4 hash of a byte array or string.
+.PARAMETER Bytes
+Specify a byte array.
+.PARAMETER String
+Specify string.
+.PARAMETER Encoding
+Specify string encoding. Default to Unicode.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Get-MD4Hash -String "ABC"
+Get the MD4 hash of the string ABC in unicode.
+.EXAMPLE
+Get-MD4Hash -String "ABC" -Encoding "ASCII"
+Get the MD4 hash of the string ABC in ASCII.
+.EXAMPLE
+Get-MD4Hash -Bytes @(0, 1, 2, 3)
+Get the MD4 hash of a byte array.
+#>
+function Get-MD4Hash {
+    [CmdletBinding(DefaultParameterSetName="FromString")]
+    Param(
+        [AllowEmptyString()]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
+        [string]$String,
+        [Parameter(Position = 1, ParameterSetName="FromString")]
+        [string]$Encoding = "Unicode",
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [byte[]]$Bytes
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromString" {
+            $enc = [System.Text.Encoding]::GetEncoding($Encoding)
+            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($String, $enc)
+        }
+        "FromBytes" {
+            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($Bytes)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Formats ASN.1 DER data to a string.
+.DESCRIPTION
+This cmdlet formats ASN.1 DER data to a string either from a byte array or a file.
+.PARAMETER Bytes
+Specify a byte array containing the DER data.
+.PARAMETER Path
+Specify file containing the DER data.
+.PARAMETER Depth
+Specify initialize indentation depth.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Format-ASN1DER -Bytes $ba
+Format the byte array with ASN.1 DER data.
+.EXAMPLE
+Format-ASN1DER -Bytes $ba -Depth 2
+Format the byte array with ASN.1 DER data with indentation depth of 2.
+.EXAMPLE
+Format-ASN1DER -Path file.bin
+Format the file containing ASN.1 DER data.
+#>
+function Format-ASN1DER {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [byte[]]$Bytes,
+        [int]$Depth = 0
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPath" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Path, $Depth)
+        }
+        "FromBytes" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Bytes, $Depth)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Split a command line into its component parts.
+.DESCRIPTION
+This cmdlet take a process command line and split it into its component parts.
+.PARAMETER CommandLine
+The command line.
+.INPUTS
+None
+.OUTPUTS
+string[]
+.EXAMPLE
+Split-Win32CommandLine -CommandLine "notepad test.txt"
+Split the command line "notepad test.txt"
+#>
+function Split-Win32CommandLine {
+    Param(
+        [parameter(Position = 0, Mandatory)]
+        [string]$CommandLine
+    )
+    [NtApiDotNet.Win32.Win32Utils]::ParseCommandLine($CommandLine) | Write-Output
+}
+
+# We use this incase we're running on a downlevel PowerShell.
+function Get-IsPSCore {
+    return ($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')
+}
