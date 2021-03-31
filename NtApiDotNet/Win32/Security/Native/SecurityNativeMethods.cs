@@ -905,6 +905,16 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeSamMemoryBuffer Use // PSID_NAME_USE
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamEnumerateUsersInDomain(
+            SafeSamHandle DomainHandle,
+            ref int EnumerationContext,
+            UserAccountControlFlags UserAccountControl,
+            out SafeSamMemoryBuffer Buffer, // PSAM_RID_ENUMERATION *
+            int PreferedMaximumLength,
+            out int CountReturned
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

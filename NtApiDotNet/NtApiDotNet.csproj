@@ -376,6 +376,8 @@
     <Compile Include="Win32\Security\Sam\SamServer.cs" />
     <Compile Include="Win32\Security\Sam\SamServerAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamUtils.cs" />
+    <Compile Include="Win32\Security\Sam\UserAccountControlFlags.cs" />
+    <Compile Include="Win32\Security\Sam\UserFlags.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />

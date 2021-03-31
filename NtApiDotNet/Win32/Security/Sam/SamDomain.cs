@@ -185,6 +185,31 @@ namespace NtApiDotNet.Win32.Security.Sam
             return LookupId(rid, true).Result;
         }
 
+        /// <summary>
+        /// Enumerate users in a domain.
+        /// </summary>
+        /// <param name="user_account_control">User account control flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of users.</returns>
+        public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateUsers(UserAccountControlFlags user_account_control, bool throw_on_error)
+        {
+            SecurityEnumDelegate< SafeSamHandle, SafeSamMemoryBuffer> enum_func = 
+                (SafeSamHandle handle, ref int context, out SafeSamMemoryBuffer buffer, int max_count, out int entries_read) =>
+                SecurityNativeMethods.SamEnumerateUsersInDomain(handle, ref context, user_account_control, out buffer, max_count, out entries_read);
+
+            return SamUtils.SamEnumerateObjects(Handle,
+                enum_func, (SAM_RID_ENUMERATION s) => new SamRidEnumeration(s), throw_on_error);
+        }
+
+        /// <summary>
+        /// Enumerate users in a domain.
+        /// </summary>
+        /// <returns>The list of users.</returns>
+        public IReadOnlyList<SamRidEnumeration> EnumerateUsers(UserAccountControlFlags user_account_control)
+        {
+            return EnumerateUsers(user_account_control, true).Result;
+        }
+
         #endregion
     }
 }
