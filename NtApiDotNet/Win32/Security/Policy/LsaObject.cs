@@ -30,12 +30,14 @@ namespace NtApiDotNet.Win32.Security.Policy
         #endregion
 
         #region Private Protected Members
-        private protected LsaObject(SafeLsaHandle handle, AccessMask granted_access, string type_name, string object_name)
+        private protected LsaObject(SafeLsaHandle handle, AccessMask granted_access, string type_name, 
+            string object_name, string system_name)
         {
             _handle = handle;
             _granted_access = granted_access;
             NtType = NtType.GetTypeByName(type_name);
             ObjectName = object_name;
+            SystemName = system_name;
         }
         #endregion
 
@@ -148,6 +150,13 @@ namespace NtApiDotNet.Win32.Security.Policy
             Delete(true);
         }
 
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get the system name for the policy.
+        /// </summary>
+        public string SystemName { get; }
         #endregion
 
         #region IDisposable implementation.

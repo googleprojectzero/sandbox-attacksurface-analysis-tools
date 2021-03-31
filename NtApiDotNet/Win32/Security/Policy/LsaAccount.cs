@@ -23,8 +23,8 @@ namespace NtApiDotNet.Win32.Security.Policy
     public sealed class LsaAccount : LsaObject
     {
         #region Internal Members
-        internal LsaAccount(SafeLsaHandle handle, LsaAccountAccessRights granted_access, Sid sid)
-            : base(handle, granted_access, LsaPolicyUtils.LSA_ACCOUNT_NT_TYPE_NAME, $"LSA Account ({sid})")
+        internal LsaAccount(SafeLsaHandle handle, LsaAccountAccessRights granted_access, Sid sid, string system_name)
+            : base(handle, granted_access, LsaPolicyUtils.LSA_ACCOUNT_NT_TYPE_NAME, $"LSA Account ({sid})", system_name)
         {
             Sid = sid;
         }

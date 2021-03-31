@@ -26,14 +26,12 @@ namespace NtApiDotNet.Win32.Security.Policy
     public sealed class LsaPolicy : LsaObject
     {
         #region Private Members
-        private readonly string _system_name;
         private delegate NtStatus LookupSidsDelegate(IntPtr[] sid_ptrs, out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer names);
 
         private LsaPolicy(SafeLsaHandle handle, LsaPolicyAccessRights granted_access, string system_name) 
             : base(handle, granted_access, LsaPolicyUtils.LSA_POLICY_NT_TYPE_NAME, 
-                  string.IsNullOrEmpty(system_name) ? "LSA Policy" : $@"LSA Policy (\\{system_name}")
+                  string.IsNullOrEmpty(system_name) ? "LSA Policy" : $@"LSA Policy (\\{system_name}", system_name)
         {
-            _system_name = system_name;
         }
 
         private static IReadOnlyList<SidName> GetSidNames(Sid[] sids, SafeLsaMemoryBuffer domains, SafeLsaMemoryBuffer names)
@@ -370,7 +368,7 @@ namespace NtApiDotNet.Win32.Security.Policy
         public NtResult<LsaSecret> OpenSecret(string name, LsaSecretAccessRights desired_access, bool throw_on_error)
         {
             return SecurityNativeMethods.LsaOpenSecret(Handle, new UnicodeString(name), 
-                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name));
+                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name, SystemName));
         }
 
         /// <summary>
@@ -404,7 +402,8 @@ namespace NtApiDotNet.Win32.Security.Policy
         public NtResult<LsaSecret> CreateSecret(string name, LsaSecretAccessRights desired_access, bool throw_on_error)
         {
             return SecurityNativeMethods.LsaCreateSecret(Handle, new UnicodeString(name),
-                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name));
+                desired_access, out SafeLsaHandle handle)
+                .CreateResult(throw_on_error, () => new LsaSecret(handle, desired_access, name, SystemName));
         }
 
         /// <summary>
@@ -466,7 +465,7 @@ namespace NtApiDotNet.Win32.Security.Policy
             {
                 return SecurityNativeMethods.LsaOpenAccount(Handle, buffer,
                     desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
-                    () => new LsaAccount(handle, desired_access, sid));
+                    () => new LsaAccount(handle, desired_access, sid, SystemName));
             }
         }
 
@@ -504,7 +503,7 @@ namespace NtApiDotNet.Win32.Security.Policy
             {
                 return SecurityNativeMethods.LsaCreateAccount(Handle, buffer,
                     desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
-                    () => new LsaAccount(handle, desired_access, sid));
+                    () => new LsaAccount(handle, desired_access, sid, SystemName));
             }
         }
 

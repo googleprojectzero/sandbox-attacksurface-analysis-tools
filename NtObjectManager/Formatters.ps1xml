@@ -4426,29 +4426,6 @@
             </TableRowEntries>
         </TableControl>
     </View>
-      <View>
-          <Name>SamServer</Name>
-          <ViewSelectedBy>
-              <TypeName>NtApiDotNet.Win32.Security.Sam.SamServer</TypeName>
-          </ViewSelectedBy>
-          <TableControl>
-              <TableHeaders>
-                  <TableColumnHeader>
-                      <Label>ServerName</Label>
-                      <Alignment>left</Alignment>
-                  </TableColumnHeader>
-              </TableHeaders>
-              <TableRowEntries>
-                  <TableRowEntry>
-                      <TableColumnItems>
-                          <TableColumnItem>
-                              <PropertyName>ServerName</PropertyName>
-                          </TableColumnItem>
-                      </TableColumnItems>
-                  </TableRowEntry>
-              </TableRowEntries>
-          </TableControl>
-      </View>
     <View>
         <Name>SamDomain</Name>
         <ViewSelectedBy>
@@ -4479,5 +4456,51 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>SamObject</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.Security.Sam.SamObject</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>ServerName</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>ServerName</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+      <View>
+          <Name>LsaObject</Name>
+          <ViewSelectedBy>
+              <TypeName>NtApiDotNet.Win32.Security.Policy.LsaObject</TypeName>
+          </ViewSelectedBy>
+          <TableControl>
+              <TableHeaders>
+                  <TableColumnHeader>
+                      <Label>SystemName</Label>
+                      <Alignment>left</Alignment>
+                  </TableColumnHeader>
+              </TableHeaders>
+              <TableRowEntries>
+                  <TableRowEntry>
+                      <TableColumnItems>
+                          <TableColumnItem>
+                              <PropertyName>SystemName</PropertyName>
+                          </TableColumnItem>
+                      </TableColumnItems>
+                  </TableRowEntry>
+              </TableRowEntries>
+          </TableControl>
+      </View>
   </ViewDefinitions>
 </Configuration>

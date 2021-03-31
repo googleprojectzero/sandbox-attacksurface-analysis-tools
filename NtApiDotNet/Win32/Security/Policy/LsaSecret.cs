@@ -23,8 +23,8 @@ namespace NtApiDotNet.Win32.Security.Policy
     public sealed class LsaSecret : LsaObject
     {
         #region Internal Members
-        internal LsaSecret(SafeLsaHandle handle, LsaSecretAccessRights granted_access, string name) 
-            : base(handle, granted_access, LsaPolicyUtils.LSA_SECRET_NT_TYPE_NAME, $"LSA Secret ({name})")
+        internal LsaSecret(SafeLsaHandle handle, LsaSecretAccessRights granted_access, string name, string system_name) 
+            : base(handle, granted_access, LsaPolicyUtils.LSA_SECRET_NT_TYPE_NAME, $"LSA Secret ({name})", system_name)
         {
         }
         #endregion
