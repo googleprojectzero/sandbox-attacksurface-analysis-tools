@@ -24,7 +24,9 @@ namespace NtApiDotNet.Win32.Security.Sam
                 new NtType(SamUtils.SAM_SERVER_NT_TYPE_NAME, SamUtils.GetSamServerGenericMapping(),
                         typeof(SamServerAccessRights), typeof(SamServerAccessRights), MandatoryLabelPolicy.NoWriteUp),
                  new NtType(SamUtils.SAM_DOMAIN_NT_TYPE_NAME, SamUtils.GetSamDomainGenericMapping(),
-                        typeof(SamDomainAccessRights), typeof(SamDomainAccessRights), MandatoryLabelPolicy.NoWriteUp)
+                        typeof(SamDomainAccessRights), typeof(SamDomainAccessRights), MandatoryLabelPolicy.NoWriteUp),
+                 new NtType(SamUtils.SAM_USER_NT_TYPE_NAME, SamUtils.GetSamUserGenericMapping(),
+                        typeof(SamUserAccessRights), typeof(SamUserAccessRights), MandatoryLabelPolicy.NoWriteUp)
             };
         }
     }

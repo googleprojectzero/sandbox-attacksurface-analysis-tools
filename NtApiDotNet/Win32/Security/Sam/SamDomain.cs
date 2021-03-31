@@ -65,6 +65,36 @@ namespace NtApiDotNet.Win32.Security.Sam
             }
         }
 
+        private SamUser CreateUserObject(SafeSamHandle user_handle, SamUserAccessRights desired_access, string name, uint user_id)
+        {
+            try
+            {
+                Sid sid = RidToSid(user_id, false).GetResultOrDefault();
+                if (sid == null)
+                {
+                    sid = DomainId.CreateRelative(user_id);
+                }
+
+                if (name == null)
+                {
+                    name = LookupId(user_id, false).GetResultOrDefault()?.Name ?? sid.ToString();
+                }
+
+                return new SamUser(user_handle, desired_access, ServerName, name, sid);
+            }
+            catch
+            {
+                user_handle.Dispose();
+                throw;
+            }
+        }
+
+        private NtResult<SamUser> OpenUser(uint user_id, string name, SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamOpenUser(Handle, desired_access, user_id, out SafeSamHandle handle).CreateResult(throw_on_error,
+                () => CreateUserObject(handle, desired_access, name, user_id));
+        }
+
         #endregion
 
         #region Internal Members
@@ -261,6 +291,155 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return EnumerateAliases(true).Result;
         }
+
+        /// <summary>
+        /// Open a user by relative ID.
+        /// </summary>
+        /// <param name="user_id">The user ID for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM user object.</returns>
+        public NtResult<SamUser> OpenUser(uint user_id, SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            return OpenUser(user_id, null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a user by relative ID.
+        /// </summary>
+        /// <param name="user_id">The user ID for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <returns>The SAM user object.</returns>
+        public SamUser OpenUser(uint user_id, SamUserAccessRights desired_access)
+        {
+            return OpenUser(user_id, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a user by SID.
+        /// </summary>
+        /// <param name="sid">The sid for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM user object.</returns>
+        public NtResult<SamUser> OpenUser(Sid sid, SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            if (sid.SubAuthorities.Count != DomainId.SubAuthorities.Count + 1 || !sid.StartsWith(DomainId))
+            {
+                return NtStatus.STATUS_NO_SUCH_DOMAIN.CreateResultFromError<SamUser>(throw_on_error);
+            }
+
+            return OpenUser(sid.SubAuthorities.Last(), null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a user by name.
+        /// </summary>
+        /// <param name="sid">The sid for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <returns>The SAM user object.</returns>
+        public SamUser OpenUser(Sid sid, SamUserAccessRights desired_access)
+        {
+            return OpenUser(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a user by name.
+        /// </summary>
+        /// <param name="name">The user name for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM user object.</returns>
+        public NtResult<SamUser> OpenUser(string name, SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            var sid_name = LookupName(name, throw_on_error);
+            if (!sid_name.IsSuccess)
+            {
+                return sid_name.Cast<SamUser>();
+            }
+
+            var sid = Sid.Parse(sid_name.Result.Sddl, throw_on_error);
+            if (!sid.IsSuccess)
+            {
+                return sid.Cast<SamUser>();
+            }
+
+            return OpenUser(sid.Result, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a user by name.
+        /// </summary>
+        /// <param name="name">The user name for the user.</param>
+        /// <param name="desired_access">The desired access for the user object.</param>
+        /// <returns>The SAM user object.</returns>
+        public SamUser OpenUser(string name, SamUserAccessRights desired_access)
+        {
+            return OpenUser(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible user objects.
+        /// </summary>
+        /// <param name="user_account_control">User account control flags.</param>
+        /// <param name="desired_access">The desired access for the opened users.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible users.</returns>
+        public NtResult<IReadOnlyList<SamUser>> OpenAccessibleUsers(UserAccountControlFlags user_account_control, SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateUsers(user_account_control, throw_on_error).Map<IReadOnlyList<SamUser>>(e => e.Select(
+                s => OpenUser(s.RelativeId, s.Name, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible user objects.
+        /// </summary>
+        /// <param name="user_account_control">User account control flags.</param>
+        /// <param name="desired_access">The desired access for the opened users.</param>
+        /// <returns>The list of accessible domains.</returns>
+        public IReadOnlyList<SamUser> OpenAccessibleUsers(UserAccountControlFlags user_account_control, SamUserAccessRights desired_access)
+        {
+            return OpenAccessibleUsers(user_account_control, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible user objects with maximum access.
+        /// </summary>
+        /// <returns>The list of accessible users.</returns>
+        public IReadOnlyList<SamUser> OpenAccessibleUsers()
+        {
+            return OpenAccessibleUsers(UserAccountControlFlags.None, SamUserAccessRights.MaximumAllowed);
+        }
+
+        #region Public Methods
+        /// <summary>
+        /// Convert a RID to a SID for the current object.
+        /// </summary>
+        /// <param name="relative_id">The relative ID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The converted SID.</returns>
+        public NtResult<Sid> RidToSid(uint relative_id, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamRidToSid(Handle, relative_id, out SafeSamMemoryBuffer buffer).CreateResult(throw_on_error, () =>
+            {
+                using (buffer)
+                {
+                    return new Sid(buffer);
+                }
+            }
+            );
+        }
+
+        /// <summary>
+        /// Convert a RID to a SID for the current object.
+        /// </summary>
+        /// <param name="relative_id">The relative ID.</param>
+        /// <returns>The converted SID.</returns>
+        public Sid RidToSid(uint relative_id)
+        {
+            return RidToSid(relative_id, true).Result;
+        }
+        #endregion
 
         #endregion
     }

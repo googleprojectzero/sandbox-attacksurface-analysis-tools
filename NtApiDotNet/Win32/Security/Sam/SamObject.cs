@@ -40,36 +40,6 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
         #endregion
 
-        #region Public Methods
-        /// <summary>
-        /// Convert a RID to a SID for the current object.
-        /// </summary>
-        /// <param name="relative_id">The relative ID.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The converted SID.</returns>
-        public NtResult<Sid> RidToSid(uint relative_id, bool throw_on_error)
-        {
-            return SecurityNativeMethods.SamRidToSid(Handle, relative_id, out SafeSamMemoryBuffer buffer).CreateResult(throw_on_error, () =>
-            {
-                using (buffer)
-                {
-                    return new Sid(buffer);
-                }
-            }
-            );
-        }
-
-        /// <summary>
-        /// Convert a RID to a SID for the current object.
-        /// </summary>
-        /// <param name="relative_id">The relative ID.</param>
-        /// <returns>The converted SID.</returns>
-        public Sid RidToSid(uint relative_id)
-        {
-            return RidToSid(relative_id, true).Result;
-        }
-        #endregion
-
         #region Public Properties
         /// <summary>
         /// The name of the server that we've connected to.

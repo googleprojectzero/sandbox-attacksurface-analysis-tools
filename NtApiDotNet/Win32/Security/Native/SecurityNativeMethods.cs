@@ -933,6 +933,15 @@ namespace NtApiDotNet.Win32.Security.Native
             out int CountReturned
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamOpenUser(
+            SafeSamHandle DomainHandle,
+            SamUserAccessRights DesiredAccess,
+            uint UserId,
+            out SafeSamHandle UserHandle
+        );
+
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

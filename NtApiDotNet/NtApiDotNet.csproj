@@ -375,6 +375,8 @@
     <Compile Include="Win32\Security\Sam\SamObject.cs" />
     <Compile Include="Win32\Security\Sam\SamServer.cs" />
     <Compile Include="Win32\Security\Sam\SamServerAccessRights.cs" />
+    <Compile Include="Win32\Security\Sam\SamUser.cs" />
+    <Compile Include="Win32\Security\Sam\SamUserAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamUtils.cs" />
     <Compile Include="Win32\Security\Sam\UserAccountControlFlags.cs" />
     <Compile Include="Win32\Security\Sam\UserFlags.cs" />

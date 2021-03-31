@@ -23,6 +23,7 @@ namespace NtApiDotNet.Win32.Security.Sam
     {
         public const string SAM_SERVER_NT_TYPE_NAME = "SamServer";
         public const string SAM_DOMAIN_NT_TYPE_NAME = "SamDomain";
+        public const string SAM_USER_NT_TYPE_NAME = "SamUser";
 
         public static GenericMapping GetSamServerGenericMapping()
         {
@@ -48,6 +49,21 @@ namespace NtApiDotNet.Win32.Security.Sam
                 GenericAll = SamDomainAccessRights.ReadControl | SamDomainAccessRights.WriteDac | SamDomainAccessRights.WriteOwner | SamDomainAccessRights.Delete |
                     SamDomainAccessRights.ReadOtherParameters | SamDomainAccessRights.GetAliasMembership | SamDomainAccessRights.WriteOtherParameters | SamDomainAccessRights.WritePasswordParams | SamDomainAccessRights.CreateAlias
                 | SamDomainAccessRights.CreateGroup | SamDomainAccessRights.CreateUser | SamDomainAccessRights.AdministerServer | SamDomainAccessRights.ReadPasswordParameters | SamDomainAccessRights.ListAccounts | SamDomainAccessRights.Lookup
+            };
+        }
+
+        public static GenericMapping GetSamUserGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = SamUserAccessRights.ReadControl | SamUserAccessRights.ReadPreferences | SamUserAccessRights.ReadLogon | SamUserAccessRights.ReadAccount | 
+                    SamUserAccessRights.ListGroups | SamUserAccessRights.ReadGroupInformation,
+                GenericWrite = SamUserAccessRights.ReadControl | SamUserAccessRights.WritePreferences | SamUserAccessRights.ChangePassword,
+                GenericExecute = SamUserAccessRights.ReadControl | SamUserAccessRights.ReadGeneral | SamUserAccessRights.ChangePassword,
+                GenericAll = SamUserAccessRights.ReadControl | SamUserAccessRights.WriteDac | SamUserAccessRights.WriteOwner | SamUserAccessRights.Delete |
+                SamUserAccessRights.ReadPreferences | SamUserAccessRights.ReadLogon | SamUserAccessRights.ReadAccount | SamUserAccessRights.ListGroups | SamUserAccessRights.ReadGroupInformation |
+                SamUserAccessRights.WritePreferences | SamUserAccessRights.ChangePassword | SamUserAccessRights.ReadGeneral | SamUserAccessRights.ForcePasswordChange |
+                SamUserAccessRights.WriteAccount | SamUserAccessRights.WriteGroupInformation
             };
         }
 
