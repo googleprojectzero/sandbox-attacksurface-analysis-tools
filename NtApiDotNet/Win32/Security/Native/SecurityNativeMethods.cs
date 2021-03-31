@@ -901,7 +901,7 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeSamHandle DomainHandle,
             int Count,
             uint[] RelativeIds,
-            out SafeSamMemoryBuffer Names, // PUNICODE_STRING *
+            out SafeSamMemoryBuffer Names, // PUNICODE_STRING
             out SafeSamMemoryBuffer Use // PSID_NAME_USE
         );
 
@@ -911,6 +911,24 @@ namespace NtApiDotNet.Win32.Security.Native
             ref int EnumerationContext,
             UserAccountControlFlags UserAccountControl,
             out SafeSamMemoryBuffer Buffer, // PSAM_RID_ENUMERATION *
+            int PreferedMaximumLength,
+            out int CountReturned
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamEnumerateGroupsInDomain(
+            SafeSamHandle DomainHandle,
+            ref int EnumerationContext,
+            out SafeSamMemoryBuffer Buffer, // PSAM_RID_ENUMERATION
+            int PreferedMaximumLength,
+            out int CountReturned
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamEnumerateAliasesInDomain(
+            SafeSamHandle DomainHandle,
+            ref int EnumerationContext,
+            out SafeSamMemoryBuffer Buffer, // PSAM_RID_ENUMERATION
             int PreferedMaximumLength,
             out int CountReturned
         );
@@ -932,9 +950,10 @@ namespace NtApiDotNet.Win32.Security.Native
             int context = 0;
             List<T> ret = new List<T>();
             NtStatus status;
+            int last_context = 0;
             do
             {
-                status = func(handle, ref context, out B buffer, 1000, out int entries_read);
+                status = func(handle, ref context, out B buffer, 64 * 1024, out int entries_read);
                 if (!status.IsSuccess())
                 {
                     if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
@@ -957,6 +976,13 @@ namespace NtApiDotNet.Win32.Security.Native
                         ret.Add(select_object(value));
                     }
                 }
+
+                // This is to deal with a weird bug in SamEnumerateAliasesInDomain.
+                if (context == last_context)
+                {
+                    break;
+                }
+                last_context = context;
             }
             while (true);
 

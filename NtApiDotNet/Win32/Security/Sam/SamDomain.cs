@@ -193,7 +193,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// <returns>The list of users.</returns>
         public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateUsers(UserAccountControlFlags user_account_control, bool throw_on_error)
         {
-            SecurityEnumDelegate< SafeSamHandle, SafeSamMemoryBuffer> enum_func = 
+            SecurityEnumDelegate<SafeSamHandle, SafeSamMemoryBuffer> enum_func = 
                 (SafeSamHandle handle, ref int context, out SafeSamMemoryBuffer buffer, int max_count, out int entries_read) =>
                 SecurityNativeMethods.SamEnumerateUsersInDomain(handle, ref context, user_account_control, out buffer, max_count, out entries_read);
 
@@ -204,10 +204,62 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// <summary>
         /// Enumerate users in a domain.
         /// </summary>
+        /// <param name="user_account_control">User account control flags.</param>
         /// <returns>The list of users.</returns>
         public IReadOnlyList<SamRidEnumeration> EnumerateUsers(UserAccountControlFlags user_account_control)
         {
             return EnumerateUsers(user_account_control, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate users in a domain.
+        /// </summary>
+        /// <returns>The list of users.</returns>
+        public IReadOnlyList<SamRidEnumeration> EnumerateUsers()
+        {
+            return EnumerateUsers(UserAccountControlFlags.None);
+        }
+
+        /// <summary>
+        /// Enumerate groups in a domain.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of groups.</returns>
+        public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateGroups(bool throw_on_error)
+        {
+            return SamUtils.SamEnumerateObjects(Handle,
+                SecurityNativeMethods.SamEnumerateGroupsInDomain, 
+                (SAM_RID_ENUMERATION s) => new SamRidEnumeration(s), throw_on_error);
+        }
+
+        /// <summary>
+        /// Enumerate groups in a domain.
+        /// </summary>
+        /// <returns>The list of groups.</returns>
+        public IReadOnlyList<SamRidEnumeration> EnumerateGroups()
+        {
+            return EnumerateGroups(true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate aliases in a domain.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of aliases.</returns>
+        public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateAliases(bool throw_on_error)
+        {
+            return SamUtils.SamEnumerateObjects(Handle,
+                SecurityNativeMethods.SamEnumerateAliasesInDomain,
+                (SAM_RID_ENUMERATION s) => new SamRidEnumeration(s), throw_on_error);
+        }
+
+        /// <summary>
+        /// Enumerate aliases in a domain.
+        /// </summary>
+        /// <returns>The list of aliases.</returns>
+        public IReadOnlyList<SamRidEnumeration> EnumerateAliases()
+        {
+            return EnumerateAliases(true).Result;
         }
 
         #endregion
