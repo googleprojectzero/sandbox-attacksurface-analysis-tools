@@ -38,10 +38,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Looks up the account name of a SID. 
         /// </summary>
+        /// <param name="system_name">The system name to lookup the SID on.</param>
         /// <param name="sid">The SID to lookup</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The name.</returns>
-        public static NtResult<SidName> LookupAccountSidName(Sid sid, bool throw_on_error)
+        public static NtResult<SidName> LookupAccountSidName(string system_name, Sid sid, bool throw_on_error)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
@@ -49,15 +50,26 @@ namespace NtApiDotNet
                 int length = name.Capacity;
                 StringBuilder domain = new StringBuilder(1024);
                 int domain_length = domain.Capacity;
-                if (!Win32NativeMethods.LookupAccountSid(null, sid_buffer, name,
+                if (!Win32NativeMethods.LookupAccountSid(system_name, sid_buffer, name,
                     ref length, domain, ref domain_length, out SidNameUse name_use))
                 {
                     return NtObjectUtils.CreateResultFromDosError<SidName>(throw_on_error);
                 }
 
-                return new SidName(sid, domain.ToString(), name.ToString(), 
+                return new SidName(sid, domain.ToString(), name.ToString(),
                     SidNameSource.Account, name_use, false).CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Looks up the account name of a SID. 
+        /// </summary>
+        /// <param name="sid">The SID to lookup</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The name.</returns>
+        public static NtResult<SidName> LookupAccountSidName(Sid sid, bool throw_on_error)
+        {
+            return LookupAccountSidName(null, sid, throw_on_error);
         }
 
         /// <summary>
@@ -110,31 +122,56 @@ namespace NtApiDotNet
         /// <summary>
         /// Lookup a SID from a username.
         /// </summary>
+        /// <param name="system_name">The system name to lookup the SID on.</param>
         /// <param name="username">The username, can be in the form domain\account.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The Security Identifier</returns>
         /// <exception cref="NtException">Thrown if account cannot be found.</exception>
-        public static Sid LookupAccountName(string username)
+        public static NtResult<Sid> LookupAccountName(string system_name, string username, bool throw_on_error)
         {
             int sid_length = 0;
             int domain_length = 0;
-            if (!Win32NativeMethods.LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length,
+            if (!Win32NativeMethods.LookupAccountName(system_name, username, SafeHGlobalBuffer.Null, ref sid_length,
                 SafeHGlobalBuffer.Null, ref domain_length, out SidNameUse name))
             {
                 if (sid_length <= 0)
                 {
-                    throw new NtException(NtStatus.STATUS_INVALID_USER_PRINCIPAL_NAME);
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Sid>(throw_on_error);
                 }
             }
 
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid_length), domain = new SafeHGlobalBuffer(domain_length * 2))
             {
-                if (!Win32NativeMethods.LookupAccountName(null, username, buffer, ref sid_length, domain, ref domain_length, out name))
+                if (!Win32NativeMethods.LookupAccountName(system_name, username, buffer, ref sid_length, domain, ref domain_length, out name))
                 {
-                    throw new NtException(NtStatus.STATUS_INVALID_USER_PRINCIPAL_NAME);
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<Sid>(throw_on_error);
                 }
 
-                return new Sid(buffer);
+                return new Sid(buffer).CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Lookup a SID from a username.
+        /// </summary>
+        /// <param name="system_name">The system name to lookup the SID on.</param>
+        /// <param name="username">The username, can be in the form domain\account.</param>
+        /// <returns>The Security Identifier</returns>
+        /// <exception cref="NtException">Thrown if account cannot be found.</exception>
+        public static Sid LookupAccountName(string system_name, string username)
+        {
+            return LookupAccountName(system_name, username, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup a SID from a username.
+        /// </summary>
+        /// <param name="username">The username, can be in the form domain\account.</param>
+        /// <returns>The Security Identifier</returns>
+        /// <exception cref="NtException">Thrown if account cannot be found.</exception>
+        public static Sid LookupAccountName(string username)
+        {
+            return LookupAccountName(null, username);
         }
 
         /// <summary>
