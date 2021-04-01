@@ -343,6 +343,7 @@
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
+    <Compile Include="Win32\Security\Native\DOMAIN_PASSWORD_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\Logon32Provider.cs" />
     <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_ENUM_BUFFER.cs" />
     <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_INFORMATION.cs" />
@@ -367,6 +368,9 @@
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />
+    <Compile Include="Win32\Security\Native\DomainInformationClass.cs" />
+    <Compile Include="Win32\Security\Sam\SamDomainPasswordInformation.cs" />
+    <Compile Include="Win32\Security\Sam\SamDomainPasswordPropertyFlags.cs" />
     <Compile Include="Win32\Security\Sam\SamAliasAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamDomain.cs" />
     <Compile Include="Win32\Security\Sam\SamDomainAccessRights.cs" />

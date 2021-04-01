@@ -95,6 +95,34 @@ namespace NtApiDotNet.Win32.Security.Sam
                 () => CreateUserObject(handle, desired_access, name, user_id));
         }
 
+        private NtResult<SafeSamMemoryBuffer> QueryBuffer<T>(DomainInformationClass info_class, bool throw_on_error) where T : struct
+        {
+            return SecurityNativeMethods.SamQueryInformationDomain(Handle, info_class, out SafeSamMemoryBuffer buffer).CreateResult(throw_on_error, () =>
+            {
+                buffer.Initialize<T>(1);
+                return buffer;
+            });
+        }
+
+        private NtResult<SafeSamMemoryBuffer> QueryBuffer(DomainInformationClass info_class, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamQueryInformationDomain(Handle, info_class, out SafeSamMemoryBuffer buffer).CreateResult(throw_on_error, () =>
+            {
+                return buffer;
+            });
+        }
+
+        private NtResult<T> Query<T>(DomainInformationClass info_class, bool throw_on_error) where T : struct
+        {
+            using (var buffer = QueryBuffer(info_class, throw_on_error))
+            {
+                if (!buffer.IsSuccess)
+                    return buffer.Cast<T>();
+                buffer.Result.Initialize<T>(1);
+                return buffer.Result.Read<T>(0).CreateResult();
+            }
+        }
+
         #endregion
 
         #region Internal Members
@@ -122,6 +150,10 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// The domain SID.
         /// </summary>
         public Sid DomainId { get; }
+        /// <summary>
+        /// Get domain password information
+        /// </summary>
+        public SamDomainPasswordInformation PasswordInformation => GetPasswordInformation(true).Result;
         #endregion
 
         #region Public Methods
@@ -411,7 +443,6 @@ namespace NtApiDotNet.Win32.Security.Sam
             return OpenAccessibleUsers(UserAccountControlFlags.None, SamUserAccessRights.MaximumAllowed);
         }
 
-        #region Public Methods
         /// <summary>
         /// Convert a RID to a SID for the current object.
         /// </summary>
@@ -439,8 +470,19 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return RidToSid(relative_id, true).Result;
         }
-        #endregion
 
+        /// <summary>
+        /// Get password information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns></returns>
+        public NtResult<SamDomainPasswordInformation> GetPasswordInformation(bool throw_on_error)
+        {
+            var info = Query<DOMAIN_PASSWORD_INFORMATION>(DomainInformationClass.DomainPasswordInformation, throw_on_error);
+            if (!info.IsSuccess)
+                return info.Cast<SamDomainPasswordInformation>();
+            return new SamDomainPasswordInformation(info.Result).CreateResult();
+        }
         #endregion
     }
 }
