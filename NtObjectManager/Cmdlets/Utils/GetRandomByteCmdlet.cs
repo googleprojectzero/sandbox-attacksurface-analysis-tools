@@ -18,7 +18,7 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Utils
 {
     /// <summary>
-    /// <para type="synopsis">Get a random byte array..</para>
+    /// <para type="synopsis">Get a random byte array.</para>
     /// <para type="description">This cmdlet returns a byte array containing random bytes up to a fixed size.</para>
     /// </summary>
     /// <example>

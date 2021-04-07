@@ -32,6 +32,8 @@ namespace NtObjectManager.Provider
 
         internal bool IsDirectory { get; }
 
+        internal NtType NtType { get; }
+
         /// <summary>
         /// Constructor taking security descriptor from an object.
         /// </summary>
@@ -41,6 +43,7 @@ namespace NtObjectManager.Provider
             : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
         {
             IsDirectory = obj.IsContainer;
+            NtType = obj.NtType;
         }
 
         internal void PersistHandle(SafeHandle handle)

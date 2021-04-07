@@ -67,6 +67,7 @@
     <Compile Include="Cmdlets\Accessible\ServiceAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Accessible\ServiceCheckMode.cs" />
     <Compile Include="Cmdlets\Accessible\WnfAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Object\ConvertToNtSecurityDescriptorCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\SetWin32ServiceConfigCmdlet.cs" />
     <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />
