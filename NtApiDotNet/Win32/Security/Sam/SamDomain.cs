@@ -89,10 +89,47 @@ namespace NtApiDotNet.Win32.Security.Sam
             }
         }
 
+        private T CreateObject<T>(SafeSamHandle handle, uint user_id, string name, Func<string, Sid, T> func)
+        {
+            try
+            {
+                Sid sid = RidToSid(user_id, false).GetResultOrDefault();
+                if (sid == null)
+                {
+                    sid = DomainId.CreateRelative(user_id);
+                }
+
+                if (name == null)
+                {
+                    name = LookupId(user_id, false).GetResultOrDefault()?.Name ?? sid.ToString();
+                }
+
+                return func(name, sid);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
+
         private NtResult<SamUser> OpenUser(uint user_id, string name, SamUserAccessRights desired_access, bool throw_on_error)
         {
+
             return SecurityNativeMethods.SamOpenUser(Handle, desired_access, user_id, out SafeSamHandle handle).CreateResult(throw_on_error,
-                () => CreateUserObject(handle, desired_access, name, user_id));
+                () => CreateObject(handle, user_id, name, (n, s) => new SamUser(handle, desired_access, ServerName, n, s)));
+        }
+
+        private NtResult<SamGroup> OpenGroup(uint group_id, string name, SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamOpenGroup(Handle, desired_access, group_id, out SafeSamHandle handle).CreateResult(throw_on_error,
+                () => CreateObject(handle, group_id, name, (n, s) => new SamGroup(handle, desired_access, ServerName, n, s)));
+        }
+
+        private NtResult<SamAlias> OpenAlias(uint alias_id, string name, SamAliasAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamOpenAlias(Handle, desired_access, alias_id, out SafeSamHandle handle).CreateResult(throw_on_error,
+                () => CreateObject(handle, alias_id, name, (n, s) => new SamAlias(handle, desired_access, ServerName, n, s)));
         }
 
         private NtResult<SafeSamMemoryBuffer> QueryBuffer<T>(DomainInformationClass info_class, bool throw_on_error) where T : struct
@@ -365,7 +402,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
 
         /// <summary>
-        /// Open a user by name.
+        /// Open a user by SID.
         /// </summary>
         /// <param name="sid">The sid for the user.</param>
         /// <param name="desired_access">The desired access for the user object.</param>
@@ -411,6 +448,178 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
 
         /// <summary>
+        /// Open a group by relative ID.
+        /// </summary>
+        /// <param name="group_id">The ID for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM group object.</returns>
+        public NtResult<SamGroup> OpenGroup(uint group_id, SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            return OpenGroup(group_id, null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a group by relative ID.
+        /// </summary>
+        /// <param name="group_id">The ID for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <returns>The SAM group object.</returns>
+        public SamGroup OpenGroup(uint group_id, SamGroupAccessRights desired_access)
+        {
+            return OpenGroup(group_id, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a group by SID.
+        /// </summary>
+        /// <param name="sid">The sid for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM group object.</returns>
+        public NtResult<SamGroup> OpenGroup(Sid sid, SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            if (sid.SubAuthorities.Count != DomainId.SubAuthorities.Count + 1 || !sid.StartsWith(DomainId))
+            {
+                return NtStatus.STATUS_NO_SUCH_DOMAIN.CreateResultFromError<SamGroup>(throw_on_error);
+            }
+
+            return OpenGroup(sid.SubAuthorities.Last(), null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a group by SID.
+        /// </summary>
+        /// <param name="sid">The sid for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <returns>The SAM group object.</returns>
+        public SamGroup OpenGroup(Sid sid, SamGroupAccessRights desired_access)
+        {
+            return OpenGroup(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a group by name.
+        /// </summary>
+        /// <param name="name">The name for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM group object.</returns>
+        public NtResult<SamGroup> OpenGroup(string name, SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            var sid_name = LookupName(name, throw_on_error);
+            if (!sid_name.IsSuccess)
+            {
+                return sid_name.Cast<SamGroup>();
+            }
+
+            var sid = Sid.Parse(sid_name.Result.Sddl, throw_on_error);
+            if (!sid.IsSuccess)
+            {
+                return sid.Cast<SamGroup>();
+            }
+
+            return OpenGroup(sid.Result, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a group by name.
+        /// </summary>
+        /// <param name="name">The name for the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <returns>The SAM group object.</returns>
+        public SamGroup OpenGroup(string name, SamGroupAccessRights desired_access)
+        {
+            return OpenGroup(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an alias by relative ID.
+        /// </summary>
+        /// <param name="alias_id">The ID for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM alias object.</returns>
+        public NtResult<SamAlias> OpenAlias(uint alias_id, SamAliasAccessRights desired_access, bool throw_on_error)
+        {
+            return OpenAlias(alias_id, null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open an alias by relative ID.
+        /// </summary>
+        /// <param name="alias_id">The ID for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <returns>The SAM alias object.</returns>
+        public SamAlias OpenAlias(uint alias_id, SamAliasAccessRights desired_access)
+        {
+            return OpenAlias(alias_id, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an alias by SID.
+        /// </summary>
+        /// <param name="sid">The sid for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM alias object.</returns>
+        public NtResult<SamAlias> OpenAlias(Sid sid, SamAliasAccessRights desired_access, bool throw_on_error)
+        {
+            if (sid.SubAuthorities.Count != DomainId.SubAuthorities.Count + 1 || !sid.StartsWith(DomainId))
+            {
+                return NtStatus.STATUS_NO_SUCH_DOMAIN.CreateResultFromError<SamAlias>(throw_on_error);
+            }
+
+            return OpenAlias(sid.SubAuthorities.Last(), null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open an alias by SID.
+        /// </summary>
+        /// <param name="sid">The sid for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <returns>The SAM alias object.</returns>
+        public SamAlias OpenAlias(Sid sid, SamAliasAccessRights desired_access)
+        {
+            return OpenAlias(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an alias by name.
+        /// </summary>
+        /// <param name="name">The name for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM alias object.</returns>
+        public NtResult<SamAlias> OpenAlias(string name, SamAliasAccessRights desired_access, bool throw_on_error)
+        {
+            var sid_name = LookupName(name, throw_on_error);
+            if (!sid_name.IsSuccess)
+            {
+                return sid_name.Cast<SamAlias>();
+            }
+
+            var sid = Sid.Parse(sid_name.Result.Sddl, throw_on_error);
+            if (!sid.IsSuccess)
+            {
+                return sid.Cast<SamAlias>();
+            }
+
+            return OpenAlias(sid.Result, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open an alias by name.
+        /// </summary>
+        /// <param name="name">The name for the alias.</param>
+        /// <param name="desired_access">The desired access for the alias object.</param>
+        /// <returns>The SAM alias object.</returns>
+        public SamAlias OpenAlias(string name, SamAliasAccessRights desired_access)
+        {
+            return OpenAlias(name, desired_access, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate and open accessible user objects.
         /// </summary>
         /// <param name="user_account_control">User account control flags.</param>
@@ -428,7 +637,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// </summary>
         /// <param name="user_account_control">User account control flags.</param>
         /// <param name="desired_access">The desired access for the opened users.</param>
-        /// <returns>The list of accessible domains.</returns>
+        /// <returns>The list of accessible users.</returns>
         public IReadOnlyList<SamUser> OpenAccessibleUsers(UserAccountControlFlags user_account_control, SamUserAccessRights desired_access)
         {
             return OpenAccessibleUsers(user_account_control, desired_access, true).Result;
@@ -441,6 +650,68 @@ namespace NtApiDotNet.Win32.Security.Sam
         public IReadOnlyList<SamUser> OpenAccessibleUsers()
         {
             return OpenAccessibleUsers(UserAccountControlFlags.None, SamUserAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible group objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened groups.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible groups.</returns>
+        public NtResult<IReadOnlyList<SamGroup>> OpenAccessibleGroups(SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateGroups(throw_on_error).Map<IReadOnlyList<SamGroup>>(e => e.Select(
+                s => OpenGroup(s.RelativeId, s.Name, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible group objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened groups.</param>
+        /// <returns>The list of accessible groups.</returns>
+        public IReadOnlyList<SamGroup> OpenAccessibleGroups(SamGroupAccessRights desired_access)
+        {
+            return OpenAccessibleGroups(desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible group objects with maximum access.
+        /// </summary>
+        /// <returns>The list of accessible groups.</returns>
+        public IReadOnlyList<SamGroup> OpenAccessibleGroups()
+        {
+            return OpenAccessibleGroups(SamGroupAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible alias objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened aliases.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible aliases.</returns>
+        public NtResult<IReadOnlyList<SamAlias>> OpenAccessibleAliases(SamAliasAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateAliases(throw_on_error).Map<IReadOnlyList<SamAlias>>(e => e.Select(
+                s => OpenAlias(s.RelativeId, s.Name, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible alias objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened aliases.</param>
+        /// <returns>The list of accessible aliases.</returns>
+        public IReadOnlyList<SamAlias> OpenAccessibleAliases(SamAliasAccessRights desired_access)
+        {
+            return OpenAccessibleAliases(desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible alias objects with maximum access.
+        /// </summary>
+        /// <returns>The list of accessible aliases.</returns>
+        public IReadOnlyList<SamAlias> OpenAccessibleAliases()
+        {
+            return OpenAccessibleAliases(SamAliasAccessRights.MaximumAllowed);
         }
 
         /// <summary>

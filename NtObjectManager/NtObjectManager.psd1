@@ -118,7 +118,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Add-AppModelLoopbackException', 'Remove-AppModelLoopbackException', 'Get-NtSDKName',
           'Wait-Win32Service', 'Send-Win32Service', 'Get-Win32ServiceTrigger', 'Set-Win32ServiceSecurityDescriptor',
           'Restart-Win32Service', 'Test-Win32Service', 'Format-KerberosTicket', 'ConvertFrom-HexDump', 
-          'Get-Win32ModuleResource', 'Get-LsaPolicy', 'Connect-SamServer', 'Get-SamDomain', 'Get-SamUser'
+          'Get-Win32ModuleResource', 'Get-LsaPolicy', 'Connect-SamServer', 'Get-SamDomain', 'Get-SamUser',
+          'Get-SamAlias', 'Get-SamGroup'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

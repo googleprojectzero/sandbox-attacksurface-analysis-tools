@@ -718,7 +718,7 @@ namespace NtApiDotNet.Win32.Security
         }
 
         /// <summary>
-        /// Retrieve LSA privilege data.
+        /// Retrieve LSA private data.
         /// </summary>
         /// <param name="system_name">The system containing the LSA instance.</param>
         /// <param name="keyname">The name of the key.</param>
@@ -740,7 +740,7 @@ namespace NtApiDotNet.Win32.Security
         }
 
         /// <summary>
-        /// Retrieve LSA privilege data.
+        /// Retrieve LSA private data.
         /// </summary>
         /// <param name="system_name">The system containing the LSA instance.</param>
         /// <param name="keyname">The name of the key.</param>
@@ -751,7 +751,7 @@ namespace NtApiDotNet.Win32.Security
         }
 
         /// <summary>
-        /// Retrieve LSA privilege data.
+        /// Retrieve LSA private data.
         /// </summary>
         /// <param name="keyname">The name of the key.</param>
         /// <returns>The private data as bytes.</returns>

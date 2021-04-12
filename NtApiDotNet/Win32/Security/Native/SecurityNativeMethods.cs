@@ -955,6 +955,22 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeBuffer DomainInformation
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamOpenGroup(
+            SafeSamHandle DomainHandle,
+            SamGroupAccessRights DesiredAccess,
+            uint GroupId,
+            out SafeSamHandle GroupHandle
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamOpenAlias(
+            SafeSamHandle DomainHandle,
+            SamAliasAccessRights DesiredAccess,
+            uint AliasId,
+            out SafeSamHandle AliasHandle
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

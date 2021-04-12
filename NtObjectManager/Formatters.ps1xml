@@ -4487,6 +4487,66 @@
         </TableControl>
     </View>
     <View>
+        <Name>SamGroup</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.Security.Sam.SamGroup</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Sid</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Sid</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>SamAlias</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.Security.Sam.SamAlias</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Sid</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Sid</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
         <Name>SamObject</Name>
         <ViewSelectedBy>
             <TypeName>NtApiDotNet.Win32.Security.Sam.SamObject</TypeName>

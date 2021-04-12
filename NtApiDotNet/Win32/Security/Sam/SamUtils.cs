@@ -24,6 +24,8 @@ namespace NtApiDotNet.Win32.Security.Sam
         public const string SAM_SERVER_NT_TYPE_NAME = "SamServer";
         public const string SAM_DOMAIN_NT_TYPE_NAME = "SamDomain";
         public const string SAM_USER_NT_TYPE_NAME = "SamUser";
+        public const string SAM_GROUP_NT_TYPE_NAME = "SamGroup";
+        public const string SAM_ALIAS_NT_TYPE_NAME = "SamAlias";
 
         public static GenericMapping GetSamServerGenericMapping()
         {
@@ -64,6 +66,32 @@ namespace NtApiDotNet.Win32.Security.Sam
                 SamUserAccessRights.ReadPreferences | SamUserAccessRights.ReadLogon | SamUserAccessRights.ReadAccount | SamUserAccessRights.ListGroups | SamUserAccessRights.ReadGroupInformation |
                 SamUserAccessRights.WritePreferences | SamUserAccessRights.ChangePassword | SamUserAccessRights.ReadGeneral | SamUserAccessRights.ForcePasswordChange |
                 SamUserAccessRights.WriteAccount | SamUserAccessRights.WriteGroupInformation
+            };
+        }
+
+        public static GenericMapping GetSamGroupGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = SamGroupAccessRights.ReadControl | SamGroupAccessRights.ListMembers,
+                GenericWrite = SamGroupAccessRights.ReadControl | SamGroupAccessRights.WriteAccount | SamGroupAccessRights.AddMember | SamGroupAccessRights.RemoveMember,
+                GenericExecute = SamGroupAccessRights.ReadControl | SamGroupAccessRights.ReadInformation,
+                GenericAll = SamGroupAccessRights.ReadControl | SamGroupAccessRights.WriteDac | SamGroupAccessRights.WriteOwner | SamGroupAccessRights.Delete |
+                    SamGroupAccessRights.ListMembers | SamGroupAccessRights.WriteAccount | SamGroupAccessRights.AddMember | SamGroupAccessRights.RemoveMember |
+                    SamGroupAccessRights.ReadInformation
+            };
+        }
+
+        public static GenericMapping GetSamAliasGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = SamAliasAccessRights.ReadControl | SamAliasAccessRights.ListMembers,
+                GenericWrite = SamAliasAccessRights.ReadControl | SamAliasAccessRights.WriteAccount | SamAliasAccessRights.AddMember | SamAliasAccessRights.RemoveMember,
+                GenericExecute = SamAliasAccessRights.ReadControl | SamAliasAccessRights.ReadInformation,
+                GenericAll = SamAliasAccessRights.ReadControl | SamAliasAccessRights.WriteDac | SamAliasAccessRights.WriteOwner | SamAliasAccessRights.Delete |
+                    SamAliasAccessRights.ListMembers | SamAliasAccessRights.WriteAccount | SamAliasAccessRights.AddMember | SamAliasAccessRights.RemoveMember |
+                    SamAliasAccessRights.ReadInformation
             };
         }
 

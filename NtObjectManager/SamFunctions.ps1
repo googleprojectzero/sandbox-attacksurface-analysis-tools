@@ -139,7 +139,7 @@ Get-SamUser -Domain $domain
 Get all accessible user objects in the domain.
 .EXAMPLE
 Get-SamUser -Domain $domain -InfoOnly
-Get all Information only domain from the server.
+Get all Information only users from the server.
 .EXAMPLE
 Get-SamUser -Domain $domain -Name "ALICE"
 Get the ALICE user object from the server.
@@ -190,6 +190,164 @@ function Get-SamUser {
             }
             "FromUserId" {
                 $Domain.OpenUser($UserId, $Access)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get a group object from a SAM server.
+.DESCRIPTION
+This cmdlet opens a group object from a SAM server.
+.PARAMETER Domain
+Specify the domain to get the group from.
+.PARAMETER Access
+Specify the access rights on the group object.
+.PARAMETER InfoOnly
+Specify to only get group information not objects.
+.PARAMETER Name
+Specify to get group by name.
+.PARAMETER Sid
+Specify to get group by SID.
+.PARAMETER GroupId
+Specify to get group by ID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamGroup
+.EXAMPLE
+Get-SamGroup -Domain $domain
+Get all accessible group objects in the domain.
+.EXAMPLE
+Get-SamGroup -Domain $domain -InfoOnly
+Get all Information only groups from the server.
+.EXAMPLE
+Get-SamGroup -Domain $domain -Name "USERS"
+Get the USERS group object from the server.
+.EXAMPLE
+Get-SamGroup -Domain $domain -GroupId 501
+Get the group object from the server with the group ID of 501.
+#>
+function Get-SamGroup { 
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [Parameter(Mandatory, ParameterSetName="FromId")]
+        [uint32]$GroupId,
+        [Parameter(ParameterSetName="All")]
+        [Parameter(ParameterSetName="FromName")]
+        [Parameter(ParameterSetName="FromSid")]
+        [Parameter(ParameterSetName="FromId")]
+        [NtApiDotNet.Win32.Security.Sam.SamGroupAccessRights]$Access = "MaximumAllowed",
+        [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
+        [switch]$InfoOnly
+    )
+
+    if ($InfoOnly) {
+        $Domain.EnumerateGroups() | ForEach-Object { 
+            [PSCustomObject]@{
+                Name = $_.Name
+                Sid = Get-NtSid -Sddl ($Domain.LookupId($_.RelativeId).Sddl)
+            }
+        }
+    } else {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Domain.OpenAccessibleGroups($Access) | Write-Output
+            }
+            "FromName" {
+                $Domain.OpenGroup($Name, $Access)
+            }
+            "FromSid" {
+                $Domain.OpenGroup($Sid, $Access)
+            }
+            "FromId" {
+                $Domain.OpenGroup($GroupId, $Access)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get an alias object from a SAM server.
+.DESCRIPTION
+This cmdlet opens an alias object from a SAM server.
+.PARAMETER Domain
+Specify the domain to get the alias from.
+.PARAMETER Access
+Specify the access rights on the alias object.
+.PARAMETER InfoOnly
+Specify to only get alias information not objects.
+.PARAMETER Name
+Specify to get alias by name.
+.PARAMETER Sid
+Specify to get alias by SID.
+.PARAMETER GroupId
+Specify to get alias by ID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamAlias
+.EXAMPLE
+Get-SamAlias -Domain $domain
+Get all accessible alias objects in the domain.
+.EXAMPLE
+Get-SamAlias -Domain $domain -InfoOnly
+Get all Information only aliases from the server.
+.EXAMPLE
+Get-SamAlias -Domain $domain -Name "RESOURCE"
+Get the RESOURCE alias object from the server.
+.EXAMPLE
+Get-SamAlias -Domain $domain -AliasId 502
+Get the alias object from the server with the alias ID of 502.
+#>
+function Get-SamAlias { 
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [Parameter(Mandatory, ParameterSetName="FromId")]
+        [uint32]$AliasId,
+        [Parameter(ParameterSetName="All")]
+        [Parameter(ParameterSetName="FromName")]
+        [Parameter(ParameterSetName="FromSid")]
+        [Parameter(ParameterSetName="FromId")]
+        [NtApiDotNet.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
+        [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
+        [switch]$InfoOnly
+    )
+
+    if ($InfoOnly) {
+        $Domain.EnumerateGroups() | ForEach-Object { 
+            [PSCustomObject]@{
+                Name = $_.Name
+                Sid = Get-NtSid -Sddl ($Domain.LookupId($_.RelativeId).Sddl)
+            }
+        }
+    } else {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Domain.OpenAccessibleAliases($Access) | Write-Output
+            }
+            "FromName" {
+                $Domain.OpenAlias($Name, $Access)
+            }
+            "FromSid" {
+                $Domain.OpenAlias($Sid, $Access)
+            }
+            "FromId" {
+                $Domain.OpenAlias($AliasId, $Access)
             }
         }
     }
