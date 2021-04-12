@@ -329,7 +329,7 @@ function Get-SamAlias {
     )
 
     if ($InfoOnly) {
-        $Domain.EnumerateGroups() | ForEach-Object { 
+        $Domain.EnumerateAliases() | ForEach-Object { 
             [PSCustomObject]@{
                 Name = $_.Name
                 Sid = Get-NtSid -Sddl ($Domain.LookupId($_.RelativeId).Sddl)
