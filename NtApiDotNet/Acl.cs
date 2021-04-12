@@ -168,6 +168,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Add an ace to the ACL
+        /// </summary>
+        /// <param name="ace">The ACE to add</param>
+        public new void Add(Ace ace)
+        {
+            base.Add(ace);
+            NullAcl = false;
+        }
+
+        /// <summary>
         /// Add an access allowed ace to the ACL
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
