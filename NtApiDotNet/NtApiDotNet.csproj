@@ -377,6 +377,7 @@
     <Compile Include="Win32\Security\Sam\SamDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamGroup.cs" />
     <Compile Include="Win32\Security\Sam\SamGroupAccessRights.cs" />
+    <Compile Include="Win32\Security\Sam\SamGroupMember.cs" />
     <Compile Include="Win32\Security\Sam\SamRidEnumeration.cs" />
     <Compile Include="Win32\Security\Sam\SamFakeTypeFactory.cs" />
     <Compile Include="Win32\Security\Sam\SamObject.cs" />

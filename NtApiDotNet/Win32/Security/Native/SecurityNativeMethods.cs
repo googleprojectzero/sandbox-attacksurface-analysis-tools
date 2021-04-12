@@ -971,6 +971,21 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeSamHandle AliasHandle
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamGetMembersInGroup(
+            SafeSamHandle GroupHandle,
+            out SafeSamMemoryBuffer MemberIds, // PULONG *
+            out SafeSamMemoryBuffer Attributes, // PULONG *
+            out int MemberCount
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamGetMembersInAlias(
+            SafeSamHandle AliasHandle,
+            out SafeSamMemoryBuffer MemberIds, // PSID **
+            out int MemberCount
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;
