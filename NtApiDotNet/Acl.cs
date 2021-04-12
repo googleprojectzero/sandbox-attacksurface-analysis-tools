@@ -168,6 +168,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Add an ace to the ACL
+        /// </summary>
+        /// <param name="ace">The ACE to add</param>
+        public new void Add(Ace ace)
+        {
+            base.Add(ace);
+            NullAcl = false;
+        }
+
+        /// <summary>
         /// Add an access allowed ace to the ACL
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
@@ -249,6 +259,68 @@ namespace NtApiDotNet
         public void AddAccessDeniedAce(AccessMask mask, Sid sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        /// <summary>
+        /// Add an audit ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditAce(AccessMask mask, AceFlags flags, string sid)
+        {
+            Add(new Ace(AceType.Audit, flags, mask, new Sid(sid)));
+        }
+
+        /// <summary>
+        /// Add an audit ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditAce(AccessMask mask, AceFlags flags, Sid sid)
+        {
+            Add(new Ace(AceType.Audit, flags, mask, sid));
+        }
+
+        /// <summary>
+        /// Add an audit success ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditSuccessAce(AccessMask mask, string sid)
+        {
+            AddAuditAce(mask, AceFlags.SuccessfulAccess, sid);
+        }
+
+        /// <summary>
+        /// Add an audit success ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditSuccessAce(AccessMask mask, Sid sid)
+        {
+            AddAuditAce(mask, AceFlags.SuccessfulAccess, sid);
+        }
+
+        /// <summary>
+        /// Add an audit fail ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditFailAce(AccessMask mask, string sid)
+        {
+            AddAuditAce(mask, AceFlags.FailedAccess, sid);
+        }
+
+        /// <summary>
+        /// Add an audit fail ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAuditFailAce(AccessMask mask, Sid sid)
+        {
+            AddAuditAce(mask, AceFlags.FailedAccess, sid);
         }
 
         /// <summary>

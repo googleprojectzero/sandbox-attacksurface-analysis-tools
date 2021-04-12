@@ -420,29 +420,54 @@ namespace NtApiDotNet
             }
         }
 
-        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
+        private void AddAccessAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
         {
-            AddAce(new Ace(type, flags, mask, sid));
+            AddAccessAce(new Ace(type, flags, mask, sid));
         }
 
         private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
         {
-            AddAce(AceType.Denied, mask, flags, sid);
+            AddAccessAce(AceType.Denied, mask, flags, sid);
         }
 
         private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, string sid)
         {
-            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
+            AddAccessAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
         private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
         {
-            AddAce(AceType.Allowed, mask, flags, sid);
+            AddAccessAce(AceType.Allowed, mask, flags, sid);
         }
 
         private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, string sid)
         {
-            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
+            AddAccessAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        private void AddAuditAce(AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAuditAce(new Ace(AceType.Audit, flags, mask, sid));
+        }
+
+        private void AddAuditFailAceInternal(AccessMask mask, Sid sid)
+        {
+            AddAuditAce(mask, AceFlags.FailedAccess, sid);
+        }
+
+        private void AddAuditFailAceInternal(AccessMask mask, string sid)
+        {
+            AddAuditAce(mask, AceFlags.FailedAccess, NtSecurity.SidFromSddl(sid));
+        }
+
+        private void AddAuditSuccessAceInternal(AccessMask mask, Sid sid)
+        {
+            AddAuditAce(mask, AceFlags.SuccessfulAccess, sid);
+        }
+
+        private void AddAuditSuccessAceInternal(AccessMask mask, string sid)
+        {
+            AddAuditAce(mask, AceFlags.SuccessfulAccess, NtSecurity.SidFromSddl(sid));
         }
 
         private static NtResult<SafeProcessHeapBuffer> CreateBuffer(
@@ -888,14 +913,26 @@ namespace NtApiDotNet
         /// Add an ACE to the DACL, creating the DACL if needed.
         /// </summary>
         /// <param name="ace">The ACE to add to the DACL.</param>
-        public void AddAce(Ace ace)
+        public void AddAccessAce(Ace ace)
         {
             if (Dacl == null)
             {
                 Dacl = new Acl();
             }
-            Dacl.NullAcl = false;
             Dacl.Add(ace);
+        }
+
+        /// <summary>
+        /// Add an ACE to the SACL, creating the SACL if needed.
+        /// </summary>
+        /// <param name="ace">The ACE to add to the SACL.</param>
+        public void AddAuditAce(Ace ace)
+        {
+            if (Sacl == null)
+            {
+                Sacl = new Acl();
+            }
+            Sacl.Add(ace);
         }
 
         /// <summary>
@@ -980,6 +1017,46 @@ namespace NtApiDotNet
         public void AddAccessDeniedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
             AddAccessDeniedAceInternal(mask, flags, sid);
+        }
+
+        /// <summary>
+        /// Add an audit success ACE to the SACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
+        public void AddAuditSuccessAce(AccessMask mask, string sid)
+        {
+            AddAuditSuccessAceInternal(mask, sid);
+        }
+
+        /// <summary>
+        /// Add an audit success ACE to the SACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
+        public void AddAuditSuccessAce(AccessMask mask, Sid sid)
+        {
+            AddAuditSuccessAceInternal(mask, sid);
+        }
+
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
+        public void AddAuditFailAce(AccessMask mask, string sid)
+        {
+            AddAuditFailAceInternal(mask, sid);
+        }
+
+        /// <summary>
+        /// Add an audit fail ACE to the SACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
+        public void AddAuditFailAce(AccessMask mask, Sid sid)
+        {
+            AddAuditFailAceInternal(mask, sid);
         }
 
         /// <summary>
