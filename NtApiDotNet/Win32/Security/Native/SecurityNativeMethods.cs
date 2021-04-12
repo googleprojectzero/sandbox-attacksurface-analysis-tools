@@ -986,6 +986,13 @@ namespace NtApiDotNet.Win32.Security.Native
             out int MemberCount
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamQueryInformationUser(
+            SafeSamHandle UserHandle,
+            UserInformationClass UserInformationClass,
+            out SafeSamMemoryBuffer Buffer
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

@@ -407,6 +407,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a SID sibling to this one. i.e. just replace the final RID.
+        /// </summary>
+        /// <param name="rid">The RID to replace with.</param>
+        /// <returns>The sibling SID.</returns>
+        public Sid CreateSibling(uint rid)
+        {
+            if (SubAuthorities.Count < 1)
+                throw new InvalidOperationException("To create a sibling SID the original must have at least 1 sub authority.");
+
+            List<uint> new_rids = new List<uint>(SubAuthorities.Take(SubAuthorities.Count - 1));
+            new_rids.Add(rid);
+            return new Sid(Authority, new_rids.ToArray());
+        }
+
+        /// <summary>
         /// Get the SID name for this SID.
         /// </summary>
         /// <param name="bypass_cache">True to bypass the SID name cache.</param>

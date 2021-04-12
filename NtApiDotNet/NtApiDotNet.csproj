@@ -352,6 +352,7 @@
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
+    <Compile Include="Win32\Security\Native\USER_INFORMATION_CLASS_STRUCTS.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
@@ -387,7 +388,7 @@
     <Compile Include="Win32\Security\Sam\SamUserAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamUtils.cs" />
     <Compile Include="Win32\Security\Sam\UserAccountControlFlags.cs" />
-    <Compile Include="Win32\Security\Sam\UserFlags.cs" />
+    <Compile Include="Win32\Security\Native\UserFlags.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />
