@@ -1091,6 +1091,72 @@ function Get-LsaPolicy {
     [NtApiDotNet.Win32.Security.Policy.LsaPolicy]::Open($SystemName, $Access)
 }
 
+<#
+.SYNOPSIS
+Get a LSA private data (secret) object.
+.DESCRIPTION
+This cmdlet gets the private data from an LSA policy.
+.PARAMETER SystemName
+Specify the target system.
+.PARAMETER Name
+Specify the name of the private data.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Get-LsaPrivateData -Name "MYSECRET"
+Get the LSA private data MYSECRET.
+.EXAMPLE
+Get-LsaPrivateData -Name "MYSECRET" -SystemName PRIMARYDC
+Get the LSA private data MYSECRET from the PRIMARYDC.
+#>
+function Get-LsaPrivateData { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Name,
+        [string]$SystemName
+    )
+
+    [NtApiDotNet.Win32.Security.Win32Security]::LsaRetrievePrivateData($SystemName, $Name)
+}
+
+<#
+.SYNOPSIS
+Set a LSA private data (secret) object.
+.DESCRIPTION
+This cmdlet sets the private data for an LSA policy.
+.PARAMETER SystemName
+Specify the target system.
+.PARAMETER Name
+Specify the name of the private data.
+.PARAMETER Data
+Specify the data to set.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-LsaPrivateData -Name "MYSECRET" -Data 0, 1, 2, 3
+Set the LSA private data MYSECRET.
+.EXAMPLE
+Set-LsaPrivateData -Name "MYSECRET" -SystemName PRIMARYDC -Data 0, 1, 2, 3
+Set the LSA private data MYSECRET on PRIMARYDC.
+#>
+function Set-LsaPrivateData { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Name,
+        [Parameter(Position = 1, Mandatory)]
+        [byte[]]$Data,
+        [string]$SystemName
+    )
+
+    [NtApiDotNet.Win32.Security.Win32Security]::LsaStorePrivateData($SystemName, $Name, $Data)
+}
+
 # Alias old functions. Remove eventually.
 Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
 Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
