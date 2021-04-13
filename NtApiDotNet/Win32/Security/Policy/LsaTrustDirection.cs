@@ -25,11 +25,11 @@ namespace NtApiDotNet.Win32.Security.Policy
         [SDKName("TRUST_DIRECTION_DISABLED")]
         Disabled = 0,
         [SDKName("TRUST_DIRECTION_INBOUND")]
-        TRUST_DIRECTION_INBOUND = 1,
+        Inbound = 1,
         [SDKName("TRUST_DIRECTION_OUTBOUND")]
-        TRUST_DIRECTION_OUTBOUND = 2,
+        Outbound = 2,
         [SDKName("TRUST_DIRECTION_BIDIRECTIONAL")]
-        TRUST_DIRECTION_BIDIRECTIONAL = TRUST_DIRECTION_INBOUND | TRUST_DIRECTION_OUTBOUND,
+        BiDirectional = Inbound | Outbound,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
