@@ -993,6 +993,20 @@ namespace NtApiDotNet.Win32.Security.Native
             out SafeSamMemoryBuffer Buffer
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamSetInformationUser(
+            SafeSamHandle UserHandle,
+            UserInformationClass UserInformationClass,
+            SafeBuffer Buffer
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamChangePasswordUser(
+            SafeSamHandle UserHandle,
+            UnicodeStringSecure OldPassword,
+            UnicodeStringSecure NewPassword
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

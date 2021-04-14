@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Security;
 
 namespace NtApiDotNet.Win32.Security.Sam
 {
@@ -85,6 +86,68 @@ namespace NtApiDotNet.Win32.Security.Sam
         public NtResult<UserAccountControlFlags> GetUserAccountControl(bool throw_on_error)
         {
             return Query(UserInformationClass.UserControlInformation, (USER_CONTROL_INFORMATION f) => (UserAccountControlFlags)f.UserAccountControl, throw_on_error);
+        }
+
+        /// <summary>
+        /// Change a user's password.
+        /// </summary>
+        /// <param name="old_password">The old password.</param>
+        /// <param name="new_password">The new password.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus ChangePassword(SecureString old_password, SecureString new_password, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var old_pwd_buf = list.AddResource(new SecureStringMarshalBuffer(old_password));
+                var new_pwd_buf = list.AddResource(new SecureStringMarshalBuffer(new_password));
+
+                return SecurityNativeMethods.SamChangePasswordUser(Handle, 
+                    new UnicodeStringSecure(old_pwd_buf, old_password.Length),
+                    new UnicodeStringSecure(new_pwd_buf, new_password.Length)).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Change a user's password.
+        /// </summary>
+        /// <param name="old_password">The old password.</param>
+        /// <param name="new_password">The new password.</param>
+        public void ChangePassword(SecureString old_password, SecureString new_password)
+        {
+            ChangePassword(old_password, new_password, true);
+        }
+
+        /// <summary>
+        /// Set a user's password.
+        /// </summary>
+        /// <param name="password">The password to set.</param>
+        /// <param name="expired">Whether the password has expired.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetPassword(SecureString password, bool expired, bool throw_on_error)
+        {
+            using (var pwd_buf = new SecureStringMarshalBuffer(password))
+            {
+                var set_info = new USER_SET_PASSWORD_INFORMATION();
+                set_info.Password = new UnicodeStringInSecure(pwd_buf, password.Length);
+                set_info.PasswordExpired = expired;
+                using (var buf = set_info.ToBuffer())
+                {
+                    return SecurityNativeMethods.SamSetInformationUser(Handle, 
+                        UserInformationClass.UserSetPasswordInformation, buf).ToNtException(throw_on_error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set a user's password.
+        /// </summary>
+        /// <param name="password">The password to set.</param>
+        /// <param name="expired">Whether the password has expired.</param>
+        public void SetPassword(SecureString password, bool expired)
+        {
+            SetPassword(password, expired, true);
         }
 
         #endregion

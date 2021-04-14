@@ -97,4 +97,12 @@ namespace NtApiDotNet.Win32.Security.Native
     {
         public uint UserAccountControl;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct USER_SET_PASSWORD_INFORMATION
+    {
+        public UnicodeStringInSecure Password;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool PasswordExpired;
+    }
 }

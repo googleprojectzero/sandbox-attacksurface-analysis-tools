@@ -72,6 +72,24 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Structure to use when passing in a unicode string as a sub-structure with a seure string.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UnicodeStringInSecure
+    {
+        ushort Length;
+        ushort MaximumLength;
+        SecureStringMarshalBuffer Buffer;
+
+        public UnicodeStringInSecure(SecureStringMarshalBuffer str, int length)
+        {
+            Length = (ushort)(length * 2);
+            MaximumLength = (ushort)((length + 1) * 2);
+            Buffer = str;
+        }
+    }
+
+    /// <summary>
     /// Standard ANSI_STRING class
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
