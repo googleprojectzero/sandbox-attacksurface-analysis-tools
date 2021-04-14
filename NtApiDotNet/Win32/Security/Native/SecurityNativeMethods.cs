@@ -787,6 +787,45 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaOpenTrustedDomain(
+            SafeLsaHandle PolicyHandle,
+            SafeSidBufferHandle TrustedDomainSid,
+            LsaTrustedDomainAccessRights DesiredAccess,
+            out SafeLsaHandle TrustedDomainHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaOpenTrustedDomainByName(
+            SafeLsaHandle PolicyHandle,
+            UnicodeString TrustedDomainName,
+            LsaTrustedDomainAccessRights DesiredAccess,
+            out SafeLsaHandle TrustedDomainHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQueryInfoTrustedDomain(
+            SafeLsaHandle TrustedDomainHandle,
+            TRUSTED_INFORMATION_CLASS InformationClass,
+            out SafeLsaMemoryBuffer Buffer
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQueryTrustedDomainInfo(
+            SafeLsaHandle PolicyHandle,
+            SafeSidBufferHandle TrustedDomainSid,
+            TRUSTED_INFORMATION_CLASS InformationClass,
+            out SafeLsaMemoryBuffer Buffer
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQueryTrustedDomainInfoByName(
+            SafeLsaHandle PolicyHandle,
+            UnicodeString TrustedDomainName,
+            TRUSTED_INFORMATION_CLASS InformationClass,
+            out SafeLsaMemoryBuffer Buffer
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaDeleteObject(
             SafeLsaHandle ObjectHandle
         );

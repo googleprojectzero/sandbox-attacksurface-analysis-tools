@@ -352,6 +352,7 @@
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
+    <Compile Include="Win32\Security\Native\TRUSTED_INFORMATION_CLASS.cs" />
     <Compile Include="Win32\Security\Native\USER_INFORMATION_CLASS_STRUCTS.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
@@ -366,6 +367,7 @@
     <Compile Include="Win32\Security\Policy\LsaSystemAccessFlags.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustAttributes.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustDirection.cs" />
+    <Compile Include="Win32\Security\Policy\LsaTrustedDomain.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustedDomainInformation.cs" />
     <Compile Include="Win32\Security\Policy\LsaTrustType.cs" />

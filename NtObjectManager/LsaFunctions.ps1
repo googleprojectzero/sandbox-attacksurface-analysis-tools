@@ -1093,6 +1093,159 @@ function Get-LsaPolicy {
 
 <#
 .SYNOPSIS
+Get an account object from an LSA policy.
+.DESCRIPTION
+This cmdlet opens an account object from a LSA policy.
+.PARAMETER Policy
+Specify the policy to get the account from.
+.PARAMETER Access
+Specify the access rights on the account object.
+.PARAMETER InfoOnly
+Specify to only get account information not objects.
+.PARAMETER Sid
+Specify to get account by SID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Policy.LsaAccount
+.EXAMPLE
+Get-LsaAccount -Policy $policy
+Get all accessible account objects in the policy.
+.EXAMPLE
+Get-LsaAccount -Policy $policy -InfoOnly
+Get all information only account objects in the policy.
+.EXAMPLE
+Get-LsaAccount -Policy $policy -Sid "S-1-2-3-4"
+Get the account object by SID.
+#>
+function Get-LsaAccount { 
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [Parameter(ParameterSetName="All")]
+        [Parameter(ParameterSetName="FromSid")]
+        [NtApiDotNet.Win32.Security.Policy.LsaAccountAccessRights]$Access = "MaximumAllowed",
+        [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
+        [switch]$InfoOnly
+    )
+
+    if ($InfoOnly) {
+        $Policy.EnumerateAccounts() | Write-Output
+    } else {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Policy.OpenAccessibleAccounts($Access) | Write-Output
+            }
+            "FromSid" {
+                $Policy.OpenAccount($Sid, $Access)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get a trusted domain object from an LSA policy.
+.DESCRIPTION
+This cmdlet opens a trusted domain object from a LSA policy.
+.PARAMETER Policy
+Specify the policy to get the trusted domain from.
+.PARAMETER Access
+Specify the access rights on the trusted domain object.
+.PARAMETER InfoOnly
+Specify to only get trusted domain information not objects.
+.PARAMETER Sid
+Specify to get trusted domain by SID.
+.PARAMETER Name
+Specify to get trusted domain by name.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Policy.LsaTrustedDomain
+.EXAMPLE
+Get-LsaTrustedDomain -Policy $policy
+Get all accessible trusted domain objects in the policy.
+.EXAMPLE
+Get-LsaTrustedDomain -Policy $policy -InfoOnly
+Get all information only trusted domain objects in the policy.
+.EXAMPLE
+Get-LsaTrustedDomain -Policy $policy -Sid "S-1-2-3"
+Get the trusted domain object by SID.
+.EXAMPLE
+Get-LsaTrustedDomain -Policy $policy -Name "domain.local"
+Get the trusted domain object by name.
+#>
+function Get-LsaTrustedDomain { 
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [Parameter(Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(ParameterSetName="All")]
+        [Parameter(ParameterSetName="FromSid")]
+        [Parameter(ParameterSetName="FromName")]
+        [NtApiDotNet.Win32.Security.Policy.LsaTrustedDomainAccessRights]$Access = "MaximumAllowed",
+        [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
+        [switch]$InfoOnly
+    )
+
+    if ($InfoOnly) {
+        $Policy.EnumerateTrustedDomains() | Write-Output
+    } else {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Policy.OpenAccessibleTrustedDomains($Access) | Write-Output
+            }
+            "FromSid" {
+                $Policy.OpenTrustedDomain($Sid, $Access)
+            }
+            "FromName" {
+                $Policy.OpenTrustedDomain($Name, $Access)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get a secret object from an LSA policy.
+.DESCRIPTION
+This cmdlet opens a secret object from a LSA policy.
+.PARAMETER Policy
+Specify the policy to get the secret from.
+.PARAMETER Access
+Specify the access rights on the secret object.
+.PARAMETER Name
+Specify to get trusted domain by name.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Policy.LsaSecret
+.EXAMPLE
+Get-LsaSecret -Policy $policy -Name '$SECRET_NAME'
+Get the secret by name.
+#>
+function Get-LsaSecret { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [Parameter(Mandatory, Position = 1)]
+        [string]$Name,
+        [NtApiDotNet.Win32.Security.Policy.LsaSecretAccessRights]$Access = "MaximumAllowed"
+    )
+
+    $Policy.OpenSecret($Name, $Access)
+}
+
+<#
+.SYNOPSIS
 Get a LSA private data (secret) object.
 .DESCRIPTION
 This cmdlet gets the private data from an LSA policy.

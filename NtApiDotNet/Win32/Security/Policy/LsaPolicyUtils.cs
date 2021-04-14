@@ -128,6 +128,7 @@ namespace NtApiDotNet.Win32.Security.Policy
         public static NtType LsaPolicyNtType => NtType.GetTypeByName(LSA_POLICY_NT_TYPE_NAME);
         public static NtType LsaSecretNtType => NtType.GetTypeByName(LSA_SECRET_NT_TYPE_NAME);
         public static NtType LsaAccountNtType => NtType.GetTypeByName(LSA_ACCOUNT_NT_TYPE_NAME);
+        public static NtType LsaTrustedDomainNtType => NtType.GetTypeByName(LSA_TRUSTED_DOMAIN_NT_TYPE_NAME);
 
         public static NtResult<IReadOnlyList<T>> LsaEnumerateObjects<T, S>(SafeLsaHandle handle, 
                 SecurityEnumDelegate<SafeLsaHandle, SafeLsaMemoryBuffer> func, Func<S, T> select_object,

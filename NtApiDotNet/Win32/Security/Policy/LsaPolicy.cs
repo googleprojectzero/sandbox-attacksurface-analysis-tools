@@ -96,6 +96,36 @@ namespace NtApiDotNet.Win32.Security.Policy
             }
         }
 
+        private LsaTrustedDomainInformation QueryDomainInfo(SafeLsaMemoryBuffer buffer)
+        {
+            using (buffer)
+            {
+                buffer.Initialize<TRUSTED_DOMAIN_INFORMATION_EX>(1);
+                return new LsaTrustedDomainInformation(buffer.Read<TRUSTED_DOMAIN_INFORMATION_EX>(0));
+            }
+        }
+
+        private LsaTrustedDomainInformation QueryDomainInfo(string name)
+        {
+            return SecurityNativeMethods.LsaQueryTrustedDomainInfoByName(Handle, new UnicodeString(name),
+                TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, out SafeLsaMemoryBuffer buffer)
+                .CreateResult(false, () => QueryDomainInfo(buffer)).GetResultOrDefault();
+        }
+
+        private LsaTrustedDomainInformation QueryDomainInfo(SafeSidBufferHandle sid_buffer)
+        {
+            return SecurityNativeMethods.LsaQueryTrustedDomainInfo(Handle, sid_buffer,
+                TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, out SafeLsaMemoryBuffer buffer)
+                .CreateResult(false, () => QueryDomainInfo(buffer)).GetResultOrDefault();
+        }
+
+        private NtResult<LsaTrustedDomain> OpenTrustedDomain(string name, LsaTrustedDomainInformation? domain_info, LsaTrustedDomainAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaOpenTrustedDomainByName(Handle, new UnicodeString(name),
+                desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
+                () => new LsaTrustedDomain(handle, desired_access, name, null, domain_info ?? QueryDomainInfo(name), SystemName));
+        }
+
         #endregion
 
         #region Public Methods
@@ -620,6 +650,98 @@ namespace NtApiDotNet.Win32.Security.Policy
         public IReadOnlyList<LsaTrustedDomainInformation> EnumerateTrustedDomains()
         {
             return EnumerateTrustedDomains(true).Result;
+        }
+
+        /// <summary>
+        /// Open trusted domain object.
+        /// </summary>
+        /// <param name="sid">The SID of the trusted domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The trusted domain object.</returns>
+        public NtResult<LsaTrustedDomain> OpenTrustedDomain(Sid sid, LsaTrustedDomainAccessRights desired_access, bool throw_on_error)
+        {
+            if (sid is null)
+            {
+                throw new ArgumentNullException(nameof(sid));
+            }
+
+            using (var sid_buffer = sid.ToSafeBuffer())
+            {
+                return SecurityNativeMethods.LsaOpenTrustedDomain(Handle, sid_buffer,
+                    desired_access, out SafeLsaHandle handle).CreateResult(throw_on_error,
+                    () => new LsaTrustedDomain(handle, desired_access, null, sid, QueryDomainInfo(sid_buffer), SystemName));
+            }
+        }
+
+        /// <summary>
+        /// Open trusted domain object.
+        /// </summary>
+        /// <param name="sid">The SID of the trusted domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The trusted domain object.</returns>
+        public LsaTrustedDomain OpenTrustedDomain(Sid sid, LsaTrustedDomainAccessRights desired_access)
+        {
+            return OpenTrustedDomain(sid, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open trusted domain object.
+        /// </summary>
+        /// <param name="name">The name of the trusted domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The trusted domain object.</returns>
+        public NtResult<LsaTrustedDomain> OpenTrustedDomain(string name, LsaTrustedDomainAccessRights desired_access, bool throw_on_error)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException($"'{nameof(name)}' cannot be null or empty.", nameof(name));
+            }
+
+            return OpenTrustedDomain(name, null, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open trusted domain object.
+        /// </summary>
+        /// <param name="name">The name of the trusted domain.</param>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The trusted domain object.</returns>
+        public LsaTrustedDomain OpenTrustedDomain(string name, LsaTrustedDomainAccessRights desired_access)
+        {
+            return OpenTrustedDomain(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible trusted domain objects in policy.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened trusted domains.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of accessible trusted domains.</returns>
+        public NtResult<IReadOnlyList<LsaTrustedDomain>> OpenAccessibleTrustedDomains(LsaTrustedDomainAccessRights desired_access, bool throw_on_error)
+        {
+            return EnumerateTrustedDomains(throw_on_error).Map<IReadOnlyList<LsaTrustedDomain>>(e => e.Select(
+                s => OpenTrustedDomain(s.Name, s, desired_access, false).GetResultOrDefault()).Where(a => a != null).ToList().AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible trusted domain objects in policy.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the opened trusted domains.</param>
+        /// <returns>The list of accessible trusted domains.</returns>
+        public IReadOnlyList<LsaTrustedDomain> OpenAccessibleTrustedDomains(LsaTrustedDomainAccessRights desired_access)
+        {
+            return OpenAccessibleTrustedDomains(desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate and open accessible trusted domain objects in policy.
+        /// </summary>
+        /// <returns>The list of accessible trusted domains.</returns>
+        public IReadOnlyList<LsaTrustedDomain> OpenAccessibleTrustedDomains()
+        {
+            return OpenAccessibleTrustedDomains(LsaTrustedDomainAccessRights.MaximumAllowed);
         }
 
         #endregion
