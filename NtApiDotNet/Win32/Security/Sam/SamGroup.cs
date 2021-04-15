@@ -39,6 +39,7 @@ namespace NtApiDotNet.Win32.Security.Sam
                 return rid_array.Select((r, i) => new SamGroupMember(r, attr_array[i])).ToList().AsReadOnly();
             }
         }
+
         #endregion
 
         #region Internal Members
@@ -70,6 +71,58 @@ namespace NtApiDotNet.Win32.Security.Sam
         {
             return GetMembers(true).Result;
         }
+
+        /// <summary>
+        /// Query group attribute flags.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The group attribute flags.</returns>
+        public NtResult<GroupAttributes> QueryGroupAttributes(bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamQueryInformationGroup(Handle, 
+                GROUP_INFORMATION_CLASS.GroupAttributeInformation, out SafeSamMemoryBuffer buffer).CreateResult(throw_on_error, () =>
+            {
+                using (buffer)
+                {
+                    buffer.Initialize<GROUP_ATTRIBUTE_INFORMATION>(1);
+                    return buffer.Read<GROUP_ATTRIBUTE_INFORMATION>(0).Attributes;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Set the group attribute flags.
+        /// </summary>
+        /// <param name="attributes">The attributes to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetGroupAttributes(GroupAttributes attributes, bool throw_on_error)
+        {
+            using (var buffer = new GROUP_ATTRIBUTE_INFORMATION() { Attributes = attributes }.ToBuffer())
+            {
+                return SecurityNativeMethods.SamSetInformationGroup(Handle, 
+                    GROUP_INFORMATION_CLASS.GroupAttributeInformation, buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Delete the group object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Delete(bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamDeleteGroup(Handle).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the group object.
+        /// </summary>
+        public void Delete()
+        {
+            Delete(true);
+        }
+
         #endregion
 
         #region Public Properties
@@ -81,6 +134,14 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// The SID of the group.
         /// </summary>
         public Sid Sid { get; }
+        /// <summary>
+        /// Get or set the group attribute flags.
+        /// </summary>
+        public GroupAttributes Attributes
+        {
+            get => QueryGroupAttributes(true).Result;
+            set => SetGroupAttributes(value, true);
+        }
         #endregion
     }
 }

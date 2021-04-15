@@ -1046,6 +1046,34 @@ namespace NtApiDotNet.Win32.Security.Native
             UnicodeStringSecure NewPassword
         );
 
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamCreateGroupInDomain(
+            SafeSamHandle DomainHandle,
+            UnicodeString Name,
+            SamGroupAccessRights DesiredAccess,
+            out SafeSamHandle GroupHandle,
+            out uint RelativeId
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamQueryInformationGroup(
+            SafeSamHandle GroupHandle,
+            GROUP_INFORMATION_CLASS GroupInformationClass,
+            out SafeSamMemoryBuffer Buffer
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamSetInformationGroup(
+            SafeSamHandle GroupHandle,
+            GROUP_INFORMATION_CLASS GroupInformationClass,
+            SafeBuffer Buffer
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamDeleteGroup(
+            SafeSamHandle GroupHandle
+        );
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

@@ -534,6 +534,41 @@ namespace NtApiDotNet.Win32.Security.Sam
         }
 
         /// <summary>
+        /// Create a new group object.
+        /// </summary>
+        /// <param name="name">The name of the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM group object.</returns>
+        public NtResult<SamGroup> CreateGroup(string name, SamGroupAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamCreateGroupInDomain(Handle, new UnicodeString(name), desired_access,
+                out SafeSamHandle group_handle, out uint rid).CreateResult(throw_on_error,
+                () => new SamGroup(group_handle, desired_access, ServerName, name, DomainId.CreateRelative(rid)));
+        }
+
+        /// <summary>
+        /// Create a new group object.
+        /// </summary>
+        /// <param name="name">The name of the group.</param>
+        /// <param name="desired_access">The desired access for the group object.</param>
+        /// <returns>The SAM group object.</returns>
+        public SamGroup CreateGroup(string name, SamGroupAccessRights desired_access)
+        {
+            return CreateGroup(name, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new group object.
+        /// </summary>
+        /// <param name="name">The name of the group.</param>
+        /// <returns>The SAM group object.</returns>
+        public SamGroup CreateGroup(string name)
+        {
+            return CreateGroup(name, SamGroupAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
         /// Open an alias by relative ID.
         /// </summary>
         /// <param name="alias_id">The ID for the alias.</param>
