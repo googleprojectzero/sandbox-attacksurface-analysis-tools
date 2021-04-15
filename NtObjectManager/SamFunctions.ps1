@@ -276,6 +276,56 @@ function Get-SamGroup {
 
 <#
 .SYNOPSIS
+Get a membership of a group object from a SAM server.
+.DESCRIPTION
+This cmdlet queries the membership of a group object from a SAM server.
+.PARAMETER Group
+Specify the group object to get the members from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamGroupMember[]
+.EXAMPLE
+Get-SamGroupMember -Group $group
+Get members of the group objects.
+#>
+function Get-SamGroupMember { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamGroup]$Group
+    )
+
+    $Group.GetMembers() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get a membership of an alias object from a SAM server.
+.DESCRIPTION
+This cmdlet queries the membership of an alias object from a SAM server.
+.PARAMETER Alias
+Specify the alias object to get the members from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid[]
+.EXAMPLE
+Get-SamGroupMember -Alias $alias
+Get members of the group objects.
+#>
+function Get-SamAliasMember { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamAlias]$Alias
+    )
+
+    $Alias.GetMembers() | Write-Output
+}
+
+<#
+.SYNOPSIS
 Get an alias object from a SAM server.
 .DESCRIPTION
 This cmdlet opens an alias object from a SAM server.
