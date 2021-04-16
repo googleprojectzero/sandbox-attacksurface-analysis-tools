@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.DirectoryService;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -480,6 +481,48 @@ namespace NtApiDotNet
         public bool IsAllAccessGranted(AccessMask mask)
         {
             return Mask.IsAllAccessGranted(mask);
+        }
+
+        /// <summary>
+        /// Get the common name of the object type.
+        /// </summary>
+        /// <param name="expand_property_list">If true then expand the list of properties.</param>
+        /// <returns>The common name of the object type, or the GUID as a string.</returns>
+        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
+        public string GetObjectTypeName(bool expand_property_list)
+        {
+            if (!ObjectType.HasValue)
+            {
+                return "All";
+            }
+            Guid object_type = ObjectType.Value;
+            return DirectoryServiceUtils.GetRightsGuidName(object_type, expand_property_list) ?? 
+                DirectoryServiceUtils.GetSchemaClassName(object_type) ?? object_type.ToString();
+        }
+
+        /// <summary>
+        /// Get the common name of the object type.
+        /// </summary>
+        /// <returns>The common name of the object type, or the GUID as a string.</returns>
+        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
+        public string GetObjectTypeName()
+        {
+            return GetObjectTypeName(false);
+        }
+
+        /// <summary>
+        /// Get the common name of the inherited object type.
+        /// </summary>
+        /// <returns>The common name of the object type, or the GUID as a string.</returns>
+        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
+        public string GetInheritedObjectTypeName()
+        {
+            if (!InheritedObjectType.HasValue)
+            {
+                return "Any";
+            }
+            Guid object_type = InheritedObjectType.Value;
+            return DirectoryServiceUtils.GetSchemaClassName(object_type) ?? object_type.ToString();
         }
 
         /// <summary>

@@ -152,7 +152,8 @@ function Format-NtAce {
         [switch]$MapGeneric,
         [switch]$Summary,
         [switch]$Container,
-        [switch]$SDKName
+        [switch]$SDKName,
+        [switch]$ResolveObjectType
     )
 
     PROCESS {
@@ -187,10 +188,18 @@ function Format-NtAce {
             }
             if ($ace.IsObjectAce) {
                 if ($null -ne $ace.ObjectType) {
-                    $cond += "(OBJ:$($ace.ObjectType))"
+                    $name = $ace.ObjectType
+                    if ($ResolveObjectType) {
+                        $name = $ace.GetObjectTypeName($false)
+                    }
+                    $cond += "(OBJ:$name)"
                 }
                 if ($null -ne $ace.InheritedObjectType) {
-                    $cond += "(IOBJ:$($ace.InheritedObjectType))"
+                    $name = $ace.InheritedObjectType
+                    if ($ResolveObjectType) {
+                        $name = $ace.GetInheritedObjectTypeName()
+                    }
+                    $cond += "(IOBJ:$name)"
                 }
             }
 
@@ -215,10 +224,18 @@ function Format-NtAce {
             }
             if ($ace.IsObjectAce) {
                 if ($null -ne $ace.ObjectType) {
-                    Write-Output " - ObjectType: $($ace.ObjectType)"
+                    $name = $ace.ObjectType
+                    if ($ResolveObjectType) {
+                        $name = $ace.GetObjectTypeName($true)
+                    }
+                    Write-Output " - ObjectType: $name"
                 }
                 if ($null -ne $ace.InheritedObjectType) {
-                    Write-Output " - InheritedObjectType: $($ace.InheritedObjectType)"
+                    $name = $ace.InheritedObjectType
+                    if ($ResolveObjectType) {
+                        $name = $ace.GetInheritedObjectTypeName()
+                    }
+                    Write-Output " - InheritedObjectType: $name"
                 }
             }
             Write-Output ""
@@ -239,7 +256,8 @@ function Format-NtAcl {
         [switch]$AuditOnly,
         [switch]$Summary,
         [switch]$Container,
-        [switch]$SDKName
+        [switch]$SDKName,
+        [switch]$ResolveObjectType
     )
 
     $flags = @()
@@ -286,10 +304,10 @@ function Format-NtAcl {
     else {
         Write-Output $Name
         if ($AuditOnly) {
-            $Acl | Where-Object IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
+            $Acl | Where-Object IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
         }
         else {
-            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
+            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
         }
     }
 }
@@ -331,6 +349,8 @@ Specify to not print the security descriptor header.
 Specify to display a path when using SecurityDescriptor or Acl formatting.
 .PARAMETER SDKName
 Specify to format the security descriptor using SDK names where available.
+.PARAMETER ResolveObjectType
+Specify to try and resolve the object type GUID from the local Active Directory.
 .OUTPUTS
 None
 .EXAMPLE
@@ -387,7 +407,8 @@ function Format-NtSecurityDescriptor {
         [Parameter(ParameterSetName = "FromSecurityDescriptor")]
         [Parameter(ParameterSetName = "FromAcl")]
         [string]$DisplayPath = "",
-        [switch]$SDKName
+        [switch]$SDKName,
+        [switch]$ResolveObjectType
     )
 
     PROCESS {
@@ -513,10 +534,10 @@ function Format-NtSecurityDescriptor {
                 }
             }
             if ($sd.DaclPresent -and (($si -band "Dacl") -ne 0)) {
-                Format-NtAcl -Acl $sd.Dacl -Type $t -Name "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName
+                Format-NtAcl -Acl $sd.Dacl -Type $t -Name "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
             }
             if (($sd.HasAuditAce -or $sd.SaclNull) -and (($si -band "Sacl") -ne 0)) {
-                Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container -SDKName:$SDKName
+                Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
             }
             $label = $sd.GetMandatoryLabel()
             if ($null -ne $label -and (($si -band "Label") -ne 0)) {

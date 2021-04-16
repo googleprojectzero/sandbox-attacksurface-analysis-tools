@@ -39,6 +39,8 @@ Specify to display the access mask from Container Access Rights.
 Specify to map access masks back to generic access rights for the object type.
 .PARAMETER SDKName
 Specify to format the security descriptor using SDK names where available.
+.PARAMETER ResolveObjectType
+Specify to try and resolve the object type GUID from the local Active Directory.
 .OUTPUTS
 None
 .EXAMPLE
@@ -68,11 +70,12 @@ function Format-Win32SecurityDescriptor {
         [switch]$ShowAll,
         [switch]$HideHeader,
         [switch]$MapGeneric,
-        [switch]$SDKName
+        [switch]$SDKName,
+        [switch]$ResolveObjectType
     )
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
         -Container:$Container -AsSddl:$AsSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
-        -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName
+        -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
 }
