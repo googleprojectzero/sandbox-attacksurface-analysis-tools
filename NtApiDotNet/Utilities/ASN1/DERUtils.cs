@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.IO;
 
 namespace NtApiDotNet.Utilities.ASN1
