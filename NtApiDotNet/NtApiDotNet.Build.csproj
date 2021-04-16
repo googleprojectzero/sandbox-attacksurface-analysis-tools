@@ -40,12 +40,14 @@
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Reference Include="System.Security" />
+    <Reference Include="System.DirectoryServices" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.0" />
+    <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
