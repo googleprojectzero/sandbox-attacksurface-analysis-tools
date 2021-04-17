@@ -24,6 +24,7 @@ namespace NtApiDotNet.Win32.DirectoryService
     public sealed class DirectoryServiceExtendedRight
     {
         private readonly Lazy<IReadOnlyList<string>> _property_set_names;
+        private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _applies_to;
 
         /// <summary>
         /// The common name of the extended right.
@@ -38,7 +39,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// The list of applies to GUIDs.
         /// </summary>
-        public IReadOnlyCollection<Guid> AppliesTo { get; }
+        public IReadOnlyCollection<DirectoryServiceSchemaClass> AppliesTo => _applies_to.Value;
 
         /// <summary>
         /// The valid accesses for this extended right.
@@ -56,11 +57,14 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         public bool IsPropertySet => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp);
 
-        internal DirectoryServiceExtendedRight(Guid rights_guid, string name, IEnumerable<Guid> applies_to, DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<string>> func)
+        internal DirectoryServiceExtendedRight(Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
+            DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<string>> func)
         {
             RightsGuid = rights_guid;
             Name = name;
-            AppliesTo = applies_to.ToList().AsReadOnly();
+            _applies_to = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(
+                () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(g) 
+                ?? new DirectoryServiceSchemaClass(g)).ToList().AsReadOnly());
             ValidAccesses = valid_accesses;
             _property_set_names = new Lazy<IReadOnlyList<string>>(() => IsPropertySet ? func() : new List<string>().AsReadOnly());
         }

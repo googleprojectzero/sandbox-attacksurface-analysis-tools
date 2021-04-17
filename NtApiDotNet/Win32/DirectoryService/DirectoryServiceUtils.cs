@@ -36,18 +36,19 @@ namespace NtApiDotNet.Win32.DirectoryService
     public static class DirectoryServiceUtils
     {
         private static readonly ConcurrentDictionary<Tuple<string, string>, DirectoryEntry> _root_entries = new ConcurrentDictionary<Tuple<string, string>, DirectoryEntry>();
-        private static readonly ConcurrentDictionary<Guid, string> _schema_name = new ConcurrentDictionary<Guid, string>();
+        private static readonly ConcurrentDictionary<Guid, DirectoryServiceSchemaClass> _schema_class = new ConcurrentDictionary<Guid, DirectoryServiceSchemaClass>();
         private static readonly ConcurrentDictionary<Guid, DirectoryServiceExtendedRight> _extended_rights = new ConcurrentDictionary<Guid, DirectoryServiceExtendedRight>();
-        private static readonly ConcurrentDictionary<Guid, IReadOnlyList<Guid>> _property_sets = new ConcurrentDictionary<Guid, IReadOnlyList<Guid>>();
+        private static readonly Lazy<bool> _get_extended_rights = new Lazy<bool>(LoadExtendedRights);
 
         private const string kCommonName = "cn";
         private const string kSchemaIDGUID = "schemaIDGUID";
         private const string kSchemaNamingContext = "schemaNamingContext";
         private const string kConfigurationNamingContext = "configurationNamingContext";
-        private const string kCNExtendedRights = "CN=Extended-Rights,";
+        private const string kCNExtendedRights = "CN=Extended-Rights";
         private const string kAppliesTo = "appliesTo";
         private const string kValidAccesses = "validAccesses";
         private const string kLDAPDisplayName = "lDAPDisplayName";
+        private const string kRightsGuid = "rightsGuid";
 
         private static string GuidToString(Guid guid)
         {
@@ -59,7 +60,16 @@ namespace NtApiDotNet.Win32.DirectoryService
             return _root_entries.GetOrAdd(Tuple.Create(prefix, context), k =>
             {
                 DirectoryEntry entry = new DirectoryEntry("LDAP://RootDSE");
-                return new DirectoryEntry($"LDAP://{prefix}{entry.Properties[context][0]}");
+                string path;
+                if (string.IsNullOrEmpty(prefix))
+                {
+                    path = $"LDAP://{entry.Properties[context][0]}";
+                }
+                else
+                {
+                    path = $"LDAP://{prefix},{entry.Properties[context][0]}";
+                }
+                return new DirectoryEntry(path);
             });
         }
 
@@ -91,17 +101,39 @@ namespace NtApiDotNet.Win32.DirectoryService
             return GetPropertyValues<T>(result, name).FirstOrDefault();
         }
 
+        private static T[] GetPropertyValues<T>(this DirectoryEntry result, string name)
+        {
+            if (result == null || !result.Properties.Contains(name))
+            {
+                return new T[0];
+            }
+            return result.Properties[name].Cast<T>().ToArray();
+        }
+
+        private static T GetPropertyValue<T>(this DirectoryEntry result, string name)
+        {
+            return GetPropertyValues<T>(result, name).FirstOrDefault();
+        }
+
         private static string GetNameForGuid(string name, DirectoryEntry root_object, string filter)
         {
             return FindDirectoryEntry(root_object, filter, name).GetPropertyValue<string>(name);
         }
 
-        private static string GetCommonNameForGuid(string prefix, string context, string filter)
+        private static DirectoryServiceSchemaClass FetchSchemaClass(Guid guid)
         {
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(prefix, context);
-                return GetNameForGuid(kCommonName, root_entry, filter);
+                DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
+                var entry = FindDirectoryEntry(root_entry, $"({kSchemaIDGUID}={GuidToString(guid)})", "cn");
+                if (entry == null)
+                    return null;
+                var dir_entry = entry.GetDirectoryEntry();
+                string cn = dir_entry.GetPropertyValue<string>(kCommonName);
+                string ldap_name = dir_entry.GetPropertyValue<string>(kLDAPDisplayName);
+                if (cn == null || ldap_name == null)
+                    return null;
+                return new DirectoryServiceSchemaClass(guid, cn, ldap_name, dir_entry.SchemaClassName);
             }
             catch
             {
@@ -114,7 +146,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindDirectoryEntry(root_entry, $"(rightsGuid={rights_guid})", kCommonName, kAppliesTo, kValidAccesses);
+                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kRightsGuid, kCommonName, kAppliesTo, kValidAccesses);
                 var cn = result.GetPropertyValue<string>(kCommonName);
                 var applies_to = result.GetPropertyValues<string>(kAppliesTo);
                 var valid_accesses = result.GetPropertyValue<int>(kValidAccesses);
@@ -129,6 +161,33 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 return null;
             }
+        }
+
+        private static bool LoadExtendedRights()
+        {
+            try
+            {
+                DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
+                foreach (DirectoryEntry entry in root_entry.Children)
+                {
+                    var value = entry.GetPropertyValue<string>(kRightsGuid);
+                    if (value == null || !Guid.TryParse(value, out Guid rights_guid))
+                        continue;
+
+                    _extended_rights.GetOrAdd(rights_guid, guid =>
+                    {
+                        var cn = entry.GetPropertyValue<string>(kCommonName);
+                        var applies_to = entry.GetPropertyValues<string>(kAppliesTo);
+                        var valid_accesses = entry.GetPropertyValue<int>(kValidAccesses);
+                        return new DirectoryServiceExtendedRight(guid, cn, applies_to.Select(g => new Guid(g)),
+                            (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(guid));
+                    });
+                }
+            }
+            catch
+            {
+            }
+            return true;
         }
 
         private static IReadOnlyList<string> GetRightsGuidPropertySet(Guid rights_guid)
@@ -189,14 +248,23 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static NtType NtType => NtType.GetTypeByName(DS_NT_TYPE_NAME);
 
         /// <summary>
+        /// Get the schema class for a GUID.
+        /// </summary>
+        /// <param name="schema_id">The GUID for the schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
+        {
+            return _schema_class.GetOrAdd(schema_id, FetchSchemaClass);
+        }
+
+        /// <summary>
         /// Get the common name of an schema object class.
         /// </summary>
-        /// <param name="schema_guid">The GUID for the schema class.</param>
+        /// <param name="schema_id">The GUID for the schema class.</param>
         /// <returns>The common name of the schema class, or null if not found.</returns>
-        public static string GetSchemaClassName(Guid schema_guid)
+        public static string GetSchemaClassName(Guid schema_id)
         {
-            return _schema_name.GetOrAdd(schema_guid, _ => GetCommonNameForGuid(string.Empty,
-                kSchemaNamingContext, $"({kSchemaIDGUID}={GuidToString(schema_guid)})"));
+            return GetSchemaClass(schema_id)?.Name;
         }
 
         /// <summary>
@@ -215,6 +283,20 @@ namespace NtApiDotNet.Win32.DirectoryService
                 return string.Join(", ", extended_right.PropertySetNames);
             }
             return extended_right.Name;
+        }
+
+        /// <summary>
+        /// Get a list of all extended rights in the current domain.
+        /// </summary>
+        /// <returns>The list of extended rights.</returns>
+        public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights()
+        {
+            List<DirectoryServiceExtendedRight> ret = new List<DirectoryServiceExtendedRight>();
+            if (_get_extended_rights.Value)
+            {
+                ret.AddRange(_extended_rights.Values);
+            }
+            return ret.AsReadOnly();
         }
     }
 }
