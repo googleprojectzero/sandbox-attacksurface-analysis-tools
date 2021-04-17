@@ -101,6 +101,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             return GetPropertyValues<T>(result, name).FirstOrDefault();
         }
 
+        private static Guid? GetPropertyGuid(this SearchResult result, string name)
+        {
+            var guid = GetPropertyValue<byte[]>(result, name);
+            if (guid == null || guid.Length != 16)
+                return null;
+            return new Guid(guid);
+        }
+
         private static T[] GetPropertyValues<T>(this DirectoryEntry result, string name)
         {
             if (result == null || !result.Properties.Contains(name))
@@ -115,9 +123,13 @@ namespace NtApiDotNet.Win32.DirectoryService
             return GetPropertyValues<T>(result, name).FirstOrDefault();
         }
 
-        private static string GetNameForGuid(string name, DirectoryEntry root_object, string filter)
+        private static DirectoryServiceSchemaClass ConvertToSchemaClass(Guid schema_id, DirectoryEntry dir_entry)
         {
-            return FindDirectoryEntry(root_object, filter, name).GetPropertyValue<string>(name);
+            string cn = dir_entry.GetPropertyValue<string>(kCommonName);
+            string ldap_name = dir_entry.GetPropertyValue<string>(kLDAPDisplayName);
+            if (cn == null || ldap_name == null)
+                return null;
+            return new DirectoryServiceSchemaClass(schema_id, cn, ldap_name, dir_entry.SchemaClassName);
         }
 
         private static DirectoryServiceSchemaClass FetchSchemaClass(Guid guid)
@@ -125,15 +137,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
-                var entry = FindDirectoryEntry(root_entry, $"({kSchemaIDGUID}={GuidToString(guid)})", "cn");
-                if (entry == null)
-                    return null;
-                var dir_entry = entry.GetDirectoryEntry();
-                string cn = dir_entry.GetPropertyValue<string>(kCommonName);
-                string ldap_name = dir_entry.GetPropertyValue<string>(kLDAPDisplayName);
-                if (cn == null || ldap_name == null)
-                    return null;
-                return new DirectoryServiceSchemaClass(guid, cn, ldap_name, dir_entry.SchemaClassName);
+                return ConvertToSchemaClass(guid, FindDirectoryEntry(root_entry, 
+                    $"({kSchemaIDGUID}={GuidToString(guid)})", "cn")?.GetDirectoryEntry());
             }
             catch
             {
@@ -190,25 +195,20 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
-        private static IReadOnlyList<string> GetRightsGuidPropertySet(Guid rights_guid)
+        private static IReadOnlyList<DirectoryServiceSchemaClass> GetRightsGuidPropertySet(Guid rights_guid)
         {
-            List<string> ret = new List<string>();
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
-                var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", kLDAPDisplayName, kSchemaIDGUID);
+                var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", kSchemaIDGUID);
                 foreach (SearchResult result in collection)
                 {
-                    var name = result.GetPropertyValue<string>(kLDAPDisplayName);
-                    var id_guid = result.GetPropertyValue<byte[]>(kSchemaIDGUID);
-                    if (name != null)
-                    {
-                        ret.Add(name);
-                    }
-                    else if (id_guid != null)
-                    {
-                        ret.Add(new Guid(id_guid).ToString());
-                    }
+                    var id_guid = result.GetPropertyGuid(kSchemaIDGUID);
+                    if (!id_guid.HasValue)
+                        continue;
+                    var entry = ConvertToSchemaClass(id_guid.Value, result.GetDirectoryEntry());
+                    ret.Add(entry ?? new DirectoryServiceSchemaClass(id_guid.Value));
                 }
             }
             catch
@@ -280,7 +280,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 return null;
             if (expand_property_set && extended_right.IsPropertySet)
             {
-                return string.Join(", ", extended_right.PropertySetNames);
+                return string.Join(", ", extended_right.PropertySet.Select(p => p.LdapName));
             }
             return extended_right.Name;
         }

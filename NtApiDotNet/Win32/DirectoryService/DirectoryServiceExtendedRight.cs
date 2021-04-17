@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// </summary>
     public sealed class DirectoryServiceExtendedRight
     {
-        private readonly Lazy<IReadOnlyList<string>> _property_set_names;
+        private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _property_set;
         private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _applies_to;
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// Get list of properties if a property set.
         /// </summary>
-        public IReadOnlyList<string> PropertySetNames => _property_set_names.Value;
+        public IReadOnlyList<DirectoryServiceSchemaClass> PropertySet => _property_set.Value;
 
         /// <summary>
         /// True if this a property set extended right.
@@ -58,7 +58,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         public bool IsPropertySet => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp);
 
         internal DirectoryServiceExtendedRight(Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
-            DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<string>> func)
+            DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaClass>> func)
         {
             RightsGuid = rights_guid;
             Name = name;
@@ -66,7 +66,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                 () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(g) 
                 ?? new DirectoryServiceSchemaClass(g)).ToList().AsReadOnly());
             ValidAccesses = valid_accesses;
-            _property_set_names = new Lazy<IReadOnlyList<string>>(() => IsPropertySet ? func() : new List<string>().AsReadOnly());
+            _property_set = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(() => IsPropertySet ? func() 
+                : new List<DirectoryServiceSchemaClass>().AsReadOnly());
         }
     }
 }
