@@ -496,7 +496,7 @@ namespace NtApiDotNet
                 return "All";
             }
             Guid object_type = ObjectType.Value;
-            return DirectoryServiceUtils.GetRightsGuidName(object_type, expand_property_list) ?? 
+            return DirectoryServiceUtils.GetExtendedRightName(object_type, expand_property_list) ?? 
                 DirectoryServiceUtils.GetSchemaClassName(object_type) ?? object_type.ToString();
         }
 

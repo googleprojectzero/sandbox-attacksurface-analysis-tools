@@ -268,14 +268,14 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
-        /// Get the common name of an object class.
+        /// Get the extended right name by GUID.
         /// </summary>
-        /// <param name="rights_guid">The GUID for the extended rights.</param>
+        /// <param name="right_guid">The GUID for the extended right.</param>
         /// <param name="expand_property_set">If true and the right is a property set, expand the name.</param>
-        /// <returns>The common name of the schema class, or null if not found.</returns>
-        public static string GetRightsGuidName(Guid rights_guid, bool expand_property_set)
+        /// <returns>The name of the extended right, or null if not found.</returns>
+        public static string GetExtendedRightName(Guid right_guid, bool expand_property_set)
         {
-            var extended_right = _extended_rights.GetOrAdd(rights_guid, _ => GetExtendedRightForGuid(rights_guid));
+            var extended_right = GetExtendedRight(right_guid);
             if (extended_right == null)
                 return null;
             if (expand_property_set && extended_right.IsPropertySet)
@@ -283,6 +283,16 @@ namespace NtApiDotNet.Win32.DirectoryService
                 return string.Join(", ", extended_right.PropertySet.Select(p => p.LdapName));
             }
             return extended_right.Name;
+        }
+
+        /// <summary>
+        /// Get an extended right by GUID.
+        /// </summary>
+        /// <param name="right_guid">The GUID for the extended right.</param>
+        /// <returns>The extended right, or null if not found.</returns>
+        public static DirectoryServiceExtendedRight GetExtendedRight(Guid right_guid)
+        {
+            return _extended_rights.GetOrAdd(right_guid, _ => GetExtendedRightForGuid(right_guid));
         }
 
         /// <summary>
