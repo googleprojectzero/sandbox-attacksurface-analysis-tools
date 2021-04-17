@@ -39,6 +39,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private static readonly ConcurrentDictionary<Guid, DirectoryServiceSchemaClass> _schema_class = new ConcurrentDictionary<Guid, DirectoryServiceSchemaClass>();
         private static readonly ConcurrentDictionary<Guid, DirectoryServiceExtendedRight> _extended_rights = new ConcurrentDictionary<Guid, DirectoryServiceExtendedRight>();
         private static readonly Lazy<bool> _get_extended_rights = new Lazy<bool>(LoadExtendedRights);
+        private static readonly Lazy<bool> _get_schema_classes = new Lazy<bool>(LoadSchemaClasses);
 
         private const string kCommonName = "cn";
         private const string kSchemaIDGUID = "schemaIDGUID";
@@ -53,6 +54,57 @@ namespace NtApiDotNet.Win32.DirectoryService
         private static string GuidToString(Guid guid)
         {
             return string.Join(string.Empty, guid.ToByteArray().Select(b => $"\\{b:X02}"));
+        }
+
+        private class PropertyClass
+        {
+            private Func<string, object[]> _get_property;
+
+            public T[] GetPropertyValues<T>(string name)
+            {
+                return _get_property(name).Cast<T>().ToArray();
+            }
+
+            public T GetPropertyValue<T>(string name)
+            {
+                return GetPropertyValues<T>(name).FirstOrDefault();
+            }
+
+            public Guid? GetPropertyGuid(string name)
+            {
+                var guid = GetPropertyValue<byte[]>(name);
+                if (guid == null || guid.Length != 16)
+                    return null;
+                return new Guid(guid);
+            }
+
+            private static object[] GetPropertyValues(SearchResult result, string name)
+            {
+                if (result == null || !result.Properties.Contains(name))
+                {
+                    return new object[0];
+                }
+                return result.Properties[name].Cast<object>().ToArray();
+            }
+
+            private static object[] GetPropertyValues(DirectoryEntry result, string name)
+            {
+                if (result == null || !result.Properties.Contains(name))
+                {
+                    return new object[0];
+                }
+                return result.Properties[name].Cast<object>().ToArray();
+            }
+
+            public PropertyClass(SearchResult result)
+            {
+                _get_property = n => GetPropertyValues(result, n);
+            }
+
+            public PropertyClass(DirectoryEntry entry)
+            {
+                _get_property = n => GetPropertyValues(entry, n);
+            }
         }
 
         private static DirectoryEntry GetRootEntry(string prefix, string context)
@@ -87,46 +139,21 @@ namespace NtApiDotNet.Win32.DirectoryService
             return ds.FindAll();
         }
 
-        private static T[] GetPropertyValues<T>(this SearchResult result, string name)
+        private static PropertyClass ToPropertyClass(this DirectoryEntry entry)
         {
-            if (result == null || !result.Properties.Contains(name))
-            {
-                return new T[0];
-            }
-            return result.Properties[name].Cast<T>().ToArray();
+            return new PropertyClass(entry);
         }
 
-        private static T GetPropertyValue<T>(this SearchResult result, string name)
+        private static PropertyClass ToPropertyClass(this SearchResult result)
         {
-            return GetPropertyValues<T>(result, name).FirstOrDefault();
-        }
-
-        private static Guid? GetPropertyGuid(this SearchResult result, string name)
-        {
-            var guid = GetPropertyValue<byte[]>(result, name);
-            if (guid == null || guid.Length != 16)
-                return null;
-            return new Guid(guid);
-        }
-
-        private static T[] GetPropertyValues<T>(this DirectoryEntry result, string name)
-        {
-            if (result == null || !result.Properties.Contains(name))
-            {
-                return new T[0];
-            }
-            return result.Properties[name].Cast<T>().ToArray();
-        }
-
-        private static T GetPropertyValue<T>(this DirectoryEntry result, string name)
-        {
-            return GetPropertyValues<T>(result, name).FirstOrDefault();
+            return new PropertyClass(result);
         }
 
         private static DirectoryServiceSchemaClass ConvertToSchemaClass(Guid schema_id, DirectoryEntry dir_entry)
         {
-            string cn = dir_entry.GetPropertyValue<string>(kCommonName);
-            string ldap_name = dir_entry.GetPropertyValue<string>(kLDAPDisplayName);
+            var prop = dir_entry.ToPropertyClass();
+            string cn = prop.GetPropertyValue<string>(kCommonName);
+            string ldap_name = prop.GetPropertyValue<string>(kLDAPDisplayName);
             if (cn == null || ldap_name == null)
                 return null;
             return new DirectoryServiceSchemaClass(schema_id, cn, ldap_name, dir_entry.SchemaClassName);
@@ -151,7 +178,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kRightsGuid, kCommonName, kAppliesTo, kValidAccesses);
+                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kRightsGuid, kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
                 var cn = result.GetPropertyValue<string>(kCommonName);
                 var applies_to = result.GetPropertyValues<string>(kAppliesTo);
                 var valid_accesses = result.GetPropertyValue<int>(kValidAccesses);
@@ -173,7 +200,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
-                foreach (DirectoryEntry entry in root_entry.Children)
+                foreach (var entry in root_entry.Children.Cast<DirectoryEntry>().Select(d => d.ToPropertyClass()))
                 {
                     var value = entry.GetPropertyValue<string>(kRightsGuid);
                     if (value == null || !Guid.TryParse(value, out Guid rights_guid))
@@ -195,6 +222,26 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
+        private static bool LoadSchemaClasses()
+        {
+            try
+            {
+                DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
+                foreach (var entry in root_entry.Children.Cast<DirectoryEntry>())
+                {
+                    var schema_id = entry.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
+                    if (!schema_id.HasValue)
+                        continue;
+
+                    _schema_class.GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(guid, entry));
+                }
+            }
+            catch
+            {
+            }
+            return true;
+        }
+
         private static IReadOnlyList<DirectoryServiceSchemaClass> GetRightsGuidPropertySet(Guid rights_guid)
         {
             List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
@@ -204,7 +251,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", kSchemaIDGUID);
                 foreach (SearchResult result in collection)
                 {
-                    var id_guid = result.GetPropertyGuid(kSchemaIDGUID);
+                    var id_guid = result.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
                     if (!id_guid.HasValue)
                         continue;
                     var entry = ConvertToSchemaClass(id_guid.Value, result.GetDirectoryEntry());
@@ -255,6 +302,20 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
         {
             return _schema_class.GetOrAdd(schema_id, FetchSchemaClass);
+        }
+
+        /// <summary>
+        /// Get all schema classes.
+        /// </summary>
+        /// <returns>The list of schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses()
+        {
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
+            if (_get_schema_classes.Value)
+            {
+                ret.AddRange(_schema_class.Values);
+            }
+            return ret.AsReadOnly();
         }
 
         /// <summary>

@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// The rights GUID for this extended right.
         /// </summary>
-        public Guid RightsGuid { get; }
+        public Guid RightsId { get; }
 
         /// <summary>
         /// The list of applies to GUIDs.
@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         internal DirectoryServiceExtendedRight(Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
             DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaClass>> func)
         {
-            RightsGuid = rights_guid;
+            RightsId = rights_guid;
             Name = name;
             _applies_to = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(
                 () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(g) 

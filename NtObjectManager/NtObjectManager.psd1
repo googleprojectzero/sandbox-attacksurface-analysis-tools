@@ -120,7 +120,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Restart-Win32Service', 'Test-Win32Service', 'Format-KerberosTicket', 'ConvertFrom-HexDump', 
           'Get-Win32ModuleResource', 'Get-LsaPolicy', 'Connect-SamServer', 'Get-SamDomain', 'Get-SamUser',
           'Get-SamAlias', 'Get-SamGroup', 'Get-LsaPrivateData', 'Set-LsaPrivateData', 'Get-LsaAccount',
-          'Get-LsaTrustedDomain', 'Get-LsaSecret', 'Get-SamAliasMember', 'Get-SamGroupMember'
+          'Get-LsaTrustedDomain', 'Get-LsaSecret', 'Get-SamAliasMember', 'Get-SamGroupMember',
+          'Get-DsExtendedRight', 'Get-DsSchemaClass'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
