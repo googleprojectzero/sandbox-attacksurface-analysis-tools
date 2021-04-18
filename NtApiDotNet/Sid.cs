@@ -410,23 +410,29 @@ namespace NtApiDotNet
         /// <returns>The relative SID.</returns>
         public Sid CreateRelative(params uint[] rids)
         {
+            if (rids.Length < 1)
+                throw new ArgumentException("Must specify at least one RID.");
             List<uint> new_rids = new List<uint>(SubAuthorities);
             new_rids.AddRange(rids);
             return new Sid(Authority, new_rids.ToArray());
         }
 
         /// <summary>
-        /// Create a SID sibling to this one. i.e. just replace the final RID.
+        /// Create a SID sibling to this SID.
         /// </summary>
-        /// <param name="rid">The RID to replace with.</param>
+        /// <param name="rids">The RIDs to replace the final RID with.</param>
         /// <returns>The sibling SID.</returns>
-        public Sid CreateSibling(uint rid)
+        /// <remarks>This replaces the final RID with one or more addditional RIDs.</remarks>
+        public Sid CreateSibling(params uint[] rids)
         {
+            if (rids.Length < 1)
+                throw new ArgumentException("Must specify at least one RID.");
+
             if (SubAuthorities.Count < 1)
                 throw new InvalidOperationException("To create a sibling SID the original must have at least 1 sub authority.");
 
             List<uint> new_rids = new List<uint>(SubAuthorities.Take(SubAuthorities.Count - 1));
-            new_rids.Add(rid);
+            new_rids.AddRange(rids);
             return new Sid(Authority, new_rids.ToArray());
         }
 

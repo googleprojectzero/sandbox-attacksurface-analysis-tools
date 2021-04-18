@@ -217,6 +217,12 @@ namespace NtObjectManager.Cmdlets.Object
         public Sid BaseSid { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify you create a sibling SID rather than a child relative SID.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "relsid")]
+        public SwitchParameter Sibling { get; set; }
+
+        /// <summary>
         /// <para type="description">Get a new logon session SID.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "logon")]
@@ -336,7 +342,7 @@ namespace NtObjectManager.Cmdlets.Object
                     sid = AccessControlEntry.Sid;
                     break;
                 case "relsid":
-                    sid = BaseSid.CreateRelative(RelativeIdentifier);
+                    sid = Sibling ? BaseSid.CreateSibling(RelativeIdentifier) : BaseSid.CreateRelative(RelativeIdentifier);
                     break;
                 case "bytes":
                     sid = new Sid(Byte);
