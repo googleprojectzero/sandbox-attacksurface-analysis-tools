@@ -1246,6 +1246,74 @@ function Get-LsaSecret {
 
 <#
 .SYNOPSIS
+Lookup one or more SIDs by name from the policy.
+.DESCRIPTION
+This cmdlet looks up one or more SIDs from a LSA policy.
+.PARAMETER Policy
+Specify the policy to get the SIDs from.
+.PARAMETER Name
+Specify the names to lookup.
+.PARAMETER Flags
+Specify flags for the looked up names.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SidName[]
+.EXAMPLE
+Get-LsaSid -Policy $policy -Name 'Administrator'
+Lookup the name Administrator in the policy.
+#>
+function Get-LsaSid { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [Parameter(Mandatory, Position = 1)]
+        [string[]]$Name,
+        [NtApiDotnet.Win32.Security.Policy.LsaLookupNameOptionFlags]$Flags = 0
+    )
+
+    $Policy.LookupNames($Name, $Flags) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Lookup one or more names by SID from the policy.
+.DESCRIPTION
+This cmdlet looks up one or more names from a LSA policy.
+.PARAMETER Policy
+Specify the policy to get the names from.
+.PARAMETER Sid
+Specify the SIDs to lookup.
+.PARAMETER Flags
+Specify flags for the looked up SIDs.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SidName[]
+.EXAMPLE
+Get-LsaName -Policy $policy -Sid 'S-1-5-32-544'
+Lookup the SID S-1-5-32-544 in the policy.
+#>
+function Get-LsaName { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [Parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Sid[]]$Sid,
+        [NtApiDotnet.Win32.Security.Policy.LsaLookupSidOptionFlags]$Flags = 0
+    )
+
+    if ($Flags -ne 0) {
+        $Policy.LookupSids2($Sid, $Flags) | Write-Output
+    } else {
+        $Policy.LookupSids($Sid) | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
 Get a LSA private data (secret) object.
 .DESCRIPTION
 This cmdlet gets the private data from an LSA policy.

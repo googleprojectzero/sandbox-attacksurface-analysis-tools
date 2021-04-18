@@ -4173,10 +4173,6 @@
             <Label>NameUse</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
-          <TableColumnHeader>
-            <Label>Sddl</Label>
-            <Alignment>left</Alignment>
-          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
@@ -4192,9 +4188,6 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>NameUse</PropertyName>
-              </TableColumnItem>
-              <TableColumnItem>
-                <PropertyName>Sddl</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

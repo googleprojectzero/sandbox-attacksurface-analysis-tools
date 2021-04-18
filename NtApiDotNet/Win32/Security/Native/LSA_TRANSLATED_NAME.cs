@@ -40,7 +40,6 @@ namespace NtApiDotNet.Win32.Security.Native
         {
             switch (Use)
             {
-                case SidNameUse.WellKnownGroup:
                 case SidNameUse.Invalid:
                 case SidNameUse.Unknown:
                     return string.Empty;
