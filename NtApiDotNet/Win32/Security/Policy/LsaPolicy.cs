@@ -173,6 +173,16 @@ namespace NtApiDotNet.Win32.Security.Policy
         }
 
         /// <summary>
+        /// Lookup name for a SID.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <returns></returns>
+        public SidName LookupSid(Sid sid)
+        {
+            return LookupSids(new [] { sid }).First();
+        }
+
+        /// <summary>
         /// Lookup names for SIDs.
         /// </summary>
         /// <param name="sids">The list of SIDs to lookup.</param>
@@ -235,6 +245,16 @@ namespace NtApiDotNet.Win32.Security.Policy
         public IReadOnlyList<SidName> LookupNames(IEnumerable<string> names)
         {
             return LookupNames(names, 0);
+        }
+
+        /// <summary>
+        /// Lookup names from the LSA policy.
+        /// </summary>
+        /// <param name="name">The name to lookup.</param>
+        /// <returns>The looked up SID name.</returns>
+        public SidName LookupName(string name)
+        {
+            return LookupNames(new[] { name }).First();
         }
 
         /// <summary>
