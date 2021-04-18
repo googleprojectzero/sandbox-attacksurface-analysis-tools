@@ -701,7 +701,7 @@ namespace NtApiDotNet.Win32.Security
                     return policy.Cast<SidName>();
                 }
 
-                return policy.Result.LookupSids2(new Sid[] { sid }, LsaLookupOptionFlags.PreferInternetNames, throw_on_error).Map(e => e.First());
+                return policy.Result.LookupSids2(new Sid[] { sid }, LsaLookupSidOptionFlags.PreferInternetNames, throw_on_error).Map(e => e.First());
             }
         }
 

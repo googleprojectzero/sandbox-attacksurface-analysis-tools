@@ -54,6 +54,26 @@ namespace NtApiDotNet.Win32.Security.Policy
             return ret.AsReadOnly();
         }
 
+        private static IReadOnlyList<SidName> GetSidNameSids(string[] names, SafeLsaMemoryBuffer domains, SafeLsaMemoryBuffer sids)
+        {
+            using (SafeBufferGeneric a = domains, b = sids)
+            {
+                List<SidName> ret = new List<SidName>();
+                domains.Initialize<LSA_REFERENCED_DOMAIN_LIST>(1);
+                sids.Initialize<LSA_TRANSLATED_SID2>((uint)names.Length);
+
+                var domain_list = domains.Read<LSA_REFERENCED_DOMAIN_LIST>(0);
+                var domains_entries = NtProcess.Current.ReadMemoryArray<LSA_TRUST_INFORMATION>(domain_list.Domains.ToInt64(), domain_list.Entries);
+                var sid_list = sids.ReadArray<LSA_TRANSLATED_SID2>(0, names.Length);
+                for (int i = 0; i < names.Length; ++i)
+                {
+                    ret.Add(new SidName(sid_list[i].GetSid(), sid_list[i].GetDomain(domains_entries),
+                        names[i], SidNameSource.Account, sid_list[i].Use, false));
+                }
+                return ret.AsReadOnly();
+            }
+        }
+
         private static NtResult<IReadOnlyList<SidName>> LookupSids(IEnumerable<Sid> sids, LookupSidsDelegate func, bool throw_on_error)
         {
             using (var list = new DisposableList())
@@ -160,7 +180,7 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of looked up SID names.</returns>
         [SupportedVersion(SupportedVersion.Windows8)]
-        public NtResult<IReadOnlyList<SidName>> LookupSids2(IEnumerable<Sid> sids, LsaLookupOptionFlags options, bool throw_on_error)
+        public NtResult<IReadOnlyList<SidName>> LookupSids2(IEnumerable<Sid> sids, LsaLookupSidOptionFlags options, bool throw_on_error)
         {
             if (NtObjectUtils.IsWindows7OrLess)
                 throw new NotSupportedException($"{nameof(LookupSids2)} isn't supported until Windows 8");
@@ -176,9 +196,45 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <param name="options">Lookup options flags.</param>
         /// <returns>The list of looked up SID names.</returns>
         [SupportedVersion(SupportedVersion.Windows8)]
-        public IReadOnlyList<SidName> LookupSids2(IEnumerable<Sid> sids, LsaLookupOptionFlags options)
+        public IReadOnlyList<SidName> LookupSids2(IEnumerable<Sid> sids, LsaLookupSidOptionFlags options)
         {
             return LookupSids2(sids, options, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup names from the LSA policy.
+        /// </summary>
+        /// <param name="names">The names to lookup.</param>
+        /// <param name="flags">Flags for the lookup.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SID names.</returns>
+        public NtResult<IReadOnlyList<SidName>> LookupNames(IEnumerable<string> names, LsaLookupNameOptionFlags flags, bool throw_on_error)
+        {
+            UnicodeStringIn[] name_arr = names.Select(n => new UnicodeStringIn(n)).ToArray();
+            return SecurityNativeMethods.LsaLookupNames2(Handle, flags, name_arr.Length, name_arr,
+                out SafeLsaMemoryBuffer domains, out SafeLsaMemoryBuffer sids).CreateResult(throw_on_error,
+                () => GetSidNameSids(names.ToArray(), domains, sids));
+        }
+
+        /// <summary>
+        /// Lookup names from the LSA policy.
+        /// </summary>
+        /// <param name="names">The names to lookup.</param>
+        /// <param name="flags">Flags for the lookup.</param>
+        /// <returns>The list of SID names.</returns>
+        public IReadOnlyList<SidName> LookupNames(IEnumerable<string> names, LsaLookupNameOptionFlags flags)
+        {
+            return LookupNames(names, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup names from the LSA policy.
+        /// </summary>
+        /// <param name="names">The names to lookup.</param>
+        /// <returns>The list of SID names.</returns>
+        public IReadOnlyList<SidName> LookupNames(IEnumerable<string> names)
+        {
+            return LookupNames(names, 0);
         }
 
         /// <summary>

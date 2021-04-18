@@ -350,6 +350,7 @@
     <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\LSA_REFERENCED_DOMAIN_LIST.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_NAME.cs" />
+    <Compile Include="Win32\Security\Native\LSA_TRANSLATED_SID2.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
@@ -358,7 +359,8 @@
     <Compile Include="Win32\Security\Policy\LsaAccount.cs" />
     <Compile Include="Win32\Security\Policy\LsaAccountAccessRights.cs" />
     <Compile Include="Win32\Security\Policy\LsaFakeTypeFactory.cs" />
-    <Compile Include="Win32\Security\Policy\LsaLookupOptionFlags.cs" />
+    <Compile Include="Win32\Security\Policy\LsaLookupNameOptionFlags.cs" />
+    <Compile Include="Win32\Security\Policy\LsaLookupSidOptionFlags.cs" />
     <Compile Include="Win32\Security\Policy\LsaObject.cs" />
     <Compile Include="Win32\Security\Policy\LsaPolicy.cs" />
     <Compile Include="Win32\Security\Policy\LsaPolicyUtils.cs" />

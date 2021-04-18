@@ -18,18 +18,15 @@ using System;
 namespace NtApiDotNet.Win32.Security.Policy
 {
     /// <summary>
-    /// Flags for looking up SID names.
+    /// Flags for looking up SIDs by name.
     /// </summary>
     [Flags]
-    public enum LsaLookupOptionFlags : uint
+    public enum LsaLookupNameOptionFlags : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("LSA_LOOKUP_RETURN_LOCAL_NAMES")]
-        ReturnLocalNames = 0,
-        [SDKName("LSA_LOOKUP_PREFER_INTERNET_NAMES")]
-        PreferInternetNames = 0x40000000,
-        [SDKName("LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID")]
-        DisallowConnectedAccountInternetSid = 0x80000000
+        None = 0,
+        [SDKName("LSA_LOOKUP_ISOLATED_AS_LOCAL")]
+        IsolatedAsLocal = 0x80000000
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

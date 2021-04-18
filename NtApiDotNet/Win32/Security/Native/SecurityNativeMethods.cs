@@ -687,11 +687,21 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaLookupSids2(
             SafeLsaHandle PolicyHandle,
-            LsaLookupOptionFlags LookupOptions,
+            LsaLookupSidOptionFlags LookupOptions,
             int Count,
             IntPtr[] Sids,
             out SafeLsaMemoryBuffer ReferencedDomains,
             out SafeLsaMemoryBuffer Names
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaLookupNames2(
+            SafeLsaHandle PolicyHandle,
+            LsaLookupNameOptionFlags Flags,
+            int Count,
+            UnicodeStringIn[] Names,
+            out SafeLsaMemoryBuffer ReferencedDomains,
+            out SafeLsaMemoryBuffer Sids // PLSA_TRANSLATED_SID
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
