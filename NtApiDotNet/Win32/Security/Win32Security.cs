@@ -27,8 +27,6 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Security
 {
-#pragma warning restore 1591
-
     /// <summary>
     /// Security utilities which call the Win32 APIs.
     /// </summary>

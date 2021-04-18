@@ -160,6 +160,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Constructor from a SID name.
+        /// </summary>
+        /// <param name="sid_name">The SID name.</param>
+        public Sid(SidName sid_name) 
+            : this(sid_name.Sid.Authority, sid_name.Sid.SubAuthorities.ToArray())
+        {
+        }
+
+        /// <summary>
         /// Construct a SID from a binary reader.
         /// </summary>
         /// <param name="reader">The binary reader.</param>

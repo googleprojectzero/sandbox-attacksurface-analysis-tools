@@ -24,6 +24,8 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class TokenPrivilege
     {
+        private readonly string _system_name;
+
         private static Luid LookupPrivilegeLuid(string name)
         {
             if (!Win32NativeMethods.LookupPrivilegeValue(".", name, out Luid luid))
@@ -65,7 +67,7 @@ namespace NtApiDotNet
                     Luid luid = Luid;
                     StringBuilder builder = new StringBuilder(256);
                     int name_length = 256;
-                    if (Win32NativeMethods.LookupPrivilegeName(null, ref luid, builder, ref name_length))
+                    if (Win32NativeMethods.LookupPrivilegeName(_system_name, ref luid, builder, ref name_length))
                     {
                         return builder.ToString();
                     }
@@ -78,7 +80,7 @@ namespace NtApiDotNet
         /// Get the display name/description of the privilege
         /// </summary>
         /// <returns>The display name</returns>
-        public string DisplayName => Win32Security.LookupPrivilegeDisplayName(null, Name);
+        public string DisplayName => Win32Security.LookupPrivilegeDisplayName(_system_name, Name);
 
         /// <summary>
         /// Get whether privilege is enabled
@@ -96,15 +98,21 @@ namespace NtApiDotNet
             get { return Attributes.HasFlag(PrivilegeAttributes.UsedForAccess); }
         }
 
+        internal TokenPrivilege(string system_name, Luid luid, PrivilegeAttributes attribute)
+        {
+            _system_name = system_name;
+            Luid = luid;
+            Attributes = attribute;
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="luid">The privilege LUID</param>
         /// <param name="attribute">The privilege attributes</param>
-        public TokenPrivilege(Luid luid, PrivilegeAttributes attribute)
+        public TokenPrivilege(Luid luid, PrivilegeAttributes attribute) 
+            : this(null, luid, attribute)
         {
-            Luid = luid;
-            Attributes = attribute;
         }
 
         /// <summary>

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Privilege")]
+    [SDKName("PRIVILEGE_SET")]
     public struct PrivilegeSet
     {
         public int PrivilegeCount;
@@ -37,14 +39,18 @@ namespace NtApiDotNet
 
     public class SafePrivilegeSetBuffer : SafeStructureInOutBuffer<PrivilegeSet>
     {
+        private static int CalculateLength(int count)
+        {
+            return count * Marshal.SizeOf(typeof(LuidAndAttributes));
+        }
+
         private SafePrivilegeSetBuffer(bool owns_handle) 
             : base(IntPtr.Zero, 0, owns_handle)
         {
         }
 
         private SafePrivilegeSetBuffer(PrivilegeSet privilege_set, int count)
-            : base(privilege_set, count * Marshal.SizeOf(typeof(LuidAndAttributes)),
-                  true)
+            : base(privilege_set, CalculateLength(count), true)
         {
         }
 
@@ -65,6 +71,11 @@ namespace NtApiDotNet
         {
         }
 
+        internal SafePrivilegeSetBuffer(IntPtr ptr, int count) 
+            : base(ptr, CalculateLength(count), true, false)
+        {
+        }
+
         public SafePrivilegeSetBuffer(IEnumerable<TokenPrivilege> privileges, 
             PrivilegeSetControlFlags control) : this(privileges, control, privileges.Count())
         {
@@ -78,10 +89,15 @@ namespace NtApiDotNet
 
         public IEnumerable<TokenPrivilege> GetPrivileges()
         {
+            return GetPrivileges(null);
+        }
+
+        internal IEnumerable<TokenPrivilege> GetPrivileges(string system_name)
+        {
             var result = Result;
             LuidAndAttributes[] luids = new LuidAndAttributes[result.PrivilegeCount];
             Data.ReadArray(0, luids, 0, luids.Length);
-            return luids.Select(l => new TokenPrivilege(l.Luid, l.Attributes)).ToArray();
+            return luids.Select(l => new TokenPrivilege(system_name, l.Luid, l.Attributes)).ToArray();
         }
     }
 

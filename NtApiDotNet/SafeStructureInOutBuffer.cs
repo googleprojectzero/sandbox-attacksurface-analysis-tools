@@ -55,6 +55,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="additional_size">Additional data to add to structure buffer.</param>
+        /// <param name="add_struct_size">If true additional_size is added to structure size, otherwise reflects the total size.</param>
+        /// <param name="buffer">An existing pointer to an existing HGLOBAL allocated buffer.</param>
+        /// <param name="owns_handle">Specify whether safe handle owns the buffer.</param>
+        public SafeStructureInOutBuffer(IntPtr buffer, int additional_size, bool add_struct_size, bool owns_handle)
+            : base(buffer, GetTotalLength(additional_size, add_struct_size), owns_handle)
+        {
+        }
+
+        /// <summary>
         /// Constructor, initializes buffer with a default structure.
         /// </summary>
         /// <param name="additional_size">Additional data to add to structure buffer.</param>

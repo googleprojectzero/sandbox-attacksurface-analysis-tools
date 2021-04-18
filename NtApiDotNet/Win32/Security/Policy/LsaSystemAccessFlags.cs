@@ -13,12 +13,14 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Reflection;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Policy
 {
     /// <summary>
     /// Flags for an account's system access.
     /// </summary>
+    [Flags]
     public enum LsaSystemAccessFlags
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member

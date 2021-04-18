@@ -60,6 +60,8 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class SidName
     {
+        private readonly Sid _sid;
+
         /// <summary>
         /// The qualified name of the SID. Either the combination of
         /// Domain and Name or the SDDL SID.
@@ -96,6 +98,8 @@ namespace NtApiDotNet
         /// </summary>
         internal bool LookupDenied { get; }
 
+        internal Sid Sid => _sid;
+
         internal SidName(Sid sid, string domain, string name, SidNameSource source, SidNameUse name_use, bool lookup_denied)
         {
             Domain = domain;
@@ -106,6 +110,7 @@ namespace NtApiDotNet
                 QualifiedName = $"{Domain}\\{Name}";
             Source = source;
             NameUse = name_use;
+            _sid = sid;
             Sddl = sid.ToString();
             LookupDenied = lookup_denied;
         }

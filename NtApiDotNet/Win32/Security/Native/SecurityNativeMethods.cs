@@ -779,6 +779,12 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaEnumeratePrivilegesOfAccount(
+            SafeLsaHandle AccountHandle,
+            out SafeLsaMemoryBuffer Privileges // PPRIVILEGE_SET 
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaEnumerateAccounts(
             SafeLsaHandle PolicyHandle,
             ref int EnumerationContext,
