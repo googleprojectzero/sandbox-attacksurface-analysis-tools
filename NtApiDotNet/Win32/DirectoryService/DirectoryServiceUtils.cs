@@ -38,8 +38,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         private static readonly ConcurrentDictionary<Tuple<string, string>, DirectoryEntry> _root_entries = new ConcurrentDictionary<Tuple<string, string>, DirectoryEntry>();
         private static readonly ConcurrentDictionary<Guid, DirectoryServiceSchemaClass> _schema_class = new ConcurrentDictionary<Guid, DirectoryServiceSchemaClass>();
         private static readonly ConcurrentDictionary<Guid, DirectoryServiceExtendedRight> _extended_rights = new ConcurrentDictionary<Guid, DirectoryServiceExtendedRight>();
-        private static readonly Lazy<bool> _get_extended_rights = new Lazy<bool>(LoadExtendedRights);
-        private static readonly Lazy<bool> _get_schema_classes = new Lazy<bool>(LoadSchemaClasses);
+        private static readonly Lazy<bool> _get_extended_rights = new Lazy<bool>(() => LoadExtendedRights(string.Empty));
+        private static readonly Lazy<bool> _get_schema_classes = new Lazy<bool>(() => LoadSchemaClasses(string.Empty));
 
         private const string kCommonName = "cn";
         private const string kSchemaIDGUID = "schemaIDGUID";
@@ -107,19 +107,24 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
         }
 
-        private static DirectoryEntry GetRootEntry(string prefix, string context)
+        private static string ConstructLdapUrl(string domain, string path)
+        {
+            return string.IsNullOrEmpty(domain) ? $"LDAP://{path}" : $"LDAP://{domain}/{path}";
+        }
+
+        private static DirectoryEntry GetRootEntry(string domain, string prefix, string context)
         {
             return _root_entries.GetOrAdd(Tuple.Create(prefix, context), k =>
             {
-                DirectoryEntry entry = new DirectoryEntry("LDAP://RootDSE");
+                DirectoryEntry entry = new DirectoryEntry(ConstructLdapUrl(domain, "RootDSE"));
                 string path;
                 if (string.IsNullOrEmpty(prefix))
                 {
-                    path = $"LDAP://{entry.Properties[context][0]}";
+                    path = ConstructLdapUrl(domain, entry.Properties[context][0].ToString());
                 }
                 else
                 {
-                    path = $"LDAP://{prefix},{entry.Properties[context][0]}";
+                    path = ConstructLdapUrl(domain, $"{prefix},{entry.Properties[context][0]}");
                 }
                 return new DirectoryEntry(path);
             });
@@ -159,11 +164,11 @@ namespace NtApiDotNet.Win32.DirectoryService
             return new DirectoryServiceSchemaClass(schema_id, cn, ldap_name, dir_entry.SchemaClassName);
         }
 
-        private static DirectoryServiceSchemaClass FetchSchemaClass(Guid guid)
+        private static DirectoryServiceSchemaClass FetchSchemaClass(string domain, Guid guid)
         {
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
+                DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 return ConvertToSchemaClass(guid, FindDirectoryEntry(root_entry, 
                     $"({kSchemaIDGUID}={GuidToString(guid)})", "cn")?.GetDirectoryEntry());
             }
@@ -173,11 +178,11 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
         }
 
-        private static DirectoryServiceExtendedRight GetExtendedRightForGuid(Guid rights_guid)
+        private static DirectoryServiceExtendedRight GetExtendedRightForGuid(string domain, Guid rights_guid)
         {
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
+                DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
                 var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kRightsGuid, kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
                 var cn = result.GetPropertyValue<string>(kCommonName);
                 var applies_to = result.GetPropertyValues<string>(kAppliesTo);
@@ -187,7 +192,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                     return null;
                 }
                 return new DirectoryServiceExtendedRight(rights_guid, cn, applies_to.Select(g => new Guid(g)), 
-                    (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(rights_guid));
+                    (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(domain, rights_guid));
             }
             catch
             {
@@ -195,11 +200,11 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
         }
 
-        private static bool LoadExtendedRights()
+        private static bool LoadExtendedRights(string domain)
         {
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(kCNExtendedRights, kConfigurationNamingContext);
+                DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
                 foreach (var entry in root_entry.Children.Cast<DirectoryEntry>().Select(d => d.ToPropertyClass()))
                 {
                     var value = entry.GetPropertyValue<string>(kRightsGuid);
@@ -212,7 +217,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                         var applies_to = entry.GetPropertyValues<string>(kAppliesTo);
                         var valid_accesses = entry.GetPropertyValue<int>(kValidAccesses);
                         return new DirectoryServiceExtendedRight(guid, cn, applies_to.Select(g => new Guid(g)),
-                            (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(guid));
+                            (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(domain, guid));
                     });
                 }
             }
@@ -222,11 +227,11 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
-        private static bool LoadSchemaClasses()
+        private static bool LoadSchemaClasses(string domain)
         {
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
+                DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 foreach (var entry in root_entry.Children.Cast<DirectoryEntry>())
                 {
                     var schema_id = entry.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
@@ -242,12 +247,12 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
-        private static IReadOnlyList<DirectoryServiceSchemaClass> GetRightsGuidPropertySet(Guid rights_guid)
+        private static IReadOnlyList<DirectoryServiceSchemaClass> GetRightsGuidPropertySet(string domain, Guid rights_guid)
         {
             List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
             try
             {
-                DirectoryEntry root_entry = GetRootEntry(string.Empty, kSchemaNamingContext);
+                DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", kSchemaIDGUID);
                 foreach (SearchResult result in collection)
                 {
@@ -279,9 +284,9 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 GenericMapping mapping = new GenericMapping
                 {
-                    GenericRead = DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.List | DirectoryServiceAccessRights.ListObject,
-                    GenericWrite = DirectoryServiceAccessRights.Self | DirectoryServiceAccessRights.WriteProp,
-                    GenericExecute = DirectoryServiceAccessRights.List,
+                    GenericRead = DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.List | DirectoryServiceAccessRights.ListObject | DirectoryServiceAccessRights.ReadControl,
+                    GenericWrite = DirectoryServiceAccessRights.Self | DirectoryServiceAccessRights.WriteProp | DirectoryServiceAccessRights.ReadControl,
+                    GenericExecute = DirectoryServiceAccessRights.List | DirectoryServiceAccessRights.ReadControl,
                     GenericAll = DirectoryServiceAccessRights.All
                 };
                 return mapping;
@@ -301,7 +306,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The schema class, or null if not found.</returns>
         public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
         {
-            return _schema_class.GetOrAdd(schema_id, FetchSchemaClass);
+            return _schema_class.GetOrAdd(schema_id, g => FetchSchemaClass(string.Empty, g));
         }
 
         /// <summary>
@@ -353,7 +358,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The extended right, or null if not found.</returns>
         public static DirectoryServiceExtendedRight GetExtendedRight(Guid right_guid)
         {
-            return _extended_rights.GetOrAdd(right_guid, _ => GetExtendedRightForGuid(right_guid));
+            return _extended_rights.GetOrAdd(right_guid, _ => GetExtendedRightForGuid(string.Empty, right_guid));
         }
 
         /// <summary>
