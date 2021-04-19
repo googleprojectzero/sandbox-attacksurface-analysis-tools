@@ -121,7 +121,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-Win32ModuleResource', 'Get-LsaPolicy', 'Connect-SamServer', 'Get-SamDomain', 'Get-SamUser',
           'Get-SamAlias', 'Get-SamGroup', 'Get-LsaPrivateData', 'Set-LsaPrivateData', 'Get-LsaAccount',
           'Get-LsaTrustedDomain', 'Get-LsaSecret', 'Get-SamAliasMember', 'Get-SamGroupMember',
-          'Get-DsExtendedRight', 'Get-DsSchemaClass', 'Get-LsaName', 'Get-LsaSid'
+          'Get-DsExtendedRight', 'Get-DsSchemaClass', 'Get-LsaName', 'Get-LsaSid', 'Protect-RC4'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -178,7 +178,8 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer', 'Get-AuthPackage', 'Read-AuthCredential', 'Get-AuthCredential', 
                 'Get-AuthCredentialHandle', 'Get-AuthClientContext', 'Get-AuthServerContext', 'Update-AuthClientContext', 
                 'Update-AuthServerContext', 'Get-AuthAccessToken', 'Get-AuthToken', 'Test-AuthContext', 'Format-AuthToken', 
-                'Export-AuthToken', 'Import-AuthToken', 'Unprotect-AuthToken', 'Out-HexDump', 'Get-NtMappedSection'
+                'Export-AuthToken', 'Import-AuthToken', 'Unprotect-AuthToken', 'Out-HexDump', 'Get-NtMappedSection',
+                'Unprotect-RC4'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

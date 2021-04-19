@@ -412,3 +412,44 @@ function Split-Win32CommandLine {
 function Get-IsPSCore {
     return ($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')
 }
+
+<#
+.SYNOPSIS
+Protect a byte array using RC4.
+.DESCRIPTION
+This cmdlet used the RC4 encryption algorithm to protect a byte array. Note as encryption
+and decryption are symmetrical this function process encrypts and decrypts. Note this 
+returns the encrypted data, it doesn't encrypt place.
+.PARAMETER Data
+The bytes to encrypt.
+.PARAMETER Key
+The key to use.
+.PARAMETER Offset
+The offset into the data to unprotect. Defaults to the start of the data.
+.PARAMETER Length
+The length of the data to unprotect. Defaults to all remaining data.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Protect-RC4 -Byte @(0, 1, 2, 3) -Key @(4, 7, 1, 254)
+Protect the byte array with RC4.
+#>
+function Protect-RC4 {
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [byte[]]$Data,
+        [Parameter(Mandatory, Position = 1)]
+        [byte[]]$Key,
+        [int]$Offset = 0,
+        [int]$Length = -1
+    )
+
+    if ($Length -lt 0) {
+        $Length = $Byte.Length - $Offset
+    }
+    [NtApiDotNet.Utilities.Security.ARC4]::Transform($Data, $Offset, $Length, $Key)
+}
+
+Set-Alias -Name Unprotect-RC4 -Value Protect-RC4
