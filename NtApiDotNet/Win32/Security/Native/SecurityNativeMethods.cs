@@ -1063,6 +1063,22 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamGetGroupsForUser(
+            SafeSamHandle UserHandle,
+            out SafeSamMemoryBuffer Groups, // PGROUP_MEMBERSHIP
+            out int MembershipCount
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamGetAliasMembership(
+            SafeSamHandle DomainHandle,
+            int PassedCount,
+            IntPtr[] Sids, // PSID
+            out int MembershipCount,
+            out SafeSamMemoryBuffer Aliases // PULONG
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus SamCreateGroupInDomain(
             SafeSamHandle DomainHandle,
             UnicodeString Name,

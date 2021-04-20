@@ -65,30 +65,6 @@ namespace NtApiDotNet.Win32.Security.Sam
             }
         }
 
-        private SamUser CreateUserObject(SafeSamHandle user_handle, SamUserAccessRights desired_access, string name, uint user_id)
-        {
-            try
-            {
-                Sid sid = RidToSid(user_id, false).GetResultOrDefault();
-                if (sid == null)
-                {
-                    sid = DomainId.CreateRelative(user_id);
-                }
-
-                if (name == null)
-                {
-                    name = LookupId(user_id, false).GetResultOrDefault()?.Name ?? sid.ToString();
-                }
-
-                return new SamUser(user_handle, desired_access, ServerName, name, sid);
-            }
-            catch
-            {
-                user_handle.Dispose();
-                throw;
-            }
-        }
-
         private T CreateObject<T>(SafeSamHandle handle, uint user_id, string name, Func<string, Sid, T> func)
         {
             try
@@ -359,6 +335,52 @@ namespace NtApiDotNet.Win32.Security.Sam
         public IReadOnlyList<SamRidEnumeration> EnumerateAliases()
         {
             return EnumerateAliases(true).Result;
+        }
+
+        /// <summary>
+        /// Get alias membership for a set of SIDs.
+        /// </summary>
+        /// <param name="sids">The SIDs to check.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The alias enumeration.</returns>
+        public NtResult<IReadOnlyList<SamRidEnumeration>> GetAliasMembership(IEnumerable<Sid> sids, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var alias_list = EnumerateAliases(throw_on_error);
+                if (!alias_list.IsSuccess)
+                    return alias_list;
+                var sid_ptrs = sids.Select(s => list.AddSid(s).DangerousGetHandle()).ToArray();
+                return SecurityNativeMethods.SamGetAliasMembership(Handle, sid_ptrs.Length, sid_ptrs, 
+                    out int count, out SafeSamMemoryBuffer aliases).CreateResult<IReadOnlyList<SamRidEnumeration>>(throw_on_error, () => {
+                    using (aliases)
+                    {
+                            aliases.Initialize<uint>((uint)count);
+                            var membership = new HashSet<uint>(aliases.ReadArray<uint>(0, count));
+                            return alias_list.Result.Where(m => membership.Contains(m.RelativeId)).ToList().AsReadOnly();
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get alias membership for a set of SIDs.
+        /// </summary>
+        /// <param name="sids">The SIDs to check.</param>
+        /// <returns>The alias enumeration.</returns>
+        public IReadOnlyList<SamRidEnumeration> GetAliasMembership(IEnumerable<Sid> sids)
+        {
+            return GetAliasMembership(sids, true).Result;
+        }
+
+        /// <summary>
+        /// Get alias membership for a SID.
+        /// </summary>
+        /// <param name="sid">The SID to check.</param>
+        /// <returns>The alias enumeration.</returns>
+        public IReadOnlyList<SamRidEnumeration> GetAliasMembership(Sid sid)
+        {
+            return GetAliasMembership(new Sid[] { sid });
         }
 
         /// <summary>
