@@ -486,18 +486,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the common name of the object type.
         /// </summary>
+        /// <param name="domain">Specify the domain for the object type.</param>
         /// <param name="expand_property_list">If true then expand the list of properties.</param>
         /// <returns>The common name of the object type, or the GUID as a string.</returns>
-        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
-        public string GetObjectTypeName(bool expand_property_list)
+        /// <remarks>This function could be quite slow to query the first time.</remarks>
+        public string GetObjectTypeName(string domain, bool expand_property_list)
         {
             if (!ObjectType.HasValue)
             {
                 return "All";
             }
             Guid object_type = ObjectType.Value;
-            return DirectoryServiceUtils.GetExtendedRightName(object_type, expand_property_list) ?? 
-                DirectoryServiceUtils.GetSchemaClassName(object_type) ?? object_type.ToString();
+            return DirectoryServiceUtils.GetExtendedRightName(domain, object_type, expand_property_list) ??
+                DirectoryServiceUtils.GetSchemaClassName(domain, object_type) ?? object_type.ToString();
+        }
+
+        /// <summary>
+        /// Get the common name of the object type.
+        /// </summary>
+        /// <param name="expand_property_list">If true then expand the list of properties.</param>
+        /// <returns>The common name of the object type, or the GUID as a string.</returns>
+        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
+        public string GetObjectTypeName(bool expand_property_list)
+        {
+            return GetObjectTypeName(string.Empty, expand_property_list);
         }
 
         /// <summary>
@@ -513,16 +525,27 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the common name of the inherited object type.
         /// </summary>
+        /// <param name="domain">Specify the domain for the object type.</param>
         /// <returns>The common name of the object type, or the GUID as a string.</returns>
-        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
-        public string GetInheritedObjectTypeName()
+        /// <remarks>This function could be quite slow to query the first time.</remarks>
+        public string GetInheritedObjectTypeName(string domain)
         {
             if (!InheritedObjectType.HasValue)
             {
                 return "Any";
             }
             Guid object_type = InheritedObjectType.Value;
-            return DirectoryServiceUtils.GetSchemaClassName(object_type) ?? object_type.ToString();
+            return DirectoryServiceUtils.GetSchemaClassName(domain, object_type) ?? object_type.ToString();
+        }
+
+        /// <summary>
+        /// Get the common name of the inherited object type.
+        /// </summary>
+        /// <returns>The common name of the object type, or the GUID as a string.</returns>
+        /// <remarks>This will query the local domain, it could be quite slow to query the first time.</remarks>
+        public string GetInheritedObjectTypeName()
+        {
+            return GetInheritedObjectTypeName(string.Empty);
         }
 
         /// <summary>

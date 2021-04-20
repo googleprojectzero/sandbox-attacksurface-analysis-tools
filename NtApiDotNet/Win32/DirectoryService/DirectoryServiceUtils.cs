@@ -35,11 +35,44 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// </summary>
     public static class DirectoryServiceUtils
     {
-        private static readonly ConcurrentDictionary<Tuple<string, string>, DirectoryEntry> _root_entries = new ConcurrentDictionary<Tuple<string, string>, DirectoryEntry>();
-        private static readonly ConcurrentDictionary<Guid, DirectoryServiceSchemaClass> _schema_class = new ConcurrentDictionary<Guid, DirectoryServiceSchemaClass>();
-        private static readonly ConcurrentDictionary<Guid, DirectoryServiceExtendedRight> _extended_rights = new ConcurrentDictionary<Guid, DirectoryServiceExtendedRight>();
-        private static readonly Lazy<bool> _get_extended_rights = new Lazy<bool>(() => LoadExtendedRights(string.Empty));
-        private static readonly Lazy<bool> _get_schema_classes = new Lazy<bool>(() => LoadSchemaClasses(string.Empty));
+        #region Private Members
+        private class DomainDictionary<T>
+        {
+            private readonly ConcurrentDictionary<string, T> _dict;
+            private readonly Func<string, T> _create_func;
+
+            public DomainDictionary(Func<string, T> create_func) 
+            {
+                _create_func = create_func;
+                _dict = new ConcurrentDictionary<string, T>();
+            }
+
+            public T Get(string domain)
+            {
+                return _dict.GetOrAdd(domain ?? string.Empty, _create_func);
+            }
+        }
+
+        private class DomainDictionaryDict<K, V> : DomainDictionary<ConcurrentDictionary<K, V>>
+        {
+            public DomainDictionaryDict() : base(_ => new ConcurrentDictionary<K, V>())
+            {
+            }
+        }
+
+        private class DomainDictionaryLazy : DomainDictionary<Lazy<bool>>
+        {
+            public DomainDictionaryLazy(Func<string, bool> create_func) 
+                : base(s => new Lazy<bool>(() => create_func(s)))
+            {
+            }
+        }
+
+        private static readonly DomainDictionaryDict<Tuple<string, string>, DirectoryEntry> _root_entries = new DomainDictionaryDict<Tuple<string, string>, DirectoryEntry>();
+        private static readonly DomainDictionaryDict<Guid, DirectoryServiceSchemaClass> _schema_class = new DomainDictionaryDict<Guid, DirectoryServiceSchemaClass>();
+        private static readonly DomainDictionaryDict<Guid, DirectoryServiceExtendedRight> _extended_rights = new DomainDictionaryDict<Guid, DirectoryServiceExtendedRight>();
+        private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
+        private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
 
         private const string kCommonName = "cn";
         private const string kSchemaIDGUID = "schemaIDGUID";
@@ -50,6 +83,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kValidAccesses = "validAccesses";
         private const string kLDAPDisplayName = "lDAPDisplayName";
         private const string kRightsGuid = "rightsGuid";
+        private const string kDistinguishedName = "distinguishedName";
 
         private static string GuidToString(Guid guid)
         {
@@ -114,7 +148,7 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static DirectoryEntry GetRootEntry(string domain, string prefix, string context)
         {
-            return _root_entries.GetOrAdd(Tuple.Create(prefix, context), k =>
+            return _root_entries.Get(domain).GetOrAdd(Tuple.Create(prefix, context), k =>
             {
                 DirectoryEntry entry = new DirectoryEntry(ConstructLdapUrl(domain, "RootDSE"));
                 string path;
@@ -139,9 +173,10 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static SearchResultCollection FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
         {
-            DirectorySearcher ds = new DirectorySearcher(root_object, filter, properties);
-            ds.SearchScope = SearchScope.OneLevel;
-            return ds.FindAll();
+            return new DirectorySearcher(root_object, filter, properties)
+            {
+                SearchScope = SearchScope.OneLevel
+            }.FindAll();
         }
 
         private static PropertyClass ToPropertyClass(this DirectoryEntry entry)
@@ -154,14 +189,15 @@ namespace NtApiDotNet.Win32.DirectoryService
             return new PropertyClass(result);
         }
 
-        private static DirectoryServiceSchemaClass ConvertToSchemaClass(Guid schema_id, DirectoryEntry dir_entry)
+        private static DirectoryServiceSchemaClass ConvertToSchemaClass(string domain, Guid schema_id, DirectoryEntry dir_entry)
         {
             var prop = dir_entry.ToPropertyClass();
             string cn = prop.GetPropertyValue<string>(kCommonName);
             string ldap_name = prop.GetPropertyValue<string>(kLDAPDisplayName);
+            string dn = prop.GetPropertyValue<string>(kDistinguishedName);
             if (cn == null || ldap_name == null)
                 return null;
-            return new DirectoryServiceSchemaClass(schema_id, cn, ldap_name, dir_entry.SchemaClassName);
+            return new DirectoryServiceSchemaClass(domain, dn, schema_id, cn, ldap_name, dir_entry.SchemaClassName);
         }
 
         private static DirectoryServiceSchemaClass FetchSchemaClass(string domain, Guid guid)
@@ -169,7 +205,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                return ConvertToSchemaClass(guid, FindDirectoryEntry(root_entry, 
+                return ConvertToSchemaClass(domain, guid, FindDirectoryEntry(root_entry, 
                     $"({kSchemaIDGUID}={GuidToString(guid)})", "cn")?.GetDirectoryEntry());
             }
             catch
@@ -183,7 +219,9 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kRightsGuid, kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
+                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kDistinguishedName, kRightsGuid,
+                    kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
+                var dn = result.GetPropertyValue<string>(kDistinguishedName);
                 var cn = result.GetPropertyValue<string>(kCommonName);
                 var applies_to = result.GetPropertyValues<string>(kAppliesTo);
                 var valid_accesses = result.GetPropertyValue<int>(kValidAccesses);
@@ -191,7 +229,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                 {
                     return null;
                 }
-                return new DirectoryServiceExtendedRight(rights_guid, cn, applies_to.Select(g => new Guid(g)), 
+
+                return new DirectoryServiceExtendedRight(domain, dn, rights_guid, cn, applies_to.Select(g => new Guid(g)), 
                     (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(domain, rights_guid));
             }
             catch
@@ -211,12 +250,13 @@ namespace NtApiDotNet.Win32.DirectoryService
                     if (value == null || !Guid.TryParse(value, out Guid rights_guid))
                         continue;
 
-                    _extended_rights.GetOrAdd(rights_guid, guid =>
+                    _extended_rights.Get(domain).GetOrAdd(rights_guid, guid =>
                     {
+                        var dn = entry.GetPropertyValue<string>(kDistinguishedName);
                         var cn = entry.GetPropertyValue<string>(kCommonName);
                         var applies_to = entry.GetPropertyValues<string>(kAppliesTo);
                         var valid_accesses = entry.GetPropertyValue<int>(kValidAccesses);
-                        return new DirectoryServiceExtendedRight(guid, cn, applies_to.Select(g => new Guid(g)),
+                        return new DirectoryServiceExtendedRight(domain, dn, guid, cn, applies_to.Select(g => new Guid(g)),
                             (DirectoryServiceAccessRights)(uint)valid_accesses, () => GetRightsGuidPropertySet(domain, guid));
                     });
                 }
@@ -238,7 +278,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                     if (!schema_id.HasValue)
                         continue;
 
-                    _schema_class.GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(guid, entry));
+                    _schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry));
                 }
             }
             catch
@@ -259,8 +299,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                     var id_guid = result.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
                     if (!id_guid.HasValue)
                         continue;
-                    var entry = ConvertToSchemaClass(id_guid.Value, result.GetDirectoryEntry());
-                    ret.Add(entry ?? new DirectoryServiceSchemaClass(id_guid.Value));
+                    var entry = ConvertToSchemaClass(domain, id_guid.Value, result.GetDirectoryEntry());
+                    ret.Add(entry ?? new DirectoryServiceSchemaClass(domain, id_guid.Value));
                 }
             }
             catch
@@ -268,7 +308,9 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
             return ret.AsReadOnly();
         }
+        #endregion
 
+        #region Public Static Members
         /// <summary>
         /// Name for the fake Directory Service NT type.
         /// </summary>
@@ -302,11 +344,37 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// Get the schema class for a GUID.
         /// </summary>
+        /// <param name="domain">Specify the domain to get the schema class for.</param>
+        /// <param name="schema_id">The GUID for the schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static DirectoryServiceSchemaClass GetSchemaClass(string domain, Guid schema_id)
+        {
+            return _schema_class.Get(domain).GetOrAdd(schema_id, g => FetchSchemaClass(string.Empty, g));
+        }
+
+        /// <summary>
+        /// Get the schema class for a GUID.
+        /// </summary>
         /// <param name="schema_id">The GUID for the schema class.</param>
         /// <returns>The schema class, or null if not found.</returns>
         public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
         {
-            return _schema_class.GetOrAdd(schema_id, g => FetchSchemaClass(string.Empty, g));
+            return GetSchemaClass(string.Empty, schema_id);
+        }
+
+        /// <summary>
+        /// Get all schema classes.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema classes for.</param>
+        /// <returns>The list of schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses(string domain)
+        {
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
+            if (_get_schema_classes.Get(domain).Value)
+            {
+                ret.AddRange(_schema_class.Get(domain).Values);
+            }
+            return ret.AsReadOnly();
         }
 
         /// <summary>
@@ -315,12 +383,18 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The list of schema classes.</returns>
         public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses()
         {
-            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
-            if (_get_schema_classes.Value)
-            {
-                ret.AddRange(_schema_class.Values);
-            }
-            return ret.AsReadOnly();
+            return GetSchemaClasses(string.Empty);
+        }
+
+        /// <summary>
+        /// Get the common name of an schema object class.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema class for.</param>
+        /// <param name="schema_id">The GUID for the schema class.</param>
+        /// <returns>The common name of the schema class, or null if not found.</returns>
+        public static string GetSchemaClassName(string domain, Guid schema_id)
+        {
+            return GetSchemaClass(domain, schema_id)?.Name;
         }
 
         /// <summary>
@@ -330,18 +404,19 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The common name of the schema class, or null if not found.</returns>
         public static string GetSchemaClassName(Guid schema_id)
         {
-            return GetSchemaClass(schema_id)?.Name;
+            return GetSchemaClassName(string.Empty, schema_id);
         }
 
         /// <summary>
         /// Get the extended right name by GUID.
         /// </summary>
+        /// <param name="domain">Specify the domain for the extended right.</param>
         /// <param name="right_guid">The GUID for the extended right.</param>
         /// <param name="expand_property_set">If true and the right is a property set, expand the name.</param>
         /// <returns>The name of the extended right, or null if not found.</returns>
-        public static string GetExtendedRightName(Guid right_guid, bool expand_property_set)
+        public static string GetExtendedRightName(string domain, Guid right_guid, bool expand_property_set)
         {
-            var extended_right = GetExtendedRight(right_guid);
+            var extended_right = GetExtendedRight(domain, right_guid);
             if (extended_right == null)
                 return null;
             if (expand_property_set && extended_right.IsPropertySet)
@@ -352,13 +427,50 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
+        /// Get the extended right name by GUID.
+        /// </summary>
+        /// <param name="right_guid">The GUID for the extended right.</param>
+        /// <param name="expand_property_set">If true and the right is a property set, expand the name.</param>
+        /// <returns>The name of the extended right, or null if not found.</returns>
+        public static string GetExtendedRightName(Guid right_guid, bool expand_property_set)
+        {
+            return GetExtendedRightName(string.Empty, right_guid, expand_property_set);
+        }
+
+        /// <summary>
+        /// Get an extended right by GUID.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the extended right for.</param>
+        /// <param name="right_guid">The GUID for the extended right.</param>
+        /// <returns>The extended right, or null if not found.</returns>
+        public static DirectoryServiceExtendedRight GetExtendedRight(string domain, Guid right_guid)
+        {
+            return _extended_rights.Get(domain).GetOrAdd(right_guid, _ => GetExtendedRightForGuid(domain, right_guid));
+        }
+
+        /// <summary>
         /// Get an extended right by GUID.
         /// </summary>
         /// <param name="right_guid">The GUID for the extended right.</param>
         /// <returns>The extended right, or null if not found.</returns>
         public static DirectoryServiceExtendedRight GetExtendedRight(Guid right_guid)
         {
-            return _extended_rights.GetOrAdd(right_guid, _ => GetExtendedRightForGuid(string.Empty, right_guid));
+            return GetExtendedRight(string.Empty, right_guid);
+        }
+
+        /// <summary>
+        /// Get a list of all extended rights in the current domain.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the extended rights from.</param>
+        /// <returns>The list of extended rights.</returns>
+        public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights(string domain)
+        {
+            List<DirectoryServiceExtendedRight> ret = new List<DirectoryServiceExtendedRight>();
+            if (_get_extended_rights.Get(domain).Value)
+            {
+                ret.AddRange(_extended_rights.Get(domain).Values);
+            }
+            return ret.AsReadOnly();
         }
 
         /// <summary>
@@ -367,12 +479,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The list of extended rights.</returns>
         public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights()
         {
-            List<DirectoryServiceExtendedRight> ret = new List<DirectoryServiceExtendedRight>();
-            if (_get_extended_rights.Value)
-            {
-                ret.AddRange(_extended_rights.Values);
-            }
-            return ret.AsReadOnly();
+            return GetExtendedRights(string.Empty);
         }
+        #endregion
     }
 }

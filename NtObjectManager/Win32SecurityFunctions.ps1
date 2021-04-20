@@ -41,6 +41,8 @@ Specify to map access masks back to generic access rights for the object type.
 Specify to format the security descriptor using SDK names where available.
 .PARAMETER ResolveObjectType
 Specify to try and resolve the object type GUID from the local Active Directory.
+.PARAMETER Domain
+Specify to indicate the domain to query the object type from when resolving. Defaults to the current domain.
 .OUTPUTS
 None
 .EXAMPLE
@@ -71,11 +73,13 @@ function Format-Win32SecurityDescriptor {
         [switch]$HideHeader,
         [switch]$MapGeneric,
         [switch]$SDKName,
-        [switch]$ResolveObjectType
+        [switch]$ResolveObjectType,
+        [string]$Domain
     )
 
     Get-Win32SecurityDescriptor -Name $Name -SecurityInformation $SecurityInformation `
         -Type $Type | Format-NtSecurityDescriptor -SecurityInformation $SecurityInformation `
         -Container:$Container -AsSddl:$AsSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
-        -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType
+        -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType `
+        -Domain $Domain
 }

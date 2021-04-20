@@ -32,6 +32,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         public string Name { get; }
 
         /// <summary>
+        /// The distinguished name for the extended right.
+        /// </summary>
+        public string DistinguishedName { get; }
+
+        /// <summary>
+        /// The domain name searched for this extended right.
+        /// </summary>
+        public string Domain { get; }
+
+        /// <summary>
         /// The rights GUID for this extended right.
         /// </summary>
         public Guid RightsId { get; }
@@ -57,14 +67,16 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         public bool IsPropertySet => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp);
 
-        internal DirectoryServiceExtendedRight(Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
+        internal DirectoryServiceExtendedRight(string domain, string distinguished_name, Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
             DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaClass>> func)
         {
+            Domain = domain ?? string.Empty;
+            DistinguishedName = distinguished_name;
             RightsId = rights_guid;
             Name = name;
             _applies_to = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(
-                () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(g) 
-                ?? new DirectoryServiceSchemaClass(g)).ToList().AsReadOnly());
+                () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(domain, g) 
+                ?? new DirectoryServiceSchemaClass(domain, g)).ToList().AsReadOnly());
             ValidAccesses = valid_accesses;
             _property_set = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(() => IsPropertySet ? func() 
                 : new List<DirectoryServiceSchemaClass>().AsReadOnly());

@@ -42,6 +42,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         public string ObjectClass { get; }
 
         /// <summary>
+        /// The distinguished name for the schema class.
+        /// </summary>
+        public string DistinguishedName { get; }
+
+        /// <summary>
+        /// The domain name searched for this schema class.
+        /// </summary>
+        public string Domain { get; }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The name of the schema class.</returns>
@@ -50,16 +60,19 @@ namespace NtApiDotNet.Win32.DirectoryService
             return Name;
         }
 
-        internal DirectoryServiceSchemaClass(Guid schema_id, string name, string ldap_name, string object_class)
+        internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, string name, string ldap_name, string object_class)
         {
+            Domain = domain ?? string.Empty;
+            DistinguishedName = dn ?? string.Empty;
             SchemaId = schema_id;
             Name = name;
             LdapName = ldap_name;
             ObjectClass = object_class;
         }
 
-        internal DirectoryServiceSchemaClass(Guid schema_id) 
-            : this(schema_id, schema_id.ToString(), schema_id.ToString(), "unknown")
+        internal DirectoryServiceSchemaClass(string domain, Guid schema_id) 
+            : this(string.Empty, string.Empty, schema_id, 
+                  schema_id.ToString(), schema_id.ToString(), "unknown")
         {
         }
     }
