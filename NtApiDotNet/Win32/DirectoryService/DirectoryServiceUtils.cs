@@ -481,6 +481,19 @@ namespace NtApiDotNet.Win32.DirectoryService
         {
             return GetExtendedRights(string.Empty);
         }
+
+        /// <summary>
+        /// Create an object type entry for an access check.
+        /// </summary>
+        /// <param name="level">The object type level.</param>
+        /// <param name="object_type">The object type GUID.</param>
+        /// <param name="name">An optional name.</param>
+        /// <returns>The object type entry.</returns>
+        public static ObjectTypeEntry CreateObjectTypeEntry(DirectoryServiceObjectTypeLevel level, Guid object_type, string name)
+        {
+            return new ObjectTypeEntry(object_type, (int)level) { Name = name ?? object_type.ToString() };
+        }
+
         #endregion
     }
 }

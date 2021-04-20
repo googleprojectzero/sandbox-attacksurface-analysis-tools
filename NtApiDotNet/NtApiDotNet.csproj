@@ -98,6 +98,7 @@
     <Compile Include="NtWindowNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="NtWnfWellKnownNames.cs" />
+    <Compile Include="ObjectTypeEntry.cs" />
     <Compile Include="PrivilegeCheckResult.cs" />
     <Compile Include="ProcessModule.cs" />
     <Compile Include="SafeArrayBuffer.cs" />
@@ -316,6 +317,7 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceExtendedRight.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceObjectTypeLevel.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaClass.cs" />
     <Compile Include="Win32\DllCharacteristics.cs" />
     <Compile Include="Win32\DllDebugData.cs" />

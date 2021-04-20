@@ -470,46 +470,6 @@ namespace NtApiDotNet
         public IntPtr ObjectType;
     }
 
-    public class ObjectTypeEntry
-    {
-        public int Level { get; set; }
-        public Guid ObjectType { get; set; }
-        public string Name { get; set; }
-
-        public ObjectTypeEntry()
-        {
-        }
-
-        public ObjectTypeEntry(Guid object_type, int level)
-        {
-            ObjectType = object_type;
-            Level = level;
-        }
-
-        public ObjectTypeEntry(Guid object_type)
-            : this(object_type, 0)
-        {
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The object formatted.</returns>
-        public override string ToString()
-        {
-            return $"{ObjectType} - Level {Level}";
-        }
-
-        internal ObjectTypeList ToStruct(DisposableList resources)
-        {
-            return new ObjectTypeList()
-            {
-                Level = (short)Level,
-                ObjectType = resources.AddResource(new SafeStructureInOutBuffer<Guid>(ObjectType)).DangerousGetHandle()
-            };
-        }
-    }
-
     [Flags]
     public enum SecurityAutoInheritFlags
     {

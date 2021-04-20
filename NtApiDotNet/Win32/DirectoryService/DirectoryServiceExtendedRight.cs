@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,6 +67,30 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
 
         public bool IsPropertySet => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp);
+
+        /// <summary>
+        /// Convert the extended right to an object type tree.
+        /// </summary>
+        /// <returns>The tree of object types.</returns>
+        public ObjectTypeTree ToObjectTypeTree()
+        {
+            ObjectTypeTree tree = new ObjectTypeTree(RightsId, Name);
+            if (IsPropertySet)
+            {
+                tree.AddNodeRange(PropertySet.Select(p => new ObjectTypeTree(p.SchemaId, p.Name)));
+            }
+            return tree;
+        }
+
+        /// <summary>
+        /// Convert the extended right to an object type tree.
+        /// </summary>
+        /// <param name="right">The extended right to convert.</param>
+        /// <returns>The tree of object types.</returns>
+        public static explicit operator ObjectTypeTree(DirectoryServiceExtendedRight right)
+        {
+            return right.ToObjectTypeTree();
+        }
 
         internal DirectoryServiceExtendedRight(string domain, string distinguished_name, Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
             DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaClass>> func)

@@ -41,9 +41,19 @@ namespace NtApiDotNet.Utilities.Security
         /// Contructor.
         /// </summary>
         /// <param name="object_type">The object type GUID.</param>
-        public ObjectTypeTree(Guid object_type) : this()
+        /// <param name="name">The name of the root object.</param>
+        public ObjectTypeTree(Guid object_type, string name) : this()
         {
             ObjectType = object_type;
+            Name = name;
+        }
+
+        /// <summary>
+        /// Contructor.
+        /// </summary>
+        /// <param name="object_type">The object type GUID.</param>
+        public ObjectTypeTree(Guid object_type) : this(object_type, null)
+        {
         }
 
         /// <summary>
@@ -86,6 +96,20 @@ namespace NtApiDotNet.Utilities.Security
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// Add a new object type to the tree.
+        /// </summary>
+        /// <param name="object_type">The object type.</param>
+        /// <param name="name">The name of the node.</param>
+        /// <returns>The added tree object.</returns>
+        public ObjectTypeTree AddNode(Guid object_type, string name)
+        {
+            ObjectTypeTree ret = new ObjectTypeTree(object_type, name);
+            AddNode(ret);
+            return ret;
+        }
+
         /// <summary>
         /// Add a new object type to the tree.
         /// </summary>
@@ -93,9 +117,7 @@ namespace NtApiDotNet.Utilities.Security
         /// <returns>The added tree object.</returns>
         public ObjectTypeTree AddNode(Guid object_type)
         {
-            ObjectTypeTree ret = new ObjectTypeTree(object_type);
-            AddNode(ret);
-            return ret;
+            return AddNode(object_type, null);
         }
 
         /// <summary>
