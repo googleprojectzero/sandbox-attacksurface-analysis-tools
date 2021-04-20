@@ -60,6 +60,10 @@ Specify to only get domain information not objects.
 Specify to get domain by name.
 .PARAMETER DomainId
 Specify to get domain by SID.
+.PARAMETER Builtin
+Specify to open the builtin domain.
+.PARAMETER User
+Specify to open the user domain.
 .INPUTS
 None
 .OUTPUTS
@@ -83,9 +87,15 @@ function Get-SamDomain {
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
         [NtApiDotNet.Sid]$DomainId,
+        [Parameter(Mandatory, ParameterSetName="FromUser")]
+        [switch]$User,
+        [Parameter(Mandatory, ParameterSetName="FromBuiltin")]
+        [switch]$Builtin,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromName")]
         [Parameter(ParameterSetName="FromSid")]
+        [Parameter(ParameterSetName="FromUser")]
+        [Parameter(ParameterSetName="FromBuiltin")]
         [NtApiDotNet.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
@@ -108,6 +118,12 @@ function Get-SamDomain {
             }
             "FromSid" {
                 $Server.OpenDomain($DomainId, $Access)
+            }
+            "FromBuiltin" {
+                $Server.OpenBuiltinDomain($Access)
+            }
+            "FromUser" {
+                $Server.OpenUserDomain($Access)
             }
         }
     }

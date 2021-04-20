@@ -170,6 +170,62 @@ namespace NtApiDotNet.Win32.Security.Sam
             return OpenAccessibleDomains(desired_access, true).Result;
         }
 
+        /// <summary>
+        /// Opens the builtin domain on the server.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM domain object.</returns>
+        public NtResult<SamDomain> OpenBuiltinDomain(SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            return OpenDomain("Builtin", KnownSids.Builtin, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Opens the builtin domain on the server.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The SAM domain object.</returns>
+        public SamDomain OpenBuiltinDomain(SamDomainAccessRights desired_access)
+        {
+            return OpenBuiltinDomain(desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Opens the user domain on the server.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM domain object.</returns>
+        public NtResult<SamDomain> OpenUserDomain(SamDomainAccessRights desired_access, bool throw_on_error)
+        {
+            var domains = EnumerateDomains(throw_on_error);
+            if (!domains.IsSuccess)
+                return domains.Cast<SamDomain>();
+
+            foreach (var domain in domains.Result)
+            {
+                var domain_id = LookupDomain(domain.Name, false).GetResultOrDefault();
+                if (domain_id is null || domain_id == KnownSids.Builtin)
+                {
+                    continue;
+                }
+
+                return OpenDomain(domain.Name, domain_id, desired_access, throw_on_error);
+            }
+            return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<SamDomain>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Opens the user domain on the server.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the object.</param>
+        /// <returns>The SAM domain object.</returns>
+        public SamDomain OpenUserDomain(SamDomainAccessRights desired_access)
+        {
+            return OpenUserDomain(desired_access, true).Result;
+        }
+
         #endregion
 
         #region Static Methods
