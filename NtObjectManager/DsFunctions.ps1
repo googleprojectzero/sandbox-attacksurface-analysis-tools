@@ -109,7 +109,7 @@ function Get-DsSchemaClass {
             [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
         }
         "FromParent" {
-            if (($null -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
+            if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
                 Get-DsSchemaClass -Domain $Domain -Name $Parent.SubClassOf
             }
         }

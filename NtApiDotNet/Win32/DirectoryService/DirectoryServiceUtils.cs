@@ -93,6 +93,10 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kRightsGuid = "rightsGuid";
         private const string kDistinguishedName = "distinguishedName";
         private const string kSubClassOf = "subClassOf";
+        private const string kMustContain = "mustContain";
+        private const string kMayContain = "mayContain";
+        private const string kSystemMustContain = "systemMustContain";
+        private const string kSystemMayContain = "systemMayContain";
 
         private static string GuidToString(Guid guid)
         {
@@ -209,10 +213,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 schema_id = prop.GetPropertyGuid(kSchemaIDGUID);
             }
+            IEnumerable<string> must_contain = prop.GetPropertyValues<string>(kMustContain) ?? new string[0];
+            must_contain = must_contain.Concat(prop.GetPropertyValues<string>(kSystemMustContain) ?? new string[0]);
+            IEnumerable<string> may_contain = prop.GetPropertyValues<string>(kMayContain) ?? new string[0];
+            may_contain = may_contain.Concat(prop.GetPropertyValues<string>(kSystemMayContain) ?? new string[0]);
             if (cn == null || ldap_name == null || !schema_id.HasValue)
                 return null;
             return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn, 
-                ldap_name, dir_entry.SchemaClassName, subclass_of);
+                ldap_name, dir_entry.SchemaClassName, subclass_of, may_contain, must_contain);
         }
 
         private static DirectoryServiceSchemaClass FetchSchemaClass(string domain, Guid guid)

@@ -14,6 +14,8 @@
 
 using NtApiDotNet.Utilities.Security;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.DirectoryService
 {
@@ -58,6 +60,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         public string Domain { get; }
 
         /// <summary>
+        /// List of attributes the class must contain.
+        /// </summary>
+        public IReadOnlyList<string> MustContain { get; }
+
+        /// <summary>
+        /// List of attributes the class may contain.
+        /// </summary>
+        public IReadOnlyList<string> MayContain { get; }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The name of the schema class.</returns>
@@ -87,7 +99,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
-            string name, string ldap_name, string object_class, string subclass_of)
+            string name, string ldap_name, string object_class, string subclass_of,
+            IEnumerable<string> may_contain, IEnumerable<string> must_contain)
         {
             Domain = domain ?? string.Empty;
             DistinguishedName = dn ?? string.Empty;
@@ -96,12 +109,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             Name = ldap_name;
             ObjectClass = object_class;
             SubClassOf = subclass_of ?? string.Empty;
+            MayContain = may_contain.ToList().AsReadOnly();
+            MustContain = must_contain.ToList().AsReadOnly();
         }
 
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id) 
             : this(string.Empty, string.Empty, schema_id, 
                   schema_id.ToString(), schema_id.ToString(), string.Empty,
-                  string.Empty)
+                  string.Empty, new string[0], new string[0])
         {
         }
     }
