@@ -55,7 +55,13 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private class DomainDictionaryDict<K, V> : DomainDictionary<ConcurrentDictionary<K, V>>
         {
-            public DomainDictionaryDict() : base(_ => new ConcurrentDictionary<K, V>())
+            public DomainDictionaryDict() 
+                : this(EqualityComparer<K>.Default)
+            {
+            }
+
+            public DomainDictionaryDict(IEqualityComparer<K> key_comparer) 
+                : base(_ => new ConcurrentDictionary<K, V>(key_comparer))
             {
             }
         }
@@ -70,6 +76,8 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static readonly DomainDictionaryDict<Tuple<string, string>, DirectoryEntry> _root_entries = new DomainDictionaryDict<Tuple<string, string>, DirectoryEntry>();
         private static readonly DomainDictionaryDict<Guid, DirectoryServiceSchemaClass> _schema_class = new DomainDictionaryDict<Guid, DirectoryServiceSchemaClass>();
+        private static readonly DomainDictionaryDict<string, DirectoryServiceSchemaClass> _schema_class_by_name 
+            = new DomainDictionaryDict<string, DirectoryServiceSchemaClass>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryDict<Guid, DirectoryServiceExtendedRight> _extended_rights = new DomainDictionaryDict<Guid, DirectoryServiceExtendedRight>();
         private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
         private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
@@ -84,6 +92,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kLDAPDisplayName = "lDAPDisplayName";
         private const string kRightsGuid = "rightsGuid";
         private const string kDistinguishedName = "distinguishedName";
+        private const string kSubClassOf = "subClassOf";
 
         private static string GuidToString(Guid guid)
         {
@@ -189,15 +198,21 @@ namespace NtApiDotNet.Win32.DirectoryService
             return new PropertyClass(result);
         }
 
-        private static DirectoryServiceSchemaClass ConvertToSchemaClass(string domain, Guid schema_id, DirectoryEntry dir_entry)
+        private static DirectoryServiceSchemaClass ConvertToSchemaClass(string domain, Guid? schema_id, DirectoryEntry dir_entry)
         {
             var prop = dir_entry.ToPropertyClass();
             string cn = prop.GetPropertyValue<string>(kCommonName);
             string ldap_name = prop.GetPropertyValue<string>(kLDAPDisplayName);
             string dn = prop.GetPropertyValue<string>(kDistinguishedName);
-            if (cn == null || ldap_name == null)
+            string subclass_of = prop.GetPropertyValue<string>(kSubClassOf);
+            if (schema_id == null)
+            {
+                schema_id = prop.GetPropertyGuid(kSchemaIDGUID);
+            }
+            if (cn == null || ldap_name == null || !schema_id.HasValue)
                 return null;
-            return new DirectoryServiceSchemaClass(domain, dn, schema_id, cn, ldap_name, dir_entry.SchemaClassName);
+            return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn, 
+                ldap_name, dir_entry.SchemaClassName, subclass_of);
         }
 
         private static DirectoryServiceSchemaClass FetchSchemaClass(string domain, Guid guid)
@@ -205,8 +220,24 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                return ConvertToSchemaClass(domain, guid, FindDirectoryEntry(root_entry, 
+                var schema_class = ConvertToSchemaClass(domain, guid, FindDirectoryEntry(root_entry, 
                     $"({kSchemaIDGUID}={GuidToString(guid)})", "cn")?.GetDirectoryEntry());
+                return _schema_class.Get(domain).GetOrAdd(guid, schema_class);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static DirectoryServiceSchemaClass FetchSchemaClassByName(string domain, string name)
+        {
+            try
+            {
+                DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
+                var schema_class = ConvertToSchemaClass(domain, null, FindDirectoryEntry(root_entry,
+                    $"({kLDAPDisplayName}={name})", "cn")?.GetDirectoryEntry());
+                return _schema_class.Get(domain).GetOrAdd(schema_class.SchemaId, schema_class);
             }
             catch
             {
@@ -349,7 +380,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The schema class, or null if not found.</returns>
         public static DirectoryServiceSchemaClass GetSchemaClass(string domain, Guid schema_id)
         {
-            return _schema_class.Get(domain).GetOrAdd(schema_id, g => FetchSchemaClass(string.Empty, g));
+            return _schema_class.Get(domain).GetOrAdd(schema_id, g => FetchSchemaClass(domain, g));
         }
 
         /// <summary>
@@ -360,6 +391,27 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
         {
             return GetSchemaClass(string.Empty, schema_id);
+        }
+
+        /// <summary>
+        /// Get the schema class for a LDAP name.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema class for.</param>
+        /// <param name="name">The LDAP name for the schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static DirectoryServiceSchemaClass GetSchemaClass(string domain, string name)
+        {
+            return _schema_class_by_name.Get(domain).GetOrAdd(name, n => FetchSchemaClassByName(domain, n));
+        }
+
+        /// <summary>
+        /// Get the schema class for a LDAP name.
+        /// </summary>
+        /// <param name="name">The LDAP name for the schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static DirectoryServiceSchemaClass GetSchemaClass(string name)
+        {
+            return GetSchemaClass(string.Empty, name);
         }
 
         /// <summary>
@@ -394,7 +446,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The common name of the schema class, or null if not found.</returns>
         public static string GetSchemaClassName(string domain, Guid schema_id)
         {
-            return GetSchemaClass(domain, schema_id)?.Name;
+            return GetSchemaClass(domain, schema_id)?.CommonName;
         }
 
         /// <summary>
@@ -421,7 +473,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 return null;
             if (expand_property_set && extended_right.IsPropertySet)
             {
-                return string.Join(", ", extended_right.PropertySet.Select(p => p.LdapName));
+                return string.Join(", ", extended_right.PropertySet.Select(p => p.Name));
             }
             return extended_right.Name;
         }

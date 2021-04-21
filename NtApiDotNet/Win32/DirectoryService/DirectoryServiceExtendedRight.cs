@@ -77,7 +77,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             ObjectTypeTree tree = new ObjectTypeTree(RightsId, Name);
             if (IsPropertySet)
             {
-                tree.AddNodeRange(PropertySet.Select(p => new ObjectTypeTree(p.SchemaId, p.Name)));
+                tree.AddNodeRange(PropertySet.Select(p => new ObjectTypeTree(p.SchemaId, p.CommonName)));
             }
             return tree;
         }

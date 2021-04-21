@@ -38,7 +38,7 @@ Get get the Public-Information extended right by GUID.
 function Get-DsExtendedRight {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [parameter(ParameterSetName = "FromGuid", Position = 0)]
+        [parameter(Mandatory, ParameterSetName = "FromGuid", Position = 0)]
         [guid]$RightId,
         [string]$Domain
     )
@@ -62,6 +62,10 @@ This cmdlet gets a schema class from the local Active Directory. This can be slo
 Specify the GUID for the schema class.
 .PARAMETER Domain
 Specify the domain or server name to query for the schema class. Defaults to current domain.
+.PARAMETER Name
+Specify the LDAP name for the schema class to get.
+.PARAMETER Parent
+Specify an existing schema class and get its parent class.
 .INPUTS
 None
 .OUTPUTS
@@ -74,13 +78,23 @@ Get-DsSchemaClass -Domain sales.domain.com
 Get all schema classes on the sales.domain.com domain.
 .EXAMPLE
 Get-DsSchemaClass -SchemaId "BF967ABA-0DE6-11D0-A285-00AA003049E2"
-Get get the user schema class by GUID.
+Get the user schema class by GUID.
+.EXAMPLE
+Get-DsSchemaClass -Name User
+Get the user schema class by LDAP name.
+.EXAMPLE
+Get-DsSchemaClass -Parent $cls
+Get the parent schema class for another class.
 #>
 function Get-DsSchemaClass {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [parameter(ParameterSetName = "FromGuid", Position = 0)]
+        [parameter(Mandatory, ParameterSetName = "FromGuid")]
         [guid]$SchemaId,
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [string]$Name,
+        [parameter(Mandatory, ParameterSetName = "FromParent", Position = 0)]
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$Parent,
         [string]$Domain
     )
 
@@ -90,6 +104,14 @@ function Get-DsSchemaClass {
         }
         "FromGuid" {
             [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
+        }
+        "FromParent" {
+            if (($null -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
+                Get-DsSchemaClass -Domain $Domain -Name $Parent.SubClassOf
+            }
         }
     }
 }

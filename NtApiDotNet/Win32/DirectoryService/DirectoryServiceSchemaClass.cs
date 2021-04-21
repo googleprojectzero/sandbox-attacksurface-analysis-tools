@@ -30,17 +30,22 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// The name of the schema class.
         /// </summary>
-        public string Name { get; }
+        public string CommonName { get; }
 
         /// <summary>
         /// The LDAP display name.
         /// </summary>
-        public string LdapName { get; }
+        public string Name { get; }
 
         /// <summary>
         /// The object class for the schema class.
         /// </summary>
         public string ObjectClass { get; }
+
+        /// <summary>
+        /// The subclass schema name.
+        /// </summary>
+        public string SubClassOf { get; }
 
         /// <summary>
         /// The distinguished name for the schema class.
@@ -81,19 +86,22 @@ namespace NtApiDotNet.Win32.DirectoryService
             return schema_class.ToObjectTypeTree();
         }
 
-        internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, string name, string ldap_name, string object_class)
+        internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
+            string name, string ldap_name, string object_class, string subclass_of)
         {
             Domain = domain ?? string.Empty;
             DistinguishedName = dn ?? string.Empty;
             SchemaId = schema_id;
-            Name = name;
-            LdapName = ldap_name;
+            CommonName = name;
+            Name = ldap_name;
             ObjectClass = object_class;
+            SubClassOf = subclass_of ?? string.Empty;
         }
 
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id) 
             : this(string.Empty, string.Empty, schema_id, 
-                  schema_id.ToString(), schema_id.ToString(), "unknown")
+                  schema_id.ToString(), schema_id.ToString(), string.Empty,
+                  string.Empty)
         {
         }
     }
