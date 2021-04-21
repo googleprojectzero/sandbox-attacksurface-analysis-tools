@@ -2303,7 +2303,15 @@ namespace NtApiDotNet
             // S-1-5-96-0
             { new Sid(SecurityAuthority.Nt, 96, 0), Tuple.Create("Font Driver Host", "Font Driver Host Group")},
             // S-1-5-93-0
-            { new Sid(SecurityAuthority.Nt, 93, 0), Tuple.Create("User Manager", "AllContainers") }
+            { new Sid(SecurityAuthority.Nt, 93, 0), Tuple.Create("User Manager", "AllContainers") },
+            // S-1-5-32-548
+            { new Sid(SecurityAuthority.Nt, 32, 548), Tuple.Create("BUILTIN", "Account Operators") },
+            // S-1-5-32-554
+            { new Sid(SecurityAuthority.Nt, 32, 554), Tuple.Create("BUILTIN", "Pre-Windows 2000 Compatible Access") },
+            // S-1-5-32-560
+            { new Sid(SecurityAuthority.Nt, 32, 560), Tuple.Create("BUILTIN", "Windows Authorization Access Group") },
+            // S-1-5-32-561
+            { new Sid(SecurityAuthority.Nt, 32, 561), Tuple.Create("BUILTIN", "Terminal Server License Servers") },
         };
 
         private static readonly Dictionary<Sid, Tuple<string, string>> _known_user_sids = new Dictionary<Sid, Tuple<string, string>>() {
