@@ -69,7 +69,7 @@ Specify an existing schema class and get its parent class.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass[]
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaObject[]
 .EXAMPLE
 Get-DsSchemaClass
 Get all schema classes.

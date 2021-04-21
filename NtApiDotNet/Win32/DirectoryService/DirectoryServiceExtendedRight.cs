@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// </summary>
     public sealed class DirectoryServiceExtendedRight
     {
-        private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _property_set;
+        private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaAttribute>> _property_set;
         private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _applies_to;
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// Get list of properties if a property set.
         /// </summary>
-        public IReadOnlyList<DirectoryServiceSchemaClass> PropertySet => _property_set.Value;
+        public IReadOnlyList<DirectoryServiceSchemaAttribute> PropertySet => _property_set.Value;
 
         /// <summary>
         /// True if this a property set extended right.
@@ -93,18 +93,18 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         internal DirectoryServiceExtendedRight(string domain, string distinguished_name, Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
-            DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaClass>> func)
+            DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaAttribute>> func)
         {
             Domain = domain ?? string.Empty;
             DistinguishedName = distinguished_name;
             RightsId = rights_guid;
             Name = name;
             _applies_to = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(
-                () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(domain, g) 
+                () => applies_to.Select(g => DirectoryServiceUtils.GetSchemaClass(domain, g) as DirectoryServiceSchemaClass
                 ?? new DirectoryServiceSchemaClass(domain, g)).ToList().AsReadOnly());
             ValidAccesses = valid_accesses;
-            _property_set = new Lazy<IReadOnlyList<DirectoryServiceSchemaClass>>(() => IsPropertySet ? func() 
-                : new List<DirectoryServiceSchemaClass>().AsReadOnly());
+            _property_set = new Lazy<IReadOnlyList<DirectoryServiceSchemaAttribute>>(() => IsPropertySet ? func() 
+                : new List<DirectoryServiceSchemaAttribute>().AsReadOnly());
         }
     }
 }

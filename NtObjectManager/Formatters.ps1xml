@@ -4697,9 +4697,9 @@
         </TableControl>
     </View>
     <View>
-        <Name>DirectoryServiceSchemaClass</Name>
+        <Name>DirectoryServiceSchemaObject</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
+            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaObject</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>

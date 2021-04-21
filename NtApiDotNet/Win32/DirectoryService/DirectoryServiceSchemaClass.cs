@@ -22,42 +22,12 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// <summary>
     /// Class to represent a directory service schema class.
     /// </summary>
-    public sealed class DirectoryServiceSchemaClass
+    public sealed class DirectoryServiceSchemaClass : DirectoryServiceSchemaObject
     {
-        /// <summary>
-        /// The GUID of the schema class.
-        /// </summary>
-        public Guid SchemaId { get; }
-
-        /// <summary>
-        /// The name of the schema class.
-        /// </summary>
-        public string CommonName { get; }
-
-        /// <summary>
-        /// The LDAP display name.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// The object class for the schema class.
-        /// </summary>
-        public string ObjectClass { get; }
-
         /// <summary>
         /// The subclass schema name.
         /// </summary>
         public string SubClassOf { get; }
-
-        /// <summary>
-        /// The distinguished name for the schema class.
-        /// </summary>
-        public string DistinguishedName { get; }
-
-        /// <summary>
-        /// The domain name searched for this schema class.
-        /// </summary>
-        public string Domain { get; }
 
         /// <summary>
         /// List of attributes the class must contain.
@@ -68,25 +38,6 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// List of attributes the class may contain.
         /// </summary>
         public IReadOnlyList<string> MayContain { get; }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The name of the schema class.</returns>
-        public override string ToString()
-        {
-            return Name;
-        }
-
-        /// <summary>
-        /// Convert the extended right to an object type tree.
-        /// </summary>
-        /// <returns>The tree of object types.</returns>
-        public ObjectTypeTree ToObjectTypeTree()
-        {
-            // TODO: Add property sets and attributes.
-            return new ObjectTypeTree(SchemaId, Name);
-        }
 
         /// <summary>
         /// Convert the extended right to an object type tree.
@@ -100,21 +51,17 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string object_class, string subclass_of,
-            IEnumerable<string> may_contain, IEnumerable<string> must_contain)
+            IEnumerable<string> may_contain, IEnumerable<string> must_contain) 
+            : base(domain, dn, schema_id, name, ldap_name, object_class)
         {
-            Domain = domain ?? string.Empty;
-            DistinguishedName = dn ?? string.Empty;
-            SchemaId = schema_id;
-            CommonName = name;
-            Name = ldap_name;
-            ObjectClass = object_class;
             SubClassOf = subclass_of ?? string.Empty;
             MayContain = may_contain.ToList().AsReadOnly();
             MustContain = must_contain.ToList().AsReadOnly();
         }
 
-        internal DirectoryServiceSchemaClass(string domain, Guid schema_id) 
-            : this(string.Empty, string.Empty, schema_id, 
+
+        internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
+            : this(domain, string.Empty, schema_id,
                   schema_id.ToString(), schema_id.ToString(), string.Empty,
                   string.Empty, new string[0], new string[0])
         {
