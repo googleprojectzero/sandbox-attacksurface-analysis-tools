@@ -66,6 +66,10 @@ Specify the domain or server name to query for the schema class. Defaults to cur
 Specify the LDAP name for the schema class to get.
 .PARAMETER Parent
 Specify an existing schema class and get its parent class.
+.PARAMETER Recurse
+Specify to recurse the parent relationships and return all objects.
+.PARAMETER Attribute
+Specify to get the schema class for an attribute.
 .INPUTS
 None
 .OUTPUTS
@@ -95,23 +99,42 @@ function Get-DsSchemaClass {
         [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromParent", Position = 0)]
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$Parent,
-        [string]$Domain
+        [parameter(ParameterSetName = "All")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromGuid")]
+        [parameter(ParameterSetName = "FromAttribute")]
+        [string]$Domain,
+        [parameter(ParameterSetName = "FromParent")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromGuid")]
+        [switch]$Recurse,
+        [parameter(Mandatory, ParameterSetName = "FromAttribute", ValueFromPipeline)]
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClassAttribute]$Attribute
     )
 
-    switch ($PSCmdlet.ParameterSetName) {
-        "All" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
-        }
-        "FromGuid" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
-        }
-        "FromName" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
-        }
-        "FromParent" {
-            if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
-                Get-DsSchemaClass -Domain $Domain -Name $Parent.SubClassOf
+    PROCESS {
+        $cls = switch ($PSCmdlet.ParameterSetName) {
+            "All" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
             }
+            "FromGuid" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+            }
+            "FromName" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
+            }
+            "FromParent" {
+                if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
+                    Get-DsSchemaClass -Domain $Parent.Domain -Name $Parent.SubClassOf
+                }
+            }
+            "FromAttribute" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Attribute.Name)
+            }
+        }
+        $cls
+        if ($Recurse -and $cls -is [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]) {
+            Get-DsSchemaClass -Parent $cls -Recurse
         }
     }
 }
@@ -174,7 +197,7 @@ Specify the distinguished name of the object.
 Specify the object directory entry.
 .PARAMETER Domain
 Specify the domain or server name to query for the object. Defaults to current domain.
-.PARAMETER All
+.PARAMETER Recurse
 Specify to get all schema classes for the object in the inheritance chain.
 .INPUTS
 None
@@ -190,7 +213,7 @@ Get the schema class for a user object by name in the SALES domain.
 Get-DsObjectSchemaClass -Object $obj
 Get the schema class from a user object.
 .EXAMPLE
-Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com" -All
+Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com" -Recurse
 Get the all inherited schema class for a user object by name.
 #>
 function Get-DsObjectSchemaClass {
@@ -203,7 +226,7 @@ function Get-DsObjectSchemaClass {
         [string]$Domain,
         [parameter(Mandatory, ParameterSetName = "FromObject")]
         [System.DirectoryServices.DirectoryEntry]$Object,
-        [switch]$All
+        [switch]$Recurse
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromName") {
@@ -215,11 +238,7 @@ function Get-DsObjectSchemaClass {
         return
     }
 
-    if ($All) {
-        $obj_class | ForEach-Object { Get-DsSchemaClass -Name $_ }
-    } else {
-        Get-DsSchemaClass -Name $obj_class[-1]
-    }
+    Get-DsSchemaClass -Name $obj_class[-1] -Recurse:$Recurse
 }
 
 <#

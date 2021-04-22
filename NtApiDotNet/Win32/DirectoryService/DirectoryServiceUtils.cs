@@ -203,6 +203,15 @@ namespace NtApiDotNet.Win32.DirectoryService
             return new PropertyClass(result);
         }
 
+        private static void AddAttributes(List<DirectoryServiceSchemaClassAttribute> attrs, IEnumerable<string> property, bool required, bool system)
+        {
+            if (property == null)
+            {
+                return;
+            }
+            attrs.AddRange(property.Select(p => new DirectoryServiceSchemaClassAttribute(p, required, system)));
+        }
+
         private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, DirectoryEntry dir_entry)
         {
             if (dir_entry is null)
@@ -226,13 +235,15 @@ namespace NtApiDotNet.Win32.DirectoryService
                 case "classschema":
                     {
                         string subclass_of = prop.GetPropertyValue<string>(kSubClassOf);
-                        IEnumerable<string> must_contain = prop.GetPropertyValues<string>(kMustContain) ?? new string[0];
-                        must_contain = must_contain.Concat(prop.GetPropertyValues<string>(kSystemMustContain) ?? new string[0]);
-                        IEnumerable<string> may_contain = prop.GetPropertyValues<string>(kMayContain) ?? new string[0];
-                        may_contain = may_contain.Concat(prop.GetPropertyValues<string>(kSystemMayContain) ?? new string[0]);
+
+                        List<DirectoryServiceSchemaClassAttribute> attrs = new List<DirectoryServiceSchemaClassAttribute>();
+                        AddAttributes(attrs, prop.GetPropertyValues<string>(kMustContain), true, false);
+                        AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMustContain), true, true);
+                        AddAttributes(attrs, prop.GetPropertyValues<string>(kMayContain), false, false);
+                        AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMayContain), false, true);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name, subclass_of, may_contain, must_contain);
+                            ldap_name, class_name, subclass_of, attrs);
                     }
                 case "attributeschema":
                     {
