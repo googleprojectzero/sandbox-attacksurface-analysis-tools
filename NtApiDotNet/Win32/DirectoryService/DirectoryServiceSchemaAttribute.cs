@@ -59,7 +59,7 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static Dictionary<Tuple<string, int, string>, string> GetTypeNames()
         {
-            var ret = new Dictionary<Tuple<string, int, string>, string>
+            return new Dictionary<Tuple<string, int, string>, string>
             {
                 { Tuple.Create("2.5.5.8", 1, ""), "Boolean" },
                 { Tuple.Create("2.5.5.9", 10, ""), "Enumeration" },
@@ -85,7 +85,6 @@ namespace NtApiDotNet.Win32.DirectoryService
                 { Tuple.Create("2.5.5.11", 23, ""), "String(UTC-Time)" },
                 { Tuple.Create("2.5.5.11", 24, ""), "String(Generalized-Time)" }
             };
-            return ret;
         }
 
         private readonly static Dictionary<Tuple<string, int, string>, string> _type_names = GetTypeNames();
