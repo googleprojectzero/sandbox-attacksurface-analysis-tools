@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// <summary>
     /// Base class for a schema class or attribute object.
     /// </summary>
-    public class DirectoryServiceSchemaObject
+    public class DirectoryServiceSchemaObject : IDirectoryServiceObjectTree
     {
         /// <summary>
         /// The GUID of the schema class.
@@ -68,6 +68,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         public virtual ObjectTypeTree ToObjectTypeTree()
         {
             return new ObjectTypeTree(SchemaId, Name);
+        }
+
+        /// <summary>
+        /// Convert the extended right to an object type tree.
+        /// </summary>
+        /// <param name="schema_class">The schema class to convert.</param>
+        /// <returns>The tree of object types.</returns>
+        public static explicit operator ObjectTypeTree(DirectoryServiceSchemaObject schema_class)
+        {
+            return schema_class.ToObjectTypeTree();
         }
 
         internal DirectoryServiceSchemaObject(string domain, string dn, Guid schema_id,

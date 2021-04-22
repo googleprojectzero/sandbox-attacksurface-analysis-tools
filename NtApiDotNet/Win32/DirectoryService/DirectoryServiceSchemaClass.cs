@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,16 +37,6 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// List of attributes the class may contain.
         /// </summary>
         public IReadOnlyList<string> MayContain { get; }
-
-        /// <summary>
-        /// Convert the extended right to an object type tree.
-        /// </summary>
-        /// <param name="schema_class">The schema class to convert.</param>
-        /// <returns>The tree of object types.</returns>
-        public static explicit operator ObjectTypeTree(DirectoryServiceSchemaClass schema_class)
-        {
-            return schema_class.ToObjectTypeTree();
-        }
 
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string object_class, string subclass_of,

@@ -121,7 +121,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-Win32ModuleResource', 'Get-LsaPolicy', 'Connect-SamServer', 'Get-SamDomain', 'Get-SamUser',
           'Get-SamAlias', 'Get-SamGroup', 'Get-LsaPrivateData', 'Set-LsaPrivateData', 'Get-LsaAccount',
           'Get-LsaTrustedDomain', 'Get-LsaSecret', 'Get-SamAliasMember', 'Get-SamGroupMember',
-          'Get-DsExtendedRight', 'Get-DsSchemaClass', 'Get-LsaName', 'Get-LsaSid', 'Protect-RC4'
+          'Get-DsExtendedRight', 'Get-DsSchemaClass', 'Get-LsaName', 'Get-LsaSid', 'Protect-RC4',
+          'Get-DsObjectSid', 'Get-DsObjectSchemaClass', 'ConvertTo-ObjectTypeTree'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

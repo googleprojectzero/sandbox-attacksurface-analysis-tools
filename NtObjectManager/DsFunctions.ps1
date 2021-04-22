@@ -14,9 +14,9 @@
 
 <#
 .SYNOPSIS
-Get an extended right from the local Active Directory.
+Get an extended right from Active Directory.
 .DESCRIPTION
-This cmdlet gets an extended right from the local Active Directory. This can be slow.
+This cmdlet gets an extended right from Active Directory. This can be slow.
 .PARAMETER RightId
 Specify the GUID for the right.
 .PARAMETER Domain
@@ -55,9 +55,9 @@ function Get-DsExtendedRight {
 
 <#
 .SYNOPSIS
-Get a schema class from the local Active Directory.
+Get a schema class from Active Directory.
 .DESCRIPTION
-This cmdlet gets a schema class from the local Active Directory. This can be slow.
+This cmdlet gets a schema class from Active Directory. This can be slow.
 .PARAMETER SchemaId
 Specify the GUID for the schema class.
 .PARAMETER Domain
@@ -113,5 +113,162 @@ function Get-DsSchemaClass {
                 Get-DsSchemaClass -Domain $Domain -Name $Parent.SubClassOf
             }
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Get the SID for an object from Active Directory.
+.DESCRIPTION
+This cmdlet gets the SID for an object from Active Directory. This can be slow.
+.PARAMETER DistinguishedName
+Specify the distinguished name of the object.
+.PARAMETER Object
+Specify the object directory entry.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid
+.EXAMPLE
+Get-DsObjectSid -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
+Get the object SID for a user object by name.
+.EXAMPLE
+Get-DsObjectSid -DistinguishedName "CN=Bob,CN=Users,DC=sales,DC=domain,DC=com" -Domain SALES
+Get the object SID for a user object by name in the SALES domain.
+.EXAMPLE
+Get-DsObjectSid -Object $obj
+Get the object SID from a user object.
+#>
+function Get-DsObjectSid {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [alias("dn")]
+        [string]$DistinguishedName,
+        [parameter(ParameterSetName = "FromName")]
+        [string]$Domain,
+        [parameter(Mandatory, ParameterSetName = "FromObject")]
+        [System.DirectoryServices.DirectoryEntry]$Object
+    )
+
+    switch ($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Domain, $DistinguishedName)
+        }
+        "FromObject" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Object)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get the schema class for an object from Active Directory.
+.DESCRIPTION
+This cmdlet gets the schema class for an object from Active Directory. This can be slow.
+.PARAMETER DistinguishedName
+Specify the distinguished name of the object.
+.PARAMETER Object
+Specify the object directory entry.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.PARAMETER All
+Specify to get all schema classes for the object in the inheritance chain.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass[]
+.EXAMPLE
+Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
+Get the schema class for a user object by name.
+.EXAMPLE
+Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=sales,DC=domain,DC=com" -Domain SALES
+Get the schema class for a user object by name in the SALES domain.
+.EXAMPLE
+Get-DsObjectSchemaClass -Object $obj
+Get the schema class from a user object.
+.EXAMPLE
+Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com" -All
+Get the all inherited schema class for a user object by name.
+#>
+function Get-DsObjectSchemaClass {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [alias("dn")]
+        [string]$DistinguishedName,
+        [parameter(ParameterSetName = "FromName")]
+        [string]$Domain,
+        [parameter(Mandatory, ParameterSetName = "FromObject")]
+        [System.DirectoryServices.DirectoryEntry]$Object,
+        [switch]$All
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromName") {
+        $Object = [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObject($Domain, $DistinguishedName)
+    }
+
+    $obj_class = $Object.objectClass
+    if ($obj_class.Count -eq 0) {
+        return
+    }
+
+    if ($All) {
+        $obj_class | ForEach-Object { Get-DsSchemaClass -Name $_ }
+    } else {
+        Get-DsSchemaClass -Name $obj_class[-1]
+    }
+}
+
+<#
+.SYNOPSIS
+Converts a DS object to an object type tree for access checking.
+.DESCRIPTION
+This cmdlet converts a DS object to an object type tree for access checking. This can be slow.
+.PARAMETER DistinguishedName
+Specify the distinguished name of the object.
+.PARAMETER Object
+Specify the object directory entry.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.PARAMETER TreeObject
+Specify an object convertable to the tree such as a schema object or extended right.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.Security.ObjectTypeTree
+.EXAMPLE
+ConvertTo-ObjectTypeTree -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
+Get the object type tree for a user object by name.
+#>
+function ConvertTo-ObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [alias("dn")]
+        [string]$DistinguishedName,
+        [parameter(ParameterSetName = "FromName")]
+        [string]$Domain,
+        [parameter(Mandatory, ParameterSetName = "FromObject")]
+        [System.DirectoryServices.DirectoryEntry]$Object,
+        [parameter(Mandatory, ParameterSetName = "FromTreeObject", ValueFromPipeline)]
+        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$TreeObject
+    )
+
+    PROCESS {
+        $tree_obj = switch($PSCmdlet.ParameterSetName) {
+            "FromName" {
+               Get-DsSchemaClass -Domain $Domain -DistinguishedName $DistinguishedName
+            }
+            "FromObject" {
+                Get-DsSchemaClass -Object $Object
+            }
+            "FromTreeObject" {
+                $TreeObject
+            }
+        }
+        $tree_obj.ToObjectTypeTree()
     }
 }

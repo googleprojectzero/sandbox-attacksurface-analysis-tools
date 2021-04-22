@@ -97,6 +97,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kMayContain = "mayContain";
         private const string kSystemMustContain = "systemMustContain";
         private const string kSystemMayContain = "systemMayContain";
+        private const string kObjectSid = "objectSid";
 
         private static string GuidToString(Guid guid)
         {
@@ -576,6 +577,61 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static ObjectTypeEntry CreateObjectTypeEntry(DirectoryServiceObjectTypeLevel level, Guid object_type, string name)
         {
             return new ObjectTypeEntry(object_type, (int)level) { Name = name ?? object_type.ToString() };
+        }
+
+        /// <summary>
+        /// Get the object SID from a directory object.
+        /// </summary>
+        /// <param name="entry">The directory entry.</param>
+        /// <returns>The object SID. Returns null if no object SID exists.</returns>
+        public static Sid GetObjectSid(DirectoryEntry entry)
+        {
+            var sid = entry.ToPropertyClass().GetPropertyValue<byte[]>(kObjectSid);
+            if (sid == null)
+                return null;
+            return Sid.Parse(sid, false).GetResultOrDefault();
+        }
+
+        /// <summary>
+        /// Get the object SID from a directory object.
+        /// </summary>
+        /// <param name="domain">The domain name for the object.</param>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The object SID. Returns null if no object SID exists.</returns>
+        public static Sid GetObjectSid(string domain, string distinguished_name)
+        {
+            return GetObjectSid(GetObject(domain, distinguished_name));
+        }
+
+        /// <summary>
+        /// Get the object SID from a directory object.
+        /// </summary>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The object SID. Returns null if no object SID exists.</returns>
+        public static Sid GetObjectSid(string distinguished_name)
+        {
+            return GetObjectSid(null, distinguished_name);
+        }
+
+        /// <summary>
+        /// Get a directory object.
+        /// </summary>
+        /// <param name="domain">The domain name for the object.</param>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The object entry.</returns>
+        public static DirectoryEntry GetObject(string domain, string distinguished_name)
+        {
+            return new DirectoryEntry(ConstructLdapUrl(domain, distinguished_name));
+        }
+
+        /// <summary>
+        /// Get a directory object.
+        /// </summary>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The object entry.</returns>
+        public static DirectoryEntry GetObject(string distinguished_name)
+        {
+            return GetObject(null, distinguished_name);
         }
 
         #endregion

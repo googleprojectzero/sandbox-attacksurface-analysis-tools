@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// <summary>
     /// Class to represent an directory service extended right queries from the current domain.
     /// </summary>
-    public sealed class DirectoryServiceExtendedRight
+    public sealed class DirectoryServiceExtendedRight : IDirectoryServiceObjectTree
     {
         private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaAttribute>> _property_set;
         private readonly Lazy<IReadOnlyList<DirectoryServiceSchemaClass>> _applies_to;
@@ -67,6 +67,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
 
         public bool IsPropertySet => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp);
+
+        /// <summary>
+        /// True if this is a validated write extended right.
+        /// </summary>
+        public bool IsValidatedWrite => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.Self);
+
+        /// <summary>
+        /// True if this is a control extended right.
+        /// </summary>
+        public bool IsControl => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ControlAccess);
 
         /// <summary>
         /// Convert the extended right to an object type tree.

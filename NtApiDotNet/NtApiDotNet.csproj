@@ -321,6 +321,7 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaAttribute.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaClass.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaObject.cs" />
+    <Compile Include="Win32\DirectoryService\IDirectoryServiceObjectTree.cs" />
     <Compile Include="Win32\DllCharacteristics.cs" />
     <Compile Include="Win32\DllDebugData.cs" />
     <Compile Include="Win32\DllExport.cs" />
