@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.DirectoryServices;
+using System.IO;
 using System.Linq;
 
 namespace NtApiDotNet.Win32.DirectoryService
@@ -247,8 +249,24 @@ namespace NtApiDotNet.Win32.DirectoryService
                     }
                 case "attributeschema":
                     {
+                        var attribute_syntax = prop.GetPropertyValue<string>("attributeSyntax") ?? string.Empty;
+                        var om_syntax = prop.GetPropertyValue<int>("oMSyntax");
+                        var om_object_class_bytes = prop.GetPropertyValue<byte[]>("oMObjectClass");
+
+                        string om_object_class_name = string.Empty;
+                        if (om_object_class_bytes?.Length > 0)
+                        {
+                            try
+                            {
+                                om_object_class_name = DERUtils.ReadObjID(om_object_class_bytes);
+                            }
+                            catch (EndOfStreamException)
+                            {
+                            }
+                        }
+
                         return new DirectoryServiceSchemaAttribute(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name);
+                            ldap_name, class_name, attribute_syntax, om_syntax, om_object_class_name);
                     }
                 default:
                     return new DirectoryServiceSchemaObject(domain, dn, schema_id.Value, cn,
@@ -278,6 +296,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var schema_class = ConvertToSchemaClass(domain, null, FindDirectoryEntry(root_entry,
                     $"({kLDAPDisplayName}={name})", "cn")?.GetDirectoryEntry());
+                if (schema_class == null)
+                    return null;
                 return _schema_class.Get(domain).GetOrAdd(schema_class.SchemaId, schema_class);
             }
             catch
