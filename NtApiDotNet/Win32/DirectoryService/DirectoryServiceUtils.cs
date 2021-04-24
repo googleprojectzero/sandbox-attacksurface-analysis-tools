@@ -22,16 +22,6 @@ using System.Linq;
 
 namespace NtApiDotNet.Win32.DirectoryService
 {
-    internal class DirectoryServiceNtFakeTypeFactory : NtFakeTypeFactory
-    {
-        public override IEnumerable<NtType> CreateTypes()
-        {
-            return new NtType[] { new NtType(DirectoryServiceUtils.DS_NT_TYPE_NAME, DirectoryServiceUtils.GenericMapping,
-                        typeof(DirectoryServiceAccessRights), typeof(DirectoryServiceAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp) };
-        }
-    }
-
     /// <summary>
     /// Class implementing various utilities for directory services.
     /// </summary>
@@ -109,7 +99,7 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private class PropertyClass
         {
-            private Func<string, object[]> _get_property;
+            private readonly Func<string, object[]> _get_property;
 
             public T[] GetPropertyValues<T>(string name)
             {
@@ -183,8 +173,10 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static SearchResult FindDirectoryEntry(DirectoryEntry root_object, string filter, params string[] properties)
         {
-            DirectorySearcher ds = new DirectorySearcher(root_object, filter, properties);
-            ds.SearchScope = SearchScope.OneLevel;
+            DirectorySearcher ds = new DirectorySearcher(root_object, filter, properties)
+            {
+                SearchScope = SearchScope.OneLevel
+            };
             return ds.FindOne();
         }
 
@@ -603,7 +595,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
-        /// Get the common name of an schema attribute.
+        /// Get the common name of a schema attribute.
         /// </summary>
         /// <param name="domain">Specify the domain to get the schema attribute for.</param>
         /// <param name="schema_id">The GUID for the schema attribute.</param>
@@ -614,7 +606,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
-        /// Get the common name of an schema attribute.
+        /// Get the common name of a schema attribute.
         /// </summary>
         /// <param name="schema_id">The GUID for the schema attribute.</param>
         /// <returns>The common name of the schema attribute, or null if not found.</returns>
