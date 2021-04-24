@@ -345,6 +345,7 @@
     <Compile Include="Win32\Security\Credential\CredentialAttributeFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredentialManager.cs" />
     <Compile Include="Win32\Security\Credential\CredentialPersistence.cs" />
+    <Compile Include="Win32\Security\Native\AUTHZ_RPC_INIT_INFO_CLIENT.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL.cs" />
     <Compile Include="Win32\Security\Credential\CredentialFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />

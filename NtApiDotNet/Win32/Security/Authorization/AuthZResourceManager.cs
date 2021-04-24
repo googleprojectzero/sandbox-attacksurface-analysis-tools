@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Rpc;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -43,6 +44,21 @@ namespace NtApiDotNet.Win32.Security.Authorization
     }
 
     /// <summary>
+    /// Type of remote service to access.
+    /// </summary>
+    public enum AuthZResourceManagerRemoteServiceType
+    {
+        /// <summary>
+        /// Default, not evaluation of CAPs.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Evaluates CAPs.
+        /// </summary>
+        CentralAccessPolicy
+    }
+
+    /// <summary>
     /// Delegate to handle a callback ACE.
     /// </summary>
     /// <param name="ace">The ACE to handle.</param>
@@ -54,9 +70,6 @@ namespace NtApiDotNet.Win32.Security.Authorization
     /// </summary>
     public sealed class AuthZResourceManager : IDisposable
     {
-        private SafeAuthZResourceManagerHandle _handle;
-        private AuthZHandleCallbackAce _handle_callback_ace;
-
         #region Public Properties
         /// <summary>
         /// The name of the resource manager if any.
@@ -163,6 +176,76 @@ namespace NtApiDotNet.Win32.Security.Authorization
             return Create(null, AuthZResourceManagerInitializeFlags.NoAudit, null);
         }
 
+        /// <summary>
+        /// Create a remote AuthZ resource manager from a raw binding string.
+        /// </summary>
+        /// <param name="string_binding">The RPC string binding for the server.</param>
+        /// <param name="server_spn">The SPN for the server.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created AuthZ resource manager.</returns>
+        public static NtResult<AuthZResourceManager> Create(string string_binding, string server_spn, bool throw_on_error)
+        {
+            var binding = new CrackedBindingString(string_binding);
+            AUTHZ_RPC_INIT_INFO_CLIENT client_info = new AUTHZ_RPC_INIT_INFO_CLIENT
+            {
+                version = AUTHZ_RPC_INIT_INFO_CLIENT.AUTHZ_RPC_INIT_INFO_CLIENT_VERSION_V1,
+                ProtSeq = binding.Protseq,
+                Options = binding.NetworkOptions,
+                NetworkAddr = binding.NetworkAddr,
+                Endpoint = binding.Endpoint,
+                ObjectUuid = binding.ObjUuid,
+                ServerSpn = server_spn
+            };
+            return Create(client_info, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a remote AuthZ resource manager from a raw binding string.
+        /// </summary>
+        /// <param name="string_binding">The RPC string binding for the server.</param>
+        /// <param name="server_spn">The SPN for the server.</param>
+        /// <returns>The created AuthZ resource manager.</returns>
+        public static AuthZResourceManager Create(string string_binding, string server_spn)
+        {
+            return Create(string_binding, server_spn, true).Result;
+        }
+
+        /// <summary>
+        /// Create a remote AuthZ resource manager from a raw binding string.
+        /// </summary>
+        /// <param name="server">The address of the server.</param>
+        /// <param name="server_spn">The SPN for the server.</param>
+        /// <param name="type">Specify the type of </param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created AuthZ resource manager.</returns>
+        public static NtResult<AuthZResourceManager> Create(string server, string server_spn, AuthZResourceManagerRemoteServiceType type, bool throw_on_error)
+        {
+            AUTHZ_RPC_INIT_INFO_CLIENT client_info = new AUTHZ_RPC_INIT_INFO_CLIENT
+            {
+                version = AUTHZ_RPC_INIT_INFO_CLIENT.AUTHZ_RPC_INIT_INFO_CLIENT_VERSION_V1,
+                ProtSeq = "ncacn_ip_tcp",
+                Options = null,
+                NetworkAddr = server,
+                Endpoint = null,
+                ObjectUuid = type == AuthZResourceManagerRemoteServiceType.Default ?
+                    "5fc860e0-6f6e-4fc2-83cd-46324f25e90b" : "9a81c2bd-a525-471d-a4ed-49907c0b23da",
+                ServerSpn = string.IsNullOrEmpty(server_spn) ? null : server_spn
+            };
+            return Create(client_info, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a remote AuthZ resource manager from a raw binding string.
+        /// </summary>
+        /// <param name="server">The network address of the server.</param>
+        /// <param name="server_spn">The SPN for the server.</param>
+        /// <param name="type">Specify the type of </param>
+        /// <returns>The created AuthZ resource manager.</returns>
+        public static AuthZResourceManager Create(string server, string server_spn, AuthZResourceManagerRemoteServiceType type)
+        {
+            return Create(server, server_spn, type, true).Result;
+        }
+
         #endregion
 
         #region Constructors
@@ -173,6 +256,9 @@ namespace NtApiDotNet.Win32.Security.Authorization
         #endregion
 
         #region Private Members
+        private SafeAuthZResourceManagerHandle _handle;
+        private AuthZHandleCallbackAce _handle_callback_ace;
+
         private bool HandleCallbackAce(
             IntPtr hAuthzClientContext,
             IntPtr pAce,
@@ -190,6 +276,14 @@ namespace NtApiDotNet.Win32.Security.Authorization
                 return false;
             }
         }
+
+        private static NtResult<AuthZResourceManager> Create(in AUTHZ_RPC_INIT_INFO_CLIENT client_info, bool throw_on_error)
+        {
+            AuthZResourceManager ret = new AuthZResourceManager(client_info.NetworkAddr ?? string.Empty);
+            return SecurityNativeMethods.AuthzInitializeRemoteResourceManager(client_info, 
+                out ret._handle).CreateWin32Result(throw_on_error, () => ret);
+        }
+
         #endregion
     }
 }

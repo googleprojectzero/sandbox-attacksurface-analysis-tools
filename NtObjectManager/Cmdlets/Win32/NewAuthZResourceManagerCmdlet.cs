@@ -38,27 +38,45 @@ namespace NtObjectManager.Cmdlets.Win32
     ///   <code>New-AuthZResourceManager { $_.Type -EQ "DeniedCallback" }</code>
     ///   <para>Create a AuthZ Resource Manager with a Callback ACE script block.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.New, "AuthZResourceManager")]
+    [Cmdlet(VerbsCommon.New, "AuthZResourceManager", DefaultParameterSetName = "LocalRM")]
     [OutputType(typeof(AuthZResourceManager))]
     public class NewAuthZResourceManagerCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Flags for initialization. Defaults to NoAudit.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "LocalRM")]
         public AuthZResourceManagerInitializeFlags Flags { get; set; }
 
         /// <summary>
         /// <para type="description">Optional name for the Resource Manager.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "LocalRM")]
         public string Name { get; set; }
 
         /// <summary>
         /// <para type="description">Optional script block for callback ACE handling.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName = "LocalRM")]
         public ScriptBlock CallbackAceScriptBlock { get; set; }
+
+        /// <summary>
+        /// <para type="description">Network address for the server.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "RemoteRM")]
+        public string Server { get; set; }
+
+        /// <summary>
+        /// <para type="description">The SPN for the server.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "RemoteRM")]
+        public string ServerSpn { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service type for the remote server.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "RemoteRM")]
+        public AuthZResourceManagerRemoteServiceType ServiceType { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -66,6 +84,7 @@ namespace NtObjectManager.Cmdlets.Win32
         public NewAuthZResourceManagerCmdlet()
         {
             Flags = AuthZResourceManagerInitializeFlags.NoAudit;
+            ServiceType = AuthZResourceManagerRemoteServiceType.Default;
         }
 
         /// <summary>
@@ -73,12 +92,19 @@ namespace NtObjectManager.Cmdlets.Win32
         /// </summary>
         protected override void ProcessRecord()
         {
-            AuthZHandleCallbackAce callback = null;
-            if (CallbackAceScriptBlock != null)
+            if (ParameterSetName == "LocalRM")
             {
-                callback = a => PSUtils.InvokeWithArg(CallbackAceScriptBlock, false, a);
+                AuthZHandleCallbackAce callback = null;
+                if (CallbackAceScriptBlock != null)
+                {
+                    callback = a => PSUtils.InvokeWithArg(CallbackAceScriptBlock, false, a);
+                }
+                WriteObject(AuthZResourceManager.Create(Name, Flags, callback));
             }
-            WriteObject(AuthZResourceManager.Create(Name, Flags, callback));
+            else
+            {
+                WriteObject(AuthZResourceManager.Create(Server, ServerSpn, ServiceType));
+            }
         }
     }
 }

@@ -332,6 +332,11 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzInitializeRemoteResourceManager(in AUTHZ_RPC_INIT_INFO_CLIENT pRpcInitInfo, 
+            out SafeAuthZResourceManagerHandle phAuthzResourceManager);
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool AuthzFreeResourceManager(
             IntPtr hAuthzResourceManager
         );
