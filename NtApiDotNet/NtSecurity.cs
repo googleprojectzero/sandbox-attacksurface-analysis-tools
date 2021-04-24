@@ -2306,6 +2306,10 @@ namespace NtApiDotNet
             { new Sid(SecurityAuthority.Nt, 93, 0), Tuple.Create("User Manager", "AllContainers") },
             // S-1-5-32-548
             { new Sid(SecurityAuthority.Nt, 32, 548), Tuple.Create("BUILTIN", "Account Operators") },
+            // S-1-5-32-549
+            { new Sid(SecurityAuthority.Nt, 32, 549), Tuple.Create("BUILTIN", "Server Operators") },
+            // S-1-5-32-550
+            { new Sid(SecurityAuthority.Nt, 32, 550), Tuple.Create("BUILTIN", "Print Operators") },
             // S-1-5-32-554
             { new Sid(SecurityAuthority.Nt, 32, 554), Tuple.Create("BUILTIN", "Pre-Windows 2000 Compatible Access") },
             // S-1-5-32-560
