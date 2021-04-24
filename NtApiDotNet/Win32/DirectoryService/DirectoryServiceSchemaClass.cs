@@ -32,19 +32,35 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         public IReadOnlyList<DirectoryServiceSchemaClassAttribute> Attributes { get; }
 
+        /// <summary>
+        /// The default security descriptor.
+        /// </summary>
+        public SecurityDescriptor DefaultSecurityDescriptor { get; }
+
+        /// <summary>
+        /// The default security descriptor in SDDL format.
+        /// </summary>
+        public string DefaultSecurityDescriptorSddl { get; }
+
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string object_class, string subclass_of,
-            List<DirectoryServiceSchemaClassAttribute> attributes)
+            List<DirectoryServiceSchemaClassAttribute> attributes, string default_security_desc)
             : base(domain, dn, schema_id, name, ldap_name, object_class)
         {
             SubClassOf = subclass_of ?? string.Empty;
             Attributes = attributes.AsReadOnly();
+            DefaultSecurityDescriptorSddl = default_security_desc;
+            if (!string.IsNullOrWhiteSpace(default_security_desc))
+            {
+                DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, false).GetResultOrDefault();
+            }
         }
 
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
             : this(domain, string.Empty, schema_id,
                   schema_id.ToString(), schema_id.ToString(), string.Empty,
-                  string.Empty, new List<DirectoryServiceSchemaClassAttribute>())
+                  string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
+                  string.Empty)
         {
         }
     }

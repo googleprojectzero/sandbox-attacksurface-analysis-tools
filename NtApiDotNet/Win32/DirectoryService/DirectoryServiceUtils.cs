@@ -100,6 +100,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kSystemMustContain = "systemMustContain";
         private const string kSystemMayContain = "systemMayContain";
         private const string kObjectSid = "objectSid";
+        private const string kDefaultSecurityDescriptor = "defaultSecurityDescriptor";
 
         private static string GuidToString(Guid guid)
         {
@@ -243,9 +244,10 @@ namespace NtApiDotNet.Win32.DirectoryService
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMustContain), true, true);
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kMayContain), false, false);
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMayContain), false, true);
+                        var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name, subclass_of, attrs);
+                            ldap_name, class_name, subclass_of, attrs, default_security_desc);
                     }
                 case "attributeschema":
                     {
