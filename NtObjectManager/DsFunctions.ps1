@@ -68,12 +68,10 @@ Specify the LDAP name for the schema class to get.
 Specify an existing schema class and get its parent class.
 .PARAMETER Recurse
 Specify to recurse the parent relationships and return all objects.
-.PARAMETER Attribute
-Specify to get the schema class for an attribute.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaObject[]
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass[]
 .EXAMPLE
 Get-DsSchemaClass
 Get all schema classes.
@@ -84,11 +82,14 @@ Get all schema classes on the sales.domain.com domain.
 Get-DsSchemaClass -SchemaId "BF967ABA-0DE6-11D0-A285-00AA003049E2"
 Get the user schema class by GUID.
 .EXAMPLE
-Get-DsSchemaClass -Name User
+Get-DsSchemaClass -Name "user"
 Get the user schema class by LDAP name.
 .EXAMPLE
 Get-DsSchemaClass -Parent $cls
 Get the parent schema class for another class.
+.EXAMPLE
+Get-DsSchemaClass -Parent $cls -Recurse
+Get the parent schema class for another class and recurse to top.
 #>
 function Get-DsSchemaClass {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -102,39 +103,95 @@ function Get-DsSchemaClass {
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromGuid")]
-        [parameter(ParameterSetName = "FromAttribute")]
         [string]$Domain,
         [parameter(ParameterSetName = "FromParent")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromGuid")]
-        [switch]$Recurse,
+        [switch]$Recurse
+    )
+
+    $cls = switch ($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
+        }
+        "FromGuid" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
+        }
+        "FromParent" {
+            if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
+                Get-DsSchemaClass -Domain $Parent.Domain -Name $Parent.SubClassOf
+            }
+        }
+    }
+    $cls
+    if ($Recurse -and ($null -ne $cls)) {
+        Get-DsSchemaClass -Parent $cls -Recurse
+    }
+}
+
+<#
+.SYNOPSIS
+Get a schema attribute from Active Directory.
+.DESCRIPTION
+This cmdlet gets a schema attribute from Active Directory. This can be slow.
+.PARAMETER SchemaId
+Specify the GUID for the schema attribute.
+.PARAMETER Domain
+Specify the domain or server name to query for the schema attribute. Defaults to current domain.
+.PARAMETER Name
+Specify the LDAP name for the schema attribute to get.
+.PARAMETER Attribute
+Specify to get the schema class for an attribute.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute[]
+.EXAMPLE
+Get-DsSchemaAttribute
+Get all schema attributes.
+.EXAMPLE
+Get-DsSchemaAttribute -Domain sales.domain.com
+Get all schema attributes on the sales.domain.com domain.
+.EXAMPLE
+Get-DsSchemaAttribute -SchemaId "28630EBB-41D5-11D1-A9C1-0000F80367C1"
+Get the user principal name attribute by GUID.
+.EXAMPLE
+Get-DsSchemaAttribute -Name "lDAPDisplayName"
+Get the user principal name attribute by LDAP name.
+#>
+function Get-DsSchemaAttribute {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromGuid")]
+        [guid]$SchemaId,
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [string]$Name,
+        [parameter(ParameterSetName = "All")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromGuid")]
+        [parameter(ParameterSetName = "FromAttribute")]
+        [string]$Domain,
         [parameter(Mandatory, ParameterSetName = "FromAttribute", ValueFromPipeline)]
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClassAttribute]$Attribute
     )
 
     PROCESS {
-        $cls = switch ($PSCmdlet.ParameterSetName) {
+        switch ($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttributes($Domain) | Write-Output
             }
             "FromGuid" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $SchemaId)
             }
             "FromName" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
-            }
-            "FromParent" {
-                if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
-                    Get-DsSchemaClass -Domain $Parent.Domain -Name $Parent.SubClassOf
-                }
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Name)
             }
             "FromAttribute" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Attribute.Name)
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Attribute.Name)
             }
-        }
-        $cls
-        if ($Recurse -and $cls -is [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]) {
-            Get-DsSchemaClass -Parent $cls -Recurse
         }
     }
 }

@@ -4697,9 +4697,9 @@
         </TableControl>
     </View>
     <View>
-        <Name>DirectoryServiceSchemaObject</Name>
+        <Name>DirectoryServiceSchemaAttribute</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaObject</TypeName>
+            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4712,7 +4712,7 @@
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>ObjectClass</Label>
+                    <Label>AttributeType</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -4726,7 +4726,44 @@
                             <PropertyName>SchemaId</PropertyName>
                         </TableColumnItem>
                         <TableColumnItem>
-                            <PropertyName>ObjectClass</PropertyName>
+                            <PropertyName>AttributeType</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>DirectoryServiceSchemaClass</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>SchemaId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>AttributeCount</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>SchemaId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <ScriptBlock>$_.Attributes.Count</ScriptBlock>
                         </TableColumnItem>
                     </TableColumnItems>
                 </TableRowEntry>

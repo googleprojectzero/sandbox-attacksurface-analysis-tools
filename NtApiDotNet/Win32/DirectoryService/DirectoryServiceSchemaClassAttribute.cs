@@ -61,5 +61,14 @@ namespace NtApiDotNet.Win32.DirectoryService
         {
             return Tuple.Create(Name, Required, System).Equals(obj);
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the attribute.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

@@ -405,6 +405,27 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
             return ret.AsReadOnly();
         }
+
+        private static IReadOnlyList<T> GetSchemaObjects<T>(string domain) where T : DirectoryServiceSchemaObject
+        {
+            var ret = new List<T>();
+            if (_get_schema_classes.Get(domain).Value)
+            {
+                ret.AddRange(_schema_class.Get(domain).Values.OfType<T>());
+            }
+            return ret.AsReadOnly();
+        }
+
+        private static T GetSchemaObject<T>(string domain, Guid schema_id) where T : DirectoryServiceSchemaObject
+        {
+            return _schema_class.Get(domain).GetOrAdd(schema_id, g => FetchSchemaClass(domain, g)) as T;
+        }
+
+        private static T GetSchemaObject<T>(string domain, string name) where T : DirectoryServiceSchemaObject
+        {
+            return _schema_class_by_name.Get(domain).GetOrAdd(name, n => FetchSchemaClassByName(domain, n)) as T;
+        }
+
         #endregion
 
         #region Public Static Members
@@ -444,9 +465,9 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <param name="domain">Specify the domain to get the schema class for.</param>
         /// <param name="schema_id">The GUID for the schema class.</param>
         /// <returns>The schema class, or null if not found.</returns>
-        public static DirectoryServiceSchemaObject GetSchemaClass(string domain, Guid schema_id)
+        public static DirectoryServiceSchemaClass GetSchemaClass(string domain, Guid schema_id)
         {
-            return _schema_class.Get(domain).GetOrAdd(schema_id, g => FetchSchemaClass(domain, g));
+            return GetSchemaObject<DirectoryServiceSchemaClass>(domain, schema_id);
         }
 
         /// <summary>
@@ -454,7 +475,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         /// <param name="schema_id">The GUID for the schema class.</param>
         /// <returns>The schema class, or null if not found.</returns>
-        public static DirectoryServiceSchemaObject GetSchemaClass(Guid schema_id)
+        public static DirectoryServiceSchemaClass GetSchemaClass(Guid schema_id)
         {
             return GetSchemaClass(string.Empty, schema_id);
         }
@@ -465,9 +486,9 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <param name="domain">Specify the domain to get the schema class for.</param>
         /// <param name="name">The LDAP name for the schema class.</param>
         /// <returns>The schema class, or null if not found.</returns>
-        public static DirectoryServiceSchemaObject GetSchemaClass(string domain, string name)
+        public static DirectoryServiceSchemaClass GetSchemaClass(string domain, string name)
         {
-            return _schema_class_by_name.Get(domain).GetOrAdd(name, n => FetchSchemaClassByName(domain, n));
+            return GetSchemaObject<DirectoryServiceSchemaClass>(domain, name);
         }
 
         /// <summary>
@@ -475,7 +496,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         /// <param name="name">The LDAP name for the schema class.</param>
         /// <returns>The schema class, or null if not found.</returns>
-        public static DirectoryServiceSchemaObject GetSchemaClass(string name)
+        public static DirectoryServiceSchemaClass GetSchemaClass(string name)
         {
             return GetSchemaClass(string.Empty, name);
         }
@@ -485,21 +506,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         /// <param name="domain">Specify the domain to get the schema classes for.</param>
         /// <returns>The list of schema classes.</returns>
-        public static IReadOnlyList<DirectoryServiceSchemaObject> GetSchemaClasses(string domain)
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses(string domain)
         {
-            List<DirectoryServiceSchemaObject> ret = new List<DirectoryServiceSchemaObject>();
-            if (_get_schema_classes.Get(domain).Value)
-            {
-                ret.AddRange(_schema_class.Get(domain).Values);
-            }
-            return ret.AsReadOnly();
+            return GetSchemaObjects<DirectoryServiceSchemaClass>(domain);
         }
 
         /// <summary>
         /// Get all schema classes.
         /// </summary>
         /// <returns>The list of schema classes.</returns>
-        public static IReadOnlyList<DirectoryServiceSchemaObject> GetSchemaClasses()
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses()
         {
             return GetSchemaClasses(string.Empty);
         }
@@ -523,6 +539,88 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static string GetSchemaClassName(Guid schema_id)
         {
             return GetSchemaClassName(string.Empty, schema_id);
+        }
+
+        /// <summary>
+        /// Get the schema attribute for a GUID.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema attribute for.</param>
+        /// <param name="schema_id">The GUID for the schema attribute.</param>
+        /// <returns>The schema attribute, or null if not found.</returns>
+        public static DirectoryServiceSchemaAttribute GetSchemaAttribute(string domain, Guid schema_id)
+        {
+            return GetSchemaObject<DirectoryServiceSchemaAttribute>(domain, schema_id);
+        }
+
+        /// <summary>
+        /// Get the schema attribute for a GUID.
+        /// </summary>
+        /// <param name="schema_id">The GUID for the schema attribute.</param>
+        /// <returns>The schema attribute, or null if not found.</returns>
+        public static DirectoryServiceSchemaAttribute GetSchemaAttribute(Guid schema_id)
+        {
+            return GetSchemaAttribute(string.Empty, schema_id);
+        }
+
+        /// <summary>
+        /// Get the schema attribute for a LDAP name.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema attribute for.</param>
+        /// <param name="name">The LDAP name for the schema attribute.</param>
+        /// <returns>The schema attribute, or null if not found.</returns>
+        public static DirectoryServiceSchemaAttribute GetSchemaAttribute(string domain, string name)
+        {
+            return GetSchemaObject<DirectoryServiceSchemaAttribute>(domain, name);
+        }
+
+        /// <summary>
+        /// Get the schema attribute for a LDAP name.
+        /// </summary>
+        /// <param name="name">The LDAP name for the schema attribute.</param>
+        /// <returns>The schema attribute, or null if not found.</returns>
+        public static DirectoryServiceSchemaAttribute GetSchemaAttribute(string name)
+        {
+            return GetSchemaAttribute(string.Empty, name);
+        }
+
+        /// <summary>
+        /// Get all schema attributes.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema attributes for.</param>
+        /// <returns>The list of schema attributes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaAttribute> GetSchemaAttributes(string domain)
+        {
+            return GetSchemaObjects<DirectoryServiceSchemaAttribute>(domain);
+        }
+
+        /// <summary>
+        /// Get all schema attributes.
+        /// </summary>
+        /// <returns>The list of schema attributes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaAttribute> GetSchemaAttributes()
+        {
+            return GetSchemaAttributes(string.Empty);
+        }
+
+        /// <summary>
+        /// Get the common name of an schema attribute.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema attribute for.</param>
+        /// <param name="schema_id">The GUID for the schema attribute.</param>
+        /// <returns>The common name of the schema attribute, or null if not found.</returns>
+        public static string GetSchemaAttributeName(string domain, Guid schema_id)
+        {
+            return GetSchemaAttribute(domain, schema_id)?.CommonName;
+        }
+
+        /// <summary>
+        /// Get the common name of an schema attribute.
+        /// </summary>
+        /// <param name="schema_id">The GUID for the schema attribute.</param>
+        /// <returns>The common name of the schema attribute, or null if not found.</returns>
+        public static string GetSchemaAttributeName(Guid schema_id)
+        {
+            return GetSchemaAttributeName(string.Empty, schema_id);
         }
 
         /// <summary>
