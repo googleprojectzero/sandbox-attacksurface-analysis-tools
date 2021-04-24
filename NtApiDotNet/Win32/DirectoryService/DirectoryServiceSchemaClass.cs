@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             DefaultSecurityDescriptorSddl = default_security_desc;
             if (!string.IsNullOrWhiteSpace(default_security_desc))
             {
-                DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, false).GetResultOrDefault();
+                DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, DirectoryServiceUtils.NtType, true, false).GetResultOrDefault();
             }
         }
 

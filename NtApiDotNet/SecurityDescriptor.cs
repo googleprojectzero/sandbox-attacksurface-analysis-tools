@@ -1579,11 +1579,24 @@ namespace NtApiDotNet
         /// Parse a security descriptor.
         /// </summary>
         /// <param name="sddl">The SDDL form of the security descriptor.</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
+        /// <param name="container">True if the security descriptor is from a container.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> Parse(string sddl, NtType type, bool container, bool throw_on_error)
+        {
+            return NtSecurity.SddlToSecurityDescriptor(sddl, throw_on_error).Map(ba => new SecurityDescriptor(ba, type) { Container = container });
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="sddl">The SDDL form of the security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(string sddl, bool throw_on_error)
         {
-            return NtSecurity.SddlToSecurityDescriptor(sddl, throw_on_error).Map(ba => new SecurityDescriptor(ba));
+            return Parse(sddl, null, false, throw_on_error);
         }
 
         /// <summary>
