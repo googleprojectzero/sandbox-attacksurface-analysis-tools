@@ -340,6 +340,12 @@
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZContextInitializeSidFlags.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZGroupSidType.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZResourceManagerInitializeFlags.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZResourceManagerRemoteServiceType.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZSecurityAttributeType.cs" />
+    <Compile Include="Win32\Security\Authorization\AuthZSidOperation.cs" />
     <Compile Include="Win32\Security\Credential\Credential.cs" />
     <Compile Include="Win32\Security\Credential\CredentialAttribute.cs" />
     <Compile Include="Win32\Security\Credential\CredentialAttributeFlags.cs" />

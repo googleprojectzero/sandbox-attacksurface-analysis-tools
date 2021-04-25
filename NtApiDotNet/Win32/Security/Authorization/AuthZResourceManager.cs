@@ -20,45 +20,6 @@ using System;
 namespace NtApiDotNet.Win32.Security.Authorization
 {
     /// <summary>
-    /// Initialization flags for resource manager.
-    /// </summary>
-    [Flags]
-    public enum AuthZResourceManagerInitializeFlags
-    {
-        /// <summary>
-        /// None
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Disable auditing.
-        /// </summary>
-        NoAudit = 1,
-        /// <summary>
-        /// Initialize using impersonation token.
-        /// </summary>
-        InitializeUnderImpersonation = 2,
-        /// <summary>
-        /// Disable central access policies.
-        /// </summary>
-        NoCentralAccessPolicies = 4
-    }
-
-    /// <summary>
-    /// Type of remote service to access.
-    /// </summary>
-    public enum AuthZResourceManagerRemoteServiceType
-    {
-        /// <summary>
-        /// Default, not evaluation of CAPs.
-        /// </summary>
-        Default,
-        /// <summary>
-        /// Evaluates CAPs.
-        /// </summary>
-        CentralAccessPolicy
-    }
-
-    /// <summary>
     /// Delegate to handle a callback ACE.
     /// </summary>
     /// <param name="ace">The ACE to handle.</param>
