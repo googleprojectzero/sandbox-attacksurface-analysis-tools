@@ -91,6 +91,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kSystemMayContain = "systemMayContain";
         private const string kObjectSid = "objectSid";
         private const string kDefaultSecurityDescriptor = "defaultSecurityDescriptor";
+        private const string kAdminDescription = "adminDescription";
 
         private static string GuidToString(Guid guid)
         {
@@ -221,6 +222,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             string cn = prop.GetPropertyValue<string>(kCommonName);
             string ldap_name = prop.GetPropertyValue<string>(kLDAPDisplayName);
             string dn = prop.GetPropertyValue<string>(kDistinguishedName);
+            string description = prop.GetPropertyValue<string>(kAdminDescription);
             string class_name = dir_entry.SchemaClassName;
 
             if (schema_id == null)
@@ -245,7 +247,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                         var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name, subclass_of, attrs, default_security_desc);
+                            ldap_name, description, class_name, subclass_of, attrs, default_security_desc);
                     }
                 case "attributeschema":
                     {
@@ -266,11 +268,11 @@ namespace NtApiDotNet.Win32.DirectoryService
                         }
 
                         return new DirectoryServiceSchemaAttribute(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name, attribute_syntax, om_syntax, om_object_class_name);
+                            ldap_name, description, class_name, attribute_syntax, om_syntax, om_object_class_name);
                     }
                 default:
                     return new DirectoryServiceSchemaObject(domain, dn, schema_id.Value, cn,
-                            ldap_name, class_name);
+                            ldap_name, description, class_name);
             }
         }
 

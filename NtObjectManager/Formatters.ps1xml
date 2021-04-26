@@ -4770,5 +4770,66 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>DirectoryServiceSchemaClass</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
+        </ViewSelectedBy>
+        <ListControl>
+            <ListEntries>
+                <ListEntry>
+                    <ListItems>
+                        <ListItem>
+                            <PropertyName>Name</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>CommonName</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>Description</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>SchemaId</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>SubClassOf</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>Attributes</PropertyName>
+                        </ListItem>
+                    </ListItems>
+                </ListEntry>
+            </ListEntries>
+        </ListControl>
+    </View>
+    <View>
+        <Name>DirectoryServiceSchemaAttribute</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
+        </ViewSelectedBy>
+        <ListControl>
+            <ListEntries>
+                <ListEntry>
+                    <ListItems>
+                        <ListItem>
+                            <PropertyName>Name</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>CommonName</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>Description</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>SchemaId</PropertyName>
+                        </ListItem>
+                        <ListItem>
+                            <PropertyName>AttributeType</PropertyName>
+                        </ListItem>
+                    </ListItems>
+                </ListEntry>
+            </ListEntries>
+        </ListControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
