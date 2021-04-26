@@ -150,7 +150,13 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         private static string ConstructLdapUrl(string domain, string path)
         {
-            return string.IsNullOrEmpty(domain) ? $"LDAP://{path}" : $"LDAP://{domain}/{path}";
+            string scheme = "LDAP";
+            if (domain?.EndsWith(":3268") ?? false)
+            {
+                scheme = "GC";
+                domain = domain.Remove(domain.Length - 5);
+            }
+            return string.IsNullOrEmpty(domain) ? $"{scheme}://{path}" : $"{scheme}://{domain}/{path}";
         }
 
         private static DirectoryEntry GetRootEntry(string domain, string prefix, string context)
