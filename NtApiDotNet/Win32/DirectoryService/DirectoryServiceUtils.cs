@@ -443,10 +443,10 @@ namespace NtApiDotNet.Win32.DirectoryService
             }
         }
 
-        private static bool ComputeAceCount(Acl acl, out int ace_allow_count, out int ace_remaining_count)
+        private static bool ComputeAceCount(Acl acl, out int ace_non_allow_index, out int ace_allow_index)
         {
-            ace_allow_count = 0;
-            ace_remaining_count = 0;
+            ace_non_allow_index = 0;
+            ace_allow_index = 0;
 
             if (acl == null)
                 return true;
@@ -458,8 +458,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 if (acl[i].IsInheritOnly)
                 {
-                    ace_allow_count = i;
-                    ace_remaining_count = i;
+                    ace_non_allow_index = i;
+                    ace_allow_index = i;
                     return true;
                 }
 
@@ -471,8 +471,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                 i++;
             }
 
-            ace_allow_count = i;
-            ace_remaining_count = i;
+            ace_non_allow_index = i;
+            ace_allow_index = i;
             if (i == acl.Count)
             {
                 return true;
@@ -482,7 +482,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 if (acl[i].IsInheritOnly)
                 {
-                    ace_remaining_count = i;
+                    ace_allow_index = i;
                     return true;
                 }
 
@@ -494,7 +494,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 i++;
             }
 
-            ace_remaining_count = i;
+            ace_allow_index = i;
             return true;
         }
 
@@ -857,14 +857,14 @@ namespace NtApiDotNet.Win32.DirectoryService
 
             if (security_descriptor.Dacl.Count > 1)
             {
-                if (!ComputeAceCount(security_descriptor.Dacl, out int dacl_ace_allow_count, 
-                    out int dacl_ace_remaining_count))
+                if (!ComputeAceCount(security_descriptor.Dacl, out int ace_non_allow_index, 
+                    out int ace_allow_index))
                 {
                     return false;
                 }
 
-                security_descriptor.Dacl.Sort(0, dacl_ace_allow_count, new AceComparer());
-                security_descriptor.Dacl.Sort(dacl_ace_allow_count, dacl_ace_remaining_count, new AceComparer());
+                security_descriptor.Dacl.Sort(0, ace_non_allow_index, new AceComparer());
+                security_descriptor.Dacl.Sort(ace_non_allow_index, ace_allow_index - ace_non_allow_index, new AceComparer());
             }
             return true;
         }

@@ -1316,10 +1316,9 @@ namespace NtApiDotNet
         /// <summary>
         /// Standardize security descriptor according to Active Directory rules.
         /// </summary>
-        /// <returns>True if the security descriptor was standardized.</returns>
-        public bool Standardize()
+        public void Standardize()
         {
-            return DirectoryServiceUtils.StandardizeSecurityDescriptor(this);
+            DirectoryServiceUtils.StandardizeSecurityDescriptor(this);
         }
 
         /// <summary>
