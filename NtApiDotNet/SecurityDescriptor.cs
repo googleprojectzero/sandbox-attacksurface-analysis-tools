@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.SafeBuffers;
+using NtApiDotNet.Win32.DirectoryService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1310,6 +1311,15 @@ namespace NtApiDotNet
             if (Sacl == null || Sacl.NullAcl)
                 return;
             Sacl.Canonicalize(false);
+        }
+
+        /// <summary>
+        /// Standardize security descriptor according to Active Directory rules.
+        /// </summary>
+        /// <returns>True if the security descriptor was standardized.</returns>
+        public bool Standardize()
+        {
+            return DirectoryServiceUtils.StandardizeSecurityDescriptor(this);
         }
 
         /// <summary>

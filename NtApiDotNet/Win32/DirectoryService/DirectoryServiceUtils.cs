@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.DirectoryServices;
@@ -426,6 +427,77 @@ namespace NtApiDotNet.Win32.DirectoryService
             return _schema_class_by_name.Get(domain).GetOrAdd(name, n => FetchSchemaClassByName(domain, n)) as T;
         }
 
+        struct AceComparer : IComparer<Ace>
+        {
+            int IComparer<Ace>.Compare(Ace x, Ace y)
+            {
+                byte[] left_bytes = x.ToByteArray();
+                byte[] right_bytes = y.ToByteArray();
+
+                if (left_bytes.Length > right_bytes.Length)
+                    return -1;
+                if (left_bytes.Length < right_bytes.Length)
+                    return 1;
+                IStructuralComparable left_compare = left_bytes;
+                return left_compare.CompareTo(right_bytes, Comparer.Default);
+            }
+        }
+
+        private static bool ComputeAceCount(Acl acl, out int ace_allow_count, out int ace_remaining_count)
+        {
+            ace_allow_count = 0;
+            ace_remaining_count = 0;
+
+            if (acl == null)
+                return true;
+            if (acl.Count == 0)
+                return true;
+
+            int i = 0;
+            while (i < acl.Count)
+            {
+                if (acl[i].IsInheritOnly)
+                {
+                    ace_allow_count = i;
+                    ace_remaining_count = i;
+                    return true;
+                }
+
+                if (acl[i].Type == AceType.Allowed || acl[i].Type == AceType.AllowedObject)
+                {
+                    break;
+                }
+
+                i++;
+            }
+
+            ace_allow_count = i;
+            ace_remaining_count = i;
+            if (i == acl.Count)
+            {
+                return true;
+            }
+
+            while (i < acl.Count)
+            {
+                if (acl[i].IsInheritOnly)
+                {
+                    ace_remaining_count = i;
+                    return true;
+                }
+
+                if (acl[i].Type == AceType.Denied || acl[i].Type == AceType.DeniedObject)
+                {
+                    return false;
+                }
+
+                i++;
+            }
+
+            ace_remaining_count = i;
+            return true;
+        }
+
         #endregion
 
         #region Public Static Members
@@ -763,6 +835,38 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static DirectoryEntry GetObject(string distinguished_name)
         {
             return GetObject(null, distinguished_name);
+        }
+
+        /// <summary>
+        /// Standardize security descriptor to the rules of Active Directory.
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor.</param>
+        /// <returns>The standardized security descriptor.</returns>
+        public static bool StandardizeSecurityDescriptor(SecurityDescriptor security_descriptor)
+        {
+            if (!security_descriptor.DaclPresent)
+                return false;
+
+            if (security_descriptor.SaclPresent && security_descriptor.Sacl.Count > 1)
+            {
+                if (ComputeAceCount(security_descriptor.Sacl, out int _, out int ace_count))
+                {
+                    security_descriptor.Sacl.Sort(0, ace_count, new AceComparer());
+                }
+            }
+
+            if (security_descriptor.Dacl.Count > 1)
+            {
+                if (!ComputeAceCount(security_descriptor.Dacl, out int dacl_ace_allow_count, 
+                    out int dacl_ace_remaining_count))
+                {
+                    return false;
+                }
+
+                security_descriptor.Dacl.Sort(0, dacl_ace_allow_count, new AceComparer());
+                security_descriptor.Dacl.Sort(dacl_ace_allow_count, dacl_ace_remaining_count, new AceComparer());
+            }
+            return true;
         }
 
         #endregion

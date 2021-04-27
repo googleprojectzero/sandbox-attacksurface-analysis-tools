@@ -951,6 +951,8 @@ function Edit-NtSecurityDescriptor {
         [NtApiDotNet.SecurityDescriptor]$Parent,
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [Nullable[Guid]]$ObjectType = $null,
+        [Parameter(ParameterSetName = "StandardizeSd")]
+        [switch]$Standardize,
         [switch]$PassThru
     )
 
@@ -989,6 +991,9 @@ function Edit-NtSecurityDescriptor {
     elseif ($PsCmdlet.ParameterSetName -eq "ToAutoInherit") {
         $SecurityDescriptor.ConvertToAutoInherit($Parent,
             $ObjectType, $Container, $Type.GenericMapping)
+    }
+    elseif ($PSCmdlet.ParameterSetName -eq "StandardizeSd") {
+        $SecurityDescriptor.Standardize()
     }
 
     if ($PassThru) {
