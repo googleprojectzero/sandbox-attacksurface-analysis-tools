@@ -551,6 +551,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert the ACE to a byte array.
+        /// </summary>
+        /// <returns>The ACE as a byte array.</returns>
+        public byte[] ToByteArray()
+        {
+            MemoryStream stm = new MemoryStream();
+            Serialize(new BinaryWriter(stm));
+            return stm.ToArray();
+        }
+
+        /// <summary>
         /// Compare ACE to another object.
         /// </summary>
         /// <param name="obj">The other object.</param>
