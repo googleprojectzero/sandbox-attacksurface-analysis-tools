@@ -38,22 +38,27 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// The name of the attribute syntax type if known.
         /// </summary>
         public string AttributeType { get; }
+        /// <summary>
+        /// The GUID of the containing property set, if it exists.
+        /// </summary>
+        public Guid? AttributeSecurityGuid { get; }
 
         internal DirectoryServiceSchemaAttribute(string domain, string dn, Guid schema_id,
             string name, string ldap_name, string description, string object_class, string attribute_syntax,
-            int om_syntax, string om_object_class)
+            int om_syntax, string om_object_class, Guid? attribute_security_guid)
             : base(domain, dn, schema_id, name, ldap_name, description, object_class)
         {
             AttributeSyntax = attribute_syntax;
             OMSyntax = om_syntax;
             OMObjectClass = om_object_class;
             AttributeType = GetAttributeTypeName();
+            AttributeSecurityGuid = attribute_security_guid;
         }
 
         internal DirectoryServiceSchemaAttribute(string domain, Guid schema_id)
             : this(domain, string.Empty, schema_id,
           schema_id.ToString(), schema_id.ToString(),
-          schema_id.ToString(), string.Empty, string.Empty, 0, string.Empty)
+          schema_id.ToString(), string.Empty, string.Empty, 0, string.Empty, null)
         {
         }
 

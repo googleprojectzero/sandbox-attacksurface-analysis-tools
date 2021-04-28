@@ -19,6 +19,8 @@ Get an extended right from Active Directory.
 This cmdlet gets an extended right from Active Directory. This can be slow.
 .PARAMETER RightId
 Specify the GUID for the right.
+.PARAMETER Attribute
+Specify to get the propert set right for an attribute which is a property.
 .PARAMETER Domain
 Specify the domain or server name to query for the extended rights. Defaults to current domain.
 .INPUTS
@@ -33,13 +35,18 @@ Get-DsExtendedRight -Domain sales.domain.com
 Get all extended rights on the sales.domain.com domain.
 .EXAMPLE
 Get-DsExtendedRight -RightId "e48d0154-bcf8-11d1-8702-00c04fb96050"
-Get get the Public-Information extended right by GUID.
+Get the Public-Information extended right by GUID.
+.EXAMPLE
+Get-DsExtendedRight -Attribute $attr
+Get the property set for the attribute.
 #>
 function Get-DsExtendedRight {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromGuid", Position = 0)]
         [guid]$RightId,
+        [parameter(Mandatory, ParameterSetName = "FromAttribute")]
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute]$Attribute,
         [string]$Domain
     )
 
@@ -49,6 +56,11 @@ function Get-DsExtendedRight {
         }
         "FromGuid" {
             [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $RightId)
+        }
+        "FromAttribute" {
+            if ($null -ne $Attribute.AttributeSecurityGuid) {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Attribute.AttributeSecurityGuid)
+            }
         }
     }
 }
@@ -296,55 +308,4 @@ function Get-DsObjectSchemaClass {
     }
 
     Get-DsSchemaClass -Name $obj_class[-1] -Recurse:$Recurse
-}
-
-<#
-.SYNOPSIS
-Converts a DS object to an object type tree for access checking.
-.DESCRIPTION
-This cmdlet converts a DS object to an object type tree for access checking. This can be slow.
-.PARAMETER DistinguishedName
-Specify the distinguished name of the object.
-.PARAMETER Object
-Specify the object directory entry.
-.PARAMETER Domain
-Specify the domain or server name to query for the object. Defaults to current domain.
-.PARAMETER TreeObject
-Specify an object convertable to the tree such as a schema object or extended right.
-.INPUTS
-None
-.OUTPUTS
-NtApiDotNet.Utilities.Security.ObjectTypeTree
-.EXAMPLE
-ConvertTo-ObjectTypeTree -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
-Get the object type tree for a user object by name.
-#>
-function ConvertTo-ObjectTypeTree {
-    [CmdletBinding(DefaultParameterSetName = "FromName")]
-    Param(
-        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
-        [alias("dn")]
-        [string]$DistinguishedName,
-        [parameter(ParameterSetName = "FromName")]
-        [string]$Domain,
-        [parameter(Mandatory, ParameterSetName = "FromObject")]
-        [System.DirectoryServices.DirectoryEntry]$Object,
-        [parameter(Mandatory, ParameterSetName = "FromTreeObject", ValueFromPipeline)]
-        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$TreeObject
-    )
-
-    PROCESS {
-        $tree_obj = switch($PSCmdlet.ParameterSetName) {
-            "FromName" {
-               Get-DsSchemaClass -Domain $Domain -DistinguishedName $DistinguishedName
-            }
-            "FromObject" {
-                Get-DsSchemaClass -Object $Object
-            }
-            "FromTreeObject" {
-                $TreeObject
-            }
-        }
-        $tree_obj.ToObjectTypeTree()
-    }
 }

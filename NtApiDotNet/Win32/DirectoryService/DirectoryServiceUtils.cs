@@ -255,6 +255,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                         var attribute_syntax = prop.GetPropertyValue<string>("attributeSyntax") ?? string.Empty;
                         var om_syntax = prop.GetPropertyValue<int>("oMSyntax");
                         var om_object_class_bytes = prop.GetPropertyValue<byte[]>("oMObjectClass");
+                        var attribute_security_guid = prop.GetPropertyGuid("attributeSecurityGUID");
 
                         string om_object_class_name = string.Empty;
                         if (om_object_class_bytes?.Length > 0)
@@ -269,7 +270,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                         }
 
                         return new DirectoryServiceSchemaAttribute(domain, dn, schema_id.Value, cn,
-                            ldap_name, description, class_name, attribute_syntax, om_syntax, om_object_class_name);
+                            ldap_name, description, class_name, attribute_syntax, 
+                            om_syntax, om_object_class_name, attribute_security_guid);
                     }
                 default:
                     return new DirectoryServiceSchemaObject(domain, dn, schema_id.Value, cn,
