@@ -1982,6 +1982,8 @@ Specify the Object Type GUID.
 Specify a list of tree objects to add a children.
 .PARAMETER Name
 Optional name of the object type.
+.PARAMETER SchemaObject
+Specify to create from a schema object such as a schema class or extended right.
 .INPUTS
 None
 .OUTPUTS
@@ -1994,19 +1996,31 @@ $tree = New-ObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2" -Nodes $childr
 Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2' with a list of children.
 #>
 function New-ObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName="FromGuid")]
     Param(
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromGuid")]
         [guid]$ObjectType,
+        [Parameter(ParameterSetName = "FromGuid")]
         [NtApiDotNet.Utilities.Security.ObjectTypeTree[]]$Nodes,
-        [string]$Name = ""
+        [Parameter(ParameterSetName = "FromGuid")]
+        [string]$Name = "",
+        [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 0)]
+        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
     )
 
-    $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
-    if ($null -ne $Nodes) {
-        $tree.AddNodeRange($Nodes)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromGuid" {
+            $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
+            if ($null -ne $Nodes) {
+                $tree.AddNodeRange($Nodes)
+            }
+            $tree.Name = $Name
+            $tree
+        }
+        "FromSchemaObject" {
+            ConvertTo-ObjectTypeTree -SchemaObject $SchemaObject
+        }
     }
-    $tree.Name = $Name
-    Write-Output $tree
 }
 
 <#
@@ -2022,6 +2036,8 @@ Specify the root tree to add to.
 Optional name of the object type.
 .PARAMETER PassThru
 Specify to return the added tree.
+.PARAMETER SchemaObject
+Specify to add a schema object such as a schema class or extended right.
 .INPUTS
 None
 .OUTPUTS
@@ -2032,18 +2048,35 @@ Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa0
 .EXAMPLE
 Add-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2" -Name "Property A"
 Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
+.EXAMPLE
+Add-ObjectTypeTree $tree $obj
+Adds a new Object Type tree based on a directory object.
 #>
 function Add-ObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName="FromGuid")]
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
-        [Parameter(Position = 1, Mandatory)]
+        [Parameter(Position = 1, Mandatory, ParameterSetName = "FromGuid")]
         [guid]$ObjectType,
+        [Parameter(ParameterSetName = "FromGuid")]
         [string]$Name = "",
+        [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 1)]
+        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject,
         [switch]$PassThru
     )
-    $result = $Tree.AddNode($ObjectType)
-    $result.Name = $Name
+    $result = switch($PSCmdlet.ParameterSetName) {
+        "FromGuid" {
+            $r = $Tree.AddNode($ObjectType)
+            $r.Name = $Name
+            $r
+        }
+        "FromSchemaObject" {
+            $r = ConvertTo-ObjectTypeTree -SchemaObject $SchemaObject
+            $Tree.AddNode($r)
+            $r
+        }
+    }
     if ($PassThru) {
         Write-Output $result
     }
@@ -2155,6 +2188,58 @@ function Select-ObjectTypeTree {
     )
     
     $Tree.Find($ObjectType) | Write-Output
+}
+
+
+<#
+.SYNOPSIS
+Converts a DS object to an object type tree for access checking.
+.DESCRIPTION
+This cmdlet converts a DS object to an object type tree for access checking. This can be slow.
+.PARAMETER DistinguishedName
+Specify the distinguished name of the object.
+.PARAMETER Object
+Specify the object directory entry.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.PARAMETER SchemaObject
+Specify an object convertable to the tree such as a schema object or extended right.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.Security.ObjectTypeTree
+.EXAMPLE
+ConvertTo-ObjectTypeTree -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
+Get the object type tree for a user object by name.
+#>
+function ConvertTo-ObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [alias("dn")]
+        [string]$DistinguishedName,
+        [parameter(ParameterSetName = "FromName")]
+        [string]$Domain,
+        [parameter(Mandatory, ParameterSetName = "FromObject")]
+        [System.DirectoryServices.DirectoryEntry]$Object,
+        [parameter(Mandatory, ParameterSetName = "FromSchemaObject", ValueFromPipeline, Position = 0)]
+        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
+    )
+
+    PROCESS {
+        $tree_obj = switch($PSCmdlet.ParameterSetName) {
+            "FromName" {
+               Get-DsObjectSchemaClass -Domain $Domain -Name $DistinguishedName
+            }
+            "FromObject" {
+                Get-DsObjectSchemaClass -Object $Object
+            }
+            "FromSchemaObject" {
+                $SchemaObject
+            }
+        }
+        $tree_obj.ToObjectTypeTree()
+    }
 }
 
 <#
