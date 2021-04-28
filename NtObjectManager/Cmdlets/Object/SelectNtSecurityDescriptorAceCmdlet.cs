@@ -87,7 +87,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the security descriptor.</para>
         /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
+        [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
         [SecurityDescriptorTransform]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
@@ -159,6 +159,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public SwitchParameter First { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to return the result as a new security descriptor.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AsSecurityDescriptor { get; set; }
+
         #endregion
 
         #region Protected Members
@@ -191,7 +197,30 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 selector = (a, p) => a.FindAll(p);
             }
-            WriteObject(SelectAces(selector), true);
+
+            if (AsSecurityDescriptor)
+            {
+                var acl_type = AclType;
+                SecurityDescriptor sd = SecurityDescriptor.Clone();
+                sd.Dacl = null;
+                sd.Sacl = null;
+                if (acl_type.HasFlag(SecurityDescriptorAclType.Dacl))
+                {
+                    AclType = SecurityDescriptorAclType.Dacl;
+                    sd.Dacl = new Acl(SelectAces(selector));
+                }
+                if (acl_type.HasFlag(SecurityDescriptorAclType.Sacl))
+                {
+                    AclType = SecurityDescriptorAclType.Sacl;
+                    sd.Sacl = new Acl(SelectAces(selector));
+                }
+                AclType = acl_type;
+                WriteObject(sd);
+            }
+            else
+            {
+                WriteObject(SelectAces(selector), true);
+            }
         }
         #endregion
 
