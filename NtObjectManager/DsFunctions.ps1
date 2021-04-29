@@ -23,6 +23,8 @@ Specify the GUID for the right.
 Specify to get the propert set right for an attribute which is a property.
 .PARAMETER Domain
 Specify the domain or server name to query for the extended rights. Defaults to current domain.
+.PARAMETER Name
+Specify the common name of the extended right to get.
 .INPUTS
 None
 .OUTPUTS
@@ -45,8 +47,13 @@ function Get-DsExtendedRight {
     Param(
         [parameter(Mandatory, ParameterSetName = "FromGuid", Position = 0)]
         [guid]$RightId,
+        [parameter(Mandatory, ParameterSetName = "FromName")]
+        [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromAttribute")]
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute]$Attribute,
+        [parameter(ParameterSetName = "FromGuid")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "All")]
         [string]$Domain
     )
 
@@ -57,9 +64,12 @@ function Get-DsExtendedRight {
         "FromGuid" {
             [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $RightId)
         }
+        "FromName" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Name)
+        }
         "FromAttribute" {
             if ($null -ne $Attribute.AttributeSecurityGuid) {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Attribute.AttributeSecurityGuid)
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Attribute.Domain, $Attribute.AttributeSecurityGuid)
             }
         }
     }

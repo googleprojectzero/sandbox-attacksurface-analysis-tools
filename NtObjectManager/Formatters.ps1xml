@@ -4674,10 +4674,6 @@
                     <Label>RightsId</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
-                <TableColumnHeader>
-                    <Label>IsPropertySet</Label>
-                    <Alignment>left</Alignment>
-                </TableColumnHeader>
             </TableHeaders>
             <TableRowEntries>
                 <TableRowEntry>
@@ -4687,9 +4683,6 @@
                         </TableColumnItem>
                         <TableColumnItem>
                             <PropertyName>RightsId</PropertyName>
-                        </TableColumnItem>
-                        <TableColumnItem>
-                            <PropertyName>IsPropertySet</PropertyName>
                         </TableColumnItem>
                     </TableColumnItems>
                 </TableRowEntry>
