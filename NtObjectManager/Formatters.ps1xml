@@ -1983,6 +1983,64 @@
                   <NewLine/>
                 </CustomItem>
               </Frame>
+              <NewLine/>
+              <Text>[USER SHADOW STACK]</Text>
+              <NewLine/>
+              <Frame>
+                  <LeftIndent>2</LeftIndent>
+                  <CustomItem>
+                      <Text>EnableUserShadowStack: </Text>
+                      <ExpressionBinding>
+                          <ScriptBlock>$_.EnableUserShadowStack</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>AuditUserShadowStack: </Text>
+                      <ExpressionBinding>
+                          <ScriptBlock>$_.AuditUserShadowStack</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>SetContextIpValidation: </Text>
+                      <ExpressionBinding>
+                          <ScriptBlock>$_.SetContextIpValidation</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>AuditSetContextIpValidation: </Text>
+                      <ExpressionBinding>
+                          <ScriptBlock>$_.AuditSetContextIpValidation</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>EnableUserShadowStackStrictMode: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.EnableUserShadowStackStrictMode</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>BlockNonCetBinaries: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.BlockNonCetBinaries</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>BlockNonCetBinariesNonEhcont: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.BlockNonCetBinariesNonEhcont</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>AuditBlockNonCetBinaries: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.AuditBlockNonCetBinaries</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>CetDynamicApisOutOfProcOnly: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.CetDynamicApisOutOfProcOnly</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                      <Text>SetContextIpValidationRelaxedMode: </Text>
+                      <ExpressionBinding>
+                        <ScriptBlock>$_.SetContextIpValidationRelaxedMode</ScriptBlock>
+                      </ExpressionBinding>
+                      <NewLine/>
+                  </CustomItem>
+              </Frame>
             </CustomItem>
           </CustomEntry>
         </CustomEntries>

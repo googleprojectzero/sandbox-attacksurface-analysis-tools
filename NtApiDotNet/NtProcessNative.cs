@@ -576,7 +576,8 @@ namespace NtApiDotNet
         SystemCallFilter,
         PayloadRestriction,
         ChildProcess,
-        SideChannelIsolation
+        SideChannelIsolation,
+        UserShadowStack
     }
 
     public struct MitigationPolicy

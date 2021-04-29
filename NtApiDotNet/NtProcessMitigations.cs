@@ -171,6 +171,22 @@ namespace NtApiDotNet
         DisallowStrippedImages = 0x8
     }
 
+    [Flags]
+    public enum ProcessMitigationUserShadowStack
+    {
+        None = 0,
+        EnableUserShadowStack = 0x1,
+        AuditUserShadowStack = 0x2,
+        SetContextIpValidation = 0x4,
+        AuditSetContextIpValidation = 0x8,
+        EnableUserShadowStackStrictMode = 0x10,
+        BlockNonCetBinaries = 0x20,
+        BlockNonCetBinariesNonEhcont = 0x40,
+        AuditBlockNonCetBinaries = 0x80,
+        CetDynamicApisOutOfProcOnly = 0x100,
+        SetContextIpValidationRelaxedMode = 0x200
+    }
+
     /// <summary>
     /// Class representing various process mitigations
     /// </summary>
@@ -254,6 +270,18 @@ namespace NtApiDotNet
             DisablePageCombine = result.GetBit(2);
             SpeculativeStoreBypassDisable = result.GetBit(3);
 
+            result = process.GetRawMitigationPolicy(ProcessMitigationPolicy.UserShadowStack);
+            EnableUserShadowStack = result.GetBit(0);
+            AuditUserShadowStack = result.GetBit(1);
+            SetContextIpValidation = result.GetBit(2);
+            AuditSetContextIpValidation = result.GetBit(3);
+            EnableUserShadowStackStrictMode = result.GetBit(4);
+            BlockNonCetBinaries = result.GetBit(5);
+            BlockNonCetBinariesNonEhcont = result.GetBit(6);
+            AuditBlockNonCetBinaries = result.GetBit(7);
+            CetDynamicApisOutOfProcOnly = result.GetBit(8);
+            SetContextIpValidationRelaxedMode = result.GetBit(9);
+
             using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query, false))
             {
                 if (token.IsSuccess)
@@ -333,6 +361,16 @@ namespace NtApiDotNet
         public bool IsolateSecurityDomain { get; }
         public bool DisablePageCombine { get; }
         public bool SpeculativeStoreBypassDisable { get; }
+        public bool EnableUserShadowStack { get; }
+        public bool AuditUserShadowStack { get; }
+        public bool SetContextIpValidation { get; }
+        public bool AuditSetContextIpValidation { get; }
+        public bool EnableUserShadowStackStrictMode { get; }
+        public bool BlockNonCetBinaries { get; }
+        public bool BlockNonCetBinariesNonEhcont { get; }
+        public bool AuditBlockNonCetBinaries { get; }
+        public bool CetDynamicApisOutOfProcOnly { get; }
+        public bool SetContextIpValidationRelaxedMode { get; }
     }
 #pragma warning restore 1591
 }

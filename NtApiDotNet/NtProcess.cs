@@ -104,6 +104,8 @@ namespace NtApiDotNet
                     return (ProcessMitigationSideChannelIsolationPolicy)value;
                 case ProcessMitigationPolicy.ASLR:
                     return (ProcessMitigationAslrPolicy)value;
+                case ProcessMitigationPolicy.UserShadowStack:
+                    return (ProcessMitigationUserShadowStack)value;
                 default:
                     return (ProcessMitigationUnknownPolicy)value;
             }
