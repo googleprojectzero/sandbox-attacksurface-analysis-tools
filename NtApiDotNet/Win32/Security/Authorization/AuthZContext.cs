@@ -422,6 +422,11 @@ namespace NtApiDotNet.Win32.Security.Authorization
                 throw new ArgumentNullException(nameof(sd));
             }
 
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             using (var list = new DisposableList())
             {
                 AUTHZ_ACCESS_REQUEST request = new AUTHZ_ACCESS_REQUEST();
