@@ -238,16 +238,27 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// </summary>
         /// <param name="type">The type of group to modify.</param>
         /// <param name="groups">The list of SIDs to modify.</param>
+        /// <param name="attributes">The attributes for the SIDs.</param>
         /// <param name="operation">The operation for the SIDs.</param>
-        public void ModifyGroups(AuthZGroupSidType type, IEnumerable<Sid> groups, AuthZSidOperation operation)
+        public void ModifyGroups(AuthZGroupSidType type, IEnumerable<Sid> groups, GroupAttributes attributes, AuthZSidOperation operation)
         {
             if (groups is null)
             {
                 throw new ArgumentNullException(nameof(groups));
             }
 
-            int count = groups.Count();
-            ModifyGroups(type, groups.Select(s => new UserGroup(s, GroupAttributes.Enabled)), Enumerable.Repeat(operation, count));
+            ModifyGroups(type, groups.Select(s => new UserGroup(s, attributes)), groups.Select(_ => operation));
+        }
+
+        /// <summary>
+        /// Modify groups in the context.
+        /// </summary>
+        /// <param name="type">The type of group to modify.</param>
+        /// <param name="groups">The list of SIDs to modify.</param>
+        /// <param name="operation">The operation for the SIDs.</param>
+        public void ModifyGroups(AuthZGroupSidType type, IEnumerable<Sid> groups, AuthZSidOperation operation)
+        {
+            ModifyGroups(type, groups, GroupAttributes.Enabled, operation);
         }
 
         /// <summary>

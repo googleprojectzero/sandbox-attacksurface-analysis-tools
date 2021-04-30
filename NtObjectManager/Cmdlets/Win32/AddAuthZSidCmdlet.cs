@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32.Security.Authorization;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Win32
@@ -28,23 +29,39 @@ namespace NtObjectManager.Cmdlets.Win32
     ///   <para>Add the World SID to the normal groups in the context.</para>
     /// </example>
     /// <example>
+    ///   <code>Add-AuthZSid $ctx -Sid "WD" -Attribute Enabled, Resource</code>
+    ///   <para>Add the World SID to the normal groups in the context.</para>
+    /// </example>
+    /// <example>
     ///   <code>Add-AuthZSid $ctx -Sid "WD" -SidType Restricted</code>
     ///   <para>Add the World SID to the restricted SID groups in the context.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Add, "AuthZSid")]
+    [Cmdlet(VerbsCommon.Add, "AuthZSid", DefaultParameterSetName = "FromSid")]
     public class AddAuthZSidCmdlet : PSCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the AuthZ Client Context.</para>
+        /// <para type="description">Specify the AuthZ client context.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
         public AuthZContext Context { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the Sids to Add.</para>
+        /// <para type="description">Specify the SIDs to add.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromSid")]
         public Sid[] Sid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the attributes for the SIDs to add.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSid")]
+        public GroupAttributes Attribute { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the user groups to add.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromUserGroup")]
+        public UserGroup[] UserGroup { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the the type of SIDs to add.</para>
@@ -58,6 +75,7 @@ namespace NtObjectManager.Cmdlets.Win32
         public AddAuthZSidCmdlet()
         {
             SidType = AuthZGroupSidType.Normal;
+            Attribute = GroupAttributes.Enabled;
         }
 
         /// <summary>
@@ -65,7 +83,14 @@ namespace NtObjectManager.Cmdlets.Win32
         /// </summary>
         protected override void ProcessRecord()
         {
-            Context.ModifyGroups(SidType, Sid, AuthZSidOperation.Add);
+            if (ParameterSetName == "FromUserGroup")
+            {
+                Context.ModifyGroups(SidType, UserGroup, UserGroup.Select(_ => AuthZSidOperation.Add));
+            }
+            else
+            {
+                Context.ModifyGroups(SidType, Sid, Attribute, AuthZSidOperation.Add);
+            }
         }
     }
 }
