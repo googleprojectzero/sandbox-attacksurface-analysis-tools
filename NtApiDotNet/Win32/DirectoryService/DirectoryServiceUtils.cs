@@ -74,6 +74,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         private static readonly DomainDictionaryDict<Guid, DirectoryServiceExtendedRight> _extended_rights = new DomainDictionaryDict<Guid, DirectoryServiceExtendedRight>();
         private static readonly DomainDictionaryDict<string, DirectoryServiceExtendedRight> _extended_rights_by_name = 
             new DomainDictionaryDict<string, DirectoryServiceExtendedRight>(StringComparer.OrdinalIgnoreCase);
+        private static readonly DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>> _extended_rights_by_applies_to 
+            = new DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>>();
         private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
         private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
 
@@ -379,6 +381,44 @@ namespace NtApiDotNet.Win32.DirectoryService
             catch
             {
                 return null;
+            }
+        }
+
+        private static List<DirectoryServiceExtendedRight> ConvertToExtendedRights(string domain, IEnumerable<SearchResult> entries)
+        {
+            List<DirectoryServiceExtendedRight> ret = new List<DirectoryServiceExtendedRight>();
+            try
+            {
+                foreach (var entry in entries.Select(d => d.ToPropertyClass()))
+                {
+                    var value = entry.GetPropertyValue<string>(kRightsGuid);
+                    if (value == null || !Guid.TryParse(value, out Guid rights_guid))
+                        continue;
+                    var right = _extended_rights.Get(domain).GetOrAdd(rights_guid,
+                        guid => ConvertToExtendedRight(domain, rights_guid, entry));
+                    _extended_rights_by_name.Get(domain).GetOrAdd(right.Name, right);
+                    ret.Add(right);
+                }
+            }
+            catch
+            {
+            }
+            return ret;
+        }
+
+        private static List<DirectoryServiceExtendedRight> GetExtendedRightsForAppliesTo(string domain, Guid applies_to)
+        {
+            try
+            {
+                DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
+                var result = FindAllDirectoryEntries(root_entry, $"({kAppliesTo}={applies_to})", kDistinguishedName, kRightsGuid,
+                    kCommonName, kAppliesTo, kValidAccesses);
+                return _extended_rights_by_applies_to.Get(domain).GetOrAdd(applies_to, 
+                    _ => ConvertToExtendedRights(domain, result.Cast<SearchResult>()));
+            }
+            catch
+            {
+                return new List<DirectoryServiceExtendedRight>();
             }
         }
 
@@ -831,6 +871,28 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights()
         {
             return GetExtendedRights(string.Empty);
+        }
+
+        /// <summary>
+        /// Get a list of extended rights applied to a schema class.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the extended rights from.</param>
+        /// <param name="schema_id">The schema class identifier.</param>
+        /// <returns>The list of extended rights applies to the schema class.</returns>
+        public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights(string domain, Guid schema_id)
+        {
+            return _extended_rights_by_applies_to.Get(domain).GetOrAdd(schema_id, 
+                g => GetExtendedRightsForAppliesTo(domain, schema_id)).AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get a list of extended rights applied to a schema class in the current domain.
+        /// </summary>
+        /// <param name="schema_id">The schema class identifier.</param>
+        /// <returns>The list of extended rights applies to the schema class.</returns>
+        public static IReadOnlyList<DirectoryServiceExtendedRight> GetExtendedRights(Guid schema_id)
+        {
+            return GetExtendedRights(string.Empty, schema_id);
         }
 
         /// <summary>

@@ -25,6 +25,8 @@ Specify to get the propert set right for an attribute which is a property.
 Specify the domain or server name to query for the extended rights. Defaults to current domain.
 .PARAMETER Name
 Specify the common name of the extended right to get.
+.PARAMETER SchemaClass
+Specify a schema class to get extended rights.
 .INPUTS
 None
 .OUTPUTS
@@ -51,6 +53,9 @@ function Get-DsExtendedRight {
         [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromAttribute")]
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute]$Attribute,
+        [parameter(Mandatory, ParameterSetName = "FromSchemaClass")]
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$SchemaClass,
+        [parameter(ParameterSetName = "FromSchemaClass")]
         [parameter(ParameterSetName = "FromGuid")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "All")]
@@ -66,6 +71,9 @@ function Get-DsExtendedRight {
         }
         "FromName" {
             [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Name)
+        }
+        "FromSchemaClass" {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRights($Domain, $SchemaClass.SchemaId)
         }
         "FromAttribute" {
             if ($null -ne $Attribute.AttributeSecurityGuid) {
