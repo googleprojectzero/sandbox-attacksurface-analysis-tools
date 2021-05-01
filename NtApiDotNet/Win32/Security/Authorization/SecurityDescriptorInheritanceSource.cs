@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Native;
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authorization
@@ -45,7 +46,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <summary>
         /// The SID of the original ACE.
         /// </summary>
-        public Sid Sid { get; }
+        public Sid Sid => InheritedAce.Sid;
 
         /// <summary>
         /// Access mask as a formatted string.
@@ -57,6 +58,21 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// </summary>
         public string GenericAccess { get; }
 
+        /// <summary>
+        /// The type of the ACE.
+        /// </summary>
+        public AceType Type => InheritedAce.Type;
+
+        /// <summary>
+        /// The object type of the ACE.
+        /// </summary>
+        public Guid? ObjectType => InheritedAce.ObjectType;
+
+        /// <summary>
+        /// The inherited object type.
+        /// </summary>
+        public Guid? InheritedObjectType => InheritedAce.InheritedObjectType;
+
         internal SecurityDescriptorInheritanceSource(
             Ace ace, INHERITED_FROM inherited_from, SeObjectType type, 
             NtType native_type,
@@ -64,7 +80,6 @@ namespace NtApiDotNet.Win32.Security.Authorization
             bool query_security, bool sacl)
         {
             InheritedAce = ace;
-            Sid = ace.Sid;
             if (native_type != null)
             {
                 Access = NtSecurity.AccessMaskToString(ace.Mask, container
