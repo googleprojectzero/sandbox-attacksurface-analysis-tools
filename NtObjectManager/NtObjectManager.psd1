@@ -174,7 +174,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Get-NtFileObjectId', 'Get-NtFileId', 'Set-NtFileObjectId', 'Remove-NtFileObjectId',
                'Get-NtFileFinalPath', 'Add-NtThreadApc', 'New-NtThread', 'New-NtEnclave', 'Get-RandomByte',
                'Get-RunningScheduledTask', 'Set-Win32ServiceConfig', 'ConvertTo-NtSecurityDescriptor',
-               'Compare-NtSecurityDescriptor'
+               'Compare-NtSecurityDescriptor', 'Clear-AuthZSid'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer', 'Get-AuthPackage', 'Read-AuthCredential', 'Get-AuthCredential', 

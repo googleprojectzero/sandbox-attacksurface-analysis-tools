@@ -14,6 +14,8 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32.Security.Authorization;
+using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Win32
@@ -31,20 +33,36 @@ namespace NtObjectManager.Cmdlets.Win32
     ///   <code>Remove-AuthZSid $ctx -Sid "WD" -SidType Restricted</code>
     ///   <para>Removes the World SID from the restricted SID groups in the context.</para>
     /// </example>
+    /// <example>
+    ///   <code>Remove-AuthZSid $ctx -KnownSid World</code>
+    ///   <para>Removes the World SID from the normal groups in the context.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Remove, "AuthZSid")]
     public class RemoveAuthZSidCmdlet : PSCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the AuthZ Client Context.</para>
+        /// <para type="description">Specify the AuthZ client context.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
         public AuthZContext Context { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the Sids to Remove.</para>
+        /// <para type="description">Specify the Sids to remove.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromSid")]
         public Sid[] Sid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the known SIDs to remove.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromKnownSid")]
+        public KnownSidValue[] KnownSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the user groups to remove.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromUserGroup")]
+        public UserGroup[] UserGroup { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the the type of SIDs to remove.</para>
@@ -65,7 +83,20 @@ namespace NtObjectManager.Cmdlets.Win32
         /// </summary>
         protected override void ProcessRecord()
         {
-            Context.ModifyGroups(SidType, Sid, AuthZSidOperation.Delete);
+            IEnumerable<Sid> sids;
+            if (ParameterSetName == "FromSid")
+            {
+                sids = Sid;
+            }
+            else if (ParameterSetName == "FromKnownSid")
+            {
+                sids = KnownSid.Select(s => KnownSids.GetKnownSid(s));
+            }
+            else
+            {
+                sids = UserGroup.Select(g => g.Sid);
+            }
+            Context.ModifyGroups(SidType, sids, AuthZSidOperation.Delete);
         }
     }
 }

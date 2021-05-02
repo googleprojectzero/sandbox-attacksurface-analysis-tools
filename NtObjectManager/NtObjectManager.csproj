@@ -69,6 +69,7 @@
     <Compile Include="Cmdlets\Accessible\WnfAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Object\CompareNtSecurityDescriptorCmdlet.cs" />
     <Compile Include="Cmdlets\Object\ConvertToNtSecurityDescriptorCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\ClearAuthZSidCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\SetWin32ServiceConfigCmdlet.cs" />
     <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />
