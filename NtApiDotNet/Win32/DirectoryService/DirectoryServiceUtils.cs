@@ -253,16 +253,24 @@ namespace NtApiDotNet.Win32.DirectoryService
                 case "classschema":
                     {
                         string subclass_of = prop.GetPropertyValue<string>(kSubClassOf);
+                        string[] system_auxiliary_classes = prop.GetPropertyValues<string>("systemAuxiliaryClass");
+                        string[] auxiliary_classes = prop.GetPropertyValues<string>("auxiliaryClass");
+                        int category = prop.GetPropertyValue<int>("objectClassCategory");
 
-                        List<DirectoryServiceSchemaClassAttribute> attrs = new List<DirectoryServiceSchemaClassAttribute>();
+                        List <DirectoryServiceSchemaClassAttribute> attrs = new List<DirectoryServiceSchemaClassAttribute>();
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kMustContain), true, false);
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMustContain), true, true);
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kMayContain), false, false);
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMayContain), false, true);
                         var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
+                        List<DirectoryServiceAuxiliaryClass> aux_classes = new List<DirectoryServiceAuxiliaryClass>();
+                        aux_classes.AddRange(system_auxiliary_classes.Select(c => new DirectoryServiceAuxiliaryClass(c, true)));
+                        aux_classes.AddRange(auxiliary_classes.Select(c => new DirectoryServiceAuxiliaryClass(c, false)));
+
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
-                            ldap_name, description, class_name, subclass_of, attrs, default_security_desc);
+                            ldap_name, description, class_name, subclass_of, attrs, default_security_desc, aux_classes,
+                            category);
                     }
                 case "attributeschema":
                     {

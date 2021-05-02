@@ -42,10 +42,21 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         public string DefaultSecurityDescriptorSddl { get; }
 
+        /// <summary>
+        /// The list of auxiliary classes for this class.
+        /// </summary>
+        public IReadOnlyList<DirectoryServiceAuxiliaryClass> AuxiliaryClasses { get; }
+
+        /// <summary>
+        /// The category of schema class.
+        /// </summary>
+        public DirectoryServiceSchemaClassCategory Category { get; }
+
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string description, string object_class, 
             string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
-            string default_security_desc)
+            string default_security_desc, List<DirectoryServiceAuxiliaryClass> auxiliary_classes,
+            int category)
             : base(domain, dn, schema_id, name, ldap_name, description, object_class)
         {
             SubClassOf = subclass_of ?? string.Empty;
@@ -56,13 +67,15 @@ namespace NtApiDotNet.Win32.DirectoryService
                 DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, 
                     DirectoryServiceUtils.NtType, true, false).GetResultOrDefault();
             }
+            AuxiliaryClasses = auxiliary_classes.AsReadOnly();
+            Category = (DirectoryServiceSchemaClassCategory)category;
         }
 
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
             : this(domain, string.Empty, schema_id,
                   schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
                   string.Empty, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
-                  string.Empty)
+                  string.Empty, new List<DirectoryServiceAuxiliaryClass>(), 0)
         {
         }
     }

@@ -316,12 +316,14 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceAuxilaryClass.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceExtendedRight.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNtFakeTypeFactory.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceObjectTypeLevel.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaAttribute.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaClass.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaClassAttribute.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaClassCategory.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSchemaObject.cs" />
     <Compile Include="Win32\DirectoryService\IDirectoryServiceObjectTree.cs" />
     <Compile Include="Win32\DllCharacteristics.cs" />
