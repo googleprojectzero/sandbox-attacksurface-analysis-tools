@@ -316,7 +316,7 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
-    <Compile Include="Win32\DirectoryService\DirectoryServiceAuxilaryClass.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceReferenceClass.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceExtendedRight.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceHeuristics.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNtFakeTypeFactory.cs" />

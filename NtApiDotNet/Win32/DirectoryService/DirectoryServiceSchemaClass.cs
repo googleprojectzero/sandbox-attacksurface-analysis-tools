@@ -45,18 +45,23 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// The list of auxiliary classes for this class.
         /// </summary>
-        public IReadOnlyList<DirectoryServiceAuxiliaryClass> AuxiliaryClasses { get; }
+        public IReadOnlyList<DirectoryServiceReferenceClass> AuxiliaryClasses { get; }
 
         /// <summary>
         /// The category of schema class.
         /// </summary>
         public DirectoryServiceSchemaClassCategory Category { get; }
 
+        /// <summary>
+        /// The list of possible superior classes for this class.
+        /// </summary>
+        public IReadOnlyList<DirectoryServiceReferenceClass> PossibleSuperiors { get; }
+
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string description, string object_class, 
             string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
-            string default_security_desc, List<DirectoryServiceAuxiliaryClass> auxiliary_classes,
-            int category)
+            string default_security_desc, List<DirectoryServiceReferenceClass> auxiliary_classes,
+            List<DirectoryServiceReferenceClass> superior_classes, int category)
             : base(domain, dn, schema_id, name, ldap_name, description, object_class)
         {
             SubClassOf = subclass_of ?? string.Empty;
@@ -68,6 +73,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                     DirectoryServiceUtils.NtType, true, false).GetResultOrDefault();
             }
             AuxiliaryClasses = auxiliary_classes.AsReadOnly();
+            PossibleSuperiors = superior_classes.AsReadOnly();
             Category = (DirectoryServiceSchemaClassCategory)category;
         }
 
@@ -75,7 +81,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             : this(domain, string.Empty, schema_id,
                   schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
                   string.Empty, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
-                  string.Empty, new List<DirectoryServiceAuxiliaryClass>(), 0)
+                  string.Empty, new List<DirectoryServiceReferenceClass>(), 
+                  new List<DirectoryServiceReferenceClass>(), 0)
         {
         }
     }

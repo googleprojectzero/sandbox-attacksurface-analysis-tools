@@ -76,6 +76,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             new DomainDictionaryDict<string, DirectoryServiceExtendedRight>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>> _extended_rights_by_applies_to 
             = new DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>>();
+        private static readonly DomainDictionaryDict<string, List<DirectoryServiceSchemaObject>> _schema_obj_by_filter 
+            = new DomainDictionaryDict<string, List<DirectoryServiceSchemaObject>>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
         private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
 
@@ -223,10 +225,15 @@ namespace NtApiDotNet.Win32.DirectoryService
         private static void AddAttributes(List<DirectoryServiceSchemaClassAttribute> attrs, IEnumerable<string> property, bool required, bool system)
         {
             if (property == null)
-            {
                 return;
-            }
             attrs.AddRange(property.Select(p => new DirectoryServiceSchemaClassAttribute(p, required, system)));
+        }
+
+        private static void AddClasses(List<DirectoryServiceReferenceClass> classes, IEnumerable<string> property, bool system)
+        {
+            if (property == null)
+                return;
+            classes.AddRange(property.Select(p => new DirectoryServiceReferenceClass(p, system)));
         }
 
         private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, DirectoryEntry dir_entry)
@@ -253,8 +260,6 @@ namespace NtApiDotNet.Win32.DirectoryService
                 case "classschema":
                     {
                         string subclass_of = prop.GetPropertyValue<string>(kSubClassOf);
-                        string[] system_auxiliary_classes = prop.GetPropertyValues<string>("systemAuxiliaryClass");
-                        string[] auxiliary_classes = prop.GetPropertyValues<string>("auxiliaryClass");
                         int category = prop.GetPropertyValue<int>("objectClassCategory");
 
                         List <DirectoryServiceSchemaClassAttribute> attrs = new List<DirectoryServiceSchemaClassAttribute>();
@@ -264,13 +269,16 @@ namespace NtApiDotNet.Win32.DirectoryService
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kSystemMayContain), false, true);
                         var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
-                        List<DirectoryServiceAuxiliaryClass> aux_classes = new List<DirectoryServiceAuxiliaryClass>();
-                        aux_classes.AddRange(system_auxiliary_classes.Select(c => new DirectoryServiceAuxiliaryClass(c, true)));
-                        aux_classes.AddRange(auxiliary_classes.Select(c => new DirectoryServiceAuxiliaryClass(c, false)));
+                        List<DirectoryServiceReferenceClass> aux_classes = new List<DirectoryServiceReferenceClass>();
+                        AddClasses(aux_classes, prop.GetPropertyValues<string>("systemAuxiliaryClass"), true);
+                        AddClasses(aux_classes, prop.GetPropertyValues<string>("auxiliaryClass"), false);
+                        List<DirectoryServiceReferenceClass> superior_classes = new List<DirectoryServiceReferenceClass>();
+                        AddClasses(superior_classes, prop.GetPropertyValues<string>("systemPossSuperiors"), true);
+                        AddClasses(superior_classes, prop.GetPropertyValues<string>("possSuperiors"), false);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
                             ldap_name, description, class_name, subclass_of, attrs, default_security_desc, aux_classes,
-                            category);
+                            superior_classes, category);
                     }
                 case "attributeschema":
                     {
@@ -472,6 +480,32 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
+        private static IReadOnlyList<DirectoryServiceSchemaObject> FindSchemaObject(string domain, string filter)
+        {
+            return _schema_obj_by_filter.Get(domain).GetOrAdd(filter, f =>
+            {
+                List<DirectoryServiceSchemaObject> objs = new List<DirectoryServiceSchemaObject>();
+                try
+                {
+                    DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
+                    var result = FindAllDirectoryEntries(root_entry, filter, kSchemaIDGUID);
+                    foreach (var entry in result.Cast<SearchResult>())
+                    {
+                        var props = entry.ToPropertyClass();
+                        var schema_id = props.GetPropertyGuid(kSchemaIDGUID);
+                        if (!schema_id.HasValue)
+                            continue;
+
+                        objs.Add(_schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry.GetDirectoryEntry())));
+                    }
+                }
+                catch
+                {
+                }
+                return objs;
+            });
+        }
+
         private static IReadOnlyList<DirectoryServiceSchemaAttribute> GetRightsGuidPropertySet(string domain, Guid rights_guid)
         {
             List<DirectoryServiceSchemaAttribute> ret = new List<DirectoryServiceSchemaAttribute>();
@@ -661,6 +695,27 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static DirectoryServiceSchemaClass GetSchemaClass(string name)
         {
             return GetSchemaClass(string.Empty, name);
+        }
+
+        /// <summary>
+        /// Get the schema class for a LDAP name.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema class for.</param>
+        /// <param name="name">The LDAP name for the parent schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClassChildClasses(string domain, string name)
+        {
+            return FindSchemaObject(domain, $"(|(possSuperiors={name})(systemPossSuperiors={name}))").OfType< DirectoryServiceSchemaClass>().ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get the schema class for a LDAP name.
+        /// </summary>
+        /// <param name="name">The LDAP name for the schema class.</param>
+        /// <returns>The schema class, or null if not found.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClassChildClasses(string name)
+        {
+            return GetSchemaClassChildClasses(string.Empty, name);
         }
 
         /// <summary>

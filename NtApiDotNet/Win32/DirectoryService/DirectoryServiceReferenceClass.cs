@@ -15,21 +15,21 @@
 namespace NtApiDotNet.Win32.DirectoryService
 {
     /// <summary>
-    /// Class to represent an auxiliary class.
+    /// Class to represent an a class which is referenced from another. For example auxiliary or superior classes.
     /// </summary>
-    public struct DirectoryServiceAuxiliaryClass
+    public struct DirectoryServiceReferenceClass
     {
         /// <summary>
-        /// The name of the auxilary class.
+        /// The name of the class.
         /// </summary>
         public string Name { get; }
 
         /// <summary>
-        /// Whether the auxilary class is a system class.
+        /// Whether the class is a system class.
         /// </summary>
         public bool System { get; }
 
-        internal DirectoryServiceAuxiliaryClass(string name, bool system)
+        internal DirectoryServiceReferenceClass(string name, bool system)
         {
             Name = name;
             System = system;
