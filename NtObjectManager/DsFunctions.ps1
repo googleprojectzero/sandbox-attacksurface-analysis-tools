@@ -327,3 +327,28 @@ function Get-DsObjectSchemaClass {
 
     Get-DsSchemaClass -Name $obj_class[-1] -Recurse:$Recurse
 }
+
+<#
+.SYNOPSIS
+Get the dsHeuristics for the domain.
+.DESCRIPTION
+This cmdlet gets the dsHeuristics value for the domain.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceHeuristics[]
+.EXAMPLE
+Get-DsHeuristics
+Get the dsHeuristics for the current domain.
+.EXAMPLE
+Get-DsHeuristics -Domain SALES
+Get the dsHeuristics for the SALES domain.
+#>
+function Get-DsHeuristics {
+    param(
+        [string]$Domain
+    )
+    [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetDsHeuristics($Domain)
+}

@@ -1002,6 +1002,33 @@ namespace NtApiDotNet.Win32.DirectoryService
             return true;
         }
 
+        /// <summary>
+        /// Get the value for the dsHeuristics attribute.
+        /// </summary>
+        /// <param name="domain">The domain to read the dsHeuristics from.</param>
+        /// <returns>The dsHeuristics value.</returns>
+        public static DirectoryServiceHeuristics GetDsHeuristics(string domain)
+        {
+            try
+            {
+                var root_entry = GetRootEntry(domain, "CN=Directory Service,CN=Windows NT,CN=Services", kConfigurationNamingContext).ToPropertyClass();
+                return new DirectoryServiceHeuristics(domain, root_entry.GetPropertyValue<string>("dsHeuristics") ?? string.Empty);
+            }
+            catch
+            {
+                return new DirectoryServiceHeuristics(domain, string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Get the value for the dsHeuristics attribute.
+        /// </summary>
+        /// <returns>The dsHeuristics value.</returns>
+        public static DirectoryServiceHeuristics GetDsHeuristics()
+        {
+            return GetDsHeuristics(string.Empty);
+        }
+
         #endregion
     }
 }
