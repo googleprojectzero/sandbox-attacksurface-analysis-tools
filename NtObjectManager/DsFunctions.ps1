@@ -98,6 +98,8 @@ Specify the LDAP name for the schema class to get.
 Specify an existing schema class and get its parent class.
 .PARAMETER Recurse
 Specify to recurse the parent relationships and return all objects.
+.PARAMETER Inferior
+Specify to return inferior classes which can be created underneath this class.
 .INPUTS
 None
 .OUTPUTS
@@ -137,7 +139,11 @@ function Get-DsSchemaClass {
         [parameter(ParameterSetName = "FromParent")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromGuid")]
-        [switch]$Recurse
+        [switch]$Recurse,
+        [parameter(ParameterSetName = "FromParent")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromGuid")]
+        [switch]$Inferior
     )
 
     $cls = switch ($PSCmdlet.ParameterSetName) {
@@ -156,9 +162,19 @@ function Get-DsSchemaClass {
             }
         }
     }
-    $cls
-    if ($Recurse -and ($null -ne $cls)) {
-        Get-DsSchemaClass -Parent $cls -Recurse
+
+    if ($Inferior) {
+        if ($null -ne $cls) {
+            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetInferiorSchemaClasses($Domain, $cls.Name) | Write-Output
+            if ($Recurse) {
+                Get-DsSchemaClass -Parent $cls -Recurse -Inferior
+            }
+        }
+    } else {
+        $cls
+        if ($Recurse -and ($null -ne $cls)) {
+            Get-DsSchemaClass -Parent $cls -Recurse
+        }
     }
 }
 

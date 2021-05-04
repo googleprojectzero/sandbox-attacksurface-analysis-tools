@@ -698,24 +698,24 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
-        /// Get the schema class for a LDAP name.
+        /// Get the inferior schema class for a LDAP name.
         /// </summary>
         /// <param name="domain">Specify the domain to get the schema class for.</param>
         /// <param name="name">The LDAP name for the parent schema class.</param>
-        /// <returns>The schema class, or null if not found.</returns>
-        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClassChildClasses(string domain, string name)
+        /// <returns>The schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetInferiorSchemaClasses(string domain, string name)
         {
             return FindSchemaObject(domain, $"(|(possSuperiors={name})(systemPossSuperiors={name}))").OfType< DirectoryServiceSchemaClass>().ToList().AsReadOnly();
         }
 
         /// <summary>
-        /// Get the schema class for a LDAP name.
+        /// Get the inferior schema class for a LDAP name.
         /// </summary>
         /// <param name="name">The LDAP name for the schema class.</param>
-        /// <returns>The schema class, or null if not found.</returns>
-        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClassChildClasses(string name)
+        /// <returns>The schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetInferiorSchemaClasses(string name)
         {
-            return GetSchemaClassChildClasses(string.Empty, name);
+            return GetInferiorSchemaClasses(string.Empty, name);
         }
 
         /// <summary>
