@@ -1898,6 +1898,7 @@ function ConvertFrom-NtSecurityDescriptor {
         [Parameter(Mandatory, ParameterSetName = "ToBase64")]
         [alias("Base64")]
         [switch]$AsBase64,
+        [Parameter(ParameterSetName = "ToBase64")]
         [switch]$InsertLineBreaks
     )
 
