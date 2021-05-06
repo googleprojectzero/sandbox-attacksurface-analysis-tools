@@ -99,6 +99,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kObjectSid = "objectSid";
         private const string kDefaultSecurityDescriptor = "defaultSecurityDescriptor";
         private const string kAdminDescription = "adminDescription";
+        private const string kObjectClassCategory = "objectClassCategory";
 
         private static string GuidToString(Guid guid)
         {
@@ -236,6 +237,15 @@ namespace NtApiDotNet.Win32.DirectoryService
             classes.AddRange(property.Select(p => new DirectoryServiceReferenceClass(p, system)));
         }
 
+        private const string kSystemAuxiliaryClass = "systemAuxiliaryClass";
+        private const string kAuxiliaryClass = "auxiliaryClass";
+        private const string kSystemPossSuperiors = "systemPossSuperiors";
+        private const string kPossSuperiors = "possSuperiors";
+        private const string kAttributeSyntax = "attributeSyntax";
+        private const string kOMSyntax = "oMSyntax";
+        private const string kOMObjectClass = "oMObjectClass";
+        private const string kAttributeSecurityGUID = "attributeSecurityGUID";
+
         private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, DirectoryEntry dir_entry)
         {
             if (dir_entry is null)
@@ -260,7 +270,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 case "classschema":
                     {
                         string subclass_of = prop.GetPropertyValue<string>(kSubClassOf);
-                        int category = prop.GetPropertyValue<int>("objectClassCategory");
+                        int category = prop.GetPropertyValue<int>(kObjectClassCategory);
 
                         List <DirectoryServiceSchemaClassAttribute> attrs = new List<DirectoryServiceSchemaClassAttribute>();
                         AddAttributes(attrs, prop.GetPropertyValues<string>(kMustContain), true, false);
@@ -270,11 +280,11 @@ namespace NtApiDotNet.Win32.DirectoryService
                         var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
                         List<DirectoryServiceReferenceClass> aux_classes = new List<DirectoryServiceReferenceClass>();
-                        AddClasses(aux_classes, prop.GetPropertyValues<string>("systemAuxiliaryClass"), true);
-                        AddClasses(aux_classes, prop.GetPropertyValues<string>("auxiliaryClass"), false);
+                        AddClasses(aux_classes, prop.GetPropertyValues<string>(kSystemAuxiliaryClass), true);
+                        AddClasses(aux_classes, prop.GetPropertyValues<string>(kAuxiliaryClass), false);
                         List<DirectoryServiceReferenceClass> superior_classes = new List<DirectoryServiceReferenceClass>();
-                        AddClasses(superior_classes, prop.GetPropertyValues<string>("systemPossSuperiors"), true);
-                        AddClasses(superior_classes, prop.GetPropertyValues<string>("possSuperiors"), false);
+                        AddClasses(superior_classes, prop.GetPropertyValues<string>(kSystemPossSuperiors), true);
+                        AddClasses(superior_classes, prop.GetPropertyValues<string>(kPossSuperiors), false);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
                             ldap_name, description, class_name, subclass_of, attrs, default_security_desc, aux_classes,
@@ -282,10 +292,10 @@ namespace NtApiDotNet.Win32.DirectoryService
                     }
                 case "attributeschema":
                     {
-                        var attribute_syntax = prop.GetPropertyValue<string>("attributeSyntax") ?? string.Empty;
-                        var om_syntax = prop.GetPropertyValue<int>("oMSyntax");
-                        var om_object_class_bytes = prop.GetPropertyValue<byte[]>("oMObjectClass");
-                        var attribute_security_guid = prop.GetPropertyGuid("attributeSecurityGUID");
+                        var attribute_syntax = prop.GetPropertyValue<string>(kAttributeSyntax) ?? string.Empty;
+                        var om_syntax = prop.GetPropertyValue<int>(kOMSyntax);
+                        var om_object_class_bytes = prop.GetPropertyValue<byte[]>(kOMObjectClass);
+                        var attribute_security_guid = prop.GetPropertyGuid(kAttributeSecurityGUID);
 
                         string om_object_class_name = string.Empty;
                         if (om_object_class_bytes?.Length > 0)
@@ -315,7 +325,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var schema_class = ConvertToSchemaClass(domain, guid, FindDirectoryEntry(root_entry, 
-                    $"({kSchemaIDGUID}={GuidToString(guid)})", "cn")?.GetDirectoryEntry());
+                    $"({kSchemaIDGUID}={GuidToString(guid)})", kCommonName)?.GetDirectoryEntry());
                 return _schema_class.Get(domain).GetOrAdd(guid, schema_class);
             }
             catch
@@ -330,7 +340,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var schema_class = ConvertToSchemaClass(domain, null, FindDirectoryEntry(root_entry,
-                    $"({kLDAPDisplayName}={name})", "cn")?.GetDirectoryEntry());
+                    $"({kLDAPDisplayName}={name})", kCommonName)?.GetDirectoryEntry());
                 if (schema_class == null)
                     return null;
                 return _schema_class.Get(domain).GetOrAdd(schema_class.SchemaId, schema_class);
