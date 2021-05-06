@@ -705,7 +705,17 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The schema classes.</returns>
         public static IReadOnlyList<DirectoryServiceSchemaClass> GetInferiorSchemaClasses(string domain, string name)
         {
-            return FindSchemaObject(domain, $"(|(possSuperiors={name})(systemPossSuperiors={name}))").OfType< DirectoryServiceSchemaClass>().ToList().AsReadOnly();
+            DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
+            var result = FindDirectoryEntry(root_entry, $"{kLDAPDisplayName}={name}", "possibleInferiors")?.ToPropertyClass();
+            if (result != null)
+            {
+                var classes = result.GetPropertyValues<string>("possibleInferiors");
+                return classes.Select(c => GetSchemaClass(domain, c)).OfType<DirectoryServiceSchemaClass>().ToList().AsReadOnly();
+            }
+            else
+            {
+                return FindSchemaObject(domain, $"(|(possSuperiors={name})(systemPossSuperiors={name}))").OfType<DirectoryServiceSchemaClass>().ToList().AsReadOnly();
+            }
         }
 
         /// <summary>
