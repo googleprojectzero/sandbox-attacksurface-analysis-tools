@@ -100,6 +100,24 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kDefaultSecurityDescriptor = "defaultSecurityDescriptor";
         private const string kAdminDescription = "adminDescription";
         private const string kObjectClassCategory = "objectClassCategory";
+        private const string kPossibleInferiors = "possibleInferiors";
+        private const string kSystemAuxiliaryClass = "systemAuxiliaryClass";
+        private const string kAuxiliaryClass = "auxiliaryClass";
+        private const string kSystemPossSuperiors = "systemPossSuperiors";
+        private const string kPossSuperiors = "possSuperiors";
+        private const string kAttributeSyntax = "attributeSyntax";
+        private const string kOMSyntax = "oMSyntax";
+        private const string kOMObjectClass = "oMObjectClass";
+        private const string kAttributeSecurityGUID = "attributeSecurityGUID";
+        private const string kObjectClass = "objectClass";
+
+        private static readonly string[] SchemaClassProperties = {
+            kCommonName, kLDAPDisplayName, kDistinguishedName, kAdminDescription, kSchemaIDGUID, kSubClassOf, 
+            kObjectClassCategory, kMustContain, kSystemMustContain, kMayContain, kSystemMayContain, 
+            kDefaultSecurityDescriptor, kSystemAuxiliaryClass, 
+            kAuxiliaryClass, kSystemPossSuperiors, kPossSuperiors, kAttributeSyntax,
+            kOMSyntax, kOMObjectClass, kAttributeSecurityGUID, kPossibleInferiors, kObjectClass
+        };
 
         private static string GuidToString(Guid guid)
         {
@@ -205,12 +223,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             return ds.FindOne();
         }
 
-        private static SearchResultCollection FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
+        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
         {
-            return new DirectorySearcher(root_object, filter, properties)
+            using (var searcher = new DirectorySearcher(root_object, filter, properties))
             {
-                SearchScope = SearchScope.OneLevel
-            }.FindAll();
+                searcher.SearchScope = SearchScope.OneLevel;
+                searcher.PageSize = 1000;
+                return searcher.FindAll().Cast<SearchResult>().ToList();
+            }
         }
 
         private static PropertyClass ToPropertyClass(this DirectoryEntry entry)
@@ -237,25 +257,21 @@ namespace NtApiDotNet.Win32.DirectoryService
             classes.AddRange(property.Select(p => new DirectoryServiceReferenceClass(p, system)));
         }
 
-        private const string kSystemAuxiliaryClass = "systemAuxiliaryClass";
-        private const string kAuxiliaryClass = "auxiliaryClass";
-        private const string kSystemPossSuperiors = "systemPossSuperiors";
-        private const string kPossSuperiors = "possSuperiors";
-        private const string kAttributeSyntax = "attributeSyntax";
-        private const string kOMSyntax = "oMSyntax";
-        private const string kOMObjectClass = "oMObjectClass";
-        private const string kAttributeSecurityGUID = "attributeSecurityGUID";
-
-        private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, DirectoryEntry dir_entry)
+        private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, SearchResult result)
         {
-            if (dir_entry is null)
+            if (result is null)
                 return null;
-            var prop = dir_entry.ToPropertyClass();
+            var prop = result.ToPropertyClass();
             string cn = prop.GetPropertyValue<string>(kCommonName);
             string ldap_name = prop.GetPropertyValue<string>(kLDAPDisplayName);
             string dn = prop.GetPropertyValue<string>(kDistinguishedName);
             string description = prop.GetPropertyValue<string>(kAdminDescription);
-            string class_name = dir_entry.SchemaClassName;
+            string[] class_names = prop.GetPropertyValues<string>(kObjectClass);
+
+            if (class_names?.Length < 1)
+                return null;
+
+            string class_name = class_names[class_names.Length - 1];
 
             if (schema_id == null)
             {
@@ -288,7 +304,7 @@ namespace NtApiDotNet.Win32.DirectoryService
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
                             ldap_name, description, class_name, subclass_of, attrs, default_security_desc, aux_classes,
-                            superior_classes, category);
+                            superior_classes, category, prop.GetPropertyValues<string>(kPossibleInferiors));
                     }
                 case "attributeschema":
                     {
@@ -325,7 +341,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var schema_class = ConvertToSchemaClass(domain, guid, FindDirectoryEntry(root_entry, 
-                    $"({kSchemaIDGUID}={GuidToString(guid)})", kCommonName)?.GetDirectoryEntry());
+                    $"({kSchemaIDGUID}={GuidToString(guid)})", SchemaClassProperties));
                 return _schema_class.Get(domain).GetOrAdd(guid, schema_class);
             }
             catch
@@ -340,7 +356,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
                 var schema_class = ConvertToSchemaClass(domain, null, FindDirectoryEntry(root_entry,
-                    $"({kLDAPDisplayName}={name})", kCommonName)?.GetDirectoryEntry());
+                    $"({kLDAPDisplayName}={name})", SchemaClassProperties));
                 if (schema_class == null)
                     return null;
                 return _schema_class.Get(domain).GetOrAdd(schema_class.SchemaId, schema_class);
@@ -475,7 +491,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                foreach (var entry in root_entry.Children.Cast<DirectoryEntry>())
+                foreach (SearchResult entry in FindAllDirectoryEntries(root_entry, "(objectClass=*)", SchemaClassProperties))
                 {
                     var schema_id = entry.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
                     if (!schema_id.HasValue)
@@ -498,7 +514,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 try
                 {
                     DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                    var result = FindAllDirectoryEntries(root_entry, filter, kSchemaIDGUID);
+                    var result = FindAllDirectoryEntries(root_entry, filter, SchemaClassProperties);
                     foreach (var entry in result.Cast<SearchResult>())
                     {
                         var props = entry.ToPropertyClass();
@@ -506,7 +522,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                         if (!schema_id.HasValue)
                             continue;
 
-                        objs.Add(_schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry.GetDirectoryEntry())));
+                        objs.Add(_schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry)));
                     }
                 }
                 catch
@@ -522,14 +538,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", kSchemaIDGUID);
+                var collection = FindAllDirectoryEntries(root_entry, $"(attributeSecurityGUID={GuidToString(rights_guid)})", SchemaClassProperties);
                 foreach (SearchResult result in collection)
                 {
                     var id_guid = result.ToPropertyClass().GetPropertyGuid(kSchemaIDGUID);
                     if (!id_guid.HasValue)
                         continue;
                     if (ConvertToSchemaClass(domain, id_guid.Value, 
-                        result.GetDirectoryEntry()) is DirectoryServiceSchemaAttribute attr)
+                        result) is DirectoryServiceSchemaAttribute attr)
                     {
                         ret.Add(attr);
                     }
@@ -715,17 +731,13 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The schema classes.</returns>
         public static IReadOnlyList<DirectoryServiceSchemaClass> GetInferiorSchemaClasses(string domain, string name)
         {
-            DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-            var result = FindDirectoryEntry(root_entry, $"{kLDAPDisplayName}={name}", "possibleInferiors")?.ToPropertyClass();
-            if (result != null)
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
+            var schema_class = GetSchemaClass(domain, name);
+            if (schema_class != null)
             {
-                var classes = result.GetPropertyValues<string>("possibleInferiors");
-                return classes.Select(c => GetSchemaClass(domain, c)).OfType<DirectoryServiceSchemaClass>().ToList().AsReadOnly();
+                ret.AddRange(schema_class.PossibleInferiors.Select(n => GetSchemaClass(domain, n)));
             }
-            else
-            {
-                return FindSchemaObject(domain, $"(|(possSuperiors={name})(systemPossSuperiors={name}))").OfType<DirectoryServiceSchemaClass>().ToList().AsReadOnly();
-            }
+            return ret;
         }
 
         /// <summary>

@@ -57,11 +57,16 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         public IReadOnlyList<DirectoryServiceReferenceClass> PossibleSuperiors { get; }
 
+        /// <summary>
+        /// Possible inferiors of the class.
+        /// </summary>
+        public IReadOnlyList<string> PossibleInferiors { get; }
+
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string description, string object_class, 
             string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
             string default_security_desc, List<DirectoryServiceReferenceClass> auxiliary_classes,
-            List<DirectoryServiceReferenceClass> superior_classes, int category)
+            List<DirectoryServiceReferenceClass> superior_classes, int category, string[] possible_inferiors)
             : base(domain, dn, schema_id, name, ldap_name, description, object_class)
         {
             SubClassOf = subclass_of ?? string.Empty;
@@ -75,6 +80,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             AuxiliaryClasses = auxiliary_classes.AsReadOnly();
             PossibleSuperiors = superior_classes.AsReadOnly();
             Category = (DirectoryServiceSchemaClassCategory)category;
+            PossibleInferiors = new List<string>(possible_inferiors ?? new string[0]).AsReadOnly();
         }
 
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
@@ -82,7 +88,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                   schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
                   string.Empty, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
                   string.Empty, new List<DirectoryServiceReferenceClass>(), 
-                  new List<DirectoryServiceReferenceClass>(), 0)
+                  new List<DirectoryServiceReferenceClass>(), 0, new string[0])
         {
         }
     }
