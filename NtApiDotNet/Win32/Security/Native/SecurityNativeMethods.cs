@@ -1002,6 +1002,17 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamCreateUser2InDomain(
+            SafeSamHandle DomainHandle,
+            UnicodeString AccountName,
+            UserAccountControlFlags AccountType,
+            SamUserAccessRights DesiredAccess,
+            out SafeSamHandle UserHandle,
+            out SamUserAccessRights GrantedAccess,
+            out uint RelativeId
+        );
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus SamQueryInformationDomain(
             SafeSamHandle DomainHandle,
             DomainInformationClass DomainInformationClass,

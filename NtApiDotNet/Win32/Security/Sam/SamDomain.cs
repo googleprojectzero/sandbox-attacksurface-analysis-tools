@@ -136,6 +136,25 @@ namespace NtApiDotNet.Win32.Security.Sam
             }
         }
 
+        private static UserAccountControlFlags AccountTypeToFlags(SamUserAccountType account_type)
+        {
+            switch (account_type)
+            {
+                case SamUserAccountType.User:
+                    return UserAccountControlFlags.NormalAccount;
+                case SamUserAccountType.Workstation:
+                    return UserAccountControlFlags.WorkstationTrustAccount;
+                case SamUserAccountType.Server:
+                    return UserAccountControlFlags.ServerTrustAccount;
+                case SamUserAccountType.InterDomain:
+                    return UserAccountControlFlags.InterDomainTrustAccount;
+                case SamUserAccountType.TempDuplicate:
+                    return UserAccountControlFlags.InterDomainTrustAccount;
+                default:
+                    throw new ArgumentException("Invalid account type.", nameof(account_type));
+            }
+        }
+
         #endregion
 
         #region Internal Members
@@ -179,7 +198,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         public NtResult<IReadOnlyList<SidName>> LookupNames(IEnumerable<string> names, bool throw_on_error)
         {
             UnicodeStringIn[] lookup_names = names.Select(n => new UnicodeStringIn(n)).ToArray();
-            return SecurityNativeMethods.SamLookupNamesInDomain(Handle, lookup_names.Length, 
+            return SecurityNativeMethods.SamLookupNamesInDomain(Handle, lookup_names.Length,
                 lookup_names, out SafeSamMemoryBuffer rids, out SafeSamMemoryBuffer use)
                 .CreateResult(throw_on_error, () => MapNames(names.ToArray(), rids, use));
         }
@@ -268,7 +287,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         /// <returns>The list of users.</returns>
         public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateUsers(UserAccountControlFlags user_account_control, bool throw_on_error)
         {
-            SecurityEnumDelegate<SafeSamHandle, SafeSamMemoryBuffer> enum_func = 
+            SecurityEnumDelegate<SafeSamHandle, SafeSamMemoryBuffer> enum_func =
                 (SafeSamHandle handle, ref int context, out SafeSamMemoryBuffer buffer, int max_count, out int entries_read) =>
                 SecurityNativeMethods.SamEnumerateUsersInDomain(handle, ref context, user_account_control, out buffer, max_count, out entries_read);
 
@@ -303,7 +322,7 @@ namespace NtApiDotNet.Win32.Security.Sam
         public NtResult<IReadOnlyList<SamRidEnumeration>> EnumerateGroups(bool throw_on_error)
         {
             return SamUtils.SamEnumerateObjects(Handle,
-                SecurityNativeMethods.SamEnumerateGroupsInDomain, 
+                SecurityNativeMethods.SamEnumerateGroupsInDomain,
                 (SAM_RID_ENUMERATION s) => new SamRidEnumeration(s), throw_on_error);
         }
 
@@ -351,15 +370,15 @@ namespace NtApiDotNet.Win32.Security.Sam
                 if (!alias_list.IsSuccess)
                     return alias_list;
                 var sid_ptrs = sids.Select(s => list.AddSid(s).DangerousGetHandle()).ToArray();
-                return SecurityNativeMethods.SamGetAliasMembership(Handle, sid_ptrs.Length, sid_ptrs, 
+                return SecurityNativeMethods.SamGetAliasMembership(Handle, sid_ptrs.Length, sid_ptrs,
                     out int count, out SafeSamMemoryBuffer aliases).CreateResult<IReadOnlyList<SamRidEnumeration>>(throw_on_error, () => {
-                    using (aliases)
-                    {
+                        using (aliases)
+                        {
                             aliases.Initialize<uint>((uint)count);
                             var membership = new HashSet<uint>(aliases.ReadArray<uint>(0, count));
                             return alias_list.Result.Where(m => membership.Contains(m.RelativeId)).ToList().AsReadOnly();
-                    }
-                });
+                        }
+                    });
             }
         }
 
@@ -588,6 +607,36 @@ namespace NtApiDotNet.Win32.Security.Sam
         public SamGroup CreateGroup(string name)
         {
             return CreateGroup(name, SamGroupAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create a new user in the SAM.
+        /// </summary>
+        /// <param name="name">The name of the user.</param>
+        /// <param name="account_type">The type of account.</param>
+        /// <param name="desired_access">Desired access for new user.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SAM user object.</returns>
+        public NtResult<SamUser> CreateUser(string name, SamUserAccountType account_type,
+            SamUserAccessRights desired_access, bool throw_on_error)
+        {
+            return SecurityNativeMethods.SamCreateUser2InDomain(Handle, new UnicodeString(name), AccountTypeToFlags(account_type),
+                desired_access, out SafeSamHandle user_handle,
+                out SamUserAccessRights granted_access, out uint rid).CreateResult(throw_on_error, 
+                () => new SamUser(user_handle, granted_access, ServerName, name, DomainId.CreateRelative(rid)));
+        }
+
+        /// <summary>
+        /// Create a new user in the SAM.
+        /// </summary>
+        /// <param name="name">The name of the user.</param>
+        /// <param name="account_type">The type of account.</param>
+        /// <param name="desired_access">Desired access for new user.</param>
+        /// <returns>The SAM user object.</returns>
+        public SamUser CreateUser(string name, SamUserAccountType account_type,
+            SamUserAccessRights desired_access)
+        {
+            return CreateUser(name, account_type, desired_access, true).Result;
         }
 
         /// <summary>

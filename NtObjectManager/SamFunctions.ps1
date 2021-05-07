@@ -418,3 +418,40 @@ function Get-SamAlias {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Create a new SAM user.
+.DESCRIPTION
+This cmdlet creates a new SAM user.
+.PARAMETER Domain
+Specify the domain to create the user in.
+.PARAMETER Access
+Specify the access rights on the user object.
+.PARAMETER Name
+Specify to name of the user.
+.PARAMETER AccountType
+Specify the type of account to create.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Sam.SamUser
+.EXAMPLE
+New-SamUser -Domain $domain -Name "bob"
+Create the bob user in the domain.
+.EXAMPLE
+New-SamUser -Domain $domain -Name "FILBERT$" -AccountType Workstation
+Create the FILBERT$ computer account in the domain.
+#>
+function New-SamUser { 
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [Parameter(Mandatory, Position = 1)]
+        [string]$Name,
+        [NtApiDotNet.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
+        [NtApiDotNet.Win32.Security.Sam.SamUserAccountType]$AccountType = "User"
+    )
+    $Domain.CreateUser($Name, $AccountType, $Access)
+}

@@ -409,6 +409,7 @@
     <Compile Include="Win32\Security\Sam\SamServerAccessRights.cs" />
     <Compile Include="Win32\Security\Sam\SamUser.cs" />
     <Compile Include="Win32\Security\Sam\SamUserAccessRights.cs" />
+    <Compile Include="Win32\Security\Sam\SamUserAccountType.cs" />
     <Compile Include="Win32\Security\Sam\SamUtils.cs" />
     <Compile Include="Win32\Security\Sam\UserAccountControlFlags.cs" />
     <Compile Include="Win32\Security\Native\UserFlags.cs" />
