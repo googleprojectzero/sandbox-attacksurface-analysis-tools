@@ -110,13 +110,14 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kOMObjectClass = "oMObjectClass";
         private const string kAttributeSecurityGUID = "attributeSecurityGUID";
         private const string kObjectClass = "objectClass";
+        private const string kSystemOnly = "systemOnly";
 
         private static readonly string[] SchemaClassProperties = {
             kCommonName, kLDAPDisplayName, kDistinguishedName, kAdminDescription, kSchemaIDGUID, kSubClassOf, 
             kObjectClassCategory, kMustContain, kSystemMustContain, kMayContain, kSystemMayContain, 
             kDefaultSecurityDescriptor, kSystemAuxiliaryClass, 
             kAuxiliaryClass, kSystemPossSuperiors, kPossSuperiors, kAttributeSyntax,
-            kOMSyntax, kOMObjectClass, kAttributeSecurityGUID, kPossibleInferiors, kObjectClass
+            kOMSyntax, kOMObjectClass, kAttributeSecurityGUID, kPossibleInferiors, kObjectClass, kSystemOnly
         };
 
         private static string GuidToString(Guid guid)
@@ -303,7 +304,8 @@ namespace NtApiDotNet.Win32.DirectoryService
                         AddClasses(superior_classes, prop.GetPropertyValues<string>(kPossSuperiors), false);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
-                            ldap_name, description, class_name, subclass_of, attrs, default_security_desc, aux_classes,
+                            ldap_name, description, class_name, prop.GetPropertyValue<bool>(kSystemOnly), 
+                            subclass_of, attrs, default_security_desc, aux_classes,
                             superior_classes, category, prop.GetPropertyValues<string>(kPossibleInferiors));
                     }
                 case "attributeschema":
@@ -326,12 +328,12 @@ namespace NtApiDotNet.Win32.DirectoryService
                         }
 
                         return new DirectoryServiceSchemaAttribute(domain, dn, schema_id.Value, cn,
-                            ldap_name, description, class_name, attribute_syntax, 
-                            om_syntax, om_object_class_name, attribute_security_guid);
+                            ldap_name, description, class_name, prop.GetPropertyValue<bool>(kSystemOnly), 
+                            attribute_syntax, om_syntax, om_object_class_name, attribute_security_guid);
                     }
                 default:
                     return new DirectoryServiceSchemaObject(domain, dn, schema_id.Value, cn,
-                            ldap_name, description, class_name);
+                            ldap_name, description, class_name, prop.GetPropertyValue<bool>(kSystemOnly));
             }
         }
 

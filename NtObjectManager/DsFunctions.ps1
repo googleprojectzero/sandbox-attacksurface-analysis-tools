@@ -133,7 +133,7 @@ function Get-DsSchemaClass {
     Param(
         [parameter(Mandatory, ParameterSetName = "FromGuid")]
         [guid]$SchemaId,
-        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
+        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0, ValueFromPipelineByPropertyName)]
         [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromParent", Position = 0)]
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$Parent,
@@ -155,38 +155,40 @@ function Get-DsSchemaClass {
         [switch]$IncludeAuxiliary
     )
 
-    $cls = switch ($PSCmdlet.ParameterSetName) {
-        "All" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
-        }
-        "FromGuid" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
-        }
-        "FromName" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
-        }
-        "FromParent" {
-            if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
-                Get-DsSchemaClass -Domain $Parent.Domain -Name $Parent.SubClassOf
+    PROCESS {
+        $cls = switch ($PSCmdlet.ParameterSetName) {
+            "All" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
+            }
+            "FromGuid" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+            }
+            "FromName" {
+                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
+            }
+            "FromParent" {
+                if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
+                    Get-DsSchemaClass -Domain $Parent.Domain -Name $Parent.SubClassOf
+                }
             }
         }
-    }
 
-    if ($null -eq $cls) {
-        return
-    }
-
-    if ($Inferior) {
-        $cls.PossibleInferiors | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_ -IncludeAuxiliary:$IncludeAuxiliary }
-    } else {
-        $cls
-        if ($IncludeAuxiliary) {
-            $cls.AuxiliaryClasses | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_.Name }
+        if ($null -eq $cls) {
+            return
         }
-    }
 
-    if ($Recurse) {
-        Get-DsSchemaClass -Parent $cls -Recurse -Inferior:$Inferior -IncludeAuxiliary:$IncludeAuxiliary
+        if ($Inferior) {
+            $cls.PossibleInferiors | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_ -IncludeAuxiliary:$IncludeAuxiliary }
+        } else {
+            $cls
+            if ($IncludeAuxiliary) {
+                $cls.AuxiliaryClasses | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_.Name }
+            }
+        }
+
+        if ($Recurse) {
+            Get-DsSchemaClass -Parent $cls -Recurse -Inferior:$Inferior -IncludeAuxiliary:$IncludeAuxiliary
+        }
     }
 }
 

@@ -64,10 +64,10 @@ namespace NtApiDotNet.Win32.DirectoryService
 
         internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
             string name, string ldap_name, string description, string object_class, 
-            string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
+            bool system_only, string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
             string default_security_desc, List<DirectoryServiceReferenceClass> auxiliary_classes,
             List<DirectoryServiceReferenceClass> superior_classes, int category, string[] possible_inferiors)
-            : base(domain, dn, schema_id, name, ldap_name, description, object_class)
+            : base(domain, dn, schema_id, name, ldap_name, description, object_class, system_only)
         {
             SubClassOf = subclass_of ?? string.Empty;
             Attributes = attributes.AsReadOnly();
@@ -86,7 +86,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
             : this(domain, string.Empty, schema_id,
                   schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
-                  string.Empty, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
+                  string.Empty, false, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
                   string.Empty, new List<DirectoryServiceReferenceClass>(), 
                   new List<DirectoryServiceReferenceClass>(), 0, new string[0])
         {

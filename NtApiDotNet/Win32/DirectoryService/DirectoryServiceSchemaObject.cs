@@ -58,6 +58,11 @@ namespace NtApiDotNet.Win32.DirectoryService
         public string Description { get; }
 
         /// <summary>
+        /// Indicates if this schema object is system only.
+        /// </summary>
+        public bool SystemOnly { get; }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The name of the schema class.</returns>
@@ -86,7 +91,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         internal DirectoryServiceSchemaObject(string domain, string dn, Guid schema_id,
-            string name, string ldap_name, string description, string object_class)
+            string name, string ldap_name, string description, string object_class, bool system_only)
         {
             Domain = domain ?? string.Empty;
             DistinguishedName = dn ?? string.Empty;
@@ -95,6 +100,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             Name = ldap_name;
             ObjectClass = object_class;
             Description = description;
+            SystemOnly = system_only;
         }
     }
 }

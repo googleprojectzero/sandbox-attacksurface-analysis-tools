@@ -44,9 +44,9 @@ namespace NtApiDotNet.Win32.DirectoryService
         public Guid? AttributeSecurityGuid { get; }
 
         internal DirectoryServiceSchemaAttribute(string domain, string dn, Guid schema_id,
-            string name, string ldap_name, string description, string object_class, string attribute_syntax,
-            int om_syntax, string om_object_class, Guid? attribute_security_guid)
-            : base(domain, dn, schema_id, name, ldap_name, description, object_class)
+            string name, string ldap_name, string description, string object_class, bool system_only, 
+            string attribute_syntax, int om_syntax, string om_object_class, Guid? attribute_security_guid)
+            : base(domain, dn, schema_id, name, ldap_name, description, object_class, system_only)
         {
             AttributeSyntax = attribute_syntax;
             OMSyntax = om_syntax;
@@ -58,7 +58,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         internal DirectoryServiceSchemaAttribute(string domain, Guid schema_id)
             : this(domain, string.Empty, schema_id,
           schema_id.ToString(), schema_id.ToString(),
-          schema_id.ToString(), string.Empty, string.Empty, 0, string.Empty, null)
+          schema_id.ToString(), string.Empty, false, 
+          string.Empty, 0, string.Empty, null)
         {
         }
 
