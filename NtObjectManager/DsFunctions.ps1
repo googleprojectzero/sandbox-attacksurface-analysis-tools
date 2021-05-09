@@ -100,6 +100,8 @@ Specify an existing schema class and get its parent class.
 Specify to recurse the parent relationships and return all objects.
 .PARAMETER Inferior
 Specify to return inferior classes which can be created underneath this class.
+.PARAMETER IncludeAuxiliary
+Specify to return include auxiliary classes with the class.
 .INPUTS
 None
 .OUTPUTS
@@ -116,6 +118,9 @@ Get the user schema class by GUID.
 .EXAMPLE
 Get-DsSchemaClass -Name "user"
 Get the user schema class by LDAP name.
+.EXAMPLE
+Get-DsSchemaClass -Name "user" -IncludeAuxiliary
+Get the user schema class by LDAP name and include all auxiliary classes.
 .EXAMPLE
 Get-DsSchemaClass -Parent $cls
 Get the parent schema class for another class.
@@ -143,7 +148,11 @@ function Get-DsSchemaClass {
         [parameter(ParameterSetName = "FromParent")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromGuid")]
-        [switch]$Inferior
+        [switch]$Inferior,
+        [parameter(ParameterSetName = "FromParent")]
+        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "FromGuid")]
+        [switch]$IncludeAuxiliary
     )
 
     $cls = switch ($PSCmdlet.ParameterSetName) {
@@ -163,18 +172,21 @@ function Get-DsSchemaClass {
         }
     }
 
+    if ($null -eq $cls) {
+        return
+    }
+
     if ($Inferior) {
-        if ($null -ne $cls) {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetInferiorSchemaClasses($Domain, $cls.Name) | Write-Output
-            if ($Recurse) {
-                Get-DsSchemaClass -Parent $cls -Recurse -Inferior
-            }
-        }
+        $cls.PossibleInferiors | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_ -IncludeAuxiliary:$IncludeAuxiliary }
     } else {
         $cls
-        if ($Recurse -and ($null -ne $cls)) {
-            Get-DsSchemaClass -Parent $cls -Recurse
+        if ($IncludeAuxiliary) {
+            $cls.AuxiliaryClasses | ForEach-Object { Get-DsSchemaClass -Domain $Domain -Name $_.Name }
         }
+    }
+
+    if ($Recurse) {
+        Get-DsSchemaClass -Parent $cls -Recurse -Inferior:$Inferior -IncludeAuxiliary:$IncludeAuxiliary
     }
 }
 

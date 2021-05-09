@@ -751,6 +751,33 @@ namespace NtApiDotNet.Win32.DirectoryService
         }
 
         /// <summary>
+        /// Get the auxiliary schema classes for a LDAP name.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema class for.</param>
+        /// <param name="name">The LDAP name for the parent schema class.</param>
+        /// <returns>The schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetAuxiliarySchemaClasses(string domain, string name)
+        {
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
+            var schema_class = GetSchemaClass(domain, name);
+            if (schema_class != null)
+            {
+                ret.AddRange(schema_class.AuxiliaryClasses.Select(n => GetSchemaClass(domain, n.Name)));
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Get the auxiliary schema classes for a LDAP name.
+        /// </summary>
+        /// <param name="name">The LDAP name for the schema class.</param>
+        /// <returns>The schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetAuxiliarySchemaClasses(string name)
+        {
+            return GetAuxiliarySchemaClasses(string.Empty, name);
+        }
+
+        /// <summary>
         /// Get all schema classes.
         /// </summary>
         /// <param name="domain">Specify the domain to get the schema classes for.</param>
