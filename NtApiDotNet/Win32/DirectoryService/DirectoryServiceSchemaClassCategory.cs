@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// Legacy class.
         /// </summary>
-        Legacy88Class = 0,
+        Class88 = 0,
         /// <summary>
         /// Structure class (can be created).
         /// </summary>
