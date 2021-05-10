@@ -478,13 +478,15 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                foreach (var entry in root_entry.Children.Cast<DirectoryEntry>().Select(d => d.ToPropertyClass()))
+                var result = FindAllDirectoryEntries(root_entry, $"({kObjectClass}=controlAccessRight)", kDistinguishedName, kRightsGuid,
+                    kCommonName, kAppliesTo, kValidAccesses);
+                foreach (var entry in result.Cast<SearchResult>().Select(r => r.ToPropertyClass()))
                 {
-                    var value = entry.GetPropertyValue<string>(kRightsGuid);
-                    if (value == null || !Guid.TryParse(value, out Guid rights_guid))
+                    var rights_guid = entry.GetPropertyGuid(kRightsGuid);
+                    if (!rights_guid.HasValue)
                         continue;
 
-                    var right = _extended_rights.Get(domain).GetOrAdd(rights_guid, 
+                    var right = _extended_rights.Get(domain).GetOrAdd(rights_guid.Value, 
                         guid => ConvertToExtendedRight(domain, rights_guid, entry));
                     _extended_rights_by_name.Get(domain).GetOrAdd(right.Name, right);
                 }
