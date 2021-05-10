@@ -85,6 +85,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kSchemaIDGUID = "schemaIDGUID";
         private const string kSchemaNamingContext = "schemaNamingContext";
         private const string kConfigurationNamingContext = "configurationNamingContext";
+        private const string kDefaultNamingContext = "defaultNamingContext";
         private const string kCNExtendedRights = "CN=Extended-Rights";
         private const string kAppliesTo = "appliesTo";
         private const string kValidAccesses = "validAccesses";
@@ -111,6 +112,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         private const string kAttributeSecurityGUID = "attributeSecurityGUID";
         private const string kObjectClass = "objectClass";
         private const string kSystemOnly = "systemOnly";
+        private const string kSDRightsEffective = "sDRightsEffective";
 
         private static readonly string[] SchemaClassProperties = {
             kCommonName, kLDAPDisplayName, kDistinguishedName, kAdminDescription, kSchemaIDGUID, kSubClassOf, 
@@ -215,13 +217,18 @@ namespace NtApiDotNet.Win32.DirectoryService
             });
         }
 
-        private static SearchResult FindDirectoryEntry(DirectoryEntry root_object, string filter, params string[] properties)
+        private static SearchResult FindDirectoryEntry(DirectoryEntry root_object, SearchScope scope, string filter, params string[] properties)
         {
             DirectorySearcher ds = new DirectorySearcher(root_object, filter, properties)
             {
-                SearchScope = SearchScope.OneLevel
+                SearchScope = scope
             };
             return ds.FindOne();
+        }
+
+        private static SearchResult FindDirectoryEntry(DirectoryEntry root_object, string filter, params string[] properties)
+        {
+            return FindDirectoryEntry(root_object, SearchScope.OneLevel, filter, properties);
         }
 
         private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
@@ -1143,6 +1150,39 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static DirectoryServiceHeuristics GetDsHeuristics()
         {
             return GetDsHeuristics(string.Empty);
+        }
+
+        /// <summary>
+        /// Get the value for an object's sDRightsEffective attribute.
+        /// </summary>
+        /// <param name="domain">The domain for the object.</param>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The sDRightsEffective value.</returns>
+        public static SecurityInformation GetSDRightsEffective(string domain, string distinguished_name)
+        {
+            try
+            {
+                var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
+                var entry = FindDirectoryEntry(root_entry, SearchScope.Subtree, $"({kDistinguishedName}={distinguished_name})",
+                    kSDRightsEffective);
+                if (entry == null)
+                    return 0;
+                return (SecurityInformation)entry.ToPropertyClass().GetPropertyValue<int>(kSDRightsEffective);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Get the value for an object's sDRightsEffective attribute.
+        /// </summary>
+        /// <param name="distinguished_name">The distinguished name of the object.</param>
+        /// <returns>The sDRightsEffective value.</returns>
+        public static SecurityInformation GetSDRightsEffective(string distinguished_name)
+        {
+            return GetSDRightsEffective(string.Empty, distinguished_name);
         }
 
         #endregion

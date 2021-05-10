@@ -382,3 +382,37 @@ function Get-DsHeuristics {
     )
     [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetDsHeuristics($Domain)
 }
+
+<#
+.SYNOPSIS
+Get the sDRightsEffective for an object.
+.DESCRIPTION
+This cmdlet gets the constructed sDRightsEffective value for an object. This represents the write access to the SD the caller has.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain.
+.PARAMETER DistinguishedName
+Specify the distinguished name of the object.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityInformation
+.EXAMPLE
+Get-DsSDRightsEffective -DistinguishedName "DC=domain,DC=local"
+Get the sDRightsEffective for an object.
+.EXAMPLE
+Get-DsHeuristics -Domain SALES -DistinguishedName "DC=domain,DC=local"
+Get the sDRightsEffective for an object in the SALES domain.
+#>
+function Get-DsSDRightsEffective {
+    [CmdletBinding()]
+    param(
+        [alias("dn")]
+        [parameter(Mandatory, Position = 0, ValueFromPipelineByPropertyName)]
+        [string]$DistinguishedName,
+        [string]$Domain
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSDRightsEffective($Domain, $DistinguishedName)
+    }
+}
