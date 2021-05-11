@@ -36,6 +36,10 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// The name of the resource manager if any.
         /// </summary>
         public string Name { get; }
+        /// <summary>
+        /// Indicates if this resource manager is connected to a remote access server.
+        /// </summary>
+        public bool Remote { get; }
         #endregion
 
         #region Public Methods
@@ -104,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <returns>The created AuthZ resource manager.</returns>
         public static NtResult<AuthZResourceManager> Create(string name, AuthZResourceManagerInitializeFlags flags, AuthZHandleCallbackAce handle_callback_ace, bool throw_on_error)
         {
-            AuthZResourceManager ret = new AuthZResourceManager(name);
+            AuthZResourceManager ret = new AuthZResourceManager(name, false);
             AuthzAccessCheckCallback callback = null;
             if (handle_callback_ace != null)
             {
@@ -210,9 +214,10 @@ namespace NtApiDotNet.Win32.Security.Authorization
         #endregion
 
         #region Constructors
-        private AuthZResourceManager(string name)
+        private AuthZResourceManager(string name, bool remote)
         {
             Name = name ?? string.Empty;
+            Remote = remote;
         }
         #endregion
 
@@ -240,7 +245,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
 
         private static NtResult<AuthZResourceManager> Create(in AUTHZ_RPC_INIT_INFO_CLIENT client_info, bool throw_on_error)
         {
-            AuthZResourceManager ret = new AuthZResourceManager(client_info.NetworkAddr ?? string.Empty);
+            AuthZResourceManager ret = new AuthZResourceManager(client_info.NetworkAddr ?? string.Empty, true);
             return SecurityNativeMethods.AuthzInitializeRemoteResourceManager(client_info, 
                 out ret._handle).CreateWin32Result(throw_on_error, () => ret);
         }
