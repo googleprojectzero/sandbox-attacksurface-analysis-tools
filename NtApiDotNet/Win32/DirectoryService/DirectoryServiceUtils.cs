@@ -122,6 +122,10 @@ namespace NtApiDotNet.Win32.DirectoryService
             kOMSyntax, kOMObjectClass, kAttributeSecurityGUID, kPossibleInferiors, kObjectClass, kSystemOnly
         };
 
+        private static readonly string[] ExtendedRightProperties = {
+            kDistinguishedName, kRightsGuid, kCommonName, kAppliesTo, kValidAccesses
+        };
+
         private static string GuidToString(Guid guid)
         {
             return string.Join(string.Empty, guid.ToByteArray().Select(b => $"\\{b:X02}"));
@@ -400,8 +404,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", kDistinguishedName, kRightsGuid,
-                    kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
+                var result = FindDirectoryEntry(root_entry, $"({kRightsGuid}={rights_guid})", ExtendedRightProperties).ToPropertyClass();
                 var right = ConvertToExtendedRight(domain, rights_guid, result);
                 if (right == null)
                 {
@@ -420,8 +423,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindDirectoryEntry(root_entry, $"({kCommonName}={name})", kDistinguishedName, kRightsGuid,
-                    kCommonName, kAppliesTo, kValidAccesses).ToPropertyClass();
+                var result = FindDirectoryEntry(root_entry, $"({kCommonName}={name})", ExtendedRightProperties).ToPropertyClass();
                 var right = ConvertToExtendedRight(domain, null, result);
                 if (right == null)
                 {
@@ -462,8 +464,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindAllDirectoryEntries(root_entry, $"({kAppliesTo}={applies_to})", kDistinguishedName, kRightsGuid,
-                    kCommonName, kAppliesTo, kValidAccesses);
+                var result = FindAllDirectoryEntries(root_entry, $"({kAppliesTo}={applies_to})", ExtendedRightProperties);
                 return _extended_rights_by_applies_to.Get(domain).GetOrAdd(applies_to, 
                     _ => ConvertToExtendedRights(domain, result.Cast<SearchResult>()));
             }
@@ -478,8 +479,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 DirectoryEntry root_entry = GetRootEntry(domain, kCNExtendedRights, kConfigurationNamingContext);
-                var result = FindAllDirectoryEntries(root_entry, $"({kObjectClass}=controlAccessRight)", kDistinguishedName, kRightsGuid,
-                    kCommonName, kAppliesTo, kValidAccesses);
+                var result = FindAllDirectoryEntries(root_entry, $"({kObjectClass}=controlAccessRight)", ExtendedRightProperties);
                 foreach (var entry in result.Cast<SearchResult>().Select(r => r.ToPropertyClass()))
                 {
                     var rights_guid = entry.GetPropertyGuid(kRightsGuid);
@@ -508,39 +508,17 @@ namespace NtApiDotNet.Win32.DirectoryService
                     if (!schema_id.HasValue)
                         continue;
 
-                    _schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry));
+                    var schema_class = _schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry));
+                    if (schema_class != null)
+                    {
+                        _schema_class_by_name.Get(domain).GetOrAdd(schema_class.Name, schema_class);
+                    }
                 }
             }
             catch
             {
             }
             return true;
-        }
-
-        private static IReadOnlyList<DirectoryServiceSchemaObject> FindSchemaObject(string domain, string filter)
-        {
-            return _schema_obj_by_filter.Get(domain).GetOrAdd(filter, f =>
-            {
-                List<DirectoryServiceSchemaObject> objs = new List<DirectoryServiceSchemaObject>();
-                try
-                {
-                    DirectoryEntry root_entry = GetRootEntry(domain, string.Empty, kSchemaNamingContext);
-                    var result = FindAllDirectoryEntries(root_entry, filter, SchemaClassProperties);
-                    foreach (var entry in result.Cast<SearchResult>())
-                    {
-                        var props = entry.ToPropertyClass();
-                        var schema_id = props.GetPropertyGuid(kSchemaIDGUID);
-                        if (!schema_id.HasValue)
-                            continue;
-
-                        objs.Add(_schema_class.Get(domain).GetOrAdd(schema_id.Value, guid => ConvertToSchemaClass(domain, guid, entry)));
-                    }
-                }
-                catch
-                {
-                }
-                return objs;
-            });
         }
 
         private static IReadOnlyList<DirectoryServiceSchemaAttribute> GetRightsGuidPropertySet(string domain, Guid rights_guid)
