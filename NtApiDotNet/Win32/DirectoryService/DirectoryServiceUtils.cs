@@ -137,7 +137,14 @@ namespace NtApiDotNet.Win32.DirectoryService
 
             public T[] GetPropertyValues<T>(string name)
             {
-                return _get_property(name).Cast<T>().ToArray();
+                try
+                {
+                    return _get_property(name).Cast<T>().ToArray();
+                }
+                catch
+                {
+                    return new T[0];
+                }
             }
 
             public T GetPropertyValue<T>(string name)
