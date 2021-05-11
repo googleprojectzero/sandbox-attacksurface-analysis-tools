@@ -42,6 +42,10 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// The GUID of the containing property set, if it exists.
         /// </summary>
         public Guid? AttributeSecurityGuid { get; }
+        /// <summary>
+        /// Indicates if the attribute is in a property set.
+        /// </summary>
+        public bool InPropertySet => AttributeSecurityGuid.HasValue;
 
         internal DirectoryServiceSchemaAttribute(string domain, string dn, Guid schema_id,
             string name, string ldap_name, string description, string object_class, bool system_only, 
