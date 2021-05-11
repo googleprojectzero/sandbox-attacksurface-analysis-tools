@@ -34,7 +34,8 @@ namespace NtApiDotNet.Win32.Security.Authorization
                 granted_access, type.GenericMapping.UnmapMask(granted_access),
                 new TokenPrivilege[0], granted_access.ToSpecificAccess(type.AccessRightsType),
                 type.GenericMapping.UnmapMask(granted_access).ToSpecificAccess(type.AccessRightsType),
-                object_type?.ObjectType ?? Guid.Empty, object_type?.Name ?? string.Empty, false)
+                object_type?.ObjectType ?? Guid.Empty, object_type?.Name ?? string.Empty, 
+                false, object_type.Level)
         {
             Error = error;
         }

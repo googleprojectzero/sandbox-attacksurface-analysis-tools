@@ -52,6 +52,10 @@ namespace NtApiDotNet
         /// </summary>
         public Guid ObjectType { get; }
         /// <summary>
+        /// The level of the object type if used.
+        /// </summary>
+        public int Level { get; }
+        /// <summary>
         /// Optional name for the object type.
         /// </summary>
         public string Name { get; private set; }
@@ -60,7 +64,6 @@ namespace NtApiDotNet
         /// an audit needs to be generated on close.
         /// </summary>
         public bool GenerateOnClose { get; internal set; }
-
         /// <summary>
         /// Whether the access check was a success.
         /// </summary>
@@ -71,9 +74,9 @@ namespace NtApiDotNet
         /// <returns>The specific access results.</returns>
         public AccessCheckResult<U> ToSpecificAccess<U>() where U : Enum
         {
-            return new AccessCheckResult<U>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired, 
-                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>(), 
-                ObjectType, Name, GenerateOnClose);
+            return new AccessCheckResult<U>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
+                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>(),
+                ObjectType, Name, GenerateOnClose, Level);
         }
         /// <summary>
         /// Get access check result as a specific access.
@@ -84,7 +87,7 @@ namespace NtApiDotNet
             return new AccessCheckResultGeneric(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
                 GrantedAccess.ToSpecificAccess(specific_access_type),
                 GenericGrantedAccess.ToSpecificAccess(specific_access_type), 
-                ObjectType, Name, GenerateOnClose);
+                ObjectType, Name, GenerateOnClose, Level);
         }
 
         internal AccessCheckResult(NtStatus status,
@@ -93,13 +96,14 @@ namespace NtApiDotNet
             IEnumerable<TokenPrivilege> privilege_required,
             ObjectTypeEntry object_type,
             bool generate_on_close) 
-            : this(status, granted_access, 
+            : this(status, granted_access,
                   generic_granted_access, privilege_required,
                   granted_access.ToSpecificAccess<T>(),
                   generic_granted_access.ToSpecificAccess<T>(),
-                  object_type.ObjectType, 
-                  object_type.Name, 
-                  generate_on_close)
+                  object_type.ObjectType,
+                  object_type.Name,
+                  generate_on_close, 
+                  object_type.Level)
         {
         }
 
@@ -111,7 +115,8 @@ namespace NtApiDotNet
             T specific_generic_granted_access,
             Guid object_type,
             string object_type_name,
-            bool generate_on_close)
+            bool generate_on_close, 
+            int level)
         {
             Status = status;
             GrantedAccess = granted_access;
@@ -122,6 +127,7 @@ namespace NtApiDotNet
             ObjectType = object_type;
             Name = object_type_name ?? string.Empty;
             GenerateOnClose = generate_on_close;
+            Level = level;
         }
     }
 
@@ -139,7 +145,8 @@ namespace NtApiDotNet
             : this(status, granted_access,
                   generic_mapping.UnmapMask(granted_access),
                   privilege_set?.GetPrivileges() ?? new TokenPrivilege[0],
-                  object_type?.ObjectType ?? Guid.Empty, object_type?.Name, generate_on_close)
+                  object_type?.ObjectType ?? Guid.Empty, object_type?.Name, 
+                  generate_on_close, object_type.Level)
         {
         }
 
@@ -150,10 +157,11 @@ namespace NtApiDotNet
             IEnumerable<TokenPrivilege> privilege_required,
             Guid object_type,
             string object_type_name,
-            bool generate_on_close)
+            bool generate_on_close,
+            int level)
             : base(status, granted_access, generic_granted_access, privilege_required,
                   granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess(),
-                  object_type, object_type_name, generate_on_close)
+                  object_type, object_type_name, generate_on_close, level)
         {
         }
     }
@@ -171,10 +179,11 @@ namespace NtApiDotNet
             Enum specific_generic_granted_access,
             Guid object_type,
             string object_type_name,
-            bool generate_on_close) : base(status, granted_access,
+            bool generate_on_close,
+            int level) : base(status, granted_access,
                 generic_granted_access, privilege_required,
                 specific_granted_access, specific_generic_granted_access,
-                object_type, object_type_name, generate_on_close)
+                object_type, object_type_name, generate_on_close, level)
         {
         }
     }
