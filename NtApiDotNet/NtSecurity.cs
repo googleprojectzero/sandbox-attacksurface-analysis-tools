@@ -2312,10 +2312,22 @@ namespace NtApiDotNet
             { new Sid(SecurityAuthority.Nt, 32, 550), Tuple.Create("BUILTIN", "Print Operators") },
             // S-1-5-32-554
             { new Sid(SecurityAuthority.Nt, 32, 554), Tuple.Create("BUILTIN", "Pre-Windows 2000 Compatible Access") },
+            // S-1-5-32-557
+            { new Sid(SecurityAuthority.Nt, 32, 557), Tuple.Create("BUILTIN", "Incoming Forest Trust Builders") },
             // S-1-5-32-560
             { new Sid(SecurityAuthority.Nt, 32, 560), Tuple.Create("BUILTIN", "Windows Authorization Access Group") },
             // S-1-5-32-561
             { new Sid(SecurityAuthority.Nt, 32, 561), Tuple.Create("BUILTIN", "Terminal Server License Servers") },
+            // S-1-5-32-574
+            { new Sid(SecurityAuthority.Nt, 32, 574), Tuple.Create("BUILTIN", "Certificate Service DCOM Access") },
+            // S-1-5-32-575
+            { new Sid(SecurityAuthority.Nt, 32, 575), Tuple.Create("BUILTIN", "RDS Remote Access Servers") },
+            // S-1-5-32-576
+            { new Sid(SecurityAuthority.Nt, 32, 576), Tuple.Create("BUILTIN", "RDS Endpoint Servers") },
+            // S-1-5-32-577
+            { new Sid(SecurityAuthority.Nt, 32, 577), Tuple.Create("BUILTIN", "RDS Management Servers") },
+            // S-1-5-32-582
+            { new Sid(SecurityAuthority.Nt, 32, 582), Tuple.Create("BUILTIN", "Storage Replica Administrators") },
         };
 
         private static readonly Dictionary<Sid, Tuple<string, string>> _known_user_sids = new Dictionary<Sid, Tuple<string, string>>() {
