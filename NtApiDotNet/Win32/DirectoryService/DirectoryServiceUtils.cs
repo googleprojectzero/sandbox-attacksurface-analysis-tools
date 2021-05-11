@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.DirectoryServices;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.DirectoryService
 {
@@ -141,7 +142,7 @@ namespace NtApiDotNet.Win32.DirectoryService
                 {
                     return _get_property(name).Cast<T>().ToArray();
                 }
-                catch
+                catch(COMException)
                 {
                     return new T[0];
                 }
