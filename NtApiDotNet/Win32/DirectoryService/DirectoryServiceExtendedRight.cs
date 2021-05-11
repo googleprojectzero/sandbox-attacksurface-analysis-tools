@@ -79,6 +79,15 @@ namespace NtApiDotNet.Win32.DirectoryService
         public bool IsControl => ValidAccesses.HasFlagSet(DirectoryServiceAccessRights.ControlAccess);
 
         /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the extended right.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        /// <summary>
         /// Convert the extended right to an object type tree.
         /// </summary>
         /// <returns>The tree of object types.</returns>

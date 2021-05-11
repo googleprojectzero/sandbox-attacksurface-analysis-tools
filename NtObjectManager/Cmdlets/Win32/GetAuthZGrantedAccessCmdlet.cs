@@ -116,7 +116,7 @@ namespace NtObjectManager.Cmdlets.Win32
         protected override void ProcessRecord()
         {
             WriteObject(Context.AccessCheck(SecurityDescriptor, AdditionalSecurityDescriptor, 
-                GetDesiredAccess(), Principal, ObjectType?.ToArray(), GetNtType()));
+                GetDesiredAccess(), Principal, ObjectType?.ToArray(), GetNtType()), true);
         }
 
         object IDynamicParameters.GetDynamicParameters()

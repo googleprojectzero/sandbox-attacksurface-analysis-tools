@@ -2062,24 +2062,27 @@ function Add-ObjectTypeTree {
         [guid]$ObjectType,
         [Parameter(ParameterSetName = "FromGuid")]
         [string]$Name = "",
-        [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 1)]
+        [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 1, ValueFromPipeline)]
         [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject,
         [switch]$PassThru
     )
-    $result = switch($PSCmdlet.ParameterSetName) {
-        "FromGuid" {
-            $r = $Tree.AddNode($ObjectType)
-            $r.Name = $Name
-            $r
+
+    PROCESS {
+        $result = switch($PSCmdlet.ParameterSetName) {
+            "FromGuid" {
+                $r = $Tree.AddNode($ObjectType)
+                $r.Name = $Name
+                $r
+            }
+            "FromSchemaObject" {
+                $r = ConvertTo-ObjectTypeTree -SchemaObject $SchemaObject
+                $Tree.AddNode($r)
+                $r
+            }
         }
-        "FromSchemaObject" {
-            $r = ConvertTo-ObjectTypeTree -SchemaObject $SchemaObject
-            $Tree.AddNode($r)
-            $r
+        if ($PassThru) {
+            Write-Output $result
         }
-    }
-    if ($PassThru) {
-        Write-Output $result
     }
 }
 

@@ -351,7 +351,7 @@ function Get-DsObjectSchemaClass {
     }
 
     $obj_class = $Object.objectClass
-    if ($obj_class.Count -eq 0) {
+    if ($obj_class -eq $null -or $obj_class.Count -eq 0) {
         return
     }
 
