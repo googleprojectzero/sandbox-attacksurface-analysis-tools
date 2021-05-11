@@ -19,6 +19,8 @@ namespace NtApiDotNet.Win32.DirectoryService
     /// </summary>
     public struct DirectoryServiceReferenceClass
     {
+        private readonly string _domain;
+
         /// <summary>
         /// The name of the class.
         /// </summary>
@@ -29,10 +31,20 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         public bool System { get; }
 
-        internal DirectoryServiceReferenceClass(string name, bool system)
+        internal DirectoryServiceReferenceClass(string name, bool system, string domain)
         {
             Name = name;
             System = system;
+            _domain = domain;
+        }
+
+        /// <summary>
+        /// Get the full schema class for this reference.
+        /// </summary>
+        /// <returns>The schema class.</returns>
+        public DirectoryServiceSchemaClass ToSchemaClass()
+        {
+            return DirectoryServiceUtils.GetSchemaClass(_domain, Name);
         }
     }
 }

@@ -270,11 +270,11 @@ namespace NtApiDotNet.Win32.DirectoryService
             attrs.AddRange(property.Select(p => new DirectoryServiceSchemaClassAttribute(p, required, system)));
         }
 
-        private static void AddClasses(List<DirectoryServiceReferenceClass> classes, IEnumerable<string> property, bool system)
+        private static void AddClasses(string domain, List<DirectoryServiceReferenceClass> classes, IEnumerable<string> property, bool system)
         {
             if (property == null)
                 return;
-            classes.AddRange(property.Select(p => new DirectoryServiceReferenceClass(p, system)));
+            classes.AddRange(property.Select(p => new DirectoryServiceReferenceClass(p, system, domain)));
         }
 
         private static DirectoryServiceSchemaObject ConvertToSchemaClass(string domain, Guid? schema_id, SearchResult result)
@@ -316,11 +316,11 @@ namespace NtApiDotNet.Win32.DirectoryService
                         var default_security_desc = prop.GetPropertyValue<string>(kDefaultSecurityDescriptor);
 
                         List<DirectoryServiceReferenceClass> aux_classes = new List<DirectoryServiceReferenceClass>();
-                        AddClasses(aux_classes, prop.GetPropertyValues<string>(kSystemAuxiliaryClass), true);
-                        AddClasses(aux_classes, prop.GetPropertyValues<string>(kAuxiliaryClass), false);
+                        AddClasses(domain, aux_classes, prop.GetPropertyValues<string>(kSystemAuxiliaryClass), true);
+                        AddClasses(domain, aux_classes, prop.GetPropertyValues<string>(kAuxiliaryClass), false);
                         List<DirectoryServiceReferenceClass> superior_classes = new List<DirectoryServiceReferenceClass>();
-                        AddClasses(superior_classes, prop.GetPropertyValues<string>(kSystemPossSuperiors), true);
-                        AddClasses(superior_classes, prop.GetPropertyValues<string>(kPossSuperiors), false);
+                        AddClasses(domain, superior_classes, prop.GetPropertyValues<string>(kSystemPossSuperiors), true);
+                        AddClasses(domain, superior_classes, prop.GetPropertyValues<string>(kPossSuperiors), false);
 
                         return new DirectoryServiceSchemaClass(domain, dn, schema_id.Value, cn,
                             ldap_name, description, class_name, prop.GetPropertyValue<bool>(kSystemOnly), 
@@ -791,6 +791,45 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses()
         {
             return GetSchemaClasses(string.Empty);
+        }
+
+        /// <summary>
+        /// Get all schema classes in a hierarchy.
+        /// </summary>
+        /// <param name="domain">Specify the domain to get the schema classes for.</param>
+        /// <param name="include_auxiliary">Specify to include auxiliary classes in the list.</param>
+        /// <param name="name">The name of the base schema class.</param>
+        /// <returns>The list of schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses(string domain, string name, bool include_auxiliary)
+        {
+            List<DirectoryServiceSchemaClass> ret = new List<DirectoryServiceSchemaClass>();
+            var schema_class = GetSchemaClass(domain, name);
+            if (schema_class == null)
+                return ret;
+            do
+            {
+                ret.Add(schema_class);
+                if (include_auxiliary)
+                {
+                    ret.AddRange(schema_class.AuxiliaryClasses.Select(s => s.ToSchemaClass()).Where(s => s != null));
+                    ret.AddRange(schema_class.AuxiliaryClasses.SelectMany(s => GetAuxiliarySchemaClasses(domain, s.Name)));
+                }
+
+                schema_class = schema_class.SubClassOf != schema_class.Name ? GetSchemaClass(domain, schema_class.SubClassOf) : null;
+            }
+            while (schema_class != null);
+            return ret;
+        }
+
+        /// <summary>
+        /// Get all schema classes in a hierarchy.
+        /// </summary>
+        /// <param name="include_auxiliary">Specify to include auxiliary classes in the list.</param>
+        /// <param name="name">The name of the base schema class.</param>
+        /// <returns>The list of schema classes.</returns>
+        public static IReadOnlyList<DirectoryServiceSchemaClass> GetSchemaClasses(string name, bool include_auxiliary)
+        {
+            return GetSchemaClasses(string.Empty, name, include_auxiliary);
         }
 
         /// <summary>
