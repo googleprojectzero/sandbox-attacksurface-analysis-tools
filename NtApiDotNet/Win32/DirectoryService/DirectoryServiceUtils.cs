@@ -81,6 +81,9 @@ namespace NtApiDotNet.Win32.DirectoryService
             = new DomainDictionaryDict<string, List<DirectoryServiceSchemaObject>>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
         private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
+        private static readonly DirectoryServiceExtendedRight _default_propset = new DirectoryServiceExtendedRight(string.Empty, string.Empty,
+            new Guid("771727b1-31b8-4cdf-ae62-4fe39fadf89e"), "PROPSET_GUID_DEFAULT", new Guid[0], 
+            DirectoryServiceAccessRights.ReadProp | DirectoryServiceAccessRights.WriteProp, () => new List<DirectoryServiceSchemaAttribute>());
 
         private const string kCommonName = "cn";
         private const string kSchemaIDGUID = "schemaIDGUID";
@@ -677,6 +680,11 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         /// <returns>The fake Directory Services NtType</returns>
         public static NtType NtType => NtType.GetTypeByName(DS_NT_TYPE_NAME);
+
+        /// <summary>
+        /// Get the default property set.
+        /// </summary>
+        public static DirectoryServiceExtendedRight DefaultPropertySet => _default_propset;
 
         /// <summary>
         /// Get the schema class for a GUID.

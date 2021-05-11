@@ -22,6 +22,11 @@ namespace NtApiDotNet.Win32.DirectoryService
     public interface IDirectoryServiceObjectTree
     {
         /// <summary>
+        /// The name of the object.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Convert the schema class to an object type tree.
         /// </summary>
         /// <returns>The tree of object types.</returns>
