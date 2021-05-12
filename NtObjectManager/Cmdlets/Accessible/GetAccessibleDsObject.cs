@@ -75,7 +75,13 @@ namespace NtObjectManager.Cmdlets.Accessible
         public string[] UserName { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify to avoid looking up groups for a user and just use what's on the local system. This might give inaccurant results.</para>
+        /// <para type="description">Specify a list of pre-configured AuthZ context for the access check.</para>
+        /// </summary>
+        [Parameter]
+        public AuthZContext[] Context { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to avoid looking up groups for a domain user and just use what's on the local system. This might give inaccurant results.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter UseLocalGroup { get; set; }
@@ -170,6 +176,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             ObjectClass = new string[0];
             Exclude = new string[0];
             Include = new string[0];
+            Context = new AuthZContext[0];
         }
         #endregion
 
@@ -195,7 +202,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             WriteProgress("Caching schema information for domain.");
             DirectoryServiceUtils.CacheDomainSchema(Domain);
-            _root_dse = new DirectoryEntry(ConstructLdapUrl("RootDSE"));
+            _root_dse = new DirectoryEntry(ConstructLdapUrl(Domain, "RootDSE", false));
             BuildAuthZContext();
         }
         #endregion
@@ -411,9 +418,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private string ConstructLdapUrl(string path)
+        private static string ConstructLdapUrl(string domain, string path, bool global_catalog)
         {
-            return string.IsNullOrEmpty(Domain) ? $"LDAP://{path}" : $"LDAP://{Domain}/{path}";
+            string scheme = global_catalog ? "GC" : "LDAP";
+            return string.IsNullOrEmpty(domain) ? $"{scheme}://{path}" : $"{scheme}://{domain}/{path}";
         }
 
         private string GetNamingContext(string nc)
@@ -427,15 +435,15 @@ namespace NtObjectManager.Cmdlets.Accessible
 
             if (NamingContext.HasFlag(DsObjectNamingContext.Default))
             {
-                ret.Add(new DirectoryEntry(ConstructLdapUrl(GetNamingContext(kDefaultNamingContext))));
+                ret.Add(new DirectoryEntry(ConstructLdapUrl(Domain, GetNamingContext(kDefaultNamingContext), false)));
             }
             if (NamingContext.HasFlag(DsObjectNamingContext.Configuration))
             {
-                ret.Add(new DirectoryEntry(ConstructLdapUrl(GetNamingContext(kConfigurationNamingContext))));
+                ret.Add(new DirectoryEntry(ConstructLdapUrl(Domain, GetNamingContext(kConfigurationNamingContext), false)));
             }
             if (NamingContext.HasFlag(DsObjectNamingContext.Schema))
             {
-                ret.Add(new DirectoryEntry(ConstructLdapUrl(GetNamingContext(kSchemaNamingContext))));
+                ret.Add(new DirectoryEntry(ConstructLdapUrl(Domain, GetNamingContext(kSchemaNamingContext), false)));
             }
             if (ret.Count == 0)
                 throw new ArgumentException("Must specify at least one root naming context.");
@@ -448,7 +456,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 return GetNamingContextRoots();
             }
-            return DistinguishedName.Select(dn => new DirectoryEntry(ConstructLdapUrl(dn))).ToList();
+            return DistinguishedName.Select(dn => new DirectoryEntry(ConstructLdapUrl(Domain, dn, false))).ToList();
         }
 
         private void BuildAuthZContext()
@@ -475,7 +483,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (sids.Count == 0)
                 sids.Add(NtToken.CurrentUser.Sid);
 
-            if (_resource_manager.Remote || UseLocalGroup)
+            if (_resource_manager.Remote)
             {
                 _context.AddRange(sids.Select(s => _resource_manager.CreateContext(s, AuthZContextInitializeSidFlags.None)));
             }
@@ -483,8 +491,27 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 foreach (var sid in sids)
                 {
+                    if (!NtSecurity.IsDomainSid(sid) || NtSecurity.IsLocalDomainSid(sid))
+                    {
+                        _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.None));
+                        continue;
+                    }
+
                     var context = _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
-                    // Get groups for the user.
+                    context.ModifyGroups(AuthZGroupSidType.Normal, DirectoryServiceUtils.FindTokenGroupsForSid(sid, false), AuthZSidOperation.Add);
+                    // TODO: Build builtin and domain local groups for the target domain.
+                }
+            }
+
+            foreach (var context in Context)
+            {
+                if (sids.Add(context.User.Sid))
+                {
+                    var next_ctx = _context.AddResource(_resource_manager.CreateContext(context.User.Sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
+                    foreach (var group in context.Groups)
+                    {
+                        next_ctx.AddSid(group.Sid);
+                    }
                 }
             }
 

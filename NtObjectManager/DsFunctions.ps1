@@ -429,7 +429,7 @@ Specify the domain or server name to query for the object. Defaults to current d
 .INPUTS
 None
 .OUTPUTS
-string
+NtApiDotNet.Win32.DirectoryService.DirectoryServiceSecurityPrincipal
 .EXAMPLE
 Search-DsObjectSid -Sid (Get-NtSid)
 Get the name of the object for the current SID.

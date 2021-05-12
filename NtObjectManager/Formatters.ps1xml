@@ -4901,6 +4901,10 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
+            <Label>UserName</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
             <Label>Modifiable</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
@@ -4917,6 +4921,9 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>ObjectClass</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>UserName</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Modifiable</PropertyName>

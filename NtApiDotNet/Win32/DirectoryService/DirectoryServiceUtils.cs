@@ -249,14 +249,20 @@ namespace NtApiDotNet.Win32.DirectoryService
             return FindDirectoryEntry(root_object, SearchScope.OneLevel, filter, properties);
         }
 
-        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
+        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, SearchScope scope, string filter, params string[] properties)
         {
             using (var searcher = new DirectorySearcher(root_object, filter, properties))
             {
-                searcher.SearchScope = SearchScope.OneLevel;
+                searcher.SearchScope = scope;
                 searcher.PageSize = 1000;
                 return searcher.FindAll().Cast<SearchResult>().ToList();
             }
+        }
+
+
+        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, string filter, params string[] properties)
+        {
+            return FindAllDirectoryEntries(root_object, SearchScope.OneLevel, filter, properties);
         }
 
         private static PropertyClass ToPropertyClass(this DirectoryEntry entry)
@@ -1229,7 +1235,7 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <param name="domain">Specify the domain to search.</param>
         /// <param name="sid">The SID to find.</param>
         /// <returns>The distinguished name of the object, null if not found.</returns>
-        public static string FindObjectFromSid(string domain, Sid sid)
+        public static DirectoryServiceSecurityPrincipal FindObjectFromSid(string domain, Sid sid)
         {
             try
             {
@@ -1241,8 +1247,9 @@ namespace NtApiDotNet.Win32.DirectoryService
                     }
                 }
                 var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
-                return FindDirectoryEntry(root_entry, SearchScope.Subtree, $"(objectSid={BytesToString(sid.ToArray())})", kDistinguishedName)?.ToPropertyClass()
-                    .GetPropertyValue<string>(kDistinguishedName);
+                return new DirectoryServiceSecurityPrincipal(FindDirectoryEntry(root_entry, SearchScope.Subtree, 
+                    $"(objectSid={BytesToString(sid.ToArray())})", kDistinguishedName)?.ToPropertyClass()
+                    .GetPropertyValue<string>(kDistinguishedName), sid);
             }
             catch (COMException)
             {
@@ -1253,10 +1260,11 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <summary>
         /// Try and find the token groups for an object.
         /// </summary>
+        /// <param name="domain">Domain name for the lookup.</param>
         /// <param name="name">The distinguished name to find.</param>
         /// <param name="all_groups">True to return all groups including BUILTIN on the server. False for just universal and global groups.</param>
         /// <returns>The list of member SIDs.</returns>
-        public static IReadOnlyList<Sid> FindTokenGroupsForName(string name, bool all_groups)
+        public static IReadOnlyList<Sid> FindTokenGroupsForName(string domain, string name, bool all_groups)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -1267,7 +1275,7 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 string property_name = all_groups ? "tokenGroups" : "tokenGroupsGlobalAndUniversal";
-                var root_entry = new DirectoryEntry($"GC://{name}");
+                var root_entry = new DirectoryEntry(ConstructLdapUrl(domain, name));
                 var token_groups = FindDirectoryEntry(root_entry, SearchScope.Base, "(objectClass=*)", property_name).ToPropertyClass().GetPropertyValues<byte[]>(property_name);
                 ret.AddRange(token_groups.Select(ba => new Sid(ba)));
             }
@@ -1285,7 +1293,41 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The list of member SIDs.</returns>
         public static IReadOnlyList<Sid> FindTokenGroupsForSid(Sid sid, bool all_groups)
         {
-            return FindTokenGroupsForName(FindObjectFromSid(string.Empty, sid), all_groups);
+            return FindTokenGroupsForName(sid.GetName().Domain, FindObjectFromSid(string.Empty, sid)?.DistinguishedName, all_groups);
+        }
+
+        /// <summary>
+        /// Try and find the membership of groups for a name.
+        /// </summary>
+        /// <param name="domain">Domain name for the lookup.</param>
+        /// <param name="name">The distinguished name to find as member.</param>
+        /// <returns>The list of member SIDs.</returns>
+        public static IReadOnlyList<DirectoryServiceSecurityPrincipal> FindGroupMemberForName(string domain, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException($"'{nameof(name)}' cannot be null or empty.", nameof(name));
+            }
+
+            var ret = new List<DirectoryServiceSecurityPrincipal>();
+            try
+            {
+                var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
+                var entry = FindAllDirectoryEntries(root_entry, SearchScope.Subtree, $"(member={name})", kObjectSid, kDistinguishedName);
+                foreach (var prop in entry.Select(r => r.ToPropertyClass()))
+                {
+                    byte[] sid = prop.GetPropertyValue<byte[]>(kObjectSid);
+                    string dn = prop.GetPropertyValue<string>(kDistinguishedName);
+                    if (dn != null && sid != null)
+                    {
+                        ret.Add(new DirectoryServiceSecurityPrincipal(dn, new Sid(sid)));
+                    }
+                }
+            }
+            catch (COMException)
+            {
+            }
+            return ret.AsReadOnly();
         }
 
         /// <summary>

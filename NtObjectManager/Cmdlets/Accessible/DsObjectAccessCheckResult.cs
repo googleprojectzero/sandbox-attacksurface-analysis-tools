@@ -201,6 +201,11 @@ namespace NtObjectManager.Cmdlets.Accessible
         public TokenInformation TokenInfo { get; }
 
         /// <summary>
+        /// The username for the token.
+        /// </summary>
+        public string UserName => TokenInfo.UserName;
+
+        /// <summary>
         /// Was read access granted?
         /// </summary>
         public bool IsRead { get; }
