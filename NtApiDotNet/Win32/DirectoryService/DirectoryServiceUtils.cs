@@ -128,9 +128,14 @@ namespace NtApiDotNet.Win32.DirectoryService
             kDistinguishedName, kRightsGuid, kCommonName, kAppliesTo, kValidAccesses
         };
 
+        private static string BytesToString(byte[] ba)
+        {
+            return string.Join(string.Empty, ba.Select(b => $"\\{b:X02}"));
+        }
+
         private static string GuidToString(Guid guid)
         {
-            return string.Join(string.Empty, guid.ToByteArray().Select(b => $"\\{b:X02}"));
+            return BytesToString(guid.ToByteArray());
         }
 
         private class PropertyClass
@@ -1216,6 +1221,35 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static SecurityInformation GetSDRightsEffective(string distinguished_name)
         {
             return GetSDRightsEffective(string.Empty, distinguished_name);
+        }
+
+        /// <summary>
+        /// Try and find the an object from its SID.
+        /// </summary>
+        /// <param name="domain">Specify the domain to search.</param>
+        /// <param name="sid">The SID to find.</param>
+        /// <returns>The distinguished name of the object, null if not found.</returns>
+        public static string FindObjectFromSid(string domain, Sid sid)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(domain))
+                {
+                    var name = sid.GetName();
+                    if (sid.StartsWith(new Sid(SecurityAuthority.Nt, 21)) 
+                        && !name.Domain.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        domain = name.Domain;
+                    }
+                }
+                var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
+                return FindDirectoryEntry(root_entry, SearchScope.Subtree, $"(objectSid={BytesToString(sid.ToArray())})", kDistinguishedName)?.ToPropertyClass()
+                    .GetPropertyValue<string>(kDistinguishedName);
+            }
+            catch (COMException)
+            {
+                return null;
+            }
         }
 
         /// <summary>

@@ -416,3 +416,33 @@ function Get-DsSDRightsEffective {
         [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSDRightsEffective($Domain, $DistinguishedName)
     }
 }
+
+<#
+.SYNOPSIS
+Search for the distinguished name of the object which represents the SID.
+.DESCRIPTION
+This cmdlet searches for the object distinguished name for a SID.
+.PARAMETER Sid
+Specify the SID to lookup.
+.PARAMETER Domain
+Specify the domain or server name to query for the object. Defaults to current domain's global catalog.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Search-DsObjectSid -Sid (Get-NtSid)
+Get the name of the object for the current SID.
+#>
+function Search-DsObjectSid {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Sid]$Sid,
+        [string]$Domain
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::FindObjectFromSid($Domain, $Sid)
+    }
+}
