@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Utilities.Security
 {
@@ -92,6 +93,11 @@ namespace NtApiDotNet.Utilities.Security
         /// Optional label for this tree entry.
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Indicates the number of total entries this tree contains.
+        /// </summary>
+        public int Count => 1 + _nodes.Sum(n => n.Count);
 
         #endregion
 
@@ -257,7 +263,7 @@ namespace NtApiDotNet.Utilities.Security
 
         #region Private Members
 
-        private List<ObjectTypeTree> _nodes;
+        private readonly List<ObjectTypeTree> _nodes;
 
         private ObjectTypeTree()
         {
