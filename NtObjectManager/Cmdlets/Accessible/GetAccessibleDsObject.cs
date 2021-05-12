@@ -323,10 +323,6 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private void GetAccessCheckResult(string dn, string name, DsObjectInformation obj_info, SecurityDescriptor sd, Sid object_sid)
         {
-            string sddl_sd = sd.ToSddl();
-            string b64_sd = sd.ToBase64();
-            string owner = sd.Owner.Sid.Name;
-
             for(int i = 0; i < _context.Count; ++i)
             {
                 var ctx = _context[i];
@@ -353,7 +349,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                     rights_results.Where(r => r.Object.IsValidatedWrite),
                     class_results,
                     attr_results,
-                    sddl_sd, b64_sd, owner, token_info));
+                    sd, token_info));
             }
         }
 

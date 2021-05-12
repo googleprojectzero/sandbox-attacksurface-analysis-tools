@@ -183,17 +183,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// The security descriptor associated with this access check.
         /// </summary>
-        public string SecurityDescriptor { get; }
-
-        /// <summary>
-        /// The security descriptor associated with this access check in base64 format.
-        /// </summary>
-        public string SecurityDescriptorBase64 { get; }
+        public SecurityDescriptor SecurityDescriptor { get; }
 
         /// <summary>
         /// The SID owner of the resource from the security descriptor.
         /// </summary>
-        public string Owner { get; }
+        public string Owner => SecurityDescriptor.Owner.Sid.Name;
 
         /// <summary>
         /// Information the token used in the access check.
@@ -233,7 +228,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceExtendedRight>> write_validated,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaClass>> schema_classes,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaAttribute>> schema_attributes,
-            string sd, string sd_b64, string owner, TokenInformation token_info)
+            SecurityDescriptor sd, TokenInformation token_info)
         {
             DistinguishedName = dn;
             Name = name;
@@ -249,8 +244,6 @@ namespace NtObjectManager.Cmdlets.Accessible
             Attributes = schema_attributes.ToList().AsReadOnly();
             TokenInfo = token_info;
             SecurityDescriptor = sd;
-            SecurityDescriptorBase64 = sd_b64;
-            Owner = owner;
 
             var mapping = DirectoryServiceUtils.GenericMapping;
             IsRead = mapping.HasRead(MaximumGrantedAccess);
