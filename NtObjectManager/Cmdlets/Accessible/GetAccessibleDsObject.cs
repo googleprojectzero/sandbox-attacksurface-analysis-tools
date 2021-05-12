@@ -166,7 +166,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             _context = new DisposableList<AuthZContext>();
             _token_info = new List<TokenInformation>();
-            _checked_paths = new HashSet<string>();
+            _checked_paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             ObjectClass = new string[0];
             Exclude = new string[0];
             Include = new string[0];
@@ -205,7 +205,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         private const string kSchemaNamingContext = "schemaNamingContext";
         private const string kConfigurationNamingContext = "configurationNamingContext";
         private const string kDefaultNamingContext = "defaultNamingContext";
-
+        private const string kDistinguishedName = "distinguishedName";
+        private const string kObjectClass = "objectClass";
+        private const string kStructuralObjectClass = "structuralObjectClass";
+        private const string kNTSecurityDescriptor = "nTSecurityDescriptor";
+        private const string kObjectSid = "objectSid";
+        private const string kName = "name";
         private readonly DisposableList<AuthZContext> _context;
         private readonly HashSet<string> _checked_paths;
         private List<TokenInformation> _token_info;
@@ -239,12 +244,12 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private static string GetObjectClass(SearchResult result)
         {
-            return GetPropertyValues<string>(result, "objectClass").LastOrDefault();
+            return GetPropertyValues<string>(result, kObjectClass).LastOrDefault();
         }
 
         private static SecurityDescriptor GetObjectSecurityDescriptor(SearchResult result)
         {
-            var sd = GetPropertyValue<byte[]>(result, "nTSecurityDescriptor");
+            var sd = GetPropertyValue<byte[]>(result, kNTSecurityDescriptor);
             if (sd == null)
                 return null;
             return SecurityDescriptor.Parse(sd, DirectoryServiceUtils.NtType, false).GetResultOrDefault();
@@ -252,7 +257,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private static Sid GetObjectSid(SearchResult result)
         {
-            var sid = GetPropertyValue<byte[]>(result, "objectSid");
+            var sid = GetPropertyValue<byte[]>(result, kObjectSid);
             if (sid == null)
                 return null;
             return NtApiDotNet.Sid.Parse(sid, false).GetResultOrDefault();
@@ -345,13 +350,13 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private void RunAccessCheck(DirectoryEntry root, SearchScope scope, string filter, int current_depth)
         {
-            foreach (var result in FindAllDirectoryEntries(root, scope, filter, "distinguishedName", "objectClass",
-                "structuralObjectClass", "nTSecurityDescriptor", "objectSid", "name"))
+            foreach (var result in FindAllDirectoryEntries(root, scope, filter, kDistinguishedName, kObjectClass,
+                kStructuralObjectClass, kNTSecurityDescriptor, kObjectSid, kName))
             {
                 if (Stopping)
                     return;
 
-                string dn = GetPropertyValue<string>(result, "distinguishedName");
+                string dn = GetPropertyValue<string>(result, kDistinguishedName);
                 if (string.IsNullOrWhiteSpace(dn))
                 {
                     WriteWarning($"Couldn't get DN for '{result.Path}'");
@@ -363,7 +368,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                 WriteProgress($"Checking {dn}");
 
-                string name = GetPropertyValue<string>(result, "name");
+                string name = GetPropertyValue<string>(result, kName);
 
                 var sd = GetObjectSecurityDescriptor(result);
                 if (sd == null)
@@ -408,14 +413,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private string ConstructLdapUrl(string path)
         {
-            string scheme = "LDAP";
-            string domain = Domain;
-            if (domain?.EndsWith(":3268") ?? false)
-            {
-                scheme = "GC";
-                domain = domain.Remove(domain.Length - 5);
-            }
-            return string.IsNullOrEmpty(domain) ? $"{scheme}://{path}" : $"{scheme}://{domain}/{path}";
+            return string.IsNullOrEmpty(Domain) ? $"LDAP://{path}" : $"LDAP://{Domain}/{path}";
         }
 
         private string GetNamingContext(string nc)
@@ -556,6 +554,8 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private bool IncludePath(string path)
         {
+            if (!_checked_paths.Add(path))
+                return false;
             InitializeFilters();
             if (_exclude_filters.Length > 0)
             {
