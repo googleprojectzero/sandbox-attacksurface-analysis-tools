@@ -59,7 +59,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <returns>The created client context.</returns>
         public NtResult<AuthZContext> CreateContext(NtToken token, bool throw_on_error)
         {
-            return AuthZContext.Create(_handle, token, throw_on_error);
+            return AuthZContext.Create(_handle, token, Remote, throw_on_error);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <returns>The created client context.</returns>
         public NtResult<AuthZContext> CreateContext(Sid sid, AuthZContextInitializeSidFlags flags, bool throw_on_error)
         {
-            return AuthZContext.Create(_handle, flags, sid, throw_on_error);
+            return AuthZContext.Create(_handle, flags, sid, Remote, throw_on_error);
         }
 
         /// <summary>

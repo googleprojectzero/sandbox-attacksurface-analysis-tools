@@ -27,11 +27,12 @@ namespace NtApiDotNet.Win32.Security.Authorization
     public sealed class AuthZContext : IDisposable
     {
         #region Private Members
-        private SafeAuthZClientContextHandle _handle;
+        private readonly SafeAuthZClientContextHandle _handle;
 
-        private AuthZContext(SafeAuthZClientContextHandle handle)
+        private AuthZContext(SafeAuthZClientContextHandle handle, bool remote)
         {
             _handle = handle;
+            Remote = remote;
         }
 
         private static AUTHZ_CONTEXT_INFORMATION_CLASS SidTypeToInfoClass(AuthZGroupSidType type)
@@ -145,6 +146,11 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// Get AppContainer SID.
         /// </summary>
         public Sid AppContainerSid => GetAppContainerSid(false).GetResultOrDefault(null);
+
+        /// <summary>
+        /// Indicates if this context is connected to a remote access server.
+        /// </summary>
+        public bool Remote { get; }
 
         #endregion
 
@@ -422,6 +428,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <param name="type">NT Type for access checking.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of access check results.</returns>
+        /// <remarks>The list of object types is restricted to 256 entries for remote access checks.</remarks>
         public NtResult<AuthZAccessCheckResult[]> AccessCheck(SecurityDescriptor sd, IEnumerable<SecurityDescriptor> optional_sd,
             AccessMask desired_access, Sid principal, IEnumerable<ObjectTypeEntry> object_types, NtType type,
             bool throw_on_error)
@@ -486,6 +493,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <param name="object_types">Optional list of object types.</param>
         /// <param name="type">NT Type for access checking.</param>
         /// <returns>The list of access check results.</returns>
+        /// <remarks>The list of object types is restricted to 256 entries for remote access checks.</remarks>
         public AuthZAccessCheckResult[] AccessCheck(SecurityDescriptor sd, IEnumerable<SecurityDescriptor> optional_sd,
             AccessMask desired_access, Sid principal, IEnumerable<ObjectTypeEntry> object_types, NtType type)
         {
@@ -510,7 +518,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
             return SecurityNativeMethods.AuthzInitializeContextFromAuthzContext(0, _handle, null, default,
                 IntPtr.Zero,
                 out SafeAuthZClientContextHandle new_handle)
-                .CreateWin32Result(throw_on_error, () => new AuthZContext(new_handle));
+                .CreateWin32Result(throw_on_error, () => new AuthZContext(new_handle, Remote));
         }
 
         /// <summary>
@@ -524,7 +532,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
         #endregion
 
         #region Internal Members
-        internal static NtResult<AuthZContext> Create(SafeAuthZResourceManagerHandle resource_manager, NtToken token, bool throw_on_error)
+        internal static NtResult<AuthZContext> Create(SafeAuthZResourceManagerHandle resource_manager, NtToken token, bool remote, bool throw_on_error)
         {
             if (token is null)
             {
@@ -532,10 +540,10 @@ namespace NtApiDotNet.Win32.Security.Authorization
             }
 
             return SecurityNativeMethods.AuthzInitializeContextFromToken(0, token.Handle, resource_manager,
-                null, default, IntPtr.Zero, out SafeAuthZClientContextHandle handle).CreateWin32Result(throw_on_error, () => new AuthZContext(handle));
+                null, default, IntPtr.Zero, out SafeAuthZClientContextHandle handle).CreateWin32Result(throw_on_error, () => new AuthZContext(handle, remote));
         }
 
-        internal static NtResult<AuthZContext> Create(SafeAuthZResourceManagerHandle resource_manager, AuthZContextInitializeSidFlags flags, Sid sid, bool throw_on_error)
+        internal static NtResult<AuthZContext> Create(SafeAuthZResourceManagerHandle resource_manager, AuthZContextInitializeSidFlags flags, Sid sid, bool remote, bool throw_on_error)
         {
             if (sid is null)
             {
@@ -545,7 +553,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
             using (var buffer = sid.ToSafeBuffer())
             {
                 return SecurityNativeMethods.AuthzInitializeContextFromSid(flags, buffer, resource_manager,
-                    null, default, IntPtr.Zero, out SafeAuthZClientContextHandle handle).CreateWin32Result(throw_on_error, () => new AuthZContext(handle));
+                    null, default, IntPtr.Zero, out SafeAuthZClientContextHandle handle).CreateWin32Result(throw_on_error, () => new AuthZContext(handle, remote));
             }
         }
 
