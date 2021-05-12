@@ -94,23 +94,6 @@ namespace NtApiDotNet
             AccessMask granted_access,
             AccessMask generic_granted_access,
             IEnumerable<TokenPrivilege> privilege_required,
-            ObjectTypeEntry object_type,
-            bool generate_on_close) 
-            : this(status, granted_access,
-                  generic_granted_access, privilege_required,
-                  granted_access.ToSpecificAccess<T>(),
-                  generic_granted_access.ToSpecificAccess<T>(),
-                  object_type.ObjectType,
-                  object_type.Name,
-                  generate_on_close, 
-                  object_type.Level)
-        {
-        }
-
-        internal AccessCheckResult(NtStatus status,
-            AccessMask granted_access,
-            AccessMask generic_granted_access,
-            IEnumerable<TokenPrivilege> privilege_required,
             T specific_granted_access,
             T specific_generic_granted_access,
             Guid object_type,
@@ -146,7 +129,7 @@ namespace NtApiDotNet
                   generic_mapping.UnmapMask(granted_access),
                   privilege_set?.GetPrivileges() ?? new TokenPrivilege[0],
                   object_type?.ObjectType ?? Guid.Empty, object_type?.Name, 
-                  generate_on_close, object_type.Level)
+                  generate_on_close, object_type?.Level ?? 0)
         {
         }
 
