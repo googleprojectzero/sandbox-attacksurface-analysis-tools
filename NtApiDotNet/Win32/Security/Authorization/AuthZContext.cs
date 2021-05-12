@@ -289,6 +289,15 @@ namespace NtApiDotNet.Win32.Security.Authorization
         }
 
         /// <summary>
+        /// Add a list of SIDs to the context.
+        /// </summary>
+        /// <param name="sids">The list of SIDS.</param>
+        public void AddSids(IEnumerable<Sid> sids)
+        {
+            ModifyGroups(AuthZGroupSidType.Normal, sids, AuthZSidOperation.Add);
+        }
+
+        /// <summary>
         /// Get list of groups for the AuthZ context.
         /// </summary>
         /// <param name="group_type">The group type.</param>

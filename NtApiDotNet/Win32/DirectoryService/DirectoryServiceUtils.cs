@@ -1301,8 +1301,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         /// <param name="domain">Domain name for the lookup.</param>
         /// <param name="name">The distinguished name to find as member.</param>
-        /// <returns>The list of member SIDs.</returns>
-        public static IReadOnlyList<DirectoryServiceSecurityPrincipal> FindGroupMemberForName(string domain, string name)
+        /// <returns>The list of groups.</returns>
+        public static IReadOnlyList<DirectoryServiceSecurityPrincipal> FindDomainLocalGroupForMember(string domain, string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -1313,7 +1313,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             try
             {
                 var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
-                var entry = FindAllDirectoryEntries(root_entry, SearchScope.Subtree, $"(member={name})", kObjectSid, kDistinguishedName);
+                var entry = FindAllDirectoryEntries(root_entry, SearchScope.Subtree, $"(&(ObjectClass=group)(member={name})(|(groupType=-2147483643)(groupType=-2147483644)))", 
+                    kObjectSid, kDistinguishedName);
                 foreach (var prop in entry.Select(r => r.ToPropertyClass()))
                 {
                     byte[] sid = prop.GetPropertyValue<byte[]>(kObjectSid);

@@ -498,7 +498,25 @@ namespace NtObjectManager.Cmdlets.Accessible
                     }
 
                     var context = _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
-                    context.ModifyGroups(AuthZGroupSidType.Normal, DirectoryServiceUtils.FindTokenGroupsForSid(sid, false), AuthZSidOperation.Add);
+                    context.AddSid(KnownSids.World);
+                    context.AddSid(KnownSids.AuthenticatedUsers);
+                    context.AddSids(DirectoryServiceUtils.FindTokenGroupsForSid(sid, false));
+                    HashSet<DirectoryServiceSecurityPrincipal> members = new HashSet<DirectoryServiceSecurityPrincipal>();
+                    foreach (var next_sid in context.Groups.Select(g => g.Sid))
+                    {
+                        var principal_name = NtSecurity.IsDomainSid(next_sid) ? DirectoryServiceUtils.FindObjectFromSid(null, next_sid) 
+                            : DirectoryServiceUtils.FindObjectFromSid(Domain, next_sid);
+                        if (principal_name == null)
+                            continue;
+                        members.Add(principal_name);
+                    }
+
+                    var user_name = DirectoryServiceUtils.FindObjectFromSid(null, sid);
+                    if (user_name != null)
+                    {
+                        members.Add(user_name);
+                    }
+
                     // TODO: Build builtin and domain local groups for the target domain.
                 }
             }
