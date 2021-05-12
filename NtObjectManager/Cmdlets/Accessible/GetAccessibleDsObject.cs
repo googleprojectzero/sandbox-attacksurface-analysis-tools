@@ -218,6 +218,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private const string kNTSecurityDescriptor = "nTSecurityDescriptor";
         private const string kObjectSid = "objectSid";
         private const string kName = "name";
+        private const int kMaxRemoteObjectTypes = 255;
         private readonly DisposableList<AuthZContext> _context;
         private readonly HashSet<string> _checked_paths;
         private List<TokenInformation> _token_info;
@@ -267,11 +268,15 @@ namespace NtObjectManager.Cmdlets.Accessible
             var sid = GetPropertyValue<byte[]>(result, kObjectSid);
             if (sid == null)
                 return null;
-            return NtApiDotNet.Sid.Parse(sid, false).GetResultOrDefault();
+            return Sid.Parse(sid, false).GetResultOrDefault();
         }
 
         private AuthZAccessCheckResult[] AccessCheck(AuthZContext context, SecurityDescriptor sd, Sid object_sid, ObjectTypeTree tree)
         {
+            if (context.Remote && tree?.Count > kMaxRemoteObjectTypes)
+            {
+                return tree.Split(kMaxRemoteObjectTypes).SelectMany(t => AccessCheck(context, sd, object_sid, t)).ToArray();
+            }
             return context.AccessCheck(sd, null, DirectoryServiceAccessRights.MaximumAllowed, object_sid, tree?.ToArray(), sd.NtType);
         }
 

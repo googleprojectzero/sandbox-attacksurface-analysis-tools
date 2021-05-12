@@ -252,6 +252,40 @@ namespace NtApiDotNet.Utilities.Security
         }
 
         /// <summary>
+        /// Split the tree up to reduce the maximum number of entries.
+        /// </summary>
+        /// <remarks>This will try and keep whole branches together if at all possible, 
+        /// but might split them up. This could result in incorrect access checking.</remarks>
+        /// <param name="max_entry">The maximum number of entries per tree.</param>
+        /// <returns>One or more split trees.</returns>
+        public IEnumerable<ObjectTypeTree> Split(int max_entry)
+        {
+            if (max_entry < 1)
+                throw new ArgumentException("Max entry can't be less than 1", nameof(max_entry));
+            if (Count < max_entry)
+                return new[] { this };
+
+            List<ObjectTypeTree> ret = new List<ObjectTypeTree>();
+            ObjectTypeTree new_tree = new ObjectTypeTree(ObjectType, Name);
+            ret.Add(new_tree);
+            int remaining = max_entry - 1;
+
+            foreach (var node in Nodes.SelectMany(n => n.Split(max_entry - 1)).OrderBy(n => n.Count))
+            {
+                int count = node.Count;
+                if (count > remaining)
+                {
+                    new_tree = new ObjectTypeTree(ObjectType, Name);
+                    remaining = max_entry - 1;
+                    ret.Add(new_tree);
+                }
+                new_tree.AddNode(node.Clone());
+                remaining -= count;
+            }
+            return ret.ToArray();
+        }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The object formatted.</returns>
