@@ -81,7 +81,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         public AuthZContext[] Context { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify to avoid looking up groups for a domain user and just use what's on the local system. This might give inaccurant results.</para>
+        /// <para type="description">Specify to avoid looking up groups for a domain user and just use what's on the local system. This might give inaccurant results. You should also use this if testing on the DC.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter UseLocalGroup { get; set; }
