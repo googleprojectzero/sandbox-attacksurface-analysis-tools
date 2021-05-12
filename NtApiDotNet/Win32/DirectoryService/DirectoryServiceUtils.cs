@@ -1235,11 +1235,9 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 if (string.IsNullOrEmpty(domain))
                 {
-                    var name = sid.GetName();
-                    if (sid.StartsWith(new Sid(SecurityAuthority.Nt, 21)) 
-                        && !name.Domain.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+                    if (NtSecurity.IsDomainSid(sid) && !NtSecurity.IsLocalDomainSid(sid))
                     {
-                        domain = name.Domain;
+                        domain = sid.GetName().Domain;
                     }
                 }
                 var root_entry = GetRootEntry(domain, null, kDefaultNamingContext);
@@ -1250,6 +1248,44 @@ namespace NtApiDotNet.Win32.DirectoryService
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Try and find the token groups for an object.
+        /// </summary>
+        /// <param name="name">The distinguished name to find.</param>
+        /// <param name="all_groups">True to return all groups including BUILTIN on the server. False for just universal and global groups.</param>
+        /// <returns>The list of member SIDs.</returns>
+        public static IReadOnlyList<Sid> FindTokenGroupsForName(string name, bool all_groups)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException($"'{nameof(name)}' cannot be null or empty.", nameof(name));
+            }
+
+            var ret = new List<Sid>();
+            try
+            {
+                string property_name = all_groups ? "tokenGroups" : "tokenGroupsGlobalAndUniversal";
+                var root_entry = new DirectoryEntry($"GC://{name}");
+                var token_groups = FindDirectoryEntry(root_entry, SearchScope.Base, "(objectClass=*)", property_name).ToPropertyClass().GetPropertyValues<byte[]>(property_name);
+                ret.AddRange(token_groups.Select(ba => new Sid(ba)));
+            }
+            catch (COMException)
+            {
+            }
+            return ret.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Try and find the token groups for an object using the SID.
+        /// </summary>
+        /// <param name="sid">Sid to use for the object.</param>
+        /// <param name="all_groups">True to return all groups including BUILTIN on the server. False for just universal and global groups.</param>
+        /// <returns>The list of member SIDs.</returns>
+        public static IReadOnlyList<Sid> FindTokenGroupsForSid(Sid sid, bool all_groups)
+        {
+            return FindTokenGroupsForName(FindObjectFromSid(string.Empty, sid), all_groups);
         }
 
         /// <summary>

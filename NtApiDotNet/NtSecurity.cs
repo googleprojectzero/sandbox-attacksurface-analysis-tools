@@ -948,6 +948,26 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Checks if a SID is a domain SID.
+        /// </summary>
+        /// <param name="sid">The SID to check.</param>
+        /// <returns>True if a domain SID.</returns>
+        public static bool IsDomainSid(Sid sid)
+        {
+            return sid.StartsWith(new Sid(SecurityAuthority.Nt, 21));
+        }
+
+        /// <summary>
+        /// Checks if a SID is a domain SID and is a member of the local machine domain.
+        /// </summary>
+        /// <param name="sid">The SID to check.</param>
+        /// <returns>True if a domain SID.</returns>
+        public static bool IsLocalDomainSid(Sid sid)
+        {
+            return IsDomainSid(sid) && sid.StartsWith(_machine_sid.Value);
+        }
+
+        /// <summary>
         /// Checks if a SID is a capability SID.
         /// </summary>
         /// <param name="sid">The sid to check.</param>
@@ -2336,6 +2356,8 @@ namespace NtApiDotNet
             // S-1-5-93-2-2
             { new Sid(SecurityAuthority.Nt, 93, 2, 2), Tuple.Create("User Manager", "ContainerUser") },
         };
+
+        private readonly static Lazy<Sid> _machine_sid = new Lazy<Sid>(() => LookupAccountName(Environment.MachineName));
 
         private static T GetEnumAttribute<T>(Type enum_type, string name) where T : Attribute
         {
