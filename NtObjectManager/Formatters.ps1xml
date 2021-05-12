@@ -4885,5 +4885,49 @@
             </ListEntries>
         </ListControl>
     </View>
+    <View>
+      <Name>DsObjectAccessCheckResult</Name>
+      <ViewSelectedBy>
+        <TypeName>NtObjectManager.Cmdlets.Accessible.DsObjectAccessCheckResult</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ObjectClass</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Modifiable</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Controllable</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ObjectClass</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Modifiable</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Controllable</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

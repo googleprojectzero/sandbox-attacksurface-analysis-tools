@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32.Security.Authorization;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -203,6 +204,16 @@ namespace NtObjectManager.Cmdlets.Accessible
                 SourceData["CommandLine"] = process.CommandLine;
                 SourceData["NativeImagePath"] = process.GetImageFilePath(true, false).GetResultOrDefault(string.Empty);
             }
+        }
+
+        internal TokenInformation(AuthZContext context)
+        {
+            SourceData = new Dictionary<string, object>();
+            User = context.User.Sid;
+            IntegrityLevel = TokenIntegrityLevel.Medium;
+            TokenType = TokenType.Impersonation;
+            ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+            Groups = context.Groups.ToList().AsReadOnly();
         }
     }
 }

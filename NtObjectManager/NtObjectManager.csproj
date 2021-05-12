@@ -40,6 +40,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Management" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -54,7 +55,11 @@
     <Compile Include="Cmdlets\Accessible\CommonAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Accessible\CommonAccessBaseWithAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\DeviceAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\DsObjectAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\DsObjectInformation.cs" />
+    <Compile Include="Cmdlets\Accessible\DsObjectTypeAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Accessible\EventTraceAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleDsObject.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessiblePathCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />
