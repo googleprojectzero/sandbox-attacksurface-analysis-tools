@@ -54,8 +54,24 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// the access a user has to that object. If no users are specified the current user is used.</para>
     /// </summary>
     /// <example>
-    ///   <code>Get-AccessibleDsObject \Device</code>
-    ///   <para>Check accessible devices under \Device for the current process token.</para>
+    ///   <code>Get-AccessibleDsObject -NamingContext Default -Recurse</code>
+    ///   <para>Check accessible DS objects under the current default naming context for the current domain.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDsObject -NamingContext Default -Recurse -Domain SALES</code>
+    ///   <para>Check accessible DS objects under the current default naming context for the SALES domain.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDsObject -DistinguishedName "CN=Users,DC=domain,DC=local" -Recurse</code>
+    ///   <para>Check accessible DS objects under the Users container.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDsObject -NamingContext Default -Recurse -ObjectType user</code>
+    ///   <para>Check accessible user DS objects under the current default naming context for the current domain.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDsObject -NamingContext Default -Recurse -UserName "DOMAIN\user"</code>
+    ///   <para>Check accessible user DS objects under the current default naming context for the current domain for the DOMAIN\user user..</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleDsObject", DefaultParameterSetName = "FromDN")]
     [OutputType(typeof(DsObjectAccessCheckResult[]))]
@@ -122,7 +138,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">When recursing specify maximum depth.</para>
         /// </summary>
         [Parameter]
-        public int? Depth { get; set; }
+        public int Depth { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a common name filter when enumerating objects. This removes paths which don't match and doesn't inspect them further.
@@ -177,6 +193,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             Exclude = new string[0];
             Include = new string[0];
             Context = new AuthZContext[0];
+            Depth = int.MaxValue;
         }
         #endregion
 
@@ -188,10 +205,9 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             SearchScope scope = GetSearchScope();
             string filter = GetLdapFilter();
-            int max_depth = Depth ?? int.MaxValue;
             foreach (var entry in GetRootEntries())
             {
-                RunAccessCheck(entry, scope, filter, max_depth);
+                RunAccessCheck(entry, scope, filter, Depth);
             }
         }
 
@@ -538,7 +554,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                         continue;
                     }
 
-                    WriteProgress($"Building context for {sid.Name}");
+                    WriteProgress($"Building security context for {sid.Name}");
                     var context = _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
                     context.AddSids(_cached_user_groups.GetOrAdd(Tuple.Create(Domain, sid), _ => GetUserDomainSids(Domain, sid)));
                 }
