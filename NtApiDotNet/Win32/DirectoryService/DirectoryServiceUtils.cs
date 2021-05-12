@@ -77,8 +77,6 @@ namespace NtApiDotNet.Win32.DirectoryService
             new DomainDictionaryDict<string, DirectoryServiceExtendedRight>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>> _extended_rights_by_applies_to 
             = new DomainDictionaryDict<Guid, List<DirectoryServiceExtendedRight>>();
-        private static readonly DomainDictionaryDict<string, List<DirectoryServiceSchemaObject>> _schema_obj_by_filter 
-            = new DomainDictionaryDict<string, List<DirectoryServiceSchemaObject>>(StringComparer.OrdinalIgnoreCase);
         private static readonly DomainDictionaryLazy _get_extended_rights = new DomainDictionaryLazy(LoadExtendedRights);
         private static readonly DomainDictionaryLazy _get_schema_classes = new DomainDictionaryLazy(LoadSchemaClasses);
         private static readonly DirectoryServiceExtendedRight _default_propset = new DirectoryServiceExtendedRight(string.Empty, string.Empty,
@@ -1218,6 +1216,25 @@ namespace NtApiDotNet.Win32.DirectoryService
         public static SecurityInformation GetSDRightsEffective(string distinguished_name)
         {
             return GetSDRightsEffective(string.Empty, distinguished_name);
+        }
+
+        /// <summary>
+        /// Call to pre-cache the schema for a domain, could take a long time to load.
+        /// </summary>
+        /// <param name="domain">The domain to cache.</param>
+        /// <returns>True if the schema was cached successfully.</returns>
+        public static bool CacheDomainSchema(string domain)
+        {
+            return _get_extended_rights.Get(domain).Value && _get_schema_classes.Get(domain).Value;
+        }
+
+        /// <summary>
+        /// Call to pre-cache the schema for the current domain, could take a long time to load.
+        /// </summary>
+        /// <returns>True if the schema was cached successfully.</returns>
+        public static bool CacheDomainSchema()
+        {
+            return CacheDomainSchema(string.Empty);
         }
 
         #endregion
