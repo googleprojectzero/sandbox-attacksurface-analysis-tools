@@ -483,7 +483,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (sids.Count == 0)
                 sids.Add(NtToken.CurrentUser.Sid);
 
-            if (_resource_manager.Remote)
+            if (_resource_manager.Remote || UseLocalGroup)
             {
                 _context.AddRange(sids.Select(s => _resource_manager.CreateContext(s, AuthZContextInitializeSidFlags.None)));
             }
@@ -497,6 +497,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                         continue;
                     }
 
+                    WriteProgress($"Building context for {sid.Name}");
                     var context = _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
                     context.AddSid(KnownSids.World);
                     context.AddSid(KnownSids.AuthenticatedUsers);
@@ -506,18 +507,30 @@ namespace NtObjectManager.Cmdlets.Accessible
                     {
                         var principal_name = NtSecurity.IsDomainSid(next_sid) ? DirectoryServiceUtils.FindObjectFromSid(null, next_sid) 
                             : DirectoryServiceUtils.FindObjectFromSid(Domain, next_sid);
-                        if (principal_name == null)
+                        if (principal_name?.DistinguishedName == null)
                             continue;
                         members.Add(principal_name);
                     }
 
                     var user_name = DirectoryServiceUtils.FindObjectFromSid(null, sid);
-                    if (user_name != null)
+                    if (user_name?.DistinguishedName != null)
                     {
                         members.Add(user_name);
                     }
 
-                    // TODO: Build builtin and domain local groups for the target domain.
+                    Queue<string> remaining_checks = new Queue<string>(members.Select(m => m.DistinguishedName));
+                    while (remaining_checks.Count > 0)
+                    {
+                        string dn = remaining_checks.Dequeue();
+                        foreach (var local_group in DirectoryServiceUtils.FindDomainLocalGroupForMember(Domain, dn))
+                        {
+                            if (members.Add(local_group))
+                            {
+                                context.AddSid(local_group.Sid);
+                                remaining_checks.Enqueue(local_group.DistinguishedName);
+                            }
+                        }
+                    }
                 }
             }
 
