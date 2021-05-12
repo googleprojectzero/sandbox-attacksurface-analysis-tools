@@ -229,6 +229,8 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private static readonly ConcurrentDictionary<string, DsObjectInformation> _cached_info 
             = new ConcurrentDictionary<string, DsObjectInformation>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<Tuple<string, Sid>, List<Sid>> _cached_user_groups 
+            = new ConcurrentDictionary<Tuple<string, Sid>, List<Sid>>();
 
         private static T[] GetPropertyValues<T>(SearchResult result, string name)
         {
@@ -464,6 +466,44 @@ namespace NtObjectManager.Cmdlets.Accessible
             return DistinguishedName.Select(dn => new DirectoryEntry(ConstructLdapUrl(Domain, dn, false))).ToList();
         }
 
+        private static List<Sid> GetUserDomainSids(string domain, Sid user_sid)
+        {
+            List<Sid> ret = new List<Sid>();
+            ret.Add(KnownSids.World);
+            ret.Add(KnownSids.AuthenticatedUsers);
+            ret.AddRange(DirectoryServiceUtils.FindTokenGroupsForSid(user_sid, false));
+            HashSet<DirectoryServiceSecurityPrincipal> members = new HashSet<DirectoryServiceSecurityPrincipal>();
+            foreach (var next_sid in ret)
+            {
+                var principal_name = NtSecurity.IsDomainSid(next_sid) ? DirectoryServiceUtils.FindObjectFromSid(null, next_sid)
+                    : DirectoryServiceUtils.FindObjectFromSid(domain, next_sid);
+                if (principal_name?.DistinguishedName == null)
+                    continue;
+                members.Add(principal_name);
+            }
+
+            var user_name = DirectoryServiceUtils.FindObjectFromSid(null, user_sid);
+            if (user_name?.DistinguishedName != null)
+            {
+                members.Add(user_name);
+            }
+
+            Queue<string> remaining_checks = new Queue<string>(members.Select(m => m.DistinguishedName));
+            while (remaining_checks.Count > 0)
+            {
+                string dn = remaining_checks.Dequeue();
+                foreach (var local_group in DirectoryServiceUtils.FindDomainLocalGroupForMember(domain, dn))
+                {
+                    if (members.Add(local_group))
+                    {
+                        ret.Add(local_group.Sid);
+                        remaining_checks.Enqueue(local_group.DistinguishedName);
+                    }
+                }
+            }
+            return ret;
+        }
+
         private void BuildAuthZContext()
         {
             _resource_manager = string.IsNullOrWhiteSpace(Server) ? AuthZResourceManager.Create(GetType().Name, 
@@ -504,38 +544,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                     WriteProgress($"Building context for {sid.Name}");
                     var context = _context.AddResource(_resource_manager.CreateContext(sid, AuthZContextInitializeSidFlags.SkipTokenGroups));
-                    context.AddSid(KnownSids.World);
-                    context.AddSid(KnownSids.AuthenticatedUsers);
-                    context.AddSids(DirectoryServiceUtils.FindTokenGroupsForSid(sid, false));
-                    HashSet<DirectoryServiceSecurityPrincipal> members = new HashSet<DirectoryServiceSecurityPrincipal>();
-                    foreach (var next_sid in context.Groups.Select(g => g.Sid))
-                    {
-                        var principal_name = NtSecurity.IsDomainSid(next_sid) ? DirectoryServiceUtils.FindObjectFromSid(null, next_sid) 
-                            : DirectoryServiceUtils.FindObjectFromSid(Domain, next_sid);
-                        if (principal_name?.DistinguishedName == null)
-                            continue;
-                        members.Add(principal_name);
-                    }
-
-                    var user_name = DirectoryServiceUtils.FindObjectFromSid(null, sid);
-                    if (user_name?.DistinguishedName != null)
-                    {
-                        members.Add(user_name);
-                    }
-
-                    Queue<string> remaining_checks = new Queue<string>(members.Select(m => m.DistinguishedName));
-                    while (remaining_checks.Count > 0)
-                    {
-                        string dn = remaining_checks.Dequeue();
-                        foreach (var local_group in DirectoryServiceUtils.FindDomainLocalGroupForMember(Domain, dn))
-                        {
-                            if (members.Add(local_group))
-                            {
-                                context.AddSid(local_group.Sid);
-                                remaining_checks.Enqueue(local_group.DistinguishedName);
-                            }
-                        }
-                    }
+                    context.AddSids(_cached_user_groups.GetOrAdd(Tuple.Create(Domain, sid), _ => GetUserDomainSids(Domain, sid)));
                 }
             }
 
