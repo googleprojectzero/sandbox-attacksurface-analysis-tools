@@ -97,7 +97,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         public AuthZContext[] Context { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify to avoid looking up groups for a domain user and just use what's on the local system. This might give inaccurant results. You should also use this if testing on the DC.</para>
+        /// <para type="description">Specify to avoid looking up groups for a domain user and just use what's on the local system. This might give inaccurate results. You should also use this if testing on the DC.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter UseLocalGroup { get; set; }
@@ -203,11 +203,14 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         protected override void ProcessRecord()
         {
-            SearchScope scope = GetSearchScope();
             string filter = GetLdapFilter();
             foreach (var entry in GetRootEntries())
             {
-                RunAccessCheck(entry, scope, filter, Depth);
+                RunAccessCheck(entry, filter, false, 0);
+                if (Recurse)
+                {
+                    RunAccessCheck(entry, filter, true, Depth - 1);
+                }
             }
         }
 
@@ -374,9 +377,12 @@ namespace NtObjectManager.Cmdlets.Accessible
             WriteProgress(new ProgressRecord(0, "Get Accessible DS Objects", str));
         }
 
-        private void RunAccessCheck(DirectoryEntry root, SearchScope scope, string filter, int current_depth)
+        private void RunAccessCheck(DirectoryEntry root, string filter, bool recurse, int current_depth)
         {
-            foreach (var result in FindAllDirectoryEntries(root, scope, filter, kDistinguishedName, kObjectClass,
+            if (current_depth < 0)
+                return;
+
+            foreach (var result in FindAllDirectoryEntries(root, recurse ? SearchScope.OneLevel : SearchScope.Base, filter, kDistinguishedName, kObjectClass,
                 kStructuralObjectClass, kNTSecurityDescriptor, kObjectSid, kName))
             {
                 if (Stopping)
@@ -422,7 +428,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (Stopping)
                 return;
 
-            if (Recurse && current_depth > 0)
+            if (recurse)
             {
                 foreach (DirectoryEntry entry in root.Children)
                 {
@@ -431,7 +437,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                     using (entry)
                     {
-                        RunAccessCheck(entry, scope, filter, current_depth--);
+                        RunAccessCheck(entry, filter, recurse, current_depth - 1);
                     }
                 }
             }
@@ -611,11 +617,6 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (filters.Count == 1)
                 return filters[0];
             return "(&" + string.Join("", filters) + ")";
-        }
-
-        private SearchScope GetSearchScope()
-        {
-            return Recurse ? SearchScope.OneLevel : SearchScope.Base;
         }
 
         private Func<string, bool> CreateFilter(string filter)
