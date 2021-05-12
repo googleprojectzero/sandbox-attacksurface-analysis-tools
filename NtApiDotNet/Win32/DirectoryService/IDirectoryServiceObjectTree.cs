@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Security;
+using System;
 
 namespace NtApiDotNet.Win32.DirectoryService
 {
@@ -25,6 +26,11 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// The name of the object.
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// The ID of the object.
+        /// </summary>
+        Guid Id { get; }
 
         /// <summary>
         /// Convert the schema class to an object type tree.

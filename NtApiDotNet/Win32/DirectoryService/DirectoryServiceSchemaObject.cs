@@ -62,6 +62,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// </summary>
         public bool SystemOnly { get; }
 
+        Guid IDirectoryServiceObjectTree.Id => SchemaId;
+
         /// <summary>
         /// Overridden ToString method.
         /// </summary>

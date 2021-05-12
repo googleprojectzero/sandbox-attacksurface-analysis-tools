@@ -111,6 +111,8 @@ namespace NtApiDotNet.Win32.DirectoryService
             return right.ToObjectTypeTree();
         }
 
+        Guid IDirectoryServiceObjectTree.Id => RightsId;
+
         internal DirectoryServiceExtendedRight(string domain, string distinguished_name, Guid rights_guid, string name, IEnumerable<Guid> applies_to, 
             DirectoryServiceAccessRights valid_accesses, Func<IReadOnlyList<DirectoryServiceSchemaAttribute>> func)
         {
