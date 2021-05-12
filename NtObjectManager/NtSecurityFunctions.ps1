@@ -227,7 +227,7 @@ function Format-NtAce {
                 if ($null -ne $ace.ObjectType) {
                     $name = $ace.ObjectType
                     if ($ResolveObjectType) {
-                        $name = $ace.GetObjectTypeName($Domain, $true)
+                        $name = $ace.GetObjectTypeName($Domain, $false)
                     }
                     Write-Output " - ObjectType: $name"
                 }
