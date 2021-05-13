@@ -178,6 +178,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         [Parameter]
         public SwitchParameter AllowEmptyAccess { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to include deleted items in the analysis.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter IncludeDeleted { get; set; }
         #endregion
 
         #region Constructors
@@ -236,6 +242,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private const string kStructuralObjectClass = "structuralObjectClass";
         private const string kNTSecurityDescriptor = "nTSecurityDescriptor";
         private const string kObjectSid = "objectSid";
+        private const string kIsDeleted = "isDeleted";
         private const string kName = "name";
         private const int kMaxRemoteObjectTypes = 255;
         private readonly DisposableList<AuthZContext> _context;
@@ -292,6 +299,11 @@ namespace NtObjectManager.Cmdlets.Accessible
             return Sid.Parse(sid, false).GetResultOrDefault();
         }
 
+        private static bool GetIsDeleted(SearchResult result)
+        {
+            return GetPropertyValue<bool>(result, kIsDeleted);
+        }
+
         private AuthZAccessCheckResult[] AccessCheck(AuthZContext context, SecurityDescriptor sd, Sid object_sid, ObjectTypeTree tree)
         {
             if (context.Remote && tree?.Count > kMaxRemoteObjectTypes)
@@ -340,7 +352,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private void GetAccessCheckResult(string dn, string name, DsObjectInformation obj_info, SecurityDescriptor sd, Sid object_sid)
+        private void GetAccessCheckResult(string dn, string name, bool is_deleted, DsObjectInformation obj_info, SecurityDescriptor sd, Sid object_sid)
         {
             for(int i = 0; i < _context.Count; ++i)
             {
@@ -361,7 +373,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 if (max_granted_access.IsEmpty && !AllowEmptyAccess)
                     continue;
 
-                WriteObject(new DsObjectAccessCheckResult(dn, name, obj_info.SchemaClass,
+                WriteObject(new DsObjectAccessCheckResult(dn, name, obj_info.SchemaClass, is_deleted,
                     Domain, granted_access, granted_access_no_type,
                     max_granted_access, rights_results.Where(r => r.Object.IsPropertySet),
                     rights_results.Where(r => r.Object.IsControl),
@@ -382,8 +394,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             if (current_depth < 0)
                 return;
 
-            foreach (var result in FindAllDirectoryEntries(root, recurse ? SearchScope.OneLevel : SearchScope.Base, filter, kDistinguishedName, kObjectClass,
-                kStructuralObjectClass, kNTSecurityDescriptor, kObjectSid, kName))
+            foreach (var result in FindAllDirectoryEntries(root, recurse ? SearchScope.OneLevel : SearchScope.Base, IncludeDeleted, filter, kDistinguishedName, kObjectClass,
+                kStructuralObjectClass, kNTSecurityDescriptor, kObjectSid, kName, kIsDeleted))
             {
                 if (Stopping)
                     return;
@@ -422,7 +434,8 @@ namespace NtObjectManager.Cmdlets.Accessible
                     WriteWarning($"Couldn't get object information for '{dn}'");
                     continue;
                 }
-                GetAccessCheckResult(dn, name, obj_info, sd, GetObjectSid(result));
+
+                GetAccessCheckResult(dn, name, GetIsDeleted(result), obj_info, sd, GetObjectSid(result));
             }
 
             if (Stopping)
@@ -581,10 +594,11 @@ namespace NtObjectManager.Cmdlets.Accessible
             _token_info = _context.Select(c => new TokenInformation(c)).ToList();
         }
 
-        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, SearchScope scope, string filter, params string[] properties)
+        private static List<SearchResult> FindAllDirectoryEntries(DirectoryEntry root_object, SearchScope scope, bool include_deleted, string filter, params string[] properties)
         {
             using (var searcher = new DirectorySearcher(root_object, filter, properties))
             {
+                searcher.Tombstone = include_deleted;
                 searcher.SearchScope = scope;
                 searcher.PageSize = 1000;
                 searcher.SecurityMasks = SecurityMasks.Dacl | SecurityMasks.Owner | SecurityMasks.Group;

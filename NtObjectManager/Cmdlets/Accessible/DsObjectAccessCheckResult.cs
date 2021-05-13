@@ -220,8 +220,13 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         public bool IsAll { get; }
 
+        /// <summary>
+        /// Is the object deleted?
+        /// </summary>
+        public bool Deleted { get; }
+
         internal DsObjectAccessCheckResult(string dn, string name, DirectoryServiceSchemaClass schema_class,
-            string domain, AccessMask granted_access,
+            bool is_deleted, string domain, AccessMask granted_access,
             AccessMask granted_access_no_type, AccessMask maximum_granted_access,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceExtendedRight>> property_sets,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceExtendedRight>> control,
@@ -244,6 +249,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             Attributes = schema_attributes.ToList().AsReadOnly();
             TokenInfo = token_info;
             SecurityDescriptor = sd;
+            Deleted = is_deleted;
 
             var mapping = DirectoryServiceUtils.GenericMapping;
             IsRead = mapping.HasRead(MaximumGrantedAccess);
