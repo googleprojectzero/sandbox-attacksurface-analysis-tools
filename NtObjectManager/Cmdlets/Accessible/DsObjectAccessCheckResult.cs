@@ -145,7 +145,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Get the list of writable attributes.
         /// </summary>
-        public IEnumerable<DirectoryServiceExtendedRight> WriteablePropertySets
+        public IEnumerable<DirectoryServiceExtendedRight> WritablePropertySets
             => PropertySets.Where(a => a.IsAccessGranted(DirectoryServiceAccessRights.WriteProp)).Select(a => a.Object);
 
         /// <summary>
