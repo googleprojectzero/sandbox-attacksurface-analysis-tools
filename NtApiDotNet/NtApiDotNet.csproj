@@ -344,6 +344,8 @@
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\LsaLogonHandle.cs" />
+    <Compile Include="Win32\Security\Authentication\LsaLogonResult.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContextInitializeSidFlags.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZGroupSidType.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZResourceManagerInitializeFlags.cs" />
@@ -727,7 +729,6 @@
     <Compile Include="Win32\ServiceTriggerInformation.cs" />
     <Compile Include="Win32\SymbolLoadedModule.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
-    <Compile Include="Win32\Security\Native\TOKEN_SOURCE.cs" />
     <Compile Include="Win32\Debugger\SymbolResolverFlags.cs" />
     <Compile Include="Win32\Win32Debug.cs" />
     <Compile Include="Win32\Win32Error.cs" />

@@ -688,12 +688,10 @@ namespace NtApiDotNet.Win32
                 var groups = local_groups == null ? SafeTokenGroupsBuffer.Null 
                     : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
 
-                TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NT.NET");
-                SecurityNativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
                 QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
                 return SecurityNativeMethods.LsaLogonUser(hlsa.Result, new LsaString(origin_name),
                     type, auth_pkg.Result, buffer, buffer.GetLength(), groups,
-                    tokenSource, out SafeLsaReturnBufferHandle profile,
+                    new TokenSource("NT.NET"), out SafeLsaReturnBufferHandle profile,
                     out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
                     quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () =>
                     {

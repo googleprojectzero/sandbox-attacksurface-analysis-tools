@@ -59,6 +59,19 @@ namespace NtApiDotNet
 
         #endregion
 
+        #region Internal Members
+        internal SafeBufferGeneric(bool owns_handle)
+            : base(owns_handle)
+        {
+        }
+
+        internal void InitializeLength(long length)
+        {
+            Initialize((ulong)length);
+            LongLength = length;
+        }
+        #endregion
+
         #region Public Properties
         /// <summary>
         /// Length of the allocation.
@@ -68,18 +81,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Length of the allocation as a long.
         /// </summary>
-        public long LongLength
-        {
-            get; protected set;
-        }
+        public long LongLength { get; private set; }
 
         /// <summary>
         /// Get the length as an IntPtr
         /// </summary>
-        public IntPtr LengthIntPtr
-        {
-            get { return new IntPtr(LongLength); }
-        }
+        public IntPtr LengthIntPtr => new IntPtr(LongLength);
 
         #endregion
 

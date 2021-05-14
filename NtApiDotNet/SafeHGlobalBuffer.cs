@@ -85,8 +85,7 @@ namespace NtApiDotNet
                 free_handle = Marshal.AllocHGlobal(new_length);
                 Marshal.Copy(old_data, 0, free_handle, Math.Min(new_length, Length));
                 free_handle = Interlocked.Exchange(ref handle, free_handle);
-                LongLength = new_length;
-                Initialize((ulong)new_length);
+                InitializeLength(new_length);
             }
             finally
             {

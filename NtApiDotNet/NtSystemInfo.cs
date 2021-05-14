@@ -620,8 +620,16 @@ namespace NtApiDotNet
         /// <returns>The allocated LUID.</returns>
         public static Luid AllocateLocallyUniqueId()
         {
-            NtSystemCalls.NtAllocateLocallyUniqueId(out Luid luid).ToNtException();
-            return luid;
+            return AllocateLocallyUniqueId(true).Result;
+        }
+
+        /// <summary>
+        /// Allocate a LUID.
+        /// </summary>
+        /// <returns>The allocated LUID.</returns>
+        public static NtResult<Luid> AllocateLocallyUniqueId(bool throw_on_error)
+        {
+            return NtSystemCalls.NtAllocateLocallyUniqueId(out Luid luid).CreateResult(throw_on_error, () => luid);
         }
 
         /// <summary>

@@ -1,0 +1,135 @@
+﻿//  Copyright 2021 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Native;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+
+namespace NtApiDotNet.Win32.Security.Authentication
+{
+    /// <summary>
+    /// Class to represent an LSA logon handle.
+    /// </summary>
+    public sealed class LsaLogonHandle : IDisposable
+    {
+        private readonly SafeLsaLogonHandle _handle;
+
+        private LsaLogonHandle(SafeLsaLogonHandle handle)
+        {
+            _handle = handle;
+        }
+
+        /// <summary>
+        /// Connect to the LSA untrusted.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The LSA logon handle.</returns>
+        public static NtResult<LsaLogonHandle> ConnectUntrusted(bool throw_on_error)
+        {
+            return SafeLsaLogonHandle.ConnectUntrusted(throw_on_error).Map(h => new LsaLogonHandle(h));
+        }
+
+        /// <summary>
+        /// Connect to the LSA untrusted.
+        /// </summary>
+        /// <returns>The LSA logon handle.</returns>
+        public static LsaLogonHandle ConnectUntrusted()
+        {
+            return ConnectUntrusted(true).Result;
+        }
+
+        /// <summary>
+        /// Connect to LSA and register as a logon process.
+        /// </summary>
+        /// <param name="process_name">The arbitrary name of the process.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The LSA logon handle.</returns>
+        public static NtResult<LsaLogonHandle> RegisterLogonProcess(string process_name, bool throw_on_error)
+        {
+            return SafeLsaLogonHandle.RegisterLogonProcess(process_name, throw_on_error).Map(h => new LsaLogonHandle(h));
+        }
+
+        /// <summary>
+        /// Connect to LSA and register as a logon process.
+        /// </summary>
+        /// <param name="process_name">The arbitrary name of the process.</param>
+        /// <returns>The LSA logon handle.</returns>
+        public static LsaLogonHandle RegisterLogonProcess(string process_name)
+        {
+            return RegisterLogonProcess(process_name, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="origin_name">The name of the origin.</param>
+        /// <param name="source_context">The token source context.</param>
+        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="local_groups">Additional local groups.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The LSA logon result.</returns>
+        public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
+            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
+                if (!auth_pkg.IsSuccess)
+                    return auth_pkg.Cast<LsaLogonResult>();
+
+                var groups = local_groups == null ? SafeTokenGroupsBuffer.Null
+                    : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
+
+                QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
+                return SecurityNativeMethods.LsaLogonUser(_handle, new LsaString(origin_name),
+                    type, auth_pkg.Result, buffer, buffer.GetLength(), groups,
+                    source_context, out SafeLsaReturnBufferHandle profile,
+                    out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
+                    quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () =>
+                    {
+                        profile.InitializeLength(cbProfile);
+                        return new LsaLogonResult(NtToken.FromHandle(token_handle), profile, logon_id, quota_limits);
+                    });
+            }
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="origin_name">The name of the origin.</param>
+        /// <param name="source_context">The token source context.</param>
+        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="local_groups">Additional local groups.</param>
+        /// <returns>The LSA logon result.</returns>
+        public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
+            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups)
+        {
+            return LsaLogonUser(type, auth_package, origin_name, source_context, buffer, local_groups, true).Result;
+        }
+
+        /// <summary>
+        /// Dispose of the LSA logon handle.
+        /// </summary>
+        public void Dispose()
+        {
+            ((IDisposable)_handle).Dispose();
+        }
+    }
+}

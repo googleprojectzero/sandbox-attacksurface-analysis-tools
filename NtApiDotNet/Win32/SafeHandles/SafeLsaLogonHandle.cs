@@ -48,11 +48,22 @@ namespace NtApiDotNet.Win32.SafeHandles
 
         internal static NtResult<SafeLsaLogonHandle> Connect(bool throw_on_error)
         {
-            if (!SecurityNativeMethods.LsaRegisterLogonProcess(new LsaString("NtApiDotNet"), out SafeLsaLogonHandle hlsa, out uint _).IsSuccess())
-            {
-                return SecurityNativeMethods.LsaConnectUntrusted(out hlsa).CreateResult(throw_on_error, () => hlsa);
-            }
-            return hlsa.CreateResult();
+            var result = RegisterLogonProcess("NtApiDotNet", false);
+            if (result.IsSuccess)
+                return result;
+
+            return ConnectUntrusted(throw_on_error);
+        }
+
+        internal static NtResult<SafeLsaLogonHandle> ConnectUntrusted(bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaConnectUntrusted(out SafeLsaLogonHandle hlsa).CreateResult(throw_on_error, () => hlsa);
+        }
+
+        internal static NtResult<SafeLsaLogonHandle> RegisterLogonProcess(string process_name, bool throw_on_error)
+        {
+            return SecurityNativeMethods.LsaRegisterLogonProcess(new LsaString(process_name), 
+                out SafeLsaLogonHandle hlsa, out uint _).CreateResult(throw_on_error, () => hlsa);
         }
 
         public NtResult<uint> LookupAuthPackage(string auth_package, bool throw_on_error)
@@ -65,7 +76,7 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
             if (!(buffer?.IsInvalid ?? true))
             {
-                buffer?.Initialize((uint)length);
+                buffer?.InitializeLength(length);
             }
             return new LsaCallPackageResponse()
             {

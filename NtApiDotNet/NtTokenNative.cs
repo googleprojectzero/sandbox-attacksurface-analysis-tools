@@ -329,18 +329,24 @@ namespace NtApiDotNet
             _sourcename = new byte[8];
         }
 
-        public TokenSource(string source)
+        public TokenSource(string source) 
+            : this(source, NtSystemInfo.AllocateLocallyUniqueId(false).GetResultOrDefault())
+        {
+        }
+
+        public TokenSource(string source, Luid identifier)
         {
             _sourcename = Encoding.ASCII.GetBytes(source);
             if (_sourcename.Length != 8)
             {
                 Array.Resize(ref _sourcename, 8);
             }
+            _sourceidentifier = identifier;
         }
 
-        public Luid SourceIdentifier { get { return _sourceidentifier; } }
+        public Luid SourceIdentifier => _sourceidentifier;
 
-        public string SourceName { get { return Encoding.ASCII.GetString(_sourcename).TrimEnd('\0'); } }
+        public string SourceName => Encoding.ASCII.GetString(_sourcename).TrimEnd('\0');
 
         public override string ToString()
         {

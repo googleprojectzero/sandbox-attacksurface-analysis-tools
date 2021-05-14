@@ -564,7 +564,7 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeBuffer AuthenticationInformation,
             int AuthenticationInformationLength,
             SafeTokenGroupsBuffer LocalGroups,
-            TOKEN_SOURCE SourceContext,
+            TokenSource SourceContext,
             out SafeLsaReturnBufferHandle ProfileBuffer,
             out int ProfileBufferLength,
             out Luid LogonId,

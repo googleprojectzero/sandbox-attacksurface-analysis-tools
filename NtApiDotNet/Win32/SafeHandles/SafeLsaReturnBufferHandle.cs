@@ -16,22 +16,19 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal class SafeLsaReturnBufferHandle : SafeBuffer
+    internal class SafeLsaReturnBufferHandle : SafeBufferGeneric
     {
         protected override bool ReleaseHandle()
         {
-            SecurityNativeMethods.LsaFreeReturnBuffer(handle);
-            return true;
+            return SecurityNativeMethods.LsaFreeReturnBuffer(handle).IsSuccess();
         }
 
         public SafeLsaReturnBufferHandle(IntPtr handle, bool owns_handle)
-            : base(owns_handle)
+            : base(handle, 0, owns_handle)
         {
-            SetHandle(handle);
         }
 
         public SafeLsaReturnBufferHandle() 
@@ -39,13 +36,7 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
         }
 
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero;
 
         /// <summary>
         /// Detaches the current buffer and allocates a new one.
@@ -61,7 +52,7 @@ namespace NtApiDotNet.Win32.SafeHandles
                 IntPtr handle = DangerousGetHandle();
                 SetHandleAsInvalid();
                 var ret = new SafeLsaReturnBufferHandle(handle, true);
-                ret.Initialize(ByteLength);
+                ret.InitializeLength(LongLength);
                 return ret;
             }
             finally
