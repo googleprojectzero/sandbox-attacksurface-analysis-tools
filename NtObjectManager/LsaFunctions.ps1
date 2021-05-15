@@ -74,7 +74,7 @@ function Read-LsaCredential {
         [Parameter(Position = 1)]
         [string]$Domain,
         [Parameter(Position = 2)]
-        [string]$Password
+        [NtObjectManager.Utils.PasswordHolder]$Password
     )
 
     $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
@@ -86,8 +86,8 @@ function Read-LsaCredential {
         $Domain = Read-Host -Prompt "Domain"
     }
     $creds.Domain = $Domain
-    if ($Password -ne "") {
-        $creds.SetPassword($Password)
+    if ($null -ne $Password) {
+        $creds.Password = $Password.Password
     }
     else {
         $creds.Password = Read-Host -AsSecureString -Prompt "Password"
@@ -105,9 +105,7 @@ The username to use.
 .PARAMETER Domain
 The domain to use.
 .PARAMETER Password
-The password to use.
-.PARAMETER SecurePassword
-The secure password to use.
+The password to use, can be a string or a StringString.
 .INPUTS
 None
 .OUTPUTS
@@ -124,25 +122,21 @@ function Get-LsaCredential {
         [Parameter(Position = 1)]
         [string]$Domain,
         [Parameter(Position = 2)]
-        [string]$Password,
-        [Parameter]
-        [System.Security.SecureString]$SecurePassword
+        [alias("SecurePassword")]
+        [NtObjectManager.Utils.PasswordHolder]$Password
     )
 
     $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
-    if ($UserName -NE "") {
+    if ($UserName -ne "") {
         $creds.UserName = $UserName
     }
     
-    if ($Domain -NE "") {
+    if ($Domain -ne "") {
         $creds.Domain = $Domain
     }
 
-    if ($Password -NE "") {
-        $creds.SetPassword($Password)
-    }
-    else {
-        $creds.Password = $SecurePassword
+    if ($null -ne $Password) {
+        $creds.Password = $Password.Password
     }
     $creds
 }
@@ -236,8 +230,6 @@ The username to use.
 The domain to use.
 .PARAMETER Password
 The password to use.
-.PARAMETER SecurePassword
-The secure password to use.
 .INPUTS
 None
 .OUTPUTS
@@ -270,18 +262,17 @@ function New-LsaCredentialHandle {
         [Parameter(ParameterSetName="FromParts")]
         [string]$Domain,
         [Parameter(ParameterSetName="FromParts")]
-        [string]$Password,
-        [Parameter(ParameterSetName="FromParts")]
-        [System.Security.SecureString]$SecurePassword
+        [alias("SecurePassword")]
+        [NtObjectManager.Utils.PasswordHolder]$Password
     )
 
-    if ($PSCmdlet.ParameterSetName -EQ "FromParts") {
+    if ($PSCmdlet.ParameterSetName -eq "FromParts") {
         if ($ReadCredential) {
             $Credential = Read-LsaCredential -UserName $UserName -Domain $Domain `
                     -Password $Password
         } else {
             $Credential = Get-LsaCredential -UserName $UserName -Domain $Domain `
-                    -Password $Password -SecurePassword $SecurePassword
+                    -Password $Password
         }
     }
 

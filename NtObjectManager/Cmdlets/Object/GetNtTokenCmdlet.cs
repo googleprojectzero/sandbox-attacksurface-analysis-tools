@@ -297,16 +297,11 @@ namespace NtObjectManager.Cmdlets.Object
         public string User { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify password for logon token.</para>
+        /// <para type="description">Specify password for logon token. Can be a string or a secure string.</para>
         /// </summary>
         [Parameter(ParameterSetName = "Logon")]
-        public string Password { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify password for logon token using a secure string.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "Logon")]
-        public SecureString SecurePassword { get; set; }
+        [Alias("SecurePassword")]
+        public PasswordHolder Password { get; set; }
 
         /// <summary>
         /// <para type="description">Specify additional group sids for logon token. Needs TCB privilege.</para>
@@ -570,26 +565,6 @@ namespace NtObjectManager.Cmdlets.Object
             return NtToken.OpenProcessToken(pid, false, desired_access);
         }
 
-        private SecureString GetPassword()
-        {
-            if (Password != null)
-            {
-                SecureString str = new SecureString();
-                foreach (var ch in Password)
-                {
-                    str.AppendChar(ch);
-                }
-                return str;
-            }
-
-            if (SecurePassword != null)
-            {
-                return SecurePassword;
-            }
-
-            return null;
-        }
-
         private static GroupAttributes GetAttributes(Sid sid)
         {
             if (NtSecurity.IsServiceSid(sid))
@@ -638,7 +613,7 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (GetTcbPrivilege())
             {
-                return GetLogonToken(desired_access, User, Domain, GetPassword(), LogonType);
+                return GetLogonToken(desired_access, User, Domain, Password?.Password, LogonType);
             }
         }
 

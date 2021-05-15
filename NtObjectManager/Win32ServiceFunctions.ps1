@@ -59,13 +59,16 @@ function New-Win32Service {
         [string]$LoadOrderGroup,
         [string[]]$Dependencies,
         [string]$Username,
-        [System.Security.SecureString]$Password,
+        [NtObjectManager.Utils.PasswordHolder]$Password,
         [switch]$PassThru,
         [string]$MachineName
     )
 
+    $pwd = if ($null -ne $Password) {
+        $Password.Password
+    }
     $service = [NtApiDotNet.Win32.ServiceUtils]::CreateService($MachineName, $Name, $DisplayName, $Type, `
-        $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $Password)
+        $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $pwd)
     if ($PassThru) {
         $service
     }

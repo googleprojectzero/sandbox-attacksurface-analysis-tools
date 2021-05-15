@@ -14,9 +14,9 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using NtObjectManager.Utils;
 using System.Linq;
 using System.Management.Automation;
-using System.Security;
 
 namespace NtObjectManager.Cmdlets.Win32
 {
@@ -102,7 +102,7 @@ namespace NtObjectManager.Cmdlets.Win32
         /// <para type="description">Specify password for the service user.</para>
         /// </summary>
         [Parameter(ParameterSetName = "ChangeConfig")]
-        public SecureString Password { get; set; }
+        public PasswordHolder Password { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the service protected type.</para>
@@ -133,7 +133,7 @@ namespace NtObjectManager.Cmdlets.Win32
                 case "ChangeConfig":
                     ServiceUtils.ChangeServiceConfig(MachineName, Name,
                         DisplayName, Type, Start, ErrorControl,
-                        Path, TagId, LoadOrderGroup, Dependencies, UserName, Password);
+                        Path, TagId, LoadOrderGroup, Dependencies, UserName, Password?.Password);
                     break;
                 case "ChangeProtected":
                     ServiceUtils.SetServiceLaunchProtected(MachineName, Name, LaunchProtected);
