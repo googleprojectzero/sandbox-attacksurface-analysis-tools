@@ -447,7 +447,7 @@ function Protect-RC4 {
     )
 
     if ($Length -lt 0) {
-        $Length = $Byte.Length - $Offset
+        $Length = $Data.Length - $Offset
     }
     [NtApiDotNet.Utilities.Security.ARC4]::Transform($Data, $Offset, $Length, $Key)
 }
