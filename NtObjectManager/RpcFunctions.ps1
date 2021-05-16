@@ -834,6 +834,10 @@ function Format-RpcComplexType {
 Get a new RPC context handle.
 .DESCRIPTION
 This cmdlet creates a new RPC context handle for calling RPC APIs.
+.PARAMETER Uuid
+The UUID for the context handle.
+.PARAMETER Attributes
+The attribute flags for the context handle.
 .INPUTS
 None
 .OUTPUTS
@@ -843,7 +847,11 @@ New-RpcContextHandle
 Creates a new RPC context handle.
 #>
 function New-RpcContextHandle {
-    New-Object "NtApiDotNet.Ndr.NdrContextHandle"
+    param(
+        [guid]$Uuid = [guid]::Empty,
+        [int]$Attributes = 0
+    )
+    [NtApiDotNet.Ndr.Marshal.NdrContextHandle]::new($Attributes, $Uuid)
 }
 
 <#
