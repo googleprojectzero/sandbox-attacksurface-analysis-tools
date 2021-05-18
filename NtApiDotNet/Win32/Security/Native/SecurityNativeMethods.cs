@@ -851,12 +851,12 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeLsaHandle ObjectHandle
         );
 
-        [DllImport("Crypt32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("Crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CertFreeCertificateContext(
             IntPtr pCertContext
         );
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CredEnumerate(
             string Filter,
@@ -864,6 +864,20 @@ namespace NtApiDotNet.Win32.Security.Native
             out int Count,
             out SafeCredBuffer Credential
         );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CredRead(
+            string TargetName,
+            CredentialType Type,
+            int Flags,
+            out SafeCredBuffer Credential
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredBackupCredentials(SafeKernelObjectHandle Token, 
+            string FilePath, IntPtr Key, int KeySize, int KeyEncoded);
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaQuerySecurityObject(
@@ -879,7 +893,7 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeBuffer SecurityDescriptor
         );
 
-        [DllImport("advapi32.dll")]
+        [DllImport("advapi32.dll", SetLastError = true)]
         internal static extern void CredFree(
             IntPtr Buffer
         );
