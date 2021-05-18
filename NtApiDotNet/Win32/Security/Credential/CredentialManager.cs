@@ -16,8 +16,10 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace NtApiDotNet.Win32.Security.Credential
 {
@@ -26,6 +28,12 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// </summary>
     public static class CredentialManager
     {
+        private static Credential ParseCredential(IntPtr ptr)
+        {
+            CREDENTIAL c = (CREDENTIAL)Marshal.PtrToStructure(ptr, typeof(CREDENTIAL));
+            return new Credential(c);
+        }
+
         private static IEnumerable<Credential> ParseCredentials(int count, SafeCredBuffer buffer)
         {
             using (buffer)
@@ -33,8 +41,7 @@ namespace NtApiDotNet.Win32.Security.Credential
                 buffer.Initialize<IntPtr>((uint)count);
                 IntPtr[] ptrs = buffer.ReadArray<IntPtr>(0, count);
 
-                return ptrs.Select(p => (CREDENTIAL)Marshal.PtrToStructure(p, 
-                    typeof(CREDENTIAL))).Select(c => new Credential(c)).ToList().AsReadOnly();
+                return ptrs.Select(ParseCredential).ToList().AsReadOnly();
             }
         }
 
@@ -83,6 +90,73 @@ namespace NtApiDotNet.Win32.Security.Credential
         public static IEnumerable<Credential> GetCredentials()
         {
             return GetCredentials(null);
+        }
+
+        /// <summary>
+        /// Get a credential by name.
+        /// </summary>
+        /// <param name="target_name">The name of the credential.</param>
+        /// <param name="type">The type of credential.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The read credential.</returns>
+        public static NtResult<Credential> GetCredential(string target_name, CredentialType type, bool throw_on_error)
+        {
+            return SecurityNativeMethods.CredRead(target_name, type, 0, out SafeCredBuffer buffer).CreateWin32Result(throw_on_error, () => {
+                using (buffer)
+                {
+                    return ParseCredential(buffer.DangerousGetHandle());
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get a credential by name.
+        /// </summary>
+        /// <param name="target_name">The name of the credential.</param>
+        /// <param name="type">The type of credential.</param>
+        /// <returns>The read credential.</returns>
+        public static Credential GetCredential(string target_name, CredentialType type)
+        {
+            return GetCredential(target_name, type, true).Result;
+        }
+
+        /// <summary>
+        /// Backup a user's credentials.
+        /// </summary>
+        /// <param name="token">The user's token.</param>
+        /// <param name="key">The key for the data, typically a unicode password. Optional</param>
+        /// <param name="key_encoded">True if the key is already encoded.</param>
+        /// <remarks>Caller needs SeTrustedCredmanAccessPrivilege enabled.</remarks>
+        public static byte[] Backup(NtToken token, byte[] key, bool key_encoded)
+        {
+            string target_path = Path.GetTempFileName();
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                int length = (key?.Length * 2) ?? 0;
+                
+                if (length > 0)
+                {
+                    ptr = Marshal.AllocHGlobal(key.Length);
+                    Marshal.Copy(key, 0, ptr, key.Length);
+                }
+                if (!SecurityNativeMethods.CredBackupCredentials(token.Handle, target_path,
+                    ptr, length, key_encoded ? 1 : 0))
+                {
+                    Win32Utils.GetLastWin32Error().ToNtException();
+                }
+
+                return ProtectedData.Unprotect(File.ReadAllBytes(target_path),
+                    null, DataProtectionScope.CurrentUser);
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(ptr);
+                }
+                File.Delete(target_path);
+            }
         }
     }
 }

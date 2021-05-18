@@ -83,3 +83,86 @@ function Format-Win32SecurityDescriptor {
         -DisplayPath $Name -MapGeneric:$MapGeneric -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType `
         -Domain $Domain
 }
+
+<#
+.SYNOPSIS
+Get credential manager credentials.
+.DESCRIPTION
+This cmdlet gets available credentials from the credential mananger.
+.PARAMETER Filter
+Specify a filter for the credential target, for example DOMAIN*.
+.PARAMETER All
+Specify to return all credentials.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Credential.Credential[]
+.EXAMPLE
+Get-Win32Credential
+Get Win32 credentials.
+.EXAMPLE
+Get-Win32Credential -All
+Get all Win32 credentials.
+.EXAMPLE
+Get-Win32Credential -Filter "DOMAIN*"
+Get Win32 credentials with a target name matching a pattern.
+#>
+function Get-Win32Credential {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [Parameter(ParameterSetName = "All")]
+        [string]$Filter,
+        [Parameter(ParameterSetName = "All")]
+        [switch]$All,
+        [Parameter(ParameterSetName = "FromName", Position = 0, Mandatory)]
+        [string]$TargetName,
+        [Parameter(ParameterSetName = "FromName", Position = 1, Mandatory)]
+        [NtApiDotNet.Win32.Security.Credential.CredentialType]$Type
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "All") {
+        $flags = if ($All) {
+            "AllCredentials"
+        } else {
+            0
+        }
+        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::GetCredentials($Filter, $flags) | Write-Output
+    } else {
+        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::GetCredential($TargetName, $Type)
+    }
+}
+
+<#
+.SYNOPSIS
+Backup credential manager credentials.
+.DESCRIPTION
+This cmdlet backs up a user's credential from the credential mananger. Needs SeTrustedCredmanAccessPrivilege to function.
+.PARAMETER Token
+Specify a token for the user to backup.
+.PARAMETER Key
+Specify optional key to encrypt the backup. Usually a password.
+.PARAMETER KeyEncoded
+Specify if the key is already encoded.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Backup-Win32Credential $token
+Backup credentials for user in token.
+.EXAMPLE
+Backup-Win32Credential $token -Key 65, 0, 32, 0
+Backup credentials for user in token encrypting with a key.
+#>
+function Backup-Win32Credential {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.NtToken]$Token,
+        [byte[]]$Key,
+        [switch]$KeyEncoded
+    )
+
+    Enable-NtTokenPrivilege SeTrustedCredmanAccessPrivilege
+    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::Backup($Token, $Key, $KeyEncoded)
+}

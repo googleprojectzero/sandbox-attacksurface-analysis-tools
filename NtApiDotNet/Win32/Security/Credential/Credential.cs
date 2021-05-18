@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Credential
 {
@@ -52,6 +53,10 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         public byte[] CredentialBlob => (byte[])_credblob.Clone();
         /// <summary>
+        /// Credential as a string, if available.
+        /// </summary>
+        public string Password => GetCredentialAsString();
+        /// <summary>
         /// Credential persistence.
         /// </summary>
         public CredentialPersistence Persist { get; }
@@ -67,6 +72,22 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Username.
         /// </summary>
         public string UserName { get; }
+
+        private string GetCredentialAsString()
+        {
+            if (_credblob.Length == 0)
+                return string.Empty;
+
+            switch (Type)
+            {
+                case CredentialType.DomainPassword:
+                case CredentialType.DomainVisiblePassword:
+                case CredentialType.DomainCertificate:
+                    return Encoding.Unicode.GetString(_credblob);
+                default:
+                    return string.Empty;
+            }
+        }
 
         internal Credential(CREDENTIAL cred)
         {
