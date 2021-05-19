@@ -145,7 +145,10 @@
     <Compile Include="Utilities\Security\NFold.cs" />
     <Compile Include="Utilities\Security\ObjectTypeTree.cs" />
     <Compile Include="Utilities\Security\ARC4.cs" />
+    <Compile Include="Utilities\Text\ExtractedString.cs" />
+    <Compile Include="Utilities\Text\ExtractedStringType.cs" />
     <Compile Include="Utilities\Text\HexDumpBuilder.cs" />
+    <Compile Include="Utilities\Text\StringExtractor.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
     <Compile Include="CreateUserProcess.cs" />

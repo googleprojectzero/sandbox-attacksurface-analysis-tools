@@ -453,3 +453,70 @@ function Protect-RC4 {
 }
 
 Set-Alias -Name Unprotect-RC4 -Value Protect-RC4
+
+<#
+.SYNOPSIS
+Selects strings out a binary value.
+.DESCRIPTION
+This cmdlet searches through a byte buffer for ASCII or Unicode strings.
+.PARAMETER Bytes
+Show the strings in a bytes.
+.PARAMETER Buffer
+Show the strings in a safe buffer.
+.PARAMETER Path
+Show the strings in a file.
+.PARAMETER MinimumLength
+Specify the minimum string length to return.
+.PARAMETER Type
+Specify the types of string to return. Defaults to ASCII and Unicode.
+.INPUTS
+byte[]
+.OUTPUTS
+NtApiDotNet.Utilities.Text.ExtractedString
+#>
+function Select-BinaryString {
+    [CmdletBinding(DefaultParameterSetName = "FromBytes")]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromBytes")]
+        [Alias("Bytes")]
+        [AllowEmptyCollection()]
+        [byte[]]$Byte,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
+        [System.Runtime.InteropServices.SafeBuffer]$Buffer,
+        [NtApiDotNet.Utilities.Text.ExtractedStringType]$Type = "Ascii, Unicode",
+        [int]$MinimumLength = 3
+    )
+
+    BEGIN {
+        $stm = [System.IO.MemoryStream]::new()
+        $in_pipeline = $PSCmdlet.MyInvocation.PipelinePosition -eq 1
+    }
+
+    PROCESS {
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromBytes" {
+                if ($in_pipeline) {
+                    $stm.Write($Byte, 0, $Byte.Length)
+                } else {
+                    [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Byte, $MinimumLength, $Type) | Write-Output
+                }
+            }
+            "FromBuffer" {
+                [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Buffer, $MinimumLength, $Type) | Write-Output
+            }
+            "FromFile" {
+                $Path = Resolve-Path $Path -ErrorAction Stop
+                [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Path, $MinimumLength, $Type) | Write-Output
+            }
+        }
+    }
+
+    END {
+        if ($stm.Length -gt 0) {
+            $stm.Position = 0
+            [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($stm, $MinimumLength, $Type) | Write-Output
+        }
+    }
+}
