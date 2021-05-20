@@ -339,6 +339,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             List<DsObjectTypeAccessCheckResult<DirectoryServiceExtendedRight>> rights,
             List<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaClass>> classes,
             List<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaAttribute>> attrs,
+            IEnumerable<DsObjectInformation> dynamic_aux_classes,
             ref AccessMask max_granted_access)
         {
             foreach (var result in results.Where(r => r.Level > 0))
@@ -348,7 +349,18 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                 if (!obj_info.ObjectTypes.TryGetValue(result.ObjectType, out IDirectoryServiceObjectTree value))
                 {
-                    continue;
+                    foreach (var dynamic_aux_class in dynamic_aux_classes)
+                    {
+                        if (dynamic_aux_class.ObjectTypes.TryGetValue(result.ObjectType, out value))
+                        {
+                            break;
+                        }
+                    }
+
+                    if (value == null)
+                    {
+                        continue;
+                    }
                 }
 
                 max_granted_access |= result.GrantedAccess;
@@ -368,7 +380,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private void GetAccessCheckResult(string dn, string name, bool is_deleted, DsObjectInformation obj_info, SecurityDescriptor sd, Sid object_sid)
+        private void GetAccessCheckResult(string dn, string name, bool is_deleted, DsObjectInformation obj_info, 
+            IEnumerable<DsObjectInformation> dynamic_aux_classes, SecurityDescriptor sd, Sid object_sid)
         {
             for(int i = 0; i < _context.Count; ++i)
             {
@@ -382,9 +395,12 @@ namespace NtObjectManager.Cmdlets.Accessible
                 var class_results = new List<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaClass>>();
                 var attr_results = new List<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaAttribute>>();
 
-                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetInferiorClasses()), obj_info, rights_results, class_results, attr_results, ref max_granted_access);
-                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetExtendedRights()), obj_info, rights_results, class_results, attr_results, ref max_granted_access);
-                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetAttributes()), obj_info, rights_results, class_results, attr_results, ref max_granted_access);
+                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetInferiorClasses()), obj_info, rights_results, class_results, 
+                    attr_results, dynamic_aux_classes, ref max_granted_access);
+                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetExtendedRights()), obj_info, rights_results, class_results, 
+                    attr_results, dynamic_aux_classes, ref max_granted_access);
+                MapResults(AccessCheck(ctx, sd, object_sid, obj_info.GetAttributes(dynamic_aux_classes)), obj_info, rights_results, 
+                    class_results, attr_results, dynamic_aux_classes, ref max_granted_access);
 
                 if (max_granted_access.IsEmpty && !AllowEmptyAccess)
                     continue;
@@ -396,6 +412,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                     rights_results.Where(r => r.Object.IsValidatedWrite),
                     class_results,
                     attr_results,
+                    dynamic_aux_classes,
                     sd, token_info));
             }
         }
@@ -453,7 +470,19 @@ namespace NtObjectManager.Cmdlets.Accessible
                     continue;
                 }
 
-                GetAccessCheckResult(dn, name, GetIsDeleted(result), obj_info, sd, GetObjectSid(result));
+                string[] structural_obj_classes = GetPropertyValues<string>(result, kStructuralObjectClass);
+                string[] obj_classes = GetPropertyValues<string>(result, kObjectClass);
+                List<DsObjectInformation> dynamic_aux_classes = new List<DsObjectInformation>();
+
+                if (obj_classes.Length > structural_obj_classes.Length)
+                {
+                    foreach (var dynamic_aux_class in obj_classes.Where(c => !obj_info.ClassNames.Contains(c)).Distinct())
+                    {
+                        dynamic_aux_classes.Add(_cached_info.GetOrAdd(dynamic_aux_class, n => DsObjectInformation.Get(Domain, n)));
+                    }
+                }
+
+                GetAccessCheckResult(dn, name, GetIsDeleted(result), obj_info, dynamic_aux_classes, sd, GetObjectSid(result));
             }
 
             if (Stopping)

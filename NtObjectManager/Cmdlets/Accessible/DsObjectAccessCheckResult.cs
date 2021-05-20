@@ -73,6 +73,11 @@ namespace NtObjectManager.Cmdlets.Accessible
         public DirectoryServiceSchemaClass SchemaClass { get; }
 
         /// <summary>
+        /// List of dynamic auxiliary classes.
+        /// </summary>
+        public IReadOnlyList<DirectoryServiceSchemaClass> DynamicAuxiliaryClasses { get; }
+
+        /// <summary>
         /// The name of the schema class.
         /// </summary>
         public string ObjectClass => SchemaClass.Name;
@@ -233,6 +238,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceExtendedRight>> write_validated,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaClass>> schema_classes,
             IEnumerable<DsObjectTypeAccessCheckResult<DirectoryServiceSchemaAttribute>> schema_attributes,
+            IEnumerable<DsObjectInformation> dynamic_aux_classes,
             SecurityDescriptor sd, TokenInformation token_info)
         {
             DistinguishedName = dn;
@@ -250,6 +256,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             TokenInfo = token_info;
             SecurityDescriptor = sd;
             Deleted = is_deleted;
+            DynamicAuxiliaryClasses = dynamic_aux_classes.Select(c => c.SchemaClass).ToList().AsReadOnly();
 
             var mapping = DirectoryServiceUtils.GenericMapping;
             IsRead = mapping.HasRead(MaximumGrantedAccess);

@@ -5053,6 +5053,9 @@
               <ListItem>
                 <PropertyName>WriteValidated</PropertyName>
               </ListItem>
+              <ListItem>
+                <PropertyName>DynamicAuxiliaryClasses</PropertyName>
+              </ListItem>
             </ListItems>
           </ListEntry>
         </ListEntries>

@@ -22,6 +22,32 @@ namespace NtObjectManager.Cmdlets.Accessible
 {
     internal sealed class DsObjectInformation
     {
+        private struct ExtendedRightsComparer : IEqualityComparer<DirectoryServiceExtendedRight>
+        {
+            public bool Equals(DirectoryServiceExtendedRight x, DirectoryServiceExtendedRight y)
+            {
+                return x.RightsId == y.RightsId;
+            }
+
+            public int GetHashCode(DirectoryServiceExtendedRight obj)
+            {
+                return obj.RightsId.GetHashCode();
+            }
+        }
+
+        private struct AttributeComparer : IEqualityComparer<DirectoryServiceSchemaAttribute>
+        {
+            public bool Equals(DirectoryServiceSchemaAttribute x, DirectoryServiceSchemaAttribute y)
+            {
+                return x.SchemaId == y.SchemaId;
+            }
+
+            public int GetHashCode(DirectoryServiceSchemaAttribute obj)
+            {
+                return obj.SchemaId.GetHashCode();
+            }
+        }
+
         public DirectoryServiceSchemaClass SchemaClass { get; private set; }
         public IReadOnlyList<DirectoryServiceSchemaClass> InferiorClasses { get; private set; }
         public IReadOnlyList<DirectoryServiceSchemaAttribute> Attributes { get; private set; }
@@ -30,6 +56,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         public IEnumerable<DirectoryServiceExtendedRight> Control => ExtendedRights.Where(r => r.IsControl);
         public IEnumerable<DirectoryServiceExtendedRight> ValidatedWrite => ExtendedRights.Where(r => r.IsValidatedWrite);
         public Dictionary<Guid, IDirectoryServiceObjectTree> ObjectTypes { get; private set; }
+        public HashSet<string> ClassNames { get; private set; }
 
         public ObjectTypeTree GetInferiorClasses()
         {
@@ -38,13 +65,20 @@ namespace NtObjectManager.Cmdlets.Accessible
             return ret;
         }
 
-        public ObjectTypeTree GetAttributes()
+        public ObjectTypeTree GetAttributes(IEnumerable<DsObjectInformation> dynamic_aux_classes)
         {
             ObjectTypeTree ret = SchemaClass.ToObjectTypeTree();
-            ret.AddNodeRange(PropertySets.Select(c => c.ToObjectTypeTree()));
+
+            var prop_sets = dynamic_aux_classes.SelectMany(c => c.PropertySets).Concat(PropertySets).Distinct(new ExtendedRightsComparer());
+
+            ret.AddNodeRange(prop_sets.Select(c => c.ToObjectTypeTree()));
             ObjectTypeTree unclass = DirectoryServiceUtils.DefaultPropertySet.ToObjectTypeTree();
-            unclass.AddNodeRange(Attributes.Where(a => !a.InPropertySet).Select(a => a.ToObjectTypeTree()));
-            ret.AddNode(unclass);
+            var attrs = dynamic_aux_classes.SelectMany(c => c.Attributes).Concat(Attributes).Distinct(new AttributeComparer());
+            unclass.AddNodeRange(attrs.Where(a => !a.InPropertySet).Select(a => a.ToObjectTypeTree()));
+            if (unclass.Nodes.Count > 0)
+            {
+                ret.AddNode(unclass);
+            }
             return ret;
         }
 
@@ -91,6 +125,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             var ret = new DsObjectInformation();
             ret.SchemaClass = schema_class;
             var classes = DirectoryServiceUtils.GetSchemaClasses(domain, object_class, true);
+            ret.ClassNames = new HashSet<string>(classes.Select(c => c.Name));
             ret.InferiorClasses = schema_class.PossibleInferiors.Select(i => DirectoryServiceUtils.GetSchemaClass(domain, i)).ToList();
             ret.Attributes = classes.SelectMany(c => c.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name))).Distinct().ToList();
             ret.ExtendedRights = DirectoryServiceUtils.GetExtendedRights(domain, schema_class.SchemaId).ToList();
