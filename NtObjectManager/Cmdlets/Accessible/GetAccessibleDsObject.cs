@@ -45,7 +45,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Schema naming context.
         /// </summary>
-        Schema = 4,
+        Schema = 4
     }
 
     /// <summary>
@@ -129,10 +129,22 @@ namespace NtObjectManager.Cmdlets.Accessible
         public DsObjectNamingContext NamingContext { get; set; }
 
         /// <summary>
+        /// <para type="description">Check all naming context including DNS roots..</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromAll")]
+        public SwitchParameter All { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the recursively enumerate objects.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter Recurse { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to use a recursive subtree search for objects. This is useful when the root object doesn't allow access, but can be slow if there's a lot of objects.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter RecurseSubtree { get; set; }
 
         /// <summary>
         /// <para type="description">When recursing specify maximum depth.</para>
@@ -212,10 +224,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             string filter = GetLdapFilter();
             foreach (var entry in GetRootEntries())
             {
-                RunAccessCheck(entry, filter, false, 0);
-                if (Recurse)
+                RunAccessCheck(entry, filter, false, RecurseSubtree, 0);
+                if (Recurse && !RecurseSubtree)
                 {
-                    RunAccessCheck(entry, filter, true, Depth - 1);
+                    RunAccessCheck(entry, filter, true, false, Depth - 1);
                 }
             }
         }
@@ -229,6 +241,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             DirectoryServiceUtils.CacheDomainSchema(Domain);
             _root_dse = new DirectoryEntry(ConstructLdapUrl(Domain, "RootDSE", false));
             BuildAuthZContext();
+            if (Recurse && RecurseSubtree)
+            {
+                WriteWarning("RecurseSubtree overrides Recurse.");
+            }
         }
         #endregion
 
@@ -389,12 +405,14 @@ namespace NtObjectManager.Cmdlets.Accessible
             WriteProgress(new ProgressRecord(0, "Get Accessible DS Objects", str));
         }
 
-        private void RunAccessCheck(DirectoryEntry root, string filter, bool recurse, int current_depth)
+        private void RunAccessCheck(DirectoryEntry root, string filter, bool recurse, bool recurse_subtree, int current_depth)
         {
             if (current_depth < 0)
                 return;
 
-            foreach (var result in FindAllDirectoryEntries(root, recurse ? SearchScope.OneLevel : SearchScope.Base, IncludeDeleted, filter, kDistinguishedName, kObjectClass,
+            SearchScope scope = recurse ? SearchScope.OneLevel : (recurse_subtree ? SearchScope.Subtree : SearchScope.Base);
+
+            foreach (var result in FindAllDirectoryEntries(root, scope, IncludeDeleted, filter, kDistinguishedName, kObjectClass,
                 kStructuralObjectClass, kNTSecurityDescriptor, kObjectSid, kName, kIsDeleted))
             {
                 if (Stopping)
@@ -450,7 +468,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                     using (entry)
                     {
-                        RunAccessCheck(entry, filter, recurse, current_depth - 1);
+                        RunAccessCheck(entry, filter, recurse, recurse_subtree, current_depth - 1);
                     }
                 }
             }
@@ -488,11 +506,21 @@ namespace NtObjectManager.Cmdlets.Accessible
             return ret;
         }
 
+        private List<DirectoryEntry> GetAllNamingContextRoots()
+        {
+            return _root_dse.Properties["namingContexts"].Cast<string>().Select(
+                nc => new DirectoryEntry(ConstructLdapUrl(Domain, nc, false))).ToList();
+        }
+
         private List<DirectoryEntry> GetRootEntries()
         {
             if (ParameterSetName == "FromNC")
             {
                 return GetNamingContextRoots();
+            }
+            else if (ParameterSetName == "FromAll")
+            {
+                return GetAllNamingContextRoots();
             }
             return DistinguishedName.Select(dn => new DirectoryEntry(ConstructLdapUrl(Domain, dn, false))).ToList();
         }
