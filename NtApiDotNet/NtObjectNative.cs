@@ -171,7 +171,8 @@ namespace NtApiDotNet
         public uint ValidAccess;
         public byte SecurityRequired;
         public byte MaintainHandleCount;
-        public ushort MaintainTypeList;
+        public byte TypeIndex;
+        public byte ReservedByte;
         public PoolType PoolType;
         public uint PagedPoolUsage;
         public uint NonPagedPoolUsage;

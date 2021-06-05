@@ -551,9 +551,8 @@ namespace NtApiDotNet
             GenericAll = string.Empty;
         }
 
-        internal NtType(int id, ObjectTypeInformation info, NtTypeFactory type_factory)
+        internal NtType(ObjectTypeInformation info, NtTypeFactory type_factory)
         {
-            Index = id;
             Name = info.Name.ToString();
             InvalidAttributes = info.InvalidAttributes;
             GenericMapping = info.GenericMapping;
@@ -573,7 +572,7 @@ namespace NtApiDotNet
             HighWaterNamePoolUsage = info.HighWaterNamePoolUsage;
             HighWaterHandleTableUsage = info.HighWaterHandleTableUsage;
             MaintainHandleCount = info.MaintainHandleCount != 0;
-            MaintainTypeList = info.MaintainTypeList;
+            Index = info.TypeIndex;
             PoolType = info.PoolType;
             PagedPoolUsage = info.PagedPoolUsage;
             NonPagedPoolUsage = info.NonPagedPoolUsage;
@@ -976,7 +975,7 @@ namespace NtApiDotNet
                                 ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
                                 string name = info.Name.ToString();
                                 NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
-                                NtType ti = new NtType(count + 2, info, factory);
+                                NtType ti = new NtType(info, factory);
                                 ret[ti.Name] = ti;
 
                                 int offset = (info.Name.MaximumLength + alignment) & ~alignment;
