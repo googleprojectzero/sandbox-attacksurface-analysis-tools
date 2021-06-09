@@ -2184,8 +2184,12 @@ namespace NtApiDotNet
             var result = OpenThreadToken(thread, open_as_self, desired_access, false);
             if (result.Status == NtStatus.STATUS_NO_TOKEN)
                 return new NtResult<NtToken>();
+            if (!result.IsSuccess)
+                return result.Forward(throw_on_error);
+
             if (!duplicate)
                 return result;
+
             using (result)
             {
                 return result.Result.DuplicateToken(throw_on_error);

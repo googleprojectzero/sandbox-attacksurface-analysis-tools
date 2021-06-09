@@ -119,6 +119,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Forward the result and check for an exception.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The forwarded result.</returns>
+        public NtResult<T> Forward(bool throw_on_error)
+        {
+            Status.ToNtException(throw_on_error);
+            return this;
+        }
+
+        /// <summary>
         /// Dispose result.
         /// </summary>
         public void Dispose()
