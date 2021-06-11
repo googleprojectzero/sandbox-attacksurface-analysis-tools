@@ -1819,27 +1819,39 @@ function Set-NtSecurityDescriptorIntegrityLevel {
 
 <#
 .SYNOPSIS
-Converts an ACE condition string expression to a byte array.
+Converts an ACE condition string expression to a byte array or a parsed object.
 .DESCRIPTION
-This cmdlet gets a byte array for an ACE conditional string expression.
+This cmdlet gets a byte array or a parsed object for an ACE conditional string expression.
 .PARAMETER Condition
 The condition string expression.
+.PARAMETER AsObject
+Specify to the return the conditional expression as a parsed object.
 .INPUTS
 None
 .OUTPUTS
 byte[]
+NtApiDotNet.Security.ConditionalExpression.ConditionalExpression
 .EXAMPLE
 ConvertFrom-NtAceCondition -Condition 'WIN://TokenId == "TEST"'
 Gets the data for the condition expression 'WIN://TokenId == "TEST"'
+.EXAMPLE
+ConvertFrom-NtAceCondition -Condition 'WIN://TokenId == "TEST"' -AsObject
+Gets the object for the condition expression 'WIN://TokenId == "TEST"'
 #>
 function ConvertFrom-NtAceCondition {
-    [CmdletBinding(DefaultParameterSetName = "FromLevel")]
+    [CmdletBinding(DefaultParameterSetName = "AsBytes")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [string]$Condition
+        [string]$Condition,
+        [Parameter(Mandatory, ParameterSetName="AsObject")]
+        [switch]$AsObject
     )
 
-    [NtApiDotNet.NtSecurity]::StringToConditionalAce($Condition)
+    if ($AsObject) {
+        [NtApiDotNet.Security.ConditionalExpression.ConditionalExpression]::Parse($Condition)
+    } else {
+        [NtApiDotNet.NtSecurity]::StringToConditionalAce($Condition)
+    }
 }
 
 <#

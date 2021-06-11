@@ -110,6 +110,15 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalCompositeOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalExpression.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalIntegerOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalOctetStringOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalAttributeOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalOperatorOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalSidOperand.cs" />
+    <Compile Include="Security\ConditionalExpression\ConditionalStringOperand.cs" />
     <Compile Include="Security\INtObjectSecurity.cs" />
     <Compile Include="Utilities\Collections\CollectionUtils.cs" />
     <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
