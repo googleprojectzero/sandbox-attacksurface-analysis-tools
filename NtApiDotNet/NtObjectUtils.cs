@@ -192,7 +192,7 @@ namespace NtApiDotNet
         /// <param name="facility">The facility.</param>
         /// <param name="code">The status code.</param>
         /// <returns></returns>
-        public static NtStatus BuildStatus(NtStatusSeverity severity, bool is_customer_code, 
+        public static NtStatus BuildStatus(NtStatusSeverity severity, bool is_customer_code,
             bool is_reserved, NtStatusFacility facility, int code)
         {
             uint status = (uint)code |
@@ -480,7 +480,7 @@ namespace NtApiDotNet
             {
                 return (NtStatus)dos_error;
             }
-            return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, 
+            return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false,
                 NtStatusFacility.FACILITY_NTWIN32, dos_error);
         }
 
@@ -627,69 +627,68 @@ namespace NtApiDotNet
 
         internal static bool IsWindows81OrLess => NtSystemInfo.OSVersion.Version < new Version(6, 4);
 
-        internal static SupportedVersion SupportedVersion
-        {
-            get
-            {
-                if (IsWindows7OrLess)
-                    return SupportedVersion.Windows7;
-                if (IsWindows8OrLess)
-                    return SupportedVersion.Windows8;
-                if (IsWindows81OrLess)
-                    return SupportedVersion.Windows81;
-                Version ver = NtSystemInfo.OSVersion.Version;
-                if (ver.Major != 10)
-                {
-                    return SupportedVersion.Unknown;
-                }
+        internal static SupportedVersion SupportedVersion => _supported_version.Value;
 
-                if (ver.Build <= 10240)
-                {
-                    return SupportedVersion.Windows10;
-                }
-                else if (ver.Build <= 10586)
-                {
-                    return SupportedVersion.Windows10_TH2;
-                }
-                else if (ver.Build <= 14393)
-                {
-                    return SupportedVersion.Windows10_RS1;
-                }
-                else if (ver.Build <= 15063)
-                {
-                    return SupportedVersion.Windows10_RS2;
-                }
-                else if (ver.Build <= 16299)
-                {
-                    return SupportedVersion.Windows10_RS3;
-                }
-                else if (ver.Build <= 17134)
-                {
-                    return SupportedVersion.Windows10_RS4;
-                }
-                else if (ver.Build <= 17763)
-                {
-                    return SupportedVersion.Windows10_RS5;
-                }
-                else if (ver.Build <= 18362)
-                {
-                    return SupportedVersion.Windows10_19H1;
-                }
-                else if (ver.Build <= 18363)
-                {
-                    return SupportedVersion.Windows10_19H2;
-                }
-                else
-                {
-                    return SupportedVersion.Windows10_Latest;
-                }
-            }
-        }
-
-        private static Lazy<string> _assembly_version = new Lazy<string>(() =>
+        private static readonly Lazy<string> _assembly_version = new Lazy<string>(() =>
         {
             Assembly asm = Assembly.GetCallingAssembly();
             return asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        });
+
+        private static readonly Lazy<SupportedVersion> _supported_version = new Lazy<SupportedVersion>(() =>
+        {
+            if (IsWindows7OrLess)
+                return SupportedVersion.Windows7;
+            if (IsWindows8OrLess)
+                return SupportedVersion.Windows8;
+            if (IsWindows81OrLess)
+                return SupportedVersion.Windows81;
+            Version ver = NtSystemInfo.OSVersion.Version;
+            if (ver.Major != 10)
+            {
+                return SupportedVersion.Unknown;
+            }
+
+            if (ver.Build <= 10240)
+            {
+                return SupportedVersion.Windows10;
+            }
+            else if (ver.Build <= 10586)
+            {
+                return SupportedVersion.Windows10_TH2;
+            }
+            else if (ver.Build <= 14393)
+            {
+                return SupportedVersion.Windows10_RS1;
+            }
+            else if (ver.Build <= 15063)
+            {
+                return SupportedVersion.Windows10_RS2;
+            }
+            else if (ver.Build <= 16299)
+            {
+                return SupportedVersion.Windows10_RS3;
+            }
+            else if (ver.Build <= 17134)
+            {
+                return SupportedVersion.Windows10_RS4;
+            }
+            else if (ver.Build <= 17763)
+            {
+                return SupportedVersion.Windows10_RS5;
+            }
+            else if (ver.Build <= 18362)
+            {
+                return SupportedVersion.Windows10_19H1;
+            }
+            else if (ver.Build <= 18363)
+            {
+                return SupportedVersion.Windows10_19H2;
+            }
+            else
+            {
+                return SupportedVersion.Windows10_Latest;
+            }
         });
 
         internal static string GetVersion()
