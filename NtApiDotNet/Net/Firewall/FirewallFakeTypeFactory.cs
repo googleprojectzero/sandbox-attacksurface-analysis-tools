@@ -23,6 +23,9 @@ namespace NtApiDotNet.Net.Firewall
             return new NtType[] {
                 new NtType(FirewallUtils.FIREWALL_NT_TYPE_NAME, FirewallUtils.GetGenericMapping(),
                         typeof(FirewallAccessRights), typeof(FirewallAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp),
+                new NtType(FirewallUtils.FIREWALL_FILTER_NT_TYPE_NAME, FirewallUtils.GetFilterGenericMapping(),
+                        typeof(FirewallFilterAccessRights), typeof(FirewallFilterAccessRights),
                         MandatoryLabelPolicy.NoWriteUp)
             };
         }

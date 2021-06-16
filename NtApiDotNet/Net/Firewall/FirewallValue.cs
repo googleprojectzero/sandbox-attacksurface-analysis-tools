@@ -121,7 +121,7 @@ namespace NtApiDotNet.Net.Firewall
             switch (type)
             {
                 case FirewallDataType.SecurityDescriptor:
-                    return SecurityDescriptor.Parse(ReadBlob(value.sd), false).GetResultOrDefault();
+                    return SecurityDescriptor.Parse(ReadBlob(value.sd), FirewallUtils.FirewallFilterType, false).GetResultOrDefault();
                 case FirewallDataType.TokenInformation:
                     return new FirewallTokenInformation(ReadStruct<FWP_TOKEN_INFORMATION>(value.tokenInformation));
                 case FirewallDataType.TokenAccessInformation:

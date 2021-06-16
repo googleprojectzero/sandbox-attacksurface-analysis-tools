@@ -26,9 +26,19 @@ namespace NtApiDotNet.Net.Firewall
         public const string FIREWALL_NT_TYPE_NAME = "Firewall";
 
         /// <summary>
+        /// Name for fake filter NT type.
+        /// </summary>
+        public const string FIREWALL_FILTER_NT_TYPE_NAME = "FirewallFilter";
+
+        /// <summary>
         /// Get the NT type for the firewall.
         /// </summary>
         public static NtType FirewallType => NtType.GetTypeByName(FIREWALL_NT_TYPE_NAME);
+
+        /// <summary>
+        /// Get the NT type for the firewall.
+        /// </summary>
+        public static NtType FirewallFilterType => NtType.GetTypeByName(FIREWALL_FILTER_NT_TYPE_NAME);
 
         /// <summary>
         /// Get the generic mapping for a firewall object.
@@ -56,6 +66,22 @@ namespace NtApiDotNet.Net.Firewall
                         FirewallAccessRights.Write
             };
         }
+
+        /// <summary>
+        /// Get the generic mapping for a firewall filter object.
+        /// </summary>
+        /// <returns>The firewall filter object generic mapping.</returns>
+        public static GenericMapping GetFilterGenericMapping()
+        {
+            return new GenericMapping()
+            {
+                GenericRead = FirewallFilterAccessRights.ReadControl,
+                GenericExecute = FirewallFilterAccessRights.ReadControl | FirewallFilterAccessRights.Match,
+                GenericWrite = FirewallFilterAccessRights.ReadControl,
+                GenericAll = FirewallFilterAccessRights.ReadControl | FirewallFilterAccessRights.Match
+            };
+        }
+
         #endregion
-}
+    }
 }
