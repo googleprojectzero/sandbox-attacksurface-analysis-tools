@@ -68,6 +68,11 @@ namespace NtApiDotNet.Net.Firewall
            IntPtr enumHandle
         );
 
+        private delegate Win32Error GetFirewallObjectByKey(
+            SafeFwpmEngineHandle engineHandle,
+            in Guid key,
+            out SafeFwpmMemoryBuffer buffer);
+
         private NtResult<SecurityDescriptor> GetSecurity(SecurityInformation security_information, GetSecurityInfo func, bool throw_on_error)
         {
             security_information &= SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Sacl;
@@ -183,6 +188,18 @@ namespace NtApiDotNet.Net.Firewall
             return ret.CreateResult();
         }
 
+        static NtResult<T> GetFwObjectByKey<T, U>(SafeFwpmEngineHandle engine_handle, Guid key,
+           Func<SafeFwpmEngineHandle, U, T> map_func, GetFirewallObjectByKey get_func, bool throw_on_error)
+        {
+            return get_func(engine_handle, key, out SafeFwpmMemoryBuffer buffer).CreateWin32Result(throw_on_error, () =>
+            {
+                using (buffer)
+                {
+                    return map_func(engine_handle, (U)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(U)));
+                }
+            });
+        }
+
         #endregion
 
         #region Constructors
@@ -234,6 +251,28 @@ namespace NtApiDotNet.Net.Firewall
         #region Public Methods
 
         /// <summary>
+        /// Get a layer by its key.
+        /// </summary>
+        /// <param name="key">The key of the layer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall layer.</returns>
+        public NtResult<FirewallLayer> GetLayer(Guid key, bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
+            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmLayerGetByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a layer by its key.
+        /// </summary>
+        /// <param name="key">The key of the layer.</param>
+        /// <returns>The firewall layer.</returns>
+        public FirewallLayer GetLayer(Guid key)
+        {
+            return GetLayer(key, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all layers.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -253,6 +292,28 @@ namespace NtApiDotNet.Net.Firewall
         public IEnumerable<FirewallLayer> EnumerateLayers()
         {
             return EnumerateLayers(true).Result;
+        }
+
+        /// <summary>
+        /// Get a sub-layer by its key.
+        /// </summary>
+        /// <param name="key">The key of the sub-layer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall sub-layer.</returns>
+        public NtResult<FirewallSubLayer> GetSubLayer(Guid key, bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
+            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmSubLayerGetByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a sub-layer by its key.
+        /// </summary>
+        /// <param name="key">The key of the sub-layer.</param>
+        /// <returns>The firewall sub-layer.</returns>
+        public FirewallSubLayer GetSubLayer(Guid key)
+        {
+            return GetSubLayer(key, true).Result;
         }
 
         /// <summary>
@@ -279,6 +340,28 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get a callout by its key.
+        /// </summary>
+        /// <param name="key">The key of the callout.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall callout.</returns>
+        public NtResult<FirewallCallout> GetCallout(Guid key, bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
+            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmCalloutGetByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a callout by its key.
+        /// </summary>
+        /// <param name="key">The key of the callout.</param>
+        /// <returns>The firewall callout.</returns>
+        public FirewallCallout GetCallout(Guid key)
+        {
+            return GetCallout(key, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all callouts
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -299,6 +382,28 @@ namespace NtApiDotNet.Net.Firewall
         public IEnumerable<FirewallCallout> EnumerateCallouts()
         {
             return EnumerateCallouts(true).Result;
+        }
+
+        /// <summary>
+        /// Get a filter by its key.
+        /// </summary>
+        /// <param name="key">The key of the filter.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall filter.</returns>
+        public NtResult<FirewallFilter> GetFilter(Guid key, bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
+            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmFilterGetByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a filter by its key.
+        /// </summary>
+        /// <param name="key">The key of the filter.</param>
+        /// <returns>The firewall filter.</returns>
+        public FirewallFilter GetFilter(Guid key)
+        {
+            return GetFilter(key, true).Result;
         }
 
         /// <summary>

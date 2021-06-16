@@ -512,6 +512,13 @@ namespace NtApiDotNet.Net.Firewall
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmFilterGetByKey0(
+          SafeFwpmEngineHandle engineHandle,
+          in Guid key,
+          out SafeFwpmMemoryBuffer filter // FWPM_FILTER0 **
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern void FwpmFreeMemory0(
             ref IntPtr p
         );
@@ -638,6 +645,13 @@ namespace NtApiDotNet.Net.Firewall
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmLayerGetByKey0(
+          SafeFwpmEngineHandle engineHandle,
+          in Guid key,
+          out SafeFwpmMemoryBuffer layer // FWPM_LAYER0**
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error FwpmLayerDestroyEnumHandle0(
             SafeFwpmEngineHandle engineHandle,
             IntPtr enumHandle
@@ -657,6 +671,13 @@ namespace NtApiDotNet.Net.Firewall
            int numEntriesRequested,
            out SafeFwpmMemoryBuffer entries, // FWPM_SUBLAYER0***
            out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmSubLayerGetByKey0(
+            SafeFwpmEngineHandle engineHandle,
+            in Guid key,
+            out SafeFwpmMemoryBuffer sublayer // FWPM_SUBLAYER0**
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
@@ -707,6 +728,13 @@ namespace NtApiDotNet.Net.Firewall
             int numEntriesRequested,
             out SafeFwpmMemoryBuffer entries, // FWPM_CALLOUT0*** 
             out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmCalloutGetByKey0(
+          SafeFwpmEngineHandle engineHandle,
+          in Guid key,
+          out SafeFwpmMemoryBuffer callout //  FWPM_CALLOUT0 **
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
