@@ -52,7 +52,9 @@ namespace NtApiDotNet.Net.Firewall
                 }
                 else if (value is uint ui)
                 {
-                    return new IPAddress(ui);
+                    ba = BitConverter.GetBytes(ui);
+                    Array.Reverse(ba);
+                    return new IPAddress(ba);
                 }
                 else if (!(value is FirewallRange) && !(value is FirewallAddressAndMask))
                 {
@@ -63,7 +65,7 @@ namespace NtApiDotNet.Net.Firewall
             {
                 if (value is byte[] ba && (ba.Length % 2 == 0))
                 {
-                    return Encoding.Unicode.GetString(ba);
+                    return Encoding.Unicode.GetString(ba).TrimEnd('\0');
                 }
             }
             else if (FirewallConditionGuids.IsGuid(condition_key))
