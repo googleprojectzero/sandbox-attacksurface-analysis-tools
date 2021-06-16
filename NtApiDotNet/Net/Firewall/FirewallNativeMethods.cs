@@ -24,62 +24,6 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    public enum FirewallDataType
-    {
-        [SDKName("FWP_EMPTY")]
-        Empty = 0,
-        [SDKName("FWP_UINT8")]
-        UInt8 = Empty + 1,
-        [SDKName("FWP_UINT16")]
-        UInt16 = UInt8 + 1,
-        [SDKName("FWP_UINT32")]
-        UInt32 = UInt16 + 1,
-        [SDKName("FWP_UINT64")]
-        UInt64 = UInt32 + 1,
-        [SDKName("FWP_INT8")]
-        Int8 = UInt64 + 1,
-        [SDKName("FWP_INT16")]
-        Int16 = Int8 + 1,
-        [SDKName("FWP_INT32")]
-        Int32 = Int16 + 1,
-        [SDKName("FWP_INT64")]
-        Int64 = Int32 + 1,
-        [SDKName("FWP_FLOAT")]
-        Float = Int64 + 1,
-        [SDKName("FWP_DOUBLE")]
-        Double = Float + 1,
-        [SDKName("FWP_BYTE_ARRAY16_TYPE")]
-        ByteArray16 = Double + 1,
-        [SDKName("FWP_BYTE_BLOB_TYPE")]
-        ByteBlob = ByteArray16 + 1,
-        [SDKName("FWP_SID")]
-        Sid = ByteBlob + 1,
-        [SDKName("FWP_SECURITY_DESCRIPTOR_TYPE")]
-        SecurityDescriptor = Sid + 1,
-        [SDKName("FWP_TOKEN_INFORMATION_TYPE")]
-        TokenInformation = SecurityDescriptor + 1,
-        [SDKName("FWP_TOKEN_ACCESS_INFORMATION_TYPE")]
-        TokenAccessInformation = TokenInformation + 1,
-        [SDKName("FWP_UNICODE_STRING_TYPE")]
-        UnicodeString = TokenAccessInformation + 1,
-        [SDKName("FWP_BYTE_ARRAY6_TYPE")]
-        ByteArray6 = UnicodeString + 1,
-        [SDKName("FWP_BITMAP_INDEX_TYPE")]
-        BitmapIndex = ByteArray6 + 1,
-        [SDKName("FWP_BITMAP_ARRAY64_TYPE")]
-        BitmapArray64 = BitmapIndex + 1,
-        [SDKName("FWP_SINGLE_DATA_TYPE_MAX")]
-        SingleDataTypeMax = 0xff,
-        [SDKName("FWP_V4_ADDR_MASK")]
-        V4AddrMask = SingleDataTypeMax + 1,
-        [SDKName("FWP_V6_ADDR_MASK")]
-        V6AddrMask = V4AddrMask + 1,
-        [SDKName("FWP_RANGE_TYPE")]
-        Range = V6AddrMask + 1,
-        [SDKName("FWP_DATA_TYPE_MAX")]
-        DataTypeMax = Range + 1
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct FWPM_DISPLAY_DATA0
     {
@@ -89,16 +33,6 @@ namespace NtApiDotNet.Net.Firewall
         /* [unique][string] */
         [MarshalAs(UnmanagedType.LPWStr)]
         public string description;
-    }
-
-    [Flags]
-    public enum FirewallSessionFlags
-    {
-        None = 0,
-        [SDKName("FWPM_SESSION_FLAG_DYNAMIC")]
-        Dynamic = 0x00000001,
-        [SDKName("FWPM_SESSION_FLAG_RESERVED")]
-        Reserved = 0x10000000
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -292,22 +226,6 @@ namespace NtApiDotNet.Net.Firewall
         FWP_FILTER_ENUM_TYPE_MAX = FWP_FILTER_ENUM_OVERLAPPING + 1
     }
 
-    [Flags]
-    public enum FilterEnumFlags
-    {
-        None = 0,
-        [SDKName("FWP_FILTER_ENUM_FLAG_BEST_TERMINATING_MATCH")]
-        BestTerminatingMatch = 0x00000001,
-        [SDKName("FWP_FILTER_ENUM_FLAG_SORTED")]
-        Sorted = 0x00000002,
-        [SDKName("FWP_FILTER_ENUM_FLAG_BOOTTIME_ONLY")]
-        BoottimeOnly = 0x00000004,
-        [SDKName("FWP_FILTER_ENUM_FLAG_INCLUDE_BOOTTIME")]
-        IncludeBoottime = 0x00000008,
-        [SDKName("FWP_FILTER_ENUM_FLAG_INCLUDE_DISABLED")]
-        IncludeDisabled = 0x00000010,
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     class FWPM_FILTER_ENUM_TEMPLATE0
     {
@@ -336,75 +254,6 @@ namespace NtApiDotNet.Net.Firewall
             return FwpmEngineClose0(handle) == Win32Error.SUCCESS;
         }
     }
-
-    class SafeFwpmFilterEnumHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        private readonly SafeFwpmEngineHandle _engine_handle;
-
-        internal SafeFwpmFilterEnumHandle(SafeFwpmEngineHandle engine_handle, IntPtr handle) : base(true)
-        {
-            _engine_handle = engine_handle;
-            SetHandle(handle);
-        }
-
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern Win32Error FwpmFilterDestroyEnumHandle0(
-            SafeFwpmEngineHandle engineHandle,
-            IntPtr enumHandle
-        );
-
-        protected override bool ReleaseHandle()
-        {
-            return FwpmFilterDestroyEnumHandle0(_engine_handle, handle) == Win32Error.SUCCESS;
-        }
-    }
-
-    class SafeFwpmLayerEnumHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        private readonly SafeFwpmEngineHandle _engine_handle;
-
-        internal SafeFwpmLayerEnumHandle(SafeFwpmEngineHandle engine_handle, IntPtr handle) : base(true)
-        {
-            _engine_handle = engine_handle;
-            SetHandle(handle);
-        }
-
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern Win32Error FwpmLayerDestroyEnumHandle0(
-            SafeFwpmEngineHandle engineHandle,
-            IntPtr enumHandle
-        );
-
-        protected override bool ReleaseHandle()
-        {
-            return FwpmLayerDestroyEnumHandle0(_engine_handle, handle) == Win32Error.SUCCESS;
-        }
-    }
-
-    class SafeFwpmSubLayerEnumHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        private readonly SafeFwpmEngineHandle _engine_handle;
-
-        internal SafeFwpmSubLayerEnumHandle(SafeFwpmEngineHandle engine_handle, IntPtr handle) : base(true)
-        {
-            _engine_handle = engine_handle;
-            SetHandle(handle);
-        }
-
-
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern Win32Error FwpmSubLayerDestroyEnumHandle0(
-           SafeFwpmEngineHandle engineHandle,
-           IntPtr enumHandle
-        );
-
-        protected override bool ReleaseHandle()
-        {
-            return FwpmSubLayerDestroyEnumHandle0(_engine_handle, handle) == Win32Error.SUCCESS;
-        }
-    }
-
-
 
     class SafeFwpmMemoryBuffer : SafeBufferGeneric
     {
@@ -476,6 +325,30 @@ namespace NtApiDotNet.Net.Firewall
         public FWP_BYTE_BLOB providerData;
         public Guid applicableLayer;
         public int calloutId;
+    }
+
+    /// <summary>
+    /// Flags for a firewall provider.
+    /// </summary>
+    [Flags]
+    public enum FirewallProviderFlags
+    {
+        None = 0,
+        [SDKName("FWPM_PROVIDER_FLAG_PERSISTENT")]
+        Persistent = 0x00000001,
+        [SDKName("FWPM_PROVIDER_FLAG_DISABLED")]
+        Disabled = 0x00000010
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_PROVIDER0
+    {
+        public Guid providerKey;
+        public FWPM_DISPLAY_DATA0 displayData;
+        public FirewallProviderFlags flags;
+        public FWP_BYTE_BLOB providerData;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string serviceName;
     }
 
     internal static class FirewallNativeMethods
@@ -602,6 +475,35 @@ namespace NtApiDotNet.Net.Firewall
             IntPtr dacl,
             IntPtr sacl,
             out SafeFwpmMemoryBuffer securityDescriptor
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmProviderCreateEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            SafeBuffer enumTemplate,
+            out IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmProviderEnum0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle,
+            int numEntriesRequested,
+            out SafeFwpmMemoryBuffer entries, // FWPM_PROVIDER0***
+            out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmProviderGetByKey0(
+            SafeFwpmEngineHandle engineHandle,
+            in Guid key,
+            out SafeFwpmMemoryBuffer provider // FWPM_PROVIDER0 **
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmProviderDestroyEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]

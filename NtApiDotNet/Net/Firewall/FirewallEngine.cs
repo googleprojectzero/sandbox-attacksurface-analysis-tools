@@ -133,11 +133,10 @@ namespace NtApiDotNet.Net.Firewall
                 FirewallNativeMethods.FwpmCalloutGetSecurityInfoByKey0, t));
         }
 
-        static IReadOnlyList<T> EnumerateFwObjects<T, U>(SafeFwpmEngineHandle engine_handle, SafeBuffer template,
-            Func<SafeFwpmEngineHandle, U, T> map_func, CreateEnumHandleFunc create_func,
-            EnumObjectFunc enum_func, DestroyEnumHandleFunc destroy_func)
+        static FirewallProvider ProcessProvider(SafeFwpmEngineHandle engine_handle, FWPM_PROVIDER0 provider)
         {
-            return EnumerateFwObjects(engine_handle, template, map_func, create_func, enum_func, destroy_func, true).Result;
+            return new FirewallProvider(provider, (i, t) => GetSecurityForKey(engine_handle, i, provider.providerKey,
+                FirewallNativeMethods.FwpmProviderGetSecurityInfoByKey0, t));
         }
 
         static NtResult<List<T>> EnumerateFwObjects<T, U>(SafeFwpmEngineHandle engine_handle, SafeBuffer template, 
@@ -426,6 +425,50 @@ namespace NtApiDotNet.Net.Firewall
         public IEnumerable<FirewallFilter> EnumerateFilters()
         {
             return EnumerateFilters(true).Result;
+        }
+
+        /// <summary>
+        /// Get a provider by its key.
+        /// </summary>
+        /// <param name="key">The key of the provider.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall provider.</returns>
+        public NtResult<FirewallProvider> GetProvider(Guid key, bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
+            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmProviderGetByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a provider by its key.
+        /// </summary>
+        /// <param name="key">The key of the provider.</param>
+        /// <returns>The firewall provider.</returns>
+        public FirewallProvider GetProvider(Guid key)
+        {
+            return GetProvider(key, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate all providers.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of providers.</returns>
+        public NtResult<IEnumerable<FirewallProvider>> EnumerateProviders(bool throw_on_error)
+        {
+            Func<SafeFwpmEngineHandle, FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
+            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmProviderCreateEnumHandle0,
+                FirewallNativeMethods.FwpmProviderEnum0, FirewallNativeMethods.FwpmProviderDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<FirewallProvider>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all providers.
+        /// </summary>
+        /// <returns>The list of providers.</returns>
+        public IEnumerable<FirewallProvider> EnumerateProviders()
+        {
+            return EnumerateProviders(true).Result;
         }
 
         /// <summary>
