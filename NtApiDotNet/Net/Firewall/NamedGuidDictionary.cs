@@ -1,0 +1,2287 @@
+﻿//  Copyright 2021 Google LLC. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using System;
+using System.Collections.Generic;
+
+namespace NtApiDotNet.Net.Firewall
+{
+    class NamedGuidDictionary : Dictionary<Guid, string>
+    {
+        public void DefineGuid(string name, uint a, ushort b, ushort c, byte d,
+            byte e, byte f, byte g, byte h, byte i, byte j, byte k)
+        {
+            Add(new Guid(a, b, c, d, e, f, g, h, i, j, k), name);
+        }
+
+        public string GetName(Guid guid)
+        {
+            if (TryGetValue(guid, out string value))
+            {
+                return value;
+            }
+            return guid.ToString("B");
+        }
+
+        public static Lazy<NamedGuidDictionary> LayerGuids = new Lazy<NamedGuidDictionary>(GetLayerGuids);
+        public static Lazy<NamedGuidDictionary> SublayerGuids = new Lazy<NamedGuidDictionary>(GetSublayerGuids);
+        public static Lazy<NamedGuidDictionary> ConditionGuids = new Lazy<NamedGuidDictionary>(GetConditionGuids);
+
+        private static NamedGuidDictionary GetLayerGuids()
+        {
+            NamedGuidDictionary ret = new NamedGuidDictionary();
+
+            // c86fd1bf-21cd-497e-a0bb-17425c885c58
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_IPPACKET_V4",
+               0xc86fd1bf,
+               0x21cd,
+               0x497e,
+               0xa0, 0xbb, 0x17, 0x42, 0x5c, 0x88, 0x5c, 0x58
+            );
+
+            // b5a230d0-a8c0-44f2-916e-991b53ded1f7
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_IPPACKET_V4_DISCARD",
+               0xb5a230d0,
+               0xa8c0,
+               0x44f2,
+               0x91, 0x6e, 0x99, 0x1b, 0x53, 0xde, 0xd1, 0xf7
+            );
+
+            // f52032cb-991c-46e7-971d-2601459a91ca
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_IPPACKET_V6",
+               0xf52032cb,
+               0x991c,
+               0x46e7,
+               0x97, 0x1d, 0x26, 0x01, 0x45, 0x9a, 0x91, 0xca
+            );
+
+            // bb24c279-93b4-47a2-83ad-ae1698b50885
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_IPPACKET_V6_DISCARD",
+               0xbb24c279,
+               0x93b4,
+               0x47a2,
+               0x83, 0xad, 0xae, 0x16, 0x98, 0xb5, 0x08, 0x85
+            );
+
+            // 1e5c9fae-8a84-4135-a331-950b54229ecd
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_IPPACKET_V4",
+               0x1e5c9fae,
+               0x8a84,
+               0x4135,
+               0xa3, 0x31, 0x95, 0x0b, 0x54, 0x22, 0x9e, 0xcd
+            );
+
+            // 08e4bcb5-b647-48f3-953c-e5ddbd03937e
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_IPPACKET_V4_DISCARD",
+               0x08e4bcb5,
+               0xb647,
+               0x48f3,
+               0x95, 0x3c, 0xe5, 0xdd, 0xbd, 0x03, 0x93, 0x7e
+            );
+
+            // a3b3ab6b-3564-488c-9117-f34e82142763
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_IPPACKET_V6",
+               0xa3b3ab6b,
+               0x3564,
+               0x488c,
+               0x91, 0x17, 0xf3, 0x4e, 0x82, 0x14, 0x27, 0x63
+            );
+
+            // 9513d7c4-a934-49dc-91a7-6ccb80cc02e3
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_IPPACKET_V6_DISCARD",
+               0x9513d7c4,
+               0xa934,
+               0x49dc,
+               0x91, 0xa7, 0x6c, 0xcb, 0x80, 0xcc, 0x02, 0xe3
+            );
+
+            // a82acc24-4ee1-4ee1-b465-fd1d25cb10a4
+            ret.DefineGuid(
+               "FWPM_LAYER_IPFORWARD_V4",
+               0xa82acc24,
+               0x4ee1,
+               0x4ee1,
+               0xb4, 0x65, 0xfd, 0x1d, 0x25, 0xcb, 0x10, 0xa4
+            );
+
+            // 9e9ea773-2fae-4210-8f17-34129ef369eb
+            ret.DefineGuid(
+               "FWPM_LAYER_IPFORWARD_V4_DISCARD",
+               0x9e9ea773,
+               0x2fae,
+               0x4210,
+               0x8f, 0x17, 0x34, 0x12, 0x9e, 0xf3, 0x69, 0xeb
+            );
+
+            // 7b964818-19c7-493a-b71f-832c3684d28c
+            ret.DefineGuid(
+               "FWPM_LAYER_IPFORWARD_V6",
+               0x7b964818,
+               0x19c7,
+               0x493a,
+               0xb7, 0x1f, 0x83, 0x2c, 0x36, 0x84, 0xd2, 0x8c
+            );
+
+            // 31524a5d-1dfe-472f-bb93-518ee945d8a2
+            ret.DefineGuid(
+               "FWPM_LAYER_IPFORWARD_V6_DISCARD",
+               0x31524a5d,
+               0x1dfe,
+               0x472f,
+               0xbb, 0x93, 0x51, 0x8e, 0xe9, 0x45, 0xd8, 0xa2
+            );
+
+            // 5926dfc8-e3cf-4426-a283-dc393f5d0f9d
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_TRANSPORT_V4",
+               0x5926dfc8,
+               0xe3cf,
+               0x4426,
+               0xa2, 0x83, 0xdc, 0x39, 0x3f, 0x5d, 0x0f, 0x9d
+            );
+
+            // ac4a9833-f69d-4648-b261-6dc84835ef39
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_TRANSPORT_V4_DISCARD",
+               0xac4a9833,
+               0xf69d,
+               0x4648,
+               0xb2, 0x61, 0x6d, 0xc8, 0x48, 0x35, 0xef, 0x39
+            );
+
+            // 634a869f-fc23-4b90-b0c1-bf620a36ae6f
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_TRANSPORT_V6",
+               0x634a869f,
+               0xfc23,
+               0x4b90,
+               0xb0, 0xc1, 0xbf, 0x62, 0x0a, 0x36, 0xae, 0x6f
+            );
+
+            // 2a6ff955-3b2b-49d2-9848-ad9d72dcaab7
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_TRANSPORT_V6_DISCARD",
+               0x2a6ff955,
+               0x3b2b,
+               0x49d2,
+               0x98, 0x48, 0xad, 0x9d, 0x72, 0xdc, 0xaa, 0xb7
+            );
+
+            // 09e61aea-d214-46e2-9b21-b26b0b2f28c8
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_TRANSPORT_V4",
+               0x09e61aea,
+               0xd214,
+               0x46e2,
+               0x9b, 0x21, 0xb2, 0x6b, 0x0b, 0x2f, 0x28, 0xc8
+            );
+
+            // c5f10551-bdb0-43d7-a313-50e211f4d68a
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_TRANSPORT_V4_DISCARD",
+               0xc5f10551,
+               0xbdb0,
+               0x43d7,
+               0xa3, 0x13, 0x50, 0xe2, 0x11, 0xf4, 0xd6, 0x8a
+            );
+
+            // e1735bde-013f-4655-b351-a49e15762df0
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_TRANSPORT_V6",
+               0xe1735bde,
+               0x013f,
+               0x4655,
+               0xb3, 0x51, 0xa4, 0x9e, 0x15, 0x76, 0x2d, 0xf0
+            );
+
+            // f433df69-ccbd-482e-b9b2-57165658c3b3
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_TRANSPORT_V6_DISCARD",
+               0xf433df69,
+               0xccbd,
+               0x482e,
+               0xb9, 0xb2, 0x57, 0x16, 0x56, 0x58, 0xc3, 0xb3
+            );
+
+            // 3b89653c-c170-49e4-b1cd-e0eeeee19a3e
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_V4",
+               0x3b89653c,
+               0xc170,
+               0x49e4,
+               0xb1, 0xcd, 0xe0, 0xee, 0xee, 0xe1, 0x9a, 0x3e
+            );
+
+            // 25c4c2c2-25ff-4352-82f9-c54a4a4726dc
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_V4_DISCARD",
+               0x25c4c2c2,
+               0x25ff,
+               0x4352,
+               0x82, 0xf9, 0xc5, 0x4a, 0x4a, 0x47, 0x26, 0xdc
+            );
+
+            // 47c9137a-7ec4-46b3-b6e4-48e926b1eda4
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_V6",
+               0x47c9137a,
+               0x7ec4,
+               0x46b3,
+               0xb6, 0xe4, 0x48, 0xe9, 0x26, 0xb1, 0xed, 0xa4
+            );
+
+            // 10a59fc7-b628-4c41-9eb8-cf37d55103cf
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_V6_DISCARD",
+               0x10a59fc7,
+               0xb628,
+               0x4c41,
+               0x9e, 0xb8, 0xcf, 0x37, 0xd5, 0x51, 0x03, 0xcf
+            );
+
+            // 3d08bf4e-45f6-4930-a922-417098e20027
+            ret.DefineGuid(
+               "FWPM_LAYER_DATAGRAM_DATA_V4",
+               0x3d08bf4e,
+               0x45f6,
+               0x4930,
+               0xa9, 0x22, 0x41, 0x70, 0x98, 0xe2, 0x00, 0x27
+            );
+
+            // 18e330c6-7248-4e52-aaab-472ed67704fd
+            ret.DefineGuid(
+               "FWPM_LAYER_DATAGRAM_DATA_V4_DISCARD",
+               0x18e330c6,
+               0x7248,
+               0x4e52,
+               0xaa, 0xab, 0x47, 0x2e, 0xd6, 0x77, 0x04, 0xfd
+            );
+
+            // fa45fe2f-3cba-4427-87fc-57b9a4b10d00
+            ret.DefineGuid(
+               "FWPM_LAYER_DATAGRAM_DATA_V6",
+               0xfa45fe2f,
+               0x3cba,
+               0x4427,
+               0x87, 0xfc, 0x57, 0xb9, 0xa4, 0xb1, 0x0d, 0x00
+            );
+
+            // 09d1dfe1-9b86-4a42-be9d-8c315b92a5d0
+            ret.DefineGuid(
+               "FWPM_LAYER_DATAGRAM_DATA_V6_DISCARD",
+               0x09d1dfe1,
+               0x9b86,
+               0x4a42,
+               0xbe, 0x9d, 0x8c, 0x31, 0x5b, 0x92, 0xa5, 0xd0
+            );
+
+            // 61499990-3cb6-4e84-b950-53b94b6964f3
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_ICMP_ERROR_V4",
+               0x61499990,
+               0x3cb6,
+               0x4e84,
+               0xb9, 0x50, 0x53, 0xb9, 0x4b, 0x69, 0x64, 0xf3
+            );
+
+            // a6b17075-ebaf-4053-a4e7-213c8121ede5
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_ICMP_ERROR_V4_DISCARD",
+               0xa6b17075,
+               0xebaf,
+               0x4053,
+               0xa4, 0xe7, 0x21, 0x3c, 0x81, 0x21, 0xed, 0xe5
+            );
+
+            // 65f9bdff-3b2d-4e5d-b8c6-c720651fe898
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_ICMP_ERROR_V6",
+               0x65f9bdff,
+               0x3b2d,
+               0x4e5d,
+               0xb8, 0xc6, 0xc7, 0x20, 0x65, 0x1f, 0xe8, 0x98
+            );
+
+            // a6e7ccc0-08fb-468d-a472-9771d5595e09
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_ICMP_ERROR_V6_DISCARD",
+               0xa6e7ccc0,
+               0x08fb,
+               0x468d,
+               0xa4, 0x72, 0x97, 0x71, 0xd5, 0x59, 0x5e, 0x09
+            );
+
+            // 41390100-564c-4b32-bc1d-718048354d7c
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_ICMP_ERROR_V4",
+               0x41390100,
+               0x564c,
+               0x4b32,
+               0xbc, 0x1d, 0x71, 0x80, 0x48, 0x35, 0x4d, 0x7c
+            );
+
+            // b3598d36-0561-4588-a6bf-e955e3f6264b
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_ICMP_ERROR_V4_DISCARD",
+               0xb3598d36,
+               0x0561,
+               0x4588,
+               0xa6, 0xbf, 0xe9, 0x55, 0xe3, 0xf6, 0x26, 0x4b
+            );
+
+            // 7fb03b60-7b8d-4dfa-badd-980176fc4e12
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_ICMP_ERROR_V6",
+               0x7fb03b60,
+               0x7b8d,
+               0x4dfa,
+               0xba, 0xdd, 0x98, 0x01, 0x76, 0xfc, 0x4e, 0x12
+            );
+
+            // 65f2e647-8d0c-4f47-b19b-33a4d3f1357c
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_ICMP_ERROR_V6_DISCARD",
+               0x65f2e647,
+               0x8d0c,
+               0x4f47,
+               0xb1, 0x9b, 0x33, 0xa4, 0xd3, 0xf1, 0x35, 0x7c
+            );
+
+            // 1247d66d-0b60-4a15-8d44-7155d0f53a0c
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_ASSIGNMENT_V4",
+               0x1247d66d,
+               0x0b60,
+               0x4a15,
+               0x8d, 0x44, 0x71, 0x55, 0xd0, 0xf5, 0x3a, 0x0c
+            );
+
+            // 0b5812a2-c3ff-4eca-b88d-c79e20ac6322
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_ASSIGNMENT_V4_DISCARD",
+               0x0b5812a2,
+               0xc3ff,
+               0x4eca,
+               0xb8, 0x8d, 0xc7, 0x9e, 0x20, 0xac, 0x63, 0x22
+            );
+
+            // 55a650e1-5f0a-4eca-a653-88f53b26aa8c
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_ASSIGNMENT_V6",
+               0x55a650e1,
+               0x5f0a,
+               0x4eca,
+               0xa6, 0x53, 0x88, 0xf5, 0x3b, 0x26, 0xaa, 0x8c
+            );
+
+            // cbc998bb-c51f-4c1a-bb4f-9775fcacab2f
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_ASSIGNMENT_V6_DISCARD",
+               0xcbc998bb,
+               0xc51f,
+               0x4c1a,
+               0xbb, 0x4f, 0x97, 0x75, 0xfc, 0xac, 0xab, 0x2f
+            );
+
+            // 88bb5dad-76d7-4227-9c71-df0a3ed7be7e
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_LISTEN_V4",
+               0x88bb5dad,
+               0x76d7,
+               0x4227,
+               0x9c, 0x71, 0xdf, 0x0a, 0x3e, 0xd7, 0xbe, 0x7e
+            );
+
+            // 371dfada-9f26-45fd-b4eb-c29eb212893f
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_LISTEN_V4_DISCARD",
+               0x371dfada,
+               0x9f26,
+               0x45fd,
+               0xb4, 0xeb, 0xc2, 0x9e, 0xb2, 0x12, 0x89, 0x3f
+            );
+
+            // 7ac9de24-17dd-4814-b4bd-a9fbc95a321b
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_LISTEN_V6",
+               0x7ac9de24,
+               0x17dd,
+               0x4814,
+               0xb4, 0xbd, 0xa9, 0xfb, 0xc9, 0x5a, 0x32, 0x1b
+            );
+
+            // 60703b07-63c8-48e9-ada3-12b1af40a617
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_LISTEN_V6_DISCARD",
+               0x60703b07,
+               0x63c8,
+               0x48e9,
+               0xad, 0xa3, 0x12, 0xb1, 0xaf, 0x40, 0xa6, 0x17
+            );
+
+            // e1cd9fe7-f4b5-4273-96c0-592e487b8650
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4",
+               0xe1cd9fe7,
+               0xf4b5,
+               0x4273,
+               0x96, 0xc0, 0x59, 0x2e, 0x48, 0x7b, 0x86, 0x50
+            );
+
+            // 9eeaa99b-bd22-4227-919f-0073c63357b1
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4_DISCARD",
+               0x9eeaa99b,
+               0xbd22,
+               0x4227,
+               0x91, 0x9f, 0x00, 0x73, 0xc6, 0x33, 0x57, 0xb1
+            );
+
+            // a3b42c97-9f04-4672-b87e-cee9c483257f
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6",
+               0xa3b42c97,
+               0x9f04,
+               0x4672,
+               0xb8, 0x7e, 0xce, 0xe9, 0xc4, 0x83, 0x25, 0x7f
+            );
+
+            // 89455b97-dbe1-453f-a224-13da895af396
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6_DISCARD",
+               0x89455b97,
+               0xdbe1,
+               0x453f,
+               0xa2, 0x24, 0x13, 0xda, 0x89, 0x5a, 0xf3, 0x96
+            );
+
+            // c38d57d1-05a7-4c33-904f-7fbceee60e82
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_CONNECT_V4",
+               0xc38d57d1,
+               0x05a7,
+               0x4c33,
+               0x90, 0x4f, 0x7f, 0xbc, 0xee, 0xe6, 0x0e, 0x82
+            );
+
+            // d632a801-f5ba-4ad6-96e3-607017d9836a
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_CONNECT_V4_DISCARD",
+               0xd632a801,
+               0xf5ba,
+               0x4ad6,
+               0x96, 0xe3, 0x60, 0x70, 0x17, 0xd9, 0x83, 0x6a
+            );
+
+            // 4a72393b-319f-44bc-84c3-ba54dcb3b6b4
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_CONNECT_V6",
+               0x4a72393b,
+               0x319f,
+               0x44bc,
+               0x84, 0xc3, 0xba, 0x54, 0xdc, 0xb3, 0xb6, 0xb4
+            );
+
+            // c97bc3b8-c9a3-4e33-8695-8e17aad4de09
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_AUTH_CONNECT_V6_DISCARD",
+               0xc97bc3b8,
+               0xc9a3,
+               0x4e33,
+               0x86, 0x95, 0x8e, 0x17, 0xaa, 0xd4, 0xde, 0x09
+            );
+
+            // af80470a-5596-4c13-9992-539e6fe57967
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_FLOW_ESTABLISHED_V4",
+               0xaf80470a,
+               0x5596,
+               0x4c13,
+               0x99, 0x92, 0x53, 0x9e, 0x6f, 0xe5, 0x79, 0x67
+            );
+
+            // 146ae4a9-a1d2-4d43-a31a-4c42682b8e4f
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_FLOW_ESTABLISHED_V4_DISCARD",
+               0x146ae4a9,
+               0xa1d2,
+               0x4d43,
+               0xa3, 0x1a, 0x4c, 0x42, 0x68, 0x2b, 0x8e, 0x4f
+            );
+
+            // 7021d2b3-dfa4-406e-afeb-6afaf7e70efd
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_FLOW_ESTABLISHED_V6",
+               0x7021d2b3,
+               0xdfa4,
+               0x406e,
+               0xaf, 0xeb, 0x6a, 0xfa, 0xf7, 0xe7, 0x0e, 0xfd
+            );
+
+            // 46928636-bbca-4b76-941d-0fa7f5d7d372
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_FLOW_ESTABLISHED_V6_DISCARD",
+               0x46928636,
+               0xbbca,
+               0x4b76,
+               0x94, 0x1d, 0x0f, 0xa7, 0xf5, 0xd7, 0xd3, 0x72
+            );
+
+            // effb7edb-0055-4f9a-a23a-4ff8131ad191
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_MAC_FRAME_ETHERNET",
+               0xeffb7edb,
+               0x0055,
+               0x4f9a,
+               0xa2, 0x31, 0x4f, 0xf8, 0x13, 0x1a, 0xd1, 0x91
+            );
+
+            // 694673bc-d6db-4870-adee-0acdbdb7f4b2
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_MAC_FRAME_ETHERNET",
+               0x694673bc,
+               0xd6db,
+               0x4870,
+               0xad, 0xee, 0x0a, 0xcd, 0xbd, 0xb7, 0xf4, 0xb2
+            );
+
+            // d4220bd3-62ce-4f08-ae88-b56e8526df50
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_MAC_FRAME_NATIVE",
+               0xd4220bd3,
+               0x62ce,
+               0x4f08,
+               0xae, 0x88, 0xb5, 0x6e, 0x85, 0x26, 0xdf, 0x50
+            );
+
+            // 94c44912-9d6f-4ebf-b995-05ab8a088d1b
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_MAC_FRAME_NATIVE",
+               0x94c44912,
+               0x9d6f,
+               0x4ebf,
+               0xb9, 0x95, 0x05, 0xab, 0x8a, 0x08, 0x8d, 0x1b
+            );
+
+            // 7d98577a-9a87-41ec-9718-7cf589c9f32d
+            ret.DefineGuid(
+               "FWPM_LAYER_INGRESS_VSWITCH_ETHERNET",
+               0x7d98577a,
+               0x9a87,
+               0x41ec,
+               0x97, 0x18, 0x7c, 0xf5, 0x89, 0xc9, 0xf3, 0x2d
+            );
+
+            // 86c872b0-76fa-4b79-93a4-0750530ae292
+            ret.DefineGuid(
+               "FWPM_LAYER_EGRESS_VSWITCH_ETHERNET",
+               0x86c872b0,
+               0x76fa,
+               0x4b79,
+               0x93, 0xa4, 0x07, 0x50, 0x53, 0x0a, 0xe2, 0x92
+            );
+
+            // b2696ff6-774f-4554-9f7d-3da3945f8e85
+            ret.DefineGuid(
+               "FWPM_LAYER_INGRESS_VSWITCH_TRANSPORT_V4",
+               0xb2696ff6,
+               0x774f,
+               0x4554,
+               0x9f, 0x7d, 0x3d, 0xa3, 0x94, 0x5f, 0x8e, 0x85
+            );
+
+            // 5ee314fc-7d8a-47f4-b7e3-291a36da4e12
+            ret.DefineGuid(
+               "FWPM_LAYER_INGRESS_VSWITCH_TRANSPORT_V6",
+               0x5ee314fc,
+               0x7d8a,
+               0x47f4,
+               0xb7, 0xe3, 0x29, 0x1a, 0x36, 0xda, 0x4e, 0x12
+            );
+
+            // b92350b6-91f0-46b6-bdc4-871dfd4a7c98
+            ret.DefineGuid(
+               "FWPM_LAYER_EGRESS_VSWITCH_TRANSPORT_V4",
+               0xb92350b6,
+               0x91f0,
+               0x46b6,
+               0xbd, 0xc4, 0x87, 0x1d, 0xfd, 0x4a, 0x7c, 0x98
+            );
+
+            // 1b2def23-1881-40bd-82f4-4254e63141cb
+            ret.DefineGuid(
+               "FWPM_LAYER_EGRESS_VSWITCH_TRANSPORT_V6",
+               0x1b2def23,
+               0x1881,
+               0x40bd,
+               0x82, 0xf4, 0x42, 0x54, 0xe6, 0x31, 0x41, 0xcb
+            );
+
+            //e41d2719-05c7-40f0-8983-ea8d17bbc2f6
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_TRANSPORT_FAST",
+               0xe41d2719,
+               0x05c7,
+               0x40f0,
+               0x89, 0x83, 0xea, 0x8d, 0x17, 0xbb, 0xc2, 0xf6
+            );
+
+            //13ed4388-a070-4815-9935-7a9be6408b78
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_TRANSPORT_FAST",
+               0x13ed4388,
+               0xa070,
+               0x4815,
+               0x99, 0x35, 0x7a, 0x9b, 0xe6, 0x40, 0x8b, 0x78
+            );
+
+            //853aaa8e-2b78-4d24-a804-36db08b29711
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_MAC_FRAME_NATIVE_FAST",
+               0x853aaa8e,
+               0x2b78,
+               0x4d24,
+               0xa8, 0x04, 0x36, 0xdb, 0x08, 0xb2, 0x97, 0x11
+            );
+
+            //470df946-c962-486f-9446-8293cbc75eb8
+            ret.DefineGuid(
+               "FWPM_LAYER_OUTBOUND_MAC_FRAME_NATIVE_FAST",
+               0x470df946,
+               0xc962,
+               0x486f,
+               0x94, 0x46, 0x82, 0x93, 0xcb, 0xc7, 0x5e, 0xb8
+            );
+
+            // f02b1526-a459-4a51-b9e3-759de52b9d2c
+            ret.DefineGuid(
+               "FWPM_LAYER_IPSEC_KM_DEMUX_V4",
+               0xf02b1526,
+               0xa459,
+               0x4a51,
+               0xb9, 0xe3, 0x75, 0x9d, 0xe5, 0x2b, 0x9d, 0x2c
+            );
+
+            // 2f755cf6-2fd4-4e88-b3e4-a91bca495235
+            ret.DefineGuid(
+               "FWPM_LAYER_IPSEC_KM_DEMUX_V6",
+               0x2f755cf6,
+               0x2fd4,
+               0x4e88,
+               0xb3, 0xe4, 0xa9, 0x1b, 0xca, 0x49, 0x52, 0x35
+            );
+
+            // eda65c74-610d-4bc5-948f-3c4f89556867
+            ret.DefineGuid(
+               "FWPM_LAYER_IPSEC_V4",
+               0xeda65c74,
+               0x610d,
+               0x4bc5,
+               0x94, 0x8f, 0x3c, 0x4f, 0x89, 0x55, 0x68, 0x67
+            );
+
+            // 13c48442-8d87-4261-9a29-59d2abc348b4
+            ret.DefineGuid(
+               "FWPM_LAYER_IPSEC_V6",
+               0x13c48442,
+               0x8d87,
+               0x4261,
+               0x9a, 0x29, 0x59, 0xd2, 0xab, 0xc3, 0x48, 0xb4
+            );
+
+            // b14b7bdb-dbbd-473e-bed4-8b4708d4f270
+            ret.DefineGuid(
+               "FWPM_LAYER_IKEEXT_V4",
+               0xb14b7bdb,
+               0xdbbd,
+               0x473e,
+               0xbe, 0xd4, 0x8b, 0x47, 0x08, 0xd4, 0xf2, 0x70
+            );
+
+            // b64786b3-f687-4eb9-89d2-8ef32acdabe2
+            ret.DefineGuid(
+               "FWPM_LAYER_IKEEXT_V6",
+               0xb64786b3,
+               0xf687,
+               0x4eb9,
+               0x89, 0xd2, 0x8e, 0xf3, 0x2a, 0xcd, 0xab, 0xe2
+            );
+
+            // 75a89dda-95e4-40f3-adc7-7688a9c847e1
+            ret.DefineGuid(
+               "FWPM_LAYER_RPC_UM",
+               0x75a89dda,
+               0x95e4,
+               0x40f3,
+               0xad, 0xc7, 0x76, 0x88, 0xa9, 0xc8, 0x47, 0xe1
+            );
+
+            // 9247bc61-eb07-47ee-872c-bfd78bfd1616
+            ret.DefineGuid(
+               "FWPM_LAYER_RPC_EPMAP",
+               0x9247bc61,
+               0xeb07,
+               0x47ee,
+               0x87, 0x2c, 0xbf, 0xd7, 0x8b, 0xfd, 0x16, 0x16
+            );
+
+            // 618dffc7-c450-4943-95db-99b4c16a55d4
+            ret.DefineGuid(
+               "FWPM_LAYER_RPC_EP_ADD",
+               0x618dffc7,
+               0xc450,
+               0x4943,
+               0x95, 0xdb, 0x99, 0xb4, 0xc1, 0x6a, 0x55, 0xd4
+            );
+
+            // 94a4b50b-ba5c-4f27-907a-229fac0c2a7a
+            ret.DefineGuid(
+               "FWPM_LAYER_RPC_PROXY_CONN",
+               0x94a4b50b,
+               0xba5c,
+               0x4f27,
+               0x90, 0x7a, 0x22, 0x9f, 0xac, 0x0c, 0x2a, 0x7a
+            );
+
+            // f8a38615-e12c-41ac-98df-121ad981aade
+            ret.DefineGuid(
+               "FWPM_LAYER_RPC_PROXY_IF",
+               0xf8a38615,
+               0xe12c,
+               0x41ac,
+               0x98, 0xdf, 0x12, 0x1a, 0xd9, 0x81, 0xaa, 0xde
+            );
+
+            // 4aa226e9-9020-45fb-956a-c0249d841195
+            ret.DefineGuid(
+               "FWPM_LAYER_KM_AUTHORIZATION",
+               0x4aa226e9,
+               0x9020,
+               0x45fb,
+               0x95, 0x6a, 0xc0, 0x24, 0x9d, 0x84, 0x11, 0x95
+            );
+
+            // 0c2aa681-905b-4ccd-a467-4dd811d07b7b
+            ret.DefineGuid(
+               "FWPM_LAYER_NAME_RESOLUTION_CACHE_V4",
+               0x0c2aa681,
+               0x905b,
+               0x4ccd,
+               0xa4, 0x67, 0x4d, 0xd8, 0x11, 0xd0, 0x7b, 0x7b
+            );
+
+            // 92d592fa-6b01-434a-9dea-d1e96ea97da9
+            ret.DefineGuid(
+               "FWPM_LAYER_NAME_RESOLUTION_CACHE_V6",
+               0x92d592fa,
+               0x6b01,
+               0x434a,
+               0x9d, 0xea, 0xd1, 0xe9, 0x6e, 0xa9, 0x7d, 0xa9
+            );
+
+            // 74365cce-ccb0-401a-bfc1-b89934ad7e15
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_RELEASE_V4",
+               0x74365cce,
+               0xccb0,
+               0x401a,
+               0xbf, 0xc1, 0xb8, 0x99, 0x34, 0xad, 0x7e, 0x15
+            );
+
+            // f4e5ce80-edcc-4e13-8a2f-b91454bb057b
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_RESOURCE_RELEASE_V6",
+               0xf4e5ce80,
+               0xedcc,
+               0x4e13,
+               0x8a, 0x2f, 0xb9, 0x14, 0x54, 0xbb, 0x05, 0x7b
+            );
+
+            // b4766427-e2a2-467a-bd7e-dbcd1bd85a09
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_ENDPOINT_CLOSURE_V4",
+               0xb4766427,
+               0xe2a2,
+               0x467a,
+               0xbd, 0x7e, 0xdb, 0xcd, 0x1b, 0xd8, 0x5a, 0x09
+            );
+
+            // bb536ccd-4755-4ba9-9ff7-f9edf8699c7b
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_ENDPOINT_CLOSURE_V6",
+               0xbb536ccd,
+               0x4755,
+               0x4ba9,
+               0x9f, 0xf7, 0xf9, 0xed, 0xf8, 0x69, 0x9c, 0x7b
+            );
+
+            // c6e63c8c-b784-4562-aa7d-0a67cfcaf9a3
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_CONNECT_REDIRECT_V4",
+               0xc6e63c8c,
+               0xb784,
+               0x4562,
+               0xaa, 0x7d, 0x0a, 0x67, 0xcf, 0xca, 0xf9, 0xa3
+            );
+
+            // 587e54a7-8046-42ba-a0aa-b716250fc7fd
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_CONNECT_REDIRECT_V6",
+               0x587e54a7,
+               0x8046,
+               0x42ba,
+               0xa0, 0xaa, 0xb7, 0x16, 0x25, 0x0f, 0xc7, 0xfd
+            );
+
+            // 66978cad-c704-42ac-86ac-7c1a231bd253
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_BIND_REDIRECT_V4",
+               0x66978cad,
+               0xc704,
+               0x42ac,
+               0x86, 0xac, 0x7c, 0x1a, 0x23, 0x1b, 0xd2, 0x53
+            );
+
+            // bef02c9c-606b-4536-8c26-1c2fc7b631d4
+            ret.DefineGuid(
+               "FWPM_LAYER_ALE_BIND_REDIRECT_V6",
+               0xbef02c9c,
+               0x606b,
+               0x4536,
+               0x8c, 0x26, 0x1c, 0x2f, 0xc7, 0xb6, 0x31, 0xd4
+            );
+
+            // af52d8ec-cb2d-44e5-ad92-f8dc38d2eb29
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_PACKET_V4",
+               0xaf52d8ec,
+               0xcb2d,
+               0x44e5,
+               0xad, 0x92, 0xf8, 0xdc, 0x38, 0xd2, 0xeb, 0x29
+            );
+
+            // 779a8ca3-f099-468f-b5d4-83535c461c02
+            ret.DefineGuid(
+               "FWPM_LAYER_STREAM_PACKET_V6",
+               0x779a8ca3,
+               0xf099,
+               0x468f,
+               0xb5, 0xd4, 0x83, 0x53, 0x5c, 0x46, 0x1c, 0x02
+            );
+
+            //f4fb8d55-c076-46d8-a2c7-6a4c722ca4ed
+            ret.DefineGuid(
+               "FWPM_LAYER_INBOUND_RESERVED2",
+               0xf4fb8d55,
+               0xc076,
+               0x46d8,
+               0xa2, 0xc7, 0x6a, 0x4c, 0x72, 0x2c, 0xa4, 0xed
+            );
+            return ret;
+        }
+
+        private static NamedGuidDictionary GetSublayerGuids()
+        {
+            NamedGuidDictionary ret = new NamedGuidDictionary();
+            // 758c84f4-fb48-4de9-9aeb-3ed9551ab1fd
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_RPC_AUDIT",
+               0x758c84f4,
+               0xfb48,
+               0x4de9,
+               0x9a, 0xeb, 0x3e, 0xd9, 0x55, 0x1a, 0xb1, 0xfd
+            );
+
+            // 83f299ed-9ff4-4967-aff4-c309f4dab827
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_IPSEC_TUNNEL",
+               0x83f299ed,
+               0x9ff4,
+               0x4967,
+               0xaf, 0xf4, 0xc3, 0x09, 0xf4, 0xda, 0xb8, 0x27
+            );
+
+            // eebecc03-ced4-4380-819a-2734397b2b74
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_UNIVERSAL",
+               0xeebecc03,
+               0xced4,
+               0x4380,
+               0x81, 0x9a, 0x27, 0x34, 0x39, 0x7b, 0x2b, 0x74
+            );
+
+            // 1b75c0ce-ff60-4711-a70f-b4958cc3b2d0
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_LIPS",
+               0x1b75c0ce,
+               0xff60,
+               0x4711,
+               0xa7, 0x0f, 0xb4, 0x95, 0x8c, 0xc3, 0xb2, 0xd0
+            );
+
+            // 15a66e17-3f3c-4f7b-aa6c-812aa613dd82
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_SECURE_SOCKET",
+               0x15a66e17,
+               0x3f3c,
+               0x4f7b,
+               0xaa, 0x6c, 0x81, 0x2a, 0xa6, 0x13, 0xdd, 0x82
+            );
+
+            // 337608b9-b7d5-4d5f-82f9-3618618bc058
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_TCP_CHIMNEY_OFFLOAD",
+               0x337608b9,
+               0xb7d5,
+               0x4d5f,
+               0x82, 0xf9, 0x36, 0x18, 0x61, 0x8b, 0xc0, 0x58
+            );
+
+            // 877519e1-e6a9-41a5-81b4-8c4f118e4a60
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_INSPECTION",
+               0x877519e1,
+               0xe6a9,
+               0x41a5,
+               0x81, 0xb4, 0x8c, 0x4f, 0x11, 0x8e, 0x4a, 0x60
+            );
+
+            // ba69dc66-5176-4979-9c89-26a7b46a8327
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_TEREDO",
+               0xba69dc66,
+               0x5176,
+               0x4979,
+               0x9c, 0x89, 0x26, 0xa7, 0xb4, 0x6a, 0x83, 0x27
+            );
+
+            // a5082e73-8f71-4559-8a9a-101cea04ef87
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_IPSEC_FORWARD_OUTBOUND_TUNNEL",
+               0xa5082e73,
+               0x8f71,
+               0x4559,
+               0x8a, 0x9a, 0x10, 0x1c, 0xea, 0x04, 0xef, 0x87
+            );
+
+            // e076d572-5d3d-48ef-802b-909eddb098bd
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_IPSEC_DOSP",
+               0xe076d572,
+               0x5d3d,
+               0x48ef,
+               0x80, 0x2b, 0x90, 0x9e, 0xdd, 0xb0, 0x98, 0xbd
+            );
+
+            // 24421dcf-0ac5-4caa-9e14-50f6e3636af0
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_TCP_TEMPLATES",
+               0x24421dcf,
+               0x0ac5,
+               0x4caa,
+               0x9e, 0x14, 0x50, 0xf6, 0xe3, 0x63, 0x6a, 0xf0
+            );
+
+            // 37a57701-5884-4964-92b8-3e704688b0ad
+            ret.DefineGuid(
+               "FWPM_SUBLAYER_IPSEC_SECURITY_REALM",
+               0x37a57701,
+               0x5884,
+               0x4964,
+               0x92, 0xb8, 0x3e, 0x70, 0x46, 0x88, 0xb0, 0xad
+            );
+            return ret;
+        }
+
+        private static NamedGuidDictionary GetConditionGuids()
+        {
+            NamedGuidDictionary ret = new NamedGuidDictionary();
+            ret.DefineGuid(
+                "FWPM_CONDITION_INTERFACE_MAC_ADDRESS",
+                0xf6e63dce,
+                0x1f4b,
+                0x4c6b,
+                0xb6, 0xef, 0x11, 0x65, 0xe7, 0x1f, 0x8e, 0xe7
+            );
+
+            // d999e981-7948-4c8e-b742-c84e3b678f8f
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_LOCAL_ADDRESS",
+               0xd999e981,
+               0x7948,
+               0x4c83,
+               0xb7, 0x42, 0xc8, 0x4e, 0x3b, 0x67, 0x8f, 0x8f
+            );
+
+            // 408f2ed4-3a70-4b4d-92a6-415ac20e2f12
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_REMOTE_ADDRESS",
+               0x408f2ed4,
+               0x3a70,
+               0x4b4d,
+               0x92, 0xa6, 0x41, 0x5a, 0xc2, 0x0e, 0x2f, 0x12
+            );
+
+            // fd08948d-a219-4d52-bb98-1a5540ee7b4e
+            ret.DefineGuid(
+               "FWPM_CONDITION_ETHER_TYPE",
+               0xfd08948d,
+               0xa219,
+               0x4d52,
+               0xbb, 0x98, 0x1a, 0x55, 0x40, 0xee, 0x7b, 0x4e
+            );
+
+            // 938eab21-3618-4e64-9ca5-2141ebda1ca2
+            ret.DefineGuid(
+               "FWPM_CONDITION_VLAN_ID",
+               0x938eab21,
+               0x3618,
+               0x4e64,
+               0x9c, 0xa5, 0x21, 0x41, 0xeb, 0xda, 0x1c, 0xa2
+            );
+
+            // dc04843c-79e6-4e44-a025-65b9bb0f9f94
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_TENANT_NETWORK_ID",
+               0xdc04843c,
+               0x79e6,
+               0x4e44,
+               0xa0, 0x25, 0x65, 0xb9, 0xbb, 0x0f, 0x9f, 0x94
+            );
+
+            // db7bb42b-2dac-4cd4-a59a-e0bdce1e6834
+            ret.DefineGuid(
+               "FWPM_CONDITION_NDIS_PORT",
+               0xdb7bb42b,
+               0x2dac,
+               0x4cd4,
+               0xa5, 0x9a, 0xe0, 0xbd, 0xce, 0x1e, 0x68, 0x34
+            );
+
+            // cb31cef1-791d-473b-89d1-61c5984304a0
+            ret.DefineGuid(
+               "FWPM_CONDITION_NDIS_MEDIA_TYPE",
+               0xcb31cef1,
+               0x791d,
+               0x473b,
+               0x89, 0xd1, 0x61, 0xc5, 0x98, 0x43, 0x04, 0xa0
+            );
+
+            // 34c79823-c229-44f2-b83c-74020882ae77
+            ret.DefineGuid(
+               "FWPM_CONDITION_NDIS_PHYSICAL_MEDIA_TYPE",
+               0x34c79823,
+               0xc229,
+               0x44f2,
+               0xb8, 0x3c, 0x74, 0x02, 0x08, 0x82, 0xae, 0x77
+            );
+
+            // 7bc43cbf-37ba-45f1-b74a-82ff518eeb10
+            ret.DefineGuid(
+               "FWPM_CONDITION_L2_FLAGS",
+               0x7bc43cbf,
+               0x37ba,
+               0x45f1,
+               0xb7, 0x4a, 0x82, 0xff, 0x51, 0x8e, 0xeb, 0x10
+            );
+
+            // cc31355c-3073-4ffb-a14f-79415cb1ead1
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_LOCAL_ADDRESS_TYPE",
+               0xcc31355c,
+               0x3073,
+               0x4ffb,
+               0xa1, 0x4f, 0x79, 0x41, 0x5c, 0xb1, 0xea, 0xd1
+            );
+
+            // 027fedb4-f1c1-4030-b564-ee777fd867ea
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_REMOTE_ADDRESS_TYPE",
+               0x027fedb4,
+               0xf1c1,
+               0x4030,
+               0xb5, 0x64, 0xee, 0x77, 0x7f, 0xd8, 0x67, 0xea
+            );
+
+            // 71BC78FA-F17C-4997-A602-6ABB261F351C
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_PACKAGE_ID",
+               0x71bc78fa,
+               0xf17c,
+               0x4997,
+               0xa6, 0x2, 0x6a, 0xbb, 0x26, 0x1f, 0x35, 0x1c
+            );
+
+            // 7b795451-f1f6-4d05-b7cb-21779d802336
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_SOURCE_ADDRESS",
+               0x7b795451,
+               0xf1f6,
+               0x4d05,
+               0xb7, 0xcb, 0x21, 0x77, 0x9d, 0x80, 0x23, 0x36
+            );
+
+            // 04ea2a93-858c-4027-b613-b43180c7859e
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_DESTINATION_ADDRESS",
+               0x04ea2a93,
+               0x858c,
+               0x4027,
+               0xb6, 0x13, 0xb4, 0x31, 0x80, 0xc7, 0x85, 0x9e
+            );
+
+            // 5c1b72e4-299e-4437-a298-bc3f014b3dc2
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_SOURCE_ADDRESS_TYPE",
+               0x5c1b72e4,
+               0x299e,
+               0x4437,
+               0xa2, 0x98, 0xbc, 0x3f, 0x01, 0x4b, 0x3d, 0xc2
+            );
+
+            // ae052932-ef42-4e99-b129-f3b3139e34f7
+            ret.DefineGuid(
+               "FWPM_CONDITION_MAC_DESTINATION_ADDRESS_TYPE",
+               0xae052932,
+               0xef42,
+               0x4e99,
+               0xb1, 0x29, 0xf3, 0xb3, 0x13, 0x9e, 0x34, 0xf7
+            );
+
+            // a6afef91-3df4-4730-a214-f5426aebf821
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_SOURCE_PORT",
+               0xa6afef91,
+               0x3df4,
+               0x4730,
+               0xa2, 0x14, 0xf5, 0x42, 0x6a, 0xeb, 0xf8, 0x21
+            );
+
+            // ce6def45-60fb-4a7b-a304-af30a117000e
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_DESTINATION_PORT",
+               0xce6def45,
+               0x60fb,
+               0x4a7b,
+               0xa3, 0x04, 0xaf, 0x30, 0xa1, 0x17, 0x00, 0x0e
+            );
+
+            // c4a414ba-437b-4de6-9946-d99c1b95b312
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_ID",
+               0xc4a414ba,
+               0x437b,
+               0x4de6,
+               0x99, 0x46, 0xd9, 0x9c, 0x1b, 0x95, 0xb3, 0x12
+            );
+
+            // 11d48b4b-e77a-40b4-9155-392c906c2608
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_NETWORK_TYPE",
+               0x11d48b4b,
+               0xe77a,
+               0x40b4,
+               0x91, 0x55, 0x39, 0x2c, 0x90, 0x6c, 0x26, 0x08
+            );
+
+            // 7f4ef24b-b2c1-4938-ba33-a1ecbed512ba
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_SOURCE_INTERFACE_ID",
+               0x7f4ef24b,
+               0xb2c1,
+               0x4938,
+               0xba, 0x33, 0xa1, 0xec, 0xbe, 0xd5, 0x12, 0xba
+            );
+
+            // 8ed48be4-c926-49f6-a4f6-ef3030e3fc16
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_DESTINATION_INTERFACE_ID",
+               0x8ed48be4,
+               0xc926,
+               0x49f6,
+               0xa4, 0xf6, 0xef, 0x30, 0x30, 0xe3, 0xfc, 0x16
+            );
+
+            // 9c2a9ec2-9fc6-42bc-bdd8-406d4da0be64
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_SOURCE_VM_ID",
+               0x9c2a9ec2,
+               0x9fc6,
+               0x42bc,
+               0xbd, 0xd8, 0x40, 0x6d, 0x4d, 0xa0, 0xbe, 0x64
+            );
+
+            // 6106aace-4de1-4c84-9671-3637f8bcf731
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_DESTINATION_VM_ID",
+               0x6106aace,
+               0x4de1,
+               0x4c84,
+               0x96, 0x71, 0x36, 0x37, 0xf8, 0xbc, 0xf7, 0x31
+            );
+
+            // e6b040a2-edaf-4c36-908b-f2f58ae43807
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_SOURCE_INTERFACE_TYPE",
+               0xe6b040a2,
+               0xedaf,
+               0x4c36,
+               0x90, 0x8b, 0xf2, 0xf5, 0x8a, 0xe4, 0x38, 0x07
+            );
+
+            // fa9b3f06-2f1a-4c57-9e68-a7098b28dbfe
+            ret.DefineGuid(
+               "FWPM_CONDITION_VSWITCH_DESTINATION_INTERFACE_TYPE",
+               0xfa9b3f06,
+               0x2f1a,
+               0x4c57,
+               0x9e, 0x68, 0xa7, 0x09, 0x8b, 0x28, 0xdb, 0xfe
+            );
+
+            // 37a57699-5883-4963-92b8-3e704688b0ad
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_SECURITY_ATTRIBUTE_FQBN_VALUE",
+               0x37a57699,
+               0x5883,
+               0x4963,
+               0x92, 0xb8, 0x3e, 0x70, 0x46, 0x88, 0xb0, 0xad
+            );
+
+            // 37a57700-5884-4964-92b8-3e704688b0ad
+            ret.DefineGuid(
+               "FWPM_CONDITION_IPSEC_SECURITY_REALM_ID",
+               0x37a57700,
+               0x5884,
+               0x4964,
+               0x92, 0xb8, 0x3e, 0x70, 0x46, 0x88, 0xb0, 0xad
+            );
+
+            // b1277b9a-b781-40fc-9671-e5f1b989f34e
+            ret.DefineGuid(
+                "FWPM_CONDITION_ALE_EFFECTIVE_NAME",
+                0xb1277b9a,
+                0xb781,
+                0x40fc,
+                0x96, 0x71, 0xe5, 0xf1, 0xb9, 0x89, 0xf3, 0x4e
+            );
+
+            // d9ee00de-c1ef-4617-bfe3-ffd8f5a08957
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_ADDRESS",
+               0xd9ee00de,
+               0xc1ef,
+               0x4617,
+               0xbf, 0xe3, 0xff, 0xd8, 0xf5, 0xa0, 0x89, 0x57
+            );
+
+            // b235ae9a-1d64-49b8-a44c-5ff3d9095045
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_REMOTE_ADDRESS",
+               0xb235ae9a,
+               0x1d64,
+               0x49b8,
+               0xa4, 0x4c, 0x5f, 0xf3, 0xd9, 0x09, 0x50, 0x45
+            );
+
+            // ae96897e-2e94-4bc9-b313-b27ee80e574d
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_SOURCE_ADDRESS",
+               0xae96897e,
+               0x2e94,
+               0x4bc9,
+               0xb3, 0x13, 0xb2, 0x7e, 0xe8, 0x0e, 0x57, 0x4d
+            );
+
+            // 2d79133b-b390-45c6-8699-acaceaafed33
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_DESTINATION_ADDRESS",
+               0x2d79133b,
+               0xb390,
+               0x45c6,
+               0x86, 0x99, 0xac, 0xac, 0xea, 0xaf, 0xed, 0x33
+            );
+
+            // 6ec7f6c4-376b-45d7-9e9c-d337cedcd237
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_ADDRESS_TYPE",
+               0x6ec7f6c4,
+               0x376b,
+               0x45d7,
+               0x9e, 0x9c, 0xd3, 0x37, 0xce, 0xdc, 0xd2, 0x37
+            );
+
+            // 1ec1b7c9-4eea-4f5e-b9ef-76beaaaf17ee
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_DESTINATION_ADDRESS_TYPE",
+               0x1ec1b7c9,
+               0x4eea,
+               0x4f5e,
+               0xb9, 0xef, 0x76, 0xbe, 0xaa, 0xaf, 0x17, 0xee
+            );
+
+            // {16EBC3DF-957A-452E-A1FC-3D2FF6A730BA}
+            ret.DefineGuid("FWPM_CONDITION_BITMAP_IP_LOCAL_ADDRESS",
+               0x16ebc3df,
+               0x957a,
+               0x452e,
+               0xa1, 0xfc, 0x3d, 0x2f, 0xf6, 0xa7, 0x30, 0xba
+            );
+
+            // {9F90A920-C3B5-4569-BA31-8BD3910DC656}
+            ret.DefineGuid("FWPM_CONDITION_BITMAP_IP_LOCAL_PORT",
+               0x9f90a920,
+               0xc3b5,
+               0x4569,
+               0xba, 0x31, 0x8b, 0xd3, 0x91, 0xd, 0xc6, 0x56
+            );
+
+            // {33F00E25-8EEC-4531-A005-41B911F62452}
+            ret.DefineGuid("FWPM_CONDITION_BITMAP_IP_REMOTE_ADDRESS",
+                0x33f00e25,
+                0x8eec,
+                0x4531,
+                0xa0, 0x5, 0x41, 0xb9, 0x11, 0xf6, 0x24, 0x52
+            );
+
+            // {2663D549-AAF2-46A2-8666-1E7667F86985}
+            ret.DefineGuid("FWPM_CONDITION_BITMAP_IP_REMOTE_PORT",
+               0x2663d549,
+               0xaaf2,
+               0x46a2,
+               0x86, 0x66, 0x1e, 0x76, 0x67, 0xf8, 0x69, 0x85
+            );
+
+            // eabe448a-a711-4d64-85b7-3f76b65299c7
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_NEXTHOP_ADDRESS",
+               0xeabe448a,
+               0xa711,
+               0x4d64,
+               0x85, 0xb7, 0x3f, 0x76, 0xb6, 0x52, 0x99, 0xc7
+            );
+
+            // {0F36514C-3226-4A81-A214-2D518B04D08A}
+            ret.DefineGuid("FWPM_CONDITION_BITMAP_INDEX_KEY",
+               0xf36514c,
+               0x3226,
+               0x4a81,
+               0xa2, 0x14, 0x2d, 0x51, 0x8b, 0x4, 0xd0, 0x8a
+            );
+
+            // 4cd62a49-59c3-4969-b7f3-bda5d32890a4
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_INTERFACE",
+               0x4cd62a49,
+               0x59c3,
+               0x4969,
+               0xb7, 0xf3, 0xbd, 0xa5, 0xd3, 0x28, 0x90, 0xa4
+            );
+
+            // 618a9b6d-386b-4136-ad6e-b51587cfb1cd
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_ARRIVAL_INTERFACE",
+               0x618a9b6d,
+               0x386b,
+               0x4136,
+               0xad, 0x6e, 0xb5, 0x15, 0x87, 0xcf, 0xb1, 0xcd
+            );
+
+            // 89f990de-e798-4e6d-ab76-7c9558292e6f
+            ret.DefineGuid(
+               "FWPM_CONDITION_ARRIVAL_INTERFACE_TYPE",
+               0x89f990de,
+               0xe798,
+               0x4e6d,
+               0xab, 0x76, 0x7c, 0x95, 0x58, 0x29, 0x2e, 0x6f
+            );
+
+            // 511166dc-7a8c-4aa7-b533-95ab59fb0340
+            ret.DefineGuid(
+               "FWPM_CONDITION_ARRIVAL_TUNNEL_TYPE",
+               0x511166dc,
+               0x7a8c,
+               0x4aa7,
+               0xb5, 0x33, 0x95, 0xab, 0x59, 0xfb, 0x03, 0x40
+            );
+
+            // cc088db3-1792-4a71-b0f9-037d21cd828b
+            ret.DefineGuid(
+               "FWPM_CONDITION_ARRIVAL_INTERFACE_INDEX",
+               0xcc088db3,
+               0x1792,
+               0x4a71,
+               0xb0, 0xf9, 0x03, 0x7d, 0x21, 0xcd, 0x82, 0x8b
+            );
+
+            // ef8a6122-0577-45a7-9aaf-825fbeb4fb95
+            ret.DefineGuid(
+               "FWPM_CONDITION_NEXTHOP_SUB_INTERFACE_INDEX",
+               0xef8a6122,
+               0x0577,
+               0x45a7,
+               0x9a, 0xaf, 0x82, 0x5f, 0xbe, 0xb4, 0xfb, 0x95
+            );
+
+            // 93ae8f5b-7f6f-4719-98c8-14e97429ef04
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_NEXTHOP_INTERFACE",
+               0x93ae8f5b,
+               0x7f6f,
+               0x4719,
+               0x98, 0xc8, 0x14, 0xe9, 0x74, 0x29, 0xef, 0x04
+            );
+
+            // 97537c6c-d9a3-4767-a381-e942675cd920
+            ret.DefineGuid(
+               "FWPM_CONDITION_NEXTHOP_INTERFACE_TYPE",
+               0x97537c6c,
+               0xd9a3,
+               0x4767,
+               0xa3, 0x81, 0xe9, 0x42, 0x67, 0x5c, 0xd9, 0x20
+            );
+
+            // 72b1a111-987b-4720-99dd-c7c576fa2d4c
+            ret.DefineGuid(
+               "FWPM_CONDITION_NEXTHOP_TUNNEL_TYPE",
+               0x72b1a111,
+               0x987b,
+               0x4720,
+               0x99, 0xdd, 0xc7, 0xc5, 0x76, 0xfa, 0x2d, 0x4c
+            );
+
+            // 138e6888-7ab8-4d65-9ee8-0591bcf6a494
+            ret.DefineGuid(
+               "FWPM_CONDITION_NEXTHOP_INTERFACE_INDEX",
+               0x138e6888,
+               0x7ab8,
+               0x4d65,
+               0x9e, 0xe8, 0x05, 0x91, 0xbc, 0xf6, 0xa4, 0x94
+            );
+
+            // 46ea1551-2255-492b-8019-aabeee349f40
+            ret.DefineGuid(
+               "FWPM_CONDITION_ORIGINAL_PROFILE_ID",
+               0x46ea1551,
+               0x2255,
+               0x492b,
+               0x80, 0x19, 0xaa, 0xbe, 0xee, 0x34, 0x9f, 0x40
+            );
+
+            // ab3033c9-c0e3-4759-937d-5758c65d4ae3
+            ret.DefineGuid(
+               "FWPM_CONDITION_CURRENT_PROFILE_ID",
+               0xab3033c9,
+               0xc0e3,
+               0x4759,
+               0x93, 0x7d, 0x57, 0x58, 0xc6, 0x5d, 0x4a, 0xe3
+            );
+
+            // 4ebf7562-9f18-4d06-9941-a7a625744d71
+            ret.DefineGuid(
+               "FWPM_CONDITION_LOCAL_INTERFACE_PROFILE_ID",
+               0x4ebf7562,
+               0x9f18,
+               0x4d06,
+               0x99, 0x41, 0xa7, 0xa6, 0x25, 0x74, 0x4d, 0x71
+            );
+
+            // cdfe6aab-c083-4142-8679-c08f95329c61
+            ret.DefineGuid(
+               "FWPM_CONDITION_ARRIVAL_INTERFACE_PROFILE_ID",
+               0xcdfe6aab,
+               0xc083,
+               0x4142,
+               0x86, 0x79, 0xc0, 0x8f, 0x95, 0x32, 0x9c, 0x61
+            );
+
+            // d7ff9a56-cdaa-472b-84db-d23963c1d1bf
+            ret.DefineGuid(
+               "FWPM_CONDITION_NEXTHOP_INTERFACE_PROFILE_ID",
+               0xd7ff9a56,
+               0xcdaa,
+               0x472b,
+               0x84, 0xdb, 0xd2, 0x39, 0x63, 0xc1, 0xd1, 0xbf
+            );
+
+
+            // 11205e8c-11ae-457a-8a44-477026dd764a
+            ret.DefineGuid(
+               "FWPM_CONDITION_REAUTHORIZE_REASON",
+               0x11205e8c,
+               0x11ae,
+               0x457a,
+               0x8a, 0x44, 0x47, 0x70, 0x26, 0xdd, 0x76, 0x4a
+            );
+
+            // 076dfdbe-c56c-4f72-ae8a-2cfe7e5c8286
+            ret.DefineGuid(
+               "FWPM_CONDITION_ORIGINAL_ICMP_TYPE",
+               0x076dfdbe,
+               0xc56c,
+               0x4f72,
+               0xae, 0x8a, 0x2c, 0xfe, 0x7e, 0x5c, 0x82, 0x86
+            );
+
+            // da50d5c8-fa0d-4c89-b032-6e62136d1e96
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_PHYSICAL_ARRIVAL_INTERFACE",
+               0xda50d5c8,
+               0xfa0d,
+               0x4c89,
+               0xb0, 0x32, 0x6e, 0x62, 0x13, 0x6d, 0x1e, 0x96
+            );
+
+            // f09bd5ce-5150-48be-b098-c25152fb1f92
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_PHYSICAL_NEXTHOP_INTERFACE",
+               0xf09bd5ce,
+               0x5150,
+               0x48be,
+               0xb0, 0x98, 0xc2, 0x51, 0x52, 0xfb, 0x1f, 0x92
+            );
+
+            // cce68d5e-053b-43a8-9a6f-33384c28e4f6
+            ret.DefineGuid(
+               "FWPM_CONDITION_INTERFACE_QUARANTINE_EPOCH",
+               0xcce68d5e,
+               0x053b,
+               0x43a8,
+               0x9a, 0x6f, 0x33, 0x38, 0x4c, 0x28, 0xe4, 0xf6
+            );
+
+            // daf8cd14-e09e-4c93-a5ae-c5c13b73ffca
+            ret.DefineGuid(
+               "FWPM_CONDITION_INTERFACE_TYPE",
+               0xdaf8cd14,
+               0xe09e,
+               0x4c93,
+               0xa5, 0xae, 0xc5, 0xc1, 0x3b, 0x73, 0xff, 0xca
+            );
+
+            // 77a40437-8779-4868-a261-f5a902f1c0cd
+            ret.DefineGuid(
+               "FWPM_CONDITION_TUNNEL_TYPE",
+               0x77a40437,
+               0x8779,
+               0x4868,
+               0xa2, 0x61, 0xf5, 0xa9, 0x02, 0xf1, 0xc0, 0xcd
+            );
+
+            // 1076b8a5-6323-4c5e-9810-e8d3fc9e6136
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_FORWARD_INTERFACE",
+               0x1076b8a5,
+               0x6323,
+               0x4c5e,
+               0x98, 0x10, 0xe8, 0xd3, 0xfc, 0x9e, 0x61, 0x36
+            );
+
+            // 3971ef2b-623e-4f9a-8cb1-6e79b806b9a7
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_PROTOCOL",
+               0x3971ef2b,
+               0x623e,
+               0x4f9a,
+               0x8c, 0xb1, 0x6e, 0x79, 0xb8, 0x06, 0xb9, 0xa7
+            );
+
+            // 0c1ba1af-5765-453f-af22-a8f791ac775b
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_PORT",
+               0x0c1ba1af,
+               0x5765,
+               0x453f,
+               0xaf, 0x22, 0xa8, 0xf7, 0x91, 0xac, 0x77, 0x5b
+            );
+
+            // c35a604d-d22b-4e1a-91b4-68f674ee674b
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_REMOTE_PORT",
+               0xc35a604d,
+               0xd22b,
+               0x4e1a,
+               0x91, 0xb4, 0x68, 0xf6, 0x74, 0xee, 0x67, 0x4b
+            );
+
+            // 4672a468-8a0a-4202-abb4-849e92e66809
+            ret.DefineGuid(
+               "FWPM_CONDITION_EMBEDDED_LOCAL_ADDRESS_TYPE",
+               0x4672a468,
+               0x8a0a,
+               0x4202,
+               0xab, 0xb4, 0x84, 0x9e, 0x92, 0xe6, 0x68, 0x09
+            );
+
+            // 77ee4b39-3273-4671-b63b-ab6feb66eeb6
+            ret.DefineGuid(
+               "FWPM_CONDITION_EMBEDDED_REMOTE_ADDRESS",
+               0x77ee4b39,
+               0x3273,
+               0x4671,
+               0xb6, 0x3b, 0xab, 0x6f, 0xeb, 0x66, 0xee, 0xb6
+            );
+
+            // 07784107-a29e-4c7b-9ec7-29c44afafdbc
+            ret.DefineGuid(
+               "FWPM_CONDITION_EMBEDDED_PROTOCOL",
+               0x07784107,
+               0xa29e,
+               0x4c7b,
+               0x9e, 0xc7, 0x29, 0xc4, 0x4a, 0xfa, 0xfd, 0xbc
+            );
+
+            // bfca394d-acdb-484e-b8e6-2aff79757345
+            ret.DefineGuid(
+               "FWPM_CONDITION_EMBEDDED_LOCAL_PORT",
+               0xbfca394d,
+               0xacdb,
+               0x484e,
+               0xb8, 0xe6, 0x2a, 0xff, 0x79, 0x75, 0x73, 0x45
+            );
+
+            // cae4d6a1-2968-40ed-a4ce-547160dda88d
+            ret.DefineGuid(
+               "FWPM_CONDITION_EMBEDDED_REMOTE_PORT",
+               0xcae4d6a1,
+               0x2968,
+               0x40ed,
+               0xa4, 0xce, 0x54, 0x71, 0x60, 0xdd, 0xa8, 0x8d
+            );
+
+            // 632ce23b-5167-435c-86d7-e903684aa80c
+            ret.DefineGuid(
+               "FWPM_CONDITION_FLAGS",
+               0x632ce23b,
+               0x5167,
+               0x435c,
+               0x86, 0xd7, 0xe9, 0x03, 0x68, 0x4a, 0xa8, 0x0c
+            );
+
+            // 8784c146-ca97-44d6-9fd1-19fb1840cbf7
+            ret.DefineGuid(
+               "FWPM_CONDITION_DIRECTION",
+               0x8784c146,
+               0xca97,
+               0x44d6,
+               0x9f, 0xd1, 0x19, 0xfb, 0x18, 0x40, 0xcb, 0xf7
+            );
+
+            // 667fd755-d695-434a-8af5-d3835a1259bc
+            ret.DefineGuid(
+               "FWPM_CONDITION_INTERFACE_INDEX",
+               0x667fd755,
+               0xd695,
+               0x434a,
+               0x8a, 0xf5, 0xd3, 0x83, 0x5a, 0x12, 0x59, 0xbc
+            );
+
+            // 0cd42473-d621-4be3-ae8c-72a348d283e1
+            ret.DefineGuid(
+               "FWPM_CONDITION_SUB_INTERFACE_INDEX",
+               0x0cd42473,
+               0xd621,
+               0x4be3,
+               0xae, 0x8c, 0x72, 0xa3, 0x48, 0xd2, 0x83, 0xe1
+            );
+
+            // 2311334d-c92d-45bf-9496-edf447820e2d
+            ret.DefineGuid(
+                "FWPM_CONDITION_SOURCE_INTERFACE_INDEX",
+                0x2311334d,
+                0xc92d,
+                0x45bf,
+                0x94, 0x96, 0xed, 0xf4, 0x47, 0x82, 0x0e, 0x2d
+            );
+
+            // 055edd9d-acd2-4361-8dab-f9525d97662f
+            ret.DefineGuid(
+               "FWPM_CONDITION_SOURCE_SUB_INTERFACE_INDEX",
+               0x055edd9d,
+               0xacd2,
+               0x4361,
+               0x8d, 0xab, 0xf9, 0x52, 0x5d, 0x97, 0x66, 0x2f
+            );
+
+            // 35cf6522-4139-45ee-a0d5-67b80949d879
+            ret.DefineGuid(
+               "FWPM_CONDITION_DESTINATION_INTERFACE_INDEX",
+               0x35cf6522,
+               0x4139,
+               0x45ee,
+               0xa0, 0xd5, 0x67, 0xb8, 0x09, 0x49, 0xd8, 0x79
+            );
+
+            // 2b7d4399-d4c7-4738-a2f5-e994b43da388
+            ret.DefineGuid(
+               "FWPM_CONDITION_DESTINATION_SUB_INTERFACE_INDEX",
+               0x2b7d4399,
+               0xd4c7,
+               0x4738,
+               0xa2, 0xf5, 0xe9, 0x94, 0xb4, 0x3d, 0xa3, 0x88
+            );
+
+            // d78e1e87-8644-4ea5-9437-d809ecefc971
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_APP_ID",
+               0xd78e1e87,
+               0x8644,
+               0x4ea5,
+               0x94, 0x37, 0xd8, 0x09, 0xec, 0xef, 0xc9, 0x71
+            );
+
+            // 0e6cd086-e1fb-4212-842f-8a9f993fb3f6
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_ORIGINAL_APP_ID",
+               0x0e6cd086,
+               0xe1fb,
+               0x4212,
+               0x84, 0x2f, 0x8a, 0x9f, 0x99, 0x3f, 0xb3, 0xf6
+            );
+
+            // af043a0a-b34d-4f86-979c-c90371af6e66
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_USER_ID",
+               0xaf043a0a,
+               0xb34d,
+               0x4f86,
+               0x97, 0x9c, 0xc9, 0x03, 0x71, 0xaf, 0x6e, 0x66
+            );
+
+            // f63073b7-0189-4ab0-95a4-6123cbfab862
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_REMOTE_USER_ID",
+               0xf63073b7,
+               0x0189,
+               0x4ab0,
+               0x95, 0xa4, 0x61, 0x23, 0xcb, 0xfa, 0xb8, 0x62
+            );
+
+            // 1aa47f51-7f93-4508-a271-81abb00c9cab
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_REMOTE_MACHINE_ID",
+               0x1aa47f51,
+               0x7f93,
+               0x4508,
+               0xa2, 0x71, 0x81, 0xab, 0xb0, 0x0c, 0x9c, 0xab
+            );
+
+            // 1c974776-7182-46e9-afd3-b02910e30334
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_PROMISCUOUS_MODE",
+               0x1c974776,
+               0x7182,
+               0x46e9,
+               0xaf, 0xd3, 0xb0, 0x29, 0x10, 0xe3, 0x03, 0x34
+            );
+
+            // b9f4e088-cb98-4efb-a2c7-ad07332643db
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_SIO_FIREWALL_SYSTEM_PORT",
+               0xb9f4e088,
+               0xcb98,
+               0x4efb,
+               0xa2, 0xc7, 0xad, 0x07, 0x33, 0x26, 0x43, 0xdb
+            );
+
+            // b482d227-1979-4a98-8044-18bbe6237542
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_REAUTH_REASON",
+               0xb482d227,
+               0x1979,
+               0x4a98,
+               0x80, 0x44, 0x18, 0xbb, 0xe6, 0x23, 0x75, 0x42
+            );
+
+            // 46275a9d-c03f-4d77-b784-1c57f4d02753
+            ret.DefineGuid(
+               "FWPM_CONDITION_ALE_NAP_CONTEXT",
+               0x46275a9d,
+               0xc03f,
+               0x4d77,
+               0xb7, 0x84, 0x1c, 0x57, 0xf4, 0xd0, 0x27, 0x53
+            );
+
+
+            // 35d0ea0e-15ca-492b-900e-97fd46352cce
+            ret.DefineGuid(
+               "FWPM_CONDITION_KM_AUTH_NAP_CONTEXT",
+               0x35d0ea0e,
+               0x15ca,
+               0x492b,
+               0x90, 0x0e, 0x97, 0xfd, 0x46, 0x35, 0x2c, 0xce
+            );
+
+
+            // 9bf0ee66-06c9-41b9-84da-288cb43af51f
+            ret.DefineGuid(
+                "FWPM_CONDITION_REMOTE_USER_TOKEN",
+                0x9bf0ee66,
+                0x06c9,
+                0x41b9,
+                0x84, 0xda, 0x28, 0x8c, 0xb4, 0x3a, 0xf5, 0x1f
+            );
+
+            // 7c9c7d9f-0075-4d35-a0d1-8311c4cf6af1
+            ret.DefineGuid(
+               "FWPM_CONDITION_RPC_IF_UUID",
+               0x7c9c7d9f,
+               0x0075,
+               0x4d35,
+               0xa0, 0xd1, 0x83, 0x11, 0xc4, 0xcf, 0x6a, 0xf1
+            );
+
+            // eabfd9b7-1262-4a2e-adaa-5f96f6fe326d
+            ret.DefineGuid(
+               "FWPM_CONDITION_RPC_IF_VERSION",
+               0xeabfd9b7,
+               0x1262,
+               0x4a2e,
+               0xad, 0xaa, 0x5f, 0x96, 0xf6, 0xfe, 0x32, 0x6d
+            );
+
+            // 238a8a32-3199-467d-871c-272621ab3896
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_IF_FLAG",
+                0x238a8a32,
+                0x3199,
+                0x467d,
+                0x87, 0x1c, 0x27, 0x26, 0x21, 0xab, 0x38, 0x96
+            );
+
+            // ff2e7b4d-3112-4770-b636-4d24ae3a6af2
+            ret.DefineGuid(
+                "FWPM_CONDITION_DCOM_APP_ID",
+                0xff2e7b4d,
+                0x3112,
+                0x4770,
+                0xb6, 0x36, 0x4d, 0x24, 0xae, 0x3a, 0x6a, 0xf2
+            );
+
+            // d024de4d-deaa-4317-9c85-e40ef6e140c3
+            ret.DefineGuid(
+                "FWPM_CONDITION_IMAGE_NAME",
+                0xd024de4d,
+                0xdeaa,
+                0x4317,
+                0x9c, 0x85, 0xe4, 0x0e, 0xf6, 0xe1, 0x40, 0xc3
+            );
+
+            // 2717bc74-3a35-4ce7-b7ef-c838fabdec45
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_PROTOCOL",
+                0x2717bc74,
+                0x3a35,
+                0x4ce7,
+                0xb7, 0xef, 0xc8, 0x38, 0xfa, 0xbd, 0xec, 0x45
+            );
+
+            // daba74ab-0d67-43e7-986e-75b84f82f594
+            ret.DefineGuid(
+               "FWPM_CONDITION_RPC_AUTH_TYPE",
+               0xdaba74ab,
+               0x0d67,
+               0x43e7,
+               0x98, 0x6e, 0x75, 0xb8, 0x4f, 0x82, 0xf5, 0x94
+            );
+
+            // e5a0aed5-59ac-46ea-be05-a5f05ecf446e
+            ret.DefineGuid(
+               "FWPM_CONDITION_RPC_AUTH_LEVEL",
+               0xe5a0aed5,
+               0x59ac,
+               0x46ea,
+               0xbe, 0x05, 0xa5, 0xf0, 0x5e, 0xcf, 0x44, 0x6e
+            );
+
+            // 0d306ef0-e974-4f74-b5c7-591b0da7d562
+            ret.DefineGuid(
+               "FWPM_CONDITION_SEC_ENCRYPT_ALGORITHM",
+               0x0d306ef0,
+               0xe974,
+               0x4f74,
+               0xb5, 0xc7, 0x59, 0x1b, 0x0d, 0xa7, 0xd5, 0x62
+            );
+
+            // 4772183b-ccf8-4aeb-bce1-c6c6161c8fe4
+            ret.DefineGuid(
+                "FWPM_CONDITION_SEC_KEY_SIZE",
+                0x4772183b,
+                0xccf8,
+                0x4aeb,
+                0xbc, 0xe1, 0xc6, 0xc6, 0x16, 0x1c, 0x8f, 0xe4
+            );
+
+            // 03a629cb-6e52-49f8-9c41-5709633c09cf
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_ADDRESS_V4",
+               0x03a629cb,
+               0x6e52,
+               0x49f8,
+               0x9c, 0x41, 0x57, 0x09, 0x63, 0x3c, 0x09, 0xcf
+            );
+
+            // 2381be84-7524-45b3-a05b-1e637d9c7a6a
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_LOCAL_ADDRESS_V6",
+               0x2381be84,
+               0x7524,
+               0x45b3,
+               0xa0, 0x5b, 0x1e, 0x63, 0x7d, 0x9c, 0x7a, 0x6a
+            );
+
+            // 1bd0741d-e3df-4e24-8634-762046eef6eb
+            ret.DefineGuid(
+                "FWPM_CONDITION_PIPE",
+                0x1bd0741d,
+                0xe3df,
+                0x4e24,
+                0x86, 0x34, 0x76, 0x20, 0x46, 0xee, 0xf6, 0xeb
+            );
+
+            // 1febb610-3bcc-45e1-bc36-2e067e2cb186
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_REMOTE_ADDRESS_V4",
+               0x1febb610,
+               0x3bcc,
+               0x45e1,
+               0xbc, 0x36, 0x2e, 0x06, 0x7e, 0x2c, 0xb1, 0x86
+            );
+
+            // 246e1d8c-8bee-4018-9b98-31d4582f3361
+            ret.DefineGuid(
+               "FWPM_CONDITION_IP_REMOTE_ADDRESS_V6",
+               0x246e1d8c,
+               0x8bee,
+               0x4018,
+               0x9b, 0x98, 0x31, 0xd4, 0x58, 0x2f, 0x33, 0x61
+            );
+
+            // e31180a8-bbbd-4d14-a65e-7157b06233bb
+            ret.DefineGuid(
+                "FWPM_CONDITION_PROCESS_WITH_RPC_IF_UUID",
+                0xe31180a8,
+                0xbbbd,
+                0x4d14,
+                0xa6, 0x5e, 0x71, 0x57, 0xb0, 0x62, 0x33, 0xbb
+            );
+
+            // dccea0b9-0886-4360-9c6a-ab043a24fba9
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_EP_VALUE",
+                0xdccea0b9,
+                0x0886,
+                0x4360,
+                0x9c, 0x6a, 0xab, 0x04, 0x3a, 0x24, 0xfb, 0xa9
+            );
+
+            // 218b814a-0a39-49b8-8e71-c20c39c7dd2e
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_EP_FLAGS",
+                0x218b814a,
+                0x0a39,
+                0x49b8,
+                0x8e, 0x71, 0xc2, 0x0c, 0x39, 0xc7, 0xdd, 0x2e
+            );
+
+            // c228fc1e-403a-4478-be05-c9baa4c05ace
+            ret.DefineGuid(
+                "FWPM_CONDITION_CLIENT_TOKEN",
+                0xc228fc1e,
+                0x403a,
+                0x4478,
+                0xbe, 0x05, 0xc9, 0xba, 0xa4, 0xc0, 0x5a, 0xce
+            );
+
+            // b605a225-c3b3-48c7-9833-7aefa9527546
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_SERVER_NAME",
+                0xb605a225,
+                0xc3b3,
+                0x48c7,
+                0x98, 0x33, 0x7a, 0xef, 0xa9, 0x52, 0x75, 0x46
+            );
+
+            // 8090f645-9ad5-4e3b-9f9f-8023ca097909
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_SERVER_PORT",
+                0x8090f645,
+                0x9ad5,
+                0x4e3b,
+                0x9f, 0x9f, 0x80, 0x23, 0xca, 0x09, 0x79, 0x09
+            );
+
+            // 40953fe2-8565-4759-8488-1771b4b4b5db
+            ret.DefineGuid(
+                "FWPM_CONDITION_RPC_PROXY_AUTH_TYPE",
+                0x40953fe2,
+                0x8565,
+                0x4759,
+                0x84, 0x88, 0x17, 0x71, 0xb4, 0xb4, 0xb5, 0xdb
+            );
+
+            // a3ec00c7-05f4-4df7-91f2-5f60d91ff443
+            ret.DefineGuid(
+                "FWPM_CONDITION_CLIENT_CERT_KEY_LENGTH",
+                0xa3ec00c7,
+                0x05f4,
+                0x4df7,
+                0x91, 0xf2, 0x5f, 0x60, 0xd9, 0x1f, 0xf4, 0x43
+            );
+
+            // c491ad5e-f882-4283-b916-436b103ff4ad
+            ret.DefineGuid(
+                "FWPM_CONDITION_CLIENT_CERT_OID",
+                0xc491ad5e,
+                0xf882,
+                0x4283,
+                0xb9, 0x16, 0x43, 0x6b, 0x10, 0x3f, 0xf4, 0xad
+            );
+
+            // 206e9996-490e-40cf-b831-b38641eb6fcb
+            ret.DefineGuid(
+               "FWPM_CONDITION_NET_EVENT_TYPE",
+               0x206e9996,
+               0x490e,
+               0x40cf,
+               0xb8, 0x31, 0xb3, 0x86, 0x41, 0xeb, 0x6f, 0xcb
+            );
+
+
+            // 9b539082-eb90-4186-a6cc-de5b63235016
+            ret.DefineGuid(
+               "FWPM_CONDITION_PEER_NAME",
+               0x9b539082,
+               0xeb90,
+               0x4186,
+               0xa6, 0xcc, 0xde, 0x5b, 0x63, 0x23, 0x50, 0x16
+            );
+
+            //f68166fd-0682-4c89-b8f5-86436c7ef9b7
+            ret.DefineGuid(
+               "FWPM_CONDITION_REMOTE_ID",
+               0xf68166fd,
+               0x0682,
+               0x4c89,
+               0xb8, 0xf5, 0x86, 0x43, 0x6c, 0x7e, 0xf9, 0xb7
+            );
+
+            //eb458cd5-da7b-4ef9-8d43-7b0a840332f2
+            ret.DefineGuid(
+               "FWPM_CONDITION_AUTHENTICATION_TYPE",
+               0xeb458cd5,
+               0xda7b,
+               0x4ef9,
+               0x8d, 0x43, 0x7b, 0x0a, 0x84, 0x03, 0x32, 0xf2
+            );
+
+            //ff0f5f49-0ceb-481b-8638-1479791f3f2c
+            ret.DefineGuid(
+               "FWPM_CONDITION_KM_TYPE",
+               0xff0f5f49,
+               0x0ceb,
+               0x481b,
+               0x86, 0x38, 0x14, 0x79, 0x79, 0x1f, 0x3f, 0x2c
+            );
+
+            //feef4582-ef8f-4f7b-858b-9077d122de47
+            ret.DefineGuid(
+               "FWPM_CONDITION_KM_MODE",
+               0xfeef4582,
+               0xef8f,
+               0x4f7b,
+               0x85, 0x8b, 0x90, 0x77, 0xd1, 0x22, 0xde, 0x47
+            );
+
+            //ad37dee3-722f-45cc-a4e3-068048124452
+            ret.DefineGuid(
+               "FWPM_CONDITION_IPSEC_POLICY_KEY",
+               0xad37dee3,
+               0x722f,
+               0x45cc,
+               0xa4, 0xe3, 0x06, 0x80, 0x48, 0x12, 0x44, 0x52
+            );
+
+            //f64fc6d1-f9cb-43d2-8a5f-e13bc894f265
+            ret.DefineGuid(
+               "FWPM_CONDITION_QM_MODE",
+               0xf64fc6d1,
+               0xf9cb,
+               0x43d2,
+               0x8a, 0x5f, 0xe1, 0x3b, 0xc8, 0x94, 0xf2, 0x65
+            );
+
+            // 35A791AB-04AC-4FF2-A6BB-DA6CFAC71806
+            ret.DefineGuid(
+                "FWPM_CONDITION_COMPARTMENT_ID",
+                0x35a791ab,
+                0x4ac,
+                0x4ff2,
+                0xa6, 0xbb, 0xda, 0x6c, 0xfa, 0xc7, 0x18, 0x6
+            );
+
+            //678f4deb-45af-4882-93fe-19d4729d9834
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED0",
+               0x678f4deb,
+               0x45af,
+               0x4882,
+               0x93, 0xfe, 0x19, 0xd4, 0x72, 0x9d, 0x98, 0x34
+               );
+
+            //d818f827-5c69-48eb-bf80-d86b17755f97
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED1",
+               0xd818f827,
+               0x5c69,
+               0x48eb,
+               0xbf, 0x80, 0xd8, 0x6b, 0x17, 0x75, 0x5f, 0x97
+               );
+
+            //53d4123d-e15b-4e84-b7a8-dce16f7b62d9
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED2",
+               0x53d4123d,
+               0xe15b,
+               0x4e84,
+               0xb7, 0xa8, 0xdc, 0xe1, 0x6f, 0x7b, 0x62, 0xd9
+               );
+
+            //7f6e8ca3-6606-4932-97c7-e1f20710af3b
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED3",
+               0x7f6e8ca3,
+               0x6606,
+               0x4932,
+               0x97, 0xc7, 0xe1, 0xf2, 0x07, 0x10, 0xaf, 0x3b
+               );
+
+            //5f58e642-b937-495e-a94b-f6b051a49250
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED4",
+               0x5f58e642,
+               0xb937,
+               0x495e,
+               0xa9, 0x4b, 0xf6, 0xb0, 0x51, 0xa4, 0x92, 0x50
+            );
+
+            //9ba8f6cd-f77c-43e6-8847-11939dc5db5a
+            ret.DefineGuid(
+               "FWPM_CONDITION_RESERVED5",
+               0x9ba8f6cd,
+               0xf77c,
+               0x43e6,
+               0x88, 0x47, 0x11, 0x93, 0x9d, 0xc5, 0xdb, 0x5a
+            );
+
+            //f13d84bd-59d5-44c4-8817-5ecdae1805bd
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED6",
+                0xf13d84bd,
+                0x59d5,
+                0x44c4,
+                0x88, 0x17, 0x5e, 0xcd, 0xae, 0x18, 0x05, 0xbd
+            );
+
+            //65a0f930-45dd-4983-aa33-efc7b611af08
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED7",
+                0x65a0f930,
+                0x45dd,
+                0x4983,
+                0xaa, 0x33, 0xef, 0xc7, 0xb6, 0x11, 0xaf, 0x08
+            );
+
+            //4f424974-0c12-4816-9b47-9a547db39a32
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED8",
+                0x4f424974,
+                0x0c12,
+                0x4816,
+                0x9b, 0x47, 0x9a, 0x54, 0x7d, 0xb3, 0x9a, 0x32
+            );
+
+            //ce78e10f-13ff-4c70-8643-36ad1879afa3
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED9",
+                0xce78e10f,
+                0x13ff,
+                0x4c70,
+                0x86, 0x43, 0x36, 0xad, 0x18, 0x79, 0xaf, 0xa3
+            );
+
+            //b979e282-d621-4c8c-b184-b105a61c36ce
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED10",
+                0xb979e282,
+                0xd621,
+                0x4c8c,
+                0xb1, 0x84, 0xb1, 0x05, 0xa6, 0x1c, 0x36, 0xce
+            );
+
+            //2d62ee4d-023d-411f-9582-43acbb795975
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED11",
+                0x2d62ee4d,
+                0x023d,
+                0x411f,
+                0x95, 0x82, 0x43, 0xac, 0xbb, 0x79, 0x59, 0x75
+            );
+
+            //a3677c32-7e35-4ddc-93da-e8c33fc923c7
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED12",
+                0xa3677c32,
+                0x7e35,
+                0x4ddc,
+                0x93, 0xda, 0xe8, 0xc3, 0x3f, 0xc9, 0x23, 0xc7
+            );
+
+            // 335a3e90-84aa-42f5-9e6f-59309536a44c
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED13",
+                0x335a3e90,
+                0x84aa,
+                0x42f5,
+                0x9e, 0x6f, 0x59, 0x30, 0x95, 0x36, 0xa4, 0x4c
+            );
+
+            // 30e44da2-2f1a-4116-a559-f907de83604a
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED14",
+                0x30e44da2,
+                0x2f1a,
+                0x4116,
+                0xa5, 0x59, 0xf9, 0x07, 0xde, 0x83, 0x60, 0x4a
+            );
+
+            // bab8340f-afe0-43d1-80d8-5ca456962de3
+            ret.DefineGuid(
+                "FWPM_CONDITION_RESERVED15",
+                0xbab8340f,
+                0xafe0,
+                0x43d1,
+                0x80, 0xd8, 0x5c, 0xa4, 0x56, 0x96, 0x2d, 0xe3
+            );
+            return ret;
+        }
+    }
+}

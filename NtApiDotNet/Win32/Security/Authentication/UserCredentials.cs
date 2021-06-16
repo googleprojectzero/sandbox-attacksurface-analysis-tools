@@ -119,6 +119,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
         }
 
+        internal SEC_WINNT_AUTH_IDENTITY ToAuthIdentity(DisposableList list)
+        {
+            return new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list);
+        }
+
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
             if (package == null)
@@ -131,7 +136,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 case "negotiate":
                 case "kerberos":
                 case "wdigest":
-                    return new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list).ToBuffer();
+                    return ToAuthIdentity(list).ToBuffer();
                 case "credssp":
                     return new KERB_INTERACTIVE_LOGON(UserName, Domain, Password, list).ToBuffer(); 
                 default:

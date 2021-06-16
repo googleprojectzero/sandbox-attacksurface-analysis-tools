@@ -1514,11 +1514,23 @@ namespace NtApiDotNet
         /// Parse a security descriptor.
         /// </summary>
         /// <param name="ptr">Native pointer to security descriptor.</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> Parse(IntPtr ptr, NtType type, bool throw_on_error)
+        {
+            return Parse(new SafeHGlobalBuffer(ptr, 0, false), type, throw_on_error);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(IntPtr ptr, bool throw_on_error)
         {
-            return Parse(new SafeHGlobalBuffer(ptr, 0, false), throw_on_error);
+            return Parse(ptr, null, throw_on_error);
         }
 
         /// <summary>
