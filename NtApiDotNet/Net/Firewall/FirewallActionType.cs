@@ -18,7 +18,7 @@ using NtApiDotNet.Utilities.Reflection;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    public enum FirewallActionType
+    public enum FirewallActionType : uint
     {
         [SDKName("FWP_ACTION_FLAG_TERMINATING")]
         Terminating = 0x00001000,
@@ -44,6 +44,7 @@ namespace NtApiDotNet.Net.Firewall
         NonTerminating = 0x00002000,
         [SDKName("FWP_ACTION_FLAG_CALLOUT")]
         Callout = 0x00004000,
+        All = 0xFFFFFFFF
     }
 }
 

@@ -16,8 +16,12 @@ using System;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    static class FirewallSubLayerGuids
+    /// <summary>
+    /// Guids for pre-defined firewall sub-layers.
+    /// </summary>
+    public static class FirewallSubLayerGuids
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // 758c84f4-fb48-4de9-9aeb-3ed9551ab1fd
         public static Guid FWPM_SUBLAYER_RPC_AUDIT = new Guid(0x758c84f4, 0xfb48, 0x4de9, 0x9a, 0xeb, 0x3e, 0xd9, 0x55, 0x1a, 0xb1, 0xfd);
         // 83f299ed-9ff4-4967-aff4-c309f4dab827
@@ -42,5 +46,6 @@ namespace NtApiDotNet.Net.Firewall
         public static Guid FWPM_SUBLAYER_TCP_TEMPLATES = new Guid(0x24421dcf, 0x0ac5, 0x4caa, 0x9e, 0x14, 0x50, 0xf6, 0xe3, 0x63, 0x6a, 0xf0);
         // 37a57701-5884-4964-92b8-3e704688b0ad
         public static Guid FWPM_SUBLAYER_IPSEC_SECURITY_REALM = new Guid(0x37a57701, 0x5884, 0x4964, 0x92, 0xb8, 0x3e, 0x70, 0x46, 0x88, 0xb0, 0xad);
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

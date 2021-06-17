@@ -24,7 +24,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Firewall value.
     /// </summary>
-    public struct FirewallValue
+    public struct FirewallValue : IComparable<FirewallValue>, IComparable
     {
         /// <summary>
         /// Type of the value.
@@ -182,6 +182,27 @@ namespace NtApiDotNet.Net.Firewall
         public override string ToString()
         {
             return ContextValue?.ToString() ?? "(null)";
+        }
+
+        int IComparable<FirewallValue>.CompareTo(FirewallValue other)
+        {
+            if (Value is IComparable comp)
+            {
+                return comp.CompareTo(other.Value);
+            }
+            return 0;
+        }
+
+        int IComparable.CompareTo(object obj)
+        {
+            if (obj is FirewallValue other)
+            {
+                if (Value is IComparable comp)
+                {
+                    return comp.CompareTo(other.Value);
+                }
+            }
+            return 0;
         }
     }
 }

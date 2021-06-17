@@ -95,8 +95,7 @@ namespace NtApiDotNet.Net.Firewall
             Guid key, GetSecurityInfoByKey func, bool throw_on_error)
         {
             security_information &= SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Sacl;
-
-            var error = func(engine_handle, key, SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl,
+            var error = func(engine_handle, key, security_information,
                                 IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, out SafeFwpmMemoryBuffer security_descriptor);
             if (error != Win32Error.SUCCESS)
             {
@@ -109,53 +108,53 @@ namespace NtApiDotNet.Net.Firewall
             }
         }
 
-        static FirewallFilter ProcessFilter(SafeFwpmEngineHandle engine_handle, FWPM_FILTER0 filter)
+        private FirewallFilter ProcessFilter(FWPM_FILTER0 filter)
         {
-            return new FirewallFilter(filter, (i, t) => GetSecurityForKey(engine_handle, i, filter.filterKey, 
+            return new FirewallFilter(filter, (i, t) => GetSecurityForKey(_handle, i, filter.filterKey, 
                 FirewallNativeMethods.FwpmFilterGetSecurityInfoByKey0, t));
         }
 
-        static FirewallLayer ProcessLayer(SafeFwpmEngineHandle engine_handle, FWPM_LAYER0 layer)
+        private FirewallLayer ProcessLayer(FWPM_LAYER0 layer)
         {
-            return new FirewallLayer(layer, (i, t) => GetSecurityForKey(engine_handle, i, layer.layerKey,
+            return new FirewallLayer(layer, (i, t) => GetSecurityForKey(_handle, i, layer.layerKey,
                 FirewallNativeMethods.FwpmLayerGetSecurityInfoByKey0, t));
         }
 
-        static FirewallSubLayer ProcessSubLayer(SafeFwpmEngineHandle engine_handle, FWPM_SUBLAYER0 sublayer)
+        private FirewallSubLayer ProcessSubLayer(FWPM_SUBLAYER0 sublayer)
         {
-            return new FirewallSubLayer(sublayer, (i, t) => GetSecurityForKey(engine_handle, i, sublayer.subLayerKey,
+            return new FirewallSubLayer(sublayer, (i, t) => GetSecurityForKey(_handle, i, sublayer.subLayerKey,
                 FirewallNativeMethods.FwpmSubLayerGetSecurityInfoByKey0, t));
         }
 
-        static FirewallCallout ProcessCallout(SafeFwpmEngineHandle engine_handle, FWPM_CALLOUT0 callout)
+        private FirewallCallout ProcessCallout(FWPM_CALLOUT0 callout)
         {
-            return new FirewallCallout(callout, (i, t) => GetSecurityForKey(engine_handle, i, callout.calloutKey,
+            return new FirewallCallout(callout, (i, t) => GetSecurityForKey(_handle, i, callout.calloutKey,
                 FirewallNativeMethods.FwpmCalloutGetSecurityInfoByKey0, t));
         }
 
-        static FirewallProvider ProcessProvider(SafeFwpmEngineHandle engine_handle, FWPM_PROVIDER0 provider)
+        private FirewallProvider ProcessProvider(FWPM_PROVIDER0 provider)
         {
-            return new FirewallProvider(provider, (i, t) => GetSecurityForKey(engine_handle, i, provider.providerKey,
+            return new FirewallProvider(provider, (i, t) => GetSecurityForKey(_handle, i, provider.providerKey,
                 FirewallNativeMethods.FwpmProviderGetSecurityInfoByKey0, t));
         }
 
-        static NtResult<List<T>> EnumerateFwObjects<T, U>(SafeFwpmEngineHandle engine_handle, SafeBuffer template, 
-            Func<SafeFwpmEngineHandle, U, T> map_func, CreateEnumHandleFunc create_func, 
+        private NtResult<List<T>> EnumerateFwObjects<T, U>(IFirewallEnumTemplate template, 
+            Func<U, T> map_func, CreateEnumHandleFunc create_func, 
             EnumObjectFunc enum_func, DestroyEnumHandleFunc destroy_func, bool throw_on_error)
         {
             const int MAX_ENTRY = 1000;
-            IntPtr enum_handle = IntPtr.Zero;
             List<T> ret = new List<T>();
-            try
+            using (var list = new DisposableList())
             {
-                NtStatus status = create_func(engine_handle, template ?? SafeHGlobalBuffer.Null, out enum_handle).MapDosErrorToStatus();
+                NtStatus status = create_func(_handle, template?.ToTemplateBuffer(list) ?? SafeHGlobalBuffer.Null, out IntPtr enum_handle).MapDosErrorToStatus();
                 if (!status.IsSuccess())
                 {
                     return status.CreateResultFromError<List<T>>(throw_on_error);
                 }
+                list.CallOnDispose(() => destroy_func(_handle, enum_handle));
                 while (true)
                 {
-                    status = enum_func(engine_handle, enum_handle, MAX_ENTRY, out SafeFwpmMemoryBuffer entries, out int entry_count).MapDosErrorToStatus();
+                    status = enum_func(_handle, enum_handle, MAX_ENTRY, out SafeFwpmMemoryBuffer entries, out int entry_count).MapDosErrorToStatus();
                     if (!status.IsSuccess())
                     {
                         return status.CreateResultFromError<List<T>>(throw_on_error);
@@ -167,7 +166,7 @@ namespace NtApiDotNet.Net.Firewall
                         {
                             entries.Initialize<IntPtr>((uint)entry_count);
                             IntPtr[] ptrs = entries.ReadArray<IntPtr>(0, entry_count);
-                            ret.AddRange(ptrs.Select(ptr => map_func(engine_handle, (U)Marshal.PtrToStructure(ptr, typeof(U)))));
+                            ret.AddRange(ptrs.Select(ptr => map_func((U)Marshal.PtrToStructure(ptr, typeof(U)))));
                         }
 
                         if (entry_count < MAX_ENTRY)
@@ -177,24 +176,16 @@ namespace NtApiDotNet.Net.Firewall
                     }
                 }
             }
-            finally
-            {
-                if (enum_handle != IntPtr.Zero)
-                {
-                    destroy_func(engine_handle, enum_handle);
-                }
-            }
             return ret.CreateResult();
         }
 
-        static NtResult<T> GetFwObjectByKey<T, U>(SafeFwpmEngineHandle engine_handle, Guid key,
-           Func<SafeFwpmEngineHandle, U, T> map_func, GetFirewallObjectByKey get_func, bool throw_on_error)
+        private NtResult<T> GetFwObjectByKey<T, U>(Guid key, Func<U, T> map_func, GetFirewallObjectByKey get_func, bool throw_on_error)
         {
-            return get_func(engine_handle, key, out SafeFwpmMemoryBuffer buffer).CreateWin32Result(throw_on_error, () =>
+            return get_func(_handle, key, out SafeFwpmMemoryBuffer buffer).CreateWin32Result(throw_on_error, () =>
             {
                 using (buffer)
                 {
-                    return map_func(engine_handle, (U)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(U)));
+                    return map_func((U)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(U)));
                 }
             });
         }
@@ -257,8 +248,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall layer.</returns>
         public NtResult<FirewallLayer> GetLayer(Guid key, bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
-            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmLayerGetByKey0, throw_on_error);
+            Func<FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
+            return GetFwObjectByKey(key, f, FirewallNativeMethods.FwpmLayerGetByKey0, throw_on_error);
         }
 
         /// <summary>
@@ -278,8 +269,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The list of layers.</returns>
         public NtResult<IEnumerable<FirewallLayer>> EnumerateLayers(bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
-            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmLayerCreateEnumHandle0,
+            Func<FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmLayerCreateEnumHandle0,
                 FirewallNativeMethods.FwpmLayerEnum0, FirewallNativeMethods.FwpmLayerDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallLayer>>(l => l.AsReadOnly());
         }
@@ -301,8 +292,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall sub-layer.</returns>
         public NtResult<FirewallSubLayer> GetSubLayer(Guid key, bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
-            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmSubLayerGetByKey0, throw_on_error);
+            Func<FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
+            return GetFwObjectByKey(key, f, FirewallNativeMethods.FwpmSubLayerGetByKey0, throw_on_error);
         }
 
         /// <summary>
@@ -322,9 +313,9 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The list of sub-layers.</returns>
         public NtResult<IEnumerable<FirewallSubLayer>> EnumerateSubLayers(bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
+            Func<FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
 
-            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmSubLayerCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmSubLayerCreateEnumHandle0,
                 FirewallNativeMethods.FwpmSubLayerEnum0, FirewallNativeMethods.FwpmSubLayerDestroyEnumHandle0, 
                 throw_on_error).Map<IEnumerable<FirewallSubLayer>>(l => l.AsReadOnly());
         }
@@ -346,8 +337,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall callout.</returns>
         public NtResult<FirewallCallout> GetCallout(Guid key, bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
-            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmCalloutGetByKey0, throw_on_error);
+            Func<FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
+            return GetFwObjectByKey(key, f, FirewallNativeMethods.FwpmCalloutGetByKey0, throw_on_error);
         }
 
         /// <summary>
@@ -367,9 +358,9 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The list of callouts.</returns>
         public NtResult<IEnumerable<FirewallCallout>> EnumerateCallouts(bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
+            Func<FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
 
-            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmCalloutCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmCalloutCreateEnumHandle0,
                 FirewallNativeMethods.FwpmCalloutEnum0, FirewallNativeMethods.FwpmCalloutDestroyEnumHandle0, 
                 throw_on_error).Map<IEnumerable<FirewallCallout>>(l => l.AsReadOnly());
         }
@@ -391,8 +382,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall filter.</returns>
         public NtResult<FirewallFilter> GetFilter(Guid key, bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
-            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmFilterGetByKey0, throw_on_error);
+            Func<FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
+            return GetFwObjectByKey(key, f, FirewallNativeMethods.FwpmFilterGetByKey0, throw_on_error);
         }
 
         /// <summary>
@@ -406,16 +397,37 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Enumerate filters
+        /// </summary>
+        /// <param name="template">Specify a template for enumerating the filters.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of filters.</returns>
+        public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(FirewallFilterEnumTemplate template, bool throw_on_error)
+        {
+            Func<FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
+            return EnumerateFwObjects(template, f, FirewallNativeMethods.FwpmFilterCreateEnumHandle0,
+                FirewallNativeMethods.FwpmFilterEnum0, FirewallNativeMethods.FwpmFilterDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<FirewallFilter>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate filters
+        /// </summary>
+        /// <param name="template">Specify a template for enumerating the filters.</param>
+        /// <returns>The list of filters.</returns>
+        public IEnumerable<FirewallFilter> EnumerateFilters(FirewallFilterEnumTemplate template)
+        {
+            return EnumerateFilters(template, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all filters
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of filters.</returns>
         public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
-            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmFilterCreateEnumHandle0,
-                FirewallNativeMethods.FwpmFilterEnum0, FirewallNativeMethods.FwpmFilterDestroyEnumHandle0, 
-                throw_on_error).Map<IEnumerable<FirewallFilter>>(l => l.AsReadOnly());
+            return EnumerateFilters(null, throw_on_error);
         }
 
         /// <summary>
@@ -435,8 +447,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall provider.</returns>
         public NtResult<FirewallProvider> GetProvider(Guid key, bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
-            return GetFwObjectByKey(_handle, key, f, FirewallNativeMethods.FwpmProviderGetByKey0, throw_on_error);
+            Func<FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
+            return GetFwObjectByKey(key, f, FirewallNativeMethods.FwpmProviderGetByKey0, throw_on_error);
         }
 
         /// <summary>
@@ -456,8 +468,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The list of providers.</returns>
         public NtResult<IEnumerable<FirewallProvider>> EnumerateProviders(bool throw_on_error)
         {
-            Func<SafeFwpmEngineHandle, FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
-            return EnumerateFwObjects(_handle, null, f, FirewallNativeMethods.FwpmProviderCreateEnumHandle0,
+            Func<FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmProviderCreateEnumHandle0,
                 FirewallNativeMethods.FwpmProviderEnum0, FirewallNativeMethods.FwpmProviderDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallProvider>>(l => l.AsReadOnly());
         }
@@ -469,6 +481,36 @@ namespace NtApiDotNet.Net.Firewall
         public IEnumerable<FirewallProvider> EnumerateProviders()
         {
             return EnumerateProviders(true).Result;
+        }
+
+        /// <summary>
+        /// Get the security descriptor for the IKE SA database.
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor</returns>
+        public NtResult<SecurityDescriptor> GetIkeSaDbSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        {
+            return GetSecurity(security_information, FirewallNativeMethods.IkeextSaDbGetSecurityInfo0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the security descriptor for the IKE SA database.
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
+        public SecurityDescriptor GetIkeSaDbSecurityDescriptor(SecurityInformation security_information)
+        {
+            return GetIkeSaDbSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Get the security descriptor for the IKE SA database.
+        /// </summary>
+        /// <returns>The security descriptor</returns>
+        public SecurityDescriptor GetIkeSaDbSecurityDescriptor()
+        {
+            return GetIkeSaDbSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl);
         }
 
         /// <summary>

@@ -644,6 +644,17 @@ namespace NtApiDotNet.Net.Firewall
             SafeFwpmEngineHandle engineHandle,
             IntPtr enumHandle
         );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IkeextSaDbGetSecurityInfo0(
+            SafeFwpmEngineHandle engineHandle,
+            SecurityInformation securityInfo,
+            IntPtr sidOwner,
+            IntPtr sidGroup,
+            IntPtr dacl,
+            IntPtr sacl,
+            out SafeFwpmMemoryBuffer securityDescriptor
+        );
     }
 }
 

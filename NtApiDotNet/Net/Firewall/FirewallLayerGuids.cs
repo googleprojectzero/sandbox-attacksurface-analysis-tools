@@ -16,8 +16,12 @@ using System;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    static class FirewallLayerGuids
+    /// <summary>
+    /// Guids for pre-defined firewall layers.
+    /// </summary>
+    public static class FirewallLayerGuids
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // c86fd1bf-21cd-497e-a0bb-17425c885c58
         public static Guid FWPM_LAYER_INBOUND_IPPACKET_V4 = new Guid(0xc86fd1bf, 0x21cd, 0x497e, 0xa0, 0xbb, 0x17, 0x42, 0x5c, 0x88, 0x5c, 0x58);
         // b5a230d0-a8c0-44f2-916e-991b53ded1f7
@@ -208,5 +212,6 @@ namespace NtApiDotNet.Net.Firewall
         public static Guid FWPM_LAYER_STREAM_PACKET_V6 = new Guid(0x779a8ca3, 0xf099, 0x468f, 0xb5, 0xd4, 0x83, 0x53, 0x5c, 0x46, 0x1c, 0x02);
         // f4fb8d55-c076-46d8-a2c7-6a4c722ca4ed
         public static Guid FWPM_LAYER_INBOUND_RESERVED2 = new Guid(0xf4fb8d55, 0xc076, 0x46d8, 0xa2, 0xc7, 0x6a, 0x4c, 0x72, 0x2c, 0xa4, 0xed);
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

@@ -37,7 +37,9 @@ namespace NtApiDotNet.Net.Firewall
                 FilterType = filter.action.action.filterType;
             }
             LayerKey = filter.layerKey;
+            LayerKeyName = NamedGuidDictionary.LayerGuids.Value.GetName(LayerKey);
             SubLayerKey = filter.subLayerKey;
+            SubLayerKeyName = NamedGuidDictionary.SublayerGuids.Value.GetName(SubLayerKey);
             Flags = filter.flags;
 
             List<FirewallFilterCondition> conditions = new List<FirewallFilterCondition>();
@@ -69,9 +71,19 @@ namespace NtApiDotNet.Net.Firewall
         public Guid LayerKey { get; }
 
         /// <summary>
+        /// The name of the layer if known.
+        /// </summary>
+        public string LayerKeyName { get; }
+
+        /// <summary>
         /// The sub-layer the filter applies to.
         /// </summary>
         public Guid SubLayerKey { get; }
+
+        /// <summary>
+        /// The name of the sub-layer if known.
+        /// </summary>
+        public string SubLayerKeyName { get; }
 
         /// <summary>
         /// The flags for the filter.

@@ -22,7 +22,7 @@ namespace NtApiDotNet.Net.Firewall
     public sealed class FirewallSubLayer : FirewallObject
     {
         /// <summary>
-        /// SubLayer flags.
+        /// Sub-layer flags.
         /// </summary>
         public FirewallSubLayerFlags Flags { get; }
         /// <summary>
@@ -33,6 +33,10 @@ namespace NtApiDotNet.Net.Firewall
         /// Provider data.
         /// </summary>
         public byte[] ProviderData { get; }
+        /// <summary>
+        /// Weight of the sub-layer.
+        /// </summary>
+        public int Weight { get; }
 
         internal FirewallSubLayer(FWPM_SUBLAYER0 sublayer, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
             : base(sublayer.subLayerKey, sublayer.displayData, NamedGuidDictionary.SublayerGuids.Value, get_sd)
@@ -43,6 +47,7 @@ namespace NtApiDotNet.Net.Firewall
             }
             ProviderData = sublayer.providerData.ToArray();
             Flags = sublayer.flags;
+            Weight = sublayer.weight;
         }
     }
 }

@@ -82,6 +82,7 @@
     <Compile Include="Net\Firewall\FirewallEngine.cs" />
     <Compile Include="Net\Firewall\FirewallFakeTypeFactory.cs" />
     <Compile Include="Net\Firewall\FirewallFilterAccessRights.cs" />
+    <Compile Include="Net\Firewall\FirewallFilterEnumTemplate.cs" />
     <Compile Include="Net\Firewall\FirewallFilterFlags.cs" />
     <Compile Include="Net\Firewall\FirewallLayerFlags.cs" />
     <Compile Include="Net\Firewall\FirewallLayerGuids.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Net\Firewall\FirewallTokenInformation.cs" />
     <Compile Include="Net\Firewall\FirewallUtils.cs" />
     <Compile Include="Net\Firewall\FirewallValue.cs" />
+    <Compile Include="Net\Firewall\IFirewallEnumTemplate.cs" />
     <Compile Include="Net\Firewall\NamedGuidDictionary.cs" />
     <Compile Include="Net\Firewall\FirewallNativeMethods.cs" />
     <Compile Include="Net\Sockets\HyperVEndpoint.cs" />

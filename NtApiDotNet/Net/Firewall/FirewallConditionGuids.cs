@@ -16,8 +16,12 @@ using System;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    static class FirewallConditionGuids
+    /// <summary>
+    /// Guids for pre-defined firewall conditions.
+    /// </summary>
+    public static class FirewallConditionGuids
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // f6e63dce-1f4b-4c6b-b6ef-1165e71f8ee7
         public static Guid FWPM_CONDITION_INTERFACE_MAC_ADDRESS = new Guid(0xf6e63dce, 0x1f4b, 0x4c6b, 0xb6, 0xef, 0x11, 0x65, 0xe7, 0x1f, 0x8e, 0xe7);
         // d999e981-7948-4c83-b742-c84e3b678f8f
@@ -332,5 +336,6 @@ namespace NtApiDotNet.Net.Firewall
             return condition_key == FWPM_CONDITION_DCOM_APP_ID ||
                 condition_key == FWPM_CONDITION_RPC_IF_UUID;
         }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
