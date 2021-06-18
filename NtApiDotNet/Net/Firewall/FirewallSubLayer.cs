@@ -38,8 +38,8 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public int Weight { get; }
 
-        internal FirewallSubLayer(FWPM_SUBLAYER0 sublayer, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(sublayer.subLayerKey, sublayer.displayData, NamedGuidDictionary.SublayerGuids.Value, get_sd)
+        internal FirewallSubLayer(FWPM_SUBLAYER0 sublayer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+            : base(sublayer.subLayerKey, sublayer.displayData, NamedGuidDictionary.SublayerGuids.Value, engine, get_sd)
         {
             if (sublayer.providerKey != IntPtr.Zero)
             {

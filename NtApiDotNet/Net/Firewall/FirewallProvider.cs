@@ -36,8 +36,8 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public byte[] ProviderData { get; }
 
-        internal FirewallProvider(FWPM_PROVIDER0 provider, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
-            : base(provider.providerKey, provider.displayData, new NamedGuidDictionary(), get_sd)
+        internal FirewallProvider(FWPM_PROVIDER0 provider, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
+            : base(provider.providerKey, provider.displayData, new NamedGuidDictionary(), engine, get_sd)
         {
             ServiceName = provider.serviceName ?? string.Empty;
             Flags = provider.flags;

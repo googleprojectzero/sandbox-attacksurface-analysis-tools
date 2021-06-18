@@ -51,8 +51,8 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public int CalloutId { get; }
 
-        internal FirewallCallout(FWPM_CALLOUT0 callout, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(callout.calloutKey, callout.displayData, new NamedGuidDictionary(), get_sd)
+        internal FirewallCallout(FWPM_CALLOUT0 callout, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+            : base(callout.calloutKey, callout.displayData, new NamedGuidDictionary(), engine, get_sd)
         {
         }
     }

@@ -110,31 +110,31 @@ namespace NtApiDotNet.Net.Firewall
 
         private FirewallFilter ProcessFilter(FWPM_FILTER0 filter)
         {
-            return new FirewallFilter(filter, (i, t) => GetSecurityForKey(_handle, i, filter.filterKey, 
+            return new FirewallFilter(filter, this, (i, t) => GetSecurityForKey(_handle, i, filter.filterKey, 
                 FirewallNativeMethods.FwpmFilterGetSecurityInfoByKey0, t));
         }
 
         private FirewallLayer ProcessLayer(FWPM_LAYER0 layer)
         {
-            return new FirewallLayer(layer, (i, t) => GetSecurityForKey(_handle, i, layer.layerKey,
+            return new FirewallLayer(layer, this, (i, t) => GetSecurityForKey(_handle, i, layer.layerKey,
                 FirewallNativeMethods.FwpmLayerGetSecurityInfoByKey0, t));
         }
 
         private FirewallSubLayer ProcessSubLayer(FWPM_SUBLAYER0 sublayer)
         {
-            return new FirewallSubLayer(sublayer, (i, t) => GetSecurityForKey(_handle, i, sublayer.subLayerKey,
+            return new FirewallSubLayer(sublayer, this, (i, t) => GetSecurityForKey(_handle, i, sublayer.subLayerKey,
                 FirewallNativeMethods.FwpmSubLayerGetSecurityInfoByKey0, t));
         }
 
         private FirewallCallout ProcessCallout(FWPM_CALLOUT0 callout)
         {
-            return new FirewallCallout(callout, (i, t) => GetSecurityForKey(_handle, i, callout.calloutKey,
+            return new FirewallCallout(callout, this, (i, t) => GetSecurityForKey(_handle, i, callout.calloutKey,
                 FirewallNativeMethods.FwpmCalloutGetSecurityInfoByKey0, t));
         }
 
         private FirewallProvider ProcessProvider(FWPM_PROVIDER0 provider)
         {
-            return new FirewallProvider(provider, (i, t) => GetSecurityForKey(_handle, i, provider.providerKey,
+            return new FirewallProvider(provider, this, (i, t) => GetSecurityForKey(_handle, i, provider.providerKey,
                 FirewallNativeMethods.FwpmProviderGetSecurityInfoByKey0, t));
         }
 

@@ -24,6 +24,7 @@ namespace NtApiDotNet.Net.Firewall
     {
         private readonly Lazy<SecurityDescriptor> _get_sd_default;
         private readonly Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> _get_sd;
+        private protected readonly FirewallEngine _engine;
 
         /// <summary>
         /// The object's key.
@@ -88,13 +89,14 @@ namespace NtApiDotNet.Net.Firewall
             throw new NotImplementedException();
         }
 
-        private protected FirewallObject(Guid key, FWPM_DISPLAY_DATA0 display_data, NamedGuidDictionary key_to_name, 
+        private protected FirewallObject(Guid key, FWPM_DISPLAY_DATA0 display_data, NamedGuidDictionary key_to_name, FirewallEngine engine,
             Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
         {
             Key = key;
             Name = display_data.name ?? string.Empty;
             Description = display_data.description ?? string.Empty;
             KeyName = key_to_name.GetName(key);
+            _engine = engine;
             _get_sd = get_sd;
             _get_sd_default = new Lazy<SecurityDescriptor>(() => ((INtObjectSecurity)this).GetSecurityDescriptor(SecurityInformation.Owner 
                 | SecurityInformation.Group | SecurityInformation.Dacl));

@@ -24,8 +24,8 @@ namespace NtApiDotNet.Net.Firewall
     /// </summary>
     public sealed class FirewallFilter : FirewallObject
     {
-        internal FirewallFilter(FWPM_FILTER0 filter, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
-            : base(filter.filterKey, filter.displayData, new NamedGuidDictionary(), get_sd)
+        internal FirewallFilter(FWPM_FILTER0 filter, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
+            : base(filter.filterKey, filter.displayData, new NamedGuidDictionary(), engine, get_sd)
         {
             ActionType = filter.action.type;
             if (ActionType.HasFlag(FirewallActionType.Callout))
@@ -134,5 +134,43 @@ namespace NtApiDotNet.Net.Firewall
         /// Is the filter a callout.
         /// </summary>
         public bool IsCallout => ActionType.HasFlag(FirewallActionType.Callout);
+
+        /// <summary>
+        /// Get a layer for this filter.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall layer.</returns>
+        public NtResult<FirewallLayer> GetLayer(bool throw_on_error)
+        {
+            return _engine.GetLayer(LayerKey, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a layer for this filter.
+        /// </summary>
+        /// <returns>The firewall layer.</returns>
+        public FirewallLayer GetLayer()
+        {
+            return GetLayer(true).Result;
+        }
+
+        /// <summary>
+        /// Get a sub-layer for this filter.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall sub-layer.</returns>
+        public NtResult<FirewallSubLayer> GetSubLayer(bool throw_on_error)
+        {
+            return _engine.GetSubLayer(SubLayerKey, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a sub-layer for this filter.
+        /// </summary>
+        /// <returns>The firewall sub-layer.</returns>
+        public FirewallSubLayer GetSubLayer()
+        {
+            return GetSubLayer(true).Result;
+        }
     }
 }

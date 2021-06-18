@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -31,8 +32,33 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public Guid DefaultSubLayerKey { get; }
 
-        internal FirewallLayer(FWPM_LAYER0 layer, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(layer.layerKey, layer.displayData, NamedGuidDictionary.LayerGuids.Value, get_sd)
+        /// <summary>
+        /// Enumerate filters for this layer.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of sorted filters.</returns>
+        public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(bool throw_on_error)
+        {
+            FirewallFilterEnumTemplate template = new FirewallFilterEnumTemplate()
+            {
+                LayerKey = Key,
+                Flags = FilterEnumFlags.Sorted
+            };
+
+            return _engine.EnumerateFilters(template, throw_on_error);
+        }
+
+        /// <summary>
+        /// Enumerate filters for this layer.
+        /// </summary>
+        /// <returns>The list of sorted filters.</returns>
+        public IEnumerable<FirewallFilter> EnumerateFilters()
+        {
+            return EnumerateFilters(true).Result;
+        }
+
+        internal FirewallLayer(FWPM_LAYER0 layer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+            : base(layer.layerKey, layer.displayData, NamedGuidDictionary.LayerGuids.Value, engine, get_sd)
         {
             Flags = layer.flags;
             DefaultSubLayerKey = layer.defaultSubLayerKey;

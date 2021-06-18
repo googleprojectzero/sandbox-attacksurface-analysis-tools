@@ -50,10 +50,6 @@ namespace NtApiDotNet.Win32.Debugger
         {
             foreach (var pair in _pointer_fixup)
             {
-                if (pair.Value.PointerType == null)
-                {
-                    Console.WriteLine("Ooops");
-                }
                 if (_cache.ContainsKey(pair.Key))
                 {
                     pair.Value.PointerType = _cache[pair.Key];

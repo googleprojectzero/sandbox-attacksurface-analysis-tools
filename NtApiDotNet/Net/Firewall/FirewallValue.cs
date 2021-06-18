@@ -163,7 +163,6 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.Empty:
                     return new FirewallEmpty();
                 default:
-                    Console.WriteLine("Unhandled type: {0}", type);
                     return type.ToString();
             }
         }
