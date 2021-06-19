@@ -274,20 +274,12 @@ namespace NtApiDotNet.Net.Firewall
         }
     }
 
-    enum FWPM_FIELD_TYPE
-    {
-        FWPM_FIELD_RAW_DATA = 0,
-        FWPM_FIELD_IP_ADDRESS = FWPM_FIELD_RAW_DATA + 1,
-        FWPM_FIELD_FLAGS = FWPM_FIELD_IP_ADDRESS + 1,
-        FWPM_FIELD_TYPE_MAX = FWPM_FIELD_FLAGS + 1
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     struct FWPM_FIELD0
     {
         /* [ref] */
         public IntPtr fieldKey; // GUID* 
-        public FWPM_FIELD_TYPE type;
+        public FirewallFieldType type;
         public FirewallDataType dataType;
     }
 
@@ -388,6 +380,13 @@ namespace NtApiDotNet.Net.Firewall
         internal static extern Win32Error FwpmFilterGetByKey0(
           SafeFwpmEngineHandle engineHandle,
           in Guid key,
+          out SafeFwpmMemoryBuffer filter // FWPM_FILTER0 **
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmFilterGetById0(
+          SafeFwpmEngineHandle engineHandle,
+          ulong id,
           out SafeFwpmMemoryBuffer filter // FWPM_FILTER0 **
         );
 
@@ -551,6 +550,13 @@ namespace NtApiDotNet.Net.Firewall
           SafeFwpmEngineHandle engineHandle,
           in Guid key,
           out SafeFwpmMemoryBuffer layer // FWPM_LAYER0**
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmLayerGetById0(
+          SafeFwpmEngineHandle engineHandle,
+          ushort id,
+          out SafeFwpmMemoryBuffer layer // FWPM_LAYER0** 
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]

@@ -12,6 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Runtime.InteropServices;
+
 namespace NtApiDotNet.Net.Firewall
 {
     /// <summary>
@@ -82,6 +85,15 @@ namespace NtApiDotNet.Net.Firewall
             };
         }
 
+        #endregion
+
+        #region Internal Methods
+        internal static Guid? ReadGuid(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+                return null;
+            return (Guid)Marshal.PtrToStructure(ptr, typeof(Guid));
+        }
         #endregion
     }
 }

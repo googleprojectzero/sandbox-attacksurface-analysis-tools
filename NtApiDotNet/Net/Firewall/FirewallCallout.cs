@@ -22,11 +22,6 @@ namespace NtApiDotNet.Net.Firewall
     public sealed class FirewallCallout : FirewallObject
     {
         /// <summary>
-        /// The callout key.
-        /// </summary>
-        public Guid CalloutKey { get; }
-
-        /// <summary>
         /// Flags for the callout.
         /// </summary>
         public FirewallCalloutFlags Flags { get; }
@@ -54,6 +49,11 @@ namespace NtApiDotNet.Net.Firewall
         internal FirewallCallout(FWPM_CALLOUT0 callout, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
             : base(callout.calloutKey, callout.displayData, new NamedGuidDictionary(), engine, get_sd)
         {
+            Flags = callout.flags;
+            ProviderData = callout.providerData.ToArray();
+            ProviderKey = FirewallUtils.ReadGuid(callout.providerKey) ?? Guid.Empty;
+            ApplicableLayer = callout.applicableLayer;
+            CalloutId = callout.calloutId;
         }
     }
 }

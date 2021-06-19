@@ -136,6 +136,21 @@ namespace NtApiDotNet.Net.Firewall
         public bool IsCallout => ActionType.HasFlag(FirewallActionType.Callout);
 
         /// <summary>
+        /// Has the filter got an AppID condition.
+        /// </summary>
+        public bool HasAppId => Conditions.Any(c => FirewallConditionGuids.IsAppId(c.FieldKey));
+
+        /// <summary>
+        /// Has the filter got an AppContainer package ID condition.
+        /// </summary>
+        public bool HasPackageId => HasCondition(FirewallConditionGuids.FWPM_CONDITION_ALE_PACKAGE_ID);
+
+        /// <summary>
+        /// Has the filter got a condition to check for a user ID.
+        /// </summary>
+        public bool HasUserId => HasCondition(FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID);
+
+        /// <summary>
         /// Get a layer for this filter.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -171,6 +186,16 @@ namespace NtApiDotNet.Net.Firewall
         public FirewallSubLayer GetSubLayer()
         {
             return GetSubLayer(true).Result;
+        }
+
+        /// <summary>
+        /// Check if filter has any condition of a specific type.
+        /// </summary>
+        /// <param name="condition_guid">The condition type to check.</param>
+        /// <returns>True if the filter has a condition of the specified type.</returns>
+        public bool HasCondition(Guid condition_guid)
+        {
+            return Conditions.Any(c => c.FieldKey == condition_guid);
         }
     }
 }

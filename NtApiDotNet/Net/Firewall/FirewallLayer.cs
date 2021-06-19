@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -31,6 +32,16 @@ namespace NtApiDotNet.Net.Firewall
         /// Default sub-layer key.
         /// </summary>
         public Guid DefaultSubLayerKey { get; }
+
+        /// <summary>
+        /// The layer ID.
+        /// </summary>
+        public int LayerId { get; }
+
+        /// <summary>
+        /// List of fields.
+        /// </summary>
+        public IReadOnlyList<FirewallField> Fields { get; }
 
         /// <summary>
         /// Enumerate filters for this layer.
@@ -62,6 +73,15 @@ namespace NtApiDotNet.Net.Firewall
         {
             Flags = layer.flags;
             DefaultSubLayerKey = layer.defaultSubLayerKey;
+            LayerId = layer.layerId;
+            List<FirewallField> fields = new List<FirewallField>();
+            if (layer.numFields > 0 && layer.field != IntPtr.Zero)
+            {
+                var buffer = new SafeHGlobalBuffer(layer.field, 1, false);
+                buffer.Initialize<FWPM_FIELD0>((uint)layer.numFields);
+                fields.AddRange(buffer.ReadArray<FWPM_FIELD0>(0, layer.numFields).Select(f => new FirewallField(f)));
+            }
+            Fields = fields.AsReadOnly();
         }
     }
 }

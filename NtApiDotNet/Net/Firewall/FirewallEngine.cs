@@ -263,6 +263,34 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get a layer by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the layer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall layer.</returns>
+        public NtResult<FirewallLayer> GetLayer(int id, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmLayerGetById0(_handle, (ushort)id, out SafeFwpmMemoryBuffer buffer)
+                .CreateWin32Result(throw_on_error, () =>
+                {
+                    using (buffer)
+                    {
+                        return ProcessLayer((FWPM_LAYER0)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(FWPM_LAYER0)));
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Get a layer by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the layer.</param>
+        /// <returns>The firewall layer.</returns>
+        public FirewallLayer GetLayer(int id)
+        {
+            return GetLayer(id, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all layers.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -394,6 +422,34 @@ namespace NtApiDotNet.Net.Firewall
         public FirewallFilter GetFilter(Guid key)
         {
             return GetFilter(key, true).Result;
+        }
+
+        /// <summary>
+        /// Get a filter by its id.
+        /// </summary>
+        /// <param name="id">The ID of the filter.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall filter.</returns>
+        public NtResult<FirewallFilter> GetFilter(ulong id, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmFilterGetById0(_handle, id, out SafeFwpmMemoryBuffer buffer)
+                .CreateWin32Result(throw_on_error, () =>
+            {
+                using (buffer)
+                {
+                    return ProcessFilter((FWPM_FILTER0)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(FWPM_FILTER0)));
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get a filter by its id.
+        /// </summary>
+        /// <param name="id">The ID of the filter.</param>
+        /// <returns>The firewall filter.</returns>
+        public FirewallFilter GetFilter(ulong id)
+        {
+            return GetFilter(id, true).Result;
         }
 
         /// <summary>

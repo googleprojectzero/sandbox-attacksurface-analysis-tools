@@ -81,6 +81,8 @@
     <Compile Include="Net\Firewall\FirewallDataType.cs" />
     <Compile Include="Net\Firewall\FirewallEngine.cs" />
     <Compile Include="Net\Firewall\FirewallFakeTypeFactory.cs" />
+    <Compile Include="Net\Firewall\FirewallField.cs" />
+    <Compile Include="Net\Firewall\FirewallFieldType.cs" />
     <Compile Include="Net\Firewall\FirewallFilterAccessRights.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumTemplate.cs" />
     <Compile Include="Net\Firewall\FirewallFilterFlags.cs" />
