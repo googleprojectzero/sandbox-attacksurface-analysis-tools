@@ -77,6 +77,7 @@
     <Compile Include="Net\Firewall\FilterEnumFlags.cs" />
     <Compile Include="Net\Firewall\FirewallActionType.cs" />
     <Compile Include="Net\Firewall\FirewallCalloutFlags.cs" />
+    <Compile Include="Net\Firewall\FirewallCalloutGuids.cs" />
     <Compile Include="Net\Firewall\FirewallConditionGuids.cs" />
     <Compile Include="Net\Firewall\FirewallDataType.cs" />
     <Compile Include="Net\Firewall\FirewallEngine.cs" />
