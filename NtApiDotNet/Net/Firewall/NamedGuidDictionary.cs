@@ -224,8 +224,7 @@ namespace NtApiDotNet.Net.Firewall
 
             // eda08606-2494-4d78-89bc-67837c03b969
             ret.DefineGuid(
-               "FWPM_CALLOUT_WFP_TRANSPORT_LAYER_V4_SILENT_DROP,
-            
+               "FWPM_CALLOUT_WFP_TRANSPORT_LAYER_V4_SILENT_DROP",
                0xeda08606,
                0x2494,
                0x4d78,
@@ -234,7 +233,7 @@ namespace NtApiDotNet.Net.Firewall
 
             // 8693cc74-a075-4156-b476-9286eece814e
             ret.DefineGuid(
-               "FWPM_CALLOUT_WFP_TRANSPORT_LAYER_V6_SILENT_DROP,
+               "FWPM_CALLOUT_WFP_TRANSPORT_LAYER_V6_SILENT_DROP",
             
                0x8693cc74,
                0xa075,
