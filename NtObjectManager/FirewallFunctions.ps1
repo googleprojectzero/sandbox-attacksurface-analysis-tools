@@ -170,6 +170,8 @@ Specify a layer object to query the filters from.
 Specify the filter's key.
 .PARAMETER Id
 Specify the filter's ID.
+.PARAMETER Filename
+Specify to search for filters which match a given executable file.
 .INPUTS
 None
 .OUTPUTS
@@ -205,7 +207,10 @@ function Get-FwFilter {
         [parameter(Mandatory, ParameterSetName="FromId")]
         [uint64]$Id,
         [parameter(Mandatory, ParameterSetName="FromKey")]
-        [guid]$Key
+        [guid]$Key,
+        [parameter(ParameterSetName="FromLayerKey")]
+        [parameter(ParameterSetName="FromLayerName")]
+        [string]$Filename
     )
 
     PROCESS {
@@ -236,6 +241,9 @@ function Get-FwFilter {
             $template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($layer_key)
             $template.Flags = $Flags
             $template.ActionType = $ActionType
+            if ("" -ne $Filename) {
+                $template.AddFilename("Equal", $Filename)
+            }
             $Engine.EnumerateFilters($template) | Write-Output
         }
     }

@@ -257,6 +257,9 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.Range:
                     ret.value.rangeValue = list.AddStructureRef(((FirewallRange)Value).ToStruct(list)).DangerousGetHandle();
                     break;
+                case FirewallDataType.TokenInformation:
+                    ret.value.tokenInformation = list.AddStructureRef(((FirewallTokenInformation)Value).ToStruct(list)).DangerousGetHandle();
+                    break;
                 default:
                     throw new ArgumentException($"Value type {Type} unsupported.");
             }

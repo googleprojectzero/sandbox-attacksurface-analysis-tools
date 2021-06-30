@@ -18,9 +18,18 @@ using System.Linq;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    struct FirewallTokenInformation
+    /// <summary>
+    /// Token information for a condition.
+    /// </summary>
+    public struct FirewallTokenInformation
     {
+        /// <summary>
+        /// The list of SIDs.
+        /// </summary>
         public IReadOnlyList<UserGroup> Sids { get; }
+        /// <summary>
+        /// The list of restricted SIDs.
+        /// </summary>
         public IReadOnlyList<UserGroup> RestrictedSids { get; }
 
         private static IReadOnlyList<UserGroup> ReadSids(IntPtr ptr, int count)
@@ -38,6 +47,38 @@ namespace NtApiDotNet.Net.Firewall
         {
             Sids = ReadSids(token_info.sids, token_info.sidCount);
             RestrictedSids = ReadSids(token_info.restrictedSids, token_info.restrictedSidCount);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="sids">The list of SIDs.</param>
+        /// <param name="restricted_sids">The list of restricted SIDs.</param>
+        public FirewallTokenInformation(IEnumerable<UserGroup> sids, IEnumerable<UserGroup> restricted_sids)
+        {
+            Sids = sids.ToList().AsReadOnly();
+            RestrictedSids = restricted_sids.ToList().AsReadOnly();
+        }
+
+        internal FWP_TOKEN_INFORMATION ToStruct(DisposableList list)
+        {
+            FWP_TOKEN_INFORMATION ret = new FWP_TOKEN_INFORMATION();
+
+            if (Sids.Count > 0)
+            {
+                TokenGroupsBuilder builder = new TokenGroupsBuilder(Sids);
+                ret.sidCount = Sids.Count;
+                ret.sids = list.AddResource(builder.ToBuffer()).DangerousGetHandle();
+            }
+
+            if (RestrictedSids.Count > 0)
+            {
+                TokenGroupsBuilder builder = new TokenGroupsBuilder(RestrictedSids);
+                ret.restrictedSidCount = RestrictedSids.Count;
+                ret.restrictedSids = list.AddResource(builder.ToBuffer()).DangerousGetHandle();
+            }
+
+            return ret;
         }
     }
 }

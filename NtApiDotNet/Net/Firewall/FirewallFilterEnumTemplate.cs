@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Firewall
@@ -20,7 +21,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Options for enumerating a filter.
     /// </summary>
-    public sealed class FirewallFilterEnumTemplate : IFirewallEnumTemplate
+    public sealed class FirewallFilterEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate
     {
         /// <summary>
         /// Specify the key for the layer to search for.
@@ -64,19 +65,28 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Constructor.
         /// </summary>
-        public FirewallFilterEnumTemplate() : this(Guid.Empty)
+        public FirewallFilterEnumTemplate() 
+            : this(Guid.Empty)
         {
         }
 
         SafeBuffer IFirewallEnumTemplate.ToTemplateBuffer(DisposableList list)
         {
-            return list.AddResource(new FWPM_FILTER_ENUM_TEMPLATE0
+            var template = new FWPM_FILTER_ENUM_TEMPLATE0
             {
                 layerKey = LayerKey,
                 flags = Flags,
                 providerKey = ProviderKey.HasValue ? list.AddResource(ProviderKey.Value.ToBuffer()).DangerousGetHandle() : IntPtr.Zero,
                 actionMask = ActionType
-            }.ToBuffer());
+            };
+
+            if (Conditions.Count > 0)
+            {
+                template.numFilterConditions = Conditions.Count;
+                template.filterCondition = list.AddList(Conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+            }
+
+            return list.AddStructure(template);
         }
     }
 }
