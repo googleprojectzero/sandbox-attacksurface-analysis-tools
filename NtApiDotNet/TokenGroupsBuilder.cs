@@ -37,11 +37,20 @@ namespace NtApiDotNet
             }
         }
 
-        private List<InternalSidAndAttributes> _sid_and_attrs;
+        private readonly List<InternalSidAndAttributes> _sid_and_attrs;
 
-        public TokenGroupsBuilder()
+        public TokenGroupsBuilder(IEnumerable<UserGroup> groups)
         {
-            _sid_and_attrs = new List<InternalSidAndAttributes>();
+            if (groups is null)
+            {
+                throw new System.ArgumentNullException(nameof(groups));
+            }
+
+            _sid_and_attrs = new List<InternalSidAndAttributes>(groups.Select(g => new InternalSidAndAttributes(g)));
+        }
+
+        public TokenGroupsBuilder() : this(new UserGroup[0])
+        {
         }
 
         public void AddGroup(Sid sid, GroupAttributes attributes)
