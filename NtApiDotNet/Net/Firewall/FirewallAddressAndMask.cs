@@ -12,7 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Net;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -108,6 +111,27 @@ namespace NtApiDotNet.Net.Firewall
             Address = address;
             Mask = CalculateMask(address, prefix);
             PrefixLength = prefix;
+        }
+
+        internal SafeBuffer ToBuffer(DisposableList list)
+        {
+            switch (Address.AddressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                    return list.AddStructureRef(new FWP_V4_ADDR_AND_MASK()
+                    {
+                        addr = BitConverter.ToUInt32(Address.GetAddressBytes(), 0),
+                        mask = BitConverter.ToUInt32(Mask.GetAddressBytes(), 0),
+                    });
+                case AddressFamily.InterNetworkV6:
+                    return list.AddStructureRef(new FWP_V6_ADDR_AND_MASK()
+                    {
+                        addr = Address.GetAddressBytes(),
+                        prefixLength = (byte)PrefixLength
+                    });
+                default:
+                    throw new ArgumentException("Invalid address family.");
+            }
         }
 
         /// <summary>

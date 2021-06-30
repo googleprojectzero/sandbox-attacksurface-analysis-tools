@@ -26,6 +26,7 @@ namespace NtApiDotNet.Net.Firewall
     /// </summary>
     public struct FirewallValue : IComparable<FirewallValue>, IComparable
     {
+        #region Public Properties
         /// <summary>
         /// Type of the value.
         /// </summary>
@@ -38,7 +39,9 @@ namespace NtApiDotNet.Net.Firewall
         /// The context specific value, might be the same as the original.
         /// </summary>
         public object ContextValue { get; }
+        #endregion
 
+        #region Private Members
         private static object SpecializeValue(FirewallDataType type, object value, Guid condition_key)
         {
             if (condition_key == Guid.Empty)
@@ -166,7 +169,9 @@ namespace NtApiDotNet.Net.Firewall
                     return type.ToString();
             }
         }
+        #endregion
 
+        #region Internal Members
         internal FirewallValue(FWP_VALUE0 value, Guid condition_key)
         {
             Type = value.type;
@@ -174,6 +179,332 @@ namespace NtApiDotNet.Net.Firewall
             ContextValue = SpecializeValue(value.type, Value, condition_key);
         }
 
+        internal FirewallValue(FirewallDataType type, object value, object context_value)
+        {
+            Type = type;
+            Value = value;
+            ContextValue = context_value;
+        }
+
+        internal FirewallValue(FirewallDataType type, object value) 
+            : this(type, value, value)
+        {
+        }
+
+        internal FWP_VALUE0 ToStruct(DisposableList list)
+        {
+            FWP_VALUE0 ret = new FWP_VALUE0();
+            switch (Type)
+            {
+                case FirewallDataType.Empty:
+                    break;
+                case FirewallDataType.SecurityDescriptor:
+                    ret.value.sd = list.AddSecurityDescriptor((SecurityDescriptor)Value).DangerousGetHandle();
+                    break;
+                case FirewallDataType.Sid:
+                    ret.value.sid = list.AddSid((Sid)Value).DangerousGetHandle();
+                    break;
+                case FirewallDataType.UInt8:
+                    ret.value.uint8 = ((IConvertible)Value).ToByte(null);
+                    break;
+                case FirewallDataType.UInt16:
+                    ret.value.uint16 = ((IConvertible)Value).ToUInt16(null);
+                    break;
+                case FirewallDataType.UInt32:
+                    ret.value.uint32 = ((IConvertible)Value).ToUInt32(null);
+                    break;
+                case FirewallDataType.Int8:
+                    ret.value.int8 = ((IConvertible)Value).ToSByte(null);
+                    break;
+                case FirewallDataType.Int16:
+                    ret.value.int16 = ((IConvertible)Value).ToInt16(null);
+                    break;
+                case FirewallDataType.Int32:
+                    ret.value.int32 = ((IConvertible)Value).ToInt32(null);
+                    break;
+                case FirewallDataType.ByteArray16:
+                    ret.value.byteArray16 = list.AddResource(new SafeHGlobalBuffer((byte[])Value)).DangerousGetHandle();
+                    break;
+                case FirewallDataType.ByteArray6:
+                    ret.value.byteArray6 = list.AddResource(new SafeHGlobalBuffer((byte[])Value)).DangerousGetHandle();
+                    break;
+                case FirewallDataType.UInt64:
+                    ret.value.uint64 = list.AddResource(((IConvertible)Value).ToUInt64(null).ToBuffer()).DangerousGetHandle();
+                    break;
+                case FirewallDataType.Int64:
+                    ret.value.int64 = list.AddResource(((IConvertible)Value).ToInt64(null).ToBuffer()).DangerousGetHandle();
+                    break;
+                case FirewallDataType.ByteBlob:
+                    {
+                        byte[] buffer = (byte[])Value;
+                        FWP_BYTE_BLOB blob = new FWP_BYTE_BLOB
+                        {
+                            size = buffer.Length,
+                            data = list.AddBytes(buffer).DangerousGetHandle()
+                        };
+                        ret.value.byteBlob = list.AddStructureRef(blob).DangerousGetHandle();
+                        break;
+                    }
+                case FirewallDataType.V4AddrMask:
+                    ret.value.v4AddrMask = ((FirewallAddressAndMask)Value).ToBuffer(list).DangerousGetHandle();
+                    break;
+                case FirewallDataType.V6AddrMask:
+                    ret.value.v6AddrMask = ((FirewallAddressAndMask)Value).ToBuffer(list).DangerousGetHandle();
+                    break;
+                case FirewallDataType.UnicodeString:
+                    ret.value.unicodeString = list.AddNulTerminatedUnicodeString((string)Value).DangerousGetHandle();
+                    break;
+                case FirewallDataType.Range:
+                    ret.value.rangeValue = list.AddStructureRef(((FirewallRange)Value).ToStruct(list)).DangerousGetHandle();
+                    break;
+                default:
+                    throw new ArgumentException($"Value type {Type} unsupported.");
+            }
+            ret.type = Type;
+            return ret;
+        }
+        #endregion
+
+        #region Static Members
+        /// <summary>
+        /// Get a value which represents Empty.
+        /// </summary>
+        public static FirewallValue Empty => new FirewallValue(FirewallDataType.Empty, new FirewallEmpty());
+
+        /// <summary>
+        /// Create a value from a security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromSecurityDescriptor(SecurityDescriptor security_descriptor)
+        {
+            return new FirewallValue(FirewallDataType.SecurityDescriptor, security_descriptor);
+        }
+
+        /// <summary>
+        /// Create a value from a SID.
+        /// </summary>
+        /// <param name="sid">The SID.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromSid(Sid sid)
+        {
+            return new FirewallValue(FirewallDataType.Sid, sid);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUInt8(byte value)
+        {
+            return new FirewallValue(FirewallDataType.UInt8, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUInt16(ushort value)
+        {
+            return new FirewallValue(FirewallDataType.UInt16, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUInt32(uint value)
+        {
+            return new FirewallValue(FirewallDataType.UInt32, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUInt64(ulong value)
+        {
+            return new FirewallValue(FirewallDataType.UInt64, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromInt8(sbyte value)
+        {
+            return new FirewallValue(FirewallDataType.Int8, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromInt16(short value)
+        {
+            return new FirewallValue(FirewallDataType.Int16, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromInt32(int value)
+        {
+            return new FirewallValue(FirewallDataType.Int32, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromInt64(ulong value)
+        {
+            return new FirewallValue(FirewallDataType.Int64, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromBlob(byte[] value)
+        {
+            return new FirewallValue(FirewallDataType.ByteBlob, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromBlobUnicodeString(string value)
+        {
+            return FromBlob(Encoding.Unicode.GetBytes(value + "\0"));
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUnicodeString(string value)
+        {
+            return new FirewallValue(FirewallDataType.UnicodeString, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromByteArray16(byte[] value)
+        {
+            if (value.Length != 16)
+                throw new ArgumentOutOfRangeException("Array must be 16 bytes in size.", nameof(value));
+            return new FirewallValue(FirewallDataType.ByteArray16, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="address">The IPv4 address.</param>
+        /// <param name="mask">The IPv4 mask.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromV4AddrMask(IPAddress address, IPAddress mask)
+        {
+            if (address.AddressFamily != AddressFamily.InterNetwork)
+            {
+                throw new ArgumentException("Address must be InternetNetwork family.", nameof(address));
+            }
+            if (mask.AddressFamily != AddressFamily.InterNetwork)
+            {
+                throw new ArgumentException("Mask must be InternetNetwork family.", nameof(mask));
+            }
+            return new FirewallValue(FirewallDataType.V4AddrMask, new FirewallAddressAndMask(address, mask));
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="address">The IPv6 address.</param>
+        /// <param name="prefix_length">The prefix length.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromV6AddrMask(IPAddress address, int prefix_length)
+        {
+            if (address.AddressFamily != AddressFamily.InterNetworkV6)
+            {
+                throw new ArgumentException("Address must be InterNetworkV6 family.", nameof(address));
+            }
+            if (prefix_length < 0 || prefix_length > 128)
+            {
+                throw new ArgumentOutOfRangeException("Prefix length invalid.", nameof(prefix_length));
+            }
+            return new FirewallValue(FirewallDataType.V6AddrMask, new FirewallAddressAndMask(address, prefix_length));
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromProtocolType(ProtocolType value)
+        {
+            return new FirewallValue(FirewallDataType.UInt8, (byte)value, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromConditionFlags(FirewallConditionFlags value)
+        {
+            return new FirewallValue(FirewallDataType.UInt32, (uint)value, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromIpAddress(IPAddress value)
+        {
+            if (value.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+                return FromByteArray16(value.GetAddressBytes());
+            }
+            else if (value.AddressFamily == AddressFamily.InterNetwork)
+            {
+                byte[] arr = value.GetAddressBytes();
+                Array.Reverse(arr);
+                return FromUInt32(BitConverter.ToUInt32(arr, 0));
+            }
+            throw new ArgumentException("Must specify V4 or V6 IP address.", nameof(value));
+        }
+
+        /// <summary>
+        /// Create a range value.
+        /// </summary>
+        /// <param name="low">The low value.</param>
+        /// <param name="high">The high value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromRange(FirewallValue low, FirewallValue high)
+        {
+            return new FirewallValue(FirewallDataType.Range, new FirewallRange(low, high));
+        }
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -182,7 +513,9 @@ namespace NtApiDotNet.Net.Firewall
         {
             return ContextValue?.ToString() ?? "(null)";
         }
+        #endregion
 
+        #region IComparable Implementations
         int IComparable<FirewallValue>.CompareTo(FirewallValue other)
         {
             if (Value is IComparable comp)
@@ -203,5 +536,6 @@ namespace NtApiDotNet.Net.Firewall
             }
             return 0;
         }
+        #endregion
     }
 }

@@ -39,7 +39,7 @@ namespace NtApiDotNet.Net.Firewall
             LayerKey = filter.layerKey;
             LayerKeyName = NamedGuidDictionary.LayerGuids.Value.GetName(LayerKey);
             SubLayerKey = filter.subLayerKey;
-            SubLayerKeyName = NamedGuidDictionary.SublayerGuids.Value.GetName(SubLayerKey);
+            SubLayerKeyName = NamedGuidDictionary.SubLayerGuids.Value.GetName(SubLayerKey);
             Flags = filter.flags;
 
             List<FirewallFilterCondition> conditions = new List<FirewallFilterCondition>();
@@ -196,6 +196,24 @@ namespace NtApiDotNet.Net.Firewall
         public bool HasCondition(Guid condition_guid)
         {
             return Conditions.Any(c => c.FieldKey == condition_guid);
+        }
+
+        /// <summary>
+        /// Delete the filter.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus Delete(bool throw_on_error)
+        {
+            return _engine.DeleteFilter(Key, throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the filter.
+        /// </summary>
+        public void Delete()
+        {
+            Delete(true);
         }
     }
 }

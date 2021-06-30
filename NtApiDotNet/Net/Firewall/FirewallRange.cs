@@ -16,17 +16,44 @@ using System;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    struct FirewallRange
+    /// <summary>
+    /// A firewall value range.
+    /// </summary>
+    public struct FirewallRange
     {
+        /// <summary>
+        /// The low value.
+        /// </summary>
         public FirewallValue Low { get; }
+        /// <summary>
+        /// The high value.
+        /// </summary>
         public FirewallValue High { get; }
 
-        internal FirewallRange(FWP_RANGE0 range, Guid condition_key)
+        internal FirewallRange(FWP_RANGE0 range, Guid condition_key) 
+            : this(new FirewallValue(range.valueLow, condition_key), 
+                  new FirewallValue(range.valueHigh, condition_key))
         {
-            Low = new FirewallValue(range.valueLow, condition_key);
-            High = new FirewallValue(range.valueHigh, condition_key);
         }
 
+        internal FirewallRange(FirewallValue low, FirewallValue high)
+        {
+            Low = low;
+            High = high;
+        }
+
+        internal FWP_RANGE0 ToStruct(DisposableList list)
+        {
+            return new FWP_RANGE0() {
+                valueLow = Low.ToStruct(list),
+                valueHigh = High.ToStruct(list)
+            };
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The range as a string.</returns>
         public override string ToString()
         {
             return $"Low: {Low.ContextValue} High: {High.ContextValue}";

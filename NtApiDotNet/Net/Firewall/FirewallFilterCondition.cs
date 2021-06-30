@@ -21,6 +21,7 @@ namespace NtApiDotNet.Net.Firewall
     /// </summary>
     public struct FirewallFilterCondition
     {
+        #region Public Properties
         /// <summary>
         /// The match type.
         /// </summary>
@@ -40,15 +41,42 @@ namespace NtApiDotNet.Net.Firewall
         /// The value for the condition
         /// </summary>
         public FirewallValue Value { get; }
+        #endregion
 
-        internal FirewallFilterCondition(FWPM_FILTER_CONDITION0 condition)
+        #region Internal Members
+        internal FirewallFilterCondition(FWPM_FILTER_CONDITION0 condition) 
+            : this(condition.matchType, condition.fieldKey, new FirewallValue(condition.conditionValue, condition.fieldKey))
         {
-            MatchType = condition.matchType;
-            FieldKey = condition.fieldKey;
-            FieldKeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(FieldKey);
-            Value = new FirewallValue(condition.conditionValue, condition.fieldKey);
         }
 
+        internal FWPM_FILTER_CONDITION0 ToStruct(DisposableList list)
+        {
+            return new FWPM_FILTER_CONDITION0
+            {
+                fieldKey = FieldKey,
+                matchType = MatchType,
+                conditionValue = Value.ToStruct(list)
+            };
+        }
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="match_type">The condition match type.</param>
+        /// <param name="field_key">The field key.</param>
+        /// <param name="value">The value.</param>
+        public FirewallFilterCondition(FirewallMatchType match_type, Guid field_key, FirewallValue value)
+        {
+            MatchType = match_type;
+            FieldKey = field_key;
+            FieldKeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(FieldKey);
+            Value = value;
+        }
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -57,5 +85,6 @@ namespace NtApiDotNet.Net.Firewall
         {
             return FieldKeyName;
         }
+        #endregion
     }
 }

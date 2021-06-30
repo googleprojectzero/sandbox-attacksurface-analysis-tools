@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -181,6 +182,11 @@ namespace NtApiDotNet
             return list.AddResource(new SafeStructureInOutBuffer<T>(value));
         }
 
+        internal static SafeStructureInOutBuffer<T> AddStructureRef<T>(this DisposableList list, T value) where T : struct
+        {
+            return list.AddResource(new SafeStructureInOutBuffer<T>(value));
+        }
+
         internal static SafeBuffer AddSecurityDescriptor(this DisposableList list, SecurityDescriptor sd)
         {
             if (sd == null)
@@ -188,6 +194,25 @@ namespace NtApiDotNet
                 return SafeHGlobalBuffer.Null;
             }
             return list.AddResource(sd.ToSafeBuffer());
+        }
+
+        internal static SafeBuffer AddNulTerminatedUnicodeString(this DisposableList list, string str)
+        {
+            return AddBytes(list, Encoding.Unicode.GetBytes(str + "\0"));
+        }
+
+        internal static SafeBuffer AddBytes(this DisposableList list, byte[] ba)
+        {
+            if (ba == null)
+            {
+                return SafeHGlobalBuffer.Null;
+            }
+            return list.AddResource(new SafeHGlobalBuffer(ba));
+        }
+
+        internal static SafeBuffer AddList<T>(this DisposableList list, IEnumerable<T> values) where T : new()
+        {
+            return values.ToArray().ToBuffer();
         }
     }
 

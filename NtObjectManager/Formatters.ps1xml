@@ -5150,7 +5150,7 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Key</Label>
+            <Label>KeyName</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>

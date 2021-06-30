@@ -85,12 +85,14 @@
     <Compile Include="Net\Firewall\FirewallField.cs" />
     <Compile Include="Net\Firewall\FirewallFieldType.cs" />
     <Compile Include="Net\Firewall\FirewallFilterAccessRights.cs" />
+    <Compile Include="Net\Firewall\FirewallFilterBuilder.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumTemplate.cs" />
     <Compile Include="Net\Firewall\FirewallFilterFlags.cs" />
     <Compile Include="Net\Firewall\FirewallLayerFlags.cs" />
     <Compile Include="Net\Firewall\FirewallLayerGuids.cs" />
     <Compile Include="Net\Firewall\FirewallMatchType.cs" />
     <Compile Include="Net\Firewall\FirewallProvider.cs" />
+    <Compile Include="Net\Firewall\FirewallProviderFlags.cs" />
     <Compile Include="Net\Firewall\FirewallSessionFlags.cs" />
     <Compile Include="Net\Firewall\FirewallSubLayerFlags.cs" />
     <Compile Include="Net\Firewall\FirewallSubLayerGuids.cs" />
@@ -106,6 +108,8 @@
     <Compile Include="Net\Firewall\FirewallRange.cs" />
     <Compile Include="Net\Firewall\FirewallSubLayer.cs" />
     <Compile Include="Net\Firewall\FirewallTokenInformation.cs" />
+    <Compile Include="Net\Firewall\FirewallTransaction.cs" />
+    <Compile Include="Net\Firewall\FirewallTransactionFlags.cs" />
     <Compile Include="Net\Firewall\FirewallUtils.cs" />
     <Compile Include="Net\Firewall\FirewallValue.cs" />
     <Compile Include="Net\Firewall\IFirewallEnumTemplate.cs" />

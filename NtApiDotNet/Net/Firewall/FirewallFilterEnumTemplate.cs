@@ -45,9 +45,27 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Constructor.
         /// </summary>
-        public FirewallFilterEnumTemplate()
+        /// <param name="layer_key">The layer key.</param>
+        public FirewallFilterEnumTemplate(Guid layer_key)
         {
+            LayerKey = layer_key;
             ActionType = FirewallActionType.All;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="layer_name">The well-known name of the layer.</param>
+        public FirewallFilterEnumTemplate(string layer_name) 
+            : this(NamedGuidDictionary.LayerGuids.Value.GuidFromName(layer_name))
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public FirewallFilterEnumTemplate() : this(Guid.Empty)
+        {
         }
 
         SafeBuffer IFirewallEnumTemplate.ToTemplateBuffer(DisposableList list)

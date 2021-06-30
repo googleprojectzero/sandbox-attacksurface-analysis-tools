@@ -319,19 +319,6 @@ namespace NtApiDotNet.Net.Firewall
         public int calloutId;
     }
 
-    /// <summary>
-    /// Flags for a firewall provider.
-    /// </summary>
-    [Flags]
-    public enum FirewallProviderFlags
-    {
-        None = 0,
-        [SDKName("FWPM_PROVIDER_FLAG_PERSISTENT")]
-        Persistent = 0x00000001,
-        [SDKName("FWPM_PROVIDER_FLAG_DISABLED")]
-        Disabled = 0x00000010
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct FWPM_PROVIDER0
     {
@@ -352,6 +339,22 @@ namespace NtApiDotNet.Net.Firewall
             SEC_WINNT_AUTH_IDENTITY authIdentity,
             FWPM_SESSION0 session,
             out SafeFwpmEngineHandle engineHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmTransactionBegin0(
+            SafeFwpmEngineHandle engineHandle,
+            FirewallTransactionFlags flags
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmTransactionCommit0(
+            SafeFwpmEngineHandle engineHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmTransactionAbort0(
+            SafeFwpmEngineHandle engineHandle
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
@@ -388,6 +391,27 @@ namespace NtApiDotNet.Net.Firewall
           SafeFwpmEngineHandle engineHandle,
           ulong id,
           out SafeFwpmMemoryBuffer filter // FWPM_FILTER0 **
+        );
+
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmFilterAdd0(
+            SafeFwpmEngineHandle engineHandle,
+            in FWPM_FILTER0 filter,
+            SafeBuffer sd, // PSECURITY_DESCRIPTOR 
+            out ulong id
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmFilterDeleteByKey0(
+            SafeFwpmEngineHandle engineHandle,
+            in Guid key
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmFilterDeleteById0(
+            SafeFwpmEngineHandle engineHandle,
+            ulong id
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]

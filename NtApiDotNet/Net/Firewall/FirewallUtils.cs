@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -83,6 +85,35 @@ namespace NtApiDotNet.Net.Firewall
                 GenericWrite = FirewallFilterAccessRights.ReadControl,
                 GenericAll = FirewallFilterAccessRights.ReadControl | FirewallFilterAccessRights.Match
             };
+        }
+
+        /// <summary>
+        /// Get App ID from a filename.
+        /// </summary>
+        /// <param name="filename">The filename to convert.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The App ID.</returns>
+        public static NtResult<string> GetAppIdFromFileName(string filename, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmGetAppIdFromFileName0(filename, out SafeFwpmMemoryBuffer appid).CreateWin32Result(
+                throw_on_error, () => {
+                using (appid)
+                {
+                    appid.Initialize<FWP_BYTE_BLOB>(1);
+                    var blob = appid.Read<FWP_BYTE_BLOB>(0);
+                    return Encoding.Unicode.GetString(blob.ToArray()).TrimEnd('\0');
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get App ID from a filename.
+        /// </summary>
+        /// <param name="filename">The filename to convert.</param>
+        /// <returns>The App ID.</returns>
+        public static string GetAppIdFromFileName(string filename)
+        {
+            return GetAppIdFromFileName(filename, true).Result;
         }
 
         #endregion

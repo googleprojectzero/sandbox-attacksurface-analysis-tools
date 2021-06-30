@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    class NamedGuidDictionary : Dictionary<Guid, string>
+    internal class NamedGuidDictionary : Dictionary<Guid, string>
     {
         public void DefineGuid(string name, uint a, ushort b, ushort c, byte d,
             byte e, byte f, byte g, byte h, byte i, byte j, byte k)
@@ -35,9 +35,26 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         public static Lazy<NamedGuidDictionary> LayerGuids = new Lazy<NamedGuidDictionary>(GetLayerGuids);
-        public static Lazy<NamedGuidDictionary> SublayerGuids = new Lazy<NamedGuidDictionary>(GetSublayerGuids);
+        public static Lazy<NamedGuidDictionary> SubLayerGuids = new Lazy<NamedGuidDictionary>(GetSublayerGuids);
         public static Lazy<NamedGuidDictionary> ConditionGuids = new Lazy<NamedGuidDictionary>(GetConditionGuids);
         public static Lazy<NamedGuidDictionary> CalloutGuids = new Lazy<NamedGuidDictionary>(GetCalloutGuids);
+
+        public NtResult<Guid> GuidFromName(string name, bool throw_on_error)
+        {
+            foreach (var pair in this)
+            {
+                if (pair.Value.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Key.CreateResult();
+                }
+            }
+            return NtStatus.STATUS_NO_KEY.CreateResultFromError<Guid>(throw_on_error);
+        }
+
+        public Guid GuidFromName(string name)
+        {
+            return GuidFromName(name, true).Result;
+        }
 
         private static NamedGuidDictionary GetCalloutGuids()
         {

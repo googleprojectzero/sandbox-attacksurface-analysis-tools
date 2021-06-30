@@ -18,6 +18,7 @@ Import-Module "$PSScriptRoot\NtObjectManager.dll"
 
 # Source the external scripts into this module.
 . "$PSScriptRoot\AppModelFunctions.ps1"
+. "$PSScriptRoot\FirewallFunctions.ps1"
 . "$PSScriptRoot\KerberosFunctions.ps1"
 . "$PSScriptRoot\LsaFunctions.ps1"
 . "$PSScriptRoot\MiscFunctions.ps1"

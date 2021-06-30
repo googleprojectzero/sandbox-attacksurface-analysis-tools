@@ -213,7 +213,7 @@ namespace NtApiDotNet.Net.Firewall
             using (var list = new DisposableList())
             {
                 var auth = auth_identity?.ToAuthIdentity(list);
-                return FirewallNativeMethods.FwpmEngineOpen0(server_name, authn_service, auth, null,
+                return FirewallNativeMethods.FwpmEngineOpen0(string.IsNullOrEmpty(server_name) ? null : server_name, authn_service, auth, null,
                     out SafeFwpmEngineHandle handle).CreateWin32Result(throw_on_error, () => new FirewallEngine(handle));
             }
         }
@@ -221,9 +221,20 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Open an instance of the engine.
         /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="server_name">The server name for the firewall service.</param>
+        /// <param name="authn_service">RPC authentication service. Use default or WinNT.</param>
+        /// <param name="auth_identity">Optional authentication credentials.</param>
         /// <returns>The opened firewall engine.</returns>
-        public static NtResult<FirewallEngine> Open(bool throw_on_error)
+        public static FirewallEngine Open(string server_name, RpcAuthenticationType authn_service, UserCredentials auth_identity)
+        {
+            return Open(server_name, authn_service, auth_identity, true).Result;
+        }
+            /// <summary>
+            /// Open an instance of the engine.
+            /// </summary>
+            /// <param name="throw_on_error">True to throw on error.</param>
+            /// <returns>The opened firewall engine.</returns>
+            public static NtResult<FirewallEngine> Open(bool throw_on_error)
         {
             return Open(null, RpcAuthenticationType.WinNT, null, throw_on_error);
         }
@@ -291,6 +302,31 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get a layer by its well-known key name.
+        /// </summary>
+        /// <param name="name">The well-known key name of the layer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall layer.</returns>
+        public NtResult<FirewallLayer> GetLayer(string name, bool throw_on_error)
+        {
+            var key = NamedGuidDictionary.LayerGuids.Value.GuidFromName(name, throw_on_error);
+            if (!key.IsSuccess)
+                return key.Cast<FirewallLayer>();
+
+            return GetLayer(key.Result, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a layer by its well-known key name.
+        /// </summary>
+        /// <param name="name">The well-known key name of the layer.</param>
+        /// <returns>The firewall layer.</returns>
+        public FirewallLayer GetLayer(string name)
+        {
+            return GetLayer(name, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all layers.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -332,6 +368,30 @@ namespace NtApiDotNet.Net.Firewall
         public FirewallSubLayer GetSubLayer(Guid key)
         {
             return GetSubLayer(key, true).Result;
+        }
+
+        /// <summary>
+        /// Get a sub-layer by its well-known key name.
+        /// </summary>
+        /// <param name="name">The well-known key name of the sub-layer.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall sub-layer.</returns>
+        public NtResult<FirewallSubLayer> GetSubLayer(string name, bool throw_on_error)
+        {
+            var key = NamedGuidDictionary.SubLayerGuids.Value.GuidFromName(name, throw_on_error);
+            if (!key.IsSuccess)
+                return key.Cast<FirewallSubLayer>();
+            return GetSubLayer(key.Result, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a sub-layer by its well-known key name.
+        /// </summary>
+        /// <param name="name">The well-known key name of the sub-layer.</param>
+        /// <returns>The firewall sub-layer.</returns>
+        public FirewallSubLayer GetSubLayer(string name)
+        {
+            return GetSubLayer(name, true).Result;
         }
 
         /// <summary>
@@ -496,6 +556,84 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Add a filter.
+        /// </summary>
+        /// <param name="builder">The builder used to create the filter.</param>
+        /// <param name="security_descriptor">Optional security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The added filter ID.</returns>
+        public NtResult<ulong> AddFilter(FirewallFilterBuilder builder, SecurityDescriptor security_descriptor, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var sd_buffer = security_descriptor != null ? list.AddResource(security_descriptor.ToSafeBuffer()) : SafeHGlobalBuffer.Null;
+                return FirewallNativeMethods.FwpmFilterAdd0(_handle, builder.ToStruct(list), 
+                    sd_buffer, out ulong id).CreateWin32Result(throw_on_error, () => id);
+            }
+        }
+
+        /// <summary>
+        /// Add a filter.
+        /// </summary>
+        /// <param name="builder">The builder used to create the filter.</param>
+        /// <param name="security_descriptor">Optional security descriptor.</param>
+        /// <returns>The added filter ID.</returns>
+        public ulong AddFilter(FirewallFilterBuilder builder, SecurityDescriptor security_descriptor)
+        {
+            return AddFilter(builder, security_descriptor, true).Result;
+        }
+
+        /// <summary>
+        /// Add a filter.
+        /// </summary>
+        /// <param name="builder">The builder used to create the filter.</param>
+        /// <returns>The added filter ID.</returns>
+        public ulong AddFilter(FirewallFilterBuilder builder)
+        {
+            return AddFilter(builder, null);
+        }
+
+        /// <summary>
+        /// Delete a filter.
+        /// </summary>
+        /// <param name="key">The filter key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus DeleteFilter(Guid key, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmFilterDeleteByKey0(_handle, key).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a filter.
+        /// </summary>
+        /// <param name="key">The filter key.</param>
+        public void DeleteFilter(Guid key)
+        {
+            DeleteFilter(key, true);
+        }
+
+        /// <summary>
+        /// Delete a filter.
+        /// </summary>
+        /// <param name="id">The filter ID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus DeleteFilter(ulong id, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmFilterDeleteById0(_handle, id).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a filter.
+        /// </summary>
+        /// <param name="id">The filter ID.</param>
+        public void DeleteFilter(ulong id)
+        {
+            DeleteFilter(id, true);
+        }
+
+        /// <summary>
         /// Get a provider by its key.
         /// </summary>
         /// <param name="key">The key of the provider.</param>
@@ -567,6 +705,39 @@ namespace NtApiDotNet.Net.Firewall
         public SecurityDescriptor GetIkeSaDbSecurityDescriptor()
         {
             return GetIkeSaDbSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl);
+        }
+
+        /// <summary>
+        /// Begin a firewall transaction.
+        /// </summary>
+        /// <param name="flags">Flags for the transaction.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall transaction.</returns>
+        /// <remarks>Disposing the transaction will cause it to abort. You should call Commit to use it.</remarks>
+        public NtResult<FirewallTransaction> BeginTransaction(FirewallTransactionFlags flags, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmTransactionBegin0(_handle, flags).CreateWin32Result(throw_on_error, () => new FirewallTransaction(_handle));
+        }
+
+        /// <summary>
+        /// Begin a firewall transaction.
+        /// </summary>
+        /// <param name="flags">Flags for the transaction.</param>
+        /// <returns>The firewall transaction.</returns>
+        /// <remarks>Disposing the transaction will cause it to abort. You should call Commit to use it.</remarks>
+        public FirewallTransaction BeginTransaction(FirewallTransactionFlags flags)
+        {
+            return BeginTransaction(flags, true).Result;
+        }
+
+        /// <summary>
+        /// Begin a read/write firewall transaction.
+        /// </summary>
+        /// <returns>The firewall transaction.</returns>
+        /// <remarks>Disposing the transaction will cause it to abort. You should call Commit to use it.</remarks>
+        public FirewallTransaction BeginTransaction()
+        {
+            return BeginTransaction(FirewallTransactionFlags.None);
         }
 
         /// <summary>
