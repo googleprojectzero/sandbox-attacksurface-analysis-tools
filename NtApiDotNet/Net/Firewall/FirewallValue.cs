@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Rpc.Transport;
 using System;
 using System.Collections;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -64,7 +66,9 @@ namespace NtApiDotNet.Net.Firewall
                     System.Diagnostics.Trace.Write($"Invalid IP Address type: {value.GetType().FullName}");
                 }
             }
-            else if (FirewallConditionGuids.IsAppId(condition_key))
+            else if (FirewallConditionGuids.IsAppId(condition_key) || 
+                condition_key == FirewallConditionGuids.FWPM_CONDITION_PIPE ||
+                condition_key == FirewallConditionGuids.FWPM_CONDITION_RPC_SERVER_NAME)
             {
                 if (value is byte[] ba && (ba.Length % 2 == 0))
                 {
@@ -102,13 +106,41 @@ namespace NtApiDotNet.Net.Firewall
             }
             else if (type is FirewallDataType.SecurityDescriptor && value is SecurityDescriptor sd)
             {
-                if (sd.DaclPresent && sd.Dacl.Count == 1 
-                    && sd.Dacl[0].Type == AceType.Allowed 
+                if (sd.DaclPresent && sd.Dacl.Count == 1
+                    && sd.Dacl[0].Type == AceType.Allowed
                     && sd.Dacl[0].Mask.IsAccessGranted(FirewallFilterAccessRights.Match))
                 {
                     return sd.Dacl[0].Sid.Name;
                 }
                 return sd.ToSddl();
+            }
+            else if (condition_key == FirewallConditionGuids.FWPM_CONDITION_DIRECTION)
+            {
+                if (value is uint ui)
+                {
+                    return (FirewallDirectionType)ui;
+                }
+            }
+            else if (condition_key == FirewallConditionGuids.FWPM_CONDITION_RPC_AUTH_TYPE)
+            {
+                if (value is byte b)
+                {
+                    return (RpcAuthenticationType)b;
+                }
+            }
+            else if (condition_key == FirewallConditionGuids.FWPM_CONDITION_RPC_AUTH_LEVEL)
+            {
+                if (value is byte b)
+                {
+                    return (RpcAuthenticationType)b;
+                }
+            }
+            else if (FirewallConditionGuids.IsMacAddressCondition(condition_key))
+            {
+                if (value is byte[] ba && ba.Length == 6)
+                {
+                    return string.Join(":", ba.Select(b => $"{b:X02}"));
+                }
             }
 
             return value;

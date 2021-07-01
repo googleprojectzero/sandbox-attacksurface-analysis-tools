@@ -81,6 +81,7 @@
     <Compile Include="Net\Firewall\FirewallConditionBuilder.cs" />
     <Compile Include="Net\Firewall\FirewallConditionGuids.cs" />
     <Compile Include="Net\Firewall\FirewallDataType.cs" />
+    <Compile Include="Net\Firewall\FirewallDirectionType.cs" />
     <Compile Include="Net\Firewall\FirewallEngine.cs" />
     <Compile Include="Net\Firewall\FirewallFakeTypeFactory.cs" />
     <Compile Include="Net\Firewall\FirewallField.cs" />
