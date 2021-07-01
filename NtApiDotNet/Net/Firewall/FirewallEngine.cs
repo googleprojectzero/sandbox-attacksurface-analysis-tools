@@ -206,14 +206,16 @@ namespace NtApiDotNet.Net.Firewall
         /// <param name="server_name">The server name for the firewall service.</param>
         /// <param name="authn_service">RPC authentication service. Use default or WinNT.</param>
         /// <param name="auth_identity">Optional authentication credentials.</param>
+        /// <param name="session">Optional session information.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The opened firewall engine.</returns>
-        public static NtResult<FirewallEngine> Open(string server_name, RpcAuthenticationType authn_service, UserCredentials auth_identity, bool throw_on_error)
+        public static NtResult<FirewallEngine> Open(string server_name, RpcAuthenticationType authn_service, UserCredentials auth_identity, FirewallSession session, bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
                 var auth = auth_identity?.ToAuthIdentity(list);
-                return FirewallNativeMethods.FwpmEngineOpen0(string.IsNullOrEmpty(server_name) ? null : server_name, authn_service, auth, null,
+                var sess = session?.ToStruct(list);
+                return FirewallNativeMethods.FwpmEngineOpen0(string.IsNullOrEmpty(server_name) ? null : server_name, authn_service, auth, sess,
                     out SafeFwpmEngineHandle handle).CreateWin32Result(throw_on_error, () => new FirewallEngine(handle));
             }
         }
@@ -224,19 +226,21 @@ namespace NtApiDotNet.Net.Firewall
         /// <param name="server_name">The server name for the firewall service.</param>
         /// <param name="authn_service">RPC authentication service. Use default or WinNT.</param>
         /// <param name="auth_identity">Optional authentication credentials.</param>
+        /// <param name="session">Optional session information.</param>
         /// <returns>The opened firewall engine.</returns>
-        public static FirewallEngine Open(string server_name, RpcAuthenticationType authn_service, UserCredentials auth_identity)
+        public static FirewallEngine Open(string server_name, RpcAuthenticationType authn_service, UserCredentials auth_identity, FirewallSession session)
         {
-            return Open(server_name, authn_service, auth_identity, true).Result;
+            return Open(server_name, authn_service, auth_identity, session, true).Result;
         }
-            /// <summary>
-            /// Open an instance of the engine.
-            /// </summary>
-            /// <param name="throw_on_error">True to throw on error.</param>
-            /// <returns>The opened firewall engine.</returns>
-            public static NtResult<FirewallEngine> Open(bool throw_on_error)
+
+        /// <summary>
+        /// Open an instance of the engine.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened firewall engine.</returns>
+        public static NtResult<FirewallEngine> Open(bool throw_on_error)
         {
-            return Open(null, RpcAuthenticationType.WinNT, null, throw_on_error);
+            return Open(null, RpcAuthenticationType.WinNT, null, null, throw_on_error);
         }
 
         /// <summary>
@@ -247,6 +251,27 @@ namespace NtApiDotNet.Net.Firewall
         {
             return Open(true).Result;
         }
+
+        /// <summary>
+        /// Open a dynamic instance of the engine.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened firewall engine.</returns>
+        public static NtResult<FirewallEngine> OpenDynamic(bool throw_on_error)
+        {
+            return Open(null, RpcAuthenticationType.WinNT, null, 
+                new FirewallSession(FirewallSessionFlags.Dynamic), throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a dynamic instance of the engine.
+        /// </summary>
+        /// <returns>The opened firewall engine.</returns>
+        public static FirewallEngine OpenDynamic()
+        {
+            return OpenDynamic(true).Result;
+        }
+
         #endregion
 
         #region Public Methods

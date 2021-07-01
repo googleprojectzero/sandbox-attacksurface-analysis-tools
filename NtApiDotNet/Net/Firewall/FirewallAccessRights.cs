@@ -21,8 +21,9 @@ namespace NtApiDotNet.Net.Firewall
     /// Access rights for a firewall object.
     /// </summary>
     [Flags]
-    enum FirewallAccessRights : uint
+    public enum FirewallAccessRights : uint
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
         [SDKName("FWPM_ACTRL_ADD")]
         Add = 0x00000001,
@@ -66,5 +67,6 @@ namespace NtApiDotNet.Net.Firewall
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         [SDKName("ACCESS_SYSTEM_SECURITY")]
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

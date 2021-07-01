@@ -28,9 +28,7 @@ namespace NtApiDotNet.Net.Firewall
         [SDKName("FWPM_FIELD_IP_ADDRESS")]
         IPAddress = RawData + 1,
         [SDKName("FWPM_FIELD_FLAGS")]
-        Flags = IPAddress + 1,
-        [SDKName("FWPM_FIELD_TYPE_MAX")]
-        Max = Flags + 1
+        Flags = IPAddress + 1
     }
 }
 

@@ -94,6 +94,7 @@
     <Compile Include="Net\Firewall\FirewallMatchType.cs" />
     <Compile Include="Net\Firewall\FirewallProvider.cs" />
     <Compile Include="Net\Firewall\FirewallProviderFlags.cs" />
+    <Compile Include="Net\Firewall\FirewallSession.cs" />
     <Compile Include="Net\Firewall\FirewallSessionFlags.cs" />
     <Compile Include="Net\Firewall\FirewallSubLayerFlags.cs" />
     <Compile Include="Net\Firewall\FirewallSubLayerGuids.cs" />

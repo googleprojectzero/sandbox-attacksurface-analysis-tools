@@ -48,9 +48,7 @@ namespace NtApiDotNet.Net.Firewall
         [SDKName("FWP_MATCH_PREFIX")]
         Prefix = NotEqual + 1,
         [SDKName("FWP_MATCH_NOT_PREFIX")]
-        NotPrefix = Prefix + 1,
-        [SDKName("FWP_MATCH_TYPE_MAX")]
-        Max = NotPrefix + 1
+        NotPrefix = Prefix + 1
     }
 }
 

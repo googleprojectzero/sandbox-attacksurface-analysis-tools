@@ -22,7 +22,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Base class to implement common condition building operations.
     /// </summary>
-    public abstract class FirewallConditionBuilder
+    public class FirewallConditionBuilder
     {
         #region Public Properties
         /// <summary>
@@ -78,10 +78,11 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Add a user ID security descriptor condition.
         /// </summary>
+        /// <param name="match_type">The match type for the condition.</param>
         /// <param name="security_descriptor">The security descriptor.</param>
-        public void AddUserId(SecurityDescriptor security_descriptor)
+        public void AddUserId(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
         {
-            AddCondition(FirewallMatchType.Equal, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
                 FirewallValue.FromSecurityDescriptor(security_descriptor));
         }
 
@@ -153,10 +154,24 @@ namespace NtApiDotNet.Net.Firewall
                 FirewallValue.FromUInt16((ushort)port));
         }
 
+        /// <summary>
+        /// Add token information.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="token">The token.</param>
+        public void AddTokenInformation(FirewallMatchType match_type, NtToken token)
+        {
+            FirewallTokenInformation token_info = new FirewallTokenInformation(token.Groups, token.RestrictedSids);
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID, FirewallValue.FromTokenInformation(token_info));
+        }
+
         #endregion
 
-        #region Private Members
-        private protected FirewallConditionBuilder()
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public FirewallConditionBuilder()
         {
             Conditions = new List<FirewallFilterCondition>();
         }

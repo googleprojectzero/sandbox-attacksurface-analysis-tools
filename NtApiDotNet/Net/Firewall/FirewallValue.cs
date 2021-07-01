@@ -24,7 +24,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Firewall value.
     /// </summary>
-    public struct FirewallValue : IComparable<FirewallValue>, IComparable
+    public struct FirewallValue : IComparable<FirewallValue>, IComparable, ICloneable
     {
         #region Public Properties
         /// <summary>
@@ -92,6 +92,23 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     return (FirewallConditionFlags)ui;
                 }
+            }
+            else if (type == FirewallDataType.Sid)
+            {
+                if (value is Sid sid)
+                {
+                    return sid.Name;
+                }
+            }
+            else if (type is FirewallDataType.SecurityDescriptor && value is SecurityDescriptor sd)
+            {
+                if (sd.DaclPresent && sd.Dacl.Count == 1 
+                    && sd.Dacl[0].Type == AceType.Allowed 
+                    && sd.Dacl[0].Mask.IsAccessGranted(FirewallFilterAccessRights.Match))
+                {
+                    return sd.Dacl[0].Sid.Name;
+                }
+                return sd.ToSddl();
             }
 
             return value;
@@ -169,6 +186,7 @@ namespace NtApiDotNet.Net.Firewall
                     return type.ToString();
             }
         }
+
         #endregion
 
         #region Internal Members
@@ -197,9 +215,6 @@ namespace NtApiDotNet.Net.Firewall
             switch (Type)
             {
                 case FirewallDataType.Empty:
-                    break;
-                case FirewallDataType.SecurityDescriptor:
-                    ret.value.sd = list.AddSecurityDescriptor((SecurityDescriptor)Value).DangerousGetHandle();
                     break;
                 case FirewallDataType.Sid:
                     ret.value.sid = list.AddSid((Sid)Value).DangerousGetHandle();
@@ -234,9 +249,15 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.Int64:
                     ret.value.int64 = list.AddResource(((IConvertible)Value).ToInt64(null).ToBuffer()).DangerousGetHandle();
                     break;
+                case FirewallDataType.TokenAccessInformation:
                 case FirewallDataType.ByteBlob:
-                    {
-                        byte[] buffer = (byte[])Value;
+                case FirewallDataType.SecurityDescriptor:
+                {
+                        if (!(Value is byte[] buffer))
+                        {
+                            buffer = ((SecurityDescriptor)Value).ToByteArray();
+                        }
+
                         FWP_BYTE_BLOB blob = new FWP_BYTE_BLOB
                         {
                             size = buffer.Length,
@@ -266,6 +287,12 @@ namespace NtApiDotNet.Net.Firewall
             ret.type = Type;
             return ret;
         }
+
+        internal static FirewallValue FromBlob(byte[] value, object context_value)
+        {
+            return new FirewallValue(FirewallDataType.ByteBlob, value, context_value);
+        }
+
         #endregion
 
         #region Static Members
@@ -391,7 +418,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The firewall value.</returns>
         public static FirewallValue FromBlobUnicodeString(string value)
         {
-            return FromBlob(Encoding.Unicode.GetBytes(value + "\0"));
+            return FromBlob(Encoding.Unicode.GetBytes(value + "\0"), value);
         }
 
         /// <summary>
@@ -505,6 +532,26 @@ namespace NtApiDotNet.Net.Firewall
             return new FirewallValue(FirewallDataType.Range, new FirewallRange(low, high));
         }
 
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromTokenInformation(FirewallTokenInformation value)
+        {
+            return new FirewallValue(FirewallDataType.TokenInformation, value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromTokenAccessInformation(byte[] value)
+        {
+            return new FirewallValue(FirewallDataType.TokenAccessInformation, value);
+        }
+
         #endregion
 
         #region Public Methods
@@ -518,7 +565,7 @@ namespace NtApiDotNet.Net.Firewall
         }
         #endregion
 
-        #region IComparable Implementations
+        #region Interface Implementations
         int IComparable<FirewallValue>.CompareTo(FirewallValue other)
         {
             if (Value is IComparable comp)
@@ -538,6 +585,11 @@ namespace NtApiDotNet.Net.Firewall
                 }
             }
             return 0;
+        }
+
+        object ICloneable.Clone()
+        {
+            return new FirewallValue(Type, Value.CloneValue(), ContextValue.CloneValue());
         }
         #endregion
     }

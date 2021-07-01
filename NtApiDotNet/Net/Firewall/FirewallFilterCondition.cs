@@ -19,7 +19,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Firewall filter condition.
     /// </summary>
-    public struct FirewallFilterCondition
+    public struct FirewallFilterCondition : ICloneable
     {
         #region Public Properties
         /// <summary>
@@ -84,6 +84,13 @@ namespace NtApiDotNet.Net.Firewall
         public override string ToString()
         {
             return FieldKeyName;
+        }
+        #endregion
+
+        #region Interface Implementations
+        object ICloneable.Clone()
+        {
+            return new FirewallFilterCondition(MatchType, FieldKey, Value.CloneValue());
         }
         #endregion
     }

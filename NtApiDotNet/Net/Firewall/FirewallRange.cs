@@ -19,7 +19,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// A firewall value range.
     /// </summary>
-    public struct FirewallRange
+    public struct FirewallRange : ICloneable
     {
         /// <summary>
         /// The low value.
@@ -57,6 +57,11 @@ namespace NtApiDotNet.Net.Firewall
         public override string ToString()
         {
             return $"Low: {Low.ContextValue} High: {High.ContextValue}";
+        }
+
+        object ICloneable.Clone()
+        {
+            return new FirewallRange(Low.CloneValue(), High.CloneValue());
         }
     }
 }

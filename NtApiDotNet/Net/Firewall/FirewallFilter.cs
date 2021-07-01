@@ -215,5 +215,28 @@ namespace NtApiDotNet.Net.Firewall
         {
             Delete(true);
         }
+
+        /// <summary>
+        /// Convert the filter into a builder so that it can be modified.
+        /// </summary>
+        /// <returns>The created builder.</returns>
+        public FirewallFilterBuilder ToBuilder()
+        {
+            var builder = new FirewallFilterBuilder()
+            {
+                LayerKey = LayerKey,
+                ActionType = ActionType,
+                CalloutKey = CalloutKey,
+                Description = Description,
+                Name = Name,
+                FilterType = FilterType,
+                FilterKey = Key,
+                Flags = Flags,
+                SubLayerKey = SubLayerKey,
+                Weight = Weight
+            };
+            builder.Conditions.AddRange(Conditions.Select(c => c.CloneValue()));
+            return builder;
+        }
     }
 }

@@ -69,9 +69,7 @@ namespace NtApiDotNet.Net.Firewall
         [SDKName("FWP_V6_ADDR_MASK")]
         V6AddrMask = V4AddrMask + 1,
         [SDKName("FWP_RANGE_TYPE")]
-        Range = V6AddrMask + 1,
-        [SDKName("FWP_DATA_TYPE_MAX")]
-        DataTypeMax = Range + 1
+        Range = V6AddrMask + 1
     }
 }
 

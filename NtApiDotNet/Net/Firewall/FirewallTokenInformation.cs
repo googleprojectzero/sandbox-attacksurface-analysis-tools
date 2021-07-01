@@ -62,22 +62,13 @@ namespace NtApiDotNet.Net.Firewall
 
         internal FWP_TOKEN_INFORMATION ToStruct(DisposableList list)
         {
-            FWP_TOKEN_INFORMATION ret = new FWP_TOKEN_INFORMATION();
-
-            if (Sids.Count > 0)
-            {
-                TokenGroupsBuilder builder = new TokenGroupsBuilder(Sids);
-                ret.sidCount = Sids.Count;
-                ret.sids = list.AddResource(builder.ToBuffer()).DangerousGetHandle();
-            }
-
-            if (RestrictedSids.Count > 0)
-            {
-                TokenGroupsBuilder builder = new TokenGroupsBuilder(RestrictedSids);
-                ret.restrictedSidCount = RestrictedSids.Count;
-                ret.restrictedSids = list.AddResource(builder.ToBuffer()).DangerousGetHandle();
-            }
-
+            var ret = new FWP_TOKEN_INFORMATION();
+            var sids = list.CreateSidAndAttributes(Sids);
+            ret.sidCount = Sids.Count;
+            ret.sids = list.AddResource(sids.ToBuffer()).DangerousGetHandle();
+            ret.restrictedSidCount = RestrictedSids.Count;
+            sids = list.CreateSidAndAttributes(RestrictedSids);
+            ret.restrictedSids = list.AddResource(sids.ToBuffer()).DangerousGetHandle();
             return ret;
         }
     }

@@ -125,6 +125,14 @@ namespace NtApiDotNet.Net.Firewall
                 return null;
             return (Guid)Marshal.PtrToStructure(ptr, typeof(Guid));
         }
+
+        internal static T CloneValue<T>(this T value)
+        {
+            if (value is ICloneable clone)
+                return (T)clone.Clone();
+            return value;
+        }
+
         #endregion
     }
 }

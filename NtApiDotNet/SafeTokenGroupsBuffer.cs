@@ -23,7 +23,7 @@ namespace NtApiDotNet
     /// </summary>
     public class SafeTokenGroupsBuffer : SafeStructureInOutBuffer<TokenGroups>
     {
-        private SafeHandleList _sids;
+        private readonly SafeHandleList _sids;
 
         /// <summary>
         /// Constructor.
@@ -66,10 +66,7 @@ namespace NtApiDotNet
         /// <param name="disposing">True if disposing.</param>
         protected override void Dispose(bool disposing)
         {
-            if (_sids != null)
-            {
-                _sids.Dispose();
-            }
+            _sids?.Dispose();
             base.Dispose(disposing);
         }
     }

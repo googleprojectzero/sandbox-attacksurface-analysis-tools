@@ -37,10 +37,15 @@ function Get-FwEngine {
     Param(
         [string]$ServerName,
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthnService = "WinNT",
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credentials
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credentials,
+        [switch]$Dynamic
     )
 
-    [NtApiDotNet.Net.Firewall.FirewallEngine]::Open($ServerName, $AuthnService, $Credentials)
+    $session = if ($Dynamic) {
+        [NtApiDotNet.Net.Firewall.FirewallSession]::new("Dynamic")
+    }
+
+    [NtApiDotNet.Net.Firewall.FirewallEngine]::Open($ServerName, $AuthnService, $Credentials, $session)
 }
 
 <#
@@ -170,8 +175,8 @@ Specify a layer object to query the filters from.
 Specify the filter's key.
 .PARAMETER Id
 Specify the filter's ID.
-.PARAMETER Filename
-Specify to search for filters which match a given executable file.
+.PARAMETER Condition
+Specify one or more conditions to check for when enumerating.
 .INPUTS
 None
 .OUTPUTS
@@ -210,7 +215,7 @@ function Get-FwFilter {
         [guid]$Key,
         [parameter(ParameterSetName="FromLayerKey")]
         [parameter(ParameterSetName="FromLayerName")]
-        [string]$Filename
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
     )
 
     PROCESS {
@@ -241,11 +246,83 @@ function Get-FwFilter {
             $template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($layer_key)
             $template.Flags = $Flags
             $template.ActionType = $ActionType
-            if ("" -ne $Filename) {
-                $template.AddFilename("Equal", $Filename)
+            if ($null -ne $Condition) {
+                $template.Conditions.AddRange($Condition)
             }
             $Engine.EnumerateFilters($template) | Write-Output
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Add a firewall filter.
+.DESCRIPTION
+This cmdlet adds a firewall filter.
+.PARAMETER Engine
+The firewall engine to add to.
+.PARAMETER LayerKey
+Specify the layer key
+.PARAMETER Flags
+Specify filters flags.
+.PARAMETER ActionType
+Specify action type.
+.PARAMETER Key
+Specify the filter's key.
+.PARAMETER Id
+Specify the filter's ID.
+.PARAMETER Condition
+Specify one or more conditions to check for when filtering..
+.INPUTS
+None
+.OUTPUTS
+uint64
+#>
+function Add-FwFilter {
+    [CmdletBinding(DefaultParameterSetName="FromLayerName")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 1)]
+        [string]$Name,
+        [string]$Description = "",
+        [parameter(Mandatory, ParameterSetName="FromLayerKey")]
+        [guid]$LayerKey,
+        [parameter(Mandatory, ParameterSetName="FromLayerName")]
+        [string]$LayerName,
+        [parameter(Mandatory)]
+        [guid]$SubLayerKey,
+        [guid]$Key = [guid]::Empty,
+        [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
+        [NtApiDotNet.Net.Firewall.FirewallValue]$Weight = [NtApiDotNet.Net.Firewall.FirewallValue]::Empty,
+        [NtApiDotNet.Net.Firewall.FirewallFilterFlags]$Flags = 0
+    )
+
+    try {
+        $builder = [NtApiDotNet.Net.Firewall.FirewallFilterBuilder]::new()
+        $builder.Name = $Name
+        $builder.Description = $Description
+        switch($PSCmdlet.ParameterSetName) {
+            "FromLayerKey" {
+                $builder.LayerKey = $LayerKey
+            }
+            "FromLayerName" {
+                $builder.SetLayerName($LayerName)
+            }
+        }
+        $builder.SubLayerKey = $SubLayerKey
+        $builder.FilterKey = $Key
+        $builder.ActionType = $ActionType
+        if ($null -ne $Condition) {
+            $builder.Conditions.AddRange($Condition)
+        }
+        $builder.Weight = $Weight
+        $builder.Flags = $Flags
+        $Engine.AddFilter($builder)
+    }
+    catch {
+        Write-Error $_
     }
 }
 
@@ -267,7 +344,6 @@ None
 .EXAMPLE
 Remove-FwFilter -Engine $engine -Key "DB498708-9100-42F6-BC13-15E0A240D0ED"
 Delete a filter by its key.
-.EXAMPLE
 .EXAMPLE
 Remove-FwFilter -Engine $engine -Id 12345
 Delete a filter by its ID.
@@ -332,5 +408,83 @@ function Format-FwFilter {
             }
             Write-Output ""
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Create a firewall filter condition.
+.DESCRIPTION
+This cmdlet creates a firewall filter condition for add or enumerating filters.
+.PARAMETER MatchType
+The match operation for the condition.
+.PARAMETER Filename
+The path to an executable file to match.
+.PARAMETER AppId
+The path to an executable file to match using the native format.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallFilterCondition
+.EXAMPLE
+New-FwFilterCondition -Filename "c:\windows\notepad.exe"
+Create a filter condition for the notepad executable.
+.EXAMPLE
+New-FwFilterCondition -Filename "c:\windows\notepad.exe" -MatchType NotEqual
+Create a filter condition which doesn't match the notepad executable.
+.EXAMPLE
+New-FwFilterCondition -ProtocolType Tcp
+Create a filter condition for the TCP protocol.
+#>
+function New-FwFilterCondition {
+    [CmdletBinding()]
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallMatchType]$MatchType = "Equal",
+        [parameter(Mandatory, ParameterSetName="FromFilename")]
+        [string]$Filename,
+        [parameter(Mandatory, ParameterSetName="FromAppId")]
+        [string]$AppId,
+        [parameter(Mandatory, ParameterSetName="FromUserId")]
+        [NtApiDotNet.SecurityDescriptor]$UserId,
+        [parameter(Mandatory, ParameterSetName="FromProtocolType")]
+        [System.Net.Sockets.ProtocolType]$ProtocolType,
+        [parameter(Mandatory, ParameterSetName="FromConditionFlags")]
+        [NtApiDotNet.Net.Firewall.FirewallConditionFlags]$ConditionFlags,
+        [parameter(Mandatory, ParameterSetName="FromIpAddress")]
+        [System.Net.IPAddress]$IPAddress,
+        [parameter(ParameterSetName="FromIpAddress")]
+        [switch]$Remote,
+        [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
+        [NtApiDotNet.NtToken]$TokenInformation
+    )
+
+    try {
+        $builder = [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]::new()
+        switch($PSCmdlet.ParameterSetName) {
+            "FromFilename" {
+                $builder.AddFilename($MatchType, $Filename)
+            }
+            "FromAppId" {
+                $builder.AddAppId($MatchType, $AppId)
+            }
+            "FromUserId" {
+                $builder.AddUserId($MatchType, $UserId)
+            }
+            "FromProtocolType" {
+                $builder.AddProtocolType($MatchType, $ProtocolType)
+            }
+            "FromConditionFlags" {
+                $builder.AddConditionFlags($MatchType, $ConditionFlags)
+            }
+            "FromIpAddress" {
+                $builder.AddIpAddress($MatchType, $Remote, $IPAddress)
+            }
+            "FromTokenInformation" {
+                $builder.AddTokenInformation($MatchType, $TokenInformation)
+            }
+        }
+        $builder.Conditions | Write-Output
+    } catch {
+        Write-Error $_
     }
 }

@@ -56,8 +56,8 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Specify the initial weight.
         /// </summary>
-        /// <remarks>If left as null then will use a default weight. Otherwise you need to specify either a UINT64 or UINT8.</remarks>
-        public FirewallValue? Weight { get; set; }
+        /// <remarks>You need to specify an EMPTY, UINT64 or UINT8 value.</remarks>
+        public FirewallValue Weight { get; set; }
 
         /// <summary>
         /// Specify the action for this filter.
@@ -72,7 +72,18 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Specify callout key GUID when using a callout.
         /// </summary>
-        public Guid CalloutKey { get => FilterType; set => FilterType = value; }
+        public Guid CalloutKey { get; set; }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Set the layer key from a name.
+        /// </summary>
+        /// <param name="name">The name of the layer key.</param>
+        public void SetLayerName(string name)
+        {
+            LayerKey = NamedGuidDictionary.LayerGuids.Value.GuidFromName(name);
+        }
         #endregion
 
         #region Constructors
@@ -83,6 +94,7 @@ namespace NtApiDotNet.Net.Firewall
         {
             Name = string.Empty;
             Description = string.Empty;
+            Weight = FirewallValue.Empty;
         }
         #endregion
 
@@ -96,9 +108,16 @@ namespace NtApiDotNet.Net.Firewall
             ret.displayData.name = Name;
             ret.displayData.description = Description;
             ret.flags = Flags;
-            ret.weight = (Weight ?? FirewallValue.Empty).ToStruct(list);
+            ret.weight = Weight.ToStruct(list);
             ret.action.type = ActionType;
-            ret.action.action.filterType = FilterType;
+            if (ActionType.HasFlag(FirewallActionType.Callout))
+            {
+                ret.action.action.calloutKey = CalloutKey;
+            }
+            else
+            {
+                ret.action.action.filterType = FilterType;
+            }
             if (Conditions.Count > 0)
             {
                 ret.numFilterConditions = Conditions.Count;

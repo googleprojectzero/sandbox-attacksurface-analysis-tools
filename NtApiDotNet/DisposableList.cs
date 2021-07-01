@@ -148,17 +148,27 @@ namespace NtApiDotNet
             Add(new CallOnDispose(action));
         }
 
+        internal SidAndAttributes[] CreateSidAndAttributes(IEnumerable<UserGroup> sids)
+        {
+            if (sids == null)
+            {
+                return new SidAndAttributes[0];
+            }
+            return sids.Select(s =>  new SidAndAttributes()
+            {
+                Sid = AddResource(s.Sid.ToSafeBuffer()).DangerousGetHandle(),
+                Attributes = s.Attributes
+            }).ToArray();
+        }
+
         internal SidAndAttributes[] CreateSidAndAttributes(IEnumerable<Sid> sids)
         {
             if (sids == null)
             {
                 return new SidAndAttributes[0];
             }
-            return sids.Select(s => new SidAndAttributes()
-            {
-                Sid = AddResource(s.ToSafeBuffer()).DangerousGetHandle(),
-                Attributes = GroupAttributes.Enabled
-            }).ToArray();
+
+            return CreateSidAndAttributes(sids.Select(s => new UserGroup(s, GroupAttributes.Enabled)));
         }
     }
 
