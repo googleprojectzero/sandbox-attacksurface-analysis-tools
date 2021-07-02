@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.DirectoryService;
+using NtApiDotNet.Win32.Printing;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authorization;
 using NtApiDotNet.Win32.Security.Native;
@@ -465,6 +466,8 @@ namespace NtApiDotNet.Win32.Security
                 case SeObjectType.Ds:
                 case SeObjectType.DsAll:
                     return NtType.GetTypeByName(DirectoryServiceUtils.DS_NT_TYPE_NAME);
+                case SeObjectType.Printer:
+                    return NtType.GetTypeByName(PrintSpoolerUtils.PRINTER_NT_TYPE_NAME);
             }
             return null;
         }

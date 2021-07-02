@@ -397,6 +397,11 @@
     <Compile Include="Win32\Image\WellKnownImageResourceType.cs" />
     <Compile Include="Win32\LoadLibraryFlags.cs" />
     <Compile Include="Win32\Net\UdpListenerInformation.cs" />
+    <Compile Include="Win32\Printing\PrinterObject.cs" />
+    <Compile Include="Win32\Printing\PrinterSpoolerFakeNtTypeFactory.cs" />
+    <Compile Include="Win32\Printing\PrintSpoolerAccessRights.cs" />
+    <Compile Include="Win32\Printing\PrintingNativeMethods.cs" />
+    <Compile Include="Win32\Printing\PrintSpoolerUtils.cs" />
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
