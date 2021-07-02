@@ -1325,11 +1325,24 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>True if multi-session.</returns>
         public static bool IsMultiSession => NtRtl.RtlIsMultiSessionSku();
+
         /// <summary>
         /// Get whether this there are multiple users in a session.
         /// </summary>
         /// <returns>True if multi-session.</returns>
         public static bool IsMultiUsersInSession => NtRtl.RtlIsMultiUsersInSessionSku();
+
+        /// <summary>
+        /// Query the system elevation flags.
+        /// </summary>
+        public static ElevationFlags ElevationFlags
+        {
+            get
+            {
+                NtRtl.RtlQueryElevationFlags(out ElevationFlags flags).ToNtException();
+                return flags;
+            }
+        }
         #endregion
     }
 }

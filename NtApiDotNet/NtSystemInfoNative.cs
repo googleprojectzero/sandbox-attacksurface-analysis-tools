@@ -163,6 +163,15 @@ namespace NtApiDotNet
         }
     }
 
+    [Flags]
+    public enum ElevationFlags
+    {
+        None = 0,
+        UACEnabled = 1,
+        VirtualizationEnabled = 2,
+        InstallerDetectionEnabled = 4,
+    }
+
     public static partial class NtRtl
     {
         [DllImport("ntdll.dll")]
@@ -189,6 +198,11 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool RtlIsMultiUsersInSessionSku();
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlQueryElevationFlags(
+            out ElevationFlags pFlags
+        );
     }
 
     [Flags]

@@ -53,6 +53,8 @@ Return isolated usermode flags.
 Return processor information.
 .PARAMETER MultiSession
 Return whether this system is a multi-session SKU.
+.PARAMETER MultiSession
+Return the system's elevation flags.
 .INPUTS
 None
 .OUTPUTS
@@ -68,7 +70,9 @@ function Get-NtSystemInformation {
         [Parameter(Mandatory, ParameterSetName="ProcessorInformation")]
         [switch]$ProcessorInformation,
         [Parameter(Mandatory, ParameterSetName="MultiSession")]
-        [switch]$MultiSession
+        [switch]$MultiSession,
+        [Parameter(Mandatory, ParameterSetName="Elevation")]
+        [switch]$ElevationFlags
     )
     if ($IsolatedUserMode) {
         [NtApiDotNet.NtSystemInfo]::IsolatedUserModeFlags
@@ -76,6 +80,8 @@ function Get-NtSystemInformation {
         [NtApiDotNet.NtSystemInfo]::ProcessorInformation
     } elseif ($MultiSession) {
         [NtApiDotNet.NtSystemInfo]::IsMultiSession
+    } elseif ($ElevationFlags) {
+        [NtApiDotNet.NtSystemInfo]::ElevationFlags
     }
 }
 
