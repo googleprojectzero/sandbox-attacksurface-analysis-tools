@@ -36,6 +36,11 @@ namespace NtApiDotNet.Security
         SecurityDescriptor SecurityDescriptor { get; }
 
         /// <summary>
+        /// Get whether the object is a container.
+        /// </summary>
+        bool IsContainer { get; }
+
+        /// <summary>
         /// Check if access is granted to a set of rights
         /// </summary>
         /// <param name="access">The access rights to check</param>

@@ -185,6 +185,8 @@ namespace NtApiDotNet.Win32.Service
 
         string INtObjectSecurity.ObjectName => string.IsNullOrEmpty(_machine_name) ? "SCM" : $@"SCM (\\{_machine_name})";
 
+        bool INtObjectSecurity.IsContainer => false;
+
         SecurityDescriptor INtObjectSecurity.SecurityDescriptor => GetSecurityDescriptor(SafeServiceHandle.DEFAULT_SECURITY_INFORMATION);
 
         bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)

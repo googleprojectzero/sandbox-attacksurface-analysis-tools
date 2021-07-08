@@ -779,6 +779,8 @@ namespace NtApiDotNet.Net.Firewall
 
         NtType INtObjectSecurity.NtType => FirewallUtils.FirewallType;
 
+        bool INtObjectSecurity.IsContainer => true;
+
         SecurityDescriptor INtObjectSecurity.SecurityDescriptor => ((INtObjectSecurity)this).GetSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl);
 
         bool INtObjectSecurity.IsAccessMaskGranted(AccessMask access)

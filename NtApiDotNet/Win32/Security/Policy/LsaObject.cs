@@ -50,12 +50,17 @@ namespace NtApiDotNet.Win32.Security.Policy
         /// <summary>
         /// Get the NT type for the object.
         /// </summary>
-        public NtType NtType { get;}
+        public NtType NtType { get; }
 
         /// <summary>
         /// Get the object name for the object.
         /// </summary>
         public string ObjectName { get; }
+
+        /// <summary>
+        /// Get whether the object is a container.
+        /// </summary>
+        public bool IsContainer => false;
 
         /// <summary>
         /// Get the object's security descriptor.

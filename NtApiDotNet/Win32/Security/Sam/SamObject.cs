@@ -64,6 +64,11 @@ namespace NtApiDotNet.Win32.Security.Sam
         public string ObjectName { get; }
 
         /// <summary>
+        /// Get whether the object is a container.
+        /// </summary>
+        public bool IsContainer => false;
+
+        /// <summary>
         /// Get the object's security descriptor.
         /// </summary>
         public SecurityDescriptor SecurityDescriptor => GetSecurityDescriptor(SecurityInformation.AllBasic);
