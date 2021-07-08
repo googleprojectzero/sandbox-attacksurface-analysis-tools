@@ -990,6 +990,8 @@ namespace NtApiDotNet.Win32.DirectoryService
         /// <returns>The extended right, or null if not found.</returns>
         public static DirectoryServiceExtendedRight GetExtendedRight(string domain, Guid right_guid)
         {
+            if (right_guid == _default_propset.RightsId)
+                return _default_propset;
             return _extended_rights.Get(domain).GetOrAdd(right_guid, _ => GetExtendedRightForGuid(domain, right_guid));
         }
 
