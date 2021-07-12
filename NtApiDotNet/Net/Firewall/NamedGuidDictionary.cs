@@ -1393,6 +1393,28 @@ namespace NtApiDotNet.Net.Firewall
                0x4964,
                0x92, 0xb8, 0x3e, 0x70, 0x46, 0x88, 0xb0, 0xad
             );
+
+            ret.DefineGuid(
+                "MICROSOFT_DEFENDER_SUBLAYER_WSH",
+                0xb3cdd441,
+                0xaf90,
+                0x41ba,
+                0xa7, 0x45, 0x7c, 0x60, 0x08, 0xff, 0x23, 0x00);
+
+            ret.DefineGuid(
+                "MICROSOFT_DEFENDER_SUBLAYER_FIREWALL",
+                0xb3cdd441,
+                0xaf90,
+                0x41ba,
+                0xa7, 0x45, 0x7c, 0x60, 0x08, 0xff, 0x23, 0x01);
+
+            ret.DefineGuid(
+               "MICROSOFT_DEFENDER_SUBLAYER_QUARANTINE",
+               0xb3cdd441,
+               0xaf90,
+               0x41ba,
+               0xa7, 0x45, 0x7c, 0x60, 0x08, 0xff, 0x23, 0x02);
+
             return ret;
         }
 
