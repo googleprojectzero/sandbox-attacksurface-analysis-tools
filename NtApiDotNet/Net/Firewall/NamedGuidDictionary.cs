@@ -251,7 +251,6 @@ namespace NtApiDotNet.Net.Firewall
             // 8693cc74-a075-4156-b476-9286eece814e
             ret.DefineGuid(
                "FWPM_CALLOUT_WFP_TRANSPORT_LAYER_V6_SILENT_DROP",
-            
                0x8693cc74,
                0xa075,
                0x4156,

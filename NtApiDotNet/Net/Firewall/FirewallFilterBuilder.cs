@@ -84,6 +84,24 @@ namespace NtApiDotNet.Net.Firewall
         {
             LayerKey = NamedGuidDictionary.LayerGuids.Value.GuidFromName(name);
         }
+
+        /// <summary>
+        /// Set the layer key from an ALE layer.
+        /// </summary>
+        /// <param name="ale_layer">The ALE layer.</param>
+        public void SetAleLayer(FirewallAleLayer ale_layer)
+        {
+            LayerKey = FirewallUtils.GetLayerGuidForAleLayer(ale_layer);
+        }
+
+        /// <summary>
+        /// Set the sub-layer key from a name.
+        /// </summary>
+        /// <param name="name">The name of the sub-layer key.</param>
+        public void SetSubLayerName(string name)
+        {
+            SubLayerKey = NamedGuidDictionary.SubLayerGuids.Value.GuidFromName(name);
+        }
         #endregion
 
         #region Constructors

@@ -352,6 +352,27 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get a layer by an ALE layer type.
+        /// </summary>
+        /// <param name="ale_layer">The ALE layer type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The firewall layer.</returns>
+        public NtResult<FirewallLayer> GetLayer(FirewallAleLayer ale_layer, bool throw_on_error)
+        {
+            return GetLayer(FirewallUtils.GetLayerGuidForAleLayer(ale_layer), throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a layer by an ALE layer type.
+        /// </summary>
+        /// <param name="ale_layer">The ALE layer type.</param>
+        /// <returns>The firewall layer.</returns>
+        public FirewallLayer GetLayer(FirewallAleLayer ale_layer)
+        {
+            return GetLayer(ale_layer, true).Result;
+        }
+
+        /// <summary>
         /// Enumerate all layers.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>

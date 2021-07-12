@@ -126,7 +126,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-DsHeuristics', 'New-SamUser', 'Get-DsSDRightsEffective', 'Search-DsObjectSid',
           'Get-Win32Credential', 'Backup-Win32Credential', 'Select-BinaryString', 'Get-FwEngine',
           'Get-FwLayer', 'Get-FwFilter', 'Get-FwSubLayer', 'Remove-FwFilter', 'Format-FwFilter',
-          'New-FwFilterCondition', 'Add-FwFilter'
+          'New-FwFilterCondition', 'Add-FwFilter', 'Get-FwGuid'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

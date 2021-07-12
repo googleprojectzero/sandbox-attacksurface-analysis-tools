@@ -76,6 +76,7 @@
     <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Firewall\FilterEnumFlags.cs" />
     <Compile Include="Net\Firewall\FirewallActionType.cs" />
+    <Compile Include="Net\Firewall\FirewallAleLayer.cs" />
     <Compile Include="Net\Firewall\FirewallCalloutFlags.cs" />
     <Compile Include="Net\Firewall\FirewallCalloutGuids.cs" />
     <Compile Include="Net\Firewall\FirewallConditionBuilder.cs" />

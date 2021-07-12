@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -114,6 +115,88 @@ namespace NtApiDotNet.Net.Firewall
         public static string GetAppIdFromFileName(string filename)
         {
             return GetAppIdFromFileName(filename, true).Result;
+        }
+
+        /// <summary>
+        /// Get a list of known layer names.
+        /// </summary>
+        /// <returns>The list of known layer names.</returns>
+        public static IEnumerable<string> GetKnownLayerNames()
+        {
+            return NamedGuidDictionary.LayerGuids.Value.Values;
+        }
+
+        /// <summary>
+        /// Get a list of known layer guids.
+        /// </summary>
+        /// <returns>The list of known layer guids.</returns>
+        public static IEnumerable<Guid> GetKnownLayerGuids()
+        {
+            return NamedGuidDictionary.LayerGuids.Value.Keys;
+        }
+
+        /// <summary>
+        /// Get a known layer GUID from its name.
+        /// </summary>
+        /// <param name="name">The name of the layer.</param>
+        /// <returns>The known layer GUID.</returns>
+        public static Guid GetKnownLayerGuid(string name)
+        {
+            return NamedGuidDictionary.LayerGuids.Value.GuidFromName(name);
+        }
+
+        /// <summary>
+        /// Get a list of known sub-layer names.
+        /// </summary>
+        /// <returns>The list of known sub-layer names.</returns>
+        public static IEnumerable<string> GetKnownSubLayerNames()
+        {
+            return NamedGuidDictionary.SubLayerGuids.Value.Values;
+        }
+
+        /// <summary>
+        /// Get a list of known sub-layer guids.
+        /// </summary>
+        /// <returns>The list of known sub-layer guids.</returns>
+        public static IEnumerable<Guid> GetKnownSubLayerGuids()
+        {
+            return NamedGuidDictionary.SubLayerGuids.Value.Keys;
+        }
+
+        /// <summary>
+        /// Get a known sub-layer GUID from its name.
+        /// </summary>
+        /// <param name="name">The name of the sub-layer.</param>
+        /// <returns>The known sub-layer GUID.</returns>
+        public static Guid GetKnownSubLayerGuid(string name)
+        {
+            return NamedGuidDictionary.SubLayerGuids.Value.GuidFromName(name);
+        }
+
+        /// <summary>
+        /// Get a layer GUID for an ALE layer enumeration.
+        /// </summary>
+        /// <param name="ale_layer">The ALE layer enumeration.</param>
+        /// <returns>The ALE layer GUID.</returns>
+        public static Guid GetLayerGuidForAleLayer(FirewallAleLayer ale_layer)
+        {
+            switch (ale_layer)
+            {
+                case FirewallAleLayer.ConnectV4:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V4;
+                case FirewallAleLayer.ConnectV6:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V6;
+                case FirewallAleLayer.ListenV4:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_LISTEN_V4;
+                case FirewallAleLayer.ListenV6:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_LISTEN_V6;
+                case FirewallAleLayer.RecvAcceptV4:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4;
+                case FirewallAleLayer.RecvAcceptV6:
+                    return FirewallLayerGuids.FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V6;
+                default:
+                    throw new ArgumentException("Unknown ALE layer", nameof(ale_layer));
+            }
         }
 
         #endregion
