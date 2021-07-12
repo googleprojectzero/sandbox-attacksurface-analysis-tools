@@ -119,11 +119,6 @@ namespace TokenViewer
         private NtToken CreateLowBoxToken(NtToken token)
         {
             Sid package_sid = TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
-            if (!NtSecurity.IsPackageSid(package_sid))
-            {
-                throw new ArgumentException($"Invalid Package Sid {package_sid}");
-            }
-            
             Sid[] capabilities = GetGroupFromList(listViewCapabilities.Items.OfType<ListViewItem>());
             foreach (Sid cap in capabilities)
             {

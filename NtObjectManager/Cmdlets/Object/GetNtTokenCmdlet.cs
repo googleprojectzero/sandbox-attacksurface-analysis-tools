@@ -688,11 +688,6 @@ namespace NtObjectManager.Cmdlets.Object
         private NtToken GetLowBoxToken(NtToken token)
         {
             Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
-            if (!NtSecurity.IsPackageSid(package_sid))
-            {
-                throw new ArgumentException($"Invalid Package Sid {package_sid}");
-            }
-
             if (!string.IsNullOrEmpty(RestrictedPackageName))
             {
                 package_sid = TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);

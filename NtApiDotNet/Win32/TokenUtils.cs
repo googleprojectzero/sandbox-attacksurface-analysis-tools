@@ -299,16 +299,20 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Get the package sid from a name.
+        /// Get the package SID from a name.
         /// </summary>
-        /// <param name="name">The name of the package, can be either an SDDL sid or a package name.</param>
-        /// <returns>The derived sid.</returns>
+        /// <param name="name">The name of the package, can be either an SDDL SID or a package name.</param>
+        /// <returns>The derived SID.</returns>
         public static Sid GetPackageSidFromName(string name)
         {
-            string package_sid_str = name;
-            if (package_sid_str.StartsWith("S-1-"))
+            var package_sid = Sid.Parse(name, false);
+            if (package_sid.IsSuccess)
             {
-                return new Sid(package_sid_str);
+                if (!NtSecurity.IsPackageSid(package_sid.Result))
+                {
+                    throw new ArgumentException($"Invalid package SID {name}");
+                }
+                return package_sid.Result;
             }
             else
             {

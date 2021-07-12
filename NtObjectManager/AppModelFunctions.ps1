@@ -392,23 +392,31 @@ Add a package SID to the list of granted loopback exceptions.
 .DESCRIPTION
 This cmdlet adds a package SID to the list of granted loopback exceptions.
 .PARAMETER PackageSid
-The package SID to add.
+The package SID to add. Can be an SDDL SID or a name.
 .INPUTS
-NtApiDotNet.Sid[]
+string[]
 .OUTPUTS
 None
 .EXAMPLE
 Add-AppModelLoopbackException -PackageSid $package_sid
 Add $package_sid to the list of loopback exceptions.
+.EXAMPLE
+Add-AppModelLoopbackException -PackageSid "ABC"
+Add package "ABC" to the list of loopback exceptions.
 #>
 function Add-AppModelLoopbackException {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Sid]$PackageSid
+        [string]$PackageSid
     )
     PROCESS {
-        [NtApiDotNet.Win32.AppModel.AppModelUtils]::AddLoopbackException($PackageSid)
+        try {
+            $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
+            [NtApiDotNet.Win32.AppModel.AppModelUtils]::AddLoopbackException($sid)
+        } catch {
+            Write-Error $_
+        }
     }
 }
 
@@ -420,21 +428,29 @@ This cmdlet removes a package SID from the list of granted loopback exceptions.
 .PARAMETER PackageSid
 The package SID to remove.
 .INPUTS
-NtApiDotNet.Sid[]
+string[]
 .OUTPUTS
 None
 .EXAMPLE
 Remove-AppModelLoopbackException -PackageSid $package_sid
 Remove $package_sid from the list of loopback exceptions.
+.EXAMPLE
+Remove-AppModelLoopbackException -PackageSid "ABC"
+Remove package "ABC" from the list of loopback exceptions.
 #>
 function Remove-AppModelLoopbackException {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Sid]$PackageSid
+        [string]$PackageSid
     )
     PROCESS {
-        [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($PackageSid)
+        try {
+            $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
+            [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($sid)
+        } catch {
+            Write-Error $_
+        }
     }
 }
 
