@@ -754,6 +754,102 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Classify a layer.
+        /// </summary>
+        /// <param name="layer_id">The ID of the layer.</param>
+        /// <param name="incoming_values">A list of incoming values.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The classify result.</returns>
+        public NtResult<FirewallClassifyResult> Classify(int layer_id, IEnumerable<FirewallValue> incoming_values, bool throw_on_error)
+        {
+            if (incoming_values is null)
+            {
+                throw new ArgumentNullException(nameof(incoming_values));
+            }
+
+            using (var list = new DisposableList())
+            {
+                var values = incoming_values.Select(v => v.ToStruct(list)).ToArray();
+                var buffer = list.AddResource(values.ToBuffer());
+                return FirewallNativeMethods.FwpsClassifyUser0(_handle, (ushort)layer_id, new FWPS_INCOMING_VALUES0()
+                {
+                    layerId = (ushort)layer_id,
+                    valueCount = values.Length,
+                    incomingValue = buffer.DangerousGetHandle()
+                }, IntPtr.Zero, IntPtr.Zero, out FWPS_CLASSIFY_OUT0 result).CreateWin32Result(throw_on_error, 
+                () => new FirewallClassifyResult(result));
+            }
+        }
+
+        /// <summary>
+        /// Classify a layer.
+        /// </summary>
+        /// <param name="layer_id">The ID of the layer.</param>
+        /// <param name="incoming_values">A list of incoming values.</param>
+        /// <returns>The classify result.</returns>
+        public FirewallClassifyResult Classify(int layer_id, IEnumerable<FirewallValue> incoming_values)
+        {
+            return Classify(layer_id, incoming_values, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate IPSEC key managers.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of registered key managers.</returns>
+        public NtResult<IEnumerable<IPsecKeyManager>> EnumerateKeyManagers(bool throw_on_error)
+        {
+            NtStatus status = FirewallNativeMethods.IPsecKeyManagersGet0(_handle,
+                out SafeFwpmMemoryBuffer entries, out int entry_count).MapDosErrorToStatus();
+            if (!status.IsSuccess())
+            {
+                return status.CreateResultFromError<IEnumerable<IPsecKeyManager>>(throw_on_error);
+            }
+
+            using (entries)
+            {
+                List<IPsecKeyManager> ret = new List<IPsecKeyManager>();
+                if (entry_count > 0)
+                {
+                    entries.Initialize<IntPtr>((uint)entry_count);
+                    IntPtr[] ptrs = entries.ReadArray<IntPtr>(0, entry_count);
+                    ret.AddRange(ptrs.Select(ptr => new IPsecKeyManager((IPSEC_KEY_MANAGER0)Marshal.PtrToStructure(ptr, typeof(IPSEC_KEY_MANAGER0)))));
+                }
+                return ret.AsReadOnly().CreateResult<IEnumerable<IPsecKeyManager>>();
+            }
+        }
+
+        /// <summary>
+        /// Enumerate IPSEC key managers.
+        /// </summary>
+        /// <returns>The list of registered key managers.</returns>
+        public IEnumerable<IPsecKeyManager> EnumerateKeyManagers()
+        {
+            return EnumerateKeyManagers(true).Result;
+        }
+
+        /// <summary>
+        /// Get key manager component security descriptor.
+        /// </summary>
+        /// <param name="security_information">The security information to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor.</returns>
+        public NtResult<SecurityDescriptor> GetKeyManagerSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        {
+            return GetSecurityForKey(_handle, security_information, Guid.Empty, FirewallNativeMethods.IPsecKeyManagerGetSecurityInfoByKey0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get key manager component security descriptor.
+        /// </summary>
+        /// <param name="security_information">The security information to query.</param>
+        /// <returns>The security descriptor.</returns>
+        public SecurityDescriptor GetKeyManagerSecurityDescriptor(SecurityInformation security_information)
+        {
+            return GetKeyManagerSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
         /// Begin a firewall transaction.
         /// </summary>
         /// <param name="flags">Flags for the transaction.</param>

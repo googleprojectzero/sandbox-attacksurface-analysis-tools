@@ -240,6 +240,25 @@ namespace NtApiDotNet.Net.Firewall
         public IntPtr calloutKey; // GUID*
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPS_INCOMING_VALUES0
+    {
+        public ushort layerId;
+        public int valueCount;
+        public IntPtr incomingValue; // FWPS_INCOMING_VALUE0* 
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPS_CLASSIFY_OUT0
+    {
+        public FirewallActionType actionType;
+        public ulong outContext;
+        public ulong filterId;
+        public FirewallRightActions rights;
+        public FirewallClassifyOutFlags flags;
+        public int reserved;
+    }
+
     class SafeFwpmEngineHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeFwpmEngineHandle() : base(true)
@@ -328,6 +347,15 @@ namespace NtApiDotNet.Net.Firewall
         public FWP_BYTE_BLOB providerData;
         [MarshalAs(UnmanagedType.LPWStr)]
         public string serviceName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_KEY_MANAGER0
+    {
+        public Guid keyManagerKey;
+        public FWPM_DISPLAY_DATA0 displayData;
+        public IPsecKeyManagerFlags flags;
+        public byte keyDictationTimeoutHint;
     }
 
     internal static class FirewallNativeMethods
@@ -678,6 +706,35 @@ namespace NtApiDotNet.Net.Firewall
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error IkeextSaDbGetSecurityInfo0(
             SafeFwpmEngineHandle engineHandle,
+            SecurityInformation securityInfo,
+            IntPtr sidOwner,
+            IntPtr sidGroup,
+            IntPtr dacl,
+            IntPtr sacl,
+            out SafeFwpmMemoryBuffer securityDescriptor
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsClassifyUser0(
+            SafeFwpmEngineHandle engineHandle,
+            ushort layerId,
+            in FWPS_INCOMING_VALUES0 inFixedValues,
+            IntPtr inMetadataValues,
+            IntPtr layerData,
+            out FWPS_CLASSIFY_OUT0 classifyOut
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecKeyManagersGet0(
+          SafeFwpmEngineHandle engineHandle,
+          out SafeFwpmMemoryBuffer entries, // IPSEC_KEY_MANAGER0***
+          out int numEntries
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecKeyManagerGetSecurityInfoByKey0(
+            SafeFwpmEngineHandle engineHandle,
+            in Guid key,
             SecurityInformation securityInfo,
             IntPtr sidOwner,
             IntPtr sidGroup,

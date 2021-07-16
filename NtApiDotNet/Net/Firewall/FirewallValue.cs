@@ -584,6 +584,16 @@ namespace NtApiDotNet.Net.Firewall
             return new FirewallValue(FirewallDataType.TokenAccessInformation, value);
         }
 
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
+        public static FirewallValue FromGuid(Guid value)
+        {
+            return new FirewallValue(FirewallDataType.ByteArray16, value.ToByteArray(), value);
+        }
+
         #endregion
 
         #region Public Methods
