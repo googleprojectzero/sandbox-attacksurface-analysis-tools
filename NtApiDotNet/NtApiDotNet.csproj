@@ -76,6 +76,7 @@
     <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Firewall\FilterEnumFlags.cs" />
     <Compile Include="Net\Firewall\FirewallActionType.cs" />
+    <Compile Include="Net\Firewall\FirewallAleEndpoint.cs" />
     <Compile Include="Net\Firewall\FirewallAleLayer.cs" />
     <Compile Include="Net\Firewall\FirewallCalloutFlags.cs" />
     <Compile Include="Net\Firewall\FirewallCalloutGuids.cs" />
@@ -124,6 +125,8 @@
     <Compile Include="Net\Firewall\IFirewallEnumTemplate.cs" />
     <Compile Include="Net\Firewall\NamedGuidDictionary.cs" />
     <Compile Include="Net\Firewall\FirewallNativeMethods.cs" />
+    <Compile Include="Net\Firewall\SafeFwpmEngineHandle.cs" />
+    <Compile Include="Net\Firewall\SafeFwpmMemoryBuffer.cs" />
     <Compile Include="Net\Sockets\HyperVEndpoint.cs" />
     <Compile Include="Net\Sockets\HyperVSocketGuids.cs" />
     <Compile Include="Net\Sockets\UnixEndPoint.cs" />

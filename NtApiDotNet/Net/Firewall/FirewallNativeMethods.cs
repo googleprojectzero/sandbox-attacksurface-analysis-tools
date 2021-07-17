@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Net;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -259,38 +259,14 @@ namespace NtApiDotNet.Net.Firewall
         public int reserved;
     }
 
-    class SafeFwpmEngineHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public enum FirewallIpVersion
     {
-        internal SafeFwpmEngineHandle() : base(true)
-        {
-        }
-
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern Win32Error FwpmEngineClose0(IntPtr engineHandle);
-
-        protected override bool ReleaseHandle()
-        {
-            return FwpmEngineClose0(handle) == Win32Error.SUCCESS;
-        }
-    }
-
-    class SafeFwpmMemoryBuffer : SafeBufferGeneric
-    {
-        internal SafeFwpmMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
-
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern void FwpmFreeMemory0(
-            ref IntPtr p
-        );
-
-        protected override bool ReleaseHandle()
-        {
-            FwpmFreeMemory0(ref handle);
-            return true;
-        }
+        [SDKName("FWP_IP_VERSION_V4")]
+        V4 = 0,
+        [SDKName("FWP_IP_VERSION_V6")]
+        V6,
+        [SDKName("FWP_IP_VERSION_NONE")]
+        None
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -356,6 +332,36 @@ namespace NtApiDotNet.Net.Firewall
         public FWPM_DISPLAY_DATA0 displayData;
         public IPsecKeyManagerFlags flags;
         public byte keyDictationTimeoutHint;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPS_ALE_ENDPOINT_PROPERTIES0
+    {
+        public ulong endpointId;
+        public FirewallIpVersion ipVersion; // FWP_IP_VERSION 
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] localAddress;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] remoteAddress;
+        public byte ipProtocol;
+        public ushort localPort;
+        public ushort remotePort;
+        public long localTokenModifiedId;
+        public ulong mmSaId;
+        public ulong qmSaId;
+        public uint ipsecStatus;
+        public uint flags;
+        public FWP_BYTE_BLOB appId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPS_ALE_ENDPOINT_ENUM_TEMPLATE0
+    {
+        FWP_VALUE0 localSubNet;
+        FWP_VALUE0 remoteSubNet;
+        FWP_VALUE0 ipProtocol;
+        FWP_VALUE0 localPort;
+        FWP_VALUE0 remotePort;
     }
 
     internal static class FirewallNativeMethods
@@ -741,6 +747,54 @@ namespace NtApiDotNet.Net.Firewall
             IntPtr dacl,
             IntPtr sacl,
             out SafeFwpmMemoryBuffer securityDescriptor
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsOpenToken0(
+          SafeFwpmEngineHandle engineHandle,
+          Luid modifiedId,
+          TokenAccessRights desiredAccess,
+          out SafeKernelObjectHandle accessToken
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsAleEndpointCreateEnumHandle0(
+          SafeFwpmEngineHandle engineHandle,
+          SafeBuffer enumTemplate, // const FWPS_ALE_ENDPOINT_ENUM_TEMPLATE0* 
+          out IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsAleEndpointDestroyEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsAleEndpointEnum0(
+          SafeFwpmEngineHandle engineHandle,
+          IntPtr enumHandle,
+          int numEntriesRequested,
+          out SafeFwpmMemoryBuffer entries, // FWPS_ALE_ENDPOINT_PROPERTIES0*** 
+          out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsAleEndpointGetById0(
+          SafeFwpmEngineHandle engineHandle,
+          ulong endpointId,
+          out SafeFwpmMemoryBuffer properties // FWPS_ALE_ENDPOINT_PROPERTIES0** 
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpsAleEndpointGetSecurityInfo0(
+          SafeFwpmEngineHandle engineHandle,
+          SecurityInformation securityInfo,
+          IntPtr sidOwner,
+          IntPtr sidGroup,
+          IntPtr dacl,
+          IntPtr sacl,
+          out SafeFwpmMemoryBuffer securityDescriptor // PSECURITY_DESCRIPTOR* 
         );
     }
 }

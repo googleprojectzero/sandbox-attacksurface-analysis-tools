@@ -32,7 +32,8 @@ namespace NtApiDotNet.Net.Firewall
 
         private readonly SafeFwpmEngineHandle _handle;
 
-        private delegate Win32Error GetSecurityInfoByKey(SafeFwpmEngineHandle engineHandle,
+        private delegate Win32Error GetSecurityInfoByKey(
+            SafeFwpmEngineHandle engineHandle,
             in Guid key,
             SecurityInformation securityInfo,
             IntPtr sidOwner,
@@ -41,7 +42,8 @@ namespace NtApiDotNet.Net.Firewall
             IntPtr sacl,
             out SafeFwpmMemoryBuffer securityDescriptor);
 
-        private delegate Win32Error GetSecurityInfo(SafeFwpmEngineHandle engineHandle,
+        private delegate Win32Error GetSecurityInfo(
+            SafeFwpmEngineHandle engineHandle,
             SecurityInformation securityInfo,
             IntPtr sidOwner,
             IntPtr sidGroup,
@@ -136,6 +138,11 @@ namespace NtApiDotNet.Net.Firewall
         {
             return new FirewallProvider(provider, this, (i, t) => GetSecurityForKey(_handle, i, provider.providerKey,
                 FirewallNativeMethods.FwpmProviderGetSecurityInfoByKey0, t));
+        }
+
+        private FirewallAleEndpoint ProcessAleEndpoint(FWPS_ALE_ENDPOINT_PROPERTIES0 endpoint)
+        {
+            return new FirewallAleEndpoint(endpoint);
         }
 
         private NtResult<List<T>> EnumerateFwObjects<T, U>(IFirewallEnumTemplate template, 
@@ -847,6 +854,102 @@ namespace NtApiDotNet.Net.Firewall
         public SecurityDescriptor GetKeyManagerSecurityDescriptor(SecurityInformation security_information)
         {
             return GetKeyManagerSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Open token from its modified ID.
+        /// </summary>
+        /// <param name="modified_id">The token's modified ID.</param>
+        /// <param name="desired_access">The desired token access.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token.</returns>
+        public NtResult<NtToken> OpenToken(Luid modified_id, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpsOpenToken0(_handle, modified_id, desired_access, 
+                out SafeKernelObjectHandle handle).CreateWin32Result(throw_on_error, () => new NtToken(handle));
+        }
+
+        /// <summary>
+        /// Open token from its modified ID.
+        /// </summary>
+        /// <param name="modified_id">The token's modified ID.</param>
+        /// <param name="desired_access">The desired token access.</param>
+        /// <returns>The opened token.</returns>
+        public NtToken OpenToken(Luid modified_id, TokenAccessRights desired_access)
+        {
+            return OpenToken(modified_id, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate all ALE endpoints.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of ALE endpoints.</returns>
+        public NtResult<IEnumerable<FirewallAleEndpoint>> EnumerateAleEndpoints(bool throw_on_error)
+        {
+            Func<FWPS_ALE_ENDPOINT_PROPERTIES0, FirewallAleEndpoint> f = ProcessAleEndpoint;
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpsAleEndpointCreateEnumHandle0,
+                FirewallNativeMethods.FwpsAleEndpointEnum0, FirewallNativeMethods.FwpsAleEndpointDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<FirewallAleEndpoint>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all ALE endpoints.
+        /// </summary>
+        /// <returns>The list of ALE endpoints.</returns>
+        public IEnumerable<FirewallAleEndpoint> EnumerateAleEndpoints()
+        {
+            return EnumerateAleEndpoints(true).Result;
+        }
+
+        /// <summary>
+        /// Get an ALE endpoint by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the ALE endpoint.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The ALE endpoint.</returns>
+        public NtResult<FirewallAleEndpoint> GetAleEndpoint(ulong id, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpsAleEndpointGetById0(_handle, id, out SafeFwpmMemoryBuffer buffer)
+                .CreateWin32Result(throw_on_error, () =>
+                {
+                    using (buffer)
+                    {
+                        return ProcessAleEndpoint((FWPS_ALE_ENDPOINT_PROPERTIES0)Marshal.PtrToStructure(
+                            buffer.DangerousGetHandle(), typeof(FWPS_ALE_ENDPOINT_PROPERTIES0)));
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Get an ALE endpoint by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the ALE endpoint.</param>
+        /// <returns>The ALE endpoint.</returns>
+        public FirewallAleEndpoint GetAleEndpoint(ulong id)
+        {
+            return GetAleEndpoint(id, true).Result;
+        }
+
+        /// <summary>
+        /// Get the ALE endpoint security.
+        /// </summary>
+        /// <param name="security_information">The security information to query for.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor.</returns>
+        public NtResult<SecurityDescriptor> GetAleEndpointSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        {
+            return GetSecurity(security_information, FirewallNativeMethods.FwpsAleEndpointGetSecurityInfo0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the ALE endpoint security.
+        /// </summary>
+        /// <param name="security_information">The security information to query for.</param>
+        /// <returns>The security descriptor.</returns>
+        public SecurityDescriptor GetAleEndpointSecurityDescriptor(SecurityInformation security_information)
+        {
+            return GetAleEndpointSecurityDescriptor(security_information, true).Result;
         }
 
         /// <summary>
