@@ -824,6 +824,7 @@ namespace NtApiDotNet
             "perceptionMonitoring",
             "perceptionSensorsExperimental",
             "perceptionSystem",
+            "permissiveLearningMode",
             "personalizationDeviceSettings",
             "phoneCall",
             "phoneCallHistory",
