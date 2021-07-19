@@ -600,6 +600,21 @@ namespace NtApiDotNet.Win32
         AllowDowngradeDynamicCodePolicyAlwaysOff = (0x00000002UL << 20),
         SpeculativeStoreBypassDisableAlwaysOn = (0x00000001UL << 24),
         SpeculativeStoreBypassDisableAlwaysOff = (0x00000002UL << 24),
+        CetUserShadowStacksAlwaysOn = (0x00000001UL << 28),
+        CetUserShadowStacksAlwaysOff = (0x00000002UL << 28),
+        CetUserShadowStacksStrictMode = (0x00000003UL << 28),
+        CetSetContextIpValidationAlwaysOn = (0x00000001UL << 32),
+        CetSetContextIpValidationAlwaysOff = (0x00000002UL << 32),
+        CetSetContextIpValidationAlwaysRelaxedMode = (0x00000003UL << 32),
+        BlockNonCetBinariesAlwaysOn = (0x00000001UL << 36),
+        BlockNonCetBinariesAlwaysOff = (0x00000002UL << 36),
+        BlockNonCetBinariesAlwaysNonEHCont = (0x00000003UL << 36),
+        XtendedControlFlowGuardAlwaysOn = (0x00000001UL << 40),
+        XtendedControlFlowGuardAlwaysOff = (0x00000002UL << 40),
+        XtendedControlFlowGuardReserved = (0x00000003UL << 40),
+        CetDynamicApisOutOfProcAlwaysOn = (0x00000001UL << 48),
+        CetDynamicApisOutOfProcAlwaysOff = (0x00000002UL << 48),
+        CetDynamicApisOutOfProcReserved = (0x00000003UL << 48),
     }
 
     [Flags]
