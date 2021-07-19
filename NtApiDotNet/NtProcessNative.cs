@@ -577,7 +577,8 @@ namespace NtApiDotNet
         PayloadRestriction,
         ChildProcess,
         SideChannelIsolation,
-        UserShadowStack
+        UserShadowStack,
+        RedirectionTrust
     }
 
     public struct MitigationPolicy
@@ -670,6 +671,14 @@ namespace NtApiDotNet
         Restricted = 1,
         Override = 2,
         RestrictedUnlessSecure = 4,
+    }
+
+    [Flags]
+    public enum ProcessMitigationRedirectionTrustPolicy
+    {
+        None = 0,
+        EnforceRedirectionTrust = 0x1,
+        AuditRedirectionTrust = 0x2,
     }
 
     [Flags]

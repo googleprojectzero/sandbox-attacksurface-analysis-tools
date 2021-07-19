@@ -106,6 +106,8 @@ namespace NtApiDotNet
                     return (ProcessMitigationAslrPolicy)value;
                 case ProcessMitigationPolicy.UserShadowStack:
                     return (ProcessMitigationUserShadowStack)value;
+                case ProcessMitigationPolicy.RedirectionTrust:
+                    return (ProcessMitigationRedirectionTrustPolicy)value;
                 default:
                     return (ProcessMitigationUnknownPolicy)value;
             }

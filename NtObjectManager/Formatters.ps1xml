@@ -2041,6 +2041,24 @@
                       <NewLine/>
                   </CustomItem>
               </Frame>
+              <NewLine/>
+              <Text>[REDIRECTION TRUST]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>EnforceRedirectionTrust: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnforceRedirectionTrust</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditRedirectionTrust: </Text>
+                    <ExpressionBinding>
+                    <ScriptBlock>$_.AuditRedirectionTrust</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
             </CustomItem>
           </CustomEntry>
         </CustomEntries>

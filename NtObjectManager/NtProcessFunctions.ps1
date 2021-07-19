@@ -311,6 +311,7 @@ Specify policy flags for system call filter mitigation policy.
 Specify policy flags for side channel isolation mitigation policy.
 .PARAMETER Aslr
 Specify policy flags for ASLR mitigation policy.
+.PARAMETER RedirectionTrust
 .INPUTS
 None
 .OUTPUTS
@@ -359,7 +360,9 @@ function Set-NtProcessMitigationPolicy {
         [parameter(Mandatory, ParameterSetName = "FromSideChannelIsolation")]
         [NtApiDotNet.ProcessMitigationSideChannelIsolationPolicy]$SideChannelIsolation,
         [parameter(Mandatory, ParameterSetName = "FromAslr")]
-        [NtApiDotNet.ProcessMitigationAslrPolicy]$Aslr
+        [NtApiDotNet.ProcessMitigationAslrPolicy]$Aslr,
+        [parameter(Mandatory, ParameterSetName = "FromRedirectionTrust")]
+        [NtApiDotNet.ProcessMitigationRedirectionTrustPolicy]$RedirectionTrust
     )
 
     BEGIN {
@@ -380,6 +383,7 @@ function Set-NtProcessMitigationPolicy {
             "FromSystemCallFilter" { $Policy = "SystemCallFilter"; $Value = $SystemCallFilter }
             "FromSideChannelIsolation" { $Policy = "SideChannelIsolation"; $Value = $SideChannelIsolation }
             "FromAslr" { $Policy = "ASLR"; $Value = $Aslr }
+            "FromRedirectionTrust" { $Policy = "RedirectionTrust"; $Value = $RedirectionTrust }
         }
     }
 

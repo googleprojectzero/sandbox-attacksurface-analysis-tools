@@ -235,7 +235,13 @@ namespace NtApiDotNet
         [SDKName("TOKEN_NO_CHILD_PROCESS_UNLESS_SECURE")]
         NoChildProcessUnlessSecure = 0x100000,
         [SDKName("TOKEN_AUDIT_NO_CHILD_PROCESS")]
-        AuditNoChildProcess = 0x200000
+        AuditNoChildProcess = 0x200000,
+        [SDKName("TOKEN_PERMISSIVE_LEARNING_MODE")]
+        PermissiveLearningMode = 0x00400000,
+        [SDKName("TOKEN_ENFORCE_REDIRECTION_TRUST")]
+        EnforceRedirectionTrust = 0x00800000,
+        [SDKName("TOKEN_AUDIT_REDIRECTION_TRUST")]
+        AuditRedirectionTrust = 0x01000000
     }
 
     [StructLayout(LayoutKind.Sequential)]

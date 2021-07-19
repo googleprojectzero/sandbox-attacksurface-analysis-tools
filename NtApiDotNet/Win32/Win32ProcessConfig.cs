@@ -231,6 +231,10 @@ namespace NtApiDotNet.Win32
         /// Specify the type of API to call when specifying a token.
         /// </summary>
         public Win32ProcessConfigTokenCallFlags TokenCall { get; set; }
+        /// <summary>
+        /// Specify component filter flags.
+        /// </summary>
+        public ProcessComponentFilterFlags ComponentFilter { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -392,6 +396,11 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
+            if (ComponentFilter != ProcessComponentFilterFlags.None)
+            {
+                count++;
+            }
+
             return count;
         }
 
@@ -500,6 +509,11 @@ namespace NtApiDotNet.Win32
             {
                 var job_list = resources.AddResource(SafeHandleListHandle.CreateAndDuplicate(JobList));
                 attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttribueJobList, job_list);
+            }
+
+            if (ComponentFilter != ProcessComponentFilterFlags.None)
+            {
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeComponentFilter, (int)ComponentFilter);
             }
 
             return attr_list;

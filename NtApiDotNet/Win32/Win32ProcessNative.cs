@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System;
 using System.Runtime.InteropServices;
 
@@ -422,6 +423,10 @@ namespace NtApiDotNet.Win32
             ProcThreadAttributeDesktopAppPolicy = 18,
             ProcThreadAttributeBnoIsolation = 19,
             ProcThreadAttributePseudoConsole = 22,
+            ProcThreadAttributeMitigationAuditPolicy = 24,
+            ProcThreadAttributeMachineType = 25,
+            ProcThreadAttributeComponentFilter = 26,
+            ProcThreadAttributeEnableOptionalXStateFeatures = 27,
         }
 
         public static IntPtr ProcThreadAttributeParentProcess => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeParentProcess, false, true, false);
@@ -453,6 +458,10 @@ namespace NtApiDotNet.Win32
         public static IntPtr ProcThreadAttributeSafeOpenPromptOriginClaim => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSafeOpenPromptOriginClaim, false, true, false);
 
         public static IntPtr ProcThreadAttributeExtendedFlags => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeExtendedFlags, false, true, true);
+
+        public static IntPtr ProcThreadAttributeMitigationAuditPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMitigationAuditPolicy, false, true, false);
+
+        public static IntPtr ProcThreadAttributeComponentFilter => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeComponentFilter, false, true, false);
     }
 
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer
@@ -600,6 +609,14 @@ namespace NtApiDotNet.Win32
         Enable = 1,
         Disable = 2,
         Override = 4
+    }
+
+    [Flags]
+    public enum ProcessComponentFilterFlags
+    {
+        None = 0,
+        [SDKName("COMPONENT_KTM")]
+        Ktm = 0x01,
     }
 #pragma warning restore
 }

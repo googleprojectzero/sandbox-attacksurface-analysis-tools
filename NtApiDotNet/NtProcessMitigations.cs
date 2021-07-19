@@ -282,6 +282,10 @@ namespace NtApiDotNet
             CetDynamicApisOutOfProcOnly = result.GetBit(8);
             SetContextIpValidationRelaxedMode = result.GetBit(9);
 
+            result = process.GetRawMitigationPolicy(ProcessMitigationPolicy.RedirectionTrust);
+            EnforceRedirectionTrust = result.GetBit(0);
+            AuditRedirectionTrust = result.GetBit(1);
+
             using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query, false))
             {
                 if (token.IsSuccess)
@@ -371,6 +375,8 @@ namespace NtApiDotNet
         public bool AuditBlockNonCetBinaries { get; }
         public bool CetDynamicApisOutOfProcOnly { get; }
         public bool SetContextIpValidationRelaxedMode { get; }
+        public bool EnforceRedirectionTrust { get; }
+        public bool AuditRedirectionTrust { get; }
     }
 #pragma warning restore 1591
 }

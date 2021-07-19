@@ -69,6 +69,8 @@ Specify an app container profile to use.
 Specify user credentials for CreateProcessWithLogon.
 .PARAMETER LogonFlags
 Specify logon flags for CreateProcessWithLogon.
+.PARAMETER ComponentFilter
+Specify component filter flags.
 .INPUTS
 None
 .OUTPUTS
@@ -103,7 +105,8 @@ function New-Win32ProcessConfig {
         [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
         [NtApiDotNet.NtJob[]]$JobList,
         [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
-        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0
+        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0,
+        [NtApiDotNet.Win32.ProcessComponentFilterFlags]$ComponentFilter = 0
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -146,6 +149,7 @@ function New-Win32ProcessConfig {
     }
     $config.Credentials = $Credential
     $config.LogonFlags = $LogonFlags
+    $config.ComponentFilter = $ComponentFilter
     return $config
 }
 
@@ -206,6 +210,8 @@ Specify the timeout to wait for the process to exit. Defaults to infinite.
 Specify user credentials for CreateProcessWithLogon.
 .PARAMETER LogonFlags
 Specify logon flags for CreateProcessWithLogon.
+.PARAMETER ComponentFilter
+Specify component filter flags.
 .PARAMETER Close
 Specify to close the process and thread handles and not return anything.
 .INPUTS
@@ -266,6 +272,8 @@ function New-Win32Process {
         [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ProcessComponentFilterFlags]$ComponentFilter = 0,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
         [switch]$Wait,
@@ -281,7 +289,8 @@ function New-Win32Process {
             -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
             -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
             -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags `
-            -ChildProcessMitigations $ChildProcessMitigations -JobList $JobList -Credential $Credential -LogonFlags $LogonFlags
+            -ChildProcessMitigations $ChildProcessMitigations -JobList $JobList -Credential $Credential -LogonFlags $LogonFlags `
+            -ComponentFilter $ComponentFilter
     }
 
     $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
