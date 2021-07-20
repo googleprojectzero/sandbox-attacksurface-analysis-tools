@@ -402,7 +402,7 @@ function Add-FwFilter {
                 $builder.LayerKey = $LayerKey.Id
             }
             "FromAleLayer" {
-                $builder.SetAleLayer($AleLayer)
+                $builder.LayerKey = Get-FwGuid -AleLayer $AleLayer
             }
         }
 
