@@ -78,6 +78,9 @@
     <Compile Include="Cmdlets\Win32\ClearAuthZSidCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\GetWin32GrantedAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Win32\SetWin32ServiceConfigCmdlet.cs" />
+    <Compile Include="Utils\Firewall\FirewallLayerGuid.cs" />
+    <Compile Include="Utils\Firewall\FirewallObjectGuid.cs" />
+    <Compile Include="Utils\Firewall\FirewallSubLayerGuid.cs" />
     <Compile Include="Utils\PasswordHolder.cs" />
     <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
     <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />

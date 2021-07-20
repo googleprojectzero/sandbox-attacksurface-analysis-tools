@@ -79,10 +79,12 @@ namespace NtApiDotNet.Net.Firewall
         /// Add a user ID security descriptor condition.
         /// </summary>
         /// <param name="match_type">The match type for the condition.</param>
+        /// <param name="remote">True to specify the remote user ID.</param>
         /// <param name="security_descriptor">The security descriptor.</param>
-        public void AddUserId(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
+        public void AddUserId(FirewallMatchType match_type, bool remote, SecurityDescriptor security_descriptor)
         {
-            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
+            AddCondition(match_type, remote ? FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID : 
+                FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
                 FirewallValue.FromSecurityDescriptor(security_descriptor));
         }
 
@@ -155,6 +157,18 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Add an IP endpoint.
+        /// </summary>
+        /// <param name="match_type">The match type for the condition.</param>
+        /// <param name="remote">True to specify remote, false for local.</param>
+        /// <param name="endpoint">The IP endpoint.</param>
+        public void AddEndpoint(FirewallMatchType match_type, bool remote, IPEndPoint endpoint)
+        {
+            AddIpAddress(match_type, remote, endpoint.Address);
+            AddPort(match_type, remote, endpoint.Port);
+        }
+
+        /// <summary>
         /// Add token information.
         /// </summary>
         /// <param name="match_type">The match type.</param>
@@ -189,6 +203,19 @@ namespace NtApiDotNet.Net.Firewall
         public void AddIncludeAppContainer()
         {
             AddPackageSid(FirewallMatchType.NotEqual, KnownSids.Null);
+        }
+
+        /// <summary>
+        /// Adds details from a process, such as the process' App ID and package SID.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="process_id">The PID of the process.</param>
+        public void AddProcess(FirewallMatchType match_type, int process_id)
+        {
+            using (var process = NtProcess.Open(process_id, ProcessAccessRights.QueryLimitedInformation))
+            {
+                AddAppId(match_type, process.FullPath.ToLower());
+            }
         }
 
         #endregion

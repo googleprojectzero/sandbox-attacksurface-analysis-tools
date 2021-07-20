@@ -66,15 +66,6 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="layer_name">The well-known name of the layer.</param>
-        public FirewallFilterEnumTemplate(string layer_name) 
-            : this(NamedGuidDictionary.LayerGuids.Value.GuidFromName(layer_name))
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
         /// <param name="ale_layer">The ALE layer type..</param>
         public FirewallFilterEnumTemplate(FirewallAleLayer ale_layer)
             : this(FirewallUtils.GetLayerGuidForAleLayer(ale_layer))

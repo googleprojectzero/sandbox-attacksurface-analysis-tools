@@ -17,19 +17,9 @@ $layer_completer = {
     [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
-$layer_guid_completer = {
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownLayerGuids() | Where-Object { $_ -like "$wordToComplete*" }
-}
-
 $sublayer_completer = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
-}
-
-$sublayer_guid_completer = {
-    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerGuids() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
 <#
@@ -135,7 +125,6 @@ function Get-FwLayer {
 }
 
 Register-ArgumentCompleter -CommandName Get-FwLayer -ParameterName Name -ScriptBlock $layer_completer
-Register-ArgumentCompleter -CommandName Get-FwLayer -ParameterName Key -ScriptBlock $layer_guid_completer
 
 <#
 .SYNOPSIS
@@ -187,7 +176,6 @@ function Get-FwSubLayer {
 }
 
 Register-ArgumentCompleter -CommandName Get-FwSubLayer -ParameterName Name -ScriptBlock $sublayer_completer
-Register-ArgumentCompleter -CommandName Get-FwSubLayer -ParameterName Key -ScriptBlock $sublayer_guid_completer
 
 <#
 .SYNOPSIS
@@ -198,8 +186,6 @@ This cmdlet gets firewall filters layer from an engine. It can return a filter i
 The firewall engine to query.
 .PARAMETER LayerKey
 Specify the layer key.
-.PARAMETER LayerName
-Specify the layer well-known name.
 .PARAMETER AleLayer
 Specify the ALE layer type.
 .PARAMETER Layer
@@ -232,16 +218,13 @@ function Get-FwFilter {
     param(
         [parameter(Mandatory, Position = 0, ParameterSetName="All")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerKey")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerName")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromAleLayer")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromTemplate")]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, ParameterSetName="FromLayerKey")]
-        [guid]$LayerKey,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromLayerName")]
-        [string]$LayerName,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromLayerKey")]
+        [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLayer", ValueFromPipeline)]
@@ -253,48 +236,47 @@ function Get-FwFilter {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromTemplate")]
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]$Template,
         [parameter(ParameterSetName="FromLayerKey")]
-        [parameter(ParameterSetName="FromLayerName")]
         [parameter(ParameterSetName="FromAleLayer")]
         [switch]$Sorted
     )
 
     PROCESS {
-        switch($PSCmdlet.ParameterSetName) {
-            "All" {
-                $Engine.EnumerateFilters() | Write-Output
-            }
-            "FromLayerKey" {
-                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey)
-            }
-            "FromLayerName" {
-                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerName)
-            }
-            "FromAleLayer" {
-                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
-            }
-            "FromLayer" {
-                foreach($l in $Layer) {
-                    $l.EnumerateFilters() | Write-Output
+        try {
+            switch($PSCmdlet.ParameterSetName) {
+                "All" {
+                    $Engine.EnumerateFilters() | Write-Output
+                }
+                "FromLayerKey" {
+                    $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
+                }
+                "FromAleLayer" {
+                    $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
+                }
+                "FromLayer" {
+                    foreach($l in $Layer) {
+                        $l.EnumerateFilters() | Write-Output
+                    }
+                }
+                "FromKey" {
+                    $Engine.GetFilter($Key)
+                }
+                "FromId" {
+                    $Engine.GetFilter($Id)
                 }
             }
-            "FromKey" {
-                $Engine.GetFilter($Key)
+            if ($null -ne $Template) {
+                if ($Sorted) {
+                    $Template.Flags = $Template.Flags -bor "Sorted"
+                }
+                $Engine.EnumerateFilters($Template) | Write-Output
             }
-            "FromId" {
-                $Engine.GetFilter($Id)
-            }
-        }
-        if ($null -ne $Template) {
-            if ($Sorted) {
-                $Template.Flags = $Template.Flags -bor "Sorted"
-            }
-            $Engine.EnumerateFilters($Template) | Write-Output
+        } catch {
+            Write-Error $_
         }
     }
 }
 
-Register-ArgumentCompleter -CommandName Get-FwFilter -ParameterName LayerName -ScriptBlock $layer_completer
-Register-ArgumentCompleter -CommandName Get-FwFilter -ParameterName LayerKey -ScriptBlock $layer_guid_completer
+Register-ArgumentCompleter -CommandName Get-FwFilter -ParameterName LayerKey -ScriptBlock $layer_completer
 
 <#
 .SYNOPSIS
@@ -302,9 +284,7 @@ Create a new template for enumerating filters.
 .DESCRIPTION
 This cmdlet creates a new template for enumerating filters, which can be used with Get-FwFilter.
 .PARAMETER LayerKey
-Specify the layer key.
-.PARAMETER LayerName
-Specify the layer well-known name.
+Specify the layer key. Can be a GUID or a well known name.
 .PARAMETER AleLayer
 Specify the ALE layer type.
 .PARAMETER Flags
@@ -328,12 +308,10 @@ New-FwFilterTemplate -LayerKey "c38d57d1-05a7-4c33-904f-7fbceee60e82"
 Create a template for enumerating firewall filters from layer key.
 #>
 function New-FwFilterTemplate {
-    [CmdletBinding(DefaultParameterSetName="FromLayerName")]
+    [CmdletBinding(DefaultParameterSetName="FromLayerKey")]
     param(
         [parameter(Mandatory, ParameterSetName="FromLayerKey")]
-        [guid]$LayerKey,
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerName")]
-        [string]$LayerName,
+        [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
@@ -346,10 +324,7 @@ function New-FwFilterTemplate {
     try {
         $template = switch($PSCmdlet.ParameterSetName) {
             "FromLayerKey" {
-                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey)
-            }
-            "FromLayerName" {
-                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerName)
+                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
             }
             "FromAleLayer" {
                 [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
@@ -368,8 +343,7 @@ function New-FwFilterTemplate {
     }
 }
 
-Register-ArgumentCompleter -CommandName New-FwFilterTemplate -ParameterName LayerName -ScriptBlock $layer_completer
-Register-ArgumentCompleter -CommandName New-FwFilterTemplate -ParameterName LayerKey -ScriptBlock $layer_guid_completer
+Register-ArgumentCompleter -CommandName New-FwFilterTemplate -ParameterName LayerKey -ScriptBlock $layer_completer
 
 <#
 .SYNOPSIS
@@ -379,15 +353,11 @@ This cmdlet adds a firewall filter.
 .PARAMETER Engine
 The firewall engine to add to.
 .PARAMETER LayerKey
-Specify the layer key
-.PARAMETER LayerName
-Specify the layer well-known name.
+Specify the layer key. Can be a GUID or a well known name.
 .PARAMETER AleLayer
 Specify the ALE layer type.
 .PARAMETER SubLayerKey
 Specify the sub-layer key
-.PARAMETER Sub-LayerName
-Specify the sub-layer well-known name.
 .PARAMETER Flags
 Specify filters flags.
 .PARAMETER ActionType
@@ -404,30 +374,18 @@ None
 uint64
 #>
 function Add-FwFilter {
-    [CmdletBinding(DefaultParameterSetName="FromLayerNameSubLayerKey")]
+    [CmdletBinding(DefaultParameterSetName="FromLayerKey")]
     param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 1)]
         [string]$Name,
         [string]$Description = "",
-        [parameter(Mandatory, ParameterSetName="FromLayerKeySubLayerKey")]
-        [parameter(Mandatory, ParameterSetName="FromLayerKeySubLayerName")]
-        [guid]$LayerKey,
-        [parameter(Mandatory, ParameterSetName="FromLayerNameSubLayerKey")]
-        [parameter(Mandatory, ParameterSetName="FromLayerNameSubLayerName")]
-        [string]$LayerName,
-        [parameter(Mandatory, ParameterSetName="FromAleLayerSubLayerKey")]
-        [parameter(Mandatory, ParameterSetName="FromAleLayerSubLayerName")]
+        [parameter(Mandatory, ParameterSetName="FromLayerKey")]
+        [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
+        [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
-        [parameter(Mandatory, ParameterSetName="FromLayerKeySubLayerKey")]
-        [parameter(Mandatory, ParameterSetName="FromLayerNameSubLayerKey")]
-        [parameter(Mandatory, ParameterSetName="FromAleLayerSubLayerKey")]
-        [guid]$SubLayerKey,
-        [parameter(Mandatory, ParameterSetName="FromLayerKeySubLayerName")]
-        [parameter(Mandatory, ParameterSetName="FromLayerNameSubLayerName")]
-        [parameter(Mandatory, ParameterSetName="FromAleLayerSubLayerName")]
-        [string]$SubLayerName,
+        [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey,
         [guid]$Key = [guid]::Empty,
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
         [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
@@ -439,25 +397,16 @@ function Add-FwFilter {
         $builder = [NtApiDotNet.Net.Firewall.FirewallFilterBuilder]::new()
         $builder.Name = $Name
         $builder.Description = $Description
-        switch -Wildcard ($PSCmdlet.ParameterSetName) {
-            "FromLayerKey*" {
-                $builder.LayerKey = $LayerKey
+        switch ($PSCmdlet.ParameterSetName) {
+            "FromLayerKey" {
+                $builder.LayerKey = $LayerKey.Id
             }
-            "FromLayerName*" {
-                $builder.SetLayerName($LayerName)
-            }
-            "FromAleLayer*" {
+            "FromAleLayer" {
                 $builder.SetAleLayer($AleLayer)
             }
         }
-        switch -Wildcard ($PSCmdlet.ParameterSetName) {
-            "*SubLayerKey" {
-                $builder.SubLayerKey = $SubLayerKey
-            }
-            "*SubLayerName" {
-                $builder.SetSubLayerName($SubLayerName)
-            }
-        }
+
+        $builder.SubLayerKey = $SubLayerKey.Id
         $builder.FilterKey = $Key
         $builder.ActionType = $ActionType
         if ($null -ne $Condition) {
@@ -472,10 +421,8 @@ function Add-FwFilter {
     }
 }
 
-Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName LayerName -ScriptBlock $layer_completer
-Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName LayerKey -ScriptBlock $layer_guid_completer
-Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName SubLayerName -ScriptBlock $sublayer_completer
-Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName SubLayerKey -ScriptBlock $sublayer_guid_completer
+Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName LayerKey -ScriptBlock $layer_completer
+Register-ArgumentCompleter -CommandName Add-FwFilter -ParameterName SubLayerKey -ScriptBlock $sublayer_completer
 
 <#
 .SYNOPSIS
@@ -586,6 +533,20 @@ The match operation for the condition.
 The path to an executable file to match.
 .PARAMETER AppId
 The path to an executable file to match using the native format.
+.PARAMETER UserId
+The security descriptor to check against the user ID. Can specify Remote to use remote user.
+.PARAMETER ProtocolType
+The type of IP protocol.
+.PARAMETER IPAddress
+The local IP address. Can specify Remote to use the remote IP address.
+.PARAMETER Port
+The local TCP/UDP port. Can specify Remote to use the remote IP address.
+.PARAMETER Remote
+Specify to change certain parameters to be remote from local.
+.PARAMETER TokenInformation
+The token for a token information condition.
+.PARAMETER PackageSid
+The token's package SID.
 .INPUTS
 None
 .OUTPUTS
@@ -617,11 +578,15 @@ function New-FwFilterCondition {
         [parameter(Mandatory, ParameterSetName="FromIpAddress")]
         [System.Net.IPAddress]$IPAddress,
         [parameter(ParameterSetName="FromIpAddress")]
+        [parameter(ParameterSetName="FromUserId")]
+        [parameter(ParameterSetName="FromPort")]
         [switch]$Remote,
         [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
         [NtApiDotNet.NtToken]$TokenInformation,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
-        [string]$PackageSid
+        [string]$PackageSid,
+        [parameter(Mandatory, ParameterSetName="FromPort")]
+        [int]$Port
     )
 
     try {
@@ -634,7 +599,7 @@ function New-FwFilterCondition {
                 $builder.AddAppId($MatchType, $AppId)
             }
             "FromUserId" {
-                $builder.AddUserId($MatchType, $UserId)
+                $builder.AddUserId($MatchType, $Remote, $UserId)
             }
             "FromProtocolType" {
                 $builder.AddProtocolType($MatchType, $ProtocolType)
@@ -654,6 +619,9 @@ function New-FwFilterCondition {
                     $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
                 }
                 $builder.AddPackageSid($MatchType, $sid)
+            }
+            "FromPort" {
+                $builder.AddPort($MatchType, $Remote, $Port)
             }
         }
         $builder.Conditions | Write-Output
