@@ -36,12 +36,22 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Specify the flags for the enumeration.
         /// </summary>
-        public FilterEnumFlags Flags { get; set; }
+        public FirewallFilterEnumFlags Flags { get; set; }
 
         /// <summary>
         /// Specify the action type.
         /// </summary>
         public FirewallActionType ActionType { get; set; }
+
+        /// <summary>
+        /// Specify a token to check the user ID.
+        /// </summary>
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// Specify a token to check the remote user ID.
+        /// </summary>
+        public NtToken RemoteToken { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -79,14 +89,68 @@ namespace NtApiDotNet.Net.Firewall
         {
         }
 
+        private bool CheckUserId(NtToken token, FirewallFilter filter, Guid condition_guid)
+        {
+            if (token == null)
+                return true;
+            if (!filter.HasCondition(condition_guid))
+                return true;
+
+            FirewallFilterCondition condition = filter.GetCondition(condition_guid);
+            if (!(condition.Value.Value is SecurityDescriptor sd))
+                return false;
+            switch (condition.MatchType)
+            {
+                case FirewallMatchType.Equal:
+                case FirewallMatchType.NotEqual:
+                    break;
+                default:
+                    return false;
+            }
+
+            if (sd.Owner == null || sd.Group == null)
+            {
+                sd = sd.Clone();
+                if (sd.Owner == null)
+                    sd.Owner = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
+                if (sd.Group == null)
+                    sd.Group = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
+            }
+            bool result = NtSecurity.AccessCheck(sd, token, FirewallFilterAccessRights.Match, 
+                null, FirewallUtils.GetFilterGenericMapping()).IsSuccess;
+            return condition.MatchType == FirewallMatchType.Equal ? result : !result;
+        }
+
+        private bool FilterFunc(FirewallFilter filter)
+        {
+            return CheckUserId(Token, filter, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID) &&
+                CheckUserId(Token, filter, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID);
+        }
+
+        internal Func<FirewallFilter, bool> GetFilterFunc()
+        {
+            if (Token == null && RemoteToken == null)
+                return _ => true;
+            return FilterFunc;
+        }
+
         SafeBuffer IFirewallEnumTemplate.ToTemplateBuffer(DisposableList list)
         {
+            FirewallActionType action_type = ActionType;
+            switch (action_type)
+            {
+                case FirewallActionType.Permit:
+                case FirewallActionType.Block:
+                    action_type &= ~FirewallActionType.Terminating;
+                    break;
+            }
+
             var template = new FWPM_FILTER_ENUM_TEMPLATE0
             {
                 layerKey = LayerKey,
                 flags = Flags,
                 providerKey = ProviderKey.HasValue ? list.AddResource(ProviderKey.Value.ToBuffer()).DangerousGetHandle() : IntPtr.Zero,
-                actionMask = ActionType
+                actionMask = action_type
             };
 
             if (Conditions.Count > 0)

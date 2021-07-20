@@ -202,18 +202,14 @@ Specify the layer key.
 Specify the layer well-known name.
 .PARAMETER AleLayer
 Specify the ALE layer type.
-.PARAMETER Flags
-Specify enumeration flags.
-.PARAMETER ActionType
-Specify enumeration action type.
 .PARAMETER Layer
 Specify a layer object to query the filters from.
 .PARAMETER Key
 Specify the filter's key.
 .PARAMETER Id
 Specify the filter's ID.
-.PARAMETER Condition
-Specify one or more conditions to check for when enumerating.
+.PARAMETER Template
+Specify the filter template to enumerate.
 .INPUTS
 None
 .OUTPUTS
@@ -224,6 +220,12 @@ Get all firewall filters.
 .EXAMPLE
 Get-FwFilter -Engine $engine -LayerKey "c38d57d1-05a7-4c33-904f-7fbceee60e82"
 Get firewall filters from layer key.
+.EXAMPLE
+Get-FwFilter -Engine $engine -LayerKey "c38d57d1-05a7-4c33-904f-7fbceee60e82" -Sorted
+Get firewall filters from layer key in a sorted order.
+.EXAMPLE
+Get-FwFilter -Engine $engine -Template $template
+Get firewall filters based on a template.
 #>
 function Get-FwFilter {
     [CmdletBinding(DefaultParameterSetName="All")]
@@ -234,6 +236,7 @@ function Get-FwFilter {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromAleLayer")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromTemplate")]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromLayerKey")]
         [guid]$LayerKey,
@@ -241,40 +244,33 @@ function Get-FwFilter {
         [string]$LayerName,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
-        [parameter(ParameterSetName="FromLayerKey")]
-        [parameter(ParameterSetName="FromLayerName")]
-        [parameter(ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FilterEnumFlags]$Flags = "None",
-        [parameter(ParameterSetName="FromLayerKey")]
-        [parameter(ParameterSetName="FromLayerName")]
-        [parameter(ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "All",
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLayer", ValueFromPipeline)]
         [NtApiDotNet.Net.Firewall.FirewallLayer[]]$Layer,
         [parameter(Mandatory, ParameterSetName="FromId")]
         [uint64]$Id,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [guid]$Key,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromTemplate")]
+        [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]$Template,
         [parameter(ParameterSetName="FromLayerKey")]
         [parameter(ParameterSetName="FromLayerName")]
         [parameter(ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
+        [switch]$Sorted
     )
 
     PROCESS {
-        $layer_key = $null
         switch($PSCmdlet.ParameterSetName) {
             "All" {
                 $Engine.EnumerateFilters() | Write-Output
             }
             "FromLayerKey" {
-                $layer_key = $LayerKey
+                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey)
             }
             "FromLayerName" {
-                $layer_key = $LayerName
+                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerName)
             }
             "FromAleLayer" {
-                $layer_key = $AleLayer
+                $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
             }
             "FromLayer" {
                 foreach($l in $Layer) {
@@ -288,20 +284,92 @@ function Get-FwFilter {
                 $Engine.GetFilter($Id)
             }
         }
-        if ($null -ne $layer_key) {
-            $template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($layer_key)
-            $template.Flags = $Flags
-            $template.ActionType = $ActionType
-            if ($null -ne $Condition) {
-                $template.Conditions.AddRange($Condition)
+        if ($null -ne $Template) {
+            if ($Sorted) {
+                $Template.Flags = $Template.Flags -bor "Sorted"
             }
-            $Engine.EnumerateFilters($template) | Write-Output
+            $Engine.EnumerateFilters($Template) | Write-Output
         }
     }
 }
 
 Register-ArgumentCompleter -CommandName Get-FwFilter -ParameterName LayerName -ScriptBlock $layer_completer
 Register-ArgumentCompleter -CommandName Get-FwFilter -ParameterName LayerKey -ScriptBlock $layer_guid_completer
+
+<#
+.SYNOPSIS
+Create a new template for enumerating filters.
+.DESCRIPTION
+This cmdlet creates a new template for enumerating filters, which can be used with Get-FwFilter.
+.PARAMETER LayerKey
+Specify the layer key.
+.PARAMETER LayerName
+Specify the layer well-known name.
+.PARAMETER AleLayer
+Specify the ALE layer type.
+.PARAMETER Flags
+Specify enumeration flags.
+.PARAMETER ActionType
+Specify enumeration action type.
+.PARAMETER Layer
+Specify a layer object to query the filters from.
+.PARAMETER Condition
+Specify one or more conditions to check for when enumerating.
+.PARAMETER Token
+Specify the user identity for the filter.
+.PARAMETER RemoteToken
+Specify the remote user identity for the filter.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate
+.EXAMPLE
+New-FwFilterTemplate -LayerKey "c38d57d1-05a7-4c33-904f-7fbceee60e82"
+Create a template for enumerating firewall filters from layer key.
+#>
+function New-FwFilterTemplate {
+    [CmdletBinding(DefaultParameterSetName="FromLayerName")]
+    param(
+        [parameter(Mandatory, ParameterSetName="FromLayerKey")]
+        [guid]$LayerKey,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerName")]
+        [string]$LayerName,
+        [parameter(Mandatory, ParameterSetName="FromAleLayer")]
+        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtApiDotNet.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
+        [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "All",
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
+        [NtApiDotNet.NtToken]$Token,
+        [NtApiDotNet.NtToken]$RemoteToken
+    )
+
+    try {
+        $template = switch($PSCmdlet.ParameterSetName) {
+            "FromLayerKey" {
+                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey)
+            }
+            "FromLayerName" {
+                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerName)
+            }
+            "FromAleLayer" {
+                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
+            }
+        }
+        $template.Flags = $Flags
+        $template.ActionType = $ActionType
+        if ($null -ne $Condition) {
+            $template.Conditions.AddRange($Condition)
+        }
+        $template.Token = $Token
+        $template.RemoteToken = $RemoteToken
+        $template
+    } catch {
+        Write-Error $_
+    }
+}
+
+Register-ArgumentCompleter -CommandName New-FwFilterTemplate -ParameterName LayerName -ScriptBlock $layer_completer
+Register-ArgumentCompleter -CommandName New-FwFilterTemplate -ParameterName LayerKey -ScriptBlock $layer_guid_completer
 
 <#
 .SYNOPSIS
@@ -551,7 +619,9 @@ function New-FwFilterCondition {
         [parameter(ParameterSetName="FromIpAddress")]
         [switch]$Remote,
         [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
-        [NtApiDotNet.NtToken]$TokenInformation
+        [NtApiDotNet.NtToken]$TokenInformation,
+        [parameter(Mandatory, ParameterSetName="FromPackageSid")]
+        [string]$PackageSid
     )
 
     try {
@@ -577,6 +647,13 @@ function New-FwFilterCondition {
             }
             "FromTokenInformation" {
                 $builder.AddTokenInformation($MatchType, $TokenInformation)
+            }
+            "FromPackageSid" {
+                $sid = $PackageSid
+                if ($sid -ne "S-1-0-0") {
+                    $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
+                }
+                $builder.AddPackageSid($MatchType, $sid)
             }
         }
         $builder.Conditions | Write-Output

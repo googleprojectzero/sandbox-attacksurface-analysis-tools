@@ -165,6 +165,32 @@ namespace NtApiDotNet.Net.Firewall
             AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID, FirewallValue.FromTokenInformation(token_info));
         }
 
+        /// <summary>
+        /// Add a package SID condition.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="package_sid">The package SID.</param>
+        public void AddPackageSid(FirewallMatchType match_type, Sid package_sid)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_PACKAGE_ID, FirewallValue.FromSid(package_sid));
+        }
+
+        /// <summary>
+        /// Add a condition which excludes app containers.
+        /// </summary>
+        public void AddExcludeAppContainer()
+        {
+            AddPackageSid(FirewallMatchType.Equal, KnownSids.Null);
+        }
+
+        /// <summary>
+        /// Add a condition which includes app containers.
+        /// </summary>
+        public void AddIncludeAppContainer()
+        {
+            AddPackageSid(FirewallMatchType.NotEqual, KnownSids.Null);
+        }
+
         #endregion
 
         #region Constructors

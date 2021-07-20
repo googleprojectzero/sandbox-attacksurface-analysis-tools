@@ -232,7 +232,7 @@ namespace NtApiDotNet.Net.Firewall
         public IntPtr providerKey;
         public Guid layerKey;
         public FWP_FILTER_ENUM_TYPE enumType;
-        public FilterEnumFlags flags;
+        public FirewallFilterEnumFlags flags;
         public IntPtr providerContextTemplate; // FWPM_PROVIDER_CONTEXT_ENUM_TEMPLATE0*
         public int numFilterConditions;
         public IntPtr filterCondition; // FWPM_FILTER_CONDITION0* 

@@ -20,7 +20,7 @@ using System;
 namespace NtApiDotNet.Net.Firewall
 {
     [Flags]
-    public enum FilterEnumFlags
+    public enum FirewallFilterEnumFlags
     {
         None = 0,
         [SDKName("FWP_FILTER_ENUM_FLAG_BEST_TERMINATING_MATCH")]

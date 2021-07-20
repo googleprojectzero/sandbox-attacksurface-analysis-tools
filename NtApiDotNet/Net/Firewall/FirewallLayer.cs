@@ -53,7 +53,7 @@ namespace NtApiDotNet.Net.Firewall
             FirewallFilterEnumTemplate template = new FirewallFilterEnumTemplate()
             {
                 LayerKey = Key,
-                Flags = FilterEnumFlags.Sorted
+                Flags = FirewallFilterEnumFlags.Sorted
             };
 
             return _engine.EnumerateFilters(template, throw_on_error);

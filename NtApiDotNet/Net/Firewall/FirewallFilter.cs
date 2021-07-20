@@ -151,6 +151,11 @@ namespace NtApiDotNet.Net.Firewall
         public bool HasUserId => HasCondition(FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID);
 
         /// <summary>
+        /// Has the filter got a condition to check for a remote user ID.
+        /// </summary>
+        public bool HasRemoteUserId => HasCondition(FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID);
+
+        /// <summary>
         /// Get a layer for this filter.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -196,6 +201,16 @@ namespace NtApiDotNet.Net.Firewall
         public bool HasCondition(Guid condition_guid)
         {
             return Conditions.Any(c => c.FieldKey == condition_guid);
+        }
+
+        /// <summary>
+        /// Get the filter condition for a GUID.
+        /// </summary>
+        /// <param name="condition_guid">The condition type to get.</param>
+        /// <returns>The filter condition.</returns>
+        public FirewallFilterCondition GetCondition(Guid condition_guid)
+        {
+            return Conditions.First(c => c.FieldKey == condition_guid);
         }
 
         /// <summary>
