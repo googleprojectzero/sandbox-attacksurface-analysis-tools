@@ -5243,11 +5243,11 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>RemoteEndpoint</Label>
+            <Label>LocalTokenModifiedId</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>LocalTokenModifiedId</Label>
+            <Label>RemoteEndpoint</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -5261,10 +5261,10 @@
                 <PropertyName>IpProtocol</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>RemoteEndpoint</PropertyName>
+                <PropertyName>LocalTokenModifiedId</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>LocalTokenModifiedId</PropertyName>
+                <PropertyName>RemoteEndpoint</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

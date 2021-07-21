@@ -719,3 +719,45 @@ function Get-FwAleEndpoint {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get token from firewall.
+.DESCRIPTION
+This cmdlet gets an access token from the firewall based on the modified ID.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER ModifiedId
+Specify the token modified ID.
+.PARAMETER AleEndpoint
+Specify an ALE endpoint.
+.PARAMETER Access
+Specify Token access rights.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtToken
+.EXAMPLE
+Get-FwToken -Engine $engine -ModifiedId 00000000-00012345
+Get token from its modified ID.
+.EXAMPLE
+Get-FwToken -Engine $engine -AleEndpoint $ep
+Get token from an ALE endpoint.
+#>
+function Get-FwToken {
+    [CmdletBinding(DefaultParameterSetName="FromLuid")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromEndpoint")]
+        [NtApiDotNet.Net.Firewall.FirewallAleEndpoint]$AleEndpoint,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromLuid")]
+        [NtApiDotNet.Luid]$ModifiedId,
+        [NtApiDotNet.TokenAccessRights]$Access = "Query"
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromEndpoint") {
+        $ModifiedId = $AleEndpoint.LocalTokenModifiedId
+    }
+    $Engine.OpenToken($ModifiedId, $Access)
+}
