@@ -5227,5 +5227,49 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>FirewallAleEndpoint</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Net.Firewall.FirewallAleEndpoint</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>FileName</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>IpProtocol</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>RemoteEndpoint</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>LocalTokenModifiedId</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>FileName</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>IpProtocol</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>RemoteEndpoint</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>LocalTokenModifiedId</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Reflection;
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -413,6 +414,17 @@ namespace NtApiDotNet
                 HighPart = HighPart
             };
             return li.QuadPart;
+        }
+
+        public static Luid Parse(string value)
+        {
+            string[] parts = value.Split('-');
+            if (parts.Length == 1)
+                return new Luid(long.Parse(value));
+            if (parts.Length != 2)
+                throw new FormatException("LUID value must be two hex values separated by a dash or a decimal integer.");
+            return new Luid(uint.Parse(parts[1], NumberStyles.HexNumber), 
+                int.Parse(parts[0], NumberStyles.HexNumber));
         }
     }
 

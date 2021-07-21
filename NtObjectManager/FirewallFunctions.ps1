@@ -680,3 +680,42 @@ function Get-FwGuid {
 
 Register-ArgumentCompleter -CommandName Get-FwGuid -ParameterName LayerName -ScriptBlock $layer_completer
 Register-ArgumentCompleter -CommandName Get-FwGuid -ParameterName SubLayerName -ScriptBlock $sublayer_completer
+
+<#
+.SYNOPSIS
+Get an ALE endpoint.
+.DESCRIPTION
+This cmdlet gets a firewall ALE endpoint from an engine.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Id
+Specify the ALE endpoint ID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallAleEndpoint[]
+.EXAMPLE
+Get-FwAleEndpoint -Engine $engine
+Get all firewall ALE endpoints.
+.EXAMPLE
+Get-FwAleEndpoint -Engine $engine -Id 12345
+Get the firewall ALE endpoint with ID 12345.
+#>
+function Get-FwAleEndpoint {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [uint64]$Id
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Engine.EnumerateAleEndpoints() | Write-Output
+        }
+        "FromId" {
+            $Engine.GetAleEndpoint($Id)
+        }
+    }
+}

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -65,6 +66,10 @@ namespace NtApiDotNet.Net.Firewall
         /// Associated application.
         /// </summary>
         public string AppId { get; }
+        /// <summary>
+        /// Filename of AppId.
+        /// </summary>
+        public string FileName => Path.GetFileName(AppId);
 
         private static IPEndPoint GetEndpoint(FirewallIpVersion ip_version, byte[] addr_bytes, int port)
         {
