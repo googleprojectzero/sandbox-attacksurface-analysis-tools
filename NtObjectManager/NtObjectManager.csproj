@@ -59,8 +59,11 @@
     <Compile Include="Cmdlets\Accessible\DsObjectInformation.cs" />
     <Compile Include="Cmdlets\Accessible\DsObjectTypeAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Accessible\EventTraceAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\FwObjectAccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\FwObjectType.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleDsObject.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleFwObjectCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessiblePathCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleTokenCmdlet.cs" />
