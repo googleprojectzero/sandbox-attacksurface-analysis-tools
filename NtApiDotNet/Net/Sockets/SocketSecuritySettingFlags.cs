@@ -26,9 +26,9 @@ namespace NtApiDotNet.Net.Sockets
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
         [SDKName("SOCKET_SETTINGS_GUARANTEE_ENCRYPTION")]
-        SOCKET_SETTINGS_GUARANTEE_ENCRYPTION = 0x1,
+        GuaranteeEncryption = 0x1,
         [SDKName("SOCKET_SETTINGS_ALLOW_INSECURE")]
-        SOCKET_SETTINGS_ALLOW_INSECURE = 0x2,
+        AllowInsecure = 0x2,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

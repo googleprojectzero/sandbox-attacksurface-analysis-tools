@@ -26,6 +26,7 @@ namespace NtApiDotNet.Net.Sockets
     /// </summary>
     public static class SocketSecurityUtils
     {
+        #region Private Members
         private static byte[] ToArray(this IPEndPoint ep)
         {
             var addr = ep.Serialize();
@@ -60,7 +61,9 @@ namespace NtApiDotNet.Net.Sockets
                 return create_func().CreateResult();
             return SocketNativeMethods.WSAGetLastError().CreateResultFromDosError<T>(throw_on_error);
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Impersonate the socket's peer.
         /// </summary>
@@ -309,5 +312,32 @@ namespace NtApiDotNet.Net.Sockets
         {
             SetPeerTargetName(socket, target_name, security_protocol, true);
         }
+
+        /// <summary>
+        /// Set target peer for socket.
+        /// </summary>
+        /// <param name="listener">The socket to set.</param>
+        /// <param name="target_name">The target name.</param>
+        /// <param name="security_protocol">The security protocol.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetPeerTargetName(this TcpListener listener, string target_name,
+            SocketSecurityProtocol security_protocol, bool throw_on_error)
+        {
+            return SetPeerTargetName(listener.Server, target_name, security_protocol, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set target peer for socket.
+        /// </summary>
+        /// <param name="listener">The socket to set.</param>
+        /// <param name="target_name">The target name.</param>
+        /// <param name="security_protocol">The security protocol.</param>
+        public static void SetPeerTargetName(this TcpListener listener, string target_name,
+            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec)
+        {
+            SetPeerTargetName(listener, target_name, security_protocol, true);
+        }
+        #endregion
     }
 }

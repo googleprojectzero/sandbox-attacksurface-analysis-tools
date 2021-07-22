@@ -16,6 +16,9 @@ using NtApiDotNet;
 using System;
 using System.Management.Automation;
 using NtObjectManager.Utils;
+using System.Net.Sockets;
+using NtApiDotNet.Net.Sockets;
+using System.Net;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -43,6 +46,14 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Current -ImpersonationLevel Identification </code>
     ///   <para>Open a process while impersonating a current token at identitification level.</para>
     /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Socket $socket</code>
+    ///   <para>Open a process while impersonating a secure socket.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Client $client</code>
+    ///   <para>Open a process while impersonating a secure TCP client.</para>
+    /// </example>
     [Cmdlet(VerbsLifecycle.Invoke, "NtToken", DefaultParameterSetName = "FromToken")]
     [OutputType(typeof(object))]
     public sealed class InvokeNtTokenCmdlet : PSCmdlet
@@ -60,6 +71,8 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromCurrent")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSystem")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSocket")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromTcpClient")]
         public ScriptBlock Script { get; set; }
 
         /// <summary>
@@ -92,6 +105,24 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "FromAnonymous")]
         public SwitchParameter Anonymous { get; set; }
+
+        /// <summary>
+        /// <para type="description">Impersonate a secure socket.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromSocket")]
+        public Socket Socket { get; set; }
+
+        /// <summary>
+        /// <para type="description">Peer address for socket impersonation.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSocket")]
+        public IPEndPoint PeerAddress { get; set; }
+
+        /// <summary>
+        /// <para type="description">Impersonate a secure TCP client.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromTcpClient")]
+        public TcpClient Client { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an object to pass to the script.</para>
@@ -147,6 +178,20 @@ namespace NtObjectManager.Cmdlets.Object
             else if (ParameterSetName == "FromSystem")
             {
                 using (PSUtils.ImpersonateSystem())
+                {
+                    obj = PSUtils.InvokeWithArg(Script, InputObject);
+                }
+            }
+            else if (ParameterSetName == "FromSocket")
+            {
+                using (Socket.Impersonate(PeerAddress))
+                {
+                    obj = PSUtils.InvokeWithArg(Script, InputObject);
+                }
+            }
+            else if (ParameterSetName == "FromTcpClient")
+            {
+                using (Client.Impersonate())
                 {
                     obj = PSUtils.InvokeWithArg(Script, InputObject);
                 }

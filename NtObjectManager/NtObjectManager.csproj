@@ -356,6 +356,9 @@
     <None Include="SamFunctions.ps1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="SocketFunctions.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="UtilityFunctions.ps1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
