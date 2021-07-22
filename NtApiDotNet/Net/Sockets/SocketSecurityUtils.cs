@@ -26,7 +26,7 @@ namespace NtApiDotNet.Net.Sockets
     /// </summary>
     public static class SocketSecurityUtils
     {
-        private static byte[] ToArray(this EndPoint ep)
+        private static byte[] ToArray(this IPEndPoint ep)
         {
             var addr = ep.Serialize();
             byte[] buffer = new byte[addr.Size];
@@ -37,7 +37,7 @@ namespace NtApiDotNet.Net.Sockets
             return buffer;
         }
 
-        private static ulong[] ToSocketStorage(this EndPoint ep)
+        private static ulong[] ToSocketStorage(this IPEndPoint ep)
         {
             ulong[] ret = new ulong[16];
             if (ep == null)
@@ -68,7 +68,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The impersonation context.</returns>
-        public static NtResult<ThreadImpersonationContext> Impersonate(this Socket socket, EndPoint peer_address, bool throw_on_error)
+        public static NtResult<ThreadImpersonationContext> Impersonate(this Socket socket, IPEndPoint peer_address, bool throw_on_error)
         {
             byte[] addr = peer_address?.ToArray();
             return SocketNativeMethods.WSAImpersonateSocketPeer(socket.Handle, addr, addr?.Length ?? 0)
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="socket">The socket to impersonate.</param>
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
         /// <returns>The impersonation context.</returns>
-        public static ThreadImpersonationContext Impersonate(this Socket socket, EndPoint peer_address = null)
+        public static ThreadImpersonationContext Impersonate(this Socket socket, IPEndPoint peer_address = null)
         {
             return Impersonate(socket, peer_address, true).Result;
         }
@@ -115,7 +115,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="desired_access">Optional desired access for peer tokens. If set to None then no tokens will be returned.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The socket security information.</returns>
-        public static NtResult<SocketSecurityInformation> QuerySecurity(this Socket socket, EndPoint peer_address, TokenAccessRights desired_access, bool throw_on_error)
+        public static NtResult<SocketSecurityInformation> QuerySecurity(this Socket socket, IPEndPoint peer_address, TokenAccessRights desired_access, bool throw_on_error)
         {
             SOCKET_SECURITY_QUERY_TEMPLATE query = new SOCKET_SECURITY_QUERY_TEMPLATE
             {
@@ -144,7 +144,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
         /// <param name="desired_access">Optional desired access for peer tokens. If set to None then no tokens will be returned.</param>
         /// <returns>The socket security information.</returns>
-        public static SocketSecurityInformation QuerySecurity(this Socket socket, EndPoint peer_address = null, 
+        public static SocketSecurityInformation QuerySecurity(this Socket socket, IPEndPoint peer_address = null, 
             TokenAccessRights desired_access = TokenAccessRights.None)
         {
             return QuerySecurity(socket, peer_address, desired_access, true).Result;
@@ -254,7 +254,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public static NtStatus SetPeerTargetName(this Socket socket, string target_name,
-            SocketSecurityProtocol security_protocol, EndPoint peer_address, bool throw_on_error)
+            SocketSecurityProtocol security_protocol, IPEndPoint peer_address, bool throw_on_error)
         {
             byte[] target_name_bytes = Encoding.Unicode.GetBytes(target_name);
             int target_name_length = security_protocol == SocketSecurityProtocol.IPsec2 ? target_name_bytes.Length : target_name.Length;
@@ -279,7 +279,7 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="security_protocol">The security protocol.</param>
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
         public static void SetPeerTargetName(this Socket socket, string target_name,
-            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec, EndPoint peer_address = null)
+            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec, IPEndPoint peer_address = null)
         {
             SetPeerTargetName(socket, target_name, security_protocol, peer_address, true);
         }
