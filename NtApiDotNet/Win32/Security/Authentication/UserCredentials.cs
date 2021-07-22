@@ -80,6 +80,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return new SecureStringMarshalBuffer();
         }
 
+        internal byte[] GetPasswordBytes()
+        {
+            if (Password == null)
+                return new byte[0];
+            using (var buffer = GetPassword())
+            {
+                byte[] ret = new byte[Password.Length * 2];
+                Marshal.Copy(buffer.Ptr, ret, 0, ret.Length);
+                return ret;
+            }
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>

@@ -542,7 +542,7 @@ namespace NtApiDotNet
         public ThreadImpersonationContext Impersonate()
         {
             FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_IMPERSONATE, null, null);
-            return new ThreadImpersonationContext(NtThread.Current.Duplicate());
+            return new ThreadImpersonationContext();
         }
 
         /// <summary>

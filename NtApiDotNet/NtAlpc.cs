@@ -323,7 +323,7 @@ namespace NtApiDotNet
         {
             int full_flags = (int)flags | (((int)required_impersonation_level) << 2);
             return NtSystemCalls.NtAlpcImpersonateClientOfPort(Handle, message.Header, (AlpcImpersonationClientOfPortFlags)full_flags)
-                .CreateResult(throw_on_error, () => new ThreadImpersonationContext(NtThread.Current.Duplicate()));
+                .CreateResult(throw_on_error, () => new ThreadImpersonationContext());
         }
 
         /// <summary>
@@ -360,7 +360,7 @@ namespace NtApiDotNet
             AlpcImpersonateClientContainerOfPortFlags flags, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcImpersonateClientContainerOfPort(Handle, message.Header, flags)
-                .CreateResult(throw_on_error, () => new ThreadImpersonationContext(NtThread.Current.Duplicate()));
+                .CreateResult(throw_on_error, () => new ThreadImpersonationContext());
         }
 
         /// <summary>

@@ -35,6 +35,11 @@ namespace NtApiDotNet
             _thread = thread;
         }
 
+        internal ThreadImpersonationContext() 
+            : this(NtThread.Current.Duplicate())
+        {
+        }
+
         /// <summary>
         /// Revert impersonation back to the current user.
         /// </summary>

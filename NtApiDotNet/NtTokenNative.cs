@@ -121,6 +121,7 @@ namespace NtApiDotNet
     [Flags]
     public enum TokenAccessRights : uint
     {
+        None = 0,
         [SDKName("TOKEN_ASSIGN_PRIMARY")]
         AssignPrimary = 0x0001,
         [SDKName("TOKEN_DUPLICATE")]
