@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Sockets
 {
@@ -39,7 +41,29 @@ namespace NtApiDotNet.Net.Sockets
         /// <summary>
         /// Socket security flags.
         /// </summary>
-        public SocketSecurityQueryFlags Flags;
+        public SocketSecurityQueryInformationFlags Flags;
+
+        /// <summary>
+        /// Security association ID for main mode.
+        /// </summary>
+        public long MmSaId { get; }
+
+        /// <summary>
+        /// Security association ID for quick mode.
+        /// </summary>
+        public long QmSaId { get; }
+
+        /// <summary>
+        /// Negotiation windows error.
+        /// </summary>
+        public Win32Error NegotiationWinerr { get; }
+
+        /// <summary>
+        /// Security association lookup context. Can be used to bypass security
+        /// checks for querying the security association information from the
+        /// firewall.
+        /// </summary>
+        public Guid SaLookupContext { get; }
 
         /// <summary>
         /// Dispose method.
@@ -57,12 +81,22 @@ namespace NtApiDotNet.Net.Sockets
             return NtToken.FromHandle(new IntPtr(handle), true);
         }
 
-        internal SocketSecurityInformation(SOCKET_SECURITY_QUERY_INFO query_info)
+        internal SocketSecurityInformation(SafeStructureInOutBuffer<SOCKET_SECURITY_QUERY_INFO> buffer)
         {
+            var query_info = buffer.Result;
             SecurityProtocol = query_info.SecurityProtocol;
             Flags = query_info.Flags;
             PeerApplicationToken = CreateToken(query_info.PeerApplicationAccessTokenHandle);
             PeerMachineToken = CreateToken(query_info.PeerMachineAccessTokenHandle);
+            if (buffer.Length < Marshal.SizeOf(typeof(SOCKET_SECURITY_QUERY_INFO_IPSEC2)))
+            {
+                return;
+            }
+            var query_info_2 = buffer.Read<SOCKET_SECURITY_QUERY_INFO_IPSEC2>(0);
+            MmSaId = query_info_2.MmSaId;
+            QmSaId = query_info_2.QmSaId;
+            NegotiationWinerr = query_info_2.NegotiationWinerr;
+            SaLookupContext = query_info_2.SaLookupContext;
         }
     }
 }

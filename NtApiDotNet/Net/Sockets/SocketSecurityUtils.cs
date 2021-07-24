@@ -120,23 +120,28 @@ namespace NtApiDotNet.Net.Sockets
         /// <returns>The socket security information.</returns>
         public static NtResult<SocketSecurityInformation> QuerySecurity(this Socket socket, IPEndPoint peer_address, TokenAccessRights desired_access, bool throw_on_error)
         {
-            SOCKET_SECURITY_QUERY_TEMPLATE query = new SOCKET_SECURITY_QUERY_TEMPLATE
+            var query = new SOCKET_SECURITY_QUERY_TEMPLATE_IPSEC2
             {
+                SecurityProtocol = SocketSecurityProtocol.IPsec2,
                 PeerAddress = peer_address.ToSocketStorage(),
-                PeerTokenAccessMask = desired_access
+                PeerTokenAccessMask = desired_access,
+                FieldMask = SocketSecurityQueryFieldMask.MmSaId | SocketSecurityQueryFieldMask.QmSaId
             };
 
-            int length = 0;
-            SocketNativeMethods.WSAQuerySocketSecurity(socket.Handle, query, Marshal.SizeOf(query),
-                SafeHGlobalBuffer.Null, ref length, IntPtr.Zero, IntPtr.Zero);
-            Win32Error error = SocketNativeMethods.WSAGetLastError();
-            if (error != Win32Error.WSAEMSGSIZE)
-                return error.CreateResultFromDosError<SocketSecurityInformation>(throw_on_error);
-            using (var buffer = new SafeStructureInOutBuffer<SOCKET_SECURITY_QUERY_INFO>(length, false))
+            using (var template = query.ToBuffer())
             {
-                return SocketNativeMethods.WSAQuerySocketSecurity(socket.Handle, query, Marshal.SizeOf(query),
-                    buffer, ref length, IntPtr.Zero, IntPtr.Zero).CreateWSAResult(throw_on_error,
-                    () => new SocketSecurityInformation(buffer.Result));
+                int length = 0;
+                SocketNativeMethods.WSAQuerySocketSecurity(socket.Handle, template, template.Length,
+                    SafeHGlobalBuffer.Null, ref length, IntPtr.Zero, IntPtr.Zero);
+                Win32Error error = SocketNativeMethods.WSAGetLastError();
+                if (error != Win32Error.WSAEMSGSIZE)
+                    return error.CreateResultFromDosError<SocketSecurityInformation>(throw_on_error);
+                using (var buffer = new SafeStructureInOutBuffer<SOCKET_SECURITY_QUERY_INFO>(length, false))
+                {
+                    return SocketNativeMethods.WSAQuerySocketSecurity(socket.Handle, template, template.Length,
+                        buffer, ref length, IntPtr.Zero, IntPtr.Zero).CreateWSAResult(throw_on_error,
+                        () => new SocketSecurityInformation(buffer));
+                }
             }
         }
 

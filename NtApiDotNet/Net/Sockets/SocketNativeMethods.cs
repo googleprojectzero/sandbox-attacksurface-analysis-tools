@@ -23,7 +23,7 @@ namespace NtApiDotNet.Net.Sockets
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int WSAQuerySocketSecurity(
             IntPtr Socket,
-            in SOCKET_SECURITY_QUERY_TEMPLATE SecurityQueryTemplate,
+            SafeBuffer SecurityQueryTemplate,
             int SecurityQueryTemplateLen,
             SafeBuffer SecurityQueryInfo,
             ref int SecurityQueryInfoLen,

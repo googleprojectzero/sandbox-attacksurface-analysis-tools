@@ -15,6 +15,8 @@
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -214,6 +216,23 @@ namespace NtApiDotNet.Net.Firewall
             if (value is ICloneable clone)
                 return (T)clone.Clone();
             return value;
+        }
+
+        internal static IPAddress GetAddress(FirewallIpVersion ip_version, byte[] addr_bytes)
+        {
+            switch (ip_version)
+            {
+                case FirewallIpVersion.V4:
+                    return new IPAddress(BitConverter.ToUInt32(addr_bytes.Take(4).Reverse().ToArray(), 0));
+                case FirewallIpVersion.V6:
+                    return new IPAddress(addr_bytes);
+            }
+            return IPAddress.None;
+        }
+
+        internal static IPEndPoint GetEndpoint(FirewallIpVersion ip_version, byte[] addr_bytes, int port)
+        {
+            return new IPEndPoint(GetAddress(ip_version, addr_bytes), port);
         }
 
         #endregion

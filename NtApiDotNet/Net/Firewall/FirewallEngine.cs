@@ -140,6 +140,11 @@ namespace NtApiDotNet.Net.Firewall
                 FirewallNativeMethods.FwpmProviderGetSecurityInfoByKey0, t));
         }
 
+        private IkeSecurityAssociation ProcessIkeSa(IKEEXT_SA_DETAILS1 sa_details)
+        {
+            return new IkeSecurityAssociation(sa_details);
+        }
+
         private FirewallAleEndpoint ProcessAleEndpoint(FWPS_ALE_ENDPOINT_PROPERTIES0 endpoint)
         {
             return new FirewallAleEndpoint(endpoint);
@@ -760,6 +765,28 @@ namespace NtApiDotNet.Net.Firewall
         public SecurityDescriptor GetIkeSaDbSecurityDescriptor()
         {
             return GetIkeSaDbSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl);
+        }
+
+        /// <summary>
+        /// Enumerate all IKE security associatations.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of IKE security associatations.</returns>
+        public NtResult<IEnumerable<IkeSecurityAssociation>> EnumerateIkeSecurityAssociations(bool throw_on_error)
+        {
+            Func<IKEEXT_SA_DETAILS1, IkeSecurityAssociation> f = ProcessIkeSa;
+            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.IkeextSaCreateEnumHandle0,
+                FirewallNativeMethods.IkeextSaEnum1, FirewallNativeMethods.IkeextSaDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<IkeSecurityAssociation>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all IKE security associatations.
+        /// </summary>
+        /// <returns>The list of IKE security associatations.</returns>
+        public IEnumerable<IkeSecurityAssociation> EnumerateIkeSecurityAssociations()
+        {
+            return EnumerateIkeSecurityAssociations(true).Result;
         }
 
         /// <summary>

@@ -20,7 +20,7 @@ namespace NtApiDotNet.Net.Sockets
     internal struct SOCKET_SECURITY_QUERY_INFO
     {
         public SocketSecurityProtocol SecurityProtocol;
-        public SocketSecurityQueryFlags Flags;
+        public SocketSecurityQueryInformationFlags Flags;
         public long PeerApplicationAccessTokenHandle;
         public long PeerMachineAccessTokenHandle;
     }

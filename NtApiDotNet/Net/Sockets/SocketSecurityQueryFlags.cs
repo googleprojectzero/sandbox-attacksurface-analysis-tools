@@ -18,19 +18,15 @@ using System;
 namespace NtApiDotNet.Net.Sockets
 {
     /// <summary>
-    /// Socket security query flags.
+    /// Flags for querying socket security information.
     /// </summary>
     [Flags]
     public enum SocketSecurityQueryFlags
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("SOCKET_INFO_CONNECTION_SECURED")]
-        Secured  = 0x1,
-        [SDKName("SOCKET_INFO_CONNECTION_ENCRYPTED")]
-        Encrypted  = 0x2,
-        [SDKName("SOCKET_INFO_CONNECTION_IMPERSONATED")]
-        Impersonated = 0x4,
+        [SDKName("SOCKET_QUERY_IPSEC2_ABORT_CONNECTION_ON_FIELD_CHANGE")]
+        AbortConnectionOnFieldChange = 0x1,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
