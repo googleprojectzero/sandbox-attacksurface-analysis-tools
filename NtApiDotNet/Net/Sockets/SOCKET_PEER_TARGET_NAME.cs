@@ -19,7 +19,7 @@ namespace NtApiDotNet.Net.Sockets
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("AllStrings")]
     internal struct SOCKET_PEER_TARGET_NAME
     {
-        public SocketSecurityProtocol SecurityProtocol;
+        public SOCKET_SECURITY_PROTOCOL SecurityProtocol;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
         public ulong[] PeerAddress;
         public int PeerTargetNameStringLen;

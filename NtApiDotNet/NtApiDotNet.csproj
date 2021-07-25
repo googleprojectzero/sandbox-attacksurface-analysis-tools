@@ -140,7 +140,7 @@
     <Compile Include="Net\Sockets\SocketSecurityQueryFlags.cs" />
     <Compile Include="Net\Sockets\SocketSecurityQueryInformationFlags.cs" />
     <Compile Include="Net\Sockets\SocketSecurityInformation.cs" />
-    <Compile Include="Net\Sockets\SocketSecurityProtocol.cs" />
+    <Compile Include="Net\Sockets\SOCKET_SECURITY_PROTOCOL.cs" />
     <Compile Include="Net\Sockets\SocketSecuritySettingFlags.cs" />
     <Compile Include="Net\Sockets\SocketSecuritySettings.cs" />
     <Compile Include="Net\Sockets\SOCKET_PEER_TARGET_NAME.cs" />

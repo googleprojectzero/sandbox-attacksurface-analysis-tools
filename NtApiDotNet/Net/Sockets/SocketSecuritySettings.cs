@@ -26,10 +26,6 @@ namespace NtApiDotNet.Net.Sockets
     public sealed class SocketSecuritySettings
     {
         /// <summary>
-        /// The security protocol.
-        /// </summary>
-        public SocketSecurityProtocol SecurityProtocol { get; set; }
-        /// <summary>
         /// The security flags.
         /// </summary>
         public SocketSecuritySettingFlags Flags { get; set; }
@@ -56,16 +52,8 @@ namespace NtApiDotNet.Net.Sockets
 
         internal SafeHGlobalBuffer ToBuffer()
         {
-            switch(SecurityProtocol)
-            {
-                case SocketSecurityProtocol.IPsec:
-                case SocketSecurityProtocol.IPsec2:
-                    break;
-                default:
-                    return new SOCKET_SECURITY_SETTINGS() { SecurityProtocol = SecurityProtocol, SecurityFlags = Flags }.ToBuffer();
-            }
             var settings = new SOCKET_SECURITY_SETTINGS_IPSEC() { 
-                SecurityProtocol = SecurityProtocol, 
+                SecurityProtocol = SOCKET_SECURITY_PROTOCOL.IPsec2, 
                 SecurityFlags = Flags, 
                 AuthipMMPolicyKey = MMPolicyKey,
                 AuthipQMPolicyKey = QMPolicyKey,
@@ -82,9 +70,9 @@ namespace NtApiDotNet.Net.Sockets
             settings.PasswordStringLen = (Credentials.Password?.Length * 2) ?? 0;
             int total_size = Marshal.SizeOf(typeof(SOCKET_SECURITY_SETTINGS_IPSEC)) +
                 settings.UserNameStringLen + settings.DomainNameStringLen + settings.PasswordStringLen;
-            using (var buffer = settings.ToBuffer(total_size, true))
+            using (var buffer = settings.ToBuffer(total_size, false))
             {
-                var stm = new UnmanagedMemoryStream(buffer.Data, 0, buffer.Data.Length);
+                var stm = new UnmanagedMemoryStream(buffer.Data, 0, buffer.Data.Length, FileAccess.ReadWrite);
                 var writer = new BinaryWriter(stm);
                 if (settings.UserNameStringLen > 0)
                 {

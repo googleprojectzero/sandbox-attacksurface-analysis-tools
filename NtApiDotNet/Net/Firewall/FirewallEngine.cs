@@ -790,6 +790,37 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get an IKE security association by its ID and lookup context.
+        /// </summary>
+        /// <param name="id">The ID of the security association.</param>
+        /// <param name="lookup_context">Optional lookup context.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The IKE security association.</returns>
+        public NtResult<IkeSecurityAssociation> GetIkeSecurityAssociation(ulong id, Guid? lookup_context, bool throw_on_error)
+        {
+            return FirewallNativeMethods.IkeextSaGetById1(_handle, id, lookup_context.ToOptional(), out SafeFwpmMemoryBuffer buffer)
+                .CreateWin32Result(throw_on_error, () =>
+                {
+                    using (buffer)
+                    {
+                        return ProcessIkeSa((IKEEXT_SA_DETAILS1)Marshal.PtrToStructure(buffer.DangerousGetHandle(), 
+                            typeof(IKEEXT_SA_DETAILS1)));
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Get an IKE security association by its ID and lookup context.
+        /// </summary>
+        /// <param name="id">The ID of the security association.</param>
+        /// <param name="lookup_context">Optional lookup context.</param>
+        /// <returns>The IKE security association.</returns>
+        public IkeSecurityAssociation GetIkeSecurityAssociation(ulong id, Guid? lookup_context)
+        {
+            return GetIkeSecurityAssociation(id, lookup_context, true).Result;
+        }
+
+        /// <summary>
         /// Classify a layer.
         /// </summary>
         /// <param name="layer_id">The ID of the layer.</param>

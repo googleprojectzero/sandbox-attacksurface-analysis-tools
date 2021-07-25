@@ -19,7 +19,7 @@ namespace NtApiDotNet.Net.Sockets
     [StructLayout(LayoutKind.Sequential)]
     internal struct SOCKET_SECURITY_QUERY_TEMPLATE_IPSEC2
     {
-        public SocketSecurityProtocol SecurityProtocol;
+        public SOCKET_SECURITY_PROTOCOL SecurityProtocol;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
         public ulong[] PeerAddress;
         public TokenAccessRights PeerTokenAccessMask;

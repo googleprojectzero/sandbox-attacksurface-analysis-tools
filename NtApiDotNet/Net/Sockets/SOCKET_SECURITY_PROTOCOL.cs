@@ -12,22 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
-using System;
-using System.Runtime.InteropServices;
+using NtApiDotNet.Utilities.Reflection;
 
 namespace NtApiDotNet.Net.Sockets
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SOCKET_SECURITY_QUERY_INFO_IPSEC2
+    /// <summary>
+    /// Security protocol for a socket.
+    /// </summary>
+    internal enum SOCKET_SECURITY_PROTOCOL
     {
-        public SOCKET_SECURITY_PROTOCOL SecurityProtocol;
-        public SocketSecurityQueryInformationFlags Flags;
-        public long PeerApplicationAccessTokenHandle;
-        public long PeerMachineAccessTokenHandle;
-        public ulong MmSaId;
-        public ulong QmSaId;
-        public Win32Error NegotiationWinerr;
-        public Guid SaLookupContext;
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        [SDKName("SOCKET_SECURITY_PROTOCOL_DEFAULT")]
+        Default,
+        [SDKName("SOCKET_SECURITY_PROTOCOL_IPSEC")]
+        IPsec,
+        [SDKName("SOCKET_SECURITY_PROTOCOL_IPSEC2")]
+        IPsec2,
+        [SDKName("SOCKET_SECURITY_PROTOCOL_INVALID")]
+        Invalid
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

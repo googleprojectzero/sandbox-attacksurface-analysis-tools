@@ -75,8 +75,6 @@ The socket to set.
 The TCP client to set.
 .PARAMETER Listener
 The TCP listener to set.
-.PARAMETER SecurityProtocol
-The IPsec security protocol to use.
 .PARAMETER Flags
 The flags for the security protocol.
 .PARAMETER IpsecFlags
@@ -107,7 +105,6 @@ function Set-SocketSecurity {
         [System.Net.Sockets.TcpClient]$Client,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromTcpListener")]
         [System.Net.Sockets.TcpListener]$Listener,
-        [NtApiDotNet.Net.Sockets.SocketSecurityProtocol]$SecurityProtocol = "IPSec",
         [NtApiDotNet.Net.Sockets.SocketSecuritySettingFlags]$Flags = 0,
         [NtApiDotNet.Net.Sockets.SocketSecurityIpsecFlags]$IpsecFlags = 0,
         [guid]$MMPolicyKey = [guid]::Empty,
@@ -116,7 +113,6 @@ function Set-SocketSecurity {
     )
 
     $setting = [NtApiDotNet.Net.Sockets.SocketSecuritySettings]::new()
-    $setting.SecurityProtocol = $SecurityProtocol
     $setting.Flags = $Flags
     $setting.IpsecFlags = $IpsecFlags
     $setting.MMPolicyKey = $MMPolicyKey
@@ -147,8 +143,6 @@ The socket to set.
 The TCP client to set.
 .PARAMETER Listener
 The TCP listener to set.
-.PARAMETER SecurityProtocol
-The IPsec security protocol to use.
 .PARAMETER TargetName
 The peer target name to set.
 .INPUTS
@@ -169,18 +163,17 @@ function Set-SocketPeerTargetName {
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromTcpListener")]
         [System.Net.Sockets.TcpListener]$Listener,
         [Parameter(Mandatory, Position = 1)]
-        [string]$TargetName,
-        [NtApiDotNet.Net.Sockets.SocketSecurityProtocol]$SecurityProtocol = "IPSec"
+        [string]$TargetName
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromSocket" {
-            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Socket, $TargetName, $SecurityProtocol)
+            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Socket, $TargetName)
         }
         "FromTcpClient" {
-            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Client, $TargetName, $SecurityProtocol)
+            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Client, $TargetName)
         }
         "FromTcpListener" {
-            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Listener, $TargetName, $SecurityProtocol)
+            [NtApiDotNet.Net.Sockets.SocketSecurityUtils]::SetPeerTargetName($Listener, $TargetName)
         }
     }
 }

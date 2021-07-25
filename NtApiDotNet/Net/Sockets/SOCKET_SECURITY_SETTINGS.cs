@@ -19,7 +19,7 @@ namespace NtApiDotNet.Net.Sockets
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct SOCKET_SECURITY_SETTINGS
     {
-        public SocketSecurityProtocol SecurityProtocol;
+        public SOCKET_SECURITY_PROTOCOL SecurityProtocol;
         public SocketSecuritySettingFlags SecurityFlags;
     }
 }

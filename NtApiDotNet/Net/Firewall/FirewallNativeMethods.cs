@@ -1052,6 +1052,14 @@ namespace NtApiDotNet.Net.Firewall
             out SafeFwpmMemoryBuffer entries, // IKEEXT_SA_DETAILS1*** 
             out int numEntriesReturned
         );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IkeextSaGetById1(
+            SafeFwpmEngineHandle engineHandle,
+            ulong id,
+            OptionalGuid saLookupContext,
+            out SafeFwpmMemoryBuffer sa // IKEEXT_SA_DETAILS1** 
+        );
     }
 }
 

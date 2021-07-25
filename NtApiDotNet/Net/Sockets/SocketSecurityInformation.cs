@@ -34,11 +34,6 @@ namespace NtApiDotNet.Net.Sockets
         public NtToken PeerMachineToken { get; }
 
         /// <summary>
-        /// Socket security protocol.
-        /// </summary>
-        public SocketSecurityProtocol SecurityProtocol { get; }
-
-        /// <summary>
         /// Socket security flags.
         /// </summary>
         public SocketSecurityQueryInformationFlags Flags;
@@ -46,12 +41,12 @@ namespace NtApiDotNet.Net.Sockets
         /// <summary>
         /// Security association ID for main mode.
         /// </summary>
-        public long MmSaId { get; }
+        public ulong MmSaId { get; }
 
         /// <summary>
         /// Security association ID for quick mode.
         /// </summary>
-        public long QmSaId { get; }
+        public ulong QmSaId { get; }
 
         /// <summary>
         /// Negotiation windows error.
@@ -84,11 +79,11 @@ namespace NtApiDotNet.Net.Sockets
         internal SocketSecurityInformation(SafeStructureInOutBuffer<SOCKET_SECURITY_QUERY_INFO> buffer)
         {
             var query_info = buffer.Result;
-            SecurityProtocol = query_info.SecurityProtocol;
             Flags = query_info.Flags;
             PeerApplicationToken = CreateToken(query_info.PeerApplicationAccessTokenHandle);
             PeerMachineToken = CreateToken(query_info.PeerMachineAccessTokenHandle);
-            if (buffer.Length < Marshal.SizeOf(typeof(SOCKET_SECURITY_QUERY_INFO_IPSEC2)))
+            if (buffer.Length < Marshal.SizeOf(typeof(SOCKET_SECURITY_QUERY_INFO_IPSEC2)) 
+                || query_info.SecurityProtocol != SOCKET_SECURITY_PROTOCOL.IPsec2)
             {
                 return;
             }

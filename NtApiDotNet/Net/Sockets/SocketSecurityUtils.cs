@@ -118,11 +118,12 @@ namespace NtApiDotNet.Net.Sockets
         /// <param name="desired_access">Optional desired access for peer tokens. If set to None then no tokens will be returned.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The socket security information.</returns>
-        public static NtResult<SocketSecurityInformation> QuerySecurity(this Socket socket, IPEndPoint peer_address, TokenAccessRights desired_access, bool throw_on_error)
+        public static NtResult<SocketSecurityInformation> QuerySecurity(this Socket socket, IPEndPoint peer_address, 
+            TokenAccessRights desired_access, bool throw_on_error)
         {
             var query = new SOCKET_SECURITY_QUERY_TEMPLATE_IPSEC2
             {
-                SecurityProtocol = SocketSecurityProtocol.IPsec2,
+                SecurityProtocol = SOCKET_SECURITY_PROTOCOL.IPsec2,
                 PeerAddress = peer_address.ToSocketStorage(),
                 PeerTokenAccessMask = desired_access,
                 FieldMask = SocketSecurityQueryFieldMask.MmSaId | SocketSecurityQueryFieldMask.QmSaId
@@ -257,25 +258,24 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="socket">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public static NtStatus SetPeerTargetName(this Socket socket, string target_name,
-            SocketSecurityProtocol security_protocol, IPEndPoint peer_address, bool throw_on_error)
+        public static NtStatus SetPeerTargetName(this Socket socket, string target_name, IPEndPoint peer_address, bool throw_on_error)
         {
             byte[] target_name_bytes = Encoding.Unicode.GetBytes(target_name);
-            int target_name_length = security_protocol == SocketSecurityProtocol.IPsec2 ? target_name_bytes.Length : target_name.Length;
+            int target_name_length = target_name_bytes.Length;
             int total_length = Marshal.SizeOf(typeof(SOCKET_PEER_TARGET_NAME)) + target_name_bytes.Length;
             using (var buffer = new SOCKET_PEER_TARGET_NAME() {
-                SecurityProtocol = security_protocol, 
+                SecurityProtocol = SOCKET_SECURITY_PROTOCOL.IPsec2, 
                 PeerAddress = peer_address.ToSocketStorage(), 
                 PeerTargetNameStringLen = target_name_length
             }.ToBuffer(total_length, false))
             {
                 buffer.Data.WriteBytes(target_name_bytes);
-                return SocketNativeMethods.WSASetSocketPeerTargetName(socket.Handle, buffer, buffer.Length, 
-                    IntPtr.Zero, IntPtr.Zero).GetNtStatus(throw_on_error);
+                return SocketNativeMethods.WSASetSocketPeerTargetName(
+                    socket.Handle, buffer, buffer.Length, IntPtr.Zero, 
+                    IntPtr.Zero).GetNtStatus(throw_on_error);
             }
         }
 
@@ -284,12 +284,10 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="socket">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
         /// <param name="peer_address">Optional peer address. Only needed for datagram sockets.</param>
-        public static void SetPeerTargetName(this Socket socket, string target_name,
-            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec, IPEndPoint peer_address = null)
+        public static void SetPeerTargetName(this Socket socket, string target_name, IPEndPoint peer_address = null)
         {
-            SetPeerTargetName(socket, target_name, security_protocol, peer_address, true);
+            SetPeerTargetName(socket, target_name, peer_address, true);
         }
 
         /// <summary>
@@ -297,13 +295,11 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="socket">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public static NtStatus SetPeerTargetName(this TcpClient socket, string target_name,
-            SocketSecurityProtocol security_protocol, bool throw_on_error)
+        public static NtStatus SetPeerTargetName(this TcpClient socket, string target_name, bool throw_on_error)
         {
-            return SetPeerTargetName(socket.Client, target_name, security_protocol, null, throw_on_error);
+            return SetPeerTargetName(socket.Client, target_name, null, throw_on_error);
         }
 
         /// <summary>
@@ -311,11 +307,9 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="socket">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
-        public static void SetPeerTargetName(this TcpClient socket, string target_name,
-            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec)
+        public static void SetPeerTargetName(this TcpClient socket, string target_name)
         {
-            SetPeerTargetName(socket, target_name, security_protocol, true);
+            SetPeerTargetName(socket, target_name, true);
         }
 
         /// <summary>
@@ -323,13 +317,11 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="listener">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public static NtStatus SetPeerTargetName(this TcpListener listener, string target_name,
-            SocketSecurityProtocol security_protocol, bool throw_on_error)
+        public static NtStatus SetPeerTargetName(this TcpListener listener, string target_name, bool throw_on_error)
         {
-            return SetPeerTargetName(listener.Server, target_name, security_protocol, null, throw_on_error);
+            return SetPeerTargetName(listener.Server, target_name, null, throw_on_error);
         }
 
         /// <summary>
@@ -337,11 +329,9 @@ namespace NtApiDotNet.Net.Sockets
         /// </summary>
         /// <param name="listener">The socket to set.</param>
         /// <param name="target_name">The target name.</param>
-        /// <param name="security_protocol">The security protocol.</param>
-        public static void SetPeerTargetName(this TcpListener listener, string target_name,
-            SocketSecurityProtocol security_protocol = SocketSecurityProtocol.IPsec)
+        public static void SetPeerTargetName(this TcpListener listener, string target_name)
         {
-            SetPeerTargetName(listener, target_name, security_protocol, true);
+            SetPeerTargetName(listener, target_name, true);
         }
         #endregion
     }

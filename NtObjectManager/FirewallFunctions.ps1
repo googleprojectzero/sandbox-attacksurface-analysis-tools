@@ -761,3 +761,53 @@ function Get-FwToken {
     }
     $Engine.OpenToken($ModifiedId, $Access)
 }
+
+<#
+.SYNOPSIS
+Get an IKE security association.
+.DESCRIPTION
+This cmdlet gets an IKE security association from an engine. It can return a security association.or all sub-layers.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Id
+Specify the security association ID.
+.PARAMETER SaLookupContext
+Specify the the security association lookup context.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.IkeSecurityAssociation[]
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine
+Get all IKE security associations.
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine -Id 1234
+Get an IKE security associations from an ID.
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine -Id 1234 -SaLookupContext "eebecc03-ced4-4380-819a-2734397b2b74"
+Get an IKE security associations from an ID and lookup context.
+#>
+function Get-IkeSecurityAssociation {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromIdAndContext")]
+        [uint64]$Id,
+        [parameter(Mandatory, Position = 2, ParameterSetName="FromIdAndContext")]
+        [guid]$SaLookupContext
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Engine.EnumerateIkeSecurityAssociations() | Write-Output
+        }
+        "FromId" {
+            $Engine.GetIkeSecurityAssociation($Id, $null)
+        }
+        "FromIdAndContext" {
+            $Engine.GetIkeSecurityAssociation($Id, $SaLookupContext)
+        }
+    }
+}

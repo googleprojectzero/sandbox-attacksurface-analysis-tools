@@ -20,7 +20,7 @@ namespace NtApiDotNet.Net.Sockets
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("AllStrings")]
     internal struct SOCKET_SECURITY_SETTINGS_IPSEC
     {
-        public SocketSecurityProtocol SecurityProtocol;
+        public SOCKET_SECURITY_PROTOCOL SecurityProtocol;
         public SocketSecuritySettingFlags SecurityFlags;
         public SocketSecurityIpsecFlags IpsecFlags;
         public Guid AuthipMMPolicyKey;
