@@ -56,14 +56,24 @@ namespace NtApiDotNet.Net.Tls
         /// Parse a TLS record from a binary reader.
         /// </summary>
         /// <param name="reader">The reader to read from.</param>
-        /// <returns></returns>
-        public TlsRecord Parse(BinaryReader reader)
+        /// <returns>The parsed TLS record.</returns>
+        public static TlsRecord Parse(BinaryReader reader)
         {
             if (!TryParse(reader, out TlsRecord record))
             {
                 throw new ArgumentException("Invalid TLS record.");
             }
             return record;
+        }
+
+        /// <summary>
+        /// Parse a TLS record from a byte array.
+        /// </summary>
+        /// <param name="data">The byte array.</param>
+        /// <returns>The parsed TLS record.</returns>
+        public static TlsRecord Parse(byte[] data)
+        {
+            return Parse(new BinaryReader(new MemoryStream(data)));
         }
         #endregion
 
