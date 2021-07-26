@@ -766,13 +766,17 @@ function Get-FwToken {
 .SYNOPSIS
 Get an IKE security association.
 .DESCRIPTION
-This cmdlet gets an IKE security association from an engine. It can return a security association.or all sub-layers.
+This cmdlet gets an IKE security association from an engine. It can return a specific security association or all of them.
 .PARAMETER Engine
 The firewall engine to query.
 .PARAMETER Id
 Specify the security association ID.
 .PARAMETER SaLookupContext
 Specify the the security association lookup context.
+.PARAMETER Socket
+Specify a secured socket to lookup the security association.
+.PARAMETER Client
+Specify a secured TCP client to lookup the security association.
 .INPUTS
 None
 .OUTPUTS
@@ -786,6 +790,15 @@ Get an IKE security associations from an ID.
 .EXAMPLE
 Get-IkeSecurityAssociation -Engine $engine -Id 1234 -SaLookupContext "eebecc03-ced4-4380-819a-2734397b2b74"
 Get an IKE security associations from an ID and lookup context.
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine -Socket $sock
+Get an IKE security associations from a secured socket.
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine -Socket $sock -PeerAddress $ep
+Get an IKE security associations from a secured socket with a specified peer address.
+.EXAMPLE
+Get-IkeSecurityAssociation -Engine $engine -Client $client
+Get an IKE security associations from a secured TCP client.
 #>
 function Get-IkeSecurityAssociation {
     [CmdletBinding(DefaultParameterSetName="All")]
@@ -796,18 +809,36 @@ function Get-IkeSecurityAssociation {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromIdAndContext")]
         [uint64]$Id,
         [parameter(Mandatory, Position = 2, ParameterSetName="FromIdAndContext")]
-        [guid]$SaLookupContext
+        [guid]$SaLookupContext,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromSocket")]
+        [System.Net.Sockets.Socket]$Socket,
+        [Parameter(ParameterSetName="FromSocket")]
+        [System.Net.IPEndPoint]$PeerAddress,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromTcpClient")]
+        [System.Net.Sockets.TcpClient]$Client
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateIkeSecurityAssociations() | Write-Output
+    try {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateIkeSecurityAssociations() | Write-Output
+            }
+            "FromId" {
+                $Engine.GetIkeSecurityAssociation($Id, $null)
+            }
+            "FromIdAndContext" {
+                $Engine.GetIkeSecurityAssociation($Id, $SaLookupContext)
+            }
+            "FromSocket" {
+                $r = Get-SocketSecurity -Socket $Socket -PeerAddress $PeerAddress
+                $Engine.GetIkeSecurityAssociation($r.MmSaId, $r.SaLookupContext)
+            }
+            "FromTcpClient" {
+                $r = Get-SocketSecurity -Client $Client
+                $Engine.GetIkeSecurityAssociation($r.MmSaId, $r.SaLookupContext)
+            }
         }
-        "FromId" {
-            $Engine.GetIkeSecurityAssociation($Id, $null)
-        }
-        "FromIdAndContext" {
-            $Engine.GetIkeSecurityAssociation($Id, $SaLookupContext)
-        }
+    } catch {
+        Write-Error $_
     }
 }
