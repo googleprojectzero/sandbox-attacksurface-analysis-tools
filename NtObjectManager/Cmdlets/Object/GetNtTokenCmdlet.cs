@@ -282,6 +282,7 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "Service")]
         [Parameter(ParameterSetName = "S4U")]
         [Parameter(ParameterSetName = "Session")]
+        [Parameter(ParameterSetName = "ServiceName")]
         public SwitchParameter WithTcb { get; set; }
 
         /// <summary>
@@ -502,14 +503,17 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtToken GetServiceNameToken(TokenAccessRights desired_access)
         {
-            int pid = ServiceUtils.GetServiceProcessId(ServiceName);
-            if (pid == 0)
+            using (GetTcbPrivilege())
             {
-                throw new ArgumentException($"{ServiceName} is not current running.");
-            }
-            using (var process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
-            {
-                return NtToken.OpenProcessToken(process, false, desired_access);
+                int pid = ServiceUtils.GetServiceProcessId(ServiceName);
+                if (pid == 0)
+                {
+                    throw new ArgumentException($"{ServiceName} is not current running.");
+                }
+                using (var process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
+                {
+                    return NtToken.OpenProcessToken(process, false, desired_access);
+                }
             }
         }
 
