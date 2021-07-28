@@ -150,6 +150,11 @@ namespace NtApiDotNet.Net.Firewall
             return new FirewallAleEndpoint(endpoint);
         }
 
+        private FirewallSession ProcessSession(FWPM_SESSION0 session)
+        {
+            return new FirewallSession(session);
+        }
+
         private NtResult<List<T>> EnumerateFwObjects<T, U>(IFirewallEnumTemplate template,
             Func<U, T> map_func, Func<T, bool> filter_func,
             CreateEnumHandleFunc create_func, EnumObjectFunc enum_func, 
@@ -1010,6 +1015,28 @@ namespace NtApiDotNet.Net.Firewall
         public SecurityDescriptor GetAleEndpointSecurityDescriptor(SecurityInformation security_information)
         {
             return GetAleEndpointSecurityDescriptor(security_information, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate all sessions.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of sessions.</returns>
+        public NtResult<IEnumerable<FirewallSession>> EnumerateSessions(bool throw_on_error)
+        {
+            Func<FWPM_SESSION0, FirewallSession> f = ProcessSession;
+            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmSessionCreateEnumHandle0,
+                FirewallNativeMethods.FwpmSessionEnum0, FirewallNativeMethods.FwpmSessionDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<FirewallSession>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all sessions.
+        /// </summary>
+        /// <returns>The list of sessions.</returns>
+        public IEnumerable<FirewallSession> EnumerateSessions()
+        {
+            return EnumerateSessions(true).Result;
         }
 
         /// <summary>

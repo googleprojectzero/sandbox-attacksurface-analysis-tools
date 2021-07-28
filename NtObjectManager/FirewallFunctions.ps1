@@ -842,3 +842,32 @@ function Get-IkeSecurityAssociation {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Get all firewall sessions.
+.DESCRIPTION
+This cmdlet gets all firewall sessions from an engine.
+.PARAMETER Engine
+The firewall engine to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallSession[]
+.EXAMPLE
+Get-FwSession -Engine $engine
+Get all firewall sessions.
+#>
+function Get-FwSession {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Engine.EnumerateSessions() | Write-Output
+        }
+    }
+}

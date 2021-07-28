@@ -889,7 +889,7 @@ namespace NtApiDotNet.Net.Firewall
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error FwpmSessionCreateEnumHandle0(
             SafeFwpmEngineHandle engineHandle,
-            IntPtr enumTemplate, // FWPM_SESSION_ENUM_TEMPLATE0* 
+            SafeBuffer enumTemplate, // FWPM_SESSION_ENUM_TEMPLATE0* 
             out IntPtr enumHandle
         );
 
