@@ -74,6 +74,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
+    <Compile Include="Net\Firewall\FirewallAddressFamily.cs" />
     <Compile Include="Net\Firewall\FirewallEngineOption.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumFlags.cs" />
     <Compile Include="Net\Firewall\FirewallActionType.cs" />
@@ -95,6 +96,15 @@
     <Compile Include="Net\Firewall\FirewallFilterBuilder.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumTemplate.cs" />
     <Compile Include="Net\Firewall\FirewallFilterFlags.cs" />
+    <Compile Include="Net\Firewall\FirewallMsDirectionType.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEvent.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventCapabilityDrop.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventClassifyDrop.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventEnumTemplate.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventFlags.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventIPsecKernelDrop.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventType.cs" />
+    <Compile Include="Net\Firewall\FirewallNetworkCapabilityType.cs" />
     <Compile Include="Net\Firewall\IkeCertificateCredential.cs" />
     <Compile Include="Net\Firewall\IkeCredential.cs" />
     <Compile Include="Net\Firewall\IkeCredentialPair.cs" />

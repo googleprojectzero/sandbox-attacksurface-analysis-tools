@@ -146,11 +146,6 @@ namespace NtApiDotNet.Net.Firewall
             return value;
         }
 
-        private static T ReadStruct<T>(IntPtr ptr)
-        {
-            return (T)Marshal.PtrToStructure(ptr, typeof(T));
-        }
-
         private static byte[] ReadBytes(IntPtr ptr, int size)
         {
             if (size <= 0 || ptr == IntPtr.Zero)
@@ -164,7 +159,7 @@ namespace NtApiDotNet.Net.Firewall
 
         private static byte[] ReadBlob(IntPtr ptr)
         {
-            var blob = ReadStruct<FWP_BYTE_BLOB>(ptr);
+            var blob = FirewallUtils.ReadStruct<FWP_BYTE_BLOB>(ptr);
             return ReadBytes(blob.data, blob.size);
         }
 
@@ -175,7 +170,7 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.SecurityDescriptor:
                     return SecurityDescriptor.Parse(ReadBlob(value.sd), FirewallUtils.FirewallFilterType, false).GetResultOrDefault();
                 case FirewallDataType.TokenInformation:
-                    return new FirewallTokenInformation(ReadStruct<FWP_TOKEN_INFORMATION>(value.tokenInformation));
+                    return new FirewallTokenInformation(FirewallUtils.ReadStruct<FWP_TOKEN_INFORMATION>(value.tokenInformation));
                 case FirewallDataType.TokenAccessInformation:
                     return ReadBlob(value.tokenAccessInformation);
                 case FirewallDataType.Sid:
@@ -193,7 +188,7 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.Int32:
                     return value.int32;
                 case FirewallDataType.Range:
-                    return new FirewallRange(ReadStruct<FWP_RANGE0>(value.rangeValue), condition_key);
+                    return new FirewallRange(FirewallUtils.ReadStruct<FWP_RANGE0>(value.rangeValue), condition_key);
                 case FirewallDataType.ByteArray16:
                     return ReadBytes(value.byteArray16, 16);
                 case FirewallDataType.ByteArray6:
@@ -205,13 +200,13 @@ namespace NtApiDotNet.Net.Firewall
                 case FirewallDataType.ByteBlob:
                     return ReadBlob(value.byteBlob);
                 case FirewallDataType.V4AddrMask:
-                    return new FirewallAddressAndMask(ReadStruct<FWP_V4_ADDR_AND_MASK>(value.v4AddrMask));
+                    return new FirewallAddressAndMask(FirewallUtils.ReadStruct<FWP_V4_ADDR_AND_MASK>(value.v4AddrMask));
                 case FirewallDataType.V6AddrMask:
-                    return new FirewallAddressAndMask(ReadStruct<FWP_V6_ADDR_AND_MASK>(value.v6AddrMask));
+                    return new FirewallAddressAndMask(FirewallUtils.ReadStruct<FWP_V6_ADDR_AND_MASK>(value.v6AddrMask));
                 case FirewallDataType.UnicodeString:
                     return Marshal.PtrToStringUni(value.unicodeString);
                 case FirewallDataType.BitmapArray64:
-                    return new BitArray(ReadStruct<FWP_BITMAP_ARRAY64>(value.bitmapArray64).bitmapArray64);
+                    return new BitArray(FirewallUtils.ReadStruct<FWP_BITMAP_ARRAY64>(value.bitmapArray64).bitmapArray64);
                 case FirewallDataType.Empty:
                     return new FirewallEmpty();
                 default:

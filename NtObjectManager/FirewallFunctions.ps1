@@ -871,3 +871,32 @@ function Get-FwSession {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get all firewall network events.
+.DESCRIPTION
+This cmdlet gets all firewall network events from an engine.
+.PARAMETER Engine
+The firewall engine to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallNetEvent[]
+.EXAMPLE
+Get-FwNetEvent -Engine $engine
+Get all firewall network events.
+#>
+function Get-FwNetEvent {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Engine.EnumerateNetEvents() | Write-Output
+        }
+    }
+}

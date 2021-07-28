@@ -1094,6 +1094,49 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Enumerate all network events.
+        /// </summary>
+        /// <param name="template">Template to filter down enumeration.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of network events.</returns>
+        public NtResult<IEnumerable<FirewallNetEvent>> EnumerateNetEvents(FirewallNetEventEnumTemplate template, bool throw_on_error)
+        {
+            Func<FWPM_NET_EVENT2, FirewallNetEvent> f = FirewallNetEvent.Create;
+            return EnumerateFwObjects(template, f, null, FirewallNativeMethods.FwpmNetEventCreateEnumHandle0,
+                FirewallNativeMethods.FwpmNetEventEnum2, FirewallNativeMethods.FwpmNetEventDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<FirewallNetEvent>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all network events.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of network events.</returns>
+        public NtResult<IEnumerable<FirewallNetEvent>> EnumerateNetEvents(bool throw_on_error)
+        {
+            return EnumerateNetEvents(null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Enumerate all network events.
+        /// </summary>
+        /// <param name="template">Template to filter down enumeration.</param>
+        /// <returns>The list of network events.</returns>
+        public IEnumerable<FirewallNetEvent> EnumerateNetEvents(FirewallNetEventEnumTemplate template)
+        {
+            return EnumerateNetEvents(template, true).Result;
+        }
+
+        /// <summary>
+        /// Enumerate all network events.
+        /// </summary>
+        /// <returns>The list of network events.</returns>
+        public IEnumerable<FirewallNetEvent> EnumerateNetEvents()
+        {
+            return EnumerateNetEvents(null);
+        }
+
+        /// <summary>
         /// Begin a firewall transaction.
         /// </summary>
         /// <param name="flags">Flags for the transaction.</param>

@@ -67,6 +67,13 @@ namespace NtApiDotNet.Net.Firewall
             return ret;
         }
 
+        public Guid ToGuid()
+        {
+            var bytes = ToArray();
+            if (bytes.Length != 16)
+                return Guid.Empty;
+            return new Guid(bytes);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -598,6 +605,93 @@ namespace NtApiDotNet.Net.Firewall
         public FWP_BYTE_BLOB correlationKey;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_HEADER2
+    {
+        public Luid timeStamp;
+        public FirewallNetEventFlags flags;
+        public FirewallIpVersion ipVersion;
+        public byte ipProtocol;
+        public uint localAddrV4;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 12)]
+        public byte[] localAddrV6;
+        public uint remoteAddrV4;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 12)]
+        public byte[] remoteAddrV6;
+        public ushort localPort;
+        public ushort remotePort;
+        public uint scopeId;
+        public FWP_BYTE_BLOB appId;
+        public IntPtr userId;
+        public FirewallAddressFamily addressFamily;
+        public IntPtr packageSid;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT2
+    {
+        public FWPM_NET_EVENT_HEADER2 header;
+        public FirewallNetEventType type;
+        public IntPtr value;
+        /*
+        union {
+        FWPM_NET_EVENT_IKEEXT_MM_FAILURE1* ikeMmFailure;
+        FWPM_NET_EVENT_IKEEXT_QM_FAILURE0* ikeQmFailure;
+        FWPM_NET_EVENT_IKEEXT_EM_FAILURE1* ikeEmFailure;
+        FWPM_NET_EVENT_CLASSIFY_DROP2* classifyDrop;
+        FWPM_NET_EVENT_IPSEC_KERNEL_DROP0* ipsecDrop;
+        FWPM_NET_EVENT_IPSEC_DOSP_DROP0* idpDrop;
+        FWPM_NET_EVENT_CLASSIFY_ALLOW0* classifyAllow;
+        FWPM_NET_EVENT_CAPABILITY_DROP0* capabilityDrop;
+        FWPM_NET_EVENT_CAPABILITY_ALLOW0* capabilityAllow;
+        FWPM_NET_EVENT_CLASSIFY_DROP_MAC0* classifyDropMac;
+        */
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_IPSEC_KERNEL_DROP0
+    {
+        public NtStatus failureStatus;
+        public FirewallDirectionType direction;
+        public uint spi;
+        public ulong filterId;
+        public ushort layerId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_CLASSIFY_DROP2
+    {
+        public ulong filterId;
+        public ushort layerId;
+        public uint reauthReason;
+        public uint originalProfile;
+        public uint currentProfile;
+        public FirewallNetEventDirectionType msFwpDirection;
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool isLoopback;
+        public FWP_BYTE_BLOB vSwitchId;
+        public uint vSwitchSourcePort;
+        public uint vSwitchDestinationPort;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_CAPABILITY_DROP0
+    {
+        public FirewallNetworkCapabilityType networkCapabilityId;
+        public ulong filterId;
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool isLoopback;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_ENUM_TEMPLATE0
+    {
+        public Luid startTime;
+        public Luid endTime;
+        public int numFilterConditions;
+        public IntPtr filterCondition;
+    }
+
     internal static class FirewallNativeMethods
     {
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
@@ -1073,6 +1167,28 @@ namespace NtApiDotNet.Net.Firewall
             ulong id,
             OptionalGuid saLookupContext,
             out SafeFwpmMemoryBuffer sa // IKEEXT_SA_DETAILS1** 
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventCreateEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            SafeBuffer enumTemplate, // const FWPM_NET_EVENT_ENUM_TEMPLATE0* 
+            out IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventEnum2(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle,
+            int numEntriesRequested,
+            out SafeFwpmMemoryBuffer entries, // FWPM_NET_EVENT2*** 
+            out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventDestroyEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle
         );
     }
 }

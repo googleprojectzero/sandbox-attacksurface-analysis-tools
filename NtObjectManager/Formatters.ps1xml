@@ -5322,5 +5322,49 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>FirewallNetEvent</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Net.Firewall.FirewallNetEvent</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Type</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Timestamp</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>IPProtocol</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>RemoteEndpoint</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Type</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Timestamp</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>IPProtocol</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>RemoteEndpoint</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
