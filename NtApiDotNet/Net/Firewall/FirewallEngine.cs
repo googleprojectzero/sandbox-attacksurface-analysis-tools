@@ -296,6 +296,60 @@ namespace NtApiDotNet.Net.Firewall
         #region Public Methods
 
         /// <summary>
+        /// Get an engine option.
+        /// </summary>
+        /// <param name="option">The option to get.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The engine option's value.</returns>
+        public NtResult<FirewallValue> GetOption(FirewallEngineOption option, bool throw_on_error)
+        {
+            return FirewallNativeMethods.FwpmEngineGetOption0(_handle, option, 
+                    out SafeFwpmMemoryBuffer value).CreateWin32Result(throw_on_error, () => {
+                using (value)
+                {
+                    value.Initialize<FWP_VALUE0>(1);
+                    return new FirewallValue(value.Read<FWP_VALUE0>(0), Guid.Empty);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Get an engine option.
+        /// </summary>
+        /// <param name="option">The option to get.</param>
+        /// <returns>The engine option's value.</returns>
+        public FirewallValue GetOption(FirewallEngineOption option)
+        {
+            return GetOption(option, true).Result;
+        }
+
+        /// <summary>
+        /// Set an engine option.
+        /// </summary>
+        /// <param name="option">The option to set.</param>
+        /// <param name="value">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetOption(FirewallEngineOption option, FirewallValue value, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                return FirewallNativeMethods.FwpmEngineSetOption0(_handle, option, 
+                    value.ToStruct(list)).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set an engine option.
+        /// </summary>
+        /// <param name="option">The option to set.</param>
+        /// <param name="value">The value to set.</param>
+        public void SetOption(FirewallEngineOption option, FirewallValue value)
+        {
+            SetOption(option, value, true);
+        }
+
+        /// <summary>
         /// Get a layer by its key.
         /// </summary>
         /// <param name="key">The key of the layer.</param>

@@ -610,6 +610,20 @@ namespace NtApiDotNet.Net.Firewall
         );
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmEngineGetOption0(
+            SafeFwpmEngineHandle engineHandle,
+            FirewallEngineOption option,
+            out SafeFwpmMemoryBuffer value // FWP_VALUE0** 
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmEngineSetOption0(
+            SafeFwpmEngineHandle engineHandle,
+            FirewallEngineOption option,
+            in FWP_VALUE0 value
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error FwpmTransactionBegin0(
             SafeFwpmEngineHandle engineHandle,
             FirewallTransactionFlags flags

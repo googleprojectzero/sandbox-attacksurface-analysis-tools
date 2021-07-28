@@ -74,6 +74,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
+    <Compile Include="Net\Firewall\FirewallEngineOption.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumFlags.cs" />
     <Compile Include="Net\Firewall\FirewallActionType.cs" />
     <Compile Include="Net\Firewall\FirewallAleEndpoint.cs" />
