@@ -499,7 +499,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Reset all groups to their default statue.
+        /// Reset all groups to their default state.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
@@ -511,7 +511,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Reset all groups to their default statue.
+        /// Reset all groups to their default state.
         /// </summary>
         public void ResetGroups()
         {

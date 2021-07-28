@@ -560,7 +560,7 @@ Set-NtTokenGroup -Sid "WD" -Attributes Enabled
 Set the Everyone SID to enabled.
 #>
 function Set-NtTokenGroup {
-    [CmdletBinding(DefaultParameterSetName = "Normal")]
+    [CmdletBinding()]
     Param(
         [NtApiDotNet.NtToken]$Token,
         [Parameter(Mandatory, Position = 0)]
@@ -578,6 +578,103 @@ function Set-NtTokenGroup {
     Use-NtObject($Token) {
         $Token.SetGroups($Sid, $Attributes)
     }
+}
+
+<#
+.SYNOPSIS
+Resets a token's group state.
+.DESCRIPTION
+This cmdlet will resets the state of groups for a token.
+.PARAMETER Token
+Optional token object to use to reset groups. Must be accesible for AdjustGroups right.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Reset-NtTokenGroup
+Reset the groups for the current token.
+.EXAMPLE
+Reset-NtTokenGroup -Token $token
+Reset the groups for the a specified token.
+#>
+function Reset-NtTokenGroup {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.NtToken]$Token
+    )
+    if ($null -eq $Token) {
+        $Token = Get-NtToken -Effective -Access AdjustGroups
+    }
+    else {
+        $Token = $Token.Duplicate()
+    }
+
+    Use-NtObject($Token) {
+        $Token.ResetGroups()
+    }
+}
+
+<#
+.SYNOPSIS
+Enable a token's group.
+.DESCRIPTION
+This cmdlet will enable one or more groups on a token. They can't be marked as mandatory.
+.PARAMETER Token
+Optional token object to use to enable groups. Must be accesible for AdjustGroups right.
+.PARAMETER Sid
+Specify the list of group SIDs to enable.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Enable-NtTokenGroup -Sid "WD"
+Enable the Everyone SID for the current token.
+.EXAMPLE
+Enable-NtTokenGroup -Sid "WD" -Token $token
+Enable the Everyone SID on a specified token.
+#>
+function Enable-NtTokenGroup {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid[]]$Sid
+    )
+
+    Set-NtTokenGroup -Token $Token -Sid $Sid -Attributes Enabled
+}
+
+<#
+.SYNOPSIS
+Disable a token's group.
+.DESCRIPTION
+This cmdlet will disable one or more groups on a token. They can't be marked as mandatory.
+.PARAMETER Token
+Optional token object to use to disable groups. Must be accesible for AdjustGroups right.
+.PARAMETER Sid
+Specify the list of group SIDs to disable.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Disable-NtTokenGroup -Sid "WD"
+Disable the Everyone SID for the current token.
+.EXAMPLE
+Disable-NtTokenGroup -Sid "WD" -Token $token
+Disable the Everyone SID on a specified token.
+#>
+function Disable-NtTokenGroup {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Sid[]]$Sid
+    )
+
+    Set-NtTokenGroup -Token $Token -Sid $Sid -Attributes Enabled
 }
 
 <#
