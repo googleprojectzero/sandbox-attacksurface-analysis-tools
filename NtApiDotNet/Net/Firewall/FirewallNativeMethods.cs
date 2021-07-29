@@ -692,6 +692,17 @@ namespace NtApiDotNet.Net.Firewall
         public IntPtr filterCondition;
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
+    delegate void FwpmNetEventCallback1(IntPtr context, IntPtr ev);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_SUBSCRIPTION0
+    {
+        public IntPtr enumTemplate; // FWPM_NET_EVENT_ENUM_TEMPLATE0
+        public int flags;
+        public Guid sessionKey;
+    }
+
     internal static class FirewallNativeMethods
     {
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
@@ -1189,6 +1200,21 @@ namespace NtApiDotNet.Net.Firewall
         internal static extern Win32Error FwpmNetEventDestroyEnumHandle0(
             SafeFwpmEngineHandle engineHandle,
             IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventSubscribe1(
+            SafeFwpmEngineHandle engineHandle,
+            in FWPM_NET_EVENT_SUBSCRIPTION0 subscription,
+            IntPtr callback,
+            IntPtr context,
+            out IntPtr eventsHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventUnsubscribe0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr eventsHandle
         );
     }
 }

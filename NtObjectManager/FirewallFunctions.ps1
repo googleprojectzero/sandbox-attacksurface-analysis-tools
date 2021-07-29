@@ -900,3 +900,74 @@ function Get-FwNetEvent {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Creates a network event listener.
+.DESCRIPTION
+This cmdlet creates a network event listenr from an engine. You pass the result to Read-FwNetEvent in a loop to read the events.
+.PARAMETER Engine
+The enginer to create from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallNetEventListener
+.EXAMPLE
+New-FwNetEventListener -Engine $e
+Create a new firewall network event listener.
+#>
+function New-FwNetEventListener {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+    )
+    $Engine.SubscribeNetEvents()
+}
+
+<#
+.SYNOPSIS
+Read a live firewall network events.
+.DESCRIPTION
+This cmdlet reads a live firewall network events from an engine.
+.PARAMETER Listener
+The firewall listener to read from.
+.PARAMETER TimeoutMs
+Specify a read timeout in milliseconds. -1 waits indefinitely.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallNetEvent
+.EXAMPLE
+Read-FwNetEvent -Listener $l
+Read a live firewall network event.
+#>
+function Read-FwNetEvent {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallNetEventListener]$Listener,
+        [int]$TimeoutMs = -1
+    )
+
+    $time_remaining = $TimeoutMs
+    try {
+        $ev = $null
+        while($true) {
+            $ev = $listener.ReadEvent(1000)
+            if ($null -ne $ev) {
+                break
+            }
+            if ($TimeoutMs -eq -1) {
+                continue
+            }
+            $time_remaining -= 1000
+            if ($time_remaining -le 0) {
+                break;
+            }
+        }
+        $ev
+    } catch {
+        Write-Error $_
+    }
+}

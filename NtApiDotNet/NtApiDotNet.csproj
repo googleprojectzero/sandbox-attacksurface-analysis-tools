@@ -103,6 +103,7 @@
     <Compile Include="Net\Firewall\FirewallNetEventEnumTemplate.cs" />
     <Compile Include="Net\Firewall\FirewallNetEventFlags.cs" />
     <Compile Include="Net\Firewall\FirewallNetEventIPsecKernelDrop.cs" />
+    <Compile Include="Net\Firewall\FirewallNetEventListener.cs" />
     <Compile Include="Net\Firewall\FirewallNetEventType.cs" />
     <Compile Include="Net\Firewall\FirewallNetworkCapabilityType.cs" />
     <Compile Include="Net\Firewall\IkeCertificateCredential.cs" />

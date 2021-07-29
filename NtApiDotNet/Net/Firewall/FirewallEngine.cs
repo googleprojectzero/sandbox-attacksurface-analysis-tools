@@ -1137,6 +1137,25 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Subscribe to read network event.s
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The network event listener.</returns>
+        public NtResult<FirewallNetEventListener> SubscribeNetEvents(bool throw_on_error)
+        {
+            return FirewallNetEventListener.Start(_handle, throw_on_error);
+        }
+
+        /// <summary>
+        /// Subscribe to read network event.s
+        /// </summary>
+        /// <returns>The network event listener.</returns>
+        public FirewallNetEventListener SubscribeNetEvents()
+        {
+            return SubscribeNetEvents(true).Result;
+        }
+
+        /// <summary>
         /// Begin a firewall transaction.
         /// </summary>
         /// <param name="flags">Flags for the transaction.</param>
