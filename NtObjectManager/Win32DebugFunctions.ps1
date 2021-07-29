@@ -133,6 +133,8 @@ Start a Win32 debug console.
 This cmdlet starts a Win32 debug console and prints the debug output to the shell.
 .PARAMETER Global
 Capture debug output for session 0.
+.PARAMETER Variable
+The name of a variable to put the read debug events into.
 .INPUTS
 None
 .OUTPUTS
@@ -140,14 +142,23 @@ None
 #>
 function Start-Win32DebugConsole {
     param(
-        [switch]$Global
+        [switch]$Global,
+        [string]$Variable
     )
 
+    $res = @()
     try {
         Use-NtObject($console = New-Win32DebugConsole -Global:$Global) {
+            $psvar = if ("" -ne $Variable) {
+                Set-Variable -Name $Variable -Value @() -Scope global
+                Get-Variable -Name $Variable
+            }
             while($true) {
                 $result = Read-Win32DebugConsole -Console $console -TimeoutMs 1000
                 if ($null -ne $result.Output) {
+                    if ($null -ne $psvar) {
+                        $psvar.Value += @($result)
+                    }
                     Write-Host "[$($result.ProcessId)] - $($result.Output.Trim())"
                 }
             }

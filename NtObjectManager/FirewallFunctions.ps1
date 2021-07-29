@@ -1001,17 +1001,19 @@ function Start-FwNetEventListener {
         [string]$Variable
     )
 
-    $res = @()
     try {
         Use-NtObject($listener = New-FwNetEventListener -Engine $Engine) {
+            $psvar = if ("" -ne $Variable) {
+                Set-Variable -Name $Variable -Value @() -Scope global
+                Get-Variable -Name $Variable
+            }
             while($true) {
                 $ev = Read-FwNetEvent -Listener $listener
                 if ($null -eq $ev) {
                     break
                 }
-                if ("" -ne $Variable) {
-                    $res += @($ev)
-                    Set-Variable -Name $Variable -Value $res -Scope global
+                if ($null -ne $psvar) {
+                    $psvar.Value += @($ev)
                 }
                 $ev | Out-Host
             }
