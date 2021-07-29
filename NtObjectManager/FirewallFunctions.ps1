@@ -907,7 +907,7 @@ Creates a network event listener.
 .DESCRIPTION
 This cmdlet creates a network event listenr from an engine. You pass the result to Read-FwNetEvent in a loop to read the events.
 .PARAMETER Engine
-The enginer to create from.
+The engine to create from.
 .INPUTS
 None
 .OUTPUTS
@@ -967,6 +967,55 @@ function Read-FwNetEvent {
             }
         }
         $ev
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Starts a network event listener.
+.DESCRIPTION
+This cmdlet starts a network event listener from an engine. It will read network events and print them to the console. It can also
+capture the events into a variable.
+.PARAMETER Engine
+The engine to listen from.
+.PARAMETER Variable
+The name of a variable to put the read network events into.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Start-FwNetEventListener -Engine $e
+Start a new firewall network event listener.
+.EXAMPLE
+Start-FwNetEventListener -Engine $e -Variable "events"
+Start a new firewall network event listener and store the captured events in a variable.
+#>
+function Start-FwNetEventListener {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [string]$Variable
+    )
+
+    $res = @()
+    try {
+        Use-NtObject($listener = New-FwNetEventListener -Engine $Engine) {
+            while($true) {
+                $ev = Read-FwNetEvent -Listener $listener
+                if ($null -eq $ev) {
+                    break
+                }
+                if ("" -ne $Variable) {
+                    $res += @($ev)
+                    Set-Variable -Name $Variable -Value $res -Scope global
+                }
+                $ev | Out-Host
+            }
+        }
     } catch {
         Write-Error $_
     }
