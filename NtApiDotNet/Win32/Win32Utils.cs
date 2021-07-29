@@ -665,5 +665,14 @@ namespace NtApiDotNet.Win32
         {
             return GetConsoleSessions(true).Result;
         }
+
+        /// <summary>
+        /// Write debug string to output.
+        /// </summary>
+        /// <param name="debug_str">The debug string to write.</param>
+        public static void WriteDebugString(string debug_str)
+        {
+            Win32NativeMethods.OutputDebugString(debug_str);
+        }
     }
 }

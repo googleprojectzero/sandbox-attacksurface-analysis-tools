@@ -1392,6 +1392,9 @@ namespace NtApiDotNet.Win32
             int Msg,
             IntPtr wParam,
             IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
+        internal static extern void OutputDebugString(string lpOutputString);
     }
 #pragma warning restore 1591
 }
