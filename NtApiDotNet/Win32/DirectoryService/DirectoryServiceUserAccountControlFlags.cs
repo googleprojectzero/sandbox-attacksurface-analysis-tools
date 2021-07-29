@@ -15,13 +15,13 @@
 using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Native
+namespace NtApiDotNet.Win32.DirectoryService
 {
     /// <summary>
     /// User flags.
     /// </summary>
     [Flags]
-    internal enum UserFlags : uint
+    public enum DirectoryServiceUserAccountControlFlags : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,

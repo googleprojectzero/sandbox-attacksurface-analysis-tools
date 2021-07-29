@@ -520,7 +520,7 @@
     <Compile Include="Win32\Security\Sam\SamUserAccountType.cs" />
     <Compile Include="Win32\Security\Sam\SamUtils.cs" />
     <Compile Include="Win32\Security\Sam\UserAccountControlFlags.cs" />
-    <Compile Include="Win32\Security\Native\UserFlags.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceUserAccountControlFlags.cs" />
     <Compile Include="Win32\Service\FirewallServiceTriggerInformation.cs" />
     <Compile Include="Win32\Memory\Win32MemoryNativeMethods.cs" />
     <Compile Include="Win32\Memory\Win32MemoryUtils.cs" />
