@@ -40,10 +40,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Sequence number.
         /// </summary>
         public int? SequenceNumber { get; private set; }
-        /// <summary>
-        /// Authorization data.
-        /// </summary>
-        public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
 
         internal override string Format()
         {
@@ -62,6 +58,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 builder.AppendLine($"Sequence Number : 0x{SequenceNumber:X}");
             }
+            
             return builder.ToString();
         }
 
