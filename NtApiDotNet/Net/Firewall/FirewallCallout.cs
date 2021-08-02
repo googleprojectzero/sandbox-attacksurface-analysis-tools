@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 
 namespace NtApiDotNet.Net.Firewall
@@ -51,7 +52,7 @@ namespace NtApiDotNet.Net.Firewall
         {
             Flags = callout.flags;
             ProviderData = callout.providerData.ToArray();
-            ProviderKey = FirewallUtils.ReadGuid(callout.providerKey) ?? Guid.Empty;
+            ProviderKey = callout.providerKey.ReadGuid() ?? Guid.Empty;
             ApplicableLayer = callout.applicableLayer;
             CalloutId = callout.calloutId;
         }

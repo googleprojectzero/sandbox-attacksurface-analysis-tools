@@ -204,11 +204,6 @@ namespace NtApiDotNet.Net.Firewall
         #endregion
 
         #region Internal Methods
-        internal static Guid? ReadGuid(IntPtr ptr)
-        {
-            return ReadStruct<Guid>(ptr);
-        }
-
         internal static T CloneValue<T>(this T value)
         {
             if (value is ICloneable clone)
@@ -244,13 +239,6 @@ namespace NtApiDotNet.Net.Firewall
         internal static IPEndPoint GetEndpoint(FirewallIpVersion ip_version, byte[] addr_bytes, int port)
         {
             return new IPEndPoint(GetAddress(ip_version, addr_bytes), port);
-        }
-
-        internal static T ReadStruct<T>(IntPtr ptr)
-        {
-            if (ptr == IntPtr.Zero)
-                return default;
-            return (T)Marshal.PtrToStructure(ptr, typeof(T));
         }
 
         #endregion

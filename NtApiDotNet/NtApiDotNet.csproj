@@ -209,6 +209,7 @@
     <Compile Include="Security\ConditionalExpression\ConditionalStringOperand.cs" />
     <Compile Include="Security\INtObjectSecurity.cs" />
     <Compile Include="Utilities\Collections\CollectionUtils.cs" />
+    <Compile Include="Utilities\Memory\UnmanagedUtils.cs" />
     <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
     <Compile Include="Utilities\Reflection\SDKNameAttribute.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
@@ -416,6 +417,13 @@
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceBinding.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceNameError.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceNameFlags.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceNameFormat.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
+    <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
+    <Compile Include="Win32\SafeHandles\SafeDirectoryServiceHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSecurityPrincipal.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceReferenceClass.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceExtendedRight.cs" />

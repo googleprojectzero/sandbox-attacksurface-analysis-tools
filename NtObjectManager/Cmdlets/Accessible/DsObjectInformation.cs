@@ -127,8 +127,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             var classes = DirectoryServiceUtils.GetSchemaClasses(domain, object_class, true);
             ret.ClassNames = new HashSet<string>(classes.Select(c => c.Name));
             ret.InferiorClasses = schema_class.PossibleInferiors.Select(i => DirectoryServiceUtils.GetSchemaClass(domain, i)).ToList();
-            ret.Attributes = classes.SelectMany(c => c.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name))).Distinct().ToList();
-            ret.ExtendedRights = DirectoryServiceUtils.GetExtendedRights(domain, schema_class.SchemaId).ToList();
+            ret.Attributes = classes.SelectMany(c => c.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name))).Distinct(new AttributeComparer()).ToList();
+            ret.ExtendedRights = DirectoryServiceUtils.GetExtendedRights(domain, schema_class.SchemaId).Distinct(new ExtendedRightsComparer()).ToList();
 
             ret.ObjectTypes = new Dictionary<Guid, IDirectoryServiceObjectTree>();
             ret.ObjectTypes[ret.SchemaClass.SchemaId] = ret.SchemaClass;

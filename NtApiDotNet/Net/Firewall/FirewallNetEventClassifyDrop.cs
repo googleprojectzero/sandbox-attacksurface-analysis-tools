@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 
 namespace NtApiDotNet.Net.Firewall
@@ -73,7 +74,7 @@ namespace NtApiDotNet.Net.Firewall
 
         internal FirewallNetEventClassifyDrop(FWPM_NET_EVENT2 net_event) : base(net_event)
         {
-            var inner_event = FirewallUtils.ReadStruct<FWPM_NET_EVENT_CLASSIFY_DROP2>(net_event.value);
+            var inner_event = net_event.value.ReadStruct<FWPM_NET_EVENT_CLASSIFY_DROP2>();
             FilterId = inner_event.filterId;
             LayerId = inner_event.layerId;
             VSwitchId = inner_event.vSwitchId.ToGuid();

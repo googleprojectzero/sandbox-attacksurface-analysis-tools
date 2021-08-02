@@ -333,6 +333,22 @@ namespace NtApiDotNet.Net.Sockets
         {
             SetPeerTargetName(listener, target_name, true);
         }
+
+        /// <summary>
+        /// Delete target peer for socket.
+        /// </summary>
+        /// <param name="socket">The socket to set.</param>
+        /// <param name="peer_address">Peer address.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus DeletePeerTargetName(this Socket socket, IPEndPoint peer_address, bool throw_on_error)
+        {
+            byte[] addr = peer_address.ToArray();
+            return SocketNativeMethods.WSADeleteSocketPeerTargetName(
+                socket.Handle, addr, addr.Length, IntPtr.Zero,
+                IntPtr.Zero).GetNtStatus(throw_on_error);
+        }
+
         #endregion
     }
 }

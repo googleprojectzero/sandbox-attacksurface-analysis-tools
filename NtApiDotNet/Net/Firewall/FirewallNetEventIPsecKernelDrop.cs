@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
+
 namespace NtApiDotNet.Net.Firewall
 {
     /// <summary>
@@ -46,7 +48,7 @@ namespace NtApiDotNet.Net.Firewall
 
         internal FirewallNetEventIPsecKernelDrop(FWPM_NET_EVENT2 net_event) : base(net_event)
         {
-            var inner_event = FirewallUtils.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>(net_event.value);
+            var inner_event = net_event.value.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>();
             FailureStatus = inner_event.failureStatus;
             Direction = inner_event.direction;
             Spi = inner_event.spi;

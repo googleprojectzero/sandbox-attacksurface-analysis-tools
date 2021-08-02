@@ -12,39 +12,36 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
-using System;
-
-namespace NtApiDotNet.Net.Firewall
+namespace NtApiDotNet.Win32.DirectoryService
 {
     /// <summary>
-    /// Represents a firewall field schema.
+    /// Structure to represent a directory service name.
     /// </summary>
-    public struct FirewallField
+    public struct DirectoryServiceNameResult
     {
         /// <summary>
-        /// The field's key.
+        /// Status of the name.
         /// </summary>
-        public Guid Key { get; }
+        public DirectoryServiceNameError Status { get; }
         /// <summary>
-        /// The name of the key if known.
+        /// Domain of the name.
         /// </summary>
-        public string KeyName { get; }
+        public string Domain { get; }
         /// <summary>
-        /// The type of the field.
+        /// Name of the name.
         /// </summary>
-        public FirewallFieldType Type { get; }
-        /// <summary>
-        /// The data type of the field.
-        /// </summary>
-        public FirewallDataType DataType { get; }
+        public string Name { get; }
 
-        internal FirewallField(FWPM_FIELD0 field)
+        private DirectoryServiceNameResult(DS_NAME_RESULT_ITEMW item)
         {
-            Key = field.fieldKey.ReadGuid() ?? Guid.Empty;
-            KeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(Key);
-            Type = field.type;
-            DataType = field.dataType;
+            Status = item.status;
+            Domain = item.pDomain;
+            Name = item.pName;
+        }
+
+        internal static DirectoryServiceNameResult Create(DS_NAME_RESULT_ITEMW item)
+        {
+            return new DirectoryServiceNameResult(item);
         }
     }
 }

@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.ApiSet
 {
@@ -90,7 +90,7 @@ namespace NtApiDotNet.ApiSet
                 return new ApiSetNamespace(ApiSetFlags.None, new List<ApiSetEntry>());
 
             IntPtr base_ptr = NtProcess.Current.GetPeb().GetApiSetMap();
-            var header = (API_SET_NAMESPACE_WIN10)Marshal.PtrToStructure(base_ptr, typeof(API_SET_NAMESPACE_WIN10));
+            var header = base_ptr.ReadStruct<API_SET_NAMESPACE_WIN10>();
             if (header.Version < 5)
                 return new ApiSetNamespace(ApiSetFlags.None, new List<ApiSetEntry>());
 

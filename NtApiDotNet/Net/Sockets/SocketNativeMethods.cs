@@ -56,6 +56,15 @@ namespace NtApiDotNet.Net.Sockets
             IntPtr CompletionRoutine
         );
 
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int WSADeleteSocketPeerTargetName(
+            IntPtr Socket,
+            byte[] PeerAddr,
+            int PeerAddrLen,
+            IntPtr Overlapped,
+            IntPtr CompletionRoutine
+        );
+
         [DllImport("Ws2_32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error WSAGetLastError();
     }

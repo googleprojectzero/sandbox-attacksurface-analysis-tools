@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
+
 namespace NtApiDotNet.Net.Firewall
 {
     /// <summary>
@@ -38,7 +40,7 @@ namespace NtApiDotNet.Net.Firewall
 
         internal FirewallNetEventCapabilityDrop(FWPM_NET_EVENT2 net_event) : base(net_event)
         {
-            var inner_event = FirewallUtils.ReadStruct<FWPM_NET_EVENT_CAPABILITY_DROP0>(net_event.value);
+            var inner_event = net_event.value.ReadStruct<FWPM_NET_EVENT_CAPABILITY_DROP0>();
             NetworkCapabilityId = inner_event.networkCapabilityId;
             FilterId = inner_event.filterId;
             IsLoopback = inner_event.isLoopback;

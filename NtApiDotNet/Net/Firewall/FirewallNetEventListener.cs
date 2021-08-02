@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Concurrent;
@@ -54,7 +55,7 @@ namespace NtApiDotNet.Net.Firewall
                 if (ptr == IntPtr.Zero)
                     return;
 
-                FWPM_NET_EVENT2 ev = FirewallUtils.ReadStruct<FWPM_NET_EVENT2>(ptr);
+                FWPM_NET_EVENT2 ev = ptr.ReadStruct<FWPM_NET_EVENT2>();
 
                 var new_ev = FirewallNetEvent.Create(ev);
                 if (_queue.IsAddingCompleted)
