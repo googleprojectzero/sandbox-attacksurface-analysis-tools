@@ -705,7 +705,7 @@ namespace TokenViewer
                     foreach (NtHandle handle in group)
                     {
                         using (var token_result = NtToken.DuplicateFrom(proc.Result, new IntPtr(handle.Handle), 
-                            TokenAccessRights.Query | TokenAccessRights.QuerySource, DuplicateObjectOptions.None, false))
+                            TokenAccessRights.None, DuplicateObjectOptions.SameAccess, false))
                         {
                             if (!token_result.IsSuccess)
                             {
@@ -715,17 +715,30 @@ namespace TokenViewer
                             ListViewItem item = new ListViewItem(handle.ProcessId.ToString());
                             item.SubItems.Add(proc.Result.Name);
                             item.SubItems.Add($"0x{handle.Handle:X}");
-                            item.SubItems.Add(token.User.ToString());
-                            item.SubItems.Add(token.IntegrityLevel.ToString());
-                            string restricted = token.Restricted.ToString();
-                            if (token.WriteRestricted)
+
+                            if (!token.IsAccessGranted(TokenAccessRights.Query))
                             {
-                                restricted = "Write";
+                                item.SubItems.Add("UNKNOWN");
+                                item.SubItems.Add("UNKNOWN");
+                                item.SubItems.Add("UNKNOWN");
+                                item.SubItems.Add("UNKNOWN");
+                                item.SubItems.Add("UNKNOWN");
+                                item.SubItems.Add("UNKNOWN");
                             }
-                            item.SubItems.Add(restricted);
-                            item.SubItems.Add(token.AppContainer.ToString());
-                            item.SubItems.Add(token.TokenType.ToString());
-                            item.SubItems.Add(token.ImpersonationLevel.ToString());
+                            else
+                            {
+                                item.SubItems.Add(token.User.ToString());
+                                item.SubItems.Add(token.IntegrityLevel.ToString());
+                                string restricted = token.Restricted.ToString();
+                                if (token.WriteRestricted)
+                                {
+                                    restricted = "Write";
+                                }
+                                item.SubItems.Add(restricted);
+                                item.SubItems.Add(token.AppContainer.ToString());
+                                item.SubItems.Add(token.TokenType.ToString());
+                                item.SubItems.Add(token.ImpersonationLevel.ToString());
+                            }
                             item.Tag = token.Duplicate();
                             items.Add(item);
                         }
