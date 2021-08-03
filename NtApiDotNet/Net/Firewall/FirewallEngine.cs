@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Security;
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.Security.Authentication;
@@ -185,7 +186,7 @@ namespace NtApiDotNet.Net.Firewall
                         {
                             entries.Initialize<IntPtr>((uint)entry_count);
                             IntPtr[] ptrs = entries.ReadArray<IntPtr>(0, entry_count);
-                            ret.AddRange(ptrs.Select(ptr => map_func((U)Marshal.PtrToStructure(ptr, typeof(U)))).Where(filter_func));
+                            ret.AddRange(ptrs.Select(ptr => map_func(ptr.ReadStruct<U>())).Where(filter_func));
                         }
 
                         if (entry_count < MAX_ENTRY)
@@ -204,7 +205,7 @@ namespace NtApiDotNet.Net.Firewall
             {
                 using (buffer)
                 {
-                    return map_func((U)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(U)));
+                    return map_func(buffer.ReadStruct<U>());
                 }
             });
         }
@@ -384,7 +385,7 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     using (buffer)
                     {
-                        return ProcessLayer((FWPM_LAYER0)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(FWPM_LAYER0)));
+                        return ProcessLayer(buffer.ReadStruct<FWPM_LAYER0>());
                     }
                 });
         }
@@ -616,7 +617,7 @@ namespace NtApiDotNet.Net.Firewall
             {
                 using (buffer)
                 {
-                    return ProcessFilter((FWPM_FILTER0)Marshal.PtrToStructure(buffer.DangerousGetHandle(), typeof(FWPM_FILTER0)));
+                    return ProcessFilter(buffer.ReadStruct<FWPM_FILTER0>());
                 }
             });
         }
@@ -862,8 +863,7 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     using (buffer)
                     {
-                        return ProcessIkeSa((IKEEXT_SA_DETAILS1)Marshal.PtrToStructure(buffer.DangerousGetHandle(), 
-                            typeof(IKEEXT_SA_DETAILS1)));
+                        return ProcessIkeSa(buffer.ReadStruct<IKEEXT_SA_DETAILS1>());
                     }
                 });
         }
@@ -939,7 +939,7 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     entries.Initialize<IntPtr>((uint)entry_count);
                     IntPtr[] ptrs = entries.ReadArray<IntPtr>(0, entry_count);
-                    ret.AddRange(ptrs.Select(ptr => new IPsecKeyManager((IPSEC_KEY_MANAGER0)Marshal.PtrToStructure(ptr, typeof(IPSEC_KEY_MANAGER0)))));
+                    ret.AddRange(ptrs.Select(ptr => new IPsecKeyManager(ptr.ReadStruct<IPSEC_KEY_MANAGER0>())));
                 }
                 return ret.AsReadOnly().CreateResult<IEnumerable<IPsecKeyManager>>();
             }
@@ -1034,8 +1034,7 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     using (buffer)
                     {
-                        return ProcessAleEndpoint((FWPS_ALE_ENDPOINT_PROPERTIES0)Marshal.PtrToStructure(
-                            buffer.DangerousGetHandle(), typeof(FWPS_ALE_ENDPOINT_PROPERTIES0)));
+                        return ProcessAleEndpoint(buffer.ReadStruct<FWPS_ALE_ENDPOINT_PROPERTIES0>());
                     }
                 });
         }
@@ -1165,6 +1164,56 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<FirewallTransaction> BeginTransaction(FirewallTransactionFlags flags, bool throw_on_error)
         {
             return FirewallNativeMethods.FwpmTransactionBegin0(_handle, flags).CreateWin32Result(throw_on_error, () => new FirewallTransaction(_handle));
+        }
+
+        /// <summary>
+        /// Enumerate all IPsec SA contexts.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of SA contexts.</returns>
+        public NtResult<IEnumerable<IPsecSecurityAssociationContext>> EnumerateIPsecSecurityAssociationContexts(bool throw_on_error)
+        {
+            Func<IPSEC_SA_CONTEXT1, IPsecSecurityAssociationContext> f = s => new IPsecSecurityAssociationContext(s, ProcessFilter);
+            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.IPsecSaContextCreateEnumHandle0,
+                FirewallNativeMethods.IPsecSaContextEnum1, FirewallNativeMethods.IPsecSaContextDestroyEnumHandle0,
+                throw_on_error).Map<IEnumerable<IPsecSecurityAssociationContext>>(l => l.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Enumerate all IPsec SA contexts.
+        /// </summary>
+        /// <returns>The list of SA contexts.</returns>
+        public IEnumerable<IPsecSecurityAssociationContext> EnumerateIPsecSecurityAssociationContexts()
+        {
+            return EnumerateIPsecSecurityAssociationContexts(true).Result;
+        }
+
+        /// <summary>
+        /// Get an IPsec SA context by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the IPsec SA context.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The IPsec SA context.</returns>
+        public NtResult<IPsecSecurityAssociationContext> GetIPsecSecurityAssociationContext(ulong id, bool throw_on_error)
+        {
+            return FirewallNativeMethods.IPsecSaContextGetById1(_handle, id, out SafeFwpmMemoryBuffer buffer)
+                .CreateWin32Result(throw_on_error, () =>
+                {
+                    using (buffer)
+                    {
+                        return new IPsecSecurityAssociationContext(buffer.ReadStruct<IPSEC_SA_CONTEXT1>(), ProcessFilter);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Get an IPsec SA context by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the IPsec SA context.</param>
+        /// <returns>The IPsec SA context.</returns>
+        public IPsecSecurityAssociationContext GetIPsecSecurityAssociationContext(ulong id)
+        {
+            return GetIPsecSecurityAssociationContext(id, true).Result;
         }
 
         /// <summary>

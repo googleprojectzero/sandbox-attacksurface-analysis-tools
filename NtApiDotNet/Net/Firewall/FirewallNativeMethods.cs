@@ -703,6 +703,282 @@ namespace NtApiDotNet.Net.Firewall
         public Guid sessionKey;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_CONTEXT1
+    {
+        public ulong saContextId;
+        public IntPtr inboundSa; // IPSEC_SA_DETAILS1* 
+        public IntPtr outboundSa; // IPSEC_SA_DETAILS1* 
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_TRAFFIC1
+    {
+        public FirewallIpVersion ipVersion;
+        public uint localAddrV4;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 12)]
+        public byte[] localAddrV6;
+        public uint remoteAddrV4;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 12)]
+        public byte[] remoteAddrV6;
+        public IPsecTrafficType trafficType;
+        public ulong trafficTypeId;
+        public ushort remotePort;
+        public ushort localPort;
+        public byte ipProtocol;
+        public long localIfLuid;
+        public uint realIfProfileId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_LIFETIME0
+    {
+        public uint lifetimeSeconds;
+        public uint lifetimeKilobytes;
+        public uint lifetimePackets;
+    }
+
+    [SDKName("IPSEC_TRANSFORM_TYPE")]
+    public enum IPsecTransformType
+    {
+        [SDKName("IPSEC_TRANSFORM_AH")]
+        AH,
+        [SDKName("IPSEC_TRANSFORM_ESP_AUTH")]
+        EspAuth,
+        [SDKName("IPSEC_TRANSFORM_ESP_CIPHER")]
+        EspCipher,
+        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_AND_CIPHER")]
+        EspAuthAndCipher,
+        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_FW")]
+        EspAuthFw
+    }
+
+    /// <summary>
+    /// IPsec authentication type.
+    /// </summary>
+    [SDKName("IPSEC_AUTH_TYPE")]
+    public enum IPsecAuthType
+    {
+        [SDKName("IPSEC_AUTH_MD5")]
+        MD5 = 0,
+        [SDKName("IPSEC_AUTH_SHA_1")]
+        SHA1 = (MD5 + 1),
+        [SDKName("IPSEC_AUTH_SHA_256")]
+        SHA256 = (SHA1 + 1),
+        [SDKName("IPSEC_AUTH_AES_128")]
+        AES128 = (SHA256 + 1),
+        [SDKName("IPSEC_AUTH_AES_192")]
+        AES192 = (AES128 + 1),
+        [SDKName("IPSEC_AUTH_AES_256")]
+        AES256 = (AES192 + 1)
+    }
+
+    public enum IPsecAuthConfig : byte
+    {
+        [SDKName("IPSEC_AUTH_CONFIG_HMAC_MD5_96")]
+        HMAC_MD5_96 = 0,
+        [SDKName("IPSEC_AUTH_CONFIG_HMAC_SHA_1_96")]
+        HMAC_SHA1_96 = 1,
+        [SDKName("IPSEC_AUTH_CONFIG_HMAC_SHA_256_128")]
+        HMAC_SHA256_128 = 2,
+        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_128")]
+        GCM_AES128 = 3,
+        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_192")]
+        GCM_AES192 = 4,
+        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_256")]
+        GCM_AES256 = 5,
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_AUTH_TRANSFORM_ID0
+    {
+        public IPsecAuthType authType;
+        public IPsecAuthConfig authConfig;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_AUTH_TRANSFORM0
+    {
+        public IPSEC_AUTH_TRANSFORM_ID0 authTransformId;
+        public IntPtr cryptoModuleId; // IPSEC_CRYPTO_MODULE_ID* -> GUID
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_AUTH_INFORMATION0
+    {
+        public IPSEC_AUTH_TRANSFORM0 authTransform;
+        public FWP_BYTE_BLOB authKey;
+    }
+
+    /// <summary>
+    /// IPSec Cipher Type.
+    /// </summary>
+    [SDKName("IPSEC_CIPHER_TYPE")]
+    public enum IPsecCipherType
+    {
+        [SDKName("IPSEC_CIPHER_TYPE_DES")]
+        DES = 1,
+        [SDKName("IPSEC_CIPHER_TYPE_3DES")]
+        TripleDES = (DES + 1),
+        [SDKName("IPSEC_CIPHER_TYPE_AES_128")]
+        AES128 = (TripleDES + 1),
+        [SDKName("IPSEC_CIPHER_TYPE_AES_192")]
+        AES192 = (AES128 + 1),
+        [SDKName("IPSEC_CIPHER_TYPE_AES_256")]
+        AES256 = (AES192 + 1)
+    }
+
+    /// <summary>
+    /// IPsec Cipher Configuration.
+    /// </summary>
+    public enum IPsecCipherConfig : byte
+    {
+        [SDKName("IPSEC_CIPHER_CONFIG_CBC_DES")]
+        CBC_DES = 1,
+        [SDKName("IPSEC_CIPHER_CONFIG_CBC_3DES")]
+        CBC_3DES = 2,
+        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_128")]
+        CBC_AES128 = 3,
+        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_192")]
+        CBC_AES192 = 4,
+        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_256")]
+        CBC_AES256 = 5,
+        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_128")]
+        GCM_AES128 = 6,
+        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_192")]
+        GCM_AES192 = 7,
+        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_256")]
+        GCM_AES256 = 8,
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_CIPHER_TRANSFORM_ID0
+    {
+        public IPsecCipherType cipherType;
+        public IPsecCipherConfig cipherConfig;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_CIPHER_TRANSFORM0
+    {
+        public IPSEC_CIPHER_TRANSFORM_ID0 cipherTransformId;
+        public IntPtr cryptoModuleId; // IPSEC_CRYPTO_MODULE_ID* -> GUID
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_CIPHER_INFORMATION0
+    {
+        public IPSEC_CIPHER_TRANSFORM0 cipherTransform;
+        public FWP_BYTE_BLOB cipherKey;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_AUTH_AND_CIPHER_INFORMATION0
+    {
+        public IPSEC_SA_CIPHER_INFORMATION0 saCipherInformation;
+        public IPSEC_SA_AUTH_INFORMATION0 saAuthInformation;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA0
+    {
+        public uint spi;
+        public IPsecTransformType saTransformType;
+        public IntPtr ptr;
+        //IPSEC_SA_AUTH_INFORMATION0            *ahInformation;
+        //IPSEC_SA_AUTH_INFORMATION0            *espAuthInformation;
+        //IPSEC_SA_CIPHER_INFORMATION0          *espCipherInformation;
+        //IPSEC_SA_AUTH_AND_CIPHER_INFORMATION0 *espAuthAndCipherInformation;
+        //IPSEC_SA_AUTH_INFORMATION0            *espAuthFwInformation;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_ID0
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string mmTargetName;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string emTargetName;
+        public int numTokens;
+        public IntPtr tokens; // IPSEC_TOKEN0* 
+        public ulong explicitCredentials;
+        public ulong logonId;
+    }
+
+    public enum IPSEC_TOKEN_MODE
+    {
+        IPSEC_TOKEN_MODE_MAIN = 0, 
+        IPSEC_TOKEN_MODE_EXTENDED = (IPSEC_TOKEN_MODE_MAIN + 1) 
+    }
+
+    public enum IPSEC_TOKEN_TYPE
+    {
+        IPSEC_TOKEN_TYPE_MACHINE = 0,
+        IPSEC_TOKEN_TYPE_IMPERSONATION = (IPSEC_TOKEN_TYPE_MACHINE + 1)
+    }
+
+    public enum IPSEC_TOKEN_PRINCIPAL
+    {
+        IPSEC_TOKEN_PRINCIPAL_LOCAL = 0,
+        IPSEC_TOKEN_PRINCIPAL_PEER = (IPSEC_TOKEN_PRINCIPAL_LOCAL + 1)
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_TOKEN0
+    {
+        public IPSEC_TOKEN_TYPE type;
+        public IPSEC_TOKEN_PRINCIPAL principal;
+        public IPSEC_TOKEN_MODE mode;
+        public long token;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_BUNDLE1
+    {
+        public IPsecSecurityAssociationBundleFlags flags;
+        public IPSEC_SA_LIFETIME0 lifetime;
+        public uint idleTimeoutSeconds;
+        public uint ndAllowClearTimeoutSeconds;
+        public IntPtr ipsecId; // IPSEC_ID0* 
+        public uint napContext;
+        public uint qmSaId;
+        public int numSAs;
+        public IntPtr saList; // IPSEC_SA0* 
+        public IntPtr keyModuleState; // IPSEC_KEYMODULE_STATE0* 
+        public FirewallIpVersion ipVersion;
+        public uint peerV4PrivateAddress;
+        public ulong mmSaId;
+        public IPsecPerfectForwardSecrecyGroup pfsGroup;
+        public Guid saLookupContext;
+        public ulong qmFilterId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_KEYMODULE_STATE0
+    {
+        public Guid keyModuleKey;
+        public FWP_BYTE_BLOB stateBlob;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_VIRTUAL_IF_TUNNEL_INFO0
+    {
+        public ulong virtualIfTunnelId;
+        public ulong trafficSelectorId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct IPSEC_SA_DETAILS1
+    {
+        public FirewallIpVersion ipVersion;
+        public FirewallDirectionType saDirection;
+        public IPSEC_TRAFFIC1 traffic;
+        public IPSEC_SA_BUNDLE1 saBundle;
+        public IntPtr udpEncapsulation; // IPSEC_V4_UDP_ENCAPSULATION0 
+        public IntPtr transportFilter; // FWPM_FILTER0* 
+        public IntPtr virtualIfTunnelInfo; // IPSEC_VIRTUAL_IF_TUNNEL_INFO0* 
+    }
+
     internal static class FirewallNativeMethods
     {
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
@@ -1215,6 +1491,35 @@ namespace NtApiDotNet.Net.Firewall
         internal static extern Win32Error FwpmNetEventUnsubscribe0(
             SafeFwpmEngineHandle engineHandle,
             IntPtr eventsHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecSaContextCreateEnumHandle0(
+          SafeFwpmEngineHandle engineHandle,
+          SafeBuffer enumTemplate, // const IPSEC_SA_CONTEXT_ENUM_TEMPLATE0*
+          out IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecSaContextEnum1(
+          SafeFwpmEngineHandle engineHandle,
+          IntPtr enumHandle,
+          int numEntriesRequested,
+          out SafeFwpmMemoryBuffer entries, // IPSEC_SA_CONTEXT1***
+          out int numEntriesReturned
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecSaContextDestroyEnumHandle0(
+            SafeFwpmEngineHandle engineHandle,
+            IntPtr enumHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error IPsecSaContextGetById1(
+          SafeFwpmEngineHandle engineHandle,
+          ulong id,
+          out SafeFwpmMemoryBuffer saContext // IPSEC_SA_CONTEXT1**
         );
     }
 }

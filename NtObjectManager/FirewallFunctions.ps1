@@ -1022,3 +1022,42 @@ function Start-FwNetEventListener {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Get an IPsec security association context.
+.DESCRIPTION
+This cmdlet gets an IPsec security association context from an engine.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Id
+Specify the IPsec security association context ID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.IPsecSecurityAssociationContext[]
+.EXAMPLE
+Get-IPsecSaContext -Engine $engine
+Get all security association context.
+.EXAMPLE
+Get-IPsecSaContext -Engine $engine -Id 12345
+Get the security association context with ID 12345.
+#>
+function Get-IPsecSaContext {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [uint64]$Id
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Engine.EnumerateIPsecSecurityAssociationContexts() | Write-Output
+        }
+        "FromId" {
+            $Engine.GetIPsecSecurityAssociationContext($Id)
+        }
+    }
+}

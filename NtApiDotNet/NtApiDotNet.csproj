@@ -112,6 +112,7 @@
     <Compile Include="Net\Firewall\IkeNameCredential.cs" />
     <Compile Include="Net\Firewall\IkePreSharedKeyCredential.cs" />
     <Compile Include="Net\Firewall\IkeSecurityAssociation.cs" />
+    <Compile Include="Net\Firewall\IPsecIdentity.cs" />
     <Compile Include="Net\Firewall\IPsecKeyManager.cs" />
     <Compile Include="Net\Firewall\IPsecKeyManagerFlags.cs" />
     <Compile Include="Net\Firewall\FirewallLayerFlags.cs" />
@@ -141,6 +142,14 @@
     <Compile Include="Net\Firewall\FirewallUtils.cs" />
     <Compile Include="Net\Firewall\FirewallValue.cs" />
     <Compile Include="Net\Firewall\IFirewallEnumTemplate.cs" />
+    <Compile Include="Net\Firewall\IPsecPerfectForwardSecrecyGroup.cs" />
+    <Compile Include="Net\Firewall\IPsecSecurityAssociationParameter.cs" />
+    <Compile Include="Net\Firewall\IPsecSecurityAssociation.cs" />
+    <Compile Include="Net\Firewall\IPsecSecurityAssociationBundle.cs" />
+    <Compile Include="Net\Firewall\IPsecSecurityAssociationBundleFlags.cs" />
+    <Compile Include="Net\Firewall\IPsecSecurityAssociationContext.cs" />
+    <Compile Include="Net\Firewall\IPsecToken.cs" />
+    <Compile Include="Net\Firewall\IPsecTrafficType.cs" />
     <Compile Include="Net\Firewall\NamedGuidDictionary.cs" />
     <Compile Include="Net\Firewall\FirewallNativeMethods.cs" />
     <Compile Include="Net\Firewall\SafeFwpmEngineHandle.cs" />

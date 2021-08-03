@@ -20,6 +20,12 @@ namespace NtApiDotNet.Utilities.Memory
 {
     internal static class UnmanagedUtils
     {
+        internal static T ReadStruct<T>(this SafeBuffer buffer)
+        {
+            return ReadStruct<T>(buffer.DangerousGetHandle());
+        }
+
+
         internal static T ReadStruct<T>(this IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)

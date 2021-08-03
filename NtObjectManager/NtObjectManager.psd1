@@ -130,7 +130,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-FwAleEndpoint', 'Get-FwToken', 'Get-SocketSecurity', 'Set-SocketSecurity',
           'Set-SocketPeerTargetName', 'Get-IkeSecurityAssociation', 'Get-FwSession',
           'Reset-NtTokenGroup', 'Enable-NtTokenGroup', 'Disable-NtTokenGroup', 'Get-FwNetEvent',
-          'Read-FwNetEvent', 'New-FwNetEventListener', 'Start-FwNetEventListener'
+          'Read-FwNetEvent', 'New-FwNetEventListener', 'Start-FwNetEventListener', 'Get-IPsecSaContext'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
