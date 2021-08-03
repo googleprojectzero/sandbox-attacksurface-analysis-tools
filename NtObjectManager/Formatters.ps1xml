@@ -731,6 +731,9 @@
                 <PropertyName>ProcessId</PropertyName>
               </ListItem>
               <ListItem>
+                <PropertyName>ProcessImagePath</PropertyName>
+              </ListItem>
+              <ListItem>
                 <PropertyName>ObjectType</PropertyName>
               </ListItem>
               <ListItem>
