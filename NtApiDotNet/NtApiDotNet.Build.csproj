@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyName>NtApiDotNet</AssemblyName>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
     <PackageId>NtApiDotNet</PackageId>
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
@@ -38,7 +38,7 @@
 </PackageReleaseNotes>
   </PropertyGroup>
   
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Security" />
     <Reference Include="System.DirectoryServices" />
   </ItemGroup>
@@ -48,6 +48,7 @@
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.0" />
     <PackageReference Include="System.DirectoryServices" Version="5.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
