@@ -44,6 +44,16 @@ namespace NtApiDotNet.Net.Firewall
         public IReadOnlyList<FirewallField> Fields { get; }
 
         /// <summary>
+        /// Is builtin layer.
+        /// </summary>
+        public bool IsBuiltin => Flags.HasFlagSet(FirewallLayerFlags.Builtin);
+
+        /// <summary>
+        /// Is a user-mode layer.
+        /// </summary>
+        public bool IsUser => !Flags.HasFlagSet(FirewallLayerFlags.Kernel);
+
+        /// <summary>
         /// Enumerate filters for this layer.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
