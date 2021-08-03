@@ -22,6 +22,23 @@ $sublayer_completer = {
     [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
+$Script:GlobalFwEngine = $null
+
+function Get-FwEngineSingleton {
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+    )
+
+    if ($null -ne $Engine) {
+        return $Engine
+    }
+
+    if ($Script:GlobalFwEngine -eq $null) {
+        $Script:GlobalFwEngine = Get-FwEngine
+    }
+    return $Script:GlobalFwEngine
+}
+
 <#
 .SYNOPSIS
 Get a firewall engine instance.
@@ -64,7 +81,7 @@ Get a firewall layer.
 .DESCRIPTION
 This cmdlet gets a firewall layer from an engine. It can return a specific layer or all layers.
 .PARAMETER Engine
-The firewall engine to query.
+The firewall engine to query. Optional, if not specified will use a globally set engine.
 .PARAMETER Key
 Specify the layer key.
 .PARAMETER Name
@@ -84,7 +101,7 @@ Get all firewall layers.
 Get-FwLayer -Engine $engine -Key "c38d57d1-05a7-4c33-904f-7fbceee60e82"
 Get firewall layer from key.
 .EXAMPLE
-Get-FwLayer -Engine $engine -Name "FWPM_LAYER_ALE_AUTH_CONNECT_V4"
+Get-FwLayer -Engine $engine -Key "FWPM_LAYER_ALE_AUTH_CONNECT_V4"
 Get firewall layer from name.
 .EXAMPLE
 Get-FwLayer -Engine $engine -Id 1234
@@ -93,38 +110,38 @@ Get firewall layer from its ID.
 function Get-FwLayer {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromKey")]
-        [Guid]$Key,
-        [parameter(Mandatory, ParameterSetName="FromName")]
-        [string]$Name,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
+        [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$Key,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
         [parameter(Mandatory, ParameterSetName="FromId")]
         [int]$Id
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateLayers() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateLayers() | Write-Output
+            }
+            "FromKey" {
+                $Engine.GetLayer($Key.Id)
+            }
+            "FromAleLayer" {
+                $Engine.GetLayer($AleLayer)
+            }
+            "FromId" {
+                $Engine.GetLayer($Id)
+            }
         }
-        "FromKey" {
-            $Engine.GetLayer($Key)
-        }
-        "FromName" {
-            $Engine.GetLayer($Name)
-        }
-        "FromAleLayer" {
-            $Engine.GetLayer($AleLayer)
-        }
-        "FromId" {
-            $Engine.GetLayer($Id)
-        }
+    } catch {
+        Write-Error $_
     }
 }
 
-Register-ArgumentCompleter -CommandName Get-FwLayer -ParameterName Name -ScriptBlock $layer_completer
+Register-ArgumentCompleter -CommandName Get-FwLayer -ParameterName Key -ScriptBlock $layer_completer
 
 <#
 .SYNOPSIS
@@ -142,40 +159,40 @@ None
 .OUTPUTS
 NtApiDotNet.Net.Firewall.FirewallSubLayer[]
 .EXAMPLE
-Get-FwSubLayer -Engine $engine
+Get-FwSubLayer
 Get all firewall sub-layers.
 .EXAMPLE
-Get-FwSubLayer -Engine $engine -Key "eebecc03-ced4-4380-819a-2734397b2b74"
+Get-FwSubLayer -Key "eebecc03-ced4-4380-819a-2734397b2b74"
 Get firewall sub-layer from key.
 .EXAMPLE
-Get-FwSubLayer -Engine $engine -Name "FWPM_SUBLAYER_UNIVERSAL"
+Get-FwSubLayer -Key "FWPM_SUBLAYER_UNIVERSAL"
 Get firewall sub-layer from name.
 #>
 function Get-FwSubLayer {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromKey")]
-        [Guid]$Key,
-        [parameter(Mandatory, ParameterSetName="FromName")]
-        [string]$Name
+        [parameter(Mandatory, ParameterSetName="FromKey")]
+        [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$Key
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateSubLayers() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateSubLayers() | Write-Output
+            }
+            "FromKey" {
+                $Engine.GetSubLayer($Key.Id)
+            }
         }
-        "FromKey" {
-            $Engine.GetSubLayer($Key)
-        }
-        "FromName" {
-            $Engine.GetSubLayer($Name)
-        }
+    } catch {
+        Write-Error $_
     }
 }
 
-Register-ArgumentCompleter -CommandName Get-FwSubLayer -ParameterName Name -ScriptBlock $sublayer_completer
+Register-ArgumentCompleter -CommandName Get-FwSubLayer -ParameterName Key -ScriptBlock $sublayer_completer
 
 <#
 .SYNOPSIS
@@ -216,14 +233,14 @@ Get firewall filters based on a template.
 function Get-FwFilter {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0, ParameterSetName="All")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerKey")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromAleLayer")]
-        [parameter(Mandatory, Position = 0, ParameterSetName="FromTemplate")]
+        [parameter(ParameterSetName="All")]
+        [parameter(ParameterSetName="FromLayerKey")]
+        [parameter(ParameterSetName="FromId")]
+        [parameter(ParameterSetName="FromKey")]
+        [parameter(ParameterSetName="FromAleLayer")]
+        [parameter(ParameterSetName="FromTemplate")]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromLayerKey")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerKey")]
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
@@ -233,7 +250,7 @@ function Get-FwFilter {
         [uint64]$Id,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [guid]$Key,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromTemplate")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromTemplate")]
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]$Template,
         [parameter(ParameterSetName="FromLayerKey")]
         [parameter(ParameterSetName="FromAleLayer")]
@@ -242,6 +259,8 @@ function Get-FwFilter {
 
     PROCESS {
         try {
+            $Engine = Get-FwEngineSingleton -Engine $Engine
+
             switch($PSCmdlet.ParameterSetName) {
                 "All" {
                     $Engine.EnumerateFilters() | Write-Output
@@ -704,19 +723,23 @@ Get the firewall ALE endpoint with ID 12345.
 function Get-FwAleEndpoint {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [uint64]$Id
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateAleEndpoints() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateAleEndpoints() | Write-Output
+            }
+            "FromId" {
+                $Engine.GetAleEndpoint($Id)
+            }
         }
-        "FromId" {
-            $Engine.GetAleEndpoint($Id)
-        }
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -747,19 +770,23 @@ Get token from an ALE endpoint.
 function Get-FwToken {
     [CmdletBinding(DefaultParameterSetName="FromLuid")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromEndpoint")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromEndpoint")]
         [NtApiDotNet.Net.Firewall.FirewallAleEndpoint]$AleEndpoint,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromLuid")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromLuid")]
         [NtApiDotNet.Luid]$ModifiedId,
         [NtApiDotNet.TokenAccessRights]$Access = "Query"
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromEndpoint") {
-        $ModifiedId = $AleEndpoint.LocalTokenModifiedId
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        if ($PSCmdlet.ParameterSetName -eq "FromEndpoint") {
+            $ModifiedId = $AleEndpoint.LocalTokenModifiedId
+        }
+        $Engine.OpenToken($ModifiedId, $Access)
+    } catch {
+        Write-Error $_
     }
-    $Engine.OpenToken($ModifiedId, $Access)
 }
 
 <#
@@ -803,22 +830,23 @@ Get an IKE security associations from a secured TCP client.
 function Get-IkeSecurityAssociation {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromIdAndContext")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromIdAndContext")]
         [uint64]$Id,
-        [parameter(Mandatory, Position = 2, ParameterSetName="FromIdAndContext")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromIdAndContext")]
         [guid]$SaLookupContext,
-        [Parameter(Mandatory, Position = 1, ParameterSetName="FromSocket")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromSocket")]
         [System.Net.Sockets.Socket]$Socket,
         [Parameter(ParameterSetName="FromSocket")]
         [System.Net.IPEndPoint]$PeerAddress,
-        [Parameter(Mandatory, Position = 1, ParameterSetName="FromTcpClient")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromTcpClient")]
         [System.Net.Sockets.TcpClient]$Client
     )
 
     try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+
         switch($PSCmdlet.ParameterSetName) {
             "All" {
                 $Engine.EnumerateIkeSecurityAssociations() | Write-Output
@@ -861,14 +889,18 @@ Get all firewall sessions.
 function Get-FwSession {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateSessions() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateSessions() | Write-Output
+            }
         }
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -890,14 +922,18 @@ Get all firewall network events.
 function Get-FwNetEvent {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateNetEvents() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateNetEvents() | Write-Output
+            }
         }
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -919,10 +955,14 @@ Create a new firewall network event listener.
 function New-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
     )
-    $Engine.SubscribeNetEvents()
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        $Engine.SubscribeNetEvents()
+    } catch {
+        Write-Error $_
+    }
 }
 
 <#
@@ -996,7 +1036,6 @@ Start a new firewall network event listener and store the captured events in a v
 function Start-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
         [string]$Variable
     )
@@ -1046,18 +1085,22 @@ Get the security association context with ID 12345.
 function Get-IPsecSaContext {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [uint64]$Id
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            $Engine.EnumerateIPsecSecurityAssociationContexts() | Write-Output
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateIPsecSecurityAssociationContexts() | Write-Output
+            }
+            "FromId" {
+                $Engine.GetIPsecSecurityAssociationContext($Id)
+            }
         }
-        "FromId" {
-            $Engine.GetIPsecSecurityAssociationContext($Id)
-        }
+    } catch {
+        Write-Error $_
     }
 }
