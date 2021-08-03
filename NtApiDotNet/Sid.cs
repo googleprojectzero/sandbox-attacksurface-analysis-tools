@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,7 +38,7 @@ namespace NtApiDotNet
                 return NtStatus.STATUS_INVALID_SID;
 
             IntPtr authority = NtRtl.RtlIdentifierAuthoritySid(sid);
-            Authority = (SidIdentifierAuthority)Marshal.PtrToStructure(authority, typeof(SidIdentifierAuthority));
+            Authority = authority.ReadStruct<SidIdentifierAuthority>();
             int sub_authority_count = Marshal.ReadByte(NtRtl.RtlSubAuthorityCountSid(sid));
             List<uint> sub_auth = new List<uint>();
             for (int i = 0; i < sub_authority_count; ++i)

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Security.Authentication.Schannel;
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
@@ -55,7 +56,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         internal static AuthenticationPackage GetAuthenticationPackage(SecHandle context)
         {
             var pkg_info = QueryContextAttribute<SecPkgContext_PackageInfo>(context, SECPKG_ATTR.PACKAGE_INFO);
-            return new AuthenticationPackage(pkg_info.PackageInfo);
+            return new AuthenticationPackage(pkg_info.PackageInfo.ReadStruct<SecPkgInfo>());
         }
 
         internal static string GetPackageName(SecHandle context)

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -30,8 +31,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     {
         private static Credential ParseCredential(IntPtr ptr)
         {
-            CREDENTIAL c = (CREDENTIAL)Marshal.PtrToStructure(ptr, typeof(CREDENTIAL));
-            return new Credential(c);
+            return new Credential(ptr.ReadStruct<CREDENTIAL>());
         }
 
         private static IEnumerable<Credential> ParseCredentials(int count, SafeCredBuffer buffer)

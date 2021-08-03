@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System.Runtime.InteropServices;
+using NtApiDotNet.Utilities.Memory;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -34,8 +34,7 @@ namespace NtApiDotNet.Net.Firewall
         internal IkePreSharedKeyCredential(IKEEXT_CREDENTIAL1 creds) 
             : base(creds)
         {
-            var key = (IKEEXT_PRESHARED_KEY_AUTHENTICATION1)Marshal.PtrToStructure(creds.cred, 
-                                                typeof(IKEEXT_PRESHARED_KEY_AUTHENTICATION1));
+            var key = creds.cred.ReadStruct<IKEEXT_PRESHARED_KEY_AUTHENTICATION1>();
             Key = key.presharedKey.ToArray();
             Flags = key.flags;
         }

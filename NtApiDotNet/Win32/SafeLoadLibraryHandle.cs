@@ -14,6 +14,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using NtApiDotNet.ApiSet;
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Image;
 using NtApiDotNet.Win32.Security.Authenticode;
 using System;
@@ -520,7 +521,7 @@ namespace NtApiDotNet.Win32
             // Should really only do up to sizeof image delay import desc
             while (i <= (size - desc_size))
             {
-                ImageDelayImportDescriptor desc = (ImageDelayImportDescriptor)Marshal.PtrToStructure(delayed_imports, typeof(ImageDelayImportDescriptor));
+                var desc = delayed_imports.ReadStruct<ImageDelayImportDescriptor>();
                 if (desc.szName == 0)
                 {
                     break;
@@ -1507,9 +1508,9 @@ namespace NtApiDotNet.Win32
             switch (magic)
             {
                 case IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR32:
-                    return (IImageOptionalHeader)Marshal.PtrToStructure(buffer, typeof(ImageOptionalHeaderPartial));
+                    return buffer.ReadStruct<ImageOptionalHeaderPartial>();
                 case IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64:
-                    return (IImageOptionalHeader)Marshal.PtrToStructure(buffer, typeof(ImageOptionalHeader64Partial));
+                    return buffer.ReadStruct<ImageOptionalHeader64Partial>();
             }
             return null;
         }
@@ -1568,15 +1569,12 @@ namespace NtApiDotNet.Win32
                 return;
             }
 
-            ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
+            ImageNtHeaders header = header_ptr.ReadStruct<ImageNtHeaders>();
             var buffer = header_ptr + Marshal.SizeOf(header) + header.FileHeader.SizeOfOptionalHeader;
             int header_size = Marshal.SizeOf(typeof(ImageSectionHeader));
-            for (int i = 0; i < header.FileHeader.NumberOfSections; ++i)
-            {
-                ImageSectionHeader section = (ImageSectionHeader)Marshal.PtrToStructure(buffer + i * header_size, typeof(ImageSectionHeader));
-                ImageSection sect = new ImageSection(section, MappedAsImage, base_ptr);
-                _image_sections.Add(sect);
-            }
+
+            _image_sections.AddRange(buffer.ReadArray<ImageSectionHeader>(header.FileHeader.NumberOfSections)
+                .Select(h => new ImageSection(h, MappedAsImage, base_ptr)));
 
             IImageOptionalHeader optional_header = GetOptionalHeader(header_ptr);
             if (optional_header == null)
@@ -1631,7 +1629,7 @@ namespace NtApiDotNet.Win32
             IntPtr import_list = RvaToVA(config.ImportList);
             for (int i = 0; i < config.NumberOfImports; ++i)
             {
-                IMAGE_ENCLAVE_IMPORT import = (IMAGE_ENCLAVE_IMPORT)Marshal.PtrToStructure(import_list, typeof(IMAGE_ENCLAVE_IMPORT));
+                var import = import_list.ReadStruct<IMAGE_ENCLAVE_IMPORT>();
                 if (import.MatchType != ImageEnclaveImportMatchType.None)
                 {
                     IntPtr name = RvaToVA(import.ImportName);
@@ -1649,7 +1647,7 @@ namespace NtApiDotNet.Win32
                 var enclave_config = GetLoadConfig()?.EnclaveConfigurationPointer ?? IntPtr.Zero;
                 if (enclave_config == IntPtr.Zero)
                     return null;
-                var config = (IMAGE_ENCLAVE_CONFIG)Marshal.PtrToStructure(enclave_config, typeof(IMAGE_ENCLAVE_CONFIG));
+                var config = enclave_config.ReadStruct<IMAGE_ENCLAVE_CONFIG>();
                 List<EnclaveImport> imports = new List<EnclaveImport>();
                 
                 return new EnclaveConfiguration(FullPath, config, ReadImports(config));

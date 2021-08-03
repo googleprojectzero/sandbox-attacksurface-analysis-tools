@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.DirectoryService;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
@@ -293,7 +293,7 @@ namespace NtApiDotNet
 
         internal static Ace Parse(IntPtr ace_ptr)
         {
-            AceHeader header = (AceHeader)Marshal.PtrToStructure(ace_ptr, typeof(AceHeader));
+            AceHeader header = ace_ptr.ReadStruct<AceHeader>();
             using (var buffer = new SafeHGlobalBuffer(ace_ptr, header.AceSize, false))
             {
                 using (var reader = new BinaryReader(new UnmanagedMemoryStream(buffer, 0, header.AceSize)))

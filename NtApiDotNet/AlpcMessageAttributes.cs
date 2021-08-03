@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -451,8 +452,7 @@ namespace NtApiDotNet
             ContextHandle = attr.ContextHandle.Value;
             if (attr.QoS != IntPtr.Zero)
             {
-                SecurityQoS = (SecurityQualityOfService)Marshal.PtrToStructure(attr.QoS,
-                                                typeof(SecurityQualityOfService));
+                SecurityQoS = attr.QoS.ReadStruct<SecurityQualityOfService>();
             }
             else
             {

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
@@ -330,11 +331,7 @@ namespace NtApiDotNet.Win32
 
         public Guid GetSubType()
         {
-            if (pTriggerSubtype != IntPtr.Zero)
-            {
-                return (Guid)Marshal.PtrToStructure(pTriggerSubtype, typeof(Guid));
-            }
-            return Guid.Empty;
+            return pTriggerSubtype.ReadGuid() ?? Guid.Empty;
         }
     }
 

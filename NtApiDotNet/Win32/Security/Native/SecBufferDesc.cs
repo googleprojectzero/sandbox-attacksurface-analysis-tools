@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Runtime.InteropServices;
 
@@ -55,13 +56,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
         public SecBuffer[] ToArray()
         {
-            SecBuffer[] buffers = new SecBuffer[cBuffers];
-            int size = Marshal.SizeOf(typeof(SecBuffer));
-            for (int i = 0; i < cBuffers; ++i)
-            {
-                buffers[i] = (SecBuffer)Marshal.PtrToStructure(pBuffers + i * size, typeof(SecBuffer));
-            }
-            return buffers;
+            return pBuffers.ReadArray<SecBuffer>(cBuffers);
         }
     }
 }

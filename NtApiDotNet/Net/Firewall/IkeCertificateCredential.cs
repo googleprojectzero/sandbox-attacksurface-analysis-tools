@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System.Runtime.InteropServices;
+using NtApiDotNet.Utilities.Memory;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -42,8 +42,7 @@ namespace NtApiDotNet.Net.Firewall
 
         internal IkeCertificateCredential(IKEEXT_CREDENTIAL1 creds) : base(creds)
         {
-            var cred = (IKEEXT_CERTIFICATE_CREDENTIAL1)Marshal.PtrToStructure(creds.cred,
-                                                typeof(IKEEXT_CERTIFICATE_CREDENTIAL1));
+            var cred = creds.cred.ReadStruct<IKEEXT_CERTIFICATE_CREDENTIAL1>();
             SubjectName = new X500DistinguishedName(cred.subjectName.ToArray());
             CertHash = cred.certHash.ToArray();
             Flags = cred.flags;

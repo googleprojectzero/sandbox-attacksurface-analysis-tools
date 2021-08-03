@@ -17,6 +17,7 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -798,7 +799,7 @@ namespace NtApiDotNet.Win32.Debugger
                 switch (ActionCode)
                 {
                     case DbgHelpCallbackActionCode.CBA_EVENT:
-                        var evt = (IMAGEHLP_CBA_EVENTW)Marshal.PtrToStructure(CallbackData, typeof(IMAGEHLP_CBA_EVENTW));
+                        var evt = CallbackData.ReadStruct<IMAGEHLP_CBA_EVENTW>();
                         _trace_writer.WriteLine(Marshal.PtrToStringUni(evt.desc).TrimEnd());
                         return true;
                 }
@@ -810,7 +811,7 @@ namespace NtApiDotNet.Win32.Debugger
                 {
                     case DbgHelpCallbackActionCode.CBA_DEFERRED_SYMBOL_LOAD_START:
                         {
-                            var load_evt = (IMAGEHLP_DEFERRED_SYMBOL_LOADW)Marshal.PtrToStructure(CallbackData, typeof(IMAGEHLP_DEFERRED_SYMBOL_LOADW));
+                            var load_evt = CallbackData.ReadStruct<IMAGEHLP_DEFERRED_SYMBOL_LOADW>();
                             return CheckOrDownloadSymbolFile(load_evt.FileName);
                         }
                 }

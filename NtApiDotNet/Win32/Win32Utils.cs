@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -637,13 +638,7 @@ namespace NtApiDotNet.Win32
                     return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<IEnumerable<ConsoleSession>>(throw_on_error);
                 }
 
-                IntPtr current = session_info;
-                for (int i = 0; i < session_count; ++i)
-                {
-                    WTS_SESSION_INFO_1 info = (WTS_SESSION_INFO_1)Marshal.PtrToStructure(current, typeof(WTS_SESSION_INFO_1));
-                    sessions.Add(new ConsoleSession(info));
-                    current += Marshal.SizeOf(typeof(WTS_SESSION_INFO_1));
-                }
+                sessions.AddRange(session_info.ReadArray<WTS_SESSION_INFO_1>(session_count).Select(w => new ConsoleSession(w)));
             }
             finally
             {

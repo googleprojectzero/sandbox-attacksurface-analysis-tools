@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
 {
@@ -384,16 +384,13 @@ namespace NtApiDotNet.Win32
             {
                 if (Win32NativeMethods.WTSEnumerateSessions(IntPtr.Zero, 0, 1, out pSessions, out dwSessionCount))
                 {
-                    IntPtr current = pSessions;
-                    for (int i = 0; i < dwSessionCount; ++i)
+                    foreach(var session_info in pSessions.ReadArray<WTS_SESSION_INFO>(dwSessionCount))
                     {
-                        WTS_SESSION_INFO session_info = (WTS_SESSION_INFO)Marshal.PtrToStructure(current, typeof(WTS_SESSION_INFO));
-
-                        if (session_info.State == ConsoleSessionConnectState.Active && Win32NativeMethods.WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
+                        if (session_info.State == ConsoleSessionConnectState.Active 
+                            && Win32NativeMethods.WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
                         {
                             tokens.Add(NtToken.FromHandle(handle));
                         }
-                        current += Marshal.SizeOf(typeof(WTS_SESSION_INFO));
                     }
                 }
             }

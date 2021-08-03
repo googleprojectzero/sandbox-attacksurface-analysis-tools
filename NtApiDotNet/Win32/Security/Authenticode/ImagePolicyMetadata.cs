@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -66,7 +67,7 @@ namespace NtApiDotNet.Win32.Security.Authenticode
                 if (policy == IntPtr.Zero)
                     return NtStatus.STATUS_NOT_FOUND.CreateResultFromError<ImagePolicyMetadata>(throw_on_error);
 
-                IMAGE_POLICY_METADATA meta_data = (IMAGE_POLICY_METADATA)Marshal.PtrToStructure(policy, typeof(IMAGE_POLICY_METADATA));
+                var meta_data = policy.ReadStruct<IMAGE_POLICY_METADATA>();
 
                 if (meta_data.Version != 1)
                     return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<ImagePolicyMetadata>(throw_on_error);
@@ -75,12 +76,12 @@ namespace NtApiDotNet.Win32.Security.Authenticode
                 int stride = Marshal.SizeOf(typeof(IMAGE_POLICY_ENTRY));
 
                 List<ImagePolicyEntry> entries = new List<ImagePolicyEntry>();
-                IMAGE_POLICY_ENTRY entry = (IMAGE_POLICY_ENTRY)Marshal.PtrToStructure(policy, typeof(IMAGE_POLICY_ENTRY));
+                var entry = policy.ReadStruct<IMAGE_POLICY_ENTRY>();
                 while (entry.Type != ImagePolicyEntryType.None)
                 {
                     entries.Add(new ImagePolicyEntry(entry.Type, entry.PolicyId, entry.Value));
                     policy += stride;
-                    entry = (IMAGE_POLICY_ENTRY)Marshal.PtrToStructure(policy, typeof(IMAGE_POLICY_ENTRY));
+                    entry = policy.ReadStruct<IMAGE_POLICY_ENTRY>();
                 }
 
                 return new ImagePolicyMetadata(1, meta_data.ApplicationId, entries).CreateResult();

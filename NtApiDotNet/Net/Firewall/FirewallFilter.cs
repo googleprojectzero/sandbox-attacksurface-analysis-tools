@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Firewall
 {
@@ -54,7 +54,7 @@ namespace NtApiDotNet.Net.Firewall
             EffectiveWeight = new FirewallValue(filter.effectiveWeight, Guid.Empty);
             if (filter.providerKey != IntPtr.Zero)
             {
-                ProviderKey = (Guid)Marshal.PtrToStructure(filter.providerKey, typeof(Guid));
+                ProviderKey = filter.providerKey.ReadGuid() ?? Guid.Empty;
             }
             ProviderData = filter.providerData.ToArray();
             FilterId = filter.filterId;

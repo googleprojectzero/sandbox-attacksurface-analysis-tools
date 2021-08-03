@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1140,7 +1141,7 @@ namespace NtApiDotNet
 
                 for (int i = 0; i < modules.Length; ++i)
                 {
-                    modules[i] = new ProcessModule((RtlProcessModuleInformation)Marshal.PtrToStructure(ptr, typeof(RtlProcessModuleInformation)));
+                    modules[i] = new ProcessModule(ptr.ReadStruct<RtlProcessModuleInformation>());
                     ptr += size;
                 }
 

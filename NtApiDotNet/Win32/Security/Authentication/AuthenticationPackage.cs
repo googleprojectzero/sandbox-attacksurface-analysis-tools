@@ -12,11 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -85,10 +85,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public string Comment { get; }
 
-        internal AuthenticationPackage(IntPtr pkg_ptr)
+        internal AuthenticationPackage(SecPkgInfo pkg)
         {
-            SecPkgInfo pkg = (SecPkgInfo)Marshal.PtrToStructure(pkg_ptr, typeof(SecPkgInfo));
-
             Capabilities = pkg.fCapabilities;
             Version = pkg.wVersion;
             RpcId = pkg.wRPCID;
@@ -109,11 +107,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 try
                 {
-                    int size = Marshal.SizeOf(typeof(SecPkgInfo));
-                    for (int i = 0; i < count; ++i)
-                    {
-                        packages.Add(new AuthenticationPackage(ppPackageInfo + i * size));
-                    }
+                    packages.AddRange(ppPackageInfo.ReadArray<SecPkgInfo>(count).Select(p => new AuthenticationPackage(p)));
                 }
                 finally
                 {
@@ -142,7 +136,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
             try
             {
-                return new AuthenticationPackage(package_info);
+                return new AuthenticationPackage(package_info.ReadStruct<SecPkgInfo>());
             }
             finally
             {

@@ -13,9 +13,9 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
@@ -46,7 +46,7 @@ namespace NtApiDotNet.Win32.SafeHandles
             var vector = vector_buffer.Result;
             IntPtr[] ptrs = new IntPtr[vector.Count];
             vector_buffer.Data.ReadArray(0, ptrs, 0, vector.Count);
-            return ptrs.Select(p => (RPC_IF_ID)Marshal.PtrToStructure(p, typeof(RPC_IF_ID))).ToArray();
+            return ptrs.Select(p => p.ReadStruct<RPC_IF_ID>()).ToArray();
         }
     }
 }

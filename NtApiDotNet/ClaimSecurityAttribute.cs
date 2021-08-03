@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Token;
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -102,11 +103,11 @@ namespace NtApiDotNet
             ISecurityAttributeV1 sec_attr;
             if (native)
             {
-                sec_attr = (SecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(SecurityAttributeV1));
+                sec_attr = ptr.ReadStruct<SecurityAttributeV1>();
             }
             else
             {
-                sec_attr = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
+                sec_attr = ptr.ReadStruct<ClaimSecurityAttributeV1>();
             }
 
             Name = sec_attr.GetName();
@@ -148,15 +149,7 @@ namespace NtApiDotNet
 
         private static T[] ReadTyped<T>(IntPtr buffer, int count) where T : struct
         {
-            int type_size = Marshal.SizeOf(typeof(T));
-            List<T> res = new List<T>();
-            while (count > 0)
-            {
-                res.Add((T)Marshal.PtrToStructure(buffer, typeof(T)));
-                buffer += type_size;
-                count--;
-            }
-            return res.ToArray();
+            return buffer.ReadArray<T>(count) ?? new T[0];
         }
 
         private IEnumerable<object> ReadValues(IntPtr buffer, int count, ClaimSecurityValueType type, bool native)

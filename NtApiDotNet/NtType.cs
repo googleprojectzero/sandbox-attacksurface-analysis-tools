@@ -12,11 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
@@ -972,7 +972,7 @@ namespace NtApiDotNet
 
                             for (int count = 0; count < result.NumberOfTypes; ++count)
                             {
-                                ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
+                                var info = curr_typeinfo.ReadStruct<ObjectTypeInformation>();
                                 string name = info.Name.ToString();
                                 NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
                                 NtType ti = new NtType(NtObjectUtils.IsWindows7OrLess ? count + 2 : info.TypeIndex, info, factory);

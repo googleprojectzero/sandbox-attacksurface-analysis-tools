@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -559,7 +560,7 @@ namespace NtApiDotNet
                 IntPtr current = buffer.DangerousGetHandle();
                 while (true)
                 {
-                    OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
+                    var dir_info = current.ReadStruct<OBJECT_DIRECTORY_INFORMATION>();
                     string name = dir_info.Name.ToString();
                     if (name.Length == 0)
                     {
