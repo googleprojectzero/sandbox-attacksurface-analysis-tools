@@ -767,7 +767,7 @@ function Set-NtSecurityDescriptor {
                 $Object.SetSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
             }
             "ToPath" {
-                $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
+                $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess -SetSecurity
                 Use-NtObject($obj = Get-NtObject -Path $Path -Root $Root -TypeName $TypeName -Access $access) {
                     $obj.SetSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
                 }
