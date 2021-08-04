@@ -1200,18 +1200,30 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         /// <param name="template">Template to filter down enumeration.</param>
         /// <returns>The list of network events.</returns>
-        public IEnumerable<FirewallNetEvent> EnumerateNetEvents(FirewallNetEventEnumTemplate template)
+        public IEnumerable<FirewallNetEvent> EnumerateNetEvents(FirewallNetEventEnumTemplate template = null)
         {
             return EnumerateNetEvents(template, true).Result;
         }
 
         /// <summary>
-        /// Enumerate all network events.
+        /// Subscribe to read network event.s
         /// </summary>
-        /// <returns>The list of network events.</returns>
-        public IEnumerable<FirewallNetEvent> EnumerateNetEvents()
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="template">Optional template to filter enumeration.</param>
+        /// <returns>The network event listener.</returns>
+        public NtResult<FirewallNetEventListener> SubscribeNetEvents(FirewallNetEventEnumTemplate template, bool throw_on_error)
         {
-            return EnumerateNetEvents(null);
+            return FirewallNetEventListener.Start(this, template, throw_on_error);
+        }
+
+        /// <summary>
+        /// Subscribe to read network event.s
+        /// </summary>
+        /// <param name="template">Optional template to filter enumeration.</param>
+        /// <returns>The network event listener.</returns>
+        public FirewallNetEventListener SubscribeNetEvents(FirewallNetEventEnumTemplate template = null)
+        {
+            return SubscribeNetEvents(template, true).Result;
         }
 
         /// <summary>
@@ -1221,16 +1233,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The network event listener.</returns>
         public NtResult<FirewallNetEventListener> SubscribeNetEvents(bool throw_on_error)
         {
-            return FirewallNetEventListener.Start(this, throw_on_error);
-        }
-
-        /// <summary>
-        /// Subscribe to read network event.s
-        /// </summary>
-        /// <returns>The network event listener.</returns>
-        public FirewallNetEventListener SubscribeNetEvents()
-        {
-            return SubscribeNetEvents(true).Result;
+            return SubscribeNetEvents(null, throw_on_error);
         }
 
         /// <summary>

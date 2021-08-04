@@ -386,7 +386,7 @@ Specify the filter's key.
 .PARAMETER Id
 Specify the filter's ID.
 .PARAMETER Condition
-Specify one or more conditions to check for when filtering..
+A filter condition builder containing conditions to add.
 .INPUTS
 None
 .OUTPUTS
@@ -407,7 +407,7 @@ function Add-FwFilter {
         [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey,
         [guid]$Key = [guid]::Empty,
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
+        [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Condition,
         [NtApiDotNet.Net.Firewall.FirewallValue]$Weight = [NtApiDotNet.Net.Firewall.FirewallValue]::Empty,
         [NtApiDotNet.Net.Firewall.FirewallFilterFlags]$Flags = 0
     )
@@ -429,7 +429,7 @@ function Add-FwFilter {
         $builder.FilterKey = $Key
         $builder.ActionType = $ActionType
         if ($null -ne $Condition) {
-            $builder.Conditions.AddRange($Condition)
+            $builder.Conditions.AddRange($Condition.Conditions)
         }
         $builder.Weight = $Weight
         $builder.Flags = $Flags
@@ -543,9 +543,31 @@ function Format-FwFilter {
 
 <#
 .SYNOPSIS
-Create a firewall filter condition.
+Create a firewall condition builder.
 .DESCRIPTION
-This cmdlet creates a firewall filter condition for add or enumerating filters.
+This cmdlet creates a new firewall condition builder. Use Add-FwCondition to add a condition to it.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallConditionBuilder
+.EXAMPLE
+New-FwConditionBuilder
+Create a condition builder.
+.EXAMPLE
+$builder = New-FwConditionBuilder | Add-FwCondition -Filename "c:\windows\notepad.exe" -PassThru
+Create a filter condition builder and add a filter condition for the notepad executable.
+#>
+function New-FwConditionBuilder {
+    [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]::new()
+}
+
+<#
+.SYNOPSIS
+Add a firewall condition to a template.
+.DESCRIPTION
+This cmdlet adds a firewall condition for a template.
+.PARAMETER Builder
+The condition builder/template to add the condition to.
 .PARAMETER MatchType
 The match operation for the condition.
 .PARAMETER Filename
@@ -553,97 +575,126 @@ The path to an executable file to match.
 .PARAMETER AppId
 The path to an executable file to match using the native format.
 .PARAMETER UserId
-The security descriptor to check against the user ID. Can specify Remote to use remote user.
+The security descriptor to check against the local user ID.
+.PARAMETER RemoteUserId
+The security descriptor to check against the remote user ID.
 .PARAMETER ProtocolType
 The type of IP protocol.
 .PARAMETER IPAddress
-The local IP address. Can specify Remote to use the remote IP address.
+The remote IP address.
 .PARAMETER Port
-The local TCP/UDP port. Can specify Remote to use the remote IP address.
-.PARAMETER Remote
-Specify to change certain parameters to be remote from local.
+The remote TCP/UDP port.
+.PARAMETER LocalIPAddress
+The local IP address.
+.PARAMETER LocalPort
+The local TCP/UDP port.
+.PARAMETER IPAddress
+The local IP address.
+.PARAMETER Port
+The local TCP/UDP port.
 .PARAMETER TokenInformation
 The token for a token information condition.
 .PARAMETER PackageSid
 The token's package SID.
+.PARAMETER PassThru
+Pass through the condition builder/template.
 .INPUTS
-None
+NtApiDotNet.Net.Firewall.FirewallConditionBuilder
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallFilterCondition
+NtApiDotNet.Net.Firewall.FirewallConditionBuilder
 .EXAMPLE
-New-FwFilterCondition -Filename "c:\windows\notepad.exe"
-Create a filter condition for the notepad executable.
+Add-FwCondition $builder -Filename "c:\windows\notepad.exe"
+Add a filter condition for the notepad executable.
 .EXAMPLE
-New-FwFilterCondition -Filename "c:\windows\notepad.exe" -MatchType NotEqual
-Create a filter condition which doesn't match the notepad executable.
+Add-FwCondition $builder -Filename "c:\windows\notepad.exe" -MatchType NotEqual
+Add a filter condition which doesn't match the notepad executable.
 .EXAMPLE
-New-FwFilterCondition -ProtocolType Tcp
-Create a filter condition for the TCP protocol.
+Add-FwCondition $builder -ProtocolType Tcp
+Add a filter condition for the TCP protocol.
 #>
-function New-FwFilterCondition {
+function Add-FwCondition {
     [CmdletBinding()]
     param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Builder,
         [NtApiDotNet.Net.Firewall.FirewallMatchType]$MatchType = "Equal",
+        [switch]$PassThru,
         [parameter(Mandatory, ParameterSetName="FromFilename")]
         [string]$Filename,
         [parameter(Mandatory, ParameterSetName="FromAppId")]
         [string]$AppId,
         [parameter(Mandatory, ParameterSetName="FromUserId")]
         [NtApiDotNet.SecurityDescriptor]$UserId,
+        [parameter(Mandatory, ParameterSetName="FromRemoteUserId")]
+        [NtApiDotNet.SecurityDescriptor]$RemoteUserId,
         [parameter(Mandatory, ParameterSetName="FromProtocolType")]
         [System.Net.Sockets.ProtocolType]$ProtocolType,
         [parameter(Mandatory, ParameterSetName="FromConditionFlags")]
         [NtApiDotNet.Net.Firewall.FirewallConditionFlags]$ConditionFlags,
-        [parameter(Mandatory, ParameterSetName="FromIpAddress")]
+        [parameter(ParameterSetName="FromRemoteEndpoint")]
         [System.Net.IPAddress]$IPAddress,
-        [parameter(ParameterSetName="FromIpAddress")]
-        [parameter(ParameterSetName="FromUserId")]
-        [parameter(ParameterSetName="FromPort")]
-        [switch]$Remote,
+        [parameter(ParameterSetName="FromRemoteEndpoint")]
+        [int]$Port = -1,
+        [parameter(ParameterSetName="FromLocalEndpoint")]
+        [System.Net.IPAddress]$LocalIPAddress,
+        [parameter(ParameterSetName="FromLocalEndpoint")]
+        [int]$LocalPort = -1,
         [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
         [NtApiDotNet.NtToken]$TokenInformation,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
-        [string]$PackageSid,
-        [parameter(Mandatory, ParameterSetName="FromPort")]
-        [int]$Port
+        [string]$PackageSid
     )
 
     try {
-        $builder = [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]::new()
         switch($PSCmdlet.ParameterSetName) {
             "FromFilename" {
-                $builder.AddFilename($MatchType, $Filename)
+                $Builder.AddFilename($MatchType, $Filename)
             }
             "FromAppId" {
-                $builder.AddAppId($MatchType, $AppId)
+                $Builder.AddAppId($MatchType, $AppId)
             }
             "FromUserId" {
-                $builder.AddUserId($MatchType, $Remote, $UserId)
+                $Builder.AddUserId($MatchType, $false, $UserId)
+            }
+            "FromRemoteUserId" {
+                $Builder.AddUserId($MatchType, $true, $RemoteUserId)
             }
             "FromProtocolType" {
-                $builder.AddProtocolType($MatchType, $ProtocolType)
+                $Builder.AddProtocolType($MatchType, $ProtocolType)
             }
             "FromConditionFlags" {
-                $builder.AddConditionFlags($MatchType, $ConditionFlags)
+                $Builder.AddConditionFlags($MatchType, $ConditionFlags)
             }
-            "FromIpAddress" {
-                $builder.AddIpAddress($MatchType, $Remote, $IPAddress)
+            "FromRemoteEndpoint" {
+                if ($null -ne $IPAddress) {
+                    $Builder.AddIpAddress($MatchType, $true, $IPAddress)
+                }
+                if ($Port -ge 0) {
+                    $Builder.AddPort($MatchType, $true, $Port)
+                }
+            }
+            "FromLocalEndpoint" {
+                if ($null -ne $LocalIPAddress) {
+                    $Builder.AddIpAddress($MatchType, $false, $LocalIPAddress)
+                }
+                if ($LocalPort -ge 0) {
+                    $Builder.AddPort($MatchType, $false, $LocalPort)
+                }
             }
             "FromTokenInformation" {
-                $builder.AddTokenInformation($MatchType, $TokenInformation)
+                $Builder.AddTokenInformation($MatchType, $TokenInformation)
             }
             "FromPackageSid" {
                 $sid = $PackageSid
                 if ($sid -ne "S-1-0-0") {
                     $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
                 }
-                $builder.AddPackageSid($MatchType, $sid)
-            }
-            "FromPort" {
-                $builder.AddPort($MatchType, $Remote, $Port)
+                $Builder.AddPackageSid($MatchType, $sid)
             }
         }
-        $builder.Conditions | Write-Output
+        if ($PassThru) {
+            $Builder
+        }
     } catch {
         Write-Error $_
     }
@@ -911,6 +962,8 @@ Get all firewall network events.
 This cmdlet gets all firewall network events from an engine.
 .PARAMETER Engine
 The firewall engine to query.
+.PARAMETER Template
+Filter template for the network events.
 .INPUTS
 None
 .OUTPUTS
@@ -922,14 +975,15 @@ Get all firewall network events.
 function Get-FwNetEvent {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
     )
 
     try {
         $Engine = Get-FwEngineSingleton -Engine $Engine
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                $Engine.EnumerateNetEvents() | Write-Output
+                $Engine.EnumerateNetEvents($Template) | Write-Output
             }
         }
     } catch {
@@ -944,18 +998,21 @@ Creates a network event listener.
 This cmdlet creates a network event listenr from an engine. You pass the result to Read-FwNetEvent in a loop to read the events.
 .PARAMETER Engine
 The engine to create from.
+.PARAMETER Template
+Filter template for the network events.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Net.Firewall.FirewallNetEventListener
 .EXAMPLE
-New-FwNetEventListener -Engine $e
+New-FwNetEventListener
 Create a new firewall network event listener.
 #>
 function New-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
     )
     try {
         $Engine = Get-FwEngineSingleton -Engine $Engine
@@ -965,7 +1022,7 @@ function New-FwNetEventListener {
             Write-Warning "CollectNetEvents option is not enabled. No events will be collected."
         }
 
-        $Engine.SubscribeNetEvents()
+        $Engine.SubscribeNetEvents($Template)
     } catch {
         Write-Error $_
     }
@@ -1028,6 +1085,8 @@ capture the events into a variable.
 The engine to listen from.
 .PARAMETER Variable
 The name of a variable to put the read network events into.
+.PARAMETER Template
+Filter template for the network events.
 .INPUTS
 None
 .OUTPUTS
@@ -1043,11 +1102,12 @@ function Start-FwNetEventListener {
     [CmdletBinding()]
     param(
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [string]$Variable
+        [string]$Variable,
+        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
     )
 
     try {
-        Use-NtObject($listener = New-FwNetEventListener -Engine $Engine) {
+        Use-NtObject($listener = New-FwNetEventListener -Engine $Engine -Template $Template) {
             if ($null -eq $listener) {
                 return
             }
@@ -1068,6 +1128,41 @@ function Start-FwNetEventListener {
                 $shown_header = $true
             }
         }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new template for enumerating network events.
+.DESCRIPTION
+This cmdlet creates a new template for enumerating network events, which can be used with Get-FwNetEvent and Start-FwNetEventListener.
+.PARAMETER
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate
+.EXAMPLE
+New-FwNetEventTemplate -StartTime ([datetime]::now.AddHours(-1))
+Create a template for enumerating net events starting one hour ago.
+#>
+function New-FwNetEventTemplate {
+    [CmdletBinding()]
+    param(
+        [datetime]$StartTime = [datetime]::FromFileTime(0),
+        [datetime]$EndTime = [datetime]::MaxValue,
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
+    )
+
+    try {
+        $template = [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]::new()
+        $template.StartTime = $StartTime
+        $template.EndTime = $EndTime
+        if ($null -ne $Condition) {
+            $template.Conditions.AddRange($Condition)
+        }
+        $template
     } catch {
         Write-Error $_
     }

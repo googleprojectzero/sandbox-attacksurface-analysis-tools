@@ -111,6 +111,10 @@ namespace NtApiDotNet.Net.Firewall
                     return new FirewallNetEventCapabilityAllow(net_event);
                 case FirewallNetEventType.IkeExtMmFailure:
                     return new FirewallNetEventIkeExtMmFailure(net_event);
+                case FirewallNetEventType.IkeExtEmFailure:
+                    return new FirewallNetEventIkeExtEmFailure(net_event);
+                case FirewallNetEventType.IkeExtQmFailure:
+                    return new FirewallNetEventIkeExtQmFailure(net_event);
             }
 
             return new FirewallNetEvent(net_event);

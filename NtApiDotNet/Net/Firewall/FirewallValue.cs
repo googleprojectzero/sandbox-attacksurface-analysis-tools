@@ -321,6 +321,18 @@ namespace NtApiDotNet.Net.Firewall
             return new FirewallValue(FirewallDataType.ByteBlob, value, context_value);
         }
 
+        private static FirewallValue FromByteArray16(byte[] value, object context_value)
+        {
+            if (value.Length != 16)
+                throw new ArgumentOutOfRangeException("Array must be 16 bytes in size.", nameof(value));
+            return new FirewallValue(FirewallDataType.ByteArray16, value, context_value);
+        }
+
+        private static FirewallValue FromUInt32(uint value, object context_value)
+        {
+            return new FirewallValue(FirewallDataType.UInt32, value, context_value);
+        }
+
         #endregion
 
         #region Static Members
@@ -548,13 +560,13 @@ namespace NtApiDotNet.Net.Firewall
         {
             if (value.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                return FromByteArray16(value.GetAddressBytes());
+                return FromByteArray16(value.GetAddressBytes(), value);
             }
             else if (value.AddressFamily == AddressFamily.InterNetwork)
             {
                 byte[] arr = value.GetAddressBytes();
                 Array.Reverse(arr);
-                return FromUInt32(BitConverter.ToUInt32(arr, 0));
+                return FromUInt32(BitConverter.ToUInt32(arr, 0), value);
             }
             throw new ArgumentException("Must specify V4 or V6 IP address.", nameof(value));
         }
