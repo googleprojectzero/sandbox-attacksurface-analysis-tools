@@ -16,12 +16,15 @@ function Format-ObjectTable {
     Param(
         [parameter(Mandatory, Position = 0)]
         $InputObject,
-        [switch]$HideTableHeaders
+        [switch]$HideTableHeaders,
+        [switch]$NoTrailingLine
     )
 
     $output = $InputObject | Format-Table -HideTableHeaders:$HideTableHeaders | Out-String
     $output -Split "`r`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Write-Output
-    Write-Output ""
+    if (!$NoTrailingLine) {
+        Write-Output ""
+    }
 }
 
 <#

@@ -394,6 +394,16 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The firewall value.</returns>
+        public static FirewallValue FromUInt32Bool(bool value)
+        {
+            return FromUInt32(value ? 1U : 0U);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
         public static FirewallValue FromInt8(sbyte value)
         {
             return new FirewallValue(FirewallDataType.Int8, value);

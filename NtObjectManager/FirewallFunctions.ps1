@@ -959,6 +959,12 @@ function New-FwNetEventListener {
     )
     try {
         $Engine = Get-FwEngineSingleton -Engine $Engine
+
+        $opt = Get-FwEngineOption -Engine $Engine -CollectNetEvents
+        if (!$opt) {
+            Write-Warning "CollectNetEvents option is not enabled. No events will be collected."
+        }
+
         $Engine.SubscribeNetEvents()
     } catch {
         Write-Error $_
@@ -1027,10 +1033,10 @@ None
 .OUTPUTS
 None
 .EXAMPLE
-Start-FwNetEventListener -Engine $e
+Start-FwNetEventListener
 Start a new firewall network event listener.
 .EXAMPLE
-Start-FwNetEventListener -Engine $e -Variable "events"
+Start-FwNetEventListener -Variable "events"
 Start a new firewall network event listener and store the captured events in a variable.
 #>
 function Start-FwNetEventListener {
@@ -1042,10 +1048,14 @@ function Start-FwNetEventListener {
 
     try {
         Use-NtObject($listener = New-FwNetEventListener -Engine $Engine) {
+            if ($null -eq $listener) {
+                return
+            }
             $psvar = if ("" -ne $Variable) {
                 Set-Variable -Name $Variable -Value @() -Scope global
                 Get-Variable -Name $Variable
             }
+            $shown_header = $false
             while($true) {
                 $ev = Read-FwNetEvent -Listener $listener
                 if ($null -eq $ev) {
@@ -1054,7 +1064,8 @@ function Start-FwNetEventListener {
                 if ($null -ne $psvar) {
                     $psvar.Value += @($ev)
                 }
-                $ev | Out-Host
+                Format-ObjectTable $ev -HideTableHeaders:$shown_header -NoTrailingLine | Out-Host
+                $shown_header = $true
             }
         }
     } catch {
@@ -1098,6 +1109,124 @@ function Get-IPsecSaContext {
             }
             "FromId" {
                 $Engine.GetIPsecSecurityAssociationContext($Id)
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Get a firewall engine option.
+.DESCRIPTION
+This cmdlet gets a firewall engine option.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Option
+Specify the option to query.
+.PARAMETER CollectNetEvents
+Specify to get the CollectNetEvents option.
+.PARAMETER NetEventMatchAnyKeywords
+Specify to get the NetEventMatchAnyKeywords option.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallValue
+.EXAMPLE
+Get-FwEngineOption -Option MonitorIPsecConnections
+Get MonitorIPsecConnections option.
+.EXAMPLE
+Get-FwEngineOption -CollectNetEvents
+Get CollectNetEvents option.
+.EXAMPLE
+Get-FwEngineOption -NetEventMatchAnyKeywords
+Get NetEventMatchAnyKeywords option.
+#>
+function Get-FwEngineOption {
+    [CmdletBinding(DefaultParameterSetName="FromOption")]
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromOption")]
+        [NtApiDotNet.Net.Firewall.FirewallEngineOption]$Option,
+        [parameter(Mandatory, ParameterSetName="FromCollect")]
+        [switch]$CollectNetEvents,
+        [parameter(Mandatory, ParameterSetName="FromKeywords")]
+        [switch]$NetEventMatchAnyKeywords
+    )
+
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "FromOption" {
+                $Engine.GetOption($Option)
+            }
+            "FromCollect" {
+                $Engine.GetCollectNetEvents()
+            }
+            "FromKeywords" {
+                $Engine.GetNetEventMatchAnyKeywords()
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Get a firewall engine option.
+.DESCRIPTION
+This cmdlet sets a firewall engine option.
+.PARAMETER Engine
+The firewall engine to set.
+.PARAMETER Option
+Specify the option to set.
+.PARAMETER Value
+Specify the value to set.
+.PARAMETER CollectNetEvents
+Specify to set the CollectNetEvents option.
+.PARAMETER NetEventMatchAnyKeywords
+Specify to set the NetEventMatchAnyKeywords option.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-FwEngineOption -Option MonitorIPsecConnections -Value $val
+Set MonitorIPsecConnections option.
+.EXAMPLE
+Set-FwEngineOption -CollectNetEvents $true
+Set CollectNetEvents option to true.
+.EXAMPLE
+Set-FwEngineOption -NetEventMatchAnyKeywords CapabilityDrop
+Get NetEventMatchAnyKeywords option.
+#>
+function Set-FwEngineOption {
+    [CmdletBinding(DefaultParameterSetName="FromOption")]
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromOption")]
+        [NtApiDotNet.Net.Firewall.FirewallEngineOption]$Option,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromOption")]
+        [NtApiDotNet.Net.Firewall.FirewallValue]$Value,
+        [parameter(Mandatory, ParameterSetName="FromCollect")]
+        [bool]$CollectNetEvents,
+        [parameter(Mandatory, ParameterSetName="FromKeywords")]
+        [NtApiDotNet.Net.Firewall.FirewallNetEventKeywords]$NetEventMatchAnyKeywords
+    )
+
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+        switch($PSCmdlet.ParameterSetName) {
+            "FromOption" {
+                $Engine.SetOption($Option, $Value)
+            }
+            "FromCollect" {
+                $Engine.SetCollectNetEvents($CollectNetEvents)
+            }
+            "FromKeywords" {
+                $Engine.SetNetEventMatchAnyKeywords($NetEventMatchAnyKeywords)
             }
         }
     } catch {

@@ -27,36 +27,59 @@ namespace NtApiDotNet.Net.Firewall
     public sealed class FirewallNetEventListener : IDisposable
     {
         private readonly BlockingCollection<FirewallNetEvent> _queue;
-        private readonly SafeFwpmEngineHandle _engine;
-        private readonly FwpmNetEventCallback1 _callback;
-        private readonly IntPtr _callback_ptr;
+        private readonly FirewallEngine _engine;
+        private readonly FwpmNetEventCallback _callback1;
+        private readonly IntPtr _callback1_ptr;
+        private readonly FwpmNetEventCallback _callback4;
+        private readonly IntPtr _callback4_ptr;
         private IntPtr _handle;
 
-        internal FirewallNetEventListener(SafeFwpmEngineHandle engine)
+        internal FirewallNetEventListener(FirewallEngine engine)
         {
             _engine = engine;
             _queue = new BlockingCollection<FirewallNetEvent>();
-            _callback = Callback;
-            _callback_ptr = Marshal.GetFunctionPointerForDelegate(_callback);
+            _callback1 = Callback<FWPM_NET_EVENT2>;
+            _callback1_ptr = Marshal.GetFunctionPointerForDelegate(_callback1);
+            _callback4 = Callback<FWPM_NET_EVENT5>;
+            _callback4_ptr = Marshal.GetFunctionPointerForDelegate(_callback4);
         }
 
-        internal static NtResult<FirewallNetEventListener> Start(SafeFwpmEngineHandle engine, bool throw_on_error)
+        private static NtResult<FirewallNetEventListener> Start4(FirewallEngine engine, bool throw_on_error)
         {
             FirewallNetEventListener listener = new FirewallNetEventListener(engine);
             FWPM_NET_EVENT_SUBSCRIPTION0 sub = new FWPM_NET_EVENT_SUBSCRIPTION0();
-            return FirewallNativeMethods.FwpmNetEventSubscribe1(engine, sub, listener._callback_ptr,
+            return FirewallNativeMethods.FwpmNetEventSubscribe4(engine.Handle, sub, listener._callback4_ptr,
                 IntPtr.Zero, out listener._handle).CreateWin32Result(throw_on_error, () => listener);
         }
 
-        private void Callback(IntPtr context, IntPtr ptr)
+        internal static NtResult<FirewallNetEventListener> Start1(FirewallEngine engine, bool throw_on_error)
+        {
+            FirewallNetEventListener listener = new FirewallNetEventListener(engine);
+            FWPM_NET_EVENT_SUBSCRIPTION0 sub = new FWPM_NET_EVENT_SUBSCRIPTION0();
+            return FirewallNativeMethods.FwpmNetEventSubscribe1(engine.Handle, sub, listener._callback1_ptr,
+                IntPtr.Zero, out listener._handle).CreateWin32Result(throw_on_error, () => listener);
+        }
+
+        internal static NtResult<FirewallNetEventListener> Start(FirewallEngine engine, bool throw_on_error)
+        {
+            try
+            {
+                return Start4(engine, throw_on_error);
+            }
+            catch(EntryPointNotFoundException)
+            {
+                return Start1(engine, throw_on_error);
+            }
+        }
+
+        private void Callback<T>(IntPtr context, IntPtr ptr) where T : IFwNetEvent
         {
             try
             {
                 if (ptr == IntPtr.Zero)
                     return;
 
-                FWPM_NET_EVENT2 ev = ptr.ReadStruct<FWPM_NET_EVENT2>();
-
+                var ev = ptr.ReadStruct<T>();
                 var new_ev = FirewallNetEvent.Create(ev);
                 if (_queue.IsAddingCompleted)
                     return;
@@ -97,7 +120,7 @@ namespace NtApiDotNet.Net.Firewall
             if (ptr == IntPtr.Zero)
                 return;
             _queue.CompleteAdding();
-            FirewallNativeMethods.FwpmNetEventUnsubscribe0(_engine, ptr);
+            FirewallNativeMethods.FwpmNetEventUnsubscribe0(_engine.Handle, ptr);
             _queue.Dispose();
         }
     }

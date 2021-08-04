@@ -46,9 +46,9 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public ushort LayerId { get; }
 
-        internal FirewallNetEventIPsecKernelDrop(FWPM_NET_EVENT2 net_event) : base(net_event)
+        internal FirewallNetEventIPsecKernelDrop(IFwNetEvent net_event) : base(net_event)
         {
-            var inner_event = net_event.value.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>();
+            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>();
             FailureStatus = inner_event.failureStatus;
             Direction = inner_event.direction;
             Spi = inner_event.spi;

@@ -79,11 +79,11 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public Sid PackageSid { get; }
 
-        private protected FirewallNetEvent(FWPM_NET_EVENT2 net_event)
+        private protected FirewallNetEvent(IFwNetEvent ev)
         {
-            Type = net_event.type;
-            Flags = net_event.header.flags;
-            var header = net_event.header;
+            Type = ev.Type;
+            var header = ev.Header;
+            Flags = header.flags;
             Timestamp = new LargeInteger(header.timeStamp.ToInt64()).ToDateTime();
             IPProtocol = (ProtocolType)header.ipProtocol;
             LocalEndpoint = FirewallUtils.GetEndpoint(header.ipVersion, header.localAddrV4, header.localAddrV6, header.localPort);
@@ -95,14 +95,20 @@ namespace NtApiDotNet.Net.Firewall
             PackageSid = Sid.Parse(header.packageSid, false).GetResultOrDefault();
         }
 
-        internal static FirewallNetEvent Create(FWPM_NET_EVENT2 net_event)
+        internal static FirewallNetEvent Create(IFwNetEvent net_event)
         {
-            switch (net_event.type)
+            switch (net_event.Type)
             {
                 case FirewallNetEventType.IPsecKernelDrop:
                     return new FirewallNetEventIPsecKernelDrop(net_event);
                 case FirewallNetEventType.ClassifyDrop:
                     return new FirewallNetEventClassifyDrop(net_event);
+                case FirewallNetEventType.ClassifyAllow:
+                    return new FirewallNetEventClassifyAllow(net_event);
+                case FirewallNetEventType.CapabilityDrop:
+                    return new FirewallNetEventCapabilityDrop(net_event);
+                case FirewallNetEventType.CapabilityAllow:
+                    return new FirewallNetEventCapabilityAllow(net_event);
             }
 
             return new FirewallNetEvent(net_event);

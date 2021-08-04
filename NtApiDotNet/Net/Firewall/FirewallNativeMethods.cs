@@ -627,25 +627,73 @@ namespace NtApiDotNet.Net.Firewall
         public IntPtr packageSid;
     }
 
+    internal interface IFwNetEvent
+    {
+        FWPM_NET_EVENT_HEADER2 Header { get; }
+        FirewallNetEventType Type { get; }
+        IntPtr Value { get; }
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    struct FWPM_NET_EVENT2
+    struct FWPM_NET_EVENT2 : IFwNetEvent
     {
         public FWPM_NET_EVENT_HEADER2 header;
         public FirewallNetEventType type;
         public IntPtr value;
+
+        FWPM_NET_EVENT_HEADER2 IFwNetEvent.Header => header;
+
+        FirewallNetEventType IFwNetEvent.Type => type;
+
+        IntPtr IFwNetEvent.Value => value;
         /*
-        union {
-        FWPM_NET_EVENT_IKEEXT_MM_FAILURE1* ikeMmFailure;
-        FWPM_NET_EVENT_IKEEXT_QM_FAILURE0* ikeQmFailure;
-        FWPM_NET_EVENT_IKEEXT_EM_FAILURE1* ikeEmFailure;
-        FWPM_NET_EVENT_CLASSIFY_DROP2* classifyDrop;
-        FWPM_NET_EVENT_IPSEC_KERNEL_DROP0* ipsecDrop;
-        FWPM_NET_EVENT_IPSEC_DOSP_DROP0* idpDrop;
-        FWPM_NET_EVENT_CLASSIFY_ALLOW0* classifyAllow;
-        FWPM_NET_EVENT_CAPABILITY_DROP0* capabilityDrop;
-        FWPM_NET_EVENT_CAPABILITY_ALLOW0* capabilityAllow;
-        FWPM_NET_EVENT_CLASSIFY_DROP_MAC0* classifyDropMac;
+            FWPM_NET_EVENT_IKEEXT_MM_FAILURE1* ikeMmFailure;
+            FWPM_NET_EVENT_IKEEXT_QM_FAILURE0* ikeQmFailure;
+            FWPM_NET_EVENT_IKEEXT_EM_FAILURE1* ikeEmFailure;
+            FWPM_NET_EVENT_CLASSIFY_DROP2* classifyDrop;
+            FWPM_NET_EVENT_IPSEC_KERNEL_DROP0* ipsecDrop;
+            FWPM_NET_EVENT_IPSEC_DOSP_DROP0* idpDrop;
+            FWPM_NET_EVENT_CLASSIFY_ALLOW0* classifyAllow;
+            FWPM_NET_EVENT_CAPABILITY_DROP0* capabilityDrop;
+            FWPM_NET_EVENT_CAPABILITY_ALLOW0* capabilityAllow;
+            FWPM_NET_EVENT_CLASSIFY_DROP_MAC0* classifyDropMac;
         */
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_HEADER3
+    {
+        public FWPM_NET_EVENT_HEADER2 Header2;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string enterpriseId;
+        public ulong policyFlags;
+        public FWP_BYTE_BLOB effectiveName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT5 : IFwNetEvent
+    {
+        public FWPM_NET_EVENT_HEADER3 header;
+        public FirewallNetEventType type;
+        public IntPtr value;
+
+        FWPM_NET_EVENT_HEADER2 IFwNetEvent.Header => header.Header2;
+
+        FirewallNetEventType IFwNetEvent.Type => type;
+
+        IntPtr IFwNetEvent.Value => value;
+
+        //FWPM_NET_EVENT_IKEEXT_MM_FAILURE2* ikeMmFailure;
+        //FWPM_NET_EVENT_IKEEXT_QM_FAILURE1* ikeQmFailure;
+        //FWPM_NET_EVENT_IKEEXT_EM_FAILURE1* ikeEmFailure;
+        //FWPM_NET_EVENT_CLASSIFY_DROP2* classifyDrop;
+        //FWPM_NET_EVENT_IPSEC_KERNEL_DROP0* ipsecDrop;
+        //FWPM_NET_EVENT_IPSEC_DOSP_DROP0* idpDrop;
+        //FWPM_NET_EVENT_CLASSIFY_ALLOW0* classifyAllow;
+        //FWPM_NET_EVENT_CAPABILITY_DROP0* capabilityDrop;
+        //FWPM_NET_EVENT_CAPABILITY_ALLOW0* capabilityAllow;
+        //FWPM_NET_EVENT_CLASSIFY_DROP_MAC0* classifyDropMac;
+        //FWPM_NET_EVENT_LPM_PACKET_ARRIVAL0* lpmPacketArrival;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -684,6 +732,34 @@ namespace NtApiDotNet.Net.Firewall
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_CAPABILITY_ALLOW0
+    {
+        public FirewallNetworkCapabilityType networkCapabilityId;
+        public ulong filterId;
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool isLoopback;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_CLASSIFY_ALLOW0
+    {
+        public ulong filterId;
+        public ushort layerId;
+        public uint reauthReason;
+        public uint originalProfile;
+        public uint currentProfile;
+        public FirewallNetEventDirectionType msFwpDirection;
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool isLoopback;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_LPM_PACKET_ARRIVAL0
+    {
+        public uint spi;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct FWPM_NET_EVENT_ENUM_TEMPLATE0
     {
         public Luid startTime;
@@ -693,7 +769,7 @@ namespace NtApiDotNet.Net.Firewall
     }
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
-    delegate void FwpmNetEventCallback1(IntPtr context, IntPtr ev);
+    delegate void FwpmNetEventCallback(IntPtr context, IntPtr ev);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct FWPM_NET_EVENT_SUBSCRIPTION0
@@ -1480,6 +1556,15 @@ namespace NtApiDotNet.Net.Firewall
 
         [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error FwpmNetEventSubscribe1(
+            SafeFwpmEngineHandle engineHandle,
+            in FWPM_NET_EVENT_SUBSCRIPTION0 subscription,
+            IntPtr callback,
+            IntPtr context,
+            out IntPtr eventsHandle
+        );
+
+        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FwpmNetEventSubscribe4(
             SafeFwpmEngineHandle engineHandle,
             in FWPM_NET_EVENT_SUBSCRIPTION0 subscription,
             IntPtr callback,

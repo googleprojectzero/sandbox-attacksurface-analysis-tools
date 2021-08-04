@@ -325,6 +325,44 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get the current network event keywords setting.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The network event keywords.</returns>
+        public NtResult<FirewallNetEventKeywords> GetNetEventMatchAnyKeywords(bool throw_on_error)
+        {
+            return GetOption(FirewallEngineOption.NetEventMatchAnyKeywords, throw_on_error).Map(v => ((FirewallNetEventKeywords)v.Value));
+        }
+
+        /// <summary>
+        /// Get the current network event keywords setting.
+        /// </summary>
+        /// <returns>The network event keywords.</returns>
+        public FirewallNetEventKeywords GetNetEventMatchAnyKeywords()
+        {
+            return GetNetEventMatchAnyKeywords(true).Result;
+        }
+
+        /// <summary>
+        /// Get collect net events option.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if net events are being collected.</returns>
+        public NtResult<bool> GetCollectNetEvents(bool throw_on_error)
+        {
+            return GetOption(FirewallEngineOption.CollectNetEvents, throw_on_error).Map(v => Convert.ToBoolean(v.Value));
+        }
+
+        /// <summary>
+        /// Get collect net events option.
+        /// </summary>
+        /// <returns>True if net events are being collected.</returns>
+        public bool GetCollectNetEvents()
+        {
+            return GetCollectNetEvents(true).Result;
+        }
+
+        /// <summary>
         /// Set an engine option.
         /// </summary>
         /// <param name="option">The option to set.</param>
@@ -348,6 +386,47 @@ namespace NtApiDotNet.Net.Firewall
         public void SetOption(FirewallEngineOption option, FirewallValue value)
         {
             SetOption(option, value, true);
+        }
+
+        /// <summary>
+        /// Set network event keywords.
+        /// </summary>
+        /// <param name="keywords">The keywords to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetNetEventMatchAnyKeywords(FirewallNetEventKeywords keywords, bool throw_on_error)
+        {
+            return SetOption(FirewallEngineOption.NetEventMatchAnyKeywords, FirewallValue.FromUInt32((uint)keywords), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set network event keywords.
+        /// </summary>
+        /// <param name="keywords">The keywords to set.</param>
+        public void SetNetEventMatchAnyKeywords(FirewallNetEventKeywords keywords)
+        {
+            SetNetEventMatchAnyKeywords(keywords, true);
+        }
+
+        /// <summary>
+        /// Set the collection net events engine option.
+        /// </summary>
+        /// <param name="collect">True to enable collection.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetCollectNetEvents(bool collect, bool throw_on_error)
+        {
+            return SetOption(FirewallEngineOption.CollectNetEvents, 
+                FirewallValue.FromUInt32Bool(collect), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the collection net events engine option.
+        /// </summary>
+        /// <param name="collect">True to enable collection.</param>
+        public void SetCollectNetEvents(bool collect)
+        {
+            SetCollectNetEvents(collect, true);
         }
 
         /// <summary>
@@ -1100,7 +1179,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The list of network events.</returns>
         public NtResult<IEnumerable<FirewallNetEvent>> EnumerateNetEvents(FirewallNetEventEnumTemplate template, bool throw_on_error)
         {
-            Func<FWPM_NET_EVENT2, FirewallNetEvent> f = FirewallNetEvent.Create;
+            Func<FWPM_NET_EVENT2, FirewallNetEvent> f = e => FirewallNetEvent.Create(e);
             return EnumerateFwObjects(template, f, null, FirewallNativeMethods.FwpmNetEventCreateEnumHandle0,
                 FirewallNativeMethods.FwpmNetEventEnum2, FirewallNativeMethods.FwpmNetEventDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallNetEvent>>(l => l.AsReadOnly());
@@ -1142,7 +1221,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <returns>The network event listener.</returns>
         public NtResult<FirewallNetEventListener> SubscribeNetEvents(bool throw_on_error)
         {
-            return FirewallNetEventListener.Start(_handle, throw_on_error);
+            return FirewallNetEventListener.Start(this, throw_on_error);
         }
 
         /// <summary>
@@ -1290,6 +1369,10 @@ namespace NtApiDotNet.Net.Firewall
         {
             return GetSecurity(security_information, FirewallNativeMethods.FwpmEngineGetSecurityInfo0, throw_on_error);
         }
+        #endregion
+
+        #region Internal Members
+        internal SafeFwpmEngineHandle Handle => _handle;
         #endregion
     }
 }

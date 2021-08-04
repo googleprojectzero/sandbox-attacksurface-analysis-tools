@@ -13,14 +13,13 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Memory;
-using System;
 
 namespace NtApiDotNet.Net.Firewall
 {
     /// <summary>
-    /// Class to represent a firewall classification drop.
+    /// Class to represent a firewall classification allow.
     /// </summary>
-    public sealed class FirewallNetEventClassifyDrop : FirewallNetEvent
+    public sealed class FirewallNetEventClassifyAllow : FirewallNetEvent
     {
         /// <summary>
         /// Filter ID.
@@ -36,7 +35,7 @@ namespace NtApiDotNet.Net.Firewall
         /// Reason for reauthorizing 
         /// </summary>
         public uint ReauthReason { get; }
-        
+
         /// <summary>
         /// The original profile the connection was received on.
         /// </summary>
@@ -57,29 +56,11 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public bool IsLoopback { get; }
 
-        /// <summary>
-        /// GUID identifier of a vSwitch.
-        /// </summary>
-        public Guid VSwitchId { get; }
-
-        /// <summary>
-        /// Transient source port of a packet within the vSwitch.
-        /// </summary>
-        public uint VSwitchSourcePort { get; }
-
-        /// <summary>
-        /// Transient destination port of a packet within the vSwitch.
-        /// </summary>
-        public uint VSwitchDestinationPort { get; }
-
-        internal FirewallNetEventClassifyDrop(IFwNetEvent net_event) : base(net_event)
+        internal FirewallNetEventClassifyAllow(IFwNetEvent net_event) : base(net_event)
         {
-            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CLASSIFY_DROP2>();
+            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CLASSIFY_ALLOW0>();
             FilterId = inner_event.filterId;
             LayerId = inner_event.layerId;
-            VSwitchId = inner_event.vSwitchId.ToGuid();
-            VSwitchSourcePort = inner_event.vSwitchSourcePort;
-            VSwitchDestinationPort = inner_event.vSwitchDestinationPort;
             ReauthReason = inner_event.reauthReason;
             OriginalProfile = inner_event.originalProfile;
             CurrentProfile = inner_event.currentProfile;

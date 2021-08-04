@@ -17,9 +17,9 @@ using NtApiDotNet.Utilities.Memory;
 namespace NtApiDotNet.Net.Firewall
 {
     /// <summary>
-    /// Class to represent a network event capability drop.
+    /// Class to represent a network event capability allow.
     /// </summary>
-    public sealed class FirewallNetEventCapabilityDrop : FirewallNetEvent
+    public sealed class FirewallNetEventCapabilityAllow : FirewallNetEvent
     {
         /// <summary>
         /// AppContainer network capability.
@@ -36,9 +36,9 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public bool IsLoopback { get; }
 
-        internal FirewallNetEventCapabilityDrop(IFwNetEvent net_event) : base(net_event)
+        internal FirewallNetEventCapabilityAllow(IFwNetEvent net_event) : base(net_event)
         {
-            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CAPABILITY_DROP0>();
+            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CAPABILITY_ALLOW0>();
             NetworkCapabilityId = inner_event.networkCapabilityId;
             FilterId = inner_event.filterId;
             IsLoopback = inner_event.isLoopback;
