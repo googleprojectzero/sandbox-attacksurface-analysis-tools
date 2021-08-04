@@ -381,38 +381,6 @@ namespace NtApiDotNet.Net.Firewall
         public ulong authIpFilterId;
     }
 
-    [SDKName("IKEEXT_KEY_MODULE_TYPE")]
-    public enum IkeExtKeyModuleType
-    {
-        [SDKName("IKEEXT_KEY_MODULE_IKE")]
-        Ike = 0,
-        [SDKName("IKEEXT_KEY_MODULE_AUTHIP")]
-        AuthIP = (Ike + 1),
-        [SDKName("IKEEXT_KEY_MODULE_IKEV2")]
-        IkeV2 = (AuthIP + 1),
-    }
-
-    [SDKName("IKEEXT_DH_GROUP")]
-    public enum IkeextDHGroup
-    {
-        [SDKName("IKEEXT_DH_GROUP_NONE")]
-        None = 0,
-        [SDKName("IKEEXT_DH_GROUP_1")]
-        Group1 = (None + 1),
-        [SDKName("IKEEXT_DH_GROUP_2")]
-        Group2 = (Group1 + 1),
-        [SDKName("IKEEXT_DH_GROUP_14")]
-        Group14 = (Group2 + 1),
-        [SDKName("IKEEXT_DH_GROUP_2048")]
-        Group2048 = Group14,
-        [SDKName("IKEEXT_DH_ECP_256")]
-        ECP256 = (Group2048 + 1),
-        [SDKName("IKEEXT_DH_ECP_384")]
-        ECP384 = (ECP256 + 1),
-        [SDKName("IKEEXT_DH_GROUP_24")]
-        Group24 = (ECP384 + 1),
-    }
-
     [SDKName("IKEEXT_INTEGRITY_TYPE")]
     public enum IkeextIntegrityType
     {
@@ -465,7 +433,7 @@ namespace NtApiDotNet.Net.Firewall
         public IKEEXT_CIPHER_ALGORITHM0 cipherAlgorithm;
         public IKEEXT_INTEGRITY_ALGORITHM0 integrityAlgorithm;
         public uint maxLifetimeSeconds;
-        public IkeextDHGroup dhGroup;
+        public IkeExtDHGroup dhGroup;
         public uint quickModeLimit;
     }
 
@@ -500,68 +468,18 @@ namespace NtApiDotNet.Net.Firewall
         public string principalName;
     }
 
-    [SDKName("IKEEXT_AUTHENTICATION_METHOD_TYPE")]
-    public enum IkeextAuthenticationMethodType
-    {
-        [SDKName("IKEEXT_PRESHARED_KEY")]
-        PreSharedKey = 0,
-        [SDKName("IKEEXT_CERTIFICATE")]
-        Certificate = (PreSharedKey + 1),
-        [SDKName("IKEEXT_KERBEROS")]
-        Kerberos = (Certificate + 1),
-        [SDKName("IKEEXT_ANONYMOUS")]
-        Anonymous = (Kerberos + 1),
-        [SDKName("IKEEXT_SSL")]
-        Ssl = (Anonymous + 1),
-        [SDKName("IKEEXT_NTLM_V2")]
-        NtlmV2 = (Ssl + 1),
-        [SDKName("IKEEXT_IPV6_CGA")]
-        IPv6Cga = (NtlmV2 + 1),
-        [SDKName("IKEEXT_CERTIFICATE_ECDSA_P256")]
-        CertificateECDSA_P256 = (IPv6Cga + 1),
-        [SDKName("IKEEXT_CERTIFICATE_ECDSA_P384")]
-        CertificateECDSA_P384 = (CertificateECDSA_P256 + 1),
-        [SDKName("IKEEXT_SSL_ECDSA_P256")]
-        SslECDSA_P256 = (CertificateECDSA_P384 + 1),
-        [SDKName("IKEEXT_SSL_ECDSA_P384")]
-        SslECDSA_P384 = (SslECDSA_P256 + 1),
-        [SDKName("IKEEXT_EAP")]
-        EAP = (SslECDSA_P384 + 1),
-        [SDKName("IKEEXT_RESERVED")]
-        Reserved = (EAP + 1),
-    }
-
-    [SDKName("IKEEXT_AUTHENTICATION_IMPERSONATION_TYPE")]
-    public enum IkeextAuthenticationImpersonationType
-    {
-        [SDKName("IKEEXT_IMPERSONATION_NONE")]
-        None = 0,
-        [SDKName("IKEEXT_IMPERSONATION_SOCKET_PRINCIPAL")]
-        SocketPrincipal = (None + 1),
-    }
-
-    [Flags]
-    public enum IkeextPreSharedKeyFlags
-    {
-        None = 0,
-        [SDKName("IKEEXT_PSK_FLAG_LOCAL_AUTH_ONLY")]
-        LocalAuthOnly = 0x00000001,
-        [SDKName("IKEEXT_PSK_FLAG_REMOTE_AUTH_ONLY")]
-        RemoteAuthOnly = 0x00000002,
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct IKEEXT_PRESHARED_KEY_AUTHENTICATION1
     {
         public FWP_BYTE_BLOB presharedKey;
-        public IkeextPreSharedKeyFlags flags;
+        public IkeExtPreSharedKeyFlags flags;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct IKEEXT_CREDENTIAL1
     {
-        public IkeextAuthenticationMethodType authenticationMethodType;
-        public IkeextAuthenticationImpersonationType impersonationType;
+        public IkeExtAuthenticationMethodType authenticationMethodType;
+        public IkeExtAuthenticationImpersonationType impersonationType;
         public IntPtr cred;
         // IKEEXT_PRESHARED_KEY_AUTHENTICATION1* presharedKey;
         // IKEEXT_CERTIFICATE_CREDENTIAL1* certificate;
@@ -754,6 +672,112 @@ namespace NtApiDotNet.Net.Firewall
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_IKEEXT_MM_FAILURE1
+    {
+        // Windows error code for the failure
+        public Win32Error failureErrorCode;
+        // Point of failure
+        public IPsecFailurePoint failurePoint;
+        // Flags for the failure event
+        public IkeExtMmFailureFlags flags;
+        // IKE or Authip
+        public IkeExtKeyModuleType keyingModuleType;
+        // Main mode state
+        public IkeExtMmSaState mmState;
+        // Initiator or Responder
+        public IkeExtSaRole saRole;
+        // Authentication method
+        public IkeExtAuthenticationMethodType mmAuthMethod;
+        // Hash (SHA thumbprint) of the end certificate corresponding to failures
+        // that happen during building or validating certificate chains.
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
+        public byte[] endCertHash;
+        // LUID for the MM SA
+        public long mmId;
+        // Main mode filter ID
+        public ulong mmFilterId;
+        // Name of local security principal that was authenticated, if available.
+        // If not available, an empty string will be stored.
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string localPrincipalNameForAuth;
+        // Name of remote security principal that was authenticated, if available.
+        // If not available, an empty string will be stored.
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string remotePrincipalNameForAuth;
+        // Array of group SIDs corresponding to the local security principal that
+        // was authenticated, if available.
+        public int numLocalPrincipalGroupSids;
+        public IntPtr localPrincipalGroupSids; // LPWSTR* 
+        // Array of group SIDs corresponding to the remote security principal that
+        // was authenticated, if available.
+        public int numRemotePrincipalGroupSids;
+        public IntPtr remotePrincipalGroupSids; // LPWSTR* 
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_IKEEXT_QM_FAILURE0
+    {
+        // Windows error code for the failure
+        public Win32Error failureErrorCode;
+        // Point of failure
+        public IPsecFailurePoint failurePoint;
+        // IKE or Authip
+        public IkeExtKeyModuleType keyingModuleType;
+        // Quick mode state
+        public IkeExtQmSaState qmState;
+        // Initiator or Responder
+        public IkeExtSaRole saRole;
+        // Tunnel or transport mode
+        public IPsecTrafficType saTrafficType;
+        public FWP_VALUE0 localSubNet;
+        public FWP_VALUE0 remoteSubNet;
+        public ulong qmFilterId;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct FWPM_NET_EVENT_IKEEXT_EM_FAILURE1
+    {
+        // Windows error code for the failure
+        public Win32Error failureErrorCode;
+        // Point of failure
+        public IPsecFailurePoint failurePoint;
+        // Flags for the failure event
+        public IkeExtEmFailureFlags flags;
+        // Extended mode state
+        public IkeExtEmSaState emState;
+        // Initiator or Responder
+        public IkeExtSaRole saRole;
+        // Authentication method
+        public IkeExtAuthenticationMethodType emAuthMethod;
+        // Hash (SHA thumbprint) of the end certificate corresponding to failures
+        // that happen during building or validating certificate chains.
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
+        public byte[] endCertHash;
+        // LUID for the MM SA corresponding to this EM failure
+        public long mmId;
+        // Quick mode filter ID associated with this EM failure
+        public ulong qmFilterId;
+        // Name of local security principal that was authenticated, if available.
+        // If not available, an empty string will be stored.
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string localPrincipalNameForAuth;
+        // Name of remote security principal that was authenticated, if available.
+        // If not available, an empty string will be stored.
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string remotePrincipalNameForAuth;
+        // Array of group SIDs corresponding to the local security principal that
+        // was authenticated, if available.
+        public int numLocalPrincipalGroupSids;
+        public IntPtr localPrincipalGroupSids; // LPWSTR* 
+        // Array of group SIDs corresponding to the remote security principal that
+        // was authenticated, if available.
+        public int numRemotePrincipalGroupSids;
+        public IntPtr remotePrincipalGroupSids; // LPWSTR* 
+        // Tunnel or transport mode
+        public IPsecTrafficType saTrafficType;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct FWPM_NET_EVENT_LPM_PACKET_ARRIVAL0
     {
         public uint spi;
@@ -814,57 +838,6 @@ namespace NtApiDotNet.Net.Firewall
         public uint lifetimePackets;
     }
 
-    [SDKName("IPSEC_TRANSFORM_TYPE")]
-    public enum IPsecTransformType
-    {
-        [SDKName("IPSEC_TRANSFORM_AH")]
-        AH,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH")]
-        EspAuth,
-        [SDKName("IPSEC_TRANSFORM_ESP_CIPHER")]
-        EspCipher,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_AND_CIPHER")]
-        EspAuthAndCipher,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_FW")]
-        EspAuthFw
-    }
-
-    /// <summary>
-    /// IPsec authentication type.
-    /// </summary>
-    [SDKName("IPSEC_AUTH_TYPE")]
-    public enum IPsecAuthType
-    {
-        [SDKName("IPSEC_AUTH_MD5")]
-        MD5 = 0,
-        [SDKName("IPSEC_AUTH_SHA_1")]
-        SHA1 = (MD5 + 1),
-        [SDKName("IPSEC_AUTH_SHA_256")]
-        SHA256 = (SHA1 + 1),
-        [SDKName("IPSEC_AUTH_AES_128")]
-        AES128 = (SHA256 + 1),
-        [SDKName("IPSEC_AUTH_AES_192")]
-        AES192 = (AES128 + 1),
-        [SDKName("IPSEC_AUTH_AES_256")]
-        AES256 = (AES192 + 1)
-    }
-
-    public enum IPsecAuthConfig : byte
-    {
-        [SDKName("IPSEC_AUTH_CONFIG_HMAC_MD5_96")]
-        HMAC_MD5_96 = 0,
-        [SDKName("IPSEC_AUTH_CONFIG_HMAC_SHA_1_96")]
-        HMAC_SHA1_96 = 1,
-        [SDKName("IPSEC_AUTH_CONFIG_HMAC_SHA_256_128")]
-        HMAC_SHA256_128 = 2,
-        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_128")]
-        GCM_AES128 = 3,
-        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_192")]
-        GCM_AES192 = 4,
-        [SDKName("IPSEC_AUTH_CONFIG_GCM_AES_256")]
-        GCM_AES256 = 5,
-    }
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct IPSEC_AUTH_TRANSFORM_ID0
     {
@@ -884,47 +857,6 @@ namespace NtApiDotNet.Net.Firewall
     {
         public IPSEC_AUTH_TRANSFORM0 authTransform;
         public FWP_BYTE_BLOB authKey;
-    }
-
-    /// <summary>
-    /// IPSec Cipher Type.
-    /// </summary>
-    [SDKName("IPSEC_CIPHER_TYPE")]
-    public enum IPsecCipherType
-    {
-        [SDKName("IPSEC_CIPHER_TYPE_DES")]
-        DES = 1,
-        [SDKName("IPSEC_CIPHER_TYPE_3DES")]
-        TripleDES = (DES + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_128")]
-        AES128 = (TripleDES + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_192")]
-        AES192 = (AES128 + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_256")]
-        AES256 = (AES192 + 1)
-    }
-
-    /// <summary>
-    /// IPsec Cipher Configuration.
-    /// </summary>
-    public enum IPsecCipherConfig : byte
-    {
-        [SDKName("IPSEC_CIPHER_CONFIG_CBC_DES")]
-        CBC_DES = 1,
-        [SDKName("IPSEC_CIPHER_CONFIG_CBC_3DES")]
-        CBC_3DES = 2,
-        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_128")]
-        CBC_AES128 = 3,
-        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_192")]
-        CBC_AES192 = 4,
-        [SDKName("IPSEC_CIPHER_CONFIG_CBC_AES_256")]
-        CBC_AES256 = 5,
-        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_128")]
-        GCM_AES128 = 6,
-        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_192")]
-        GCM_AES192 = 7,
-        [SDKName("IPSEC_CIPHER_CONFIG_GCM_AES_256")]
-        GCM_AES256 = 8,
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

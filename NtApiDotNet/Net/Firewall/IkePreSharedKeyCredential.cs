@@ -29,7 +29,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Key flags.
         /// </summary>
-        public IkeextPreSharedKeyFlags Flags { get; }
+        public IkeExtPreSharedKeyFlags Flags { get; }
 
         internal IkePreSharedKeyCredential(IKEEXT_CREDENTIAL1 creds) 
             : base(creds)

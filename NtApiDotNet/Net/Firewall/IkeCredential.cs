@@ -24,12 +24,12 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Authentication method type.
         /// </summary>
-        public IkeextAuthenticationMethodType AuthenticationMethodType { get; }
+        public IkeExtAuthenticationMethodType AuthenticationMethodType { get; }
 
         /// <summary>
         /// Impersonation type.
         /// </summary>
-        public IkeextAuthenticationImpersonationType ImpersonationType { get; }
+        public IkeExtAuthenticationImpersonationType ImpersonationType { get; }
 
         private protected IkeCredential(IKEEXT_CREDENTIAL1 creds)
         {
@@ -43,13 +43,13 @@ namespace NtApiDotNet.Net.Firewall
             {
                 switch (creds.authenticationMethodType)
                 {
-                    case IkeextAuthenticationMethodType.PreSharedKey:
+                    case IkeExtAuthenticationMethodType.PreSharedKey:
                         return new IkePreSharedKeyCredential(creds);
-                    case IkeextAuthenticationMethodType.Certificate:
-                    case IkeextAuthenticationMethodType.Ssl:
+                    case IkeExtAuthenticationMethodType.Certificate:
+                    case IkeExtAuthenticationMethodType.Ssl:
                         return new IkeCertificateCredential(creds);
-                    case IkeextAuthenticationMethodType.NtlmV2:
-                    case IkeextAuthenticationMethodType.Kerberos:
+                    case IkeExtAuthenticationMethodType.NtlmV2:
+                    case IkeExtAuthenticationMethodType.Kerberos:
                         return new IkeNameCredential(creds);
                     default:
                         System.Diagnostics.Trace.WriteLine($"Unknown cred type {creds.authenticationMethodType}");

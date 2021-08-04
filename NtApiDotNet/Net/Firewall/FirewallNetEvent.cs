@@ -79,10 +79,10 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         public Sid PackageSid { get; }
 
-        private protected FirewallNetEvent(IFwNetEvent ev)
+        private protected FirewallNetEvent(IFwNetEvent net_event)
         {
-            Type = ev.Type;
-            var header = ev.Header;
+            Type = net_event.Type;
+            var header = net_event.Header;
             Flags = header.flags;
             Timestamp = new LargeInteger(header.timeStamp.ToInt64()).ToDateTime();
             IPProtocol = (ProtocolType)header.ipProtocol;
@@ -109,6 +109,8 @@ namespace NtApiDotNet.Net.Firewall
                     return new FirewallNetEventCapabilityDrop(net_event);
                 case FirewallNetEventType.CapabilityAllow:
                     return new FirewallNetEventCapabilityAllow(net_event);
+                case FirewallNetEventType.IkeExtMmFailure:
+                    return new FirewallNetEventIkeExtMmFailure(net_event);
             }
 
             return new FirewallNetEvent(net_event);

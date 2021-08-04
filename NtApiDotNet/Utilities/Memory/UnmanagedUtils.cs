@@ -53,6 +53,13 @@ namespace NtApiDotNet.Utilities.Memory
             return ret;
         }
 
+        internal static string[] ReadStringArray(this IntPtr ptr, int count)
+        {
+            if (ptr == IntPtr.Zero)
+                return null;
+            return ReadArray<IntPtr>(ptr, count).Select(p => Marshal.PtrToStringUni(p)).ToArray();
+        }
+
         internal static T[] ReadArray<T, U>(this IntPtr ptr, int count, Func<U, T> map_func)
         {
             return ptr.ReadArray<U>(count).Select(map_func).ToArray();

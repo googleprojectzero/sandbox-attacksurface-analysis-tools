@@ -96,7 +96,7 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// Diffie-Hellman group.
         /// </summary>
-        public IkeextDHGroup DiffieHellmanGroup { get; }
+        public IkeExtDHGroup DiffieHellmanGroup { get; }
         /// <summary>
         /// Quick mode limit.
         /// </summary>

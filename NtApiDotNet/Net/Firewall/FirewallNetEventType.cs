@@ -38,7 +38,7 @@ namespace NtApiDotNet.Net.Firewall
         IPsecDoSPDrop,
         [SDKName("FWPM_NET_EVENT_TYPE_CLASSIFY_ALLOW")]
         ClassifyAllow,
-        [SDKName("FWPM_NET_EVFWPM_NET_EVENT_TYPE_CAPABILITY_DROPENT_TYPE")]
+        [SDKName("FWPM_NET_EVENT_TYPE_CAPABILITY_DROP")]
         CapabilityDrop,
         [SDKName("FWPM_NET_EVENT_TYPE_CAPABILITY_ALLOW")]
         CapabilityAllow,
