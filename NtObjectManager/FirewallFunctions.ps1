@@ -642,7 +642,7 @@ function Add-FwCondition {
         [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
         [NtApiDotNet.NtToken]$TokenInformation,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
-        [string]$PackageSid
+        [NtObjectManager.Utils.Firewall.FirewallPackageSid]$PackageSid
     )
 
     try {
@@ -685,11 +685,7 @@ function Add-FwCondition {
                 $Builder.AddTokenInformation($MatchType, $TokenInformation)
             }
             "FromPackageSid" {
-                $sid = $PackageSid
-                if ($sid -ne "S-1-0-0") {
-                    $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
-                }
-                $Builder.AddPackageSid($MatchType, $sid)
+                $Builder.AddPackageSid($MatchType, $PackageSid.Sid)
             }
         }
         if ($PassThru) {
