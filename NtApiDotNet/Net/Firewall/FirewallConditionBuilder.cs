@@ -248,7 +248,29 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
-        /// Adds details from a process, such as the process' App ID and package SID.
+        /// Adds details from a process, such as the process' App ID and package SID and token information.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="process">The process.</param>
+        public void AddProcess(FirewallMatchType match_type, NtProcess process)
+        {
+            AddFilename(match_type, process.Win32ImagePath);
+            using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query))
+            {
+                AddUserToken(match_type, token);
+                if (token.AppContainer)
+                {
+                    AddPackageSid(match_type, token.AppContainerSid);
+                }
+                else
+                {
+                    AddPackageSid(match_type, KnownSids.Null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds details from a process, such as the process' App ID and package SID and token information.
         /// </summary>
         /// <param name="match_type">The match type.</param>
         /// <param name="process_id">The PID of the process.</param>
@@ -256,8 +278,18 @@ namespace NtApiDotNet.Net.Firewall
         {
             using (var process = NtProcess.Open(process_id, ProcessAccessRights.QueryLimitedInformation))
             {
-                AddAppId(match_type, process.FullPath.ToLower());
+                AddProcess(match_type, process);
             }
+        }
+
+        /// <summary>
+        /// Add the RPC UUID.
+        /// </summary>
+        /// <param name="match_type">Match type.</param>
+        /// <param name="uuid">The RPC UUID.</param>
+        public void AddRpcUuid(FirewallMatchType match_type, Guid uuid)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_IF_UUID, FirewallValue.FromGuid(uuid));
         }
 
         #endregion

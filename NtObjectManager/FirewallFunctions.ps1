@@ -598,6 +598,10 @@ The token for a token information condition for remote machine ID.
 The token's package SID.
 .PARAMETER ConditionFlags
 Specify condition flags to match.
+.PARAMETER Process
+Specify process to populate from. Adds token information and app ID.
+.PARAMETER ProcessId
+Specify process ID to populate from. Adds token information and app ID.
 .PARAMETER PassThru
 Pass through the condition builder/template.
 .INPUTS
@@ -648,7 +652,12 @@ function Add-FwCondition {
         [parameter(Mandatory, ParameterSetName="FromMachineToken")]
         [NtApiDotNet.NtToken]$MachineToken,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
-        [NtObjectManager.Utils.Firewall.FirewallPackageSid]$PackageSid
+        [NtObjectManager.Utils.Firewall.FirewallPackageSid]$PackageSid,
+        [parameter(Mandatory, ParameterSetName="FromProcess")]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Mandatory, ParameterSetName="FromProcessID")]
+        [alias("pid")]
+        [int]$ProcessId
     )
 
     try {
@@ -698,6 +707,12 @@ function Add-FwCondition {
             }
             "FromPackageSid" {
                 $Builder.AddPackageSid($MatchType, $PackageSid.Sid)
+            }
+            "FromProcess" {
+                $Builder.AddProcess($MatchType, $Process)
+            }
+            "FromProcessId" {
+                $Builder.AddProcess($MatchType, $ProcessId)
             }
         }
         if ($PassThru) {
