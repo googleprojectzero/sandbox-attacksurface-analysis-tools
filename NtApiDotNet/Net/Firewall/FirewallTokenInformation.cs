@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,10 +28,29 @@ namespace NtApiDotNet.Net.Firewall
         /// The list of SIDs.
         /// </summary>
         public IReadOnlyList<UserGroup> Sids { get; }
+
         /// <summary>
         /// The list of restricted SIDs.
         /// </summary>
         public IReadOnlyList<UserGroup> RestrictedSids { get; }
+
+        /// <summary>
+        /// Capabilities.
+        /// </summary>
+        /// <remarks>This is only used for local filtering. It's not used by WFP.</remarks>
+        internal IReadOnlyList<UserGroup> Capabilities { get; }
+
+        /// <summary>
+        /// Appcontainer SID.
+        /// </summary>
+        /// <remarks>This is only used for local filtering. It's not used by WFP.</remarks>
+        internal Sid AppContainerSid { get; }
+
+        /// <summary>
+        /// User SID.
+        /// </summary>
+        /// <remarks>This is only used for local filtering. It's not used by WFP.</remarks>
+        internal Sid UserSid { get; }
 
         private static IReadOnlyList<UserGroup> ReadSids(IntPtr ptr, int count)
         {
@@ -47,6 +67,24 @@ namespace NtApiDotNet.Net.Firewall
         {
             Sids = ReadSids(token_info.sids, token_info.sidCount);
             RestrictedSids = ReadSids(token_info.restrictedSids, token_info.restrictedSidCount);
+            Capabilities = new List<UserGroup>();
+            UserSid = null;
+            AppContainerSid = null;
+        }
+
+        /// <summary>
+        /// Constructor from a token.
+        /// </summary>
+        /// <param name="token">The token to constructo from.</param>
+        public FirewallTokenInformation(NtToken token) 
+            : this(token.Groups, token.RestrictedSids)
+        {
+            UserSid = token.User.Sid;
+            if (token.AppContainer)
+            {
+                Capabilities = token.Capabilities;
+                AppContainerSid = token.AppContainerSid;
+            }
         }
 
         /// <summary>
@@ -58,6 +96,9 @@ namespace NtApiDotNet.Net.Firewall
         {
             Sids = sids.ToList().AsReadOnly();
             RestrictedSids = restricted_sids.ToList().AsReadOnly();
+            Capabilities = new List<UserGroup>();
+            UserSid = null;
+            AppContainerSid = null;
         }
 
         internal FWP_TOKEN_INFORMATION ToStruct(DisposableList list)
@@ -70,6 +111,37 @@ namespace NtApiDotNet.Net.Firewall
             sids = list.CreateSidAndAttributes(RestrictedSids);
             ret.restrictedSids = list.AddResource(sids.ToBuffer()).DangerousGetHandle();
             return ret;
+        }
+
+        private static bool FilterGroup(UserGroup group)
+        {
+            return !group.Attributes.HasFlagSet(GroupAttributes.Integrity);
+        }
+
+        private static UserGroup MapGroupAttributes(UserGroup group)
+        {
+            return new UserGroup(group.Sid, group.Attributes & (GroupAttributes.Enabled | GroupAttributes.UseForDenyOnly));
+        }
+
+        private static void AddGroups(AuthZContext context, AuthZGroupSidType type, IEnumerable<UserGroup> groups)
+        {
+            groups = groups.Where(FilterGroup).Select(MapGroupAttributes);
+            context.ModifyGroups(type, groups, groups.Select(_ => AuthZSidOperation.Add));
+        }
+
+        internal AuthZContext CreateContext(AuthZResourceManager resource_manager, DisposableList list)
+        {
+            var ctx = list.AddResource(resource_manager.CreateContext(UserSid, AuthZContextInitializeSidFlags.SkipTokenGroups));
+            AddGroups(ctx, AuthZGroupSidType.Normal, Sids);
+            if (RestrictedSids.Count > 0)
+            {
+                AddGroups(ctx, AuthZGroupSidType.Restricted, RestrictedSids);
+            }
+            if (AppContainerSid != null)
+            {
+                ctx.SetAppContainer(AppContainerSid, Capabilities);
+            }
+            return ctx;
         }
     }
 }

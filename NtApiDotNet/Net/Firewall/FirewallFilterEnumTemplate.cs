@@ -134,11 +134,11 @@ namespace NtApiDotNet.Net.Firewall
                 {
                     continue;
                 }
-                if (!(condition.Value.ContextValue is NtToken token) || (token.Handle.IsClosed))
+                if (!(condition.Value.ContextValue is FirewallTokenInformation token) || token.UserSid == null)
                 {
                     continue;
                 }
-                contexts.Add(condition.FieldKey, rm.CreateContext(token));
+                contexts.Add(condition.FieldKey, token.CreateContext(rm, list));
             }
 
             return f => FilterFunc(contexts, f);

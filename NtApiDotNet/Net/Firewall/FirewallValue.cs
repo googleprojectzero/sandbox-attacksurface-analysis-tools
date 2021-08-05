@@ -600,7 +600,7 @@ namespace NtApiDotNet.Net.Firewall
         public static FirewallValue FromTokenInformation(NtToken value)
         {
             return new FirewallValue(FirewallDataType.TokenInformation, 
-                new FirewallTokenInformation(value.Groups, value.RestrictedSids), value);
+                new FirewallTokenInformation(value));
         }
 
         /// <summary>

@@ -318,6 +318,8 @@ Specify one or more conditions to check for when enumerating.
 Specify the user identity for the filter.
 .PARAMETER RemoteToken
 Specify the remote user identity for the filter.
+.PARAMETER Sorted
+Specify to sort the filter output.
 .INPUTS
 None
 .OUTPUTS
@@ -335,7 +337,8 @@ function New-FwFilterTemplate {
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "All",
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
+        [switch]$Sorted
     )
 
     try {
@@ -346,6 +349,9 @@ function New-FwFilterTemplate {
             "FromAleLayer" {
                 [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
             }
+        }
+        if ($Sorted) {
+            $Flags = $Flags -bor "Sorted"
         }
         $template.Flags = $Flags
         $template.ActionType = $ActionType
