@@ -12,12 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Net.Firewall
 {
-    internal interface IFirewallEnumTemplate
+    internal interface IFirewallEnumTemplate<T>
     {
         SafeBuffer ToTemplateBuffer(DisposableList list);
+        Func<T, bool> GetFilterFunc(DisposableList list);
     }
 }

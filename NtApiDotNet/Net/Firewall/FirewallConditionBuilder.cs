@@ -79,12 +79,32 @@ namespace NtApiDotNet.Net.Firewall
         /// Add a user ID security descriptor condition.
         /// </summary>
         /// <param name="match_type">The match type for the condition.</param>
-        /// <param name="remote">True to specify the remote user ID.</param>
         /// <param name="security_descriptor">The security descriptor.</param>
-        public void AddUserId(FirewallMatchType match_type, bool remote, SecurityDescriptor security_descriptor)
+        public void AddUserId(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
         {
-            AddCondition(match_type, remote ? FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID : 
-                FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
+                FirewallValue.FromSecurityDescriptor(security_descriptor));
+        }
+
+        /// <summary>
+        /// Add a remote user ID security descriptor condition.
+        /// </summary>
+        /// <param name="match_type">The match type for the condition.</param>
+        /// <param name="security_descriptor">The security descriptor.</param>
+        public void AddRemoteUserId(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID,
+                FirewallValue.FromSecurityDescriptor(security_descriptor));
+        }
+
+        /// <summary>
+        /// Add a remote machine ID security descriptor condition.
+        /// </summary>
+        /// <param name="match_type">The match type for the condition.</param>
+        /// <param name="security_descriptor">The security descriptor.</param>
+        public void AddRemoteMachineId(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_MACHINE_ID,
                 FirewallValue.FromSecurityDescriptor(security_descriptor));
         }
 
@@ -173,10 +193,32 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         /// <param name="match_type">The match type.</param>
         /// <param name="token">The token.</param>
-        public void AddTokenInformation(FirewallMatchType match_type, NtToken token)
+        public void AddUserToken(FirewallMatchType match_type, NtToken token)
         {
-            FirewallTokenInformation token_info = new FirewallTokenInformation(token.Groups, token.RestrictedSids);
-            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID, FirewallValue.FromTokenInformation(token_info));
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID,
+                FirewallValue.FromTokenInformation(token));
+        }
+
+        /// <summary>
+        /// Add remote token information.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="token">The token.</param>
+        public void AddRemoteUserToken(FirewallMatchType match_type, NtToken token)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID,
+                FirewallValue.FromTokenInformation(token));
+        }
+
+        /// <summary>
+        /// Add remote machine token information.
+        /// </summary>
+        /// <param name="match_type">The match type.</param>
+        /// <param name="token">The token.</param>
+        public void AddRemoteMachineToken(FirewallMatchType match_type, NtToken token)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_MACHINE_ID,
+                FirewallValue.FromTokenInformation(token));
         }
 
         /// <summary>

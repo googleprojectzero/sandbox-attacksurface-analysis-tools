@@ -156,16 +156,15 @@ namespace NtApiDotNet.Net.Firewall
             return new FirewallSession(session);
         }
 
-        private NtResult<List<T>> EnumerateFwObjects<T, U>(IFirewallEnumTemplate template,
-            Func<U, T> map_func, Func<T, bool> filter_func,
-            CreateEnumHandleFunc create_func, EnumObjectFunc enum_func, 
+        private NtResult<List<T>> EnumerateFwObjects<T, U>(IFirewallEnumTemplate<T> template,
+            Func<U, T> map_func, CreateEnumHandleFunc create_func, EnumObjectFunc enum_func, 
             DestroyEnumHandleFunc destroy_func, bool throw_on_error)
         {
             const int MAX_ENTRY = 1000;
-            filter_func = filter_func ?? (_ => true);
             List<T> ret = new List<T>();
             using (var list = new DisposableList())
             {
+                Func<T, bool> filter_func = template?.GetFilterFunc(list) ?? (_ => true);
                 NtStatus status = create_func(_handle, template?.ToTemplateBuffer(list) ?? SafeHGlobalBuffer.Null, out IntPtr enum_handle).MapDosErrorToStatus();
                 if (!status.IsSuccess())
                 {
@@ -533,7 +532,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallLayer>> EnumerateLayers(bool throw_on_error)
         {
             Func<FWPM_LAYER0, FirewallLayer> f = ProcessLayer;
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmLayerCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmLayerCreateEnumHandle0,
                 FirewallNativeMethods.FwpmLayerEnum0, FirewallNativeMethods.FwpmLayerDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallLayer>>(l => l.AsReadOnly());
         }
@@ -602,7 +601,7 @@ namespace NtApiDotNet.Net.Firewall
         {
             Func<FWPM_SUBLAYER0, FirewallSubLayer> f = ProcessSubLayer;
 
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmSubLayerCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmSubLayerCreateEnumHandle0,
                 FirewallNativeMethods.FwpmSubLayerEnum0, FirewallNativeMethods.FwpmSubLayerDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallSubLayer>>(l => l.AsReadOnly());
         }
@@ -647,7 +646,7 @@ namespace NtApiDotNet.Net.Firewall
         {
             Func<FWPM_CALLOUT0, FirewallCallout> f = ProcessCallout;
 
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmCalloutCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmCalloutCreateEnumHandle0,
                 FirewallNativeMethods.FwpmCalloutEnum0, FirewallNativeMethods.FwpmCalloutDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallCallout>>(l => l.AsReadOnly());
         }
@@ -720,7 +719,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(FirewallFilterEnumTemplate template, bool throw_on_error)
         {
             Func<FWPM_FILTER0, FirewallFilter> f = ProcessFilter;
-            return EnumerateFwObjects(template, f, template?.GetFilterFunc(), FirewallNativeMethods.FwpmFilterCreateEnumHandle0,
+            return EnumerateFwObjects(template, f, FirewallNativeMethods.FwpmFilterCreateEnumHandle0,
                     FirewallNativeMethods.FwpmFilterEnum0, FirewallNativeMethods.FwpmFilterDestroyEnumHandle0,
                     throw_on_error).Map<IEnumerable<FirewallFilter>>(l => l.AsReadOnly());
         }
@@ -862,7 +861,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallProvider>> EnumerateProviders(bool throw_on_error)
         {
             Func<FWPM_PROVIDER0, FirewallProvider> f = ProcessProvider;
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmProviderCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmProviderCreateEnumHandle0,
                 FirewallNativeMethods.FwpmProviderEnum0, FirewallNativeMethods.FwpmProviderDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallProvider>>(l => l.AsReadOnly());
         }
@@ -914,7 +913,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<IkeSecurityAssociation>> EnumerateIkeSecurityAssociations(bool throw_on_error)
         {
             Func<IKEEXT_SA_DETAILS1, IkeSecurityAssociation> f = ProcessIkeSa;
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.IkeextSaCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.IkeextSaCreateEnumHandle0,
                 FirewallNativeMethods.IkeextSaEnum1, FirewallNativeMethods.IkeextSaDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<IkeSecurityAssociation>>(l => l.AsReadOnly());
         }
@@ -1086,7 +1085,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallAleEndpoint>> EnumerateAleEndpoints(bool throw_on_error)
         {
             Func<FWPS_ALE_ENDPOINT_PROPERTIES0, FirewallAleEndpoint> f = ProcessAleEndpoint;
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpsAleEndpointCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpsAleEndpointCreateEnumHandle0,
                 FirewallNativeMethods.FwpsAleEndpointEnum0, FirewallNativeMethods.FwpsAleEndpointDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallAleEndpoint>>(l => l.AsReadOnly());
         }
@@ -1157,7 +1156,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallSession>> EnumerateSessions(bool throw_on_error)
         {
             Func<FWPM_SESSION0, FirewallSession> f = ProcessSession;
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.FwpmSessionCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.FwpmSessionCreateEnumHandle0,
                 FirewallNativeMethods.FwpmSessionEnum0, FirewallNativeMethods.FwpmSessionDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallSession>>(l => l.AsReadOnly());
         }
@@ -1180,7 +1179,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<FirewallNetEvent>> EnumerateNetEvents(FirewallNetEventEnumTemplate template, bool throw_on_error)
         {
             Func<FWPM_NET_EVENT2, FirewallNetEvent> f = e => FirewallNetEvent.Create(e);
-            return EnumerateFwObjects(template, f, null, FirewallNativeMethods.FwpmNetEventCreateEnumHandle0,
+            return EnumerateFwObjects(template, f, FirewallNativeMethods.FwpmNetEventCreateEnumHandle0,
                 FirewallNativeMethods.FwpmNetEventEnum2, FirewallNativeMethods.FwpmNetEventDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<FirewallNetEvent>>(l => l.AsReadOnly());
         }
@@ -1256,7 +1255,7 @@ namespace NtApiDotNet.Net.Firewall
         public NtResult<IEnumerable<IPsecSecurityAssociationContext>> EnumerateIPsecSecurityAssociationContexts(bool throw_on_error)
         {
             Func<IPSEC_SA_CONTEXT1, IPsecSecurityAssociationContext> f = s => new IPsecSecurityAssociationContext(s, ProcessFilter);
-            return EnumerateFwObjects(null, f, null, FirewallNativeMethods.IPsecSaContextCreateEnumHandle0,
+            return EnumerateFwObjects(null, f, FirewallNativeMethods.IPsecSaContextCreateEnumHandle0,
                 FirewallNativeMethods.IPsecSaContextEnum1, FirewallNativeMethods.IPsecSaContextDestroyEnumHandle0,
                 throw_on_error).Map<IEnumerable<IPsecSecurityAssociationContext>>(l => l.AsReadOnly());
         }

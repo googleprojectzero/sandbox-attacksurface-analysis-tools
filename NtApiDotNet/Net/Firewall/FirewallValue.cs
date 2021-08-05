@@ -597,6 +597,17 @@ namespace NtApiDotNet.Net.Firewall
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The firewall value.</returns>
+        public static FirewallValue FromTokenInformation(NtToken value)
+        {
+            return new FirewallValue(FirewallDataType.TokenInformation, 
+                new FirewallTokenInformation(value.Groups, value.RestrictedSids), value);
+        }
+
+        /// <summary>
+        /// Create a value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The firewall value.</returns>
         public static FirewallValue FromTokenAccessInformation(byte[] value)
         {
             return new FirewallValue(FirewallDataType.TokenAccessInformation, value);

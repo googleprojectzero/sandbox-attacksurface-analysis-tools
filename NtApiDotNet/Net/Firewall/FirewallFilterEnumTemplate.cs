@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authorization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -21,7 +23,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Options for enumerating a filter.
     /// </summary>
-    public sealed class FirewallFilterEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate
+    public sealed class FirewallFilterEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallFilter>
     {
         /// <summary>
         /// Specify the key for the layer to search for.
@@ -42,16 +44,6 @@ namespace NtApiDotNet.Net.Firewall
         /// Specify the action type.
         /// </summary>
         public FirewallActionType ActionType { get; set; }
-
-        /// <summary>
-        /// Specify a token to check the user ID.
-        /// </summary>
-        public NtToken Token { get; set; }
-
-        /// <summary>
-        /// Specify a token to check the remote user ID.
-        /// </summary>
-        public NtToken RemoteToken { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -80,10 +72,8 @@ namespace NtApiDotNet.Net.Firewall
         {
         }
 
-        private bool CheckUserId(NtToken token, FirewallFilter filter, Guid condition_guid)
+        private bool CheckUserId(FirewallFilter filter, Guid condition_guid, AuthZContext context)
         {
-            if (token == null)
-                return true;
             if (!filter.HasCondition(condition_guid))
                 return true;
 
@@ -107,25 +97,54 @@ namespace NtApiDotNet.Net.Firewall
                 if (sd.Group == null)
                     sd.Group = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
             }
-            bool result = NtSecurity.AccessCheck(sd, token, FirewallFilterAccessRights.Match, 
-                null, FirewallUtils.GetFilterGenericMapping()).IsSuccess;
+            bool result = context.AccessCheck(sd, null, FirewallFilterAccessRights.Match,
+                null, null, FirewallUtils.FirewallFilterType).First().IsSuccess;
             return condition.MatchType == FirewallMatchType.Equal ? result : !result;
         }
 
-        private bool FilterFunc(FirewallFilter filter)
+        private bool FilterFunc(Dictionary<Guid, AuthZContext> contexts, FirewallFilter filter)
         {
-            return CheckUserId(Token, filter, FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID) &&
-                CheckUserId(Token, filter, FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID);
+            bool result = true;
+            foreach (var pair in contexts)
+            {
+                result &= CheckUserId(filter, pair.Key, pair.Value);
+            }
+            return result;
         }
 
-        internal Func<FirewallFilter, bool> GetFilterFunc()
+        private static bool IsUserId(FirewallFilterCondition condition)
         {
-            if (Token == null && RemoteToken == null)
+            return condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID ||
+                condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID ||
+                condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_MACHINE_ID;
+        }
+
+        Func<FirewallFilter, bool> IFirewallEnumTemplate<FirewallFilter>.GetFilterFunc(DisposableList list)
+        {
+            var user_conditions = Conditions.Where(IsUserId);
+
+            if (!user_conditions.Any())
                 return _ => true;
-            return FilterFunc;
+
+            var rm = list.AddResource(AuthZResourceManager.Create());
+            Dictionary<Guid, AuthZContext> contexts = new Dictionary<Guid, AuthZContext>();
+            foreach (var condition in user_conditions)
+            {
+                if (contexts.ContainsKey(condition.FieldKey))
+                {
+                    continue;
+                }
+                if (!(condition.Value.ContextValue is NtToken token) || (token.Handle.IsClosed))
+                {
+                    continue;
+                }
+                contexts.Add(condition.FieldKey, rm.CreateContext(token));
+            }
+
+            return f => FilterFunc(contexts, f);
         }
 
-        SafeBuffer IFirewallEnumTemplate.ToTemplateBuffer(DisposableList list)
+        SafeBuffer IFirewallEnumTemplate<FirewallFilter>.ToTemplateBuffer(DisposableList list)
         {
             FirewallActionType action_type = ActionType;
             switch (action_type)
@@ -144,10 +163,12 @@ namespace NtApiDotNet.Net.Firewall
                 actionMask = action_type
             };
 
-            if (Conditions.Count > 0)
+            var valid_conditions = Conditions.Where(c => !IsUserId(c));
+            int count = valid_conditions.Count();
+            if (count > 0)
             {
-                template.numFilterConditions = Conditions.Count;
-                template.filterCondition = list.AddList(Conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+                template.numFilterConditions = count;
+                template.filterCondition = list.AddList(valid_conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
             }
 
             return list.AddStructure(template);

@@ -335,9 +335,7 @@ function New-FwFilterTemplate {
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "All",
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
-        [NtApiDotNet.NtToken]$Token,
-        [NtApiDotNet.NtToken]$RemoteToken
+        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
     )
 
     try {
@@ -354,8 +352,6 @@ function New-FwFilterTemplate {
         if ($null -ne $Condition) {
             $template.Conditions.AddRange($Condition)
         }
-        $template.Token = $Token
-        $template.RemoteToken = $RemoteToken
         $template
     } catch {
         Write-Error $_
@@ -592,10 +588,16 @@ The local TCP/UDP port.
 The local IP address.
 .PARAMETER Port
 The local TCP/UDP port.
-.PARAMETER TokenInformation
-The token for a token information condition.
+.PARAMETER Token
+The token for a token information condition for user ID.
+.PARAMETER RemoteToken
+The token for a token information condition for remote user ID.
+.PARAMETER MachineToken
+The token for a token information condition for remote machine ID.
 .PARAMETER PackageSid
 The token's package SID.
+.PARAMETER ConditionFlags
+Specify condition flags to match.
 .PARAMETER PassThru
 Pass through the condition builder/template.
 .INPUTS
@@ -639,8 +641,12 @@ function Add-FwCondition {
         [System.Net.IPAddress]$LocalIPAddress,
         [parameter(ParameterSetName="FromLocalEndpoint")]
         [int]$LocalPort = -1,
-        [parameter(Mandatory, ParameterSetName="FromTokenInformation")]
-        [NtApiDotNet.NtToken]$TokenInformation,
+        [parameter(Mandatory, ParameterSetName="FromToken")]
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(Mandatory, ParameterSetName="FromRemoteToken")]
+        [NtApiDotNet.NtToken]$RemoteToken,
+        [parameter(Mandatory, ParameterSetName="FromMachineToken")]
+        [NtApiDotNet.NtToken]$MachineToken,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
         [NtObjectManager.Utils.Firewall.FirewallPackageSid]$PackageSid
     )
@@ -654,10 +660,10 @@ function Add-FwCondition {
                 $Builder.AddAppId($MatchType, $AppId)
             }
             "FromUserId" {
-                $Builder.AddUserId($MatchType, $false, $UserId)
+                $Builder.AddUserId($MatchType, $UserId)
             }
             "FromRemoteUserId" {
-                $Builder.AddUserId($MatchType, $true, $RemoteUserId)
+                $Builder.AddRemoteUserId($MatchType, $RemoteUserId)
             }
             "FromProtocolType" {
                 $Builder.AddProtocolType($MatchType, $ProtocolType)
@@ -681,8 +687,14 @@ function Add-FwCondition {
                     $Builder.AddPort($MatchType, $false, $LocalPort)
                 }
             }
-            "FromTokenInformation" {
-                $Builder.AddTokenInformation($MatchType, $TokenInformation)
+            "FromToken" {
+                $Builder.AddUserToken($MatchType, $Token)
+            }
+            "FromRemoteToken" {
+                $Builder.AddRemoteUserToken($MatchType, $RemoteToken)
+            }
+            "FromMachineToken" {
+                $Builder.AddRemoteMachineToken($MatchType, $MachineToken)
             }
             "FromPackageSid" {
                 $Builder.AddPackageSid($MatchType, $PackageSid.Sid)

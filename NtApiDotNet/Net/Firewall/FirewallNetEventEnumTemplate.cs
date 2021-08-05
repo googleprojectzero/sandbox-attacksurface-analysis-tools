@@ -21,7 +21,7 @@ namespace NtApiDotNet.Net.Firewall
     /// <summary>
     /// Template for network event enumeration.
     /// </summary>
-    public sealed class FirewallNetEventEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate
+    public sealed class FirewallNetEventEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallNetEvent>
     {
         /// <summary>
         /// Start time for events.
@@ -42,7 +42,7 @@ namespace NtApiDotNet.Net.Firewall
             EndTime = DateTime.MaxValue;
         }
 
-        SafeBuffer IFirewallEnumTemplate.ToTemplateBuffer(DisposableList list)
+        SafeBuffer IFirewallEnumTemplate<FirewallNetEvent>.ToTemplateBuffer(DisposableList list)
         {
             var template = new FWPM_NET_EVENT_ENUM_TEMPLATE0
             {
@@ -57,6 +57,11 @@ namespace NtApiDotNet.Net.Firewall
             }
 
             return list.AddStructureRef(template);
+        }
+
+        Func<FirewallNetEvent, bool> IFirewallEnumTemplate<FirewallNetEvent>.GetFilterFunc(DisposableList list)
+        {
+            return null;
         }
     }
 }

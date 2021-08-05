@@ -57,7 +57,7 @@ namespace NtApiDotNet.Net.Firewall
             }
         }
 
-        private Win32Error Initialize<T>(SubscribeFunc func, IFirewallEnumTemplate template) where T : IFwNetEvent
+        private Win32Error Initialize<T>(SubscribeFunc func, IFirewallEnumTemplate<FirewallNetEvent> template) where T : IFwNetEvent
         {
             _callback = Callback<T>;
             _callback_ptr = Marshal.GetFunctionPointerForDelegate(_callback);
