@@ -67,7 +67,7 @@ namespace NtApiDotNet.Net.Firewall
                     System.Diagnostics.Trace.Write($"Invalid IP Address type: {value.GetType().FullName}");
                 }
             }
-            else if (FirewallConditionGuids.IsAppId(condition_key) || 
+            else if (FirewallConditionGuids.IsAppId(condition_key) ||
                 condition_key == FirewallConditionGuids.FWPM_CONDITION_PIPE ||
                 condition_key == FirewallConditionGuids.FWPM_CONDITION_RPC_SERVER_NAME)
             {
@@ -141,6 +141,13 @@ namespace NtApiDotNet.Net.Firewall
                 if (value is byte[] ba && ba.Length == 6)
                 {
                     return string.Join(":", ba.Select(b => $"{b:X02}"));
+                }
+            }
+            else if (FirewallConditionGuids.IsProfileId(condition_key))
+            {
+                if (value is uint profile_id)
+                {
+                    return (FirewallProfileId)profile_id;
                 }
             }
 

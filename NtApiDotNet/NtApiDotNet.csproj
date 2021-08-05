@@ -112,6 +112,7 @@
     <Compile Include="Net\Firewall\FirewallNetEventListener.cs" />
     <Compile Include="Net\Firewall\FirewallNetEventType.cs" />
     <Compile Include="Net\Firewall\FirewallNetworkCapabilityType.cs" />
+    <Compile Include="Net\Firewall\FirewallProfileId.cs" />
     <Compile Include="Net\Firewall\IkeCertificateCredential.cs" />
     <Compile Include="Net\Firewall\IkeCredential.cs" />
     <Compile Include="Net\Firewall\IkeCredentialPair.cs" />

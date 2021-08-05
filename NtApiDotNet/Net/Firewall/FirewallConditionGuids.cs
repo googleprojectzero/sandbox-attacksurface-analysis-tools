@@ -336,6 +336,16 @@ namespace NtApiDotNet.Net.Firewall
             return condition_key == FWPM_CONDITION_DCOM_APP_ID ||
                 condition_key == FWPM_CONDITION_RPC_IF_UUID;
         }
+
+        public static bool IsProfileId(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_CURRENT_PROFILE_ID ||
+                condition_key == FWPM_CONDITION_ORIGINAL_PROFILE_ID ||
+                condition_key == FWPM_CONDITION_ARRIVAL_INTERFACE_PROFILE_ID ||
+                condition_key == FWPM_CONDITION_LOCAL_INTERFACE_PROFILE_ID ||
+                condition_key == FWPM_CONDITION_NEXTHOP_INTERFACE_PROFILE_ID;
+        }
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
