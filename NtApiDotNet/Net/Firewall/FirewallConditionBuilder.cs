@@ -292,6 +292,16 @@ namespace NtApiDotNet.Net.Firewall
             AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_IF_UUID, FirewallValue.FromGuid(uuid));
         }
 
+        /// <summary>
+        /// Add a network event type.
+        /// </summary>
+        /// <param name="match_type">Match type.</param>
+        /// <param name="type">Network event type.</param>
+        public void AddNetEventType(FirewallMatchType match_type, FirewallNetEventType type)
+        {
+            AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_NET_EVENT_TYPE, FirewallValue.FromUInt32((uint)type));
+        }
+
         #endregion
 
         #region Constructors

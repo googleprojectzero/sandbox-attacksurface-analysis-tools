@@ -663,7 +663,9 @@ function Add-FwCondition {
         [NtApiDotNet.NtProcess]$Process,
         [parameter(Mandatory, ParameterSetName="FromProcessID")]
         [alias("pid")]
-        [int]$ProcessId
+        [int]$ProcessId,
+        [parameter(Mandatory, ParameterSetName="FromNetEventType")]
+        [NtApiDotNet.Net.Firewall.FirewallNetEventType]$NetEventType
     )
 
     try {
@@ -719,6 +721,9 @@ function Add-FwCondition {
             }
             "FromProcessId" {
                 $Builder.AddProcess($MatchType, $ProcessId)
+            }
+            "FromNetEventType" {
+                $Builder.AddNetEventType($MatchType, $NetEventType)
             }
         }
         if ($PassThru) {

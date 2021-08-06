@@ -42,6 +42,32 @@ namespace NtApiDotNet.Net.Firewall
             EndTime = DateTime.MaxValue;
         }
 
+        private static bool IsValidCondition(FirewallFilterCondition condition)
+        {
+            Guid key = condition.FieldKey;
+            return key == FirewallConditionGuids.FWPM_CONDITION_IP_PROTOCOL ||
+                key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_ADDRESS ||
+                key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS ||
+                key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_PORT ||
+                key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_PORT ||
+                key == FirewallConditionGuids.FWPM_CONDITION_ALE_APP_ID ||
+                key == FirewallConditionGuids.FWPM_CONDITION_NET_EVENT_TYPE ||
+                key == FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID;
+        }
+
+        private static FirewallFilterCondition ConvertUserId(FirewallFilterCondition condition)
+        {
+            if (condition.FieldKey != FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID)
+                return condition;
+            if (condition.Value.Type == FirewallDataType.Sid)
+                return condition;
+            if (!(condition.Value.Value is FirewallTokenInformation token_info))
+                throw new ArgumentException("Must specify a SID or FirewallTokenInformation for FWPM_CONDITION_ALE_USER_ID.");
+            if (token_info.UserSid == null)
+                throw new ArgumentException("Must specify a user SID for the TokenInformation for FWPM_CONDITION_ALE_USER_ID.");
+            return new FirewallFilterCondition(condition.MatchType, condition.FieldKey, FirewallValue.FromSid(token_info.UserSid));
+        }
+
         SafeBuffer IFirewallEnumTemplate<FirewallNetEvent>.ToTemplateBuffer(DisposableList list)
         {
             var template = new FWPM_NET_EVENT_ENUM_TEMPLATE0
@@ -50,10 +76,13 @@ namespace NtApiDotNet.Net.Firewall
                 endTime = new Luid(EndTime.ToFileTime())
             };
 
-            if (Conditions.Count > 0)
+            var conditions = Conditions.Where(IsValidCondition).Select(ConvertUserId);
+            int count = conditions.Count();
+
+            if (count > 0)
             {
-                template.numFilterConditions = Conditions.Count;
-                template.filterCondition = list.AddList(Conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+                template.numFilterConditions = count;
+                template.filterCondition = list.AddList(conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
             }
 
             return list.AddStructureRef(template);

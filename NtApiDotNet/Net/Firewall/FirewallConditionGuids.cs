@@ -375,6 +375,13 @@ namespace NtApiDotNet.Net.Firewall
                 condition_key == FWPM_CONDITION_ARRIVAL_INTERFACE_TYPE;
         }
 
+        public static bool IsUserId(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_ALE_USER_ID ||
+                condition_key == FWPM_CONDITION_ALE_REMOTE_USER_ID ||
+                condition_key == FWPM_CONDITION_ALE_REMOTE_MACHINE_ID;
+        }
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

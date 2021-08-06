@@ -112,16 +112,9 @@ namespace NtApiDotNet.Net.Firewall
             return result;
         }
 
-        private static bool IsUserId(FirewallFilterCondition condition)
-        {
-            return condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID ||
-                condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_USER_ID ||
-                condition.FieldKey == FirewallConditionGuids.FWPM_CONDITION_ALE_REMOTE_MACHINE_ID;
-        }
-
         Func<FirewallFilter, bool> IFirewallEnumTemplate<FirewallFilter>.GetFilterFunc(DisposableList list)
         {
-            var user_conditions = Conditions.Where(IsUserId);
+            var user_conditions = Conditions.Where(c => FirewallConditionGuids.IsUserId(c.FieldKey));
 
             if (!user_conditions.Any())
                 return _ => true;
@@ -163,7 +156,7 @@ namespace NtApiDotNet.Net.Firewall
                 actionMask = action_type
             };
 
-            var valid_conditions = Conditions.Where(c => !IsUserId(c));
+            var valid_conditions = Conditions.Where(c => !FirewallConditionGuids.IsUserId(c.FieldKey));
             int count = valid_conditions.Count();
             if (count > 0)
             {
