@@ -150,6 +150,34 @@ namespace NtApiDotNet.Net.Firewall
                     return (FirewallProfileId)profile_id;
                 }
             }
+            else if (FirewallConditionGuids.IsDataLink(condition_key))
+            {
+                if (value is byte dl_type)
+                {
+                    return (DataLinkAddressType)dl_type;
+                }
+            }
+            else if (FirewallConditionGuids.IsNetworkLayer(condition_key))
+            {
+                if (value is byte nl_type)
+                {
+                    return (NetworkLayerAddressType)nl_type;
+                }
+            }
+            else if (FirewallConditionGuids.IsTunnelType(condition_key))
+            {
+                if (value is uint tunnel_type)
+                {
+                    return (NetworkTunnelType)tunnel_type;
+                }
+            }
+            else if (FirewallConditionGuids.IsInterfaceType(condition_key))
+            {
+                if (value is uint if_type)
+                {
+                    return (NetworkInterfaceType)if_type;
+                }
+            }
 
             return value;
         }

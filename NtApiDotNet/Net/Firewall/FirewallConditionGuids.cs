@@ -147,9 +147,9 @@ namespace NtApiDotNet.Net.Firewall
         // cce68d5e-053b-43a8-9a6f-33384c28e4f6
         public static Guid FWPM_CONDITION_INTERFACE_QUARANTINE_EPOCH = new Guid(0xcce68d5e, 0x053b, 0x43a8, 0x9a, 0x6f, 0x33, 0x38, 0x4c, 0x28, 0xe4, 0xf6);
         // daf8cd14-e09e-4c93-a5ae-c5c13b73ffca
-        public static Guid FWPM_CONDITION_INTERFACE_TYPE = new Guid(0xdaf8cd14, 0xe09e, 0x4c93, 0xa5, 0xae, 0xc5, 0xc1, 0x3b, 0x73, 0xff, 0xca);
+        public static Guid FWPM_CONDITION_LOCAL_INTERFACE_TYPE = new Guid(0xdaf8cd14, 0xe09e, 0x4c93, 0xa5, 0xae, 0xc5, 0xc1, 0x3b, 0x73, 0xff, 0xca);
         // 77a40437-8779-4868-a261-f5a902f1c0cd
-        public static Guid FWPM_CONDITION_TUNNEL_TYPE = new Guid(0x77a40437, 0x8779, 0x4868, 0xa2, 0x61, 0xf5, 0xa9, 0x02, 0xf1, 0xc0, 0xcd);
+        public static Guid FWPM_LOCAL_CONDITION_TUNNEL_TYPE = new Guid(0x77a40437, 0x8779, 0x4868, 0xa2, 0x61, 0xf5, 0xa9, 0x02, 0xf1, 0xc0, 0xcd);
         // 1076b8a5-6323-4c5e-9810-e8d3fc9e6136
         public static Guid FWPM_CONDITION_IP_FORWARD_INTERFACE = new Guid(0x1076b8a5, 0x6323, 0x4c5e, 0x98, 0x10, 0xe8, 0xd3, 0xfc, 0x9e, 0x61, 0x36);
         // 3971ef2b-623e-4f9a-8cb1-6e79b806b9a7
@@ -344,6 +344,35 @@ namespace NtApiDotNet.Net.Firewall
                 condition_key == FWPM_CONDITION_ARRIVAL_INTERFACE_PROFILE_ID ||
                 condition_key == FWPM_CONDITION_LOCAL_INTERFACE_PROFILE_ID ||
                 condition_key == FWPM_CONDITION_NEXTHOP_INTERFACE_PROFILE_ID;
+        }
+
+        public static bool IsDataLink(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_MAC_LOCAL_ADDRESS_TYPE ||
+                condition_key == FWPM_CONDITION_MAC_REMOTE_ADDRESS_TYPE ||
+                condition_key == FWPM_CONDITION_MAC_SOURCE_ADDRESS_TYPE ||
+                condition_key == FWPM_CONDITION_MAC_DESTINATION_ADDRESS_TYPE;
+        }
+
+        public static bool IsNetworkLayer(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_IP_LOCAL_ADDRESS_TYPE ||
+                condition_key == FWPM_CONDITION_IP_DESTINATION_ADDRESS_TYPE ||
+                condition_key == FWPM_CONDITION_EMBEDDED_LOCAL_ADDRESS_TYPE;
+        }
+
+        public static bool IsTunnelType(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_ARRIVAL_TUNNEL_TYPE ||
+                condition_key == FWPM_LOCAL_CONDITION_TUNNEL_TYPE || 
+                condition_key == FWPM_CONDITION_NEXTHOP_TUNNEL_TYPE;
+        }
+
+        public static bool IsInterfaceType(Guid condition_key)
+        {
+            return condition_key == FWPM_CONDITION_LOCAL_INTERFACE_TYPE ||
+                condition_key == FWPM_CONDITION_NEXTHOP_INTERFACE_TYPE ||
+                condition_key == FWPM_CONDITION_ARRIVAL_INTERFACE_TYPE;
         }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

@@ -74,6 +74,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
+    <Compile Include="Net\Firewall\DataLinkAddressType.cs" />
     <Compile Include="Net\Firewall\FirewallAddressFamily.cs" />
     <Compile Include="Net\Firewall\FirewallEngineOption.cs" />
     <Compile Include="Net\Firewall\FirewallFilterEnumFlags.cs" />
@@ -176,8 +177,11 @@
     <Compile Include="Net\Firewall\IPsecTransformType.cs" />
     <Compile Include="Net\Firewall\NamedGuidDictionary.cs" />
     <Compile Include="Net\Firewall\FirewallNativeMethods.cs" />
+    <Compile Include="Net\Firewall\NetworkInterfaceType.cs" />
+    <Compile Include="Net\Firewall\NetworkLayerAddressType.cs" />
     <Compile Include="Net\Firewall\SafeFwpmEngineHandle.cs" />
     <Compile Include="Net\Firewall\SafeFwpmMemoryBuffer.cs" />
+    <Compile Include="Net\Firewall\NetworkTunnelType.cs" />
     <Compile Include="Net\Sockets\HyperVEndpoint.cs" />
     <Compile Include="Net\Sockets\HyperVSocketGuids.cs" />
     <Compile Include="Net\Sockets\SocketSecurityIpsecFlags.cs" />
