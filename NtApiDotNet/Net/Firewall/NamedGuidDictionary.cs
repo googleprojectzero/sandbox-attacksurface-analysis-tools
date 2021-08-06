@@ -419,6 +419,15 @@ namespace NtApiDotNet.Net.Firewall
                0xbb, 0xe7, 0xd2, 0x4b, 0x45, 0xfe, 0x63, 0x2c
             );
 
+            // d67b238d-d80c-4ba7-96df-4a0c83464fa7
+            ret.DefineGuid(
+                "windefend_stream_v4",
+                0xd67b238d,
+                0xd80c,
+                0x4ba7, 
+                0x96,0xdf,0x4a,0x0c,0x83,0x46,0x4f,0xa7
+            );
+
             return ret;
         }
 

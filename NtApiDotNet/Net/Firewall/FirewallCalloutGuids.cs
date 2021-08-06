@@ -380,6 +380,7 @@ namespace NtApiDotNet.Net.Firewall
            0x4f53,
            0xbb, 0xe7, 0xd2, 0x4b, 0x45, 0xfe, 0x63, 0x2c
         );
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

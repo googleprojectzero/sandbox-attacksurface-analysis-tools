@@ -525,7 +525,7 @@ function Format-FwFilter {
             Write-Output "Flags      : $($f.Flags)"
             Write-Output "Weight     : $($f.EffectiveWeight)"
             if ($f.IsCallout) {
-                Write-Output "Callout Key: $($f.CalloutKey)"
+                Write-Output "Callout Key: $($f.CalloutKeyName)"
             }
             if ($f.Conditions.Count -gt 0) {
                 Write-Output "Conditions :"

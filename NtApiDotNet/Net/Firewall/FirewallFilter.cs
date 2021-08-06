@@ -31,6 +31,7 @@ namespace NtApiDotNet.Net.Firewall
             if (ActionType.HasFlag(FirewallActionType.Callout))
             {
                 CalloutKey = filter.action.action.calloutKey;
+                CalloutKeyName = NamedGuidDictionary.CalloutGuids.Value.GetName(CalloutKey);
             }
             else
             {
@@ -129,6 +130,11 @@ namespace NtApiDotNet.Net.Firewall
         /// Key for the callout.
         /// </summary>
         public Guid CalloutKey { get; }
+
+        /// <summary>
+        /// Name of the callout key if known.
+        /// </summary>
+        public string CalloutKeyName { get; }
 
         /// <summary>
         /// Is the filter a callout.
