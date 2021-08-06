@@ -33,6 +33,8 @@ namespace NtApiDotNet.Net.Firewall
         IncludeBoottime = 0x00000008,
         [SDKName("FWP_FILTER_ENUM_FLAG_INCLUDE_DISABLED")]
         IncludeDisabled = 0x00000010,
+        [SDKName("FWP_FILTER_ENUM_FLAG_RESERVED1")]
+        Reserved1 = 0x00000020,
     }
 }
 

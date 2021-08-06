@@ -26,6 +26,26 @@ namespace NtApiDotNet.Net.Firewall
     public enum FirewallCalloutFlags
     {
         None = 0,
+        [SDKName("FWP_CALLOUT_FLAG_CONDITIONAL_ON_FLOW")]
+        ConditionalOnFlow = 0x00000001,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_OFFLOAD")]
+        AllowOffload = 0x00000002,
+        [SDKName("FWP_CALLOUT_FLAG_ENABLE_COMMIT_ADD_NOTIFY")]
+        EnableCommitAddNotify = 0x00000004,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_MID_STREAM_INSPECTION")]
+        AllowMidStreamInspection = 0x00000008,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_RECLASSIFY")]
+        AllowReclassify = 0x00000010,
+        [SDKName("FWP_CALLOUT_FLAG_RESERVED1")]
+        Reserved1 = 0x00000020,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_RSC")]
+        AllowRsc = 0x00000040,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_L2_BATCH_CLASSIFY")]
+        AllowL2BatchClassify = 0x00000080,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_USO")]
+        AllowUSO = 0x00000100,
+        [SDKName("FWP_CALLOUT_FLAG_ALLOW_URO")]
+        AllowURO = 0x00000200,
         [SDKName("FWPM_CALLOUT_FLAG_PERSISTENT")]
         Persistent = 0x00010000,
         [SDKName("FWPM_CALLOUT_FLAG_USES_PROVIDER_CONTEXT")]

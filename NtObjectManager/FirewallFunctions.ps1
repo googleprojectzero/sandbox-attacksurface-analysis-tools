@@ -1357,3 +1357,47 @@ function Set-FwEngineOption {
         Write-Error $_
     }
 }
+
+<#
+.SYNOPSIS
+Get a firewall callouts.
+.DESCRIPTION
+This cmdlet gets a firewall callout from an engine. It can return a specific callout or all callouts.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Key
+Specify the callout key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallCallout[]
+.EXAMPLE
+Get-FwCallout
+Get all firewall callouts.
+.EXAMPLE
+Get-FwCallout -Key "eebecc03-ced4-4380-819a-2734397b2b74"
+Get firewall callout from key.
+#>
+function Get-FwCallout {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, ParameterSetName="FromKey")]
+        [Guid]$Key
+    )
+
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateCallouts() | Write-Output
+            }
+            "FromKey" {
+                $Engine.GetCallout($Key)
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
