@@ -39,12 +39,12 @@ namespace NtApiDotNet.Net.Firewall
         /// <summary>
         /// The original profile the connection was received on.
         /// </summary>
-        public uint OriginalProfile { get; }
+        public FirewallProfileId OriginalProfile { get; }
 
         /// <summary>
         /// The profile the error occurred on.
         /// </summary>
-        public uint CurrentProfile { get; }
+        public FirewallProfileId CurrentProfile { get; }
 
         /// <summary>
         /// Indicates the direction of the packet transmission.

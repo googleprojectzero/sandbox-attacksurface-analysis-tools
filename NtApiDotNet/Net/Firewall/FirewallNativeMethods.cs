@@ -630,8 +630,8 @@ namespace NtApiDotNet.Net.Firewall
         public ulong filterId;
         public ushort layerId;
         public uint reauthReason;
-        public uint originalProfile;
-        public uint currentProfile;
+        public FirewallProfileId originalProfile;
+        public FirewallProfileId currentProfile;
         public FirewallNetEventDirectionType msFwpDirection;
         [MarshalAs(UnmanagedType.Bool)]
         public bool isLoopback;
@@ -664,8 +664,8 @@ namespace NtApiDotNet.Net.Firewall
         public ulong filterId;
         public ushort layerId;
         public uint reauthReason;
-        public uint originalProfile;
-        public uint currentProfile;
+        public FirewallProfileId originalProfile;
+        public FirewallProfileId currentProfile;
         public FirewallNetEventDirectionType msFwpDirection;
         [MarshalAs(UnmanagedType.Bool)]
         public bool isLoopback;
