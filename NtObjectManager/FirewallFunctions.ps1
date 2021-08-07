@@ -1135,9 +1135,9 @@ Start a new firewall network event listener and store the captured events in a v
 function Start-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template,
         [string]$Variable,
-        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
     )
 
     try {
