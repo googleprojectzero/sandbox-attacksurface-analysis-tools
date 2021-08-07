@@ -20,7 +20,7 @@ namespace NtApiDotNet.Net.Firewall
     public enum FirewallProfileId : uint
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        All = 0,
+        None = 0,
         Public = 1,
         Private = 2,
         Domain = 3
