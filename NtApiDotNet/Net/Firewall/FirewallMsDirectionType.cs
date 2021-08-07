@@ -35,6 +35,10 @@ namespace NtApiDotNet.Net.Firewall
         /// Forwarding
         /// </summary>
         [SDKName("FWP_DIRECTION_FORWARD")]
-        Forward = 0x00003902
+        Forward = 0x00003902,
+        /// <summary>
+        /// Loopback.
+        /// </summary>
+        Loopback = 0x00003903,
     }
 }
