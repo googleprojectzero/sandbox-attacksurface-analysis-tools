@@ -497,6 +497,8 @@ This cmdlet formats a list of firewall filters.
 The list of filters to format.
 .PARAMETER FormatSecurityDescriptor
 Format any security descriptor condition values.
+.PARAMETER Summary
+Format the security descriptor in summary format.
 .INPUTS
 None
 .OUTPUTS
@@ -506,11 +508,14 @@ Format-FwFilter -Filter $fs
 Format a list of firewall filters.
 #>
 function Format-FwFilter {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="NoSd")]
     param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [NtApiDotNet.Net.Firewall.FirewallFilter[]]$Filter,
-        [switch]$FormatSecurityDescriptor
+        [parameter(Mandatory, ParameterSetName="FormatSd")]
+        [switch]$FormatSecurityDescriptor,
+        [parameter(ParameterSetName="FormatSd")]
+        [switch]$Summary
     )
 
     PROCESS {
@@ -533,7 +538,7 @@ function Format-FwFilter {
                 if ($FormatSecurityDescriptor) {
                     foreach($cond in $f.Conditions) {
                         if ($cond.Value.Value -is [NtApiDotNet.SecurityDescriptor]) {
-                            Format-NtSecurityDescriptor -SecurityDescriptor $cond.Value.Value -DisplayPath $cond.FieldKeyName
+                            Format-NtSecurityDescriptor -SecurityDescriptor $cond.Value.Value -DisplayPath $cond.FieldKeyName -Summary:$Summary
                         }
                     }
                 }
