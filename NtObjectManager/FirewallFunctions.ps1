@@ -22,6 +22,11 @@ $sublayer_completer = {
     [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
+$callout_completer = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownCalloutNames() | Where-Object { $_ -like "$wordToComplete*" }
+}
+
 $Script:GlobalFwEngine = $null
 
 function Get-FwEngineSingleton {
@@ -1393,7 +1398,7 @@ function Get-FwCallout {
     param(
         [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromKey")]
-        [Guid]$Key
+        [NtObjectManager.Utils.Firewall.FirewallCalloutGuid]$Key
     )
 
     try {
@@ -1404,10 +1409,12 @@ function Get-FwCallout {
                 $Engine.EnumerateCallouts() | Write-Output
             }
             "FromKey" {
-                $Engine.GetCallout($Key)
+                $Engine.GetCallout($Key.Id)
             }
         }
     } catch {
         Write-Error $_
     }
 }
+
+Register-ArgumentCompleter -CommandName Get-FwCallout -ParameterName Key -ScriptBlock $callout_completer

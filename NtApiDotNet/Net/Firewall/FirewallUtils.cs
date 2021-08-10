@@ -148,12 +148,31 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         /// <summary>
+        /// Get a known callout GUID from its name.
+        /// </summary>
+        /// <param name="name">The name of the callout.</param>
+        /// <returns>The known callout GUID.</returns>
+        public static Guid GetKnownCalloutGuid(string name)
+        {
+            return NamedGuidDictionary.CalloutGuids.Value.GuidFromName(name);
+        }
+
+        /// <summary>
         /// Get a list of known sub-layer names.
         /// </summary>
         /// <returns>The list of known sub-layer names.</returns>
         public static IEnumerable<string> GetKnownSubLayerNames()
         {
             return NamedGuidDictionary.SubLayerGuids.Value.Values;
+        }
+
+        /// <summary>
+        /// Get a list of known callout names.
+        /// </summary>
+        /// <returns>The list of known callout names.</returns>
+        public static IEnumerable<string> GetKnownCalloutNames()
+        {
+            return NamedGuidDictionary.CalloutGuids.Value.Values;
         }
 
         /// <summary>
