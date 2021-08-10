@@ -397,6 +397,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify package SID or a package name.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
+        [Alias("pkg")]
         public string PackageSid { get; set; }
 
         /// <summary>
@@ -409,7 +410,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify list of capability SIDS to add to token. Can specify an SDDL format string or a capability name.</para>
         /// </summary>
         [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
-        [Alias("CapabilitySids")]
+        [Alias("CapabilitySids", "cap")]
         public string[] CapabilitySid { get; set; }
 
         /// <summary>

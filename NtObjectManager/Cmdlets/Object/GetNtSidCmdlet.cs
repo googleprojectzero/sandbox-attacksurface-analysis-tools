@@ -136,6 +136,12 @@ namespace NtObjectManager.Cmdlets.Object
         public string RestrictedPackageName { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the package SID should be in capability format.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "package")]
+        public SwitchParameter AsCapability { get; set; }
+
+        /// <summary>
         /// <para type="description">Get a known SID.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "known")]
@@ -288,6 +294,10 @@ namespace NtObjectManager.Cmdlets.Object
                     if (RestrictedPackageName != null)
                     {
                         sid = TokenUtils.DeriveRestrictedPackageSidFromSid(sid, RestrictedPackageName);
+                    }
+                    if (AsCapability)
+                    {
+                        sid = NtSecurity.PackageSidToCapability(sid);
                     }
                     break;
                 case "known":

@@ -205,7 +205,7 @@ namespace NtApiDotNet
         {
             if (!IsPackageSid(sid))
             {
-                throw new ArgumentException("Sid not a package sid", "sid");
+                throw new ArgumentException("Sid not a package sid", nameof(sid));
             }
 
             return _package_names.GetOrAdd(sid, _ =>
@@ -246,7 +246,7 @@ namespace NtApiDotNet
         {
             if (!IsCapabilitySid(sid))
             {
-                throw new ArgumentException("Sid not a capability sid", "sid");
+                throw new ArgumentException("Sid not a capability sid", nameof(sid));
             }
 
             var device_capabilities = GetDeviceCapabilities();
@@ -255,6 +255,24 @@ namespace NtApiDotNet
                 return device_capabilities[sid];
             }
             return null;
+        }
+
+        /// <summary>
+        /// Convert a package SID to a capability.
+        /// </summary>
+        /// <param name="sid">The package SID to convert.</param>
+        /// <returns>The package SID as a capability.</returns>
+        public static Sid PackageSidToCapability(Sid sid)
+        {
+            if (!IsPackageSid(sid))
+            {
+                throw new ArgumentException("Sid not a package sid", nameof(sid));
+            }
+
+            uint[] sub_authorities = sid.SubAuthorities.ToArray();
+            // Convert to a package SID.
+            sub_authorities[0] = 3;
+            return new Sid(sid.Authority, sub_authorities);
         }
 
         /// <summary>
@@ -2472,6 +2490,7 @@ namespace NtApiDotNet
                 {
                     switch (sid.SubAuthorities.Count)
                     {
+                        case 12:
                         case 8:
                             uint[] sub_authorities = sid.SubAuthorities.ToArray();
                             // Convert to a package SID.
