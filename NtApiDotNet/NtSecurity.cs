@@ -208,27 +208,32 @@ namespace NtApiDotNet
                 throw new ArgumentException("Sid not a package sid", "sid");
             }
 
-            string ret = null;
-            using (var key = NtKey.GetCurrentUserKey(false))
+            return _package_names.GetOrAdd(sid, _ =>
             {
-                if (key.IsSuccess)
-                {
-                    ret = ReadMoniker(key.Result, sid);
-                }
-            }
-
-            if (ret == null)
-            {
-                using (var key = NtKey.GetMachineKey(false))
+                string ret = null;
+                using (var key = NtKey.GetCurrentUserKey(false))
                 {
                     if (key.IsSuccess)
                     {
                         ret = ReadMoniker(key.Result, sid);
                     }
                 }
-            }
 
-            return ret;
+                if (ret == null)
+                {
+                    using (var key = NtKey.GetMachineKey(false))
+                    {
+                        if (key.IsSuccess)
+                        {
+                            ret = ReadMoniker(key.Result, sid);
+                        }
+                    }
+                }
+
+                _package_names.TryAdd(sid, ret);
+
+                return ret;
+            });
         }
 
         /// <summary>
@@ -2306,6 +2311,11 @@ namespace NtApiDotNet
             return object_types.Select(o => o.ToStruct(list)).ToArray();
         }
 
+        internal static void CachePackageName(Sid sid, string name)
+        {
+            _package_names.AddOrUpdate(sid, name, (a,b) => name);
+        }
+
         #endregion
 
         #region Private Members
@@ -2358,6 +2368,7 @@ namespace NtApiDotNet
         };
 
         private readonly static Lazy<Sid> _machine_sid = new Lazy<Sid>(() => LookupAccountName(Environment.MachineName));
+        private readonly static ConcurrentDictionary<Sid, string> _package_names = new ConcurrentDictionary<Sid, string>();
 
         private static T GetEnumAttribute<T>(Type enum_type, string name) where T : Attribute
         {
@@ -2454,6 +2465,7 @@ namespace NtApiDotNet
             string name;
             if (IsCapabilitySid(sid))
             {
+                bool make_fake_name = true;
                 // See if there's a known SID with this name.
                 name = LookupKnownCapabilityName(sid);
                 if (name == null)
@@ -2465,6 +2477,7 @@ namespace NtApiDotNet
                             // Convert to a package SID.
                             sub_authorities[0] = 2;
                             name = LookupPackageName(new Sid(sid.Authority, sub_authorities));
+                            make_fake_name = false;
                             break;
                         case 5:
                             name = LookupDeviceCapabilityName(sid);
@@ -2474,8 +2487,9 @@ namespace NtApiDotNet
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(sid, GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
-                        SidNameSource.Capability, SidNameUse.Group, false);
+                    string domain = make_fake_name ? GetNamedCapabilityDomain(false) : "PACKAGE CAPABILITY";
+                    name = make_fake_name ? MakeFakeCapabilityName(name) : name;
+                    return new SidName(sid, domain, name, SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
             else if (IsCapabilityGroupSid(sid))

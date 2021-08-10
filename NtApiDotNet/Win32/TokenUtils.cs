@@ -231,6 +231,7 @@ namespace NtApiDotNet.Win32
                 using (sid)
                 {
                     Sid result = new Sid(sid);
+                    NtSecurity.CachePackageName(result, name);
                     return NtSecurity.CacheSidName(result, string.Empty, name, 
                         SidNameSource.Package, SidNameUse.User).CreateResult();
                 }
