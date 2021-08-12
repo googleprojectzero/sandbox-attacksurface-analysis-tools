@@ -19,6 +19,14 @@ using System.IO;
 
 namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
+    [Flags]
+    internal enum BindTimeFeatureNegotiation
+    {
+        None = 0,
+        SecurityContextMultiplexingSupported = 1,
+        KeepConnectionOnOrphanSupported = 2,
+    }
+
     internal sealed class ContextElement
     {
         public ushort ContextId { get; set; }
@@ -40,6 +48,17 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
         {
             AbstractSyntax = ToSyntax(interface_id, interface_version);
             TransferSyntax.Add(ToSyntax(transfer_syntax_id, transfer_syntax_version));
+        }
+
+        public ContextElement(Guid interface_id, Version interface_version, BindTimeFeatureNegotiation negotiation_flags)
+            : this(interface_id, interface_version, GetNegotiationGuid(negotiation_flags), new Version(1, 0))
+        {
+        }
+
+        private static Guid GetNegotiationGuid(BindTimeFeatureNegotiation negotiation_flags)
+        {
+            return new Guid(0x6CB71C2C, unchecked((short)0x9812), 
+                0x4540, BitConverter.GetBytes((long)negotiation_flags));
         }
 
         private void WriteSyntax(BinaryWriter writer, RPC_SYNTAX_IDENTIFIER syntax)

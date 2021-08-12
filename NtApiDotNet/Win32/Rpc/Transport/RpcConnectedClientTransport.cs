@@ -45,6 +45,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             _data_rep = data_rep;
             _transport_security = transport_security;
             _auth_context = transport_security.CreateClientContext();
+            if (!EnableBindTimeFeatureNegotiation)
+                _bind_time_features = BindTimeFeatureNegotiation.None;
         }
 
         /// <summary>
@@ -71,6 +73,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private int _send_sequence_no;
         private int _recv_sequence_no;
         private RpcAuthenticationType _negotiated_auth_type;
+        private BindTimeFeatureNegotiation? _bind_time_features;
+        private bool _transport_bound;
+        private Guid _interface_id;
+        private Version _interface_version;
+        private Guid _transfer_syntax_id;
+        private Version _transfer_syntax_version;
 
         private PDUBase CheckFault(PDUBase pdu)
         {
@@ -379,13 +387,24 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, alter_context);
 
                 bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+                if (!_bind_time_features.HasValue)
+                {
+                    _bind_time_features = BindTimeFeatureNegotiation.None;
+                    bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, 
+                        BindTimeFeatureNegotiation.SecurityContextMultiplexingSupported));
+                }
 
                 var recv = SendReceivePDU(call_id, bind_pdu, _auth_context.Token.ToArray(), true);
                 if (recv.Item1 is PDUBindAck bind_ack)
                 {
-                    if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
+                    if (bind_ack.ResultList.Count < 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
                     {
                         throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
+                    }
+
+                    if (bind_ack.ResultList.Count == 2)
+                    {
+                        _bind_time_features = bind_ack.ResultList[1].BindTimeFeature;
                     }
 
                     if (!alter_context)
@@ -488,6 +507,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public IClientAuthenticationContext AuthenticationContext => _auth_context;
 
         /// <summary>
+        /// Indicates if this connection supported multiple security context.
+        /// </summary>
+        public bool SupportsMultipleSecurityContexts => (_bind_time_features ??
+            BindTimeFeatureNegotiation.None).HasFlagSet(BindTimeFeatureNegotiation.SecurityContextMultiplexingSupported);
+
+        /// <summary>
         /// Get the current Call ID.
         /// </summary>
         public int CallId { get; private set; }
@@ -505,6 +530,17 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 throw new ArgumentException("Only supports DCE transfer syntax");
             }
+
+            if (_transport_bound)
+            {
+                throw new InvalidOperationException("Transport is already bound to an interface.");
+            }
+
+            _transport_bound = true;
+            _interface_id = interface_id;
+            _interface_version = interface_version;
+            _transfer_syntax_id = transfer_syntax_id;
+            _transfer_syntax_version = transfer_syntax_version;
 
             if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.None)
             {
@@ -535,6 +571,17 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Disconnect the transport.
         /// </summary>
         public abstract void Disconnect();
+
+        #endregion
+
+        #region Static Members
+        /// <summary>
+        /// Enable or disable bind time feature negotiation. You need to enable this to
+        /// use multiple security context.
+        /// </summary>
+        /// <remarks>Should be set before connecting an RPC client.</remarks>
+        public static bool EnableBindTimeFeatureNegotiation { get; set; }
+
         #endregion
 
         #region IDisposable implementation.

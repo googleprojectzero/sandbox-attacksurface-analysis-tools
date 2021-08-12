@@ -23,7 +23,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
     {
         Acceptance = 0,
         UserRejection,
-        ProviderRejection
+        ProviderRejection,
+        NegotiateAck
     }
 
     internal enum PresentationResultReason
@@ -38,12 +39,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
     {
         public PresentationResultType Result { get; }
         public PresentationResultReason Reason { get; }
+        public BindTimeFeatureNegotiation BindTimeFeature { get; }
         public RPC_SYNTAX_IDENTIFIER TransferSyntax { get; }
 
-        private ContextResult(PresentationResultType result, PresentationResultReason reason, RPC_SYNTAX_IDENTIFIER transfer_syntax)
+        private ContextResult(PresentationResultType result, int reason, RPC_SYNTAX_IDENTIFIER transfer_syntax)
         {
             Result = result;
-            Reason = reason;
+            if (result == PresentationResultType.NegotiateAck)
+            {
+                BindTimeFeature = (BindTimeFeatureNegotiation)reason;
+            }
+            else
+            {
+                Reason = (PresentationResultReason)reason;
+            }
             TransferSyntax = transfer_syntax;
         }
 
@@ -57,7 +66,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             for (int i = 0; i < count; ++i)
             {
                 PresentationResultType result = (PresentationResultType)reader.ReadUInt16();
-                PresentationResultReason reason = (PresentationResultReason)reader.ReadUInt16();
+                int reason = reader.ReadUInt16();
                 Guid transfer_syntax_id = new Guid(reader.ReadAllBytes(16));
                 ushort major_version = reader.ReadUInt16();
                 ushort minor_version = reader.ReadUInt16();
