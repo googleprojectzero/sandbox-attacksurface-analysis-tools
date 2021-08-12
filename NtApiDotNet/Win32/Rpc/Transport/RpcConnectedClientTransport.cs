@@ -349,16 +349,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        private void BindNoAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        private void BindNoAuth()
         {
             PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, false);
-            bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+            bind_pdu.Elements.Add(new ContextElement(_interface_id, _interface_version, _transfer_syntax_id, _transfer_syntax_version));
             var recv_pdu = SendReceivePDU(++CallId, bind_pdu, new byte[0], true).Item1;
             if (recv_pdu is PDUBindAck bind_ack)
             {
                 if (bind_ack.ResultList.Count != 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
                 {
-                    throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
+                    throw new RpcTransportException($"Bind to {_interface_id}:{_interface_version} was rejected.");
                 }
 
                 _max_recv_fragment = bind_ack.MaxRecvFrag;
@@ -374,23 +374,22 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        private void BindAuth(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        private void BindAuth(bool alter_context)
         {
             // 8 should be more than enough legs to complete authentication.
             int max_legs = _transport_security.AuthenticationType == RpcAuthenticationType.WinNT ? 3 : 8;
             int call_id = ++CallId;
             int count = 0;
-            bool alter_context = false;
 
             while (count++ < max_legs)
             {
                 PDUBind bind_pdu = new PDUBind(_max_send_fragment, _max_recv_fragment, alter_context);
 
-                bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version));
+                bind_pdu.Elements.Add(new ContextElement(_interface_id, _interface_version, _transfer_syntax_id, _transfer_syntax_version));
                 if (!_bind_time_features.HasValue)
                 {
                     _bind_time_features = BindTimeFeatureNegotiation.None;
-                    bind_pdu.Elements.Add(new ContextElement(interface_id, interface_version, 
+                    bind_pdu.Elements.Add(new ContextElement(_interface_id, _interface_version, 
                         BindTimeFeatureNegotiation.SecurityContextMultiplexingSupported));
                 }
 
@@ -399,7 +398,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 {
                     if (bind_ack.ResultList.Count < 1 || bind_ack.ResultList[0].Result != PresentationResultType.Acceptance)
                     {
-                        throw new RpcTransportException($"Bind to {interface_id}:{interface_version} was rejected.");
+                        throw new RpcTransportException($"Bind to {_interface_id}:{_interface_version} was rejected.");
                     }
 
                     if (bind_ack.ResultList.Count == 2)
@@ -544,11 +543,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (_transport_security.AuthenticationLevel == RpcAuthenticationLevel.None)
             {
-                BindNoAuth(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version);
+                BindNoAuth();
             }
             else
             {
-                BindAuth(interface_id, interface_version, transfer_syntax_id, transfer_syntax_version);
+                BindAuth(false);
             }
         }
 
