@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             var stub_data_buffer = new SecurityBufferInOut(SecurityBufferType.Data, stub_data);
             buffers.Add(stub_data_buffer);
             buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
-                AuthData.ToArray(TransportSecurity, auth_padding_length, 0, new byte[0])));
+                AuthData.ToArray(TransportSecurity, auth_padding_length, ContextId, new byte[0])));
 
             byte[] signature;
             if (TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
