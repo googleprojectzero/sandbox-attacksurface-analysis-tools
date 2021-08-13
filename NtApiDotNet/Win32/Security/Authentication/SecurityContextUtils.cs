@@ -303,6 +303,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return QueryContextAttribute<SecPkgContext_StreamSizes>(context, SECPKG_ATTR.STREAM_SIZES);
         }
 
+        internal static bool GetIsLoopback(SecHandle context)
+        {
+            var res = QueryContextAttributeNoThrow<int>(context, SECPKG_ATTR.IS_LOOPBACK);
+            return res.Item1 != 0;
+        }
+
         internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package, bool client)
         {
             if (context is null)

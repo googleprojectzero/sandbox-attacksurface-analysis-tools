@@ -180,6 +180,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public SchannelConnectionInfo ConnectionInfo => SecurityContextUtils.GetConnectionInfo(Context);
 
+        /// <summary>
+        /// Get whether the authentication context is for loopback.
+        /// </summary>
+        public bool IsLoopback => SecurityContextUtils.GetIsLoopback(Context);
+
         #endregion
 
         #region Constructors

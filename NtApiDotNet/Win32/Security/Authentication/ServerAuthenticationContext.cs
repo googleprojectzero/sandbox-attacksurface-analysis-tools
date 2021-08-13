@@ -191,6 +191,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public X509Certificate2 RemoteCertificate => SecurityContextUtils.GetRemoteCertificate(Context);
 
+        /// <summary>
+        /// Get whether the authentication context is for loopback.
+        /// </summary>
+        public bool IsLoopback => SecurityContextUtils.GetIsLoopback(Context);
+
         #endregion
 
         #region Public Methods
