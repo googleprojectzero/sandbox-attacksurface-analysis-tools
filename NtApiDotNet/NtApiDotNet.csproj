@@ -247,6 +247,8 @@
     <Compile Include="Security\INtObjectSecurity.cs" />
     <Compile Include="Utilities\Collections\CollectionUtils.cs" />
     <Compile Include="Utilities\Memory\UnmanagedUtils.cs" />
+    <Compile Include="Utilities\Misc\DetachableContainer.cs" />
+    <Compile Include="Utilities\Misc\MiscUtils.cs" />
     <Compile Include="Utilities\Reflection\ReflectionUtils.cs" />
     <Compile Include="Utilities\Reflection\SDKNameAttribute.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
@@ -460,6 +462,7 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameFormat.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\SafeHandles\SafeDirectoryServiceHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSecurityPrincipal.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceReferenceClass.cs" />

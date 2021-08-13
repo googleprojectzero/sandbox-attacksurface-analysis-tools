@@ -25,6 +25,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         #region Private Members
         private NtAlpcClient _client;
+        private readonly SecurityQualityOfService _sqos;
 
         private static AlpcPortAttributes CreatePortAttributes(SecurityQualityOfService sqos)
         {
@@ -241,6 +242,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
 
             _client = ConnectPort(path, security_quality_of_service);
+            _sqos = security_quality_of_service;
             Endpoint = path;
         }
         #endregion
@@ -300,6 +302,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             Dispose();
         }
 
+        /// <summary>
+        /// Add and authenticate a new security context.
+        /// </summary>
+        /// <param name="transport_security">The transport security for the context.</param>
+        /// <returns>The created security context.</returns>
+        public RpcTransportSecurityContext AddSecurityContext(RpcTransportSecurity transport_security)
+        {
+            throw new InvalidOperationException("Transport doesn't support multiple security context.");
+        }
+
         #endregion
 
         #region Public Properties
@@ -350,6 +362,28 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the transports authentication level.
         /// </summary>
         public RpcAuthenticationLevel AuthenticationLevel => Authenticated ? RpcAuthenticationLevel.PacketPrivacy : RpcAuthenticationLevel.None;
+
+        /// <summary>
+        /// Indicates if this connection supported multiple security context.
+        /// </summary>
+        public bool SupportsMultipleSecurityContexts => false;
+
+        /// <summary>
+        /// Get the list of negotiated security context.
+        /// </summary>
+        public IReadOnlyList<RpcTransportSecurityContext> SecurityContext => 
+            new List<RpcTransportSecurityContext>() { CurrentSecurityContext }.AsReadOnly();
+
+        /// <summary>
+        /// Get or set the current security context.
+        /// </summary>
+        public RpcTransportSecurityContext CurrentSecurityContext {
+            get => new RpcTransportSecurityContext(this, new RpcTransportSecurity(_sqos)
+            {
+                AuthenticationType = AuthenticationType,
+                AuthenticationLevel = AuthenticationLevel
+            }, 0);
+            set => throw new InvalidOperationException("Transport doesn't support multiple security context."); }
 
         #endregion
     }

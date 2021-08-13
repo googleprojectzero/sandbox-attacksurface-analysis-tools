@@ -1340,3 +1340,118 @@ function Get-NtAlpcServer {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Add a RPC security context to a client.
+.DESCRIPTION
+This cmdlet adds a RPC security context to an endpoint.
+.PARAMETER Client
+Specify the RPC client to add the context to.
+.PARAMETER SecurityQualityOfService
+Specify the security quality of service for the connection.
+.PARAMETER Credentials
+Specify user credentials for the RPC client authentication.
+.PARAMETER ServicePrincipalName
+Specify service principal name for the RPC client authentication.
+.PARAMETER AuthenticationLevel
+Specify authentication level for the RPC client authentication.
+.PARAMETER AuthenticationType
+Specify authentication type for the RPC client authentication.
+.PARAMETER AuthenticationCapabilities
+Specify authentication capabilities for the RPC client authentication.
+.PARAMETER PassThru
+Specify to the pass the security context object to the output. If you don't specify this
+the security context will be set as the current context before returning.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext
+#>
+function Add-RpcClientSecurityContext {
+    [CmdletBinding(DefaultParameterSetName = "FromProtocol")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
+        [string]$ServicePrincipalName,
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
+        [switch]$PassThru
+    )
+
+    try {
+        $security = New-Object NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity
+        $security.SecurityQualityOfService = $SecurityQualityOfService
+        $security.Credentials = $Credentials
+        $security.ServicePrincipalName = $ServicePrincipalName
+        $security.AuthenticationLevel = $AuthenticationLevel
+        $security.AuthenticationType = $AuthenticationType
+        $security.AuthenticationCapabilities = $AuthenticationCapabilities
+        $ctx = $Client.Transport.AddSecurityContext($security)
+        if ($PassThru) {
+            $ctx
+        } else {
+            Set-RpcClientSecurityContext -Client $Client -SecurityContext $ctx
+        }
+    } catch {
+        Write-Error $_
+    }
+}
+
+<#
+.SYNOPSIS
+Set a RPC security context on a client.
+.DESCRIPTION
+This cmdlet sets the current RPC security context for a client.
+.PARAMETER Client
+Specify the RPC client to set the context to.
+.PARAMETER SecurityContext
+Specify the security context to set.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-RpcClientSecurityContext {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext]$SecurityContext
+    )
+
+    $Client.Transport.CurrentSecurityContext = $SecurityContext
+}
+
+<#
+.SYNOPSIS
+Get a RPC security contexts from a client.
+.DESCRIPTION
+This cmdlet gets the current RPC security context for a client.
+.PARAMETER Client
+Specify the RPC client to set the context to.
+.PARAMETER Current
+Specify to return the current context only.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext[]
+#>
+function Get-RpcClientSecurityContext {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [switch]$Current
+    )
+
+    if ($Current) {
+        $Client.Transport.CurrentSecurityContext
+    } else {
+        $Client.Transport.SecurityContext | Write-Output
+    }
+}

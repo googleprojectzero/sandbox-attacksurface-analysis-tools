@@ -45,6 +45,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles);
 
         /// <summary>
+        /// Add and authenticate a new security context.
+        /// </summary>
+        /// <param name="transport_security">The transport security for the context.</param>
+        /// <returns>The created security context.</returns>
+        RpcTransportSecurityContext AddSecurityContext(RpcTransportSecurity transport_security);
+
+        /// <summary>
         /// Disconnect the transport.
         /// </summary>
         void Disconnect();
@@ -70,12 +77,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         bool Authenticated { get; }
 
         /// <summary>
-        /// Get the transports authentication type.
+        /// Get the transport's authentication type.
         /// </summary>
         RpcAuthenticationType AuthenticationType { get; }
 
         /// <summary>
-        /// Get the transports authentication level.
+        /// Get the transport's authentication level.
         /// </summary>
         RpcAuthenticationLevel AuthenticationLevel { get; }
 
@@ -88,5 +95,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the current Call ID.
         /// </summary>
         int CallId { get; }
+
+        /// <summary>
+        /// Indicates if this connection supported multiple security context.
+        /// </summary>
+        bool SupportsMultipleSecurityContexts { get; }
+
+        /// <summary>
+        /// Get the list of negotiated security context.
+        /// </summary>
+        IReadOnlyList<RpcTransportSecurityContext> SecurityContext { get; }
+
+        /// <summary>
+        /// Get or set the current security context.
+        /// </summary>
+        RpcTransportSecurityContext CurrentSecurityContext { get; set; }
     }
 }

@@ -86,6 +86,16 @@ namespace NtApiDotNet
             return ret;
         }
 
+        /// <summary>
+        /// Detach a detachable reference and add it to the list.
+        /// </summary>
+        /// <typeparam name="R">The type of resource to detach.</typeparam>
+        /// <returns>The detached resource.</returns>
+        public R Detach<R>(DetachableContainer<R> container) where R : class, T
+        {
+            return AddResource(container.Detach());
+        }
+
         #region IDisposable Support
         private bool disposedValue = false;
 
