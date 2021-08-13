@@ -74,6 +74,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private int _current_context_id;
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
+        private int _recv_sequence_no;
+        private int _send_senqunce_no;
         private BindTimeFeatureNegotiation? _bind_time_features;
         private bool _transport_bound;
         private Guid _interface_id;
@@ -147,7 +149,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 RpcUtils.DumpBuffer(true, $"{GetType().Name} Send Buffer", fragment);
                 if (!WriteFragment(fragment))
                     throw new RpcTransportException("Failed to write out PDU buffer.");
-                security_context.SendSequenceNo++;
+                _send_senqunce_no++;
                 if (!receive_pdu)
                     return null;
 
@@ -168,7 +170,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     throw new RpcTransportException($"Mismatching context ID - {pdu.Item3.ContextId} should be {security_context.ContextId}.");
                 }
 
-                security_context.RecvSequenceNo++;
+                _recv_sequence_no++;
 
                 return Tuple.Create(CheckFault(curr_header.ToPDU(pdu.Item2)), pdu.Item3);
             }
@@ -255,7 +257,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         }
 
                         header = request_pdu.ToArray(pdu_header, stub_fragment.Length + AuthData.PDU_AUTH_DATA_HEADER_SIZE, auth_data_length);
-                        auth_data = security_context.ProtectPDU(header, ref stub_fragment, auth_data_padding);
+                        auth_data = security_context.ProtectPDU(header, ref stub_fragment, auth_data_padding, _send_senqunce_no);
                     }
 
                     MemoryStream send_stm = new MemoryStream();
@@ -268,7 +270,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     RpcUtils.DumpBuffer(true, name, fragment);
                     if (!WriteFragment(fragment))
                         throw new RpcTransportException("Failed to write out PDU buffer.");
-                    security_context.SendSequenceNo++;
+                    _send_senqunce_no++;
                 }
 
                 MemoryStream recv_stm = new MemoryStream();
@@ -293,8 +295,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     if (recv_pdu is PDUResponse resp_pdu)
                     {
                         byte[] resp_stub_data = auth_required ? security_context.UnprotectPDU(resp_pdu.ToArray(curr_header), 
-                            resp_pdu.StubData, auth_data) : resp_pdu.StubData;
-                        security_context.RecvSequenceNo++;
+                            resp_pdu.StubData, auth_data, _recv_sequence_no) : resp_pdu.StubData;
+                        _recv_sequence_no++;
                         recv_stm.Write(resp_stub_data, 0, resp_stub_data.Length);
                     }
                     else
