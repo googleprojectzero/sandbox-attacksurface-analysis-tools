@@ -12,6 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+$protseq_completer = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    @("ncalrpc", "ncacn_np", "ncacn_ip_tcp", "ncacn_http") | Where-Object { $_ -like "$wordToComplete*" }
+}
+
 <#
 .SYNOPSIS
 Get a list of ALPC Ports that can be opened by a specified token.
@@ -176,6 +181,8 @@ function Get-RpcEndpoint {
         $eps | Write-Output
     }
 }
+
+Register-ArgumentCompleter -CommandName Get-RpcEndpoint -ParameterName ProtocolSequence -ScriptBlock $protseq_completer
 
 <#
 .SYNOPSIS
@@ -643,6 +650,8 @@ function Connect-RpcClient {
     }
 }
 
+Register-ArgumentCompleter -CommandName Connect-RpcClient -ParameterName ProtocolSequence -ScriptBlock $protseq_completer
+
 <#
 .SYNOPSIS
 Disconnect an RPC client.
@@ -899,6 +908,8 @@ function Get-RpcStringBinding {
 
     [NtApiDotNet.Win32.Rpc.RpcUtils]::ComposeStringBinding($objuuid_str, $ProtocolSequence, $NetworkAddress, $Endpoint, $Options)
 }
+
+Register-ArgumentCompleter -CommandName Get-RpcStringBinding -ParameterName ProtocolSequence -ScriptBlock $protseq_completer
 
 <#
 .SYNOPSIS
