@@ -50,10 +50,23 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcAuthenticationLevel AuthenticationLevel => TransportSecurity.AuthenticationLevel;
 
         internal bool Authenticated => AuthContext?.Done ?? false;
-        internal bool NeedAuthData => TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity ||
-                    TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketPrivacy;
-        internal int AuthDataLength => TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity ?
-                        AuthContext.MaxSignatureSize : AuthContext.SecurityTrailerSize;
+
+        internal int AuthDataLength
+        {
+            get
+            {
+                switch (TransportSecurity.AuthenticationLevel)
+                {
+                    case RpcAuthenticationLevel.PacketIntegrity:
+                        return AuthContext.MaxSignatureSize;
+                    case RpcAuthenticationLevel.PacketPrivacy:
+                        return AuthContext.SecurityTrailerSize;
+                    default:
+                        return 0;
+                }
+            }
+        }
+
         internal int MaxAuthLegs => TransportSecurity.AuthenticationType == RpcAuthenticationType.WinNT ? 3 : 8;
 
         internal void SetNegotiatedAuthType()
@@ -97,19 +110,23 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             buffers.Add(new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
                 AuthData.ToArray(TransportSecurity, auth_padding_length, ContextId, new byte[0])));
 
-            byte[] signature;
+            byte[] signature = new byte[0];
             if (TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketIntegrity)
             {
                 signature = AuthContext.MakeSignature(buffers, send_sequence_no);
             }
-            else
+            else if (TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketPrivacy)
             {
                 signature = AuthContext.EncryptMessage(buffers, SecurityQualityOfProtectionFlags.None, send_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
                 RpcUtils.DumpBuffer(true, "Send Encrypted Data", stub_data);
             }
 
-            RpcUtils.DumpBuffer(true, "Send Signature Data", signature);
+            if (signature.Length > 0)
+            {
+                RpcUtils.DumpBuffer(true, "Send Signature Data", signature);
+            }
+
             return AuthData.ToArray(TransportSecurity, auth_padding_length, ContextId, signature);
         }
 
@@ -134,10 +151,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     throw new RpcTransportException("Invalid response PDU signature.");
                 }
             }
-            else
+            else if (TransportSecurity.AuthenticationLevel == RpcAuthenticationLevel.PacketPrivacy)
             {
                 AuthContext.DecryptMessage(buffers, signature, recv_sequence_no);
                 stub_data = stub_data_buffer.ToArray();
+            }
+            else
+            {
+                // Do nothing.
             }
 
             Array.Resize(ref stub_data, stub_data.Length - auth_data.Padding);

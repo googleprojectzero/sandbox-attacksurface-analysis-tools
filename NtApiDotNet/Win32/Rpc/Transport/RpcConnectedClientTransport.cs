@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
-using NtApiDotNet.Utilities.Misc;
 using NtApiDotNet.Win32.Rpc.Transport.PDU;
 using NtApiDotNet.Win32.Security.Authentication;
 using System;
@@ -47,6 +46,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             _security_context = new Dictionary<int, RpcTransportSecurityContext>();
             _current_security_context = new RpcTransportSecurityContext(this, transport_security, _current_context_id++);
             _security_context[_current_security_context.ContextId] = _current_security_context;
+            switch (transport_security.AuthenticationLevel)
+            {
+                case RpcAuthenticationLevel.PacketIntegrity:
+                case RpcAuthenticationLevel.PacketPrivacy:
+                    _auth_data_required = true;
+                    break;
+            }
 
             if (DisableBindTimeFeatureNegotiation)
                 _bind_time_features = BindTimeFeatureNegotiation.None;
@@ -75,13 +81,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
         private int _recv_sequence_no;
-        private int _send_senqunce_no;
+        private int _send_sequence_no;
         private BindTimeFeatureNegotiation? _bind_time_features;
         private bool _transport_bound;
         private Guid _interface_id;
         private Version _interface_version;
         private Guid _transfer_syntax_id;
         private Version _transfer_syntax_version;
+        private bool _auth_data_required;
 
         private PDUBase CheckFault(PDUBase pdu)
         {
@@ -149,7 +156,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 RpcUtils.DumpBuffer(true, $"{GetType().Name} Send Buffer", fragment);
                 if (!WriteFragment(fragment))
                     throw new RpcTransportException("Failed to write out PDU buffer.");
-                _send_senqunce_no++;
+                _send_sequence_no++;
                 if (!receive_pdu)
                     return null;
 
@@ -213,13 +220,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 int max_fragment = _max_send_fragment - request_pdu.HeaderLength;
                 int auth_data_length = 0;
 
-                bool auth_required = false;
-                if (security_context.NeedAuthData)
+                if (_auth_data_required)
                 {
                     auth_data_length = security_context.AuthDataLength;
                     max_fragment -= (auth_data_length + AuthData.PDU_AUTH_DATA_HEADER_SIZE);
                     max_fragment &= ~0xF;
-                    auth_required = true;
                 }
 
                 List<byte[]> fragments = PDURequest.DoFragment(stub_data, max_fragment);
@@ -246,7 +251,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     byte[] stub_fragment = fragments[i];
                     byte[] auth_data = new byte[0];
                     byte[] header = request_pdu.ToArray(pdu_header, stub_fragment.Length, 0);
-                    if (auth_required)
+                    if (_auth_data_required)
                     {
                         int auth_data_padding = 0;
                         int auth_trailing_size = (header.Length + stub_fragment.Length + AuthData.PDU_AUTH_DATA_HEADER_SIZE) & 0xF;
@@ -257,7 +262,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         }
 
                         header = request_pdu.ToArray(pdu_header, stub_fragment.Length + AuthData.PDU_AUTH_DATA_HEADER_SIZE, auth_data_length);
-                        auth_data = security_context.ProtectPDU(header, ref stub_fragment, auth_data_padding, _send_senqunce_no);
+                        auth_data = security_context.ProtectPDU(header, ref stub_fragment, auth_data_padding, _send_sequence_no);
                     }
 
                     MemoryStream send_stm = new MemoryStream();
@@ -270,7 +275,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     RpcUtils.DumpBuffer(true, name, fragment);
                     if (!WriteFragment(fragment))
                         throw new RpcTransportException("Failed to write out PDU buffer.");
-                    _send_senqunce_no++;
+                    _send_sequence_no++;
                 }
 
                 MemoryStream recv_stm = new MemoryStream();
@@ -294,7 +299,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     var recv_pdu = CheckFault(curr_header.ToPDU(pdu.Item2));
                     if (recv_pdu is PDUResponse resp_pdu)
                     {
-                        byte[] resp_stub_data = auth_required ? security_context.UnprotectPDU(resp_pdu.ToArray(curr_header), 
+                        byte[] resp_stub_data = _auth_data_required ? security_context.UnprotectPDU(resp_pdu.ToArray(curr_header), 
                             resp_pdu.StubData, auth_data, _recv_sequence_no) : resp_pdu.StubData;
                         _recv_sequence_no++;
                         recv_stm.Write(resp_stub_data, 0, resp_stub_data.Length);
@@ -528,8 +533,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             if (!SupportsMultipleSecurityContexts)
                 throw new InvalidOperationException("Transport doesn't support multiple security context.");
-            if (transport_security.AuthenticationLevel < RpcAuthenticationLevel.PacketIntegrity)
-                throw new ArgumentException("Can only create a new context with higher authentication level.");
+            switch (transport_security.AuthenticationLevel)
+            {
+                case RpcAuthenticationLevel.Connect:
+                case RpcAuthenticationLevel.PacketIntegrity:
+                case RpcAuthenticationLevel.PacketPrivacy:
+                    break;
+                default:
+                    throw new ArgumentException("Can only create a new context with specific authentication levels.");
+            }
+
             if (!_transport_bound)
                 throw new InvalidOperationException("Transport hasn't been bound yet.");
             var context = new RpcTransportSecurityContext(this,
@@ -537,6 +550,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             try
             {
                 BindAuth(true, context);
+                _auth_data_required = true;
                 return _security_context[context.ContextId] = context;
             }
             catch
@@ -577,7 +591,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         /// <remarks>Should be set before connecting an RPC client.</remarks>
         public static bool DisableBindTimeFeatureNegotiation { get; set; }
-
         #endregion
 
         #region IDisposable implementation.
