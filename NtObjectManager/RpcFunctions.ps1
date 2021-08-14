@@ -1410,19 +1410,27 @@ This cmdlet sets the current RPC security context for a client.
 Specify the RPC client to set the context to.
 .PARAMETER SecurityContext
 Specify the security context to set.
+.PARAMETER ContextId
+Specify the ID of the security context to set.
 .INPUTS
 None
 .OUTPUTS
 None
 #>
 function Set-RpcClientSecurityContext {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
-        [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext]$SecurityContext
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromContext")]
+        [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext]$SecurityContext,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [int]$ContextId
     )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromId") {
+        $SecurityContext = Get-RpcClientSecurityContext -Client $Client -ContextId $ContextId
+    }
 
     $Client.Transport.CurrentSecurityContext = $SecurityContext
 }
@@ -1436,22 +1444,33 @@ This cmdlet gets the current RPC security context for a client.
 Specify the RPC client to set the context to.
 .PARAMETER Current
 Specify to return the current context only.
+.PARAMETER ContextId
+Specify to return the context with the specified ID.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext[]
 #>
 function Get-RpcClientSecurityContext {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="All")]
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
-        [switch]$Current
+        [parameter(Mandatory, ParameterSetName="FromCurrent")]
+        [switch]$Current,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
+        [int]$ContextId
     )
 
-    if ($Current) {
-        $Client.Transport.CurrentSecurityContext
-    } else {
-        $Client.Transport.SecurityContext | Write-Output
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Client.Transport.SecurityContext | Write-Output
+        }
+        "FromCurrent" {
+            $Client.Transport.CurrentSecurityContext
+        }
+        "FromId" {
+            $Client.Transport.SecurityContext | Where-Object ContextId -eq $ContextId
+        }
     }
 }
