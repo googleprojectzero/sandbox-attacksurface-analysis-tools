@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
 using System;
 
@@ -22,61 +23,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// </summary>
     public struct RpcTransportSecurity
     {
+        #region Private Members
         private readonly Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
         private RpcAuthenticationType _auth_type;
-
-        /// <summary>
-        /// Security quality of service.
-        /// </summary>
-        public SecurityQualityOfService SecurityQualityOfService { get; set; }
-
-        /// <summary>
-        /// Authentication level.
-        /// </summary>
-        public RpcAuthenticationLevel AuthenticationLevel { get; set; }
-
-        /// <summary>
-        /// Authentication type.
-        /// </summary>
-        public RpcAuthenticationType AuthenticationType
-        {
-            get => _auth_type;
-            set => _auth_type = value == RpcAuthenticationType.Default ? RpcAuthenticationType.WinNT : value;
-        }
-
-        /// <summary>
-        /// Authentication credentials.
-        /// </summary>
-        public AuthenticationCredentials Credentials { get; set; }
-
-        /// <summary>
-        /// The SPN for the authentication.
-        /// </summary>
-        public string ServicePrincipalName { get; set; }
-
-        /// <summary>
-        /// Authentication capabilities.
-        /// </summary>
-        public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="auth_factory">Factory to create a non-standard authentication context.</param>
-        /// <remarks>You can use this version to create a mechanism to pass existing tokens such as pass-the-hash or sending arbitrary Kerberos tickets.</remarks>
-        public RpcTransportSecurity(Func<RpcTransportSecurity, IClientAuthenticationContext> auth_factory) : this()
-        {
-            _auth_factory = auth_factory;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="security_quality_of_service">Security quality of service.</param>
-        public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
-        {
-            SecurityQualityOfService = security_quality_of_service;
-        }
 
         private string GetAuthPackageName()
         {
@@ -133,6 +82,106 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return flags;
         }
 
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Security quality of service.
+        /// </summary>
+        public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+        /// <summary>
+        /// Authentication level.
+        /// </summary>
+        public RpcAuthenticationLevel AuthenticationLevel { get; set; }
+
+        /// <summary>
+        /// Authentication type.
+        /// </summary>
+        public RpcAuthenticationType AuthenticationType
+        {
+            get => _auth_type;
+            set => _auth_type = value == RpcAuthenticationType.Default ? RpcAuthenticationType.WinNT : value;
+        }
+
+        /// <summary>
+        /// Authentication credentials.
+        /// </summary>
+        public AuthenticationCredentials Credentials { get; set; }
+
+        /// <summary>
+        /// The SPN for the authentication.
+        /// </summary>
+        public string ServicePrincipalName { get; set; }
+
+        /// <summary>
+        /// Authentication capabilities.
+        /// </summary>
+        public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="auth_factory">Factory to create a non-standard authentication context.</param>
+        /// <remarks>You can use this version to create a mechanism to pass existing tokens such as pass-the-hash or sending arbitrary Kerberos tickets.</remarks>
+        public RpcTransportSecurity(Func<RpcTransportSecurity, IClientAuthenticationContext> auth_factory) : this()
+        {
+            _auth_factory = auth_factory;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
+        {
+            SecurityQualityOfService = security_quality_of_service;
+        }
+        #endregion
+
+        #region Static Members
+        /// <summary>
+        /// Query the service principal name for the server.
+        /// </summary>
+        /// <param name="string_binding">The binding string for the server.</param>
+        /// <param name="authn_svc">The authentication service to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The service principal name.</returns>
+        public static NtResult<string> QueryServicePrincipalName(string string_binding, RpcAuthenticationType authn_svc, bool throw_on_error)
+        {
+            using (var binding = SafeRpcBindingHandle.Create(string_binding, false))
+            {
+                if (!binding.IsSuccess)
+                {
+                    return binding.Cast<string>();
+                }
+
+                return Win32NativeMethods.RpcMgmtInqServerPrincName(binding.Result, authn_svc,
+                    out SafeRpcStringHandle spn).CreateWin32Result(throw_on_error, () => {
+                        using (spn)
+                        {
+                            return spn.ToString();
+                        }
+                    }
+                    );
+            }
+        }
+
+        /// <summary>
+        /// Query the service principal name for the server.
+        /// </summary>
+        /// <param name="string_binding">The binding string for the server.</param>
+        /// <param name="authn_svc">The authentication service to query.</param>
+        /// <returns>The service principal name.</returns>
+        public static string QueryServicePrincipalName(string string_binding, RpcAuthenticationType authn_svc)
+        {
+            return QueryServicePrincipalName(string_binding, authn_svc, true).Result;
+        }
+        #endregion
+
+        #region Internal Members
         internal IClientAuthenticationContext CreateClientContext()
         {
             if (_auth_factory != null)
@@ -157,5 +206,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     ServicePrincipalName, SecDataRep.Native);
             }
         }
+        #endregion
     }
 }

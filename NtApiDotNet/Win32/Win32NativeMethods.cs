@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -625,6 +626,13 @@ namespace NtApiDotNet.Win32
         internal static extern int RpcMgmtInqIfIds(
             SafeRpcBindingHandle Binding,
             out SafeRpcIfIdVectorHandle IfIdVector
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error RpcMgmtInqServerPrincName(
+          SafeRpcBindingHandle Binding,
+          RpcAuthenticationType AuthnSvc,
+          out SafeRpcStringHandle ServerPrincName
         );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]

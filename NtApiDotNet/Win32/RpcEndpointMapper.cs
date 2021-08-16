@@ -140,14 +140,6 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        /// <summary>
-        /// Resolve the binding string for this service from the local Endpoint Mapper.
-        /// </summary>
-        /// <param name="binding">The binding handle.</param>
-        /// <param name="interface_id">Interface UUID to lookup.</param>
-        /// <param name="interface_version">Interface version lookup.</param>
-        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
-        /// <returns>The RPC binding string. Empty string if it doesn't exist or the lookup failed.</returns>
         private static string MapBindingToBindingString(NtResult<SafeRpcBindingHandle> binding, Guid interface_id, Version interface_version)
         {
             if (!binding.IsSuccess)
