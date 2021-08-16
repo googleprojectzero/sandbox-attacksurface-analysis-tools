@@ -1485,3 +1485,28 @@ function Get-RpcClientSecurityContext {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the registered security principal name for a RPC server.
+.DESCRIPTION
+This cmdlet gets the registered security principal name for a RPC server.
+.PARAMETER Binding
+Specify the server binding.
+.PARAMETER AuthenticationType
+Specify the authentication type.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Get-RpcSecurityPrincipalName {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Binding,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType
+    )
+    [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity]::QueryServicePrincipalName($Binding, $AuthenticationType)
+}
