@@ -870,6 +870,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool RtlTestProtectedAccess(byte request_level, byte target_level);
+
+        [DllImport("ntdll.dll")]
+        public static extern IntPtr RtlGetCurrentPeb();
     }
 
     [Flags]

@@ -2707,6 +2707,11 @@ namespace NtApiDotNet
         /// <remarks>This only uses the pseudo handle, for the process. If you need a proper handle use OpenCurrent.</remarks>
         public static NtProcess Current => new NtProcess(new SafeKernelObjectHandle(-1));
 
+        /// <summary>
+        /// Get the current PEB address.
+        /// </summary>
+        public static IntPtr CurrentPebAddress => NtRtl.RtlGetCurrentPeb();
+
         #endregion
     }
 }
