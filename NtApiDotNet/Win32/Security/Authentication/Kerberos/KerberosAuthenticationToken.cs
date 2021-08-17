@@ -83,7 +83,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         return true;
                     if (KerberosErrorAuthenticationToken.TryParse(data, values, out token))
                         return true;
-                    return false;
+                    if (KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token))
+                        return true;
+                    if (KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token))
+                        return true;
+                    token = new KerberosAuthenticationToken(data, values, KerberosMessageType.UNKNOWN);
+                    return true;
                 }
                 else
                 {
