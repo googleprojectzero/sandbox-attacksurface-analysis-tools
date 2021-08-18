@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.IO;
@@ -28,14 +29,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     public enum KerberosChecksumGSSApiFlags
     {
         None = 0,
+        [SDKName("GSS_C_DELEG_FLAG")]
         Delegate = 1,
+        [SDKName("GSS_C_MUTUAL_FLAG")]
         Mutual = 2,
+        [SDKName("GSS_C_REPLAY_FLAG")]
         Replay = 4,
+        [SDKName("GSS_C_SEQUENCE_FLAG")]
         Sequence = 8,
+        [SDKName("GSS_C_CONF_FLAG")]
         Confidentiality = 0x10,
+        [SDKName("GSS_C_INTEG_FLAG")]
         Integrity = 0x20,
-        UseDceStyle = 0x1000,
-        Identity = 0x2000
+        [SDKName("GSS_C_DCE_STYLE")]
+        DceStyle = 0x1000,
+        [SDKName("GSS_C_IDENTIFY_FLAG")]
+        Identify = 0x2000,
+        [SDKName("GSS_C_EXTENDED_ERROR_FLAG")]
+        ExtendedError = 0x4000,
     }
 #pragma warning restore 1591
 

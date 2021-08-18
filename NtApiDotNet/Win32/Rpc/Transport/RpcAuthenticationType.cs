@@ -130,6 +130,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         CloudAP = 36,
 
         /// <summary>
+        /// Netlogon.
+        /// </summary>
+        [SDKName("RPC_C_AUTHN_NETLOGON")]
+        NetLogon = 68,
+
+        /// <summary>
         /// MS Online.
         /// </summary>
         [SDKName("RPC_C_AUTHN_MSONLINE")]
