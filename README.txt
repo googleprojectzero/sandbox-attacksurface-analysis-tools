@@ -1,6 +1,6 @@
 sandbox-attacksurface-analysis-tools
 
-(c) Google Inc. 2015, 2016, 2017, 2018, 2019, 2020
+(c) Google LLC. 2015 - 2021
 Developed by James Forshaw
 
 This is a small suite of PowerShell tools to test various properties of sandboxes on Windows. Many of the
@@ -36,6 +36,10 @@ Thanks to the people who were willing to test it and give feedback:
 * Jared Atkinson
 
 Release Notes:
+
+1.1.32
+--------
+* Too many changes to mention.
 
 1.1.31
 --------
