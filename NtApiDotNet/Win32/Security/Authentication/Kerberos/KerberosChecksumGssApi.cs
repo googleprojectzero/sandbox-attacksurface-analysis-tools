@@ -34,6 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         Sequence = 8,
         Confidentiality = 0x10,
         Integrity = 0x20,
+        UseDceStyle = 0x1000,
         Identity = 0x2000
     }
 #pragma warning restore 1591
