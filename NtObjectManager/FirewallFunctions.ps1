@@ -411,7 +411,7 @@ function Add-FwFilter {
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
-        [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey,
+        [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey = "FWPM_SUBLAYER_UNIVERSAL",
         [guid]$Key = [guid]::Empty,
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
         [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Condition,
