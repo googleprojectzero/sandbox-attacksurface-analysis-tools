@@ -420,7 +420,8 @@ function Add-FwFilter {
         [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
         [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Condition,
         [NtApiDotNet.Net.Firewall.FirewallValue]$Weight = [NtApiDotNet.Net.Firewall.FirewallValue]::Empty,
-        [NtApiDotNet.Net.Firewall.FirewallFilterFlags]$Flags = 0
+        [NtApiDotNet.Net.Firewall.FirewallFilterFlags]$Flags = 0,
+        [guid]$ProviderKey = [guid]::Empty
     )
 
     try {
@@ -444,6 +445,7 @@ function Add-FwFilter {
         }
         $builder.Weight = $Weight
         $builder.Flags = $Flags
+        $builder.ProviderKey = $ProviderKey
         $Engine.AddFilter($builder)
     }
     catch {

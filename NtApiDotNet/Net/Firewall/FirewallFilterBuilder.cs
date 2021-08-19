@@ -73,6 +73,12 @@ namespace NtApiDotNet.Net.Firewall
         /// Specify callout key GUID when using a callout.
         /// </summary>
         public Guid CalloutKey { get; set; }
+
+        /// <summary>
+        /// Specify provider key GUID.
+        /// </summary>
+        public Guid ProviderKey { get; set; }
+
         #endregion
 
         #region Constructors
@@ -107,6 +113,11 @@ namespace NtApiDotNet.Net.Firewall
             {
                 ret.action.action.filterType = FilterType;
             }
+            if (ProviderKey != Guid.Empty)
+            {
+                ret.providerKey = list.AddStructureRef(ProviderKey).DangerousGetHandle();
+            }
+
             if (Conditions.Count > 0)
             {
                 ret.numFilterConditions = Conditions.Count;
