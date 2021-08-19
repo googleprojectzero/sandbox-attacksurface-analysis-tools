@@ -157,8 +157,6 @@ This cmdlet gets a firewall sub-layer from an engine. It can return a specific s
 The firewall engine to query.
 .PARAMETER Key
 Specify the sub-layer key.
-.PARAMETER Name
-Specify the well-known name of the sub-layer.
 .INPUTS
 None
 .OUTPUTS
@@ -259,7 +257,10 @@ function Get-FwFilter {
         [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]$Template,
         [parameter(ParameterSetName="FromLayerKey")]
         [parameter(ParameterSetName="FromAleLayer")]
-        [switch]$Sorted
+        [switch]$Sorted,
+        [parameter(ParameterSetName="FromLayerKey")]
+        [parameter(ParameterSetName="FromAleLayer")]
+        [switch]$IncludeDisabled
     )
 
     PROCESS {
@@ -291,6 +292,9 @@ function Get-FwFilter {
             if ($null -ne $Template) {
                 if ($Sorted) {
                     $Template.Flags = $Template.Flags -bor "Sorted"
+                }
+                if ($IncludeDisabled) {
+                    $Template.Flags = $Template.Flags -bor "IncludeDisabled"
                 }
                 $Engine.EnumerateFilters($Template) | Write-Output
             }
@@ -1418,3 +1422,44 @@ function Get-FwCallout {
 }
 
 Register-ArgumentCompleter -CommandName Get-FwCallout -ParameterName Key -ScriptBlock $callout_completer
+
+<#
+.SYNOPSIS
+Get a firewall provider.
+.DESCRIPTION
+This cmdlet gets a firewall provider from an engine. It can return a specific provider or all providers.
+.PARAMETER Engine
+The firewall engine to query.
+.PARAMETER Key
+Specify the provider key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Firewall.FirewallSubLayer[]
+.EXAMPLE
+Get-FwProvider
+Get all firewall providers.
+#>
+function Get-FwProvider {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    param(
+        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [parameter(Mandatory, ParameterSetName="FromKey")]
+        [Guid]$Key
+    )
+
+    try {
+        $Engine = Get-FwEngineSingleton -Engine $Engine
+
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                $Engine.EnumerateProviders() | Write-Output
+            }
+            "FromKey" {
+                $Engine.GetProvider($Key)
+            }
+        }
+    } catch {
+        Write-Error $_
+    }
+}
