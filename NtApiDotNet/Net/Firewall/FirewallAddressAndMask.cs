@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -89,6 +90,13 @@ namespace NtApiDotNet.Net.Firewall
             return new IPAddress(ba);
         }
 
+        private static IPAddress GetAddress(uint addr)
+        {
+            byte[] ba = BitConverter.GetBytes(addr);
+            Array.Reverse(ba);
+            return new IPAddress(ba);
+        }
+
         internal FirewallAddressAndMask(IPAddress address, IPAddress mask)
         {
             Address = address;
@@ -97,7 +105,7 @@ namespace NtApiDotNet.Net.Firewall
         }
 
         internal FirewallAddressAndMask(FWP_V4_ADDR_AND_MASK value) 
-            : this(new IPAddress(value.addr), new IPAddress(value.mask))
+            : this(GetAddress(value.addr), GetAddress(value.mask))
         {
         }
 
@@ -120,8 +128,8 @@ namespace NtApiDotNet.Net.Firewall
                 case AddressFamily.InterNetwork:
                     return list.AddStructureRef(new FWP_V4_ADDR_AND_MASK()
                     {
-                        addr = BitConverter.ToUInt32(Address.GetAddressBytes(), 0),
-                        mask = BitConverter.ToUInt32(Mask.GetAddressBytes(), 0),
+                        addr = BitConverter.ToUInt32(Address.GetAddressBytes().Reverse().ToArray(), 0),
+                        mask = BitConverter.ToUInt32(Mask.GetAddressBytes().Reverse().ToArray(), 0),
                     });
                 case AddressFamily.InterNetworkV6:
                     return list.AddStructureRef(new FWP_V6_ADDR_AND_MASK()
