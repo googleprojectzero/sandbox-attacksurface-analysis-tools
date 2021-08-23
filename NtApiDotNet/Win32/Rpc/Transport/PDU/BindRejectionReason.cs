@@ -16,7 +16,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal enum BindRejectionReason
     {
-        ResonaNotSpecified = 0,
+        NotSpecified = 0,
         TemporaryCongestion = 1,
         LocalLimitExceeded = 2,
         CalledPAddrUnknown = 3,

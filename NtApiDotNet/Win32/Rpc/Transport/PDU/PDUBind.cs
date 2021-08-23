@@ -19,16 +19,18 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
 {
     internal class PDUBind : PDUBase
     {
-        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag, bool alter_context) 
+        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag, int assoc_group_id, bool alter_context) 
             : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
         {
             _max_xmit_frag = max_xmit_frag;
             _max_recv_frag = max_recv_frag;
+            _assoc_group_id = assoc_group_id;
             Elements = new List<ContextElement>();
         }
 
         private readonly ushort _max_xmit_frag;
         private readonly ushort _max_recv_frag;
+        private readonly int _assoc_group_id;
 
         public List<ContextElement> Elements { get; }
 
@@ -38,7 +40,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport.PDU
             BinaryWriter writer = new BinaryWriter(stm);
             writer.Write(_max_xmit_frag);
             writer.Write(_max_recv_frag);
-            writer.Write(0); // assoc_group_id.
+            writer.Write(_assoc_group_id);
             ContextElement.WriteList(writer, Elements);
             return stm.ToArray();
         }
