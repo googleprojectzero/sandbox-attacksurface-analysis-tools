@@ -80,6 +80,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private int _current_context_id;
         private ushort _max_recv_fragment;
         private ushort _max_send_fragment;
+        private int _assoc_group_id;
         private int _recv_sequence_no;
         private int _send_sequence_no;
         private BindTimeFeatureNegotiation? _bind_time_features;
@@ -332,6 +333,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
                 _max_recv_fragment = bind_ack.MaxRecvFrag;
                 _max_send_fragment = bind_ack.MaxXmitFrag;
+                _assoc_group_id = bind_ack.AssocGroupId;
             }
             else if (recv_pdu is PDUBindNack bind_nack)
             {
@@ -380,6 +382,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                         // Only capture values from the BindAck.
                         _max_recv_fragment = bind_ack.MaxRecvFrag;
                         _max_send_fragment = bind_ack.MaxXmitFrag;
+                        _assoc_group_id = bind_ack.AssocGroupId;
                         alter_context = true;
                     }
 
@@ -488,6 +491,21 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get the current Call ID.
         /// </summary>
         public int CallId { get; private set; }
+
+        /// <summary>
+        /// Get maximum receive fragment.
+        /// </summary>
+        public int MaxRecvFragment => _max_recv_fragment;
+
+        /// <summary>
+        /// Get maximum send fragment.
+        /// </summary>
+        public int MaxSendFragment => _max_send_fragment;
+
+        /// <summary>
+        /// Get association group ID.
+        /// </summary>
+        public int AssocGroupId => _assoc_group_id;
 
         /// <summary>
         /// Bind the RPC transport to a specified interface.
