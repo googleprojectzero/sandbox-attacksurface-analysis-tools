@@ -59,9 +59,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         {
             if (!string.IsNullOrWhiteSpace(SupportedMechanism))
             {
-                builder.AppendLine($"Supported Mech    : {SupportedMechanism} - {OIDValues.ToString(SupportedMechanism)}");
+                builder.AppendLine($"Supported Mech  : {SupportedMechanism} - {OIDValues.ToString(SupportedMechanism)}");
             }
-            builder.AppendLine($"State             : {State}");
+            builder.AppendLine($"State           : {State}");
         }
 
         internal NegotiateResponseAuthenticationToken(byte[] data, 

@@ -61,6 +61,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"<SPNEGO {(this is NegotiateInitAuthenticationToken ? "Init" : "Response")}>");
             FormatData(builder);
+            if (MessageIntegrityCode?.Length > 0)
+            {
+                builder.AppendLine($"MIC             : {NtObjectUtils.ToHexString(MessageIntegrityCode)}");
+            }
             string token_format = Token?.Format();
             if (!string.IsNullOrWhiteSpace(token_format))
             {

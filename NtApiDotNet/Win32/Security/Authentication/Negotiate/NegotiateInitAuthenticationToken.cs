@@ -54,7 +54,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
 
         private protected override void FormatData(StringBuilder builder)
         {
-            builder.AppendLine("Mechanism List     :");
+            builder.AppendLine("Mechanism List  :");
             foreach (var oid in MechanismList)
             {
                 builder.AppendLine($"{oid,-30} - {OIDValues.ToString(oid)}");
