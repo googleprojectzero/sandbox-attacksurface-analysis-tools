@@ -501,6 +501,14 @@ The authentication context to extract token from. If combined with Token will pa
 the type of context.
 .PARAMETER Token
 The array of bytes for the new token.
+.PARAMETER Base64Token
+The token as a base64 string.
+.PARAMETER HexToken
+The token as a hex string.
+.PARAMETER PackageName
+Specify package name for the token.
+.PARAMETER Client
+Specify the token is from a client.
 .INPUTS
 None
 .OUTPUTS
@@ -511,21 +519,50 @@ function Get-LsaAuthToken {
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromBytes")]
         [byte[]]$Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromBase64")]
+        [string]$Base64Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromHex")]
+        [string]$HexToken,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
         [Parameter(ParameterSetName="FromBytes")]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
+        [Parameter(ParameterSetName="FromHex")]
+        [Parameter(ParameterSetName="FromBase64")]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [Parameter(ParameterSetName="FromBytes")]
+        [Parameter(ParameterSetName="FromHex")]
+        [Parameter(ParameterSetName="FromBase64")]
+        [string]$PackageName,
+        [Parameter(ParameterSetName="FromBytes")]
+        [Parameter(ParameterSetName="FromHex")]
+        [Parameter(ParameterSetName="FromBase64")]
+        [switch]$Client
     )
 
-    PROCESS {
+    try {
         if ($PSCmdlet.ParameterSetName -eq "FromContext") {
             $Context.Token | Write-Output
         } else {
+            $ba = switch($PSCmdlet.ParameterSetName) {
+                "FromBase64" {
+                    [System.Convert]::FromBase64String($Base64Token)
+                }
+                "FromHex" {
+                    ConvertFrom-HexDump -Hex $HexToken
+                }
+                "FromBytes" {
+                    $Token
+                }
+            }
             if ($null -ne $Context) {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $Token)
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
+            } elseif ($null -ne $PackageName) {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($PackageName, $Client, $ba)
             } else {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($Token)
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($ba)
             }
         }
+    } catch {
+        Write-Error $_
     }
 }
 

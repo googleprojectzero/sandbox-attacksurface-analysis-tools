@@ -18,6 +18,7 @@ using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
 using NtApiDotNet.Win32.Security.Authentication.Schannel;
+using System;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -96,6 +97,29 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
 
             return Parse(context.PackageName, 0, context is IClientAuthenticationContext, token);
+        }
+
+        /// <summary>
+        /// Parse a structured authentication token.
+        /// </summary>
+        /// <param name="package_name">The package name to parse as.</param>
+        /// <param name="client">True if the token is from a client.</param>
+        /// <param name="token">The token to parse.</param>
+        /// <returns>The parsed authentication token. If can't parse any other format returns
+        /// a raw AuthenticationToken.</returns>
+        public static AuthenticationToken Parse(string package_name, bool client, byte[] token)
+        {
+            if (package_name is null)
+            {
+                throw new ArgumentNullException(nameof(package_name));
+            }
+
+            if (token is null)
+            {
+                throw new System.ArgumentNullException(nameof(token));
+            }
+
+            return Parse(package_name, 0, client, token);
         }
 
         internal static AuthenticationToken Parse(string package_name, int token_count, bool client, byte[] token)

@@ -90,6 +90,10 @@ The number of iterations for the key derivation.
 The principal associated with the key.
 .PARAMETER Salt
 The salt for the key, if not specified will try and derive from the principal.
+.PARAMETER Base64Key
+The key as a base64 string.
+.PARAMETER HexKey
+The key as a hex string.
 .INPUTS
 None
 .OUTPUTS
@@ -104,9 +108,12 @@ function Get-KerberosKey {
         [byte[]]$Key,
         [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
         [string]$Base64Key,
+        [Parameter(Mandatory, ParameterSetName="FromHexKey")]
+        [string]$HexKey,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromPassword")]
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromKey")]
         [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
+        [Parameter(Mandatory, ParameterSetName="FromHexKey")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
         [Parameter(ParameterSetName="FromPassword")]
         [int]$Interations = 4096,
@@ -114,28 +121,38 @@ function Get-KerberosKey {
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromPassword")]
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromKey")]
         [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
+        [Parameter(Mandatory, ParameterSetName="FromHexKey")]
         [string]$Principal,
         [Parameter(ParameterSetName="FromPassword")]
         [string]$Salt,
         [uint32]$Version = 1,
         [Parameter(ParameterSetName="FromKey")]
         [Parameter(ParameterSetName="FromBase64Key")]
+        [Parameter(ParameterSetName="FromHexKey")]
         [DateTime]$Timestamp = [DateTime]::Now
     )
 
-    $k = switch($PSCmdlet.ParameterSetName) {
-        "FromPassword" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
+    try {
+        $k = switch($PSCmdlet.ParameterSetName) {
+            "FromPassword" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
+            }
+            "FromKey" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+            }
+            "FromBase64Key" {
+                $Key = [System.Convert]::FromBase64String($Base64Key)
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+            }
+            "FromHexKey" {
+                $Key = ConvertFrom-HexDump -Hex $HexKey
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+            }
         }
-        "FromKey" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
-        }
-        "FromBase64Key" {
-            $Key = [System.Convert]::FromBase64String($Base64Key)
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
-        }
+        $k | Write-Output
+    } catch {
+        Write-Error $_
     }
-    $k | Write-Output
 }
 
 <#
