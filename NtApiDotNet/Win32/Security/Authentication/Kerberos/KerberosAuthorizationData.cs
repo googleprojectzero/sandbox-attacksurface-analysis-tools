@@ -16,6 +16,7 @@ using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Text;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -82,7 +83,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Data = data;
         }
 
-        internal static KerberosAuthorizationData Parse(DERValue value)
+        internal static IEnumerable<KerberosAuthorizationData> Parse(DERValue value)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
@@ -108,20 +109,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (type == 0 || data == null)
                 throw new InvalidDataException();
 
+            List<KerberosAuthorizationData> ret = new List<KerberosAuthorizationData>();
+
             if (type == KerberosAuthorizationDataType.AD_IF_RELEVANT)
             {
                 DERValue[] values = DERParser.ParseData(data, 0);
                 if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
                     throw new InvalidDataException();
 
-                return Parse(values[0].Children[0]);
+                ret.AddRange(values[0].Children.SelectMany(c => Parse(c)));
             }
             else if (type == KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
             {
                 if (KerberosAuthorizationDataRestrictionEntry.Parse(data,
                     out KerberosAuthorizationDataRestrictionEntry entry))
                 {
-                    return entry;
+                    ret.Add(entry);
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
@@ -129,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataEncryptionNegotiation.Parse(data,
                     out KerberosAuthorizationDataEncryptionNegotiation entry))
                 {
-                    return entry;
+                    ret.Add(entry);
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_WIN2K_PAC)
@@ -137,11 +140,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataPAC.Parse(data, 
                     out KerberosAuthorizationDataPAC entry))
                 {
-                    return entry;
+                    ret.Add(entry);
                 }
             }
 
-            return new KerberosAuthorizationData(type, data);
+            if (ret.Count == 0)
+            {
+                ret.Add(new KerberosAuthorizationData(type, data));
+            }
+            return ret;
         }
 
         internal static IReadOnlyList<KerberosAuthorizationData> ParseSequence(DERValue value)
@@ -151,7 +158,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             var ret = new List<KerberosAuthorizationData>();
             foreach (var next in value.Children)
             {
-                ret.Add(Parse(next));
+                ret.AddRange(Parse(next));
             }
             return ret.AsReadOnly();
         }

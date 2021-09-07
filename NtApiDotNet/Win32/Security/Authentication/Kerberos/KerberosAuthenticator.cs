@@ -21,7 +21,7 @@ using System.Text;
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
-    /// Class to represent a 
+    /// Class to represent an unencrypted kerberos authenticator.
     /// </summary>
     public class KerberosAuthenticator : KerberosEncryptedData
     {
