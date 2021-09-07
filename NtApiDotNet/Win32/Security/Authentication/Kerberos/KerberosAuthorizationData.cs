@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         KERB_LOCAL = 142,
         AD_AUTH_DATA_AP_OPTIONS = 143,
         AD_PKU2U_CLIENT_NAME = 143,
-        MS_RESERVED_144 = 144,
+        AD_AUTH_DATA_TARGET_NAME = 144,
         MS_RESERVED_145 = 145,
         AD_SIGNTICKET = 512,
         AD_DIAMETER = 513,
@@ -137,8 +137,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             else if (type == KerberosAuthorizationDataType.AD_WIN2K_PAC)
             {
-                if (KerberosAuthorizationDataPAC.Parse(data, 
+                if (KerberosAuthorizationDataPAC.Parse(data,
                     out KerberosAuthorizationDataPAC entry))
+                {
+                    ret.Add(entry);
+                }
+            }
+            else if (type == KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
+            {
+                if (KerberosAuthorizationDataApOptions.Parse(data,
+                    out KerberosAuthorizationDataApOptions entry))
+                {
+                    ret.Add(entry);
+                }
+            }
+            else if (type == KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
+            {
+                if (KerberosAuthorizationDataTargetName.Parse(data,
+                    out KerberosAuthorizationDataTargetName entry))
+                {
+                    ret.Add(entry);
+                }
+            }
+            else if (type == KerberosAuthorizationDataType.KERB_LOCAL)
+            {
+                if (KerberosAuthorizationDataKerbLocal.Parse(data,
+                    out KerberosAuthorizationDataKerbLocal entry))
                 {
                     ret.Add(entry);
                 }
@@ -168,13 +192,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             HexDumpBuilder hex = new HexDumpBuilder(false, false, true, false, 0);
             hex.Append(Data);
             hex.Complete();
-            builder.AppendLine(hex.ToString());
+            builder.Append(hex.ToString());
         }
 
         internal void Format(StringBuilder builder)
         {
             builder.AppendLine($"<Authorization Data - {DataType}>");
             FormatData(builder);
+            builder.AppendLine();
         }
     }
 }
