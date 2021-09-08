@@ -531,7 +531,7 @@ function Get-LsaAuthToken {
         [Parameter(ParameterSetName="FromBytes")]
         [Parameter(ParameterSetName="FromHex")]
         [Parameter(ParameterSetName="FromBase64")]
-        [string]$PackageName,
+        [string]$Package,
         [Parameter(ParameterSetName="FromBytes")]
         [Parameter(ParameterSetName="FromHex")]
         [Parameter(ParameterSetName="FromBase64")]
@@ -565,6 +565,8 @@ function Get-LsaAuthToken {
         Write-Error $_
     }
 }
+
+Register-ArgumentCompleter -CommandName Get-LsaAuthToken -ParameterName Package -ScriptBlock $package_completer
 
 <#
 .SYNOPSIS
