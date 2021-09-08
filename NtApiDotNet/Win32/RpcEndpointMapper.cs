@@ -140,22 +140,25 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static string MapBindingToBindingString(NtResult<SafeRpcBindingHandle> binding, Guid interface_id, Version interface_version)
+        private static Win32Error ResolveBinding(SafeRpcBindingHandle binding, Guid interface_id, Version interface_version)
         {
-            if (!binding.IsSuccess)
-                return string.Empty;
-
             RPC_SERVER_INTERFACE ifspec = new RPC_SERVER_INTERFACE();
             ifspec.Length = Marshal.SizeOf(ifspec);
             ifspec.InterfaceId.SyntaxGUID = interface_id;
             ifspec.InterfaceId.SyntaxVersion = interface_version.ToRpcVersion();
 
-            var result = Win32NativeMethods.RpcEpResolveBinding(binding.Result, ref ifspec);
-            if (result != Win32Error.SUCCESS)
+            return Win32NativeMethods.RpcEpResolveBinding(binding, ref ifspec);
+        }
+
+        private static string MapBindingToBindingString(NtResult<SafeRpcBindingHandle> binding, Guid interface_id, Version interface_version)
+        {
+            if (!binding.IsSuccess)
+                return string.Empty;
+
+            if (ResolveBinding(binding.Result, interface_id, interface_version) != Win32Error.SUCCESS)
             {
                 return string.Empty;
             }
-
             return binding.Result.ToString();
         }
 
@@ -454,21 +457,7 @@ namespace NtApiDotNet.Win32
         { 
             using (var binding = SafeRpcBindingHandle.Create(null, protocol_seq, network_address, null, null, false))
             {
-                if (!binding.IsSuccess)
-                    return string.Empty;
-
-                RPC_SERVER_INTERFACE ifspec = new RPC_SERVER_INTERFACE();
-                ifspec.Length = Marshal.SizeOf(ifspec);
-                ifspec.InterfaceId.SyntaxGUID = interface_id;
-                ifspec.InterfaceId.SyntaxVersion = interface_version.ToRpcVersion();
-
-                var result = Win32NativeMethods.RpcEpResolveBinding(binding.Result, ref ifspec);
-                if (result != Win32Error.SUCCESS)
-                {
-                    return string.Empty;
-                }
-
-                return binding.Result.ToString();
+                return MapBindingToBindingString(binding, interface_id, interface_version);
             }
         }
 
