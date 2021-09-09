@@ -555,8 +555,8 @@ function Get-LsaAuthToken {
             }
             if ($null -ne $Context) {
                 [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
-            } elseif ($null -ne $PackageName) {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($PackageName, $Client, $ba)
+            } elseif ($null -ne $Package) {
+                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
             } else {
                 [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($ba)
             }
