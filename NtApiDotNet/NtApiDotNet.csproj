@@ -245,6 +245,9 @@
     <Compile Include="Security\ConditionalExpression\ConditionalSidOperand.cs" />
     <Compile Include="Security\ConditionalExpression\ConditionalStringOperand.cs" />
     <Compile Include="Security\INtObjectSecurity.cs" />
+    <Compile Include="Utilities\ASN1\Builder\DERBuilder.cs" />
+    <Compile Include="Utilities\ASN1\Builder\DERBuilderSubStructure.cs" />
+    <Compile Include="Utilities\ASN1\Builder\DERBuilderUtils.cs" />
     <Compile Include="Utilities\Collections\CollectionUtils.cs" />
     <Compile Include="Utilities\Memory\UnmanagedUtils.cs" />
     <Compile Include="Utilities\Misc\DetachableContainer.cs" />

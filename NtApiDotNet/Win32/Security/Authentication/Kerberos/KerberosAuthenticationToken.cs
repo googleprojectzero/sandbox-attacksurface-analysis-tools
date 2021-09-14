@@ -92,6 +92,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
                 else
                 {
+                    // RFC1964
                     byte[] tok_id = new byte[] { inner_token[0], inner_token[1] };
                     var values = DERParser.ParseData(inner_token, 2);
 

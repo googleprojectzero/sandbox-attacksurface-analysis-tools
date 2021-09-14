@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 namespace NtApiDotNet.Utilities.ASN1
@@ -64,9 +66,7 @@ namespace NtApiDotNet.Utilities.ASN1
             // TODO: Handle indefinite length?
             int length = reader.ReadLength();
             ret.DataOffset = offset + reader.BaseStream.Position;
-            ret.Data = reader.ReadBytes(length);
-            if (ret.Data.Length != length)
-                throw new EndOfStreamException();
+            ret.Data = reader.ReadAllBytes(length);
             return ret;
         }
 
@@ -94,6 +94,12 @@ namespace NtApiDotNet.Utilities.ASN1
             if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
                 return false;
             return true;
+        }
+
+        public static bool ParseGeneralizedTime(string time_str, out DateTime time)
+        {
+            return DateTime.TryParseExact(time_str, "yyyyMMddHHmmssZ",
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out time);
         }
     }
 }

@@ -15,6 +15,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -113,6 +114,25 @@ namespace NtApiDotNet.Utilities.ASN1
             return ReadBigInteger().ToString("X");
         }
 
+        public string ReadString(UniversalTag tag_type)
+        {
+            if (!CheckPrimitive(tag_type))
+                throw new InvalidDataException();
+            switch (tag_type)
+            {
+                case UniversalTag.GeneralString:
+                    return Encoding.ASCII.GetString(Data);
+                case UniversalTag.IA5String:
+                    return Encoding.ASCII.GetString(Data);
+                case UniversalTag.UTF8String:
+                    return Encoding.UTF8.GetString(Data);
+                case UniversalTag.GeneralizedTime:
+                    return Encoding.ASCII.GetString(Data);
+                default:
+                    throw new InvalidDataException();
+            }
+        }
+
         public string ReadGeneralString()
         {
             if (!CheckPrimitive(UniversalTag.GeneralString))
@@ -208,16 +228,25 @@ namespace NtApiDotNet.Utilities.ASN1
             if (Type == DERTagType.Universal)
             {
                 UniversalTag tag = (UniversalTag)Tag;
-                if (tag == UniversalTag.GeneralString)
-                    return ReadGeneralString();
-                if (tag == UniversalTag.OBJECT_IDENTIFIER)
-                    return ReadObjID();
-                if (tag == UniversalTag.INTEGER || tag == UniversalTag.ENUMERATED)
-                    return FormatInteger();
-                if (tag == UniversalTag.OCTET_STRING)
-                    return BitConverter.ToString(Data);
-                if (tag == UniversalTag.BIT_STRING)
-                    return string.Join(",", ReadBitString().Cast<bool>().Select(b => b ? 1 : 0));
+                switch(tag)
+                {
+                    case UniversalTag.GeneralString:
+                        return ReadGeneralString();
+                    case UniversalTag.OBJECT_IDENTIFIER:
+                        return ReadObjID();
+                    case UniversalTag.INTEGER:
+                    case UniversalTag.ENUMERATED:
+                        return FormatInteger();
+                    case UniversalTag.OCTET_STRING:
+                        return BitConverter.ToString(Data);
+                    case UniversalTag.BIT_STRING:
+                        return string.Join(",", ReadBitString().Cast<bool>().Select(b => b ? 1 : 0));
+                    case UniversalTag.UTF8String:
+                    case UniversalTag.IA5String:
+                        return ReadString(tag);
+                    case UniversalTag.GeneralizedTime:
+                        return ReadGeneralizedTime();
+                }
             }
             return $"Len: {Data.Length:X}";
         }
