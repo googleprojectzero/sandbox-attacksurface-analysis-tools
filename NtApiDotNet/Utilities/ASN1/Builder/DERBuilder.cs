@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -139,6 +140,22 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
+        /// Write a sequence based on the contents of another DER builder.
+        /// </summary>
+        /// <param name="values">Write a sequence of fixed values.</param>
+        /// <param name="build">The build function for the contents.</param>
+        public void WriteSequence<T>(IEnumerable<T> values, Action<DERBuilder, T> build)
+        {
+            using (var seq = CreateSequence())
+            {
+                foreach (var value in values)
+                {
+                    build(seq, value);
+                }
+            }
+        }
+
+        /// <summary>
         /// Create a sequence builder.
         /// </summary>
         /// <returns>The created builder.</returns>
@@ -183,13 +200,23 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
+        /// Write a context specific tag with specified contents.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="data">The contents of the context specific value.</param>
+        public void WriteContextSpecific(int context, byte[] data)
+        {
+            _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, data);
+        }
+
+        /// <summary>
         /// Write a context specific tag with contents from the builder.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
         /// <param name="builder">The builder for the contents.</param>
         public void WriteContextSpecific(int context, DERBuilder builder)
         {
-            _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, builder.ToArray());
+            WriteContextSpecific(context, builder.ToArray());
         }
 
         /// <summary>

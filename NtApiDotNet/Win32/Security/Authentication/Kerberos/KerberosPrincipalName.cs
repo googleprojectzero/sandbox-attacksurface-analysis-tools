@@ -60,7 +60,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
         }
 
-        internal KerberosPrincipalName(KerberosNameType name_type, 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="name_type">The type of the principal name.</param>
+        /// <param name="names">The list of names for the principal.</param>
+        public KerberosPrincipalName(KerberosNameType name_type, 
             IEnumerable<string> names)
         {
             NameType = name_type;

@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System.IO;
 using System.Text;
 
@@ -21,8 +23,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a User to User TGT Request.
     /// </summary>
-    public class KerberosTGTRequestAuthenticationToken : KerberosAuthenticationToken
+    public sealed class KerberosTGTRequestAuthenticationToken : KerberosAuthenticationToken
     {
+        #region Public Properties
         /// <summary>
         /// Realm.
         /// </summary>
@@ -31,14 +34,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Server name.
         /// </summary>
         public KerberosPrincipalName ServerName { get; private set; }
+        #endregion
 
-        private protected KerberosTGTRequestAuthenticationToken(byte[] data, DERValue[] values)
+        #region Private Members
+        private KerberosTGTRequestAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_TGT_REQ)
         {
             Realm = string.Empty;
             ServerName = new KerberosPrincipalName();
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Format the Authentication Token.
         /// </summary>
@@ -58,6 +65,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return builder.ToString();
         }
+        #endregion
+
+        #region Public Static Members
+        /// <summary>
+        /// Create a new TGT-REQ authentication token.
+        /// </summary>
+        /// <param name="realm">Optional realm string.</param>
+        /// <param name="server_name">Optional server name.</param>
+        /// <returns>The new TGT-REQ authentication token.</returns>
+        public static KerberosTGTRequestAuthenticationToken Create(string realm, KerberosPrincipalName server_name)
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REQ);
+                if (server_name != null)
+                    seq.WriteContextSpecific(2, b => b.WritePrincipalName(server_name));
+                if (realm != null)
+                    seq.WriteContextSpecific(3, b => b.WriteGeneralString(realm));
+            }
+            return (KerberosTGTRequestAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x400));
+        }
+
+        #endregion
 
         #region Internal Static Methods
         /// <summary>

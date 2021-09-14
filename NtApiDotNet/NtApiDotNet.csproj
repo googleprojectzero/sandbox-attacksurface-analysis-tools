@@ -500,6 +500,7 @@
     <Compile Include="Win32\SafeHandles\SafeCredBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosBuilderUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataApOptions.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataKerbLocal.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataTargetName.cs" />

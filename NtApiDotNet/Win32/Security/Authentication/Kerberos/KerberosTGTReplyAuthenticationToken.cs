@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,18 +26,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a User to User TGT Reply.
     /// </summary>
-    public class KerberosTGTReplyAuthenticationToken : KerberosAuthenticationToken
+    public sealed class KerberosTGTReplyAuthenticationToken : KerberosAuthenticationToken
     {
+        #region Public Properties
         /// <summary>
         /// The Kerberos Ticket.
         /// </summary>
         public KerberosTicket Ticket { get; private set; }
+        #endregion
 
-        private protected KerberosTGTReplyAuthenticationToken(byte[] data, DERValue[] values)
+        #region Private Members
+        private KerberosTGTReplyAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_TGT_REP)
         {
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Format the Authentication Token.
         /// </summary>
@@ -70,6 +78,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return base.Decrypt(keyset);
         }
+        #endregion
+
+        #region Public Static Members
+        /// <summary>
+        /// Create a new TGT-REP authentication token.
+        /// </summary>
+        /// <param name="ticket">The TGT ticket to embed in the token.</param>
+        /// <returns>The </returns>
+        public static KerberosTGTReplyAuthenticationToken Create(KerberosTicket ticket)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REP);
+                seq.WriteContextSpecific(2, ticket.TicketData);
+            }
+            return (KerberosTGTReplyAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x401));
+        }
+        #endregion
 
         #region Internal Static Methods
         /// <summary>
@@ -83,7 +115,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                var ret = new KerberosTGTReplyAuthenticationToken(data, values);
+                 var ret = new KerberosTGTReplyAuthenticationToken(data, values);
 
                 if (values.Length != 1 || !values[0].HasChildren())
                     return false;
