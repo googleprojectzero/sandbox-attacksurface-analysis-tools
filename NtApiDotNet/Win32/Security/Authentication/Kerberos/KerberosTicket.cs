@@ -98,6 +98,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Convert the ticket to an array.
+        /// </summary>
+        /// <returns>The ticket as an array.</returns>
+        public byte[] ToArray()
+        {
+            return (byte[])TicketData.Clone();
+        }
+
         private protected KerberosTicket(
             int ticket_version,
             string realm, 

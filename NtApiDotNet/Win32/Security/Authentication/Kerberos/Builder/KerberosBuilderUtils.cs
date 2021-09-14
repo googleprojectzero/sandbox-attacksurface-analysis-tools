@@ -17,15 +17,18 @@ using System;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 {
+    /// <summary>
+    /// Utilities for building Kerberos structures.
+    /// </summary>
     internal static class KerberosBuilderUtils
     {
-        public static void WriteKerberosHeader(this DERBuilder builder, KerberosMessageType msg_type)
+        internal static void WriteKerberosHeader(this DERBuilder builder, KerberosMessageType msg_type)
         {
             builder.WriteContextSpecific(0, b => b.WriteInt32(5));
             builder.WriteContextSpecific(1, b => b.WriteInt32((int)msg_type));
         }
 
-        public static void WritePrincipalName(this DERBuilder builder, KerberosPrincipalName name)
+        internal static void WritePrincipalName(this DERBuilder builder, KerberosPrincipalName name)
         {
             using (var seq = builder.CreateSequence())
             {
@@ -35,18 +38,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             }
         }
 
-        public static void WriteKerberosTime(this DERBuilder builder, int context, DateTime time)
+        internal static void WriteKerberosTime(this DERBuilder builder, int context, DateTime time)
         {
             builder.WriteContextSpecific(context, b => b.WriteGeneralizedTime(time));
             builder.WriteContextSpecific(context + 1, b => b.WriteInt32(time.Millisecond * 1000));
         }
 
-        public static byte[] CreateGssApiWrapper(this DERBuilder inner_token, string oid, ushort token_id)
+        internal static byte[] CreateGssApiWrapper(this DERBuilder inner_token, string oid, ushort token_id)
         {
             return CreateGssApiWrapper(inner_token.ToArray(), oid, token_id);
         }
 
-        public static byte[] CreateGssApiWrapper(byte[] inner_token, string oid, ushort token_id)
+        internal static byte[] CreateGssApiWrapper(byte[] inner_token, string oid, ushort token_id)
         {
             var builder = new DERBuilder();
             using (var app = builder.CreateApplication(0))
