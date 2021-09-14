@@ -14,10 +14,6 @@
 
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 {
@@ -37,6 +33,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 seq.WriteContextSpecific(1, b => b.WriteSequence(name.Names, 
                     (s, v) => s.WriteGeneralString(v)));
             }
+        }
+
+        public static void WriteKerberosTime(this DERBuilder builder, int context, DateTime time)
+        {
+            builder.WriteContextSpecific(context, b => b.WriteGeneralizedTime(time));
+            builder.WriteContextSpecific(context + 1, b => b.WriteInt32(time.Millisecond * 1000));
         }
 
         public static byte[] CreateGssApiWrapper(this DERBuilder inner_token, string oid, ushort token_id)

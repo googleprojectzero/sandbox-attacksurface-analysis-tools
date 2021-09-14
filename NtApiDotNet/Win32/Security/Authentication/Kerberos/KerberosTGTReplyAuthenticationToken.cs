@@ -40,6 +40,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(data, values, KerberosMessageType.KRB_TGT_REP)
         {
         }
+
+        private static DERBuilder CreateBuilder(KerberosTicket ticket)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REP);
+                seq.WriteContextSpecific(2, ticket.TicketData);
+            }
+            return builder;
+        }
+
         #endregion
 
         #region Public Methods
@@ -88,19 +105,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The </returns>
         public static KerberosTGTReplyAuthenticationToken Create(KerberosTicket ticket)
         {
-            if (ticket is null)
-            {
-                throw new ArgumentNullException(nameof(ticket));
-            }
-
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REP);
-                seq.WriteContextSpecific(2, ticket.TicketData);
-            }
-            return (KerberosTGTReplyAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x401));
+            return (KerberosTGTReplyAuthenticationToken)Parse(CreateBuilder(ticket)
+                .CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x401));
         }
+
+        /// <summary>
+        /// Create a new TGT-REP authentication token.
+        /// </summary>
+        /// <param name="ticket">The TGT ticket to embed in the token.</param>
+        /// <returns>The </returns>
+        public static KerberosTGTReplyAuthenticationToken CreateNoGSSAPI(KerberosTicket ticket)
+        {
+            return (KerberosTGTReplyAuthenticationToken)Parse(CreateBuilder(ticket).ToArray());
+        }
+
         #endregion
 
         #region Internal Static Methods

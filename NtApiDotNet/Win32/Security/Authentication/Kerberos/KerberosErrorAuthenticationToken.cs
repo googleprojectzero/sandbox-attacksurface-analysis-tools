@@ -13,7 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using System;
 using System.IO;
 using System.Text;
 
@@ -22,8 +25,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Kerberos Error.
     /// </summary>
-    public class KerberosErrorAuthenticationToken : KerberosAuthenticationToken
+    public sealed class KerberosErrorAuthenticationToken : KerberosAuthenticationToken
     {
+        #region Public Properties
         /// <summary>
         /// Client time.
         /// </summary>
@@ -68,8 +72,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Error data.
         /// </summary>
         public byte[] ErrorData { get; private set; }
+        #endregion
 
-        private protected KerberosErrorAuthenticationToken(byte[] data, DERValue[] values)
+        #region Private Members
+        private KerberosErrorAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_ERROR)
         {
             ClientRealm = string.Empty;
@@ -81,7 +87,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ErrorText = string.Empty;
             ErrorData = new byte[0];
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Format the Authentication Token.
         /// </summary>
@@ -117,6 +125,64 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return builder.ToString();
         }
+        #endregion
+
+        #region Public Static Members
+
+        /// <summary>
+        /// Create a new KRB-ERROR authentication token.
+        /// </summary>
+        /// <param name="client_time">Optional client time.</param>
+        /// <param name="server_time">Server time.</param>
+        /// <param name="error_code">Error code.</param>
+        /// <param name="client_realm">Optional client realm.</param>
+        /// <param name="client_name">Optional client name.</param>
+        /// <param name="server_realm">Server realm</param>
+        /// <param name="server_name">Server name.</param>
+        /// <param name="error_text">Optional error text.</param>
+        /// <param name="error_data">Optional error data.</param>
+        /// <returns>The KRB-ERROR authentication token.</returns>
+        public static KerberosErrorAuthenticationToken Create(DateTime server_time, KerberosErrorType error_code,
+            string server_realm, KerberosPrincipalName server_name, DateTime? client_time = null, string client_realm = null,
+            KerberosPrincipalName client_name = null,string error_text = null, byte[] error_data = null)
+        {
+            if (server_realm is null)
+            {
+                throw new ArgumentNullException(nameof(server_realm));
+            }
+
+            if (server_name is null)
+            {
+                throw new ArgumentNullException(nameof(server_name));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication(30))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteKerberosHeader(KerberosMessageType.KRB_ERROR);
+                    if (client_time.HasValue)
+                    {
+                        seq.WriteKerberosTime(2, client_time.Value);
+                    }
+                    seq.WriteKerberosTime(4, server_time);
+                    seq.WriteContextSpecific(6, b => b.WriteInt32((int)error_code));
+                    if (client_realm != null)
+                        seq.WriteContextSpecific(7, b => b.WriteGeneralString(client_realm));
+                    if (client_name != null)
+                        seq.WriteContextSpecific(8, b => b.WritePrincipalName(client_name));
+                    seq.WriteContextSpecific(9, b => b.WriteGeneralString(server_realm));
+                    seq.WriteContextSpecific(10, b => b.WritePrincipalName(server_name));
+                    if (error_text != null)
+                        seq.WriteContextSpecific(11, b => b.WriteGeneralString(error_text));
+                    if (error_data != null)
+                        seq.WriteContextSpecific(12, b => b.WriteOctetString(error_data));
+                }
+            }
+            return (KerberosErrorAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300));
+        }
+        #endregion
 
         #region Internal Static Methods
         /// <summary>

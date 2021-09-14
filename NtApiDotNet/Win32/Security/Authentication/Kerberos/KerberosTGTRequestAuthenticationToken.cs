@@ -43,6 +43,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Realm = string.Empty;
             ServerName = new KerberosPrincipalName();
         }
+
+        private static DERBuilder CreateBuilder(string realm, KerberosPrincipalName server_name)
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REQ);
+                if (server_name != null)
+                    seq.WriteContextSpecific(2, b => b.WritePrincipalName(server_name));
+                if (realm != null)
+                    seq.WriteContextSpecific(3, b => b.WriteGeneralString(realm));
+            }
+            return builder;
+        }
+
         #endregion
 
         #region Public Methods
@@ -76,16 +91,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The new TGT-REQ authentication token.</returns>
         public static KerberosTGTRequestAuthenticationToken Create(string realm, KerberosPrincipalName server_name)
         {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REQ);
-                if (server_name != null)
-                    seq.WriteContextSpecific(2, b => b.WritePrincipalName(server_name));
-                if (realm != null)
-                    seq.WriteContextSpecific(3, b => b.WriteGeneralString(realm));
-            }
-            return (KerberosTGTRequestAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x400));
+            return (KerberosTGTRequestAuthenticationToken)Parse(CreateBuilder(realm, 
+                server_name).CreateGssApiWrapper(OIDValues.KERBEROS_USER_TO_USER, 0x400));
+        }
+
+        /// <summary>
+        /// Create a new TGT-REQ authentication token without the GSS-API wrapper.
+        /// </summary>
+        /// <param name="realm">Optional realm string.</param>
+        /// <param name="server_name">Optional server name.</param>
+        /// <returns>The new TGT-REQ authentication token.</returns>
+        public static KerberosTGTRequestAuthenticationToken CreateNoGSSAPI(string realm, KerberosPrincipalName server_name)
+        {
+            return (KerberosTGTRequestAuthenticationToken)Parse(CreateBuilder(realm, server_name).ToArray());
         }
 
         #endregion
