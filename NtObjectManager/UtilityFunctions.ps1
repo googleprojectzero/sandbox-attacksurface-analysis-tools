@@ -523,3 +523,23 @@ function Select-BinaryString {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Send a message to update the environment from the registry.
+.DESCRIPTION
+This cmdlet sends the WM_SETTINGCHANGE broadcast message to force explorer (and anyone else listenting)
+to update their environment variables from the registry.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Update-Win32Environment {
+    $str = [System.Runtime.InteropServices.Marshal]::StringToHGlobalUni("Environment")
+    try {
+        [NtApiDotNet.NtWindow]::Broadcast.SendMessage(0x1A, [System.IntPtr]::Zero, $str) | Out-Null
+    } finally {
+        [System.Runtime.InteropServices.Marshal]::FreeHGlobal($str)
+    }
+}

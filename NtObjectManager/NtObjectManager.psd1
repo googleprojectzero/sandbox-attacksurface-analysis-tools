@@ -133,7 +133,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Read-FwNetEvent', 'New-FwNetEventListener', 'Start-FwNetEventListener', 'Get-IPsecSaContext',
           'Get-FwEngineOption', 'Set-FwEngineOption', 'New-FwNetEventTemplate', 'Add-FwCondition',
           'Get-FwCallout', 'Add-RpcClientSecurityContext', 'Set-RpcClientSecurityContext', 
-          'Get-RpcClientSecurityContext', 'Get-RpcSecurityPrincipalName', 'Get-FwProvider'
+          'Get-RpcClientSecurityContext', 'Get-RpcSecurityPrincipalName', 'Get-FwProvider',
+          'Update-Win32Environment'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

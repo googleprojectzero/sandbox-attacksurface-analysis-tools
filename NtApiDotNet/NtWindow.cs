@@ -155,6 +155,16 @@ namespace NtApiDotNet
         public static NtWindow Null => new NtWindow();
 
         /// <summary>
+        /// Get the desktop window.
+        /// </summary>
+        public static NtWindow Desktop => Null;
+
+        /// <summary>
+        /// Get the broadcast window.
+        /// </summary>
+        public static NtWindow Broadcast => new NtWindow(0xFFFF);
+
+        /// <summary>
         /// Get all Top Level windows.
         /// </summary>
         public static IEnumerable<NtWindow> Windows => GetWindows(null, Null, false, true, 0);
