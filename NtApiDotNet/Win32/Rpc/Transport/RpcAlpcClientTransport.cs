@@ -385,6 +385,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }, 0);
             set => throw new InvalidOperationException("Transport doesn't support multiple security context."); }
 
+        /// <summary>
+        /// Get whether the transport supports synchronous pipes.
+        /// </summary>
+        public bool SupportsSynchronousPipes => false;
+
         #endregion
     }
 }

@@ -331,7 +331,7 @@ namespace NtApiDotNet.Win32.Rpc
         public static void ThrowNotImplemented(this CodeMemberMethod method, string comment)
         {
             method.Statements.Add(new CodeCommentStatement(comment));
-            method.AddThrow(typeof(NotImplementedException));
+            method.AddThrow(typeof(NotImplementedException), comment);
         }
 
         public static CodeConstructor AddConstructor(this CodeTypeDeclaration type, MemberAttributes attributes)

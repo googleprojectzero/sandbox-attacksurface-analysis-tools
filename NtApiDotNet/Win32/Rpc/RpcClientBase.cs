@@ -100,6 +100,24 @@ namespace NtApiDotNet.Win32.Rpc
             return resp;
         }
 
+        /// <summary>
+        /// Method to call to check if the transport supports synchronous pipes.
+        /// </summary>
+        protected void CheckSynchronousPipeSupport()
+        {
+            if (_transport?.SupportsSynchronousPipes ?? false)
+                return;
+            throw new RpcTransportException("RPC transport doesn't support synchronous pipes.");
+        }
+
+        /// <summary>
+        /// Method to call to check if the transport supports asynchronous pipes.
+        /// </summary>
+        protected void CheckAsynchronousPipeSupport()
+        {
+            throw new RpcTransportException("RPC transport doesn't support asynchronous pipes.");
+        }
+
         #endregion
 
         #region Public Properties

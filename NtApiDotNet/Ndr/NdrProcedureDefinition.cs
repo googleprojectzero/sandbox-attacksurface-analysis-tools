@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
@@ -70,6 +69,7 @@ namespace NtApiDotNet.Ndr
         public bool IsOut => Attributes.HasFlag(NdrParamAttributes.IsOut);
         public bool IsInOut => IsIn && IsOut;
         public bool IsSimpleRef => Attributes.HasFlag(NdrParamAttributes.IsSimpleRef);
+        public bool IsPipe => Attributes.HasFlag(NdrParamAttributes.IsPipe);
 
         private const ushort ServerAllocSizeMask = 0xe000;
 

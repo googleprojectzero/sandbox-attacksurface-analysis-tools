@@ -866,13 +866,21 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
+
+                if (HasFlag(RpcClientBuilderFlags.InsertBreakpoints))
+                {
+                    method.AddBreakpoint();
+                }
+
                 if (proc.HasAsyncHandle)
                 {
                     method.Comments.Add(new CodeCommentStatement("async"));
                 }
-                if (HasFlag(RpcClientBuilderFlags.InsertBreakpoints))
+
+                if (proc.Params.Any(p => p.IsPipe))
                 {
-                    method.AddBreakpoint();
+                    string check_method = proc.HasAsyncHandle ? "CheckAsynchronousPipeSupport" : "CheckSynchronousPipeSupport";
+                    method.Statements.Add(new CodeMethodInvokeExpression(null, check_method));
                 }
 
                 RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue?.Type, marshal_helper);
@@ -889,6 +897,7 @@ namespace NtApiDotNet.Win32.Rpc
                 method.CreateMarshalObject(MARSHAL_NAME, marshal_helper);
 
                 int out_parameter_count = 0;
+                List<Action> pipe_marshal_cmds = new List<Action>();
                 foreach (var p in proc.Params)
                 {
                     if (p == proc.Handle)
@@ -939,11 +948,25 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         null_check = true;
                     }
-                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null_check, null, null, null, extra_marshal_args.ToArray());
+
+                    void marshal_method() => method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name,
+                            write_ref, null_check, null, null, null, extra_marshal_args.ToArray());
+
+                    if (p.IsPipe)
+                    {
+                        pipe_marshal_cmds.Add(marshal_method);
+                    }
+                    else
+                    {
+                        marshal_method();
+                    }
                 }
+
+                pipe_marshal_cmds.ForEach(a => a());
 
                 method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum, marshal_helper);
 
+                List<Action> non_pipe_unmarshal_cmds = new List<Action>();
                 foreach (var p in proc.Params.Where(x => x.IsOut))
                 {
                     if (p == proc.Handle)
@@ -951,16 +974,29 @@ namespace NtApiDotNet.Win32.Rpc
                         continue;
                     }
 
-                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
-                    if (p_type.Pointer && p_type.PointerType != RpcPointerType.Reference)
+                    void unmarshal_method()
                     {
-                        method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                        RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
+                        if (p_type.Pointer && p_type.PointerType != RpcPointerType.Reference)
+                        {
+                            method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                        }
+                        else
+                        {
+                            method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name, null, null, null);
+                        }
+                    }
+                    if (p.IsPipe)
+                    {
+                        unmarshal_method();
                     }
                     else
                     {
-                        method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name, null, null, null);
+                        non_pipe_unmarshal_cmds.Add(unmarshal_method);
                     }
                 }
+
+                non_pipe_unmarshal_cmds.ForEach(a => a());
 
                 method.AddUnmarshalReturn(return_type, UNMARSHAL_NAME);
 

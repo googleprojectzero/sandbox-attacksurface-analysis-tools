@@ -110,5 +110,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Get or set the current security context.
         /// </summary>
         RpcTransportSecurityContext CurrentSecurityContext { get; set; }
+
+        /// <summary>
+        /// Get whether the transport supports synchronous pipes.
+        /// </summary>
+        bool SupportsSynchronousPipes { get; }
     }
 }

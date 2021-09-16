@@ -508,6 +508,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public int AssocGroupId => _assoc_group_id;
 
         /// <summary>
+        /// Get whether the transport supports synchronous pipes.
+        /// </summary>
+        public bool SupportsSynchronousPipes => true;
+
+        /// <summary>
         /// Bind the RPC transport to a specified interface.
         /// </summary>
         /// <param name="interface_id">The interface ID to bind to.</param>
