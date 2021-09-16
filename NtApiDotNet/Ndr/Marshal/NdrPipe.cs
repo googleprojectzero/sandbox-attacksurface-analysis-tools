@@ -12,54 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-
 namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
-    /// Abstract type for a NDR pipe.
+    /// Abstract type for a synchronous NDR pipe.
     /// </summary>
     /// <typeparam name="T">The base type of pipe blocks.</typeparam>
     public abstract class NdrPipe<T> where T : struct
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="can_pull">True to indicate supports pulling.</param>
-        /// <param name="can_push">True to indicate supports pushing.</param>
-        protected NdrPipe(bool can_pull, bool can_push)
-        {
-            CanPull = can_pull;
-            CanPush = can_push;
-        }
-
-        /// <summary>
-        /// Can the pipe pull elements.
-        /// </summary>
-        public bool CanPull { get; }
-
-        /// <summary>
-        /// Pull a block from a pipe.
-        /// </summary>
-        /// <param name="count">The maximum number of elements to pull.</param>
-        /// <returns>The pulled block.</returns>
-        public virtual T[] Pull(int count)
-        {
-            throw new NotImplementedException("Pipe support not implemented");
-        }
-
-        /// <summary>
-        /// Can the pipe push elements.
-        /// </summary>
-        public bool CanPush { get; }
-
-        /// <summary>
-        /// Push a block to a pipe.
-        /// </summary>
-        /// <param name="data">The block to push.</param>
-        public virtual void Push(T[] data)
-        {
-            throw new NotImplementedException("Pipe support not implemented");
-        }
     }
 }

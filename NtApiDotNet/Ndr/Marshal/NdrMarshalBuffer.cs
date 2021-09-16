@@ -144,6 +144,21 @@ namespace NtApiDotNet.Ndr.Marshal
             _stm.Write(buffer, 0, buffer.Length);
         }
 
+        private void WritePrimitivePipeBlock<T>(T[] block) where T : struct
+        {
+            byte[] ba = new byte[Buffer.ByteLength(block)];
+            Buffer.BlockCopy(block, 0, ba, 0, ba.Length);
+            WriteBytes(ba);
+        }
+
+        private void WriteStructuredPipeBlock(IEnumerable<INdrStructure> block)
+        {
+            foreach (var value in block)
+            {
+                WriteStruct(value);
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -204,7 +219,35 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
         {
-            throw new NotImplementedException("Pipe support is not implemented");
+            if (!(pipe is NdrInPipe<T> in_pipe))
+            {
+                throw new ArgumentException("Input pipe must be of type NdrInPipe.");
+            }
+
+            Type type = typeof(T);
+
+            Action<T[]> writer;
+            if (type.IsPrimitive)
+            {
+                writer = a => WritePrimitivePipeBlock(a);
+            }
+            else if (typeof(INdrStructure).IsAssignableFrom(type))
+            {
+                writer = (T[] a) => WriteStructuredPipeBlock(a.Cast<T, INdrStructure>());
+            }
+            else
+            {
+                throw new NotImplementedException("Pipes only support primitive and NDR structures.");
+            }
+
+            foreach(var block in in_pipe.Blocks)
+            {
+                if (block.Length == 0)
+                    continue;
+                WriteInt32(block.Length);
+                writer(block);
+            }
+            WriteInt32(0);
         }
 
         public byte[] ToArray()

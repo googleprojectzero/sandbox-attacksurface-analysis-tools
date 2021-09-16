@@ -16,6 +16,7 @@ using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Ndr.Marshal
@@ -112,6 +113,26 @@ namespace NtApiDotNet.Ndr.Marshal
             NdrUtils.WriteLine($"Pos: {_stm.Position} - Align: {alignment}");
         }
 
+        private T[] ReadPrimitivePipeBlock<T>(int count) where T : struct
+        {
+            // TODO: This should convert endian if needed.
+            T[] ret = new T[count];
+            int length = Buffer.ByteLength(ret);
+            byte[] ba = ReadFixedByteArray(length);
+            Buffer.BlockCopy(ba, 0, ret, 0, length);
+            return ret;
+        }
+
+        private T[] ReadStructuredPipeBlock<T>(int count) where T : struct
+        {
+            List<T> ret = new List<T>();
+            for (int i = 0; i < count; ++i)
+            {
+                ret.Add(ReadStructInternal<T>());
+            }
+            return ret.ToArray();
+        }
+
         #endregion
 
         #region Constructors
@@ -183,7 +204,31 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public NdrPipe<T> ReadPipe<T>() where T : struct
         {
-            throw new NotImplementedException("Pipe support is not implemented");
+            Type type = typeof(T);
+
+            Func<int, T[]> reader;
+            if (type.IsPrimitive)
+            {
+                reader = c => ReadPrimitivePipeBlock<T>(c);
+            }
+            else if (typeof(INdrStructure).IsAssignableFrom(type))
+            {
+                reader = c => ReadStructuredPipeBlock<T>(c);
+            }
+            else
+            {
+                throw new NotImplementedException("Pipes only support primitive and NDR structures.");
+            }
+
+            List<T[]> blocks = new List<T[]>();
+            int count = ReadInt32();
+            while (count > 0)
+            {
+                blocks.Add(reader(count));
+                count = ReadInt32();
+            }
+
+            return new NdrOutPipe<T>(blocks);
         }
 
         internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)

@@ -73,6 +73,8 @@
     <Compile Include="IO\UsnJournal\UsnJournalReasonFlags.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="Ndr\Marshal\NdrInPipe.cs" />
+    <Compile Include="Ndr\Marshal\NdrOutPipe.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Firewall\DataLinkAddressType.cs" />
     <Compile Include="Net\Firewall\FirewallAddressFamily.cs" />
