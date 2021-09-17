@@ -217,6 +217,16 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteStruct(intf);
         }
 
+        public void WritePipeArray<T>(T[] pipe_array) where T : struct
+        {
+            if (pipe_array is null)
+            {
+                throw new ArgumentNullException(nameof(pipe_array));
+            }
+
+            WritePipe(new NdrInPipe<T>(pipe_array));
+        }
+
         public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
         {
             if (!(pipe is NdrInPipe<T> in_pipe))

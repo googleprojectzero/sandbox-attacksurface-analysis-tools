@@ -71,6 +71,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// Wrap complex type decoders with a unique pointer.
         /// </summary>
         PointerComplexTypeDecoders = 0x200,
+        /// <summary>
+        /// Marshal pipe parameters using arrays.
+        /// </summary>
+        MarshalPipesAsArrays = 0x400,
     }
 
     /// <summary>

@@ -410,10 +410,14 @@ namespace NtApiDotNet.Win32.Rpc
 
         private RpcTypeDescriptor GetPipeTypeDescriptor(NdrPipeTypeReference pipe_type, MarshalHelperBuilder marshal_helper)
         {
+            bool pipe_array = HasFlag(RpcClientBuilderFlags.MarshalPipesAsArrays);
             var base_type_descriptor = GetTypeDescriptor(pipe_type.BaseType, marshal_helper);
+            CodeTypeReference type_ref = pipe_array ? base_type_descriptor.CodeType.ToRefArray() :
+                typeof(NdrPipe<>).ToRef(base_type_descriptor.CodeType);
+            string unmarshal_name = pipe_array ? nameof(NdrUnmarshalBuffer.ReadPipeArray) : nameof(NdrUnmarshalBuffer.ReadPipe);
+            string marshal_name = pipe_array ? nameof(NdrMarshalBuffer.WritePipeArray) : nameof(NdrMarshalBuffer.WritePipe);
             AdditionalArguments args = new AdditionalArguments(base_type_descriptor.CodeType);
-            return new RpcTypeDescriptor(typeof(NdrPipe<>).ToRef(base_type_descriptor.CodeType), false,
-                nameof(NdrUnmarshalBuffer.ReadPipe), marshal_helper, nameof(NdrMarshalBuffer.WritePipe),
+            return new RpcTypeDescriptor(type_ref, false, unmarshal_name, marshal_helper, marshal_name,
                 pipe_type, null, null, args, args);
         }
 

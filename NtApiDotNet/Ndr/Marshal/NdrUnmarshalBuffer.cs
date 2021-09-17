@@ -202,6 +202,11 @@ namespace NtApiDotNet.Ndr.Marshal
             return ReadStruct<NdrInterfacePointer>();
         }
 
+        public T[] ReadPipeArray<T>() where T : struct
+        {
+            return ((NdrOutPipe<T>)ReadPipe<T>()).ToArray();
+        }
+
         public NdrPipe<T> ReadPipe<T>() where T : struct
         {
             Type type = typeof(T);
