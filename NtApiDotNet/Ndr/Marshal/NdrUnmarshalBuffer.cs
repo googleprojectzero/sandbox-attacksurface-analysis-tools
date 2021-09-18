@@ -212,7 +212,11 @@ namespace NtApiDotNet.Ndr.Marshal
             Type type = typeof(T);
 
             Func<int, T[]> reader;
-            if (type.IsPrimitive)
+            if (type == typeof(byte) || type == typeof(sbyte))
+            {
+                reader = c => (T[])(object)ReadFixedByteArray(c);
+            }
+            else if (type.IsPrimitive)
             {
                 reader = c => ReadPrimitivePipeBlock<T>(c);
             }

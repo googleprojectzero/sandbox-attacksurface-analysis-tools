@@ -237,7 +237,11 @@ namespace NtApiDotNet.Ndr.Marshal
             Type type = typeof(T);
 
             Action<T[]> writer;
-            if (type.IsPrimitive)
+            if (type == typeof(byte) || type == typeof(sbyte))
+            {
+                writer = (T[] a) => WriteBytes((byte[])(object)a);
+            }
+            else if (type.IsPrimitive)
             {
                 writer = a => WritePrimitivePipeBlock(a);
             }
