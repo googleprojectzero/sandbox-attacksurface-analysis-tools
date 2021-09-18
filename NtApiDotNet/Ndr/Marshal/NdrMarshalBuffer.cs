@@ -229,6 +229,11 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
         {
+            if (pipe is null)
+            {
+                throw new ArgumentNullException(nameof(pipe));
+            }
+
             Type type = typeof(T);
 
             Action<T[]> writer;
