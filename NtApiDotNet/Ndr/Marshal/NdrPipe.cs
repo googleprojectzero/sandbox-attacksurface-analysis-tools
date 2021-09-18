@@ -12,13 +12,47 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
-    /// Abstract type for a synchronous NDR pipe.
+    /// Type for a synchronous NDR pipe.
     /// </summary>
     /// <typeparam name="T">The base type of pipe blocks.</typeparam>
-    public abstract class NdrPipe<T> where T : struct
+    public sealed class NdrPipe<T> where T : struct
     {
+        /// <summary>
+        /// The list of blocks for the pipe.
+        /// </summary>
+        public IEnumerable<T[]> Blocks { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="blocks">The list of blocks to return.</param>
+        public NdrPipe(IEnumerable<T[]> blocks)
+        {
+            Blocks = blocks;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="block">A single block to return.</param>
+        public NdrPipe(T[] block)
+        {
+            Blocks = new[] { block };
+        }
+
+        /// <summary>
+        /// Convert the pipe blocks to a flat array.
+        /// </summary>
+        /// <returns>The flat array.</returns>
+        public T[] ToArray()
+        {
+            return Blocks.SelectMany(a => a).ToArray();
+        }
     }
 }

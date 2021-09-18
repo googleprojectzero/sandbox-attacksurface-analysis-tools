@@ -224,16 +224,11 @@ namespace NtApiDotNet.Ndr.Marshal
                 throw new ArgumentNullException(nameof(pipe_array));
             }
 
-            WritePipe(new NdrInPipe<T>(pipe_array));
+            WritePipe(new NdrPipe<T>(pipe_array));
         }
 
         public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
         {
-            if (!(pipe is NdrInPipe<T> in_pipe))
-            {
-                throw new ArgumentException("Input pipe must be of type NdrInPipe.");
-            }
-
             Type type = typeof(T);
 
             Action<T[]> writer;
@@ -254,7 +249,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 throw new NotImplementedException("Pipes only support primitive and NDR structures.");
             }
 
-            foreach(var block in in_pipe.Blocks)
+            foreach(var block in pipe.Blocks)
             {
                 if (block.Length == 0)
                     continue;

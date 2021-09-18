@@ -16,7 +16,6 @@ using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Ndr.Marshal
@@ -204,7 +203,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadPipeArray<T>() where T : struct
         {
-            return ((NdrOutPipe<T>)ReadPipe<T>()).ToArray();
+            return ReadPipe<T>().ToArray();
         }
 
         public NdrPipe<T> ReadPipe<T>() where T : struct
@@ -237,7 +236,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 count = ReadInt32();
             }
 
-            return new NdrOutPipe<T>(blocks);
+            return new NdrPipe<T>(blocks.AsReadOnly());
         }
 
         internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)
