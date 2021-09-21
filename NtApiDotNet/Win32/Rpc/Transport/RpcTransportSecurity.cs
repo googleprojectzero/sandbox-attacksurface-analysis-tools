@@ -78,6 +78,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 flags |= InitializeContextReqFlags.NullSession;
             }
+            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.Delegation))
+            {
+                flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
+            }
 
             return flags;
         }

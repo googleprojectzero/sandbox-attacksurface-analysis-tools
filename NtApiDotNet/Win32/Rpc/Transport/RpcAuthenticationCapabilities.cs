@@ -33,6 +33,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Enable a NULL session authentication.
         /// </summary>
-        NullSession = 2
+        NullSession = 2,
+        /// <summary>
+        /// Enable delegation of credentials if supported.
+        /// </summary>
+        Delegation = 4,
     }
 }
