@@ -1136,6 +1136,9 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeSamHandle GroupHandle
         );
 
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus RtlMapSecurityErrorToNtStatus(SecStatusCode Error);
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;
@@ -1143,7 +1146,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
         internal static SecStatusCode CheckResult(this SecStatusCode result, bool throw_on_error = true)
         {
-            ((NtStatus)(uint)result).ToNtException(throw_on_error);
+            RtlMapSecurityErrorToNtStatus(result).ToNtException(throw_on_error);
             return result;
         }
 
