@@ -1249,6 +1249,30 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private Dictionary<int, string> GetNameToOrdinals(ImageExportDirectory export_directory)
+        {
+            Dictionary<int, string> ordinal_to_names = new Dictionary<int, string>();
+            IntPtr names = RvaToVA(export_directory.AddressOfNames);
+            IntPtr name_ordinals = RvaToVA(export_directory.AddressOfNameOrdinals);
+
+            if (names == IntPtr.Zero || name_ordinals == IntPtr.Zero)
+                return ordinal_to_names;
+
+            int[] name_rvas = new int[export_directory.NumberOfNames];
+            Marshal.Copy(names, name_rvas, 0, name_rvas.Length);
+            IntPtr[] name_vas = name_rvas.Select(r => r != 0 ? RvaToVA(r) : IntPtr.Zero).ToArray();
+            short[] ordinals = new short[export_directory.NumberOfNames];
+            Marshal.Copy(name_ordinals, ordinals, 0, ordinals.Length);
+
+            for (int i = 0; i < name_vas.Length; ++i)
+            {
+                string name = Marshal.PtrToStringAnsi(name_vas[i]);
+                int ordinal = ordinals[i];
+                ordinal_to_names[ordinal] = name;
+            }
+            return ordinal_to_names;
+        }
+
         private void ParseExports()
         {
             _exports = new List<DllExport>();
@@ -1267,31 +1291,18 @@ namespace NtApiDotNet.Win32
                 {
                     return;
                 }
-                IntPtr funcs = RvaToVA(export_directory.AddressOfFunctions);
-                IntPtr names = RvaToVA(export_directory.AddressOfNames);
-                IntPtr name_ordinals = RvaToVA(export_directory.AddressOfNameOrdinals);
 
                 long export_base = buffer.DangerousGetHandle().ToInt64();
                 long export_top = export_base + buffer.Length;
 
+                IntPtr funcs = RvaToVA(export_directory.AddressOfFunctions);
+                if (funcs == IntPtr.Zero)
+                    return;
                 int[] func_rvas = new int[export_directory.NumberOfFunctions];
                 Marshal.Copy(funcs, func_rvas, 0, func_rvas.Length);
                 IntPtr[] func_vas = func_rvas.Select(r => r != 0 ? RvaToVA(r) : IntPtr.Zero).ToArray();
 
-                int[] name_rvas = new int[export_directory.NumberOfNames];
-                Marshal.Copy(names, name_rvas, 0, name_rvas.Length);
-                IntPtr[] name_vas = name_rvas.Select(r => r != 0 ? RvaToVA(r) : IntPtr.Zero).ToArray();
-
-                short[] ordinals = new short[export_directory.NumberOfNames];
-                Marshal.Copy(name_ordinals, ordinals, 0, ordinals.Length);
-
-                Dictionary<int, string> ordinal_to_names = new Dictionary<int, string>();
-                for (int i = 0; i < name_vas.Length; ++i)
-                {
-                    string name = Marshal.PtrToStringAnsi(name_vas[i]);
-                    int ordinal = ordinals[i];
-                    ordinal_to_names[ordinal] = name;
-                }
+                Dictionary<int, string> ordinal_to_names = GetNameToOrdinals(export_directory);
 
                 for (int i = 0; i < func_vas.Length; ++i)
                 {
