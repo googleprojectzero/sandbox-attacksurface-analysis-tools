@@ -203,12 +203,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
             }
 
-            using (var creds = CredentialHandle.Create(GetAuthPackageName(),
-                    SecPkgCredFlags.Outbound, Credentials))
-            {
-                return new ClientAuthenticationContext(creds, GetContextRequestFlags(),
-                    ServicePrincipalName, SecDataRep.Native);
-            }
+            return new ClientAuthenticationContext(CredentialHandle.Create(GetAuthPackageName(),
+                SecPkgCredFlags.Outbound, Credentials), GetContextRequestFlags(),
+                    ServicePrincipalName, SecDataRep.Native) { OwnsCredentials = true };
         }
         #endregion
     }

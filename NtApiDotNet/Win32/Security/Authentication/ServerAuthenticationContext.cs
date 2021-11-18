@@ -59,12 +59,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return result;
         }
 
-
         private void Dispose(bool _)
         {
             if (_context != null)
             {
                 SecurityNativeMethods.DeleteSecurityContext(_context);
+            }
+            if (OwnsCredentials)
+            {
+                _creds?.Dispose();
             }
         }
 
@@ -195,6 +198,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get whether the authentication context is for loopback.
         /// </summary>
         public bool IsLoopback => SecurityContextUtils.GetIsLoopback(Context);
+
+        /// <summary>
+        /// Get or set whether the context owns the credentials object or not. If true
+        /// then the credentials are disposed with the context.
+        /// </summary>
+        public bool OwnsCredentials { get; set; }
 
         #endregion
 
