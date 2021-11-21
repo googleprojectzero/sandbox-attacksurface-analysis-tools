@@ -359,6 +359,53 @@ namespace NtApiDotNet.Win32
         public ServiceSidType dwServiceSidType;
     }
 
+    public enum ServiceControlManagerAction
+    {
+        [SDKName("SC_ACTION_NONE")]
+        None = 0,
+        [SDKName("SC_ACTION_RESTART")]
+        Restart = 1,
+        [SDKName("SC_ACTION_REBOOT")]
+        Reboot = 2,
+        [SDKName("SC_ACTION_RUN_COMMAND")]
+        RunCommand = 3
+    }
+
+    /// <summary>
+    /// Represents an action that the service control manager can perform.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FailureAction
+    {
+        /// <summary>
+        /// The action to be performed.
+        /// </summary>
+        public ServiceControlManagerAction Action;
+
+        /// <summary>
+        /// The time to wait before performing the specified action, in milliseconds.
+        /// </summary>
+        public int Delay;
+
+        /// <param name="action">The action to be performed.</param>
+        /// <param name="delay">The time to wait before performing the specified action, in milliseconds.</param>
+        public FailureAction(ServiceControlManagerAction action, int delay)
+        {
+            Action = action;
+            Delay = delay;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct SERVICE_FAILURE_ACTIONS
+    {
+        public int dwResetPeriod;
+        public string lpRebootMsg;
+        public string lpCommand;
+        public int cActions;
+        public SafeHGlobalBuffer lpsaActions;
+    }
+
     public enum ServiceLaunchProtectedType
     {
         [SDKName("SERVICE_LAUNCH_PROTECTED_NONE")]
@@ -1873,7 +1920,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The NT status code.</returns>
         public static NtStatus SetServiceSidType(string name, ServiceSidType sid_type, bool throw_on_error)
         {
-            return SetServiceSidType(name, sid_type, throw_on_error);
+            return SetServiceSidType(null, name, sid_type, throw_on_error);
         }
 
         /// <summary>
@@ -1884,6 +1931,112 @@ namespace NtApiDotNet.Win32
         public static void SetServiceSidType(string name, ServiceSidType sid_type)
         {
             SetServiceSidType(name, sid_type, true);
+        }
+
+        /// <summary>
+        /// Set a service's delayed auto-start.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="enabled">If true, the service is started after other auto-start services are started plus a short delay. Otherwise, the service is started during system boot.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceDelayedAutoStart(string machine_name, string name, bool enabled, bool throw_on_error)
+        {
+            return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.DELAYED_AUTO_START_INFO,
+                new SERVICE_DELAYED_AUTO_START_INFO() { fDelayedAutostart = enabled }, throw_on_error);
+        }
+
+        /// <returns/>
+        /// <inheritdoc cref="SetServiceDelayedAutoStart(string, string, bool, bool)"/>
+        public static void SetServiceDelayedAutoStart(string machine_name, string name, bool enabled)
+        {
+            SetServiceDelayedAutoStart(machine_name, name, enabled, true);
+        }
+
+        /// <returns/>
+        /// <inheritdoc cref="SetServiceDelayedAutoStart(string, string, bool, bool)"/>
+        public static void SetServiceDelayedAutoStart(string name, bool enabled, bool throw_on_error)
+        {
+            SetServiceDelayedAutoStart(null, name, enabled, throw_on_error);
+        }
+
+
+        /// <inheritdoc cref="SetServiceDelayedAutoStart(string, string, bool, bool)"/>
+        public static void SetServiceDelayedAutoStart(string name, bool enabled)
+        {
+            SetServiceDelayedAutoStart(name, enabled, true);
+        }
+
+        /// <summary>
+        /// Set a service's failure recover actions.
+        /// </summary>
+        /// <param name="machine_name">The name of a target computer. Can be null or empty to specify local machine.</param>
+        /// <param name="name">The name of the service.</param>
+        /// <param name="actions">Actions to be performed on service failure.
+        /// <br/>If this value is null, <paramref name="reset_period"/> is ignored.
+        /// <br/> If this value is empty, the reset period and array of failure actions are deleted.</param>
+        /// <param name="reset_period">The time after which to reset the failure count to zero if there are no failures, in seconds. Specify -1 to indicate that this value should never be reset.</param>
+        /// <param name="recover_command">The command line of the process for the CreateProcess function to execute in response to the command run service controller action.
+        /// <br/> This process runs under the same account as the service.
+        /// <br/> If this value is null, the command is unchanged.
+        /// <br/> If the value is an empty string (""), the command is deleted and no program is run when the service fails.</param>
+        /// <param name="reboot_msg">The message to be broadcast to server users before rebooting in response to the reboot action service controller action.
+        /// <br/> If this value is null, the reboot message is unchanged.
+        /// <br/> If the value is an empty string (""), the reboot message is deleted and no message is broadcast.
+        /// <br/> This member can specify a localized string using the following format: <c>@[path]dllname,-strID</c>
+        /// <br/> The string with identifier <c>strID</c> is loaded from <c>dllname</c>; <c>path</c> is optional.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetServiceFailureActions(string machine_name, string name, IEnumerable<FailureAction> actions, int reset_period, string recover_command, string reboot_msg, bool throw_on_error)
+        {
+            int cActions;
+            SafeHGlobalBuffer actions_buffer;
+            if (actions == null)
+            {
+                actions_buffer = SafeHGlobalBuffer.Null;
+                cActions = 0;
+            }
+            else
+            {
+                var actions_array = actions.ToArray();
+                actions_buffer = BufferUtils.ToBuffer(actions_array);
+                cActions = actions_array.Length;
+            }
+
+            using (actions_buffer)
+            {
+                var fa_struct = new SERVICE_FAILURE_ACTIONS
+                {
+                    dwResetPeriod = reset_period,
+                    lpRebootMsg = reboot_msg,
+                    lpCommand = recover_command,
+                    cActions = cActions,
+                    lpsaActions = actions_buffer,
+                };
+
+                return ChangeServiceConfig2(machine_name, name, SERVICE_CONFIG_INFO_LEVEL.FAILURE_ACTIONS, fa_struct, throw_on_error);
+            }
+        }
+
+        /// <returns/>
+        /// <inheritdoc cref="SetServiceFailureActions(string, string, IEnumerable{FailureAction}, int, string, string, bool)"/>
+        public static void SetServiceFailureActions(string machine_name, string name, IEnumerable<FailureAction> actions, int reset_period, string recover_command, string reboot_msg)
+        {
+            SetServiceFailureActions(machine_name, name, actions, reset_period, recover_command, reboot_msg, true);
+        }
+
+        /// <returns/>
+        /// <inheritdoc cref="SetServiceFailureActions(string, string, IEnumerable{FailureAction}, int, string, string, bool)"/>
+        public static void SetServiceFailureActions(string name, IEnumerable<FailureAction> actions, int reset_period, string recover_command, string reboot_msg, bool throw_on_error)
+        {
+            SetServiceFailureActions(null, name, actions, reset_period, recover_command, reboot_msg, throw_on_error);
+        }
+
+        /// <inheritdoc cref="SetServiceFailureActions(string, string, IEnumerable{FailureAction}, int, string, string, bool)"/>
+        public static void SetServiceFailureActions(string name, IEnumerable<FailureAction> actions, int reset_period, string recover_command, string reboot_msg)
+        {
+            SetServiceFailureActions(name, actions, reset_period, recover_command, reboot_msg, true);
         }
 
         /// <summary>
@@ -1920,7 +2073,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The NT status code.</returns>
         public static NtStatus SetServiceRequiredPrivileges(string name, string[] privileges, bool throw_on_error)
         {
-            return SetServiceRequiredPrivileges(name, privileges, throw_on_error);
+            return SetServiceRequiredPrivileges(null, name, privileges, throw_on_error);
         }
 
         /// <summary>
@@ -1967,7 +2120,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The NT status code.</returns>
         public static NtStatus SetServiceLaunchProtected(string name, ServiceLaunchProtectedType protected_type, bool throw_on_error)
         {
-            return SetServiceLaunchProtected(name, protected_type, throw_on_error);
+            return SetServiceLaunchProtected(null, name, protected_type, throw_on_error);
         }
 
         /// <summary>
