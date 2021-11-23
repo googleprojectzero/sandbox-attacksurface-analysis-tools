@@ -526,6 +526,35 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// This creates a Desktop using the User32 API.
+        /// </summary>
+        /// <param name="name">The name of the Desktop.</param>
+        /// <returns>The Desktop.</returns>
+        public static NtDesktop CreateDesktop(string name)
+        {
+            var handle = Win32NativeMethods.CreateDesktop(name, IntPtr.Zero, IntPtr.Zero, 0, WindowStationAccessRights.MaximumAllowed, null);
+            if (handle.IsInvalid)
+                throw new SafeWin32Exception();
+            return new NtDesktop(handle);
+        }
+
+        /// <summary>
+        /// This creates a Desktop using the User32 API.
+        /// </summary>
+        /// <param name="name">The name of the Desktop.</param>
+        /// <param name="heapSize">The size of the desktop heap, in kilobytes.</param>
+        /// <returns>The Desktop.</returns>
+        public static NtDesktop CreateDesktop(string name, ulong heapSize)
+        {
+            var handle = Win32NativeMethods.CreateDesktopEx(name, IntPtr.Zero, IntPtr.Zero, 0, WindowStationAccessRights.MaximumAllowed, null, heapSize,
+                                                            IntPtr.Zero);
+            if (handle.IsInvalid)
+                throw new SafeWin32Exception();
+            return new NtDesktop(handle);
+        }
+
+
+        /// <summary>
         /// Create a remote thread.
         /// </summary>
         /// <param name="process">The process to create the thread in.</param>
