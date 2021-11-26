@@ -746,7 +746,8 @@ namespace NtApiDotNet.Ndr.Marshal
 
             if (full_pointer)
             {
-                unmarshal_func = () => ReadFullPointer(referent, unmarshal_func);
+                Func<T> original_unmarshal_func = unmarshal_func;
+                unmarshal_func = () => ReadFullPointer(referent, original_unmarshal_func);
             }
 
             var deferred_reader = NdrEmbeddedPointer<T>.CreateDeferredReader(unmarshal_func);
