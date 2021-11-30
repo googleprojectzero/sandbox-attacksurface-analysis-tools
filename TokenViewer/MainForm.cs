@@ -350,7 +350,8 @@ namespace TokenViewer
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             listViewHandles.ListViewItemSorter = new ListItemComparer(0);
             listViewServices.ListViewItemSorter = new ListItemComparer(0);
-            AddGrouping("Name", p => p.Name);
+            AddGrouping("Name", p => p.Name.ToLower());
+            AddGrouping("Path", p => p.ImagePath.ToLower());
             AddGrouping("Session ID", p => $"Session {p.SessionId}");
             AddGrouping("Sandbox", p => GetSandboxName(p.ProcessToken));
             AddGrouping("Integrity Level", p => p.ProcessToken.IntegrityLevel.ToString());
@@ -373,8 +374,6 @@ namespace TokenViewer
             AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
             AddGrouping("Chrome Sandbox Type", p => GetChromeSandboxType(p));
             AddGrouping("Logon SID", p => GetLogonSid(p.ProcessToken));
-            AddGrouping("Image Path", p => p.ImagePath.ToLower());
-            AddGrouping("Image Name", p => p.Name.ToLower());
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
