@@ -373,6 +373,8 @@ namespace TokenViewer
             AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
             AddGrouping("Chrome Sandbox Type", p => GetChromeSandboxType(p));
             AddGrouping("Logon SID", p => GetLogonSid(p.ProcessToken));
+            AddGrouping("Image Path", p => p.ImagePath.ToLower());
+            AddGrouping("Image Name", p => p.Name.ToLower());
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
