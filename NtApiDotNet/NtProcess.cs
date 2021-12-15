@@ -2544,7 +2544,6 @@ namespace NtApiDotNet
             set => Set(ProcessInformationClass.ProcessDefaultHardErrorMode, value);
         }
 
-
         /// <summary>
         /// Does the process has a child process restriction?
         /// </summary>
@@ -2591,6 +2590,11 @@ namespace NtApiDotNet
         /// Gets whether the process is a subsystem process.
         /// </summary>
         public bool Subsystem => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsSubsystemProcess);
+
+        /// <summary>
+        /// Gets whether the process is frozen.
+        /// </summary>
+        public bool Frozen => ExtendedFlags.HasFlagSet(ProcessExtendedBasicInformationFlags.IsFrozen);
 
         /// <summary>
         /// Get process protection information.
