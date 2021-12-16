@@ -83,6 +83,8 @@ A RPC binding string to query all endpoints from.
 An ALPC port name. Can contain a full path as long as the string contains \RPC Control\ (case sensitive).
 .PARAMETER FindAlpcPort
 Use brute force to find a valid ALPC endpoint for the interface.
+.PARAMETER ProcessId
+Used to find all ALPC ports in a process and get the supported interfaces.
 .INPUTS
 None or NtApiDotNet.Ndr.NdrRpcServerInterface
 .OUTPUTS
@@ -108,6 +110,9 @@ Get RPC endpoints for exposed over ncalrpc with name RPC_PORT.
 .EXAMPLE
 Get-RpcEndpoint -AlpcPort "RPC_PORT"
 Get RPC endpoints for exposed over ALPC with name RPC_PORT.
+.EXAMPLE
+Get-RpcEndpoint -ProcessId 1234
+Get RPC endpoints for exposed over ALPC for the process 1234.
 #>
 function Get-RpcEndpoint {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -123,6 +128,9 @@ function Get-RpcEndpoint {
         [string]$Binding,
         [parameter(Mandatory, ParameterSetName = "FromAlpc")]
         [string]$AlpcPort,
+        [parameter(Mandatory, ParameterSetName = "FromProcessId")]
+        [alias("pid")]
+        [int]$ProcessId,
         [parameter(ParameterSetName = "FromIdAndVersion")]
         [parameter(ParameterSetName = "FromServer")]
         [switch]$FindAlpcPort,
@@ -172,6 +180,9 @@ function Get-RpcEndpoint {
             }
             "FromRpcClient" {
                 [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $Client.InterfaceId, $Client.InterfaceVersion)
+            }
+            "FromProcessId" {
+                (Get-RpcAlpcServer -ProcessId $ProcessId).Endpoints
             }
         }
 
