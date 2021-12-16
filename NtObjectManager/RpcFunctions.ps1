@@ -336,14 +336,17 @@ function Get-RpcServer {
                     }
                 }
             }
-            if ($AsText) {
-                foreach ($server in $servers) {
-                    $text = $server.FormatAsText($RemoveComments)
-                    Write-Output $text
+
+            if ($null -ne $servers) {
+                if ($AsText) {
+                    foreach ($server in $servers) {
+                        $text = $server.FormatAsText($RemoveComments)
+                        Write-Output $text
+                    }
                 }
-            }
-            else {
-                Write-Output $servers
+                else {
+                    Write-Output $servers
+                }
             }
         }
         catch {
