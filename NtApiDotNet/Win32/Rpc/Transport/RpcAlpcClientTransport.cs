@@ -49,11 +49,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             };
         }
 
-        private static NtAlpcClient ConnectPort(string path, SecurityQualityOfService sqos)
+        private static NtAlpcClient ConnectPort(string path, SecurityQualityOfService sqos, NtWaitTimeout timeout)
         {
             AlpcReceiveMessageAttributes in_attr = new AlpcReceiveMessageAttributes();
             return NtAlpcClient.Connect(path, null,
-                CreatePortAttributes(sqos), AlpcMessageFlags.SyncRequest, null, null, null, in_attr, NtWaitTimeout.FromSeconds(5));
+                CreatePortAttributes(sqos), AlpcMessageFlags.SyncRequest, null, null, null, in_attr, timeout);
         }
 
         private static void CheckForFault(SafeHGlobalBuffer buffer, LRPC_MESSAGE_TYPE message_type)
@@ -229,11 +229,27 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         /// <param name="path">The path to connect. The format depends on the transport.</param>
         /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
-        public RpcAlpcClientTransport(string path, SecurityQualityOfService security_quality_of_service)
+        public RpcAlpcClientTransport(string path, SecurityQualityOfService security_quality_of_service) 
+            : this(path, security_quality_of_service, NtWaitTimeout.FromSeconds(5))
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="path">The path to connect. The format depends on the transport.</param>
+        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
+        /// <param name="timeout">Timeout for connection.</param>
+        public RpcAlpcClientTransport(string path, SecurityQualityOfService security_quality_of_service, NtWaitTimeout timeout)
         {
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException("Must specify a path to connect to");
+            }
+
+            if (timeout is null)
+            {
+                throw new ArgumentNullException(nameof(timeout));
             }
 
             if (!path.StartsWith(@"\"))
@@ -241,10 +257,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 path = $@"\RPC Control\{path}";
             }
 
-            _client = ConnectPort(path, security_quality_of_service);
+            _client = ConnectPort(path, security_quality_of_service, timeout);
             _sqos = security_quality_of_service;
             Endpoint = path;
         }
+
         #endregion
 
         #region Public Methods

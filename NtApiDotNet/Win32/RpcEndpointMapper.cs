@@ -118,24 +118,25 @@ namespace NtApiDotNet.Win32
 
         private const string RPC_CONTROL_PATH = @"\RPC Control\";
 
-        private static IEnumerable<RpcEndpoint> QueryEndpointsForBinding(SafeRpcBindingHandle binding_handle)
+        private static NtResult<RpcEndpoint[]> QueryEndpointsForBinding(SafeRpcBindingHandle binding_handle, bool throw_on_error)
         {
             using (binding_handle)
             {
-                int status = Win32NativeMethods.RpcMgmtInqIfIds(binding_handle, out SafeRpcIfIdVectorHandle if_id_vector);
+                Win32Error status = Win32NativeMethods.RpcMgmtInqIfIds(binding_handle, out SafeRpcIfIdVectorHandle if_id_vector);
                 // If the RPC server doesn't exist return an empty list.
-                if (status == 1722)
+                if (status == Win32Error.RPC_S_SERVER_UNAVAILABLE)
                 {
-                    return new RpcEndpoint[0];
+                    return new RpcEndpoint[0].CreateResult();
                 }
-                if (status != 0)
+                if (status != Win32Error.SUCCESS)
                 {
-                    throw new SafeWin32Exception(status);
+                    return status.CreateResultFromDosError<RpcEndpoint[]>(throw_on_error);
                 }
 
                 using (if_id_vector)
                 {
-                    return if_id_vector.GetIfIds().Select(if_id => CreateEndpoint(binding_handle, if_id)).ToArray();
+                    return if_id_vector.GetIfIds().Select(if_id => 
+                        CreateEndpoint(binding_handle, if_id)).ToArray().CreateResult();
                 }
             }
         }
@@ -280,15 +281,38 @@ namespace NtApiDotNet.Win32
         /// Query for endpoints for a RPC binding. 
         /// </summary>
         /// <param name="alpc_port">The ALPC port to query. Can be a full path as long as it contains \RPC Control\ somewhere.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of endpoints on the RPC binding.</returns>
-        public static IEnumerable<RpcEndpoint> QueryEndpointsForAlpcPort(string alpc_port)
+        public static NtResult<IEnumerable<RpcEndpoint>> QueryEndpointsForAlpcPort(string alpc_port, bool throw_on_error)
         {
             int index = alpc_port.IndexOf(@"\RPC Control\", StringComparison.OrdinalIgnoreCase);
             if (index >= 0)
             {
                 alpc_port = alpc_port.Substring(0, index) + RPC_CONTROL_PATH + alpc_port.Substring(index + RPC_CONTROL_PATH.Length);
             }
-            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(null, "ncalrpc", null, alpc_port, null));
+            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(null, "ncalrpc", 
+                null, alpc_port, null), throw_on_error).Cast<IEnumerable<RpcEndpoint>>();
+        }
+
+        /// <summary>
+        /// Query for endpoints for a RPC binding. 
+        /// </summary>
+        /// <param name="alpc_port">The ALPC port to query. Can be a full path as long as it contains \RPC Control\ somewhere.</param>
+        /// <returns>The list of endpoints on the RPC binding.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpointsForAlpcPort(string alpc_port)
+        {
+            return QueryEndpointsForAlpcPort(alpc_port, true).Result;
+        }
+
+        /// <summary>
+        /// Query for endpoints for a RPC binding. 
+        /// </summary>
+        /// <param name="string_binding">The RPC binding to query, e.g. ncalrpc:[PORT]</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of endpoints on the RPC binding.</returns>
+        public static NtResult<IEnumerable<RpcEndpoint>> QueryEndpointsForBinding(string string_binding, bool throw_on_error)
+        {
+            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(string_binding), throw_on_error).Cast<IEnumerable<RpcEndpoint>>();
         }
 
         /// <summary>
@@ -298,7 +322,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The list of endpoints on the RPC binding.</returns>
         public static IEnumerable<RpcEndpoint> QueryEndpointsForBinding(string string_binding)
         {
-            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(string_binding));
+            return QueryEndpointsForBinding(string_binding, true).Result;
         }
 
         /// <summary>

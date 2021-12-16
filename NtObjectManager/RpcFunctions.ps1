@@ -415,6 +415,8 @@ Gets a list of ALPC RPC servers.
 This cmdlet gets a list of ALPC RPC servers. This relies on being able to access the list of ALPC ports in side a process so might need elevated privileges.
 .PARAMETER ProcessId
 The ID of a process to query for ALPC servers.
+.PARAMETER AlpcPort
+The path to the ALPC port to query.
 .INPUTS
 None
 .OUTPUTS
@@ -425,12 +427,17 @@ Get all ALPC RPC servers.
 .EXAMPLE
 Get-RpcAlpcServer -ProcessId 1234
 Get all ALPC RPC servers in process ID 1234.
+.EXAMPLE
+Get-RpcAlpcServer -AlpcPort srvsvc
+Get the ALPC RPC servers for the srvsvc ALPC port. Needs Windows 10 19H1 and above to work.
 #>
 function Get-RpcAlpcServer {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProcessId")]
-        [int]$ProcessId
+        [int]$ProcessId,
+        [parameter(Mandatory, ParameterSetName = "FromAlpc")]
+        [string]$AlpcPort
     )
 
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
@@ -440,6 +447,9 @@ function Get-RpcAlpcServer {
         }
         "FromProcessId" {
             [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($ProcessId)
+        }
+        "FromAlpc" {
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServer($AlpcPort)
         }
     }
 }

@@ -623,7 +623,7 @@ namespace NtApiDotNet.Win32
         );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
-        internal static extern int RpcMgmtInqIfIds(
+        internal static extern Win32Error RpcMgmtInqIfIds(
             SafeRpcBindingHandle Binding,
             out SafeRpcIfIdVectorHandle IfIdVector
         );
