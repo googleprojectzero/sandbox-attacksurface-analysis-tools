@@ -211,6 +211,8 @@ Path to a serialized representation of the RPC servers.
 If private symbols available try and resolve the names of structures and parameters.
 .PARAMETER SymSrvFallback
 Specify to use a built-in fallback for symbol server resolving when using the system dbghelp DLL. You also need to specify a local cache directory in SymbolPath.
+.PARAMETER ProcessId
+Specify a process to extract the RPC servers from. This parses all the modules in a process for any available servers.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -240,27 +242,33 @@ Get the list of RPC servers from rpcss.dll, use symbol server fallback with c:\s
 function Get-RpcServer {
     [CmdletBinding(DefaultParameterSetName = "FromDll")]
     Param(
-        [parameter(Mandatory = $true, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = "FromDll")]
+        [parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = "FromDll")]
         [alias("Path")]
         [string]$FullName,
+        [parameter(Mandatory, ParameterSetName = "FromSerialized")]
+        [string]$SerializedPath,
+        [parameter(Mandatory, ParameterSetName = "FromProcessId")]
+        [alias("pid")]
+        [int]$ProcessId,
         [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
         [string]$DbgHelpPath,
         [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
         [string]$SymbolPath,
-        [parameter(ParameterSetName = "FromDll")]
-        [switch]$AsText,
-        [parameter(ParameterSetName = "FromDll")]
-        [switch]$RemoveComments,
         [parameter(ParameterSetName = "FromDll")]
         [switch]$ParseClients,
         [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
         [switch]$IgnoreSymbols,
         [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
         [switch]$ResolveStructureNames,
         [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
         [switch]$SymSrvFallback,
-        [parameter(Mandatory = $true, ParameterSetName = "FromSerialized")]
-        [string]$SerializedPath
+        [switch]$AsText,
+        [switch]$RemoveComments
     )
 
     BEGIN {
@@ -291,27 +299,40 @@ function Get-RpcServer {
 
     PROCESS {
         try {
-            if ($PSCmdlet.ParameterSetName -eq "FromDll") {
-                $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
-                Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-                $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParserFlags)
-                if ($AsText) {
-                    foreach ($server in $servers) {
-                        $text = $server.FormatAsText($RemoveComments)
-                        Write-Output $text
+            $servers = switch($PSCmdlet.ParameterSetName) {
+                "FromDll" {
+                    $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
+                    Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
+                    [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParserFlags)
+                }
+                "FromSerialized" {
+                    $FullName = Resolve-Path -LiteralPath $SerializedPath -ErrorAction Stop
+                    Use-NtObject($stm = [System.IO.File]::OpenRead($FullName)) {
+                        while ($stm.Position -lt $stm.Length) {
+                            [NtApiDotNet.Win32.RpcServer]::Deserialize($stm) | Write-Output
+                        }
                     }
                 }
-                else {
-                    Write-Output $servers
+                "FromProcessId" {
+                    $proc = Get-Process -PID $ProcessId
+                    if ($null -eq $proc.SafeHandle) {
+                        throw "Can't open process $ProcessId"
+                    }
+                    $proc.Modules | 
+                    % { 
+                        Get-RpcServer -FullName $_.FileName -DbgHelpPath $DbgHelpPath -SymbolPath $SymbolPath `
+                            -IgnoreSymbols:$IgnoreSymbols -ResolveStructureNames:$ResolveStructureNames -SymSrvFallback:$SymSrvFallback 
+                    }
+                }
+            }
+            if ($AsText) {
+                foreach ($server in $servers) {
+                    $text = $server.FormatAsText($RemoveComments)
+                    Write-Output $text
                 }
             }
             else {
-                $FullName = Resolve-Path -LiteralPath $SerializedPath -ErrorAction Stop
-                Use-NtObject($stm = [System.IO.File]::OpenRead($FullName)) {
-                    while ($stm.Position -lt $stm.Length) {
-                        [NtApiDotNet.Win32.RpcServer]::Deserialize($stm) | Write-Output
-                    }
-                }
+                Write-Output $servers
             }
         }
         catch {
