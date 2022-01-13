@@ -63,8 +63,12 @@ namespace NtApiDotNet.Win32
             }
 
             string encoded_name = Uri.EscapeDataString(filename);
+            string base_path = uri.AbsolutePath.Trim('/');
+            base_path = string.Join("/", base_path, encoded_name, IdentiferPath, encoded_name);
+            if (!base_path.StartsWith("/"))
+                base_path = "/" + base_path;
 
-            return new Uri(uri, string.Join("/", uri.AbsolutePath, encoded_name, IdentiferPath, encoded_name)).ToString();
+            return new Uri(uri, base_path).ToString();
         }
 
         private const uint CV_RSDS_MAGIC = 0x53445352;
