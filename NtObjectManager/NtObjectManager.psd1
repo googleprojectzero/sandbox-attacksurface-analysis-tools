@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.32'
+ModuleVersion = '1.1.33'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -211,9 +211,10 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.32
+        ReleaseNotes = '1.1.33
 --------
-* Too many changes to mention.
+* Various bug fixes.
+* Added RPC pipe support.
 '
 
         # External dependent modules of this module

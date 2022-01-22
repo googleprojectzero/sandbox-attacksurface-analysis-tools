@@ -7,8 +7,8 @@
     <Authors>James Forshaw</Authors>
     <Company>Google LLC.</Company>
     <Product>NtApiDotNet.Forms</Product>
-    <FileVersion>1.1.32.0</FileVersion>
-    <Version>1.1.32</Version>
+    <FileVersion>1.1.33.0</FileVersion>
+    <Version>1.1.33</Version>
     <Copyright>Copyright © Google LLC. 2016-2021</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -18,9 +18,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <UseWindowsForms>true</UseWindowsForms>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
-    <PackageReleaseNotes>1.1.32
+    <PackageReleaseNotes>1.1.33
 --------
-* Too many changes to mention.
+* Various bug fixes.
+* Added RPC pipe support.
     </PackageReleaseNotes>
   </PropertyGroup>
 

@@ -37,6 +37,11 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.33
+--------
+* Various bug fixes.
+* Added RPC pipe support.
+
 1.1.32
 --------
 * Too many changes to mention.

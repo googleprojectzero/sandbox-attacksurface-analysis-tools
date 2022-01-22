@@ -7,8 +7,8 @@
     <Authors>James Forshaw</Authors>
     <Company>Google LLC.</Company>
     <Product>NtApiDotNet</Product>
-    <FileVersion>1.1.32.0</FileVersion>
-    <Version>1.1.32</Version>
+    <FileVersion>1.1.33.0</FileVersion>
+    <Version>1.1.33</Version>
     <Copyright>Copyright © Google LLC. 2016-2021</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -16,9 +16,10 @@
     <Description>A .NET class library to access native NT API system calls</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageReleaseNotes>1.1.32
+    <PackageReleaseNotes>1.1.33
 --------
-* Too many changes to mention.
+* Various bug fixes.
+* Added RPC pipe support.
 </PackageReleaseNotes>
   </PropertyGroup>
   
