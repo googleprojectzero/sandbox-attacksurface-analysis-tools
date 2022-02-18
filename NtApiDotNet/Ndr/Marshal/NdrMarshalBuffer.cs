@@ -580,6 +580,15 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteStruct(blob);
         }
 
+        public void WriteHString(string str)
+        {
+            Align(8);
+            char[] chars = str?.ToCharArray() ?? Array.Empty<char>();
+            WriteInt32(NdrUserMarshal.WDT_INPROC_CALL);
+            WriteInt32(chars.Length * 2);
+            WriteChars(chars);
+        }
+
         #endregion
 
         #region Structure Types

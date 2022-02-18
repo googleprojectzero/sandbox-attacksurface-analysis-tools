@@ -349,9 +349,10 @@ namespace NtApiDotNet.Win32.Rpc
                     return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadBasicString), 
                         nameof(NdrMarshalBuffer.WriteBasicString), known_type, RpcPointerType.Unique);
                 case NdrKnownTypes.HSTRING:
-                    // TODO: Implement these custom marshallers?
-                    break;
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadHString),
+                        nameof(NdrMarshalBuffer.WriteHString), known_type, RpcPointerType.Unique);
             }
+            // TODO: Implement remaining custom marshallers?
             return null;
         }
 

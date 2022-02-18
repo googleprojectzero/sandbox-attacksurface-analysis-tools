@@ -434,6 +434,8 @@ namespace NtApiDotNet.Ndr
                     {
                         return new NdrKnownTypeReference(known_type);
                     }
+                    if (name.Equals("LOCAL_HSTRING"))
+                        return new NdrKnownTypeReference(NdrKnownTypes.HSTRING);
                     return new NdrNamedTypeReference(name);
                 }
             }

@@ -699,6 +699,17 @@ namespace NtApiDotNet.Ndr.Marshal
             return new string(blob.asData);
         }
 
+        public string ReadHString()
+        {
+            Align(8);
+            // Drop the magic as it doesn't seem to be consistent.
+            _ = ReadInt32();
+            int length = ReadInt32();
+            if ((length & 1) == 1)
+                throw new ArgumentException("Invalid remote HSTRING buffer length.");
+            return ReadFixedString(length / 2);
+        }
+
         #endregion
 
         #region Pointer Types

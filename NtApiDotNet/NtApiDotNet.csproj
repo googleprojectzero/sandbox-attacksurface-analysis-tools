@@ -74,6 +74,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
     <Compile Include="Ndr\Marshal\FLAGGED_WORD_BLOB.cs" />
+    <Compile Include="Ndr\Marshal\NdrUserMarshal.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Firewall\DataLinkAddressType.cs" />
     <Compile Include="Net\Firewall\FirewallAddressFamily.cs" />
