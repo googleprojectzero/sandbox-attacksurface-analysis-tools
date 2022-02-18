@@ -346,6 +346,8 @@ namespace NtApiDotNet.Win32.Rpc
                 case NdrKnownTypes.GUID:
                     return new RpcTypeDescriptor(typeof(Guid), nameof(NdrUnmarshalBuffer.ReadGuid), nameof(NdrMarshalBuffer.WriteGuid), known_type);
                 case NdrKnownTypes.BSTR:
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadBasicString), 
+                        nameof(NdrMarshalBuffer.WriteBasicString), known_type, RpcPointerType.Unique);
                 case NdrKnownTypes.HSTRING:
                     // TODO: Implement these custom marshallers?
                     break;

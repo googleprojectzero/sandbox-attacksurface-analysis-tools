@@ -573,6 +573,13 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteBytes(values);
         }
 
+        public void WriteBasicString(string str)
+        {
+            char[] chars = str?.ToCharArray() ?? Array.Empty<char>();
+            var blob = new FLAGGED_WORD_BLOB(str == null ? -1 : chars.Length * 2, chars.Length, chars);
+            WriteStruct(blob);
+        }
+
         #endregion
 
         #region Structure Types

@@ -691,6 +691,14 @@ namespace NtApiDotNet.Ndr.Marshal
             return BinaryEncoding.Instance.GetString(ReadVaryingByteArray()).TrimEnd('\0');
         }
 
+        public string ReadBasicString()
+        {
+            var blob = ReadStruct<FLAGGED_WORD_BLOB>();
+            if (blob.cBytes == -1)
+                return null;
+            return new string(blob.asData);
+        }
+
         #endregion
 
         #region Pointer Types
@@ -777,7 +785,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T ReadStruct<T>() where T : INdrStructure, new()
         {
-            INdrStructure s = (INdrStructure)new T();
+            INdrStructure s = new T();
             bool conformant = false;
             if (s is INdrConformantStructure conformant_struct)
             {

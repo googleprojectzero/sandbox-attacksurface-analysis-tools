@@ -151,9 +151,10 @@ namespace NtApiDotNet.Win32.Rpc
             BuiltinType = code_type;
         }
 
-        public RpcTypeDescriptor(Type code_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type) 
+        public RpcTypeDescriptor(Type code_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type, RpcPointerType pointer_type = RpcPointerType.None)
             : this(code_type, unmarshal_method, null, marshal_method, ndr_type, null, null, null, null)
         {
+            PointerType = pointer_type;
         }
 
         public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, MarshalHelperBuilder marshal_helper, 
