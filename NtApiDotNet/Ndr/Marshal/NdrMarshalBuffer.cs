@@ -767,6 +767,8 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteFixedPrimitiveArray<T>(T[] array, int fixed_count) where T : struct
         {
+            if (fixed_count == 0)
+                return;
             int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
             int actual_size = array.Length * size;
             byte[] total_buffer = new byte[size * fixed_count];

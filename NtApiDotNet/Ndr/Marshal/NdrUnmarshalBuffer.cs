@@ -358,6 +358,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadFixedPrimitiveArray<T>(int actual_count) where T : struct
         {
+            if (actual_count == 0)
+            {
+                return Array.Empty<T>();
+            }
             int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
             Align(size);
             byte[] total_buffer = ReadFixedByteArray(size * actual_count);
