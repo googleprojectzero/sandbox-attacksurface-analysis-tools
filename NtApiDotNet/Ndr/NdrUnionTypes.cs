@@ -110,6 +110,7 @@ namespace NtApiDotNet.Ndr
         public int SwitchIncrement { get; }
         public NdrUnionArms Arms { get; }
         public NdrCorrelationDescriptor Correlation { get; }
+        public string SelectorName { get; set; }
         public bool NonEncapsulated => Format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION;
 
         internal NdrUnionTypeReference(NdrFormatCharacter format, NdrParseContext context, BinaryReader reader)
@@ -139,13 +140,14 @@ namespace NtApiDotNet.Ndr
         internal override string FormatComplexType(INdrFormatterInternal context)
         {
             int indent = 4;
+            string selector_name = !string.IsNullOrWhiteSpace(SelectorName) ? SelectorName : "Selector";
             StringBuilder builder = new StringBuilder();
             builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
 
             if (!NonEncapsulated)
             {
-                builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrSimpleTypeReference(SwitchType).FormatType(context)).AppendLine();
+                builder.Append(' ', indent).AppendFormat("{0} {1};", new NdrSimpleTypeReference(SwitchType).FormatType(context), selector_name).AppendLine();
                 builder.Append(' ', indent).AppendLine("union { ");
                 indent *= 2;
             }

@@ -580,6 +580,9 @@ namespace NtApiDotNet.Win32.Rpc
                 bool is_union = complex_type.IsUnion();
                 bool is_conformant = complex_type.IsConformantStruct();
                 var selector_type = complex_type.GetSelectorType();
+                string selector_name = complex_type.GetSelectorName();
+                if (string.IsNullOrWhiteSpace(selector_name))
+                    selector_name = UNION_SELECTOR_NAME;
 
                 var s_type = ns.AddType(complex_type.Name);
                 if (start_type == null)
@@ -601,7 +604,7 @@ namespace NtApiDotNet.Win32.Rpc
                     s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
                 }
 
-                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, UNION_SELECTOR_NAME, 
+                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, selector_name, 
                     selector_type != null ? selector_type.GetSimpleTypeDescriptor(null, HasFlag(RpcClientBuilderFlags.UnsignedChar)).CodeType : null);
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
                 if (is_conformant)
@@ -611,12 +614,12 @@ namespace NtApiDotNet.Win32.Rpc
                 s_type.AddAlignmentMethod(complex_type.GetAlignment(), marshal_helper);
 
                 var offset_to_name =
-                    complex_type.GetMembers(UNION_SELECTOR_NAME).Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
+                    complex_type.GetMembers(selector_name).Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
                 var default_initialize_expr = new Dictionary<string, CodeExpression>();
                 var member_parameters = new List<Tuple<CodeTypeReference, string, bool>>();
                 bool set_default_arm = false;
 
-                foreach (var member in complex_type.GetMembers(UNION_SELECTOR_NAME))
+                foreach (var member in complex_type.GetMembers(selector_name))
                 {
                     var f_type = GetTypeDescriptor(member.MemberType, marshal_helper);
                     s_type.AddField(f_type.GetStructureType(), member.Name, member.Hidden ? MemberAttributes.Private : MemberAttributes.Public);
@@ -638,10 +641,10 @@ namespace NtApiDotNet.Win32.Rpc
 
                     if (f_type.Pointer)
                     {
-                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name, member.Selector, 
-                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
+                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name, member.Selector,
+                            selector_name, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
                         unmarshal_method.AddDeferredEmbeddedUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name, member.Selector,
-                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL);
+                            selector_name, DEFAULT_UNION_ARM_LABEL);
                     }
                     else
                     {
@@ -651,10 +654,10 @@ namespace NtApiDotNet.Win32.Rpc
                             null_check = true;
                         }
 
-                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, null_check, member.Selector, 
-                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
+                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, null_check, member.Selector,
+                            selector_name, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name, member.Selector,
-                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL);
+                            selector_name, DEFAULT_UNION_ARM_LABEL);
                     }
 
                     if (!f_type.Pointer || f_type.PointerType == RpcPointerType.Reference)

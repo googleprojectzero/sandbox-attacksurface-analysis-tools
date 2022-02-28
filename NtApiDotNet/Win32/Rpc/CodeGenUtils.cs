@@ -940,6 +940,15 @@ namespace NtApiDotNet.Win32.Rpc
             return false;
         }
 
+        public static string GetSelectorName(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrUnionTypeReference union_type)
+            {
+                return union_type.SelectorName;
+            }
+            return string.Empty;
+        }
+
         public static bool IsUnion(this NdrComplexTypeReference complex_type)
         {
             return complex_type is NdrUnionTypeReference;

@@ -201,6 +201,9 @@ namespace NtApiDotNet.Ndr
 
         private static void FixupStructureType(HashSet<NdrComplexTypeReference> fixup_set, NdrBaseStructureTypeReference complex_type, UserDefinedTypeInformation udt)
         {
+            // Ignore union types.
+            if (udt.Union)
+                return;
             var members = complex_type.Members.ToList();
             if (members.Count != udt.Members.Count)
                 return;
@@ -219,9 +222,24 @@ namespace NtApiDotNet.Ndr
         private static void FixupUnionType(HashSet<NdrComplexTypeReference> fixup_set, NdrUnionTypeReference union_type, UserDefinedTypeInformation udt)
         {
             var members = union_type.Arms.Arms.ToList();
+            if (union_type.NonEncapsulated)
+            {
+                if (!udt.Union)
+                    return;
+            }
+            else
+            {
+                if (udt.Union)
+                    return;
+                if (udt.Members.Count != 2 || !(udt.Members[1].Type is UserDefinedTypeInformation sub_union_type) || !sub_union_type.Union)
+                    return;
+                union_type.SelectorName = udt.Members[0].Name;
+                udt = sub_union_type;
+            }
+
             if (members.Count != udt.Members.Count)
                 return;
-            for (int i = 0; i < members.Count; ++i)
+            for (int i = 0; i < udt.Members.Count; ++i)
             {
                 members[i].Name = udt.Members[i].Name;
                 var member_udt = GetUDTType(udt.Members[i].Type);
@@ -240,19 +258,13 @@ namespace NtApiDotNet.Ndr
 
             // Fixup the name to remove compiler generated characters.
             complex_type.Name = CodeGenUtils.MakeIdentifier(udt.Name);
-            if (udt.Union)
+            if (complex_type is NdrUnionTypeReference union)
             {
-                if (complex_type is NdrUnionTypeReference union)
-                {
-                    FixupUnionType(fixup_set, union, udt);
-                }
+                FixupUnionType(fixup_set, union, udt);
             }
-            else
+            else if (complex_type is NdrBaseStructureTypeReference str)
             {
-                if (complex_type is NdrBaseStructureTypeReference str)
-                {
-                    FixupStructureType(fixup_set, str, udt);
-                }
+                FixupStructureType(fixup_set, str, udt);
             }
         }
 
