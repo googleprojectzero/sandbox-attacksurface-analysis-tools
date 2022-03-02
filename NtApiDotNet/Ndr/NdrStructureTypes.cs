@@ -241,7 +241,7 @@ namespace NtApiDotNet.Ndr
                 {
                     if (_base_members[i].Format == NdrFormatCharacter.FC_POINTER)
                     {
-                        _base_members[i] = Read(context, reader);
+                        _base_members[i] = Read(context, pointer_reader);
                     }
                 }
             }
