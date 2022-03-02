@@ -730,6 +730,11 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        public void WriteIgnorePointer(IntPtr value)
+        {
+            WriteInt32((int)value.ToInt64());
+        }
+
         #endregion
 
         #region Fixed Array Types

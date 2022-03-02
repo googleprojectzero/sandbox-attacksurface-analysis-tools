@@ -81,7 +81,7 @@ namespace NtApiDotNet.Ndr
             int current_offset = 0;
             foreach (var type in _base_members)
             {
-                if (!(type is NdrStructurePaddingTypeReference) && !(type is NdrIgnoreTypeReference))
+                if (!(type is NdrStructurePaddingTypeReference))
                 {
                     members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
                 }
@@ -267,6 +267,16 @@ namespace NtApiDotNet.Ndr
     {
         internal NdrIgnoreTypeReference() : base(NdrFormatCharacter.FC_IGNORE)
         {
+        }
+
+        public override int GetSize()
+        {
+            return IntPtr.Size;
+        }
+
+        internal override string FormatType(INdrFormatterInternal context)
+        {
+            return $"{context.FormatComment("ignore")} {context.SimpleTypeToName(Format)}";
         }
     }
 

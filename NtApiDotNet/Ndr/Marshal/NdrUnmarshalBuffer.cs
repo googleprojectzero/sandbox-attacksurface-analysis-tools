@@ -788,6 +788,11 @@ namespace NtApiDotNet.Ndr.Marshal
             return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2), full_pointer);
         }
 
+        public IntPtr ReadIgnorePointer()
+        {
+            return new IntPtr(ReadInt32());
+        }
+
         #endregion
 
         #region Structure Types

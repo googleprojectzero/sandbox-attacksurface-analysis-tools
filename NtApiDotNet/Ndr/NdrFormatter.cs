@@ -125,6 +125,7 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_DOUBLE:
                     return "double";
                 case NdrFormatCharacter.FC_INT3264:
+                case NdrFormatCharacter.FC_IGNORE:
                     return "IntPtr";
                 case NdrFormatCharacter.FC_UINT3264:
                     return "UIntPtr";
@@ -262,6 +263,8 @@ namespace NtApiDotNet.Ndr
                     return "handle_t";
                 case NdrFormatCharacter.FC_ERROR_STATUS_T:
                     return "uint";
+                case NdrFormatCharacter.FC_IGNORE:
+                    return "void*";
             }
 
             return $"{format}";

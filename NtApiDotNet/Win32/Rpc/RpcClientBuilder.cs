@@ -477,6 +477,10 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 ret_desc = GetPipeTypeDescriptor(pipe_type, marshal_helper);
             }
+            else if (type is NdrIgnoreTypeReference)
+            {
+                ret_desc = new RpcTypeDescriptor(typeof(IntPtr), nameof(NdrUnmarshalBuffer.ReadIgnorePointer), nameof(NdrMarshalBuffer.WriteIgnorePointer), type);
+            }
 
             if (ret_desc != null)
             {
