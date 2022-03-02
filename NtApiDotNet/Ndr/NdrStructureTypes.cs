@@ -31,6 +31,7 @@ namespace NtApiDotNet.Ndr
     public abstract class NdrComplexTypeReference : NdrBaseTypeReference
     {
         public string Name { get; set; }
+        public abstract int MemberCount { get; }
         internal abstract string FormatComplexType(INdrFormatterInternal context);
 
         internal NdrComplexTypeReference(string name, NdrFormatCharacter format) : base(format)
@@ -101,6 +102,8 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrBaseTypeReference> MembersTypes { get { return _base_members.AsReadOnly(); } }
 
         public IEnumerable<NdrStructureMember> Members => GetMembers().AsReadOnly();
+
+        public override int MemberCount => GetMembers().Count;
 
         internal NdrBaseStructureTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
             : base($"Struct_{context.TypeCache.GetNextComplexId()}", format)

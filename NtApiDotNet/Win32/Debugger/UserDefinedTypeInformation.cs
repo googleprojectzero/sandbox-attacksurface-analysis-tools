@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Debugger
 {
@@ -83,12 +84,20 @@ namespace NtApiDotNet.Win32.Debugger
         /// </summary>
         public bool Union { get; }
 
+        /// <summary>
+        /// Get the list of members based on their offset in the structure..
+        /// </summary>
+        public IReadOnlyList<IReadOnlyList<UserDefinedTypeMember>> UniqueMembers { get; }
+
         internal UserDefinedTypeInformation(long size, int type_index, SymbolLoadedModule module, 
             string name, bool union, IReadOnlyList<UserDefinedTypeMember> members)
             : base(SymTagEnum.SymTagUDT, size, type_index, module, name)
         {
             Members = members;
             Union = union;
+            var groups = members.GroupBy(m => m.Offset).OrderBy(g => g.Key);
+            var lists = groups.Select(g => (IReadOnlyList<UserDefinedTypeMember>)g.AsEnumerable().ToList());
+            UniqueMembers = lists.ToList().AsReadOnly();
         }
     }
 }

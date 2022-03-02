@@ -205,13 +205,42 @@ namespace NtApiDotNet.Ndr
             if (udt.Union)
                 return;
             var members = complex_type.Members.ToList();
-            if (members.Count != udt.Members.Count)
+            var udt_members = udt.UniqueMembers;
+            if (members.Count != udt_members.Count)
+                return;
+
+            for (int i = 0; i < members.Count; ++i)
+            {
+                var member_complex = GetComplexType(members[i].MemberType);
+                if (udt_members[i].Count == 1)
+                {
+                    var udt_member = udt_members[i][0];
+                    var member_udt = GetUDTType(udt_member.Type);
+                    if (member_udt != null && member_complex != null)
+                    {
+                        FixupComplexType(fixup_set, member_complex, member_udt);
+                    }
+                    members[i].Name = udt_member.Name;
+                }
+                else if (member_complex is NdrUnionTypeReference union_type && fixup_set.Add(member_complex))
+                {
+                    members[i].Name = $"_Union{i}";
+                    member_complex.Name = $"{CodeGenUtils.MakeIdentifier(udt.Name)}_Union{i}";
+                    FixupUnionTypeMembers(fixup_set, union_type.Arms.Arms.ToList(), udt_members[i]);
+                }
+            }
+        }
+
+        private static void FixupUnionTypeMembers(HashSet<NdrComplexTypeReference> fixup_set, List<NdrUnionArm> members, 
+            IReadOnlyList<UserDefinedTypeMember> udt_members)
+        {
+            if (members.Count != udt_members.Count)
                 return;
             for (int i = 0; i < members.Count; ++i)
             {
-                members[i].Name = udt.Members[i].Name;
-                var member_udt = GetUDTType(udt.Members[i].Type);
-                var member_complex = GetComplexType(members[i].MemberType);
+                members[i].Name = udt_members[i].Name;
+                var member_udt = GetUDTType(udt_members[i].Type);
+                var member_complex = GetComplexType(members[i].ArmType);
                 if (member_udt != null && member_complex != null)
                 {
                     FixupComplexType(fixup_set, member_complex, member_udt);
@@ -237,18 +266,7 @@ namespace NtApiDotNet.Ndr
                 udt = sub_union_type;
             }
 
-            if (members.Count != udt.Members.Count)
-                return;
-            for (int i = 0; i < udt.Members.Count; ++i)
-            {
-                members[i].Name = udt.Members[i].Name;
-                var member_udt = GetUDTType(udt.Members[i].Type);
-                var member_complex = GetComplexType(members[i].ArmType);
-                if (member_udt != null && member_complex != null)
-                {
-                    FixupComplexType(fixup_set, member_complex, member_udt);
-                }
-            }
+            FixupUnionTypeMembers(fixup_set, members, udt.Members.ToList());
         }
 
         private static void FixupComplexType(HashSet<NdrComplexTypeReference> fixup_set, NdrComplexTypeReference complex_type, UserDefinedTypeInformation udt)

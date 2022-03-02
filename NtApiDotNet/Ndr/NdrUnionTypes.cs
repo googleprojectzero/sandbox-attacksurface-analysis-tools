@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Ndr
@@ -131,6 +132,8 @@ namespace NtApiDotNet.Ndr
                 Arms = new NdrUnionArms(context, reader);
             }
         }
+
+        public override int MemberCount => Arms.Arms.Count();
 
         internal override string FormatType(INdrFormatterInternal context)
         {
