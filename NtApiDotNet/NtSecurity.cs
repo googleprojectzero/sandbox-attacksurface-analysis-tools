@@ -1029,7 +1029,7 @@ namespace NtApiDotNet
                     new UnicodeString(capability_name),
                     cap_group_sid, cap_sid)
                     .CreateResult(throw_on_error, ()
-                    => CacheSidName(new Sid(cap_sid), GetNamedCapabilityDomain(false), capability_name, 
+                    => CacheSidName(new Sid(cap_sid), GetNamedCapabilityDomain(false), capability_name,
                             SidNameSource.Capability, SidNameUse.Group));
             }
         }
@@ -1059,7 +1059,7 @@ namespace NtApiDotNet
                     new UnicodeString(capability_name),
                     cap_group_sid, cap_sid).CreateResult(throw_on_error,
                     () => CacheSidName(new Sid(cap_group_sid),
-                        GetNamedCapabilityDomain(true), capability_name, 
+                        GetNamedCapabilityDomain(true), capability_name,
                         SidNameSource.Capability, SidNameUse.Group));
             }
         }
@@ -2256,7 +2256,7 @@ namespace NtApiDotNet
         /// <returns>True if the token has the capability.</returns>
         public static NtResult<bool> CapabilityCheck(SafeKernelObjectHandle token, string capability_name, bool throw_on_error)
         {
-            return NtRtl.RtlCapabilityCheck(token ?? SafeKernelObjectHandle.Null, new UnicodeString(capability_name), 
+            return NtRtl.RtlCapabilityCheck(token ?? SafeKernelObjectHandle.Null, new UnicodeString(capability_name),
                 out bool result).CreateResult(throw_on_error, () => result);
         }
 
@@ -2269,6 +2269,52 @@ namespace NtApiDotNet
         public static bool CapabilityCheck(SafeKernelObjectHandle token, string capability_name)
         {
             return CapabilityCheck(token, capability_name, true).Result;
+        }
+
+        /// <summary>
+        /// Encrypt memory.
+        /// </summary>
+        /// <param name="memory">The memory to encrypt.</param>
+        /// <param name="option_flags">Option flags for the encryption.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The encrypted memory.</returns>
+        public static NtResult<byte[]> EncryptMemory(byte[] memory, RtlEncryptOptionFlags option_flags, bool throw_on_error)
+        {
+            return DoEncrypt(memory, option_flags, NtRtl.RtlEncryptMemory, throw_on_error);
+        }
+
+        /// <summary>
+        /// Encrypt memory.
+        /// </summary>
+        /// <param name="memory">The memory to encrypt.</param>
+        /// <param name="option_flags">Option flags for the encryption.</param>
+        /// <returns>The encrypted memory.</returns>
+        public static byte[] EncryptMemory(byte[] memory, RtlEncryptOptionFlags option_flags)
+        {
+            return EncryptMemory(memory, option_flags, true).Result;
+        }
+
+        /// <summary>
+        /// Decrypt memory.
+        /// </summary>
+        /// <param name="memory">The memory to decrypt.</param>
+        /// <param name="option_flags">Option flags for the decryption.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The decrypted memory.</returns>
+        public static NtResult<byte[]> DecryptMemory(byte[] memory, RtlEncryptOptionFlags option_flags, bool throw_on_error)
+        {
+            return DoEncrypt(memory, option_flags, NtRtl.RtlDecryptMemory, throw_on_error);
+        }
+
+        /// <summary>
+        /// Decrypt memory.
+        /// </summary>
+        /// <param name="memory">The memory to decrypt.</param>
+        /// <param name="option_flags">Option flags for the decryption.</param>
+        /// <returns>The decrypted memory.</returns>
+        public static byte[] DecryptMemory(byte[] memory, RtlEncryptOptionFlags option_flags)
+        {
+            return DecryptMemory(memory, option_flags, true).Result;
         }
 
         #endregion
@@ -2331,7 +2377,7 @@ namespace NtApiDotNet
 
         internal static void CachePackageName(Sid sid, string name)
         {
-            _package_names.AddOrUpdate(sid, name, (a,b) => name);
+            _package_names.AddOrUpdate(sid, name, (a, b) => name);
         }
 
         #endregion
@@ -2516,7 +2562,7 @@ namespace NtApiDotNet
                 name = LookupKnownCapabilityName(sid);
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(sid, GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name), 
+                    return new SidName(sid, GetNamedCapabilityDomain(false), MakeFakeCapabilityName(name),
                         SidNameSource.Capability, SidNameUse.Group, false);
                 }
             }
@@ -2533,7 +2579,7 @@ namespace NtApiDotNet
                 name = LookupProcessTrustName(sid);
                 if (name != null)
                 {
-                    return new SidName(sid, "TRUST LEVEL", name, 
+                    return new SidName(sid, "TRUST LEVEL", name,
                         SidNameSource.ProcessTrust, SidNameUse.Label, false);
                 }
             }
@@ -2871,7 +2917,7 @@ namespace NtApiDotNet
                 IntPtr handle_id,
                 string object_type_name,
                 string object_name,
-                bool object_creation, 
+                bool object_creation,
                 AuditEventType audit_type,
                 AuditAccessCheckFlags flags)
             {
@@ -2898,9 +2944,9 @@ namespace NtApiDotNet
                 NtStatus[] access_status_list)
             {
                 return NtSystemCalls.NtAccessCheckByTypeResultListAndAuditAlarmByHandle(
-                    new UnicodeString(_subsystem_name), _handle_id, client_token, 
+                    new UnicodeString(_subsystem_name), _handle_id, client_token,
                     new UnicodeString(_object_type_name), new UnicodeString(_object_name),
-                    security_descriptor, self_sid, desired_access, _audit_type, _flags, 
+                    security_descriptor, self_sid, desired_access, _audit_type, _flags,
                     object_type_list, object_type_list_length, ref generic_mapping, _object_creation,
                     granted_access_list, access_status_list, out _generate_on_close);
             }
@@ -3075,6 +3121,15 @@ namespace NtApiDotNet
                     repeat_count--;
                     privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
                 }
+            }
+        }
+
+        private static NtResult<byte[]> DoEncrypt(byte[] memory, RtlEncryptOptionFlags option_flags, 
+            Func<SafeBuffer, int, RtlEncryptOptionFlags, NtStatus> func, bool throw_on_error)
+        {
+            using (var buffer = memory.ToBuffer())
+            {
+                return func(buffer, buffer.Length, option_flags).CreateResult(throw_on_error, () => buffer.ToArray());
             }
         }
 

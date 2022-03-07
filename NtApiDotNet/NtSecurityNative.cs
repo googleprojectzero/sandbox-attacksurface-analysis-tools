@@ -515,6 +515,29 @@ namespace NtApiDotNet
         AllowNoPrivilege = 1,
     }
 
+    [Flags]
+    public enum RtlEncryptOptionFlags
+    {
+        None = 0,
+        //
+        // Allow Encrypt/Decrypt across process boundaries.
+        // eg: encrypted buffer passed across LPC to another process which calls RtlDecryptMemory.
+        //
+        [SDKName("RTL_ENCRYPT_OPTION_CROSS_PROCESS")]
+        CrossProcess = 0x01,
+        //
+        // Allow Encrypt/Decrypt across callers with same LogonId.
+        // eg: encrypted buffer passed across LPC to another process which calls RtlDecryptMemory whilst impersonating.
+        //
+        [SDKName("RTL_ENCRYPT_OPTION_SAME_LOGON")]
+        SameLogon = 0x02,
+        //
+        // Allow callers to encrypt information to be decrypted only by a system process
+        //
+        [SDKName("RTL_ENCRYPT_OPTION_FOR_SYSTEM")]
+        ForSystem = 0x04,
+    }
+
     public static partial class NtRtl
     {
         public const uint SecurityDescriptorRevision = 1;
@@ -749,6 +772,12 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus RtlCapabilityCheck(SafeKernelObjectHandle TokenHandle,
             [In] UnicodeString CapabilityName, [MarshalAs(UnmanagedType.U1)] out bool Result);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "SystemFunction040")]
+        public static extern NtStatus RtlEncryptMemory(SafeBuffer Memory, int MemorySize, RtlEncryptOptionFlags OptionFlags);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "SystemFunction041")]
+        public static extern NtStatus RtlDecryptMemory(SafeBuffer Memory, int MemorySize, RtlEncryptOptionFlags OptionFlags);
     }
 
     public static partial class NtSystemCalls
