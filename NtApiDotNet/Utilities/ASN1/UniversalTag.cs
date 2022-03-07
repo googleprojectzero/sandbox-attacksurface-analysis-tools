@@ -14,8 +14,12 @@
 
 namespace NtApiDotNet.Utilities.ASN1
 {
-    internal enum UniversalTag
+    /// <summary>
+    /// The universal object tag.
+    /// </summary>
+    public enum UniversalTag
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         EOC = 0,
         BOOLEAN = 1,
         INTEGER = 2,
@@ -34,5 +38,6 @@ namespace NtApiDotNet.Utilities.ASN1
         UTCTime = 23,
         GeneralizedTime = 24,
         GeneralString = 27,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

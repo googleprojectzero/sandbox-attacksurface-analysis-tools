@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1.Parser;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Utilities.ASN1
@@ -68,6 +70,26 @@ namespace NtApiDotNet.Utilities.ASN1
         public static string FormatDER(string path, int depth)
         {
             return FormatDER(File.ReadAllBytes(path), depth);
+        }
+
+        /// <summary>
+        /// Parse DER encoded ASN.1 to an object tree.
+        /// </summary>
+        /// <param name="path">The path to the file containing ASN.1 data in DER format.</param>
+        /// <returns>The ASN1 objects parsed.</returns>
+        public static IEnumerable<ASN1Object> ParseDER(string path)
+        {
+            return ParseDER(File.ReadAllBytes(path));
+        }
+
+        /// <summary>
+        /// Parse DER encoded ASN.1 to an object tree.
+        /// </summary>
+        /// <param name="asn1_der">The ASN.1 data in DER format.</param>
+        /// <returns>The ASN1 objects parsed.</returns>
+        public static IEnumerable<ASN1Object> ParseDER(byte[] asn1_der)
+        {
+            return DERParser.ParseData(asn1_der, 0).Select(v => ASN1Object.ToObject(v)).ToArray();
         }
     }
 }
