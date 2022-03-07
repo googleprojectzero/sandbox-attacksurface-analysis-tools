@@ -14,6 +14,8 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
@@ -30,6 +32,26 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
         }
 
+        public SafeCredBuffer(IntPtr ptr) 
+            : base(ptr, 0, true)
+        {
+        }
+
         public override bool IsInvalid => handle == IntPtr.Zero;
+
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        public SafeCredBuffer Detach()
+        {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try // Needed for constrained region.
+            {
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                return new SafeCredBuffer(handle);
+            }
+            finally
+            {
+            }
+        }
     }
 }

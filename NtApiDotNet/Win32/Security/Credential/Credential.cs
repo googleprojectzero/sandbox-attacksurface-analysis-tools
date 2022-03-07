@@ -33,6 +33,10 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         public CredentialFlags Flags { get; }
         /// <summary>
+        /// The logon type for the credential.
+        /// </summary>
+        public SecurityLogonType LogonType { get; }
+        /// <summary>
         /// Credential type.
         /// </summary>
         public CredentialType Type { get; }
@@ -91,7 +95,8 @@ namespace NtApiDotNet.Win32.Security.Credential
 
         internal Credential(CREDENTIAL cred)
         {
-            Flags = cred.Flags;
+            Flags = (CredentialFlags)(cred.Flags & 0xFF);
+            LogonType = (SecurityLogonType)((cred.Flags >> 12) & 0xF);
             Type = cred.Type;
             TargetName = cred.TargetName ?? string.Empty;
             Comment = cred.Comment ?? string.Empty;

@@ -879,6 +879,27 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern bool CredBackupCredentials(SafeKernelObjectHandle Token, 
             string FilePath, IntPtr Key, int KeySize, int KeyEncoded);
 
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredMarshalCredential(
+            CredMarshalType CredType,
+            SafeBuffer Credential,
+            out SafeCredBuffer MarshaledCredential // LPWSTR* 
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredUnmarshalCredential(
+          string MarshaledCredential,
+          out CredMarshalType CredType,
+          out SafeCredBuffer Credential
+        );
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern void CredFree(
+            IntPtr Buffer
+        );
+
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaQuerySecurityObject(
             SafeLsaHandle ObjectHandle,
@@ -891,11 +912,6 @@ namespace NtApiDotNet.Win32.Security.Native
             SafeLsaHandle ObjectHandle,
             SecurityInformation SecurityInformation,
             SafeBuffer SecurityDescriptor
-        );
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern void CredFree(
-            IntPtr Buffer
         );
 
         [DllImport("samlib.dll", CharSet = CharSet.Unicode)]

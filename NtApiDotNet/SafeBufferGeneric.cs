@@ -345,5 +345,40 @@ namespace NtApiDotNet
         }
 
         #endregion
+
+        #region Unsafe Methods
+        /// <summary>
+        /// Reads a structure from the buffer.
+        /// </summary>
+        /// <typeparam name="T">The type of the structure to read.</typeparam>
+        /// <returns>The read structure.</returns>
+        /// <remarks>This is unsafe and does no length checks. Use with caution.</remarks>
+        public T ReadStructUnsafe<T>()
+        {
+            return Marshal.PtrToStructure<T>(DangerousGetHandle());
+        }
+
+        /// <summary>
+        /// Writes a structure to the buffer.
+        /// </summary>
+        /// <typeparam name="T">The type of the structure to write.</typeparam>
+        /// <param name="value">The structure to write.</param>
+        /// <remarks>This is unsafe and does no length checks. Use with caution.</remarks>
+        public void WriteStructureUnsafe<T>(T value)
+        {
+            Marshal.StructureToPtr(value, DangerousGetHandle(), false);
+        }
+
+        /// <summary>
+        /// Read a NUL terminated unicode string from the buffer.
+        /// </summary>
+        /// <returns>The unicode string.</returns>
+        /// <remarks>This is unsafe and does no length checks. Use with caution.</remarks>
+        public string ReadNulTerminatedUnicodeStringUnsafe()
+        {
+            return Marshal.PtrToStringUni(DangerousGetHandle());
+        }
+
+        #endregion
     }
 }

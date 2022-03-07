@@ -158,5 +158,58 @@ namespace NtApiDotNet.Win32.Security.Credential
                 File.Delete(target_path);
             }
         }
+
+        /// <summary>
+        /// Marshal a credentials buffer to a string.
+        /// </summary>
+        /// <param name="credential">The credentials.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The marshalled credentials.</returns>
+        public static NtResult<string> MarshalCredential(CredentialMarshalBase credential, bool throw_on_error)
+        {
+            using (var buffer = credential.ToBuffer())
+            {
+                return SecurityNativeMethods.CredMarshalCredential(credential.CredType, buffer, 
+                    out SafeCredBuffer cred_string).CreateWin32Result(throw_on_error, () =>
+                {
+                    using (cred_string)
+                    {
+                        return cred_string.ReadNulTerminatedUnicodeStringUnsafe();
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Marshal a credentials buffer to a string.
+        /// </summary>
+        /// <param name="credential">The credentials.</param>
+        /// <returns>The marshalled credentials.</returns>
+        public static string MarshalCredential(CredentialMarshalBase credential)
+        {
+            return MarshalCredential(credential, true).Result;
+        }
+
+        /// <summary>
+        /// Unmarshal a credentials buffer from a string.
+        /// </summary>
+        /// <param name="credential">The marshalled credentials.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The unmarshalled credentials.</returns>
+        public static NtResult<CredentialMarshalBase> UnmarshalCredential(string credential, bool throw_on_error)
+        {
+            return SecurityNativeMethods.CredUnmarshalCredential(credential, out CredMarshalType cred_type, 
+                out SafeCredBuffer buffer).CreateWin32Result(throw_on_error, () => CredentialMarshalBase.GetCredentialBuffer(buffer, cred_type));
+        }
+
+        /// <summary>
+        /// Unmarshal a credentials buffer from a string.
+        /// </summary>
+        /// <param name="credential">The marshalled credentials.</param>
+        /// <returns>The unmarshalled credentials.</returns>
+        public static CredentialMarshalBase UnmarshalCredential(string credential)
+        {
+            return UnmarshalCredential(credential, true).Result;
+        }
     }
 }
