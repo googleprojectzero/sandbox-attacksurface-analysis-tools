@@ -40,9 +40,11 @@ namespace NtApiDotNet.Win32.Security.Credential
                     case CredMarshalType.CertCredential:
                         return new CredentialMarshalCertificate(buffer.ReadStructUnsafe<CERT_CREDENTIAL_INFO>());
                     case CredMarshalType.UsernameTargetCredential:
-                        return new CredentialMarshalUsernameTarget(buffer.ReadStructUnsafe<USERNAME_TARGET_CREDENTIAL_INFO>());
+                    case CredMarshalType.UsernameForPackedCredentials:
+                        return new CredentialMarshalUsernameTarget(buffer.ReadStructUnsafe<USERNAME_TARGET_CREDENTIAL_INFO>(), cred_type);
                     case CredMarshalType.BinaryBlobCredential:
-                        return new CredentialMarshalBinaryBlob(buffer.ReadStructUnsafe<BINARY_BLOB_CREDENTIAL_INFO>());
+                    case CredMarshalType.BinaryBlobForSystem:
+                        return new CredentialMarshalBinaryBlob(buffer.ReadStructUnsafe<BINARY_BLOB_CREDENTIAL_INFO>(), cred_type);
                     default:
                         return new CredentialMarshalUnknown(buffer.Detach(), cred_type);
                 }
@@ -121,7 +123,7 @@ namespace NtApiDotNet.Win32.Security.Credential
             return new USERNAME_TARGET_CREDENTIAL_INFO() { UserName = UserName }.ToBuffer();
         }
 
-        internal CredentialMarshalUsernameTarget(USERNAME_TARGET_CREDENTIAL_INFO info) : base(CredMarshalType.UsernameTargetCredential)
+        internal CredentialMarshalUsernameTarget(USERNAME_TARGET_CREDENTIAL_INFO info, CredMarshalType cred_type) : base(cred_type)
         {
             UserName = info.UserName;
         }
@@ -163,7 +165,7 @@ namespace NtApiDotNet.Win32.Security.Credential
             }
         }
 
-        internal CredentialMarshalBinaryBlob(BINARY_BLOB_CREDENTIAL_INFO info) : base(CredMarshalType.BinaryBlobCredential)
+        internal CredentialMarshalBinaryBlob(BINARY_BLOB_CREDENTIAL_INFO info, CredMarshalType marshal_type) : base(marshal_type)
         {
             Blob = new byte[info.cbBlob];
             Marshal.Copy(info.pbBlob, Blob, 0, info.cbBlob);

@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Credential
 {
@@ -210,6 +211,190 @@ namespace NtApiDotNet.Win32.Security.Credential
         public static CredentialMarshalBase UnmarshalCredential(string credential)
         {
             return UnmarshalCredential(credential, true).Result;
+        }
+
+        /// <summary>
+        /// Protect a credential EX version.
+        /// </summary>
+        /// <param name="flags">Flags for the protection.</param>
+        /// <param name="credential">The credential to protect.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The protected credential.</returns>
+        public static NtResult<string> ProtectCredentialEx(CredentialProtectFlag flags, byte[] credential, bool throw_on_error)
+        {
+            if (credential is null)
+                throw new ArgumentNullException(nameof(credential));
+
+            if ((credential.Length & 1) != 0)
+                throw new ArgumentException("Credential must be multiple of 2.", nameof(credential));
+
+            int length = 0;
+            var error = SecurityNativeMethods.CredProtectEx(flags, credential, credential.Length / 2,
+                null, ref length, out CredentialProtectionType protection_type).GetLastWin32Error();
+            if (error == Win32Error.SUCCESS)
+                return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<string>(throw_on_error);
+            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                return error.CreateResultFromDosError<string>(throw_on_error);
+
+            byte[] buffer = new byte[length * 2];
+            return SecurityNativeMethods.CredProtectEx(flags, credential, credential.Length / 2,
+                buffer, ref length, out protection_type).CreateWin32Result(throw_on_error, 
+                () => Encoding.Unicode.GetString(buffer).TrimEnd('\0'));
+        }
+
+        /// <summary>
+        /// Protect a credential EX version.
+        /// </summary>
+        /// <param name="flags">Flags for the protection.</param>
+        /// <param name="credential">The credential to protect.</param>
+        /// <returns>The protected credential.</returns>
+        public static string ProtectCredentialEx(CredentialProtectFlag flags, byte[] credential)
+        {
+            return ProtectCredentialEx(flags, credential, true).Result;
+        }
+
+        /// <summary>
+        /// Protect a credential EX version.
+        /// </summary>
+        /// <param name="flags">Flags for the protection.</param>
+        /// <param name="credential">The credential to protect.</param>
+        /// <returns>The protected credential.</returns>
+        public static string ProtectCredentialEx(CredentialProtectFlag flags, string credential)
+        {
+            return ProtectCredentialEx(flags, Encoding.Unicode.GetBytes(credential));
+        }
+
+        /// <summary>
+        /// Protect a credential.
+        /// </summary>
+        /// <param name="as_self">True to protect as self.</param>
+        /// <param name="credential">The credential to protect.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The protected credential.</returns>
+        public static NtResult<string> ProtectCredential(bool as_self, string credential, bool throw_on_error)
+        {
+            if (credential is null)
+                throw new ArgumentNullException(nameof(credential));
+
+            int length = 0;
+            var error = SecurityNativeMethods.CredProtect(as_self, credential, credential.Length / 2,
+                null, ref length, out CredentialProtectionType protection_type).GetLastWin32Error();
+            if (error == Win32Error.SUCCESS)
+                return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<string>(throw_on_error);
+            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                return error.CreateResultFromDosError<string>(throw_on_error);
+
+            byte[] buffer = new byte[length * 2];
+            return SecurityNativeMethods.CredProtect(as_self, credential, credential.Length / 2,
+                buffer, ref length, out protection_type).CreateWin32Result(throw_on_error, 
+                () => Encoding.Unicode.GetString(buffer).TrimEnd('\0'));
+        }
+
+        /// <summary>
+        /// Protect a credential.
+        /// </summary>
+        /// <param name="as_self">True to protect as self.</param>
+        /// <param name="credential">The credential to protect.</param>
+        /// <returns>The protected credential.</returns>
+        public static string ProtectCredential(bool as_self, string credential)
+        {
+            return ProtectCredential(as_self, credential, true).Result;
+        }
+
+        /// <summary>
+        /// Unprotect a credential.
+        /// </summary>
+        /// <param name="as_self">True to unprotect as self.</param>
+        /// <param name="credential">The credential to unprotect.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The unprotected credential.</returns>
+        public static NtResult<string> UnprotectCredential(bool as_self, string credential, bool throw_on_error)
+        {
+            if (credential is null)
+                throw new ArgumentNullException(nameof(credential));
+
+            int length = 0;
+            var error = SecurityNativeMethods.CredUnprotect(as_self, credential, credential.Length,
+                null, ref length).GetLastWin32Error();
+            if (error == Win32Error.SUCCESS)
+                return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<string>(throw_on_error);
+            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                return error.CreateResultFromDosError<string>(throw_on_error);
+
+            byte[] buffer = new byte[length * 2];
+            return SecurityNativeMethods.CredUnprotect(as_self, credential, credential.Length / 2,
+                buffer, ref length).CreateWin32Result(throw_on_error,
+                () => Encoding.Unicode.GetString(buffer).TrimEnd('\0'));
+        }
+
+        /// <summary>
+        /// Unprotect a credential.
+        /// </summary>
+        /// <param name="as_self">True to unprotect as self.</param>
+        /// <param name="credential">The credential to unprotect.</param>
+        /// <returns>The unprotected credential.</returns>
+        public static string UnprotectCredential(bool as_self, string credential)
+        {
+            return UnprotectCredential(as_self, credential, true).Result;
+        }
+
+        /// <summary>
+        /// Unprotect a credential.
+        /// </summary>
+        /// <param name="flags">Flags for the unprotect.</param>
+        /// <param name="credential">The credential to unprotect.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The unprotected credential.</returns>
+        public static NtResult<byte[]> UnprotectCredentialEx(CredentialUnprotectFlag flags, string credential, bool throw_on_error)
+        {
+            if (credential is null)
+                throw new ArgumentNullException(nameof(credential));
+
+            int length = 0;
+            var error = SecurityNativeMethods.CredUnprotectEx(flags, credential, credential.Length,
+                null, ref length).GetLastWin32Error();
+            if (error == Win32Error.SUCCESS)
+                return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<byte[]>(throw_on_error);
+            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                return error.CreateResultFromDosError<byte[]>(throw_on_error);
+
+            byte[] buffer = new byte[length * 2];
+            return SecurityNativeMethods.CredUnprotectEx(flags, credential, credential.Length / 2,
+                buffer, ref length).CreateWin32Result(throw_on_error,
+                () => buffer);
+        }
+
+        /// <summary>
+        /// Unprotect a credential.
+        /// </summary>
+        /// <param name="flags">Flags for the unprotect.</param>
+        /// <param name="credential">The credential to unprotect.</param>
+        /// <returns>The unprotected credential.</returns>
+        public static byte[] UnprotectCredentialEx(CredentialUnprotectFlag flags, string credential)
+        {
+            return UnprotectCredentialEx(flags, credential, true).Result;
+        }
+
+        /// <summary>
+        /// Get the credential protection type of an encrypted credential.
+        /// </summary>
+        /// <param name="credential">The credentials.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The protection type.</returns>
+        public static NtResult<CredentialProtectionType> GetCredentialProtectionType(string credential, bool throw_on_error)
+        {
+            return SecurityNativeMethods.CredIsProtected(credential, out CredentialProtectionType protection_type)
+                .CreateWin32Result(throw_on_error, () => protection_type);
+        }
+
+        /// <summary>
+        /// Get the credential protection type of an encrypted credential.
+        /// </summary>
+        /// <param name="credential">The credentials.</param>
+        /// <returns>The protection type.</returns>
+        public static CredentialProtectionType GetCredentialProtectionType(string credential)
+        {
+            return GetCredentialProtectionType(credential, true).Result;
         }
     }
 }

@@ -895,6 +895,55 @@ namespace NtApiDotNet.Win32.Security.Native
           out SafeCredBuffer Credential
         );
 
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredProtect(
+            [MarshalAs(UnmanagedType.Bool)] bool fAsSelf,
+            string pszCredentials,
+            int cchCredentials,
+            [Out] byte[] pszProtectedCredentials,
+            ref int pcchMaxChars,
+            out CredentialProtectionType ProtectionType
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("api-ms-win-security-credentials-l2-1-1.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredProtectEx(
+            CredentialProtectFlag Flags,
+            [In] byte[] pszCredentials,
+            int cchCredentials,
+            [Out] byte[] pszProtectedCredentials,
+            ref int pcchMaxChars,
+            out CredentialProtectionType ProtectionType
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredUnprotect(
+            [MarshalAs(UnmanagedType.Bool)] bool fAsSelf,
+            string pszProtectedCredentials,
+            int cchProtectedCredentials,
+            [Out] byte[] pszCredentials,
+            ref int pcchMaxChars
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("api-ms-win-security-credentials-l2-1-1.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredUnprotectEx(
+           CredentialUnprotectFlag Flags,
+            string pszProtectedCredentials,
+            int cchProtectedCredentials,
+            [Out] byte[] pszCredentials,
+            ref int pcchMaxChars
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredIsProtected(
+            string pszProtectedCredentials,
+            out CredentialProtectionType pProtectionType
+        );
+
         [DllImport("advapi32.dll", SetLastError = true)]
         internal static extern void CredFree(
             IntPtr Buffer

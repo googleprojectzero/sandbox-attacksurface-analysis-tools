@@ -524,6 +524,9 @@
     <Compile Include="Win32\Security\Credential\CredentialAttributeFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredentialManager.cs" />
     <Compile Include="Win32\Security\Credential\CredentialPersistence.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialProtectFlag.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialProtectionType.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialUnprotectFlag.cs" />
     <Compile Include="Win32\Security\Credential\CredMarshalType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBase.cs" />
     <Compile Include="Win32\Security\Native\AUTHZ_RPC_INIT_INFO_CLIENT.cs" />
