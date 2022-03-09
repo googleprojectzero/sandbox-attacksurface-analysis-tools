@@ -157,7 +157,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     case 3:
                         if (!next.HasChildren())
                             throw new InvalidDataException();
-                        ret.EncryptedData = KerberosEncryptedData.Parse(next.Children[0]);
+                        ret.EncryptedData = KerberosEncryptedData.Parse(next.Children[0], next.Data);
                         break;
                     default:
                         throw new InvalidDataException();

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -288,6 +289,42 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         {
             string time_str = time.ToUniversalTime().ToString("yyyyMMddHHmmssZ");
             _writer.WriteUniversalValue(false, UniversalTag.GeneralizedTime, Encoding.ASCII.GetBytes(time_str));
+        }
+
+        /// <summary>
+        /// Write a bit array.
+        /// </summary>
+        /// <param name="bits">The bits to write.</param>
+        public void WriteBitString(int bits)
+        {
+            WriteBitString(new BitArray(BitConverter.GetBytes(bits)));
+        }
+
+        /// <summary>
+        /// Write a bit array.
+        /// </summary>
+        /// <param name="bits">The bits to write.</param>
+        public void WriteBitString(BitArray bits)
+        {
+            int byte_count = (bits.Length + 7) / 8;
+
+            byte[] data = new byte[byte_count + 1];
+
+            for (int i = 0; i < bits.Length; ++i)
+            {
+                if (!bits[i])
+                    continue;
+                int array_pos = (i / 8) + 1;
+                int bit_pos = 7 - (i & 7);
+                data[array_pos] |= (byte)(1 << bit_pos);
+            }
+
+            int remaining = bits.Length % 8;
+            if (remaining > 0)
+            {
+                data[0] = (byte)(7 - remaining);
+            }
+            _writer.WriteUniversalValue(false, UniversalTag.BIT_STRING, data);
         }
 
         /// <summary>

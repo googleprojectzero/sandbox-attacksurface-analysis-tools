@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.Text;
+using System;
 using System.IO;
 using System.Text;
 
@@ -37,17 +38,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] CipherText { get; private set; }
 
-        internal KerberosEncryptedData()
+        internal KerberosEncryptedData() 
+            : this(KerberosEncryptionType.NULL, null, Array.Empty<byte>(), Array.Empty<byte>())
         {
-            CipherText = new byte[0];
         }
 
         private protected KerberosEncryptedData(KerberosEncryptionType type, 
-            int? key_version, byte[] cipher_text)
+            int? key_version, byte[] cipher_text, byte[] data)
         {
             EncryptionType = type;
             KeyVersion = key_version;
             CipherText = cipher_text;
+            Data = data;
         }
 
         internal virtual string Format()
@@ -89,12 +91,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return false;
         }
 
-        internal static KerberosEncryptedData Parse(DERValue value)
+        internal static KerberosEncryptedData Parse(DERValue value, byte[] data)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
 
             KerberosEncryptedData ret = new KerberosEncryptedData();
+            ret.Data = data;
             foreach (var next in value.Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -116,5 +119,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return ret;
         }
+
+        internal byte[] Data { get; private set; }
     }
 }

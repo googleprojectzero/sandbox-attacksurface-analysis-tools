@@ -13,7 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -122,6 +125,45 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         #endregion
 
+        #region Public Static Methods
+        /// <summary>
+        /// Create a new KRB AP-REQ token.
+        /// </summary>
+        /// <param name="options">The AP-REQ options.</param>
+        /// <param name="ticket">The service ticket.</param>
+        /// <param name="authenticator">The authenticator.</param>
+        /// <returns>The new AP-REQ token.</returns>
+        public static KerberosAPRequestAuthenticationToken Create(KerberosAPRequestOptions options, KerberosTicket ticket, KerberosEncryptedData authenticator)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            if (authenticator is null)
+            {
+                throw new ArgumentNullException(nameof(authenticator));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication(14))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    BitArray option_bits = new BitArray(32, false);
+                    option_bits[1] = options.HasFlagSet(KerberosAPRequestOptions.UseSessionKey);
+                    option_bits[2] = options.HasFlagSet(KerberosAPRequestOptions.MutualAuthRequired);
+
+                    seq.WriteKerberosHeader(KerberosMessageType.KRB_AP_REQ);
+                    seq.WriteContextSpecific(2, b => b.WriteBitString(option_bits));
+                    seq.WriteContextSpecific(3, b => b.WriteRawBytes(ticket.ToArray()));
+                    seq.WriteContextSpecific(4, b => b.WriteRawBytes(authenticator.Data));
+                }
+            }
+            return (KerberosAPRequestAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x100));
+        }
+        #endregion
+
         #region Internal Static Methods
         /// <summary>
         /// Try and parse data into an ASN1 authentication token.
@@ -181,7 +223,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 4:
                             if (!next.HasChildren())
                                 return false;
-                            ret.Authenticator = KerberosEncryptedData.Parse(next.Children[0]);
+                            ret.Authenticator = KerberosEncryptedData.Parse(next.Children[0], next.Data);
                             break;
                         default:
                             return false;

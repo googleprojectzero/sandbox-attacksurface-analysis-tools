@@ -147,7 +147,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 3:
                             if (!next.HasChildren())
                                 return false;
-                            ret.EncryptedPart = KerberosEncryptedData.Parse(next.Children[0]);
+                            ret.EncryptedPart = KerberosEncryptedData.Parse(next.Children[0], next.Data);
                             break;
                         default:
                             return false;

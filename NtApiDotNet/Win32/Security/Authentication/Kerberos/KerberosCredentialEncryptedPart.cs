@@ -55,7 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosHostAddress RecipientAddress { get; private set; }
 
         private KerberosCredentialEncryptedPart(KerberosEncryptedData data) : 
-            base(data.EncryptionType, data.KeyVersion, data.CipherText)
+            base(data.EncryptionType, data.KeyVersion, data.CipherText, data.Data)
         {
         }
 

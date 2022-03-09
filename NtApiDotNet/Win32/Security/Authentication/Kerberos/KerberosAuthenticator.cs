@@ -98,7 +98,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         private KerberosAuthenticator(KerberosEncryptedData orig_data) 
-            : base(orig_data.EncryptionType, orig_data.KeyVersion, orig_data.CipherText)
+            : base(orig_data.EncryptionType, orig_data.KeyVersion, orig_data.CipherText, orig_data.Data)
         {
             AuthenticatorVersion = 5;
         }
