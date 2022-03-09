@@ -108,8 +108,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Ticket.
         /// </summary>
         public KerberosTicket Ticket { get; private set; }
+        /// <summary>
+        /// The ticket if a KRB_CRED was requested.
+        /// </summary>
+        public KerberosCredential Credential { get; private set; }
 
-        internal static bool TryParse(KERB_EXTERNAL_TICKET ticket, out KerberosExternalTicket result)
+        internal static bool TryParse(KERB_EXTERNAL_TICKET ticket, bool krb_cred, out KerberosExternalTicket result)
         {
             result = null;
             try
@@ -133,7 +137,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 DERValue[] values = DERParser.ParseData(ticket_data, 0);
                 if (values.Length != 1)
                     return false;
-                ret.Ticket = KerberosTicket.Parse(values[0], ticket_data);
+                if (krb_cred)
+                {
+                    if (!KerberosCredential.TryParse(ticket_data, values, out KerberosCredential cred))
+                        return false;
+                    ret.Credential = cred;
+                    ret.Ticket = cred.Tickets.FirstOrDefault();
+                }
+                else
+                {
+                    ret.Ticket = KerberosTicket.Parse(values[0], ticket_data);
+                }
                 result = ret;
                 return true;
             }

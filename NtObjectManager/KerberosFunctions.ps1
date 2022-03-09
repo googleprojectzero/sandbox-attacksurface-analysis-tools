@@ -177,13 +177,18 @@ function Get-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="CurrentLuid")]
     Param(
         [Parameter(Position = 0, ParameterSetName="FromLuid", Mandatory)]
-        [NtApiDotNet.Luid]$LogonId,
+        [Parameter(ParameterSetName="FromTarget")]
+        [NtApiDotNet.Luid]$LogonId = [NtApiDotNet.Luid]::new(0),
         [Parameter(Position = 0, ParameterSetName="FromLogonSession", ValueFromPipeline, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.LogonSession[]]$LogonSession,
         [Parameter(Position = 0, ParameterSetName="FromTarget", Mandatory)]
+        [Parameter(Position = 0, ParameterSetName="FromTargetCredHandle", Mandatory)]
         [string]$TargetName,
         [Parameter(ParameterSetName="FromTarget")]
-        [switch]$CacheOnly
+        [Parameter(ParameterSetName="FromTargetCredHandle")]
+        [switch]$CacheOnly,
+        [Parameter(ParameterSetName="FromTargetCredHandle", Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle
     )
 
     PROCESS {
@@ -200,7 +205,10 @@ function Get-KerberosTicket {
                 }
             }
             "FromTarget" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($LogonId, $CacheOnly) | Write-Output
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $LogonId, $CacheOnly) | Write-Output
+            }
+            "FromTargetCredHandle" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $CredHandle, $CacheOnly) | Write-Output
             }
         }
     }

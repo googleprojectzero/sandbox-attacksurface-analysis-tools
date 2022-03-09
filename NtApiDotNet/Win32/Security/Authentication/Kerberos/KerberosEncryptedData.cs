@@ -212,6 +212,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted)
         {
+            if (EncryptionType == KerberosEncryptionType.NULL)
+            {
+                decrypted = (byte[])CipherText.Clone();
+                return true;
+            }
             if (EncryptionType == KerberosEncryptionType.ARCFOUR_HMAC_MD5)
             {
                 return DecryptRC4(keyset, realm, server_name, key_usage, out decrypted);
