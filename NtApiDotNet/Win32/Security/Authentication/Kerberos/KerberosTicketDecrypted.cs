@@ -14,7 +14,6 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -161,17 +160,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             AuthorizationData = new List<KerberosAuthorizationData>().AsReadOnly();
         }
 
-        private static KerberosTicketFlags ConvertTicketFlags(BitArray flags)
-        {
-            int ret = 0;
-            for (int i = 0; i < flags.Length; ++i)
-            {
-                if (flags[i])
-                    ret |= (1 << i);
-            }
-            return (KerberosTicketFlags)ret;
-        }
-
         internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicket ticket)
         {
             ticket = null;
@@ -193,7 +181,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     switch (next.Tag)
                     {
                         case 0:
-                            ret.Flags = ConvertTicketFlags(next.ReadChildBitString());
+                            ret.Flags = next.ReadChildBitFlags<KerberosTicketFlags>();
                             break;
                         case 1:
                             if (!next.HasChildren())

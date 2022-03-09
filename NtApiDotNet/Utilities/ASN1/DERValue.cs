@@ -222,6 +222,18 @@ namespace NtApiDotNet.Utilities.ASN1
             return Children[0].ReadBitString();
         }
 
+        public T ReadChildBitFlags<T>() where T : Enum
+        {
+            var flags = ReadChildBitString();
+            int ret = 0;
+            for (int i = 0; i < flags.Length; ++i)
+            {
+                if (flags[i])
+                    ret |= (1 << i);
+            }
+            return (T)Enum.ToObject(typeof(T), ret);
+        }
+
         public string FormatValue()
         {
             if (Type == DERTagType.Universal)

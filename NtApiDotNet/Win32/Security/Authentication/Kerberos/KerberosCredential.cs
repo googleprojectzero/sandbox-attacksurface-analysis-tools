@@ -85,7 +85,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.KrbCred, out byte[] decrypted))
             {
-                // Needs session key from TGT request which we don't necessarily have.
+                if (KerberosCredentialEncryptedPart.TryParse(EncryptedPart, decrypted, Tickets, tmp_keys, out KerberosCredentialEncryptedPart enc_part))
+                {
+                    EncryptedPart = enc_part;
+                }
             }
 
             if (decrypted_ticket || encdata != null)
@@ -148,6 +151,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             break;
                         default:
                             return false;
+                    }
+                }
+
+                if (ret.EncryptedPart.EncryptionType == KerberosEncryptionType.NULL)
+                {
+                    if (KerberosCredentialEncryptedPart.TryParse(ret.EncryptedPart, ret.EncryptedPart.CipherText, 
+                        ret.Tickets, new KerberosKeySet(), out KerberosCredentialEncryptedPart enc_part))
+                    {
+                        ret.EncryptedPart = enc_part;
                     }
                 }
                 token = ret;

@@ -511,6 +511,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataApOptions.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataKerbLocal.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataTargetName.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosCredentialEncryptedPart.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosCredentialInfo.cs" />
     <Compile Include="Win32\Security\Authentication\LsaLogonHandle.cs" />
     <Compile Include="Win32\Security\Authentication\LsaLogonResult.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContextInitializeSidFlags.cs" />

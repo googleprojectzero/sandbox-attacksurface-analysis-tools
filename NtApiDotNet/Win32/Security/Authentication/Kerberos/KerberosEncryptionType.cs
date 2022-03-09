@@ -38,6 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         ARCFOUR_MD4 = -128,
         ARCFOUR_HMAC_OLD = -133,
         ARCFOUR_HMAC_OLD_EXP = -135,
+        WRAPPED_KEY = -180,
         DES_CBC_NONE = -4096,
         DES3_CBC_NONE = -4097,
         DES_CFB64_NONE = -4098,

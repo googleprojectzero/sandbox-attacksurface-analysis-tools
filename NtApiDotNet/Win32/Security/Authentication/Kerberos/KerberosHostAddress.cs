@@ -81,6 +81,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Address = address;
         }
 
+        internal static KerberosHostAddress ParseChild(DERValue value)
+        {
+            if (!value.HasChildren() || !value.Children[0].CheckSequence())
+            {
+                throw new InvalidDataException();
+            }
+            return Parse(value.Children[0]);
+        }
+
         internal static KerberosHostAddress Parse(DERValue value)
         {
             if (!value.CheckSequence())
