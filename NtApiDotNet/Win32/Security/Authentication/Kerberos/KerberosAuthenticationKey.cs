@@ -28,8 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosAuthenticationKey : AuthenticationKey
     {
-        private readonly byte[] _key;
-
+        #region Public Properties
         /// <summary>
         /// The Key encryption type.
         /// </summary>
@@ -62,7 +61,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Key Version Number (KVNO).
         /// </summary>
         public uint Version { get; }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -137,7 +138,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : this(key_encryption, GetKey(key), name_type, principal, timestamp, version)
         {
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Derive a key from a password.
         /// </summary>
@@ -180,7 +183,76 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return new KerberosAuthenticationKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
+        #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Try and decrypt an encrypted cipher text.
+        /// </summary>
+        /// <param name="key_usage">The key usage for the decryption.</param>
+        /// <param name="plain_text">The plain text.</param>
+        /// <param name="cipher_text">The cipher text.</param>
+        /// <returns>True if successfully decrypted.</returns>
+        public bool TryDecrypt(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
+        {
+            switch (KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    return DecryptRC4(cipher_text, key_usage, out plain_text);
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return DecryptAES(cipher_text, key_usage, out plain_text);
+            }
+            plain_text = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Decrypt an encrypted cipher text.
+        /// </summary>
+        /// <param name="key_usage">The key usage for the decryption.</param>
+        /// <param name="cipher_text">The cipher text.</param>
+        /// <returns>The decrypted data.</returns>
+        /// <exception cref="InvalidDataException">Thrown if can't decrypt.</exception>
+        public byte[] Decrypt(byte[] cipher_text, KerberosKeyUsage key_usage)
+        {
+            switch (KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    break;
+                default:
+                    throw new InvalidDataException("Unsupported encryption algorithm.");
+            }
+            if (!TryDecrypt(cipher_text, key_usage, out byte[] plain_text))
+                throw new InvalidDataException("Can't decrypt the cipher text.");
+            return plain_text;
+        }
+
+        /// <summary>
+        /// Encrypt a plain text buffer.
+        /// </summary>
+        /// <param name="plain_text">The plain text to encrypt.</param>
+        /// <param name="key_usage">The Kerberos key usage.</param>
+        /// <returns>The encrypted buffer.</returns>
+        /// <exception cref="InvalidDataException">Thrown in can't encrypt.</exception>
+        public byte[] Encrypt(byte[] plain_text, KerberosKeyUsage key_usage)
+        {
+            switch (KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    return EncryptRC4(plain_text, key_usage);
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return EncryptAES(plain_text, key_usage);
+                default:
+                    throw new InvalidDataException("Unsupported encryption algorithm.");
+            }
+        }
+        #endregion
+
+        #region Internal Members
         internal static KerberosAuthenticationKey Parse(DERValue value, string realm, KerberosPrincipalName name)
         {
             if (!value.CheckSequence())
@@ -208,6 +280,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new InvalidDataException();
             return new KerberosAuthenticationKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
         }
+
+        internal static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)
+        {
+            Aes encrypt = new AesManaged();
+            encrypt.Mode = CipherMode.ECB;
+
+            folded_key = (byte[])folded_key.Clone();
+
+            byte[] ret = new byte[base_key.Length];
+            var transform = encrypt.CreateEncryptor(base_key, new byte[16]);
+            transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
+            Array.Copy(folded_key, ret, 16);
+            if (ret.Length > 16)
+            {
+                transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
+                Array.Copy(folded_key, 0, ret, 16, 16);
+            }
+            return ret;
+        }
+
+        #endregion
+
+        #region Private Members
+        private readonly byte[] _key;
 
         private static string MakeSalt(string salt, string principal)
         {
@@ -244,6 +340,102 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
+        private const int MD5_CHECKSUM_SIZE = 16;
+        private const int RC4_NONCE_LENGTH = 8;
+
+        private bool DecryptRC4(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
+        {
+            HMACMD5 hmac = new HMACMD5(_key);
+            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
+            hmac = new HMACMD5(key1);
+
+            byte[] checksum = new byte[MD5_CHECKSUM_SIZE];
+            Buffer.BlockCopy(cipher_text, 0, checksum, 0, checksum.Length);
+            byte[] key2 = hmac.ComputeHash(checksum);
+
+            byte[] result = ARC4.Transform(cipher_text, MD5_CHECKSUM_SIZE, cipher_text.Length - MD5_CHECKSUM_SIZE, key2);
+            hmac = new HMACMD5(key1);
+            byte[] calculated_checksum = hmac.ComputeHash(result);
+
+            plain_text = new byte[result.Length - RC4_NONCE_LENGTH];
+            Buffer.BlockCopy(result, RC4_NONCE_LENGTH, plain_text, 0, plain_text.Length);
+            return NtObjectUtils.EqualByteArray(checksum, calculated_checksum);
+        }
+
+        private byte[] EncryptRC4(byte[] plain_text, KerberosKeyUsage key_usage)
+        {
+            HMACMD5 hmac = new HMACMD5(_key);
+            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
+            hmac = new HMACMD5(key1);
+
+            byte[] enc_buffer = new byte[RC4_NONCE_LENGTH];
+            new Random().NextBytes(enc_buffer);
+            Array.Resize(ref enc_buffer, RC4_NONCE_LENGTH + plain_text.Length);
+            Buffer.BlockCopy(plain_text, 0, enc_buffer, RC4_NONCE_LENGTH, plain_text.Length);
+
+            byte[] checksum = hmac.ComputeHash(enc_buffer);
+            byte[] key2 = hmac.ComputeHash(checksum);
+            enc_buffer = ARC4.Transform(enc_buffer, 0, enc_buffer.Length, key2);
+            byte[] cipher_text = new byte[enc_buffer.Length + MD5_CHECKSUM_SIZE];
+            Buffer.BlockCopy(checksum, 0, cipher_text, 0, MD5_CHECKSUM_SIZE);
+            Buffer.BlockCopy(enc_buffer, 0, cipher_text, MD5_CHECKSUM_SIZE, enc_buffer.Length);
+            return cipher_text;
+        }
+
+        private const int AES_BLOCK_SIZE = 16;
+        private const int AES_CHECKSUM_SIZE = 12;
+        private const int AES_CONFOUNDER_SIZE = 16;
+
+        private static void SwapEndBlocks(byte[] cipher_text)
+        {
+            if (cipher_text.Length < AES_BLOCK_SIZE * 2)
+            {
+                return;
+            }
+
+            byte[] block = new byte[AES_BLOCK_SIZE];
+            Array.Copy(cipher_text, cipher_text.Length - AES_BLOCK_SIZE, block, 0, AES_BLOCK_SIZE);
+            Array.Copy(cipher_text, cipher_text.Length - (2 * AES_BLOCK_SIZE), cipher_text, cipher_text.Length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+            Array.Copy(block, 0, cipher_text, cipher_text.Length - (2 * AES_BLOCK_SIZE), AES_BLOCK_SIZE);
+        }
+
+        private static int AlignBlock(int size)
+        {
+            return (size + (AES_BLOCK_SIZE - 1)) & ~(AES_BLOCK_SIZE - 1);
+        }
+
+        private byte[] DecryptAESBlock(byte[] key, byte[] cipher_text, int offset)
+        {
+            AesManaged aes = new AesManaged
+            {
+                Mode = CipherMode.ECB,
+                Padding = PaddingMode.None,
+                Key = key,
+                IV = new byte[16]
+            };
+            var dec = aes.CreateDecryptor();
+            byte[] block = new byte[AES_BLOCK_SIZE];
+            dec.TransformBlock(cipher_text, offset, AES_BLOCK_SIZE, block, 0);
+            return block;
+        }
+
+        private byte[] EncryptAESBlock(byte[] key, byte[] cipher_text, int offset)
+        {
+            AesManaged aes = new AesManaged
+            {
+                Mode = CipherMode.ECB,
+                Padding = PaddingMode.None,
+                Key = key,
+                IV = new byte[16]
+            };
+            var enc = aes.CreateEncryptor();
+            byte[] block = new byte[AES_BLOCK_SIZE];
+            enc.TransformBlock(cipher_text, offset, AES_BLOCK_SIZE, block, 0);
+            return block;
+        }
+
+        private const byte EncryptionKey = 0xAA;
+        private const byte VerificationKey = 0x55;
 
         private static byte[] DeriveAesKey(string password, string salt, int iterations, int key_size)
         {
@@ -251,23 +443,96 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return DeriveAesKey(pbkdf.GetBytes(key_size), NFold.Compute("kerberos", 16));
         }
 
-        internal static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)
+        private byte[] DeriveTempKey(KerberosKeyUsage key_usage, byte key_type)
         {
-            Aes encrypt = new AesManaged();
-            encrypt.Mode = CipherMode.ECB;
-
-            folded_key = (byte[])folded_key.Clone();
-
-            byte[] ret = new byte[base_key.Length];
-            var transform = encrypt.CreateEncryptor(base_key, new byte[16]);
-            transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-            Array.Copy(folded_key, ret, 16);
-            if (ret.Length > 16)
-            {
-                transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-                Array.Copy(folded_key, 0, ret, 16, 16);
-            }
-            return ret;
+            byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
+            Array.Resize(ref r, 5);
+            r[4] = key_type;
+            return NFold.Compute(r, 16);
         }
+
+        private bool DecryptAES(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
+        {
+            byte[] derive_enc_key = DeriveTempKey(key_usage, EncryptionKey);
+            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
+
+            byte[] new_key = DeriveAesKey(_key, derive_enc_key);
+
+            int cipher_text_length = cipher_text.Length - AES_CHECKSUM_SIZE;
+            int remaining = AES_BLOCK_SIZE - (cipher_text_length % AES_BLOCK_SIZE);
+            plain_text = new byte[AlignBlock(cipher_text_length)];
+            Array.Copy(cipher_text, plain_text, cipher_text_length);
+
+            if (remaining > 0 && remaining != AES_BLOCK_SIZE)
+            {
+                byte[] decrypted_block = DecryptAESBlock(new_key, plain_text, plain_text.Length - (AES_BLOCK_SIZE * 2));
+                Array.Copy(decrypted_block, AES_BLOCK_SIZE - remaining, plain_text, plain_text.Length - remaining, remaining);
+            }
+
+            SwapEndBlocks(plain_text);
+
+            AesManaged aes = new AesManaged
+            {
+                Mode = CipherMode.CBC,
+                Padding = PaddingMode.None,
+                Key = new_key,
+                IV = new byte[16]
+            };
+            var dec = aes.CreateDecryptor();
+            dec.TransformBlock(plain_text, 0, plain_text.Length, plain_text, 0);
+
+            // Obviously not a secure check. This is for information only.
+            HMACSHA1 hmac = new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
+            byte[] hash = hmac.ComputeHash(plain_text, 0, cipher_text_length);
+            for (int i = 0; i < AES_CHECKSUM_SIZE; ++i)
+            {
+                if (hash[i] != cipher_text[cipher_text_length + i])
+                    return false;
+            }
+            Array.Copy(plain_text, AES_CONFOUNDER_SIZE, plain_text, 0, cipher_text_length - AES_CONFOUNDER_SIZE);
+            Array.Resize(ref plain_text, cipher_text_length - AES_CONFOUNDER_SIZE);
+            return true;
+        }
+
+        private byte[] EncryptAES(byte[] plain_text, KerberosKeyUsage key_usage)
+        {
+            byte[] derive_enc_key = DeriveTempKey(key_usage, EncryptionKey);
+            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
+
+            byte[] cipher_text = new byte[AES_CONFOUNDER_SIZE];
+            new Random().NextBytes(cipher_text);
+            int plain_text_length = plain_text.Length + AES_CONFOUNDER_SIZE;
+
+            HMACSHA1 hmac = new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
+            Array.Resize(ref cipher_text, AlignBlock(plain_text_length));
+            Array.Copy(plain_text, 0, cipher_text, AES_CONFOUNDER_SIZE, plain_text.Length);
+            byte[] hash = hmac.ComputeHash(cipher_text, 0, plain_text_length);
+
+            byte[] new_key = DeriveAesKey(_key, derive_enc_key);
+            AesManaged aes = new AesManaged
+            {
+                Mode = CipherMode.CBC,
+                Padding = PaddingMode.None,
+                Key = new_key,
+                IV = new byte[16]
+            };
+            var enc = aes.CreateEncryptor();
+            enc.TransformBlock(cipher_text, 0, cipher_text.Length, cipher_text, 0);
+
+            SwapEndBlocks(cipher_text);
+
+            int remaining = AES_BLOCK_SIZE - (plain_text_length % AES_BLOCK_SIZE);
+            if (remaining > 0 && remaining != AES_BLOCK_SIZE)
+            {
+                byte[] encrypted_block = EncryptAESBlock(new_key, cipher_text, cipher_text.Length - (AES_BLOCK_SIZE * 2));
+                Array.Copy(encrypted_block, AES_BLOCK_SIZE - remaining, cipher_text, cipher_text.Length - remaining, remaining);
+            }
+
+            Array.Resize(ref cipher_text, plain_text_length + AES_CHECKSUM_SIZE);
+            Buffer.BlockCopy(hash, 0, cipher_text, cipher_text.Length - AES_CHECKSUM_SIZE, AES_CHECKSUM_SIZE);
+            return cipher_text;
+        }
+
+        #endregion
     }
 }
