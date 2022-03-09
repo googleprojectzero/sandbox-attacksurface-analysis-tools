@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Security;
 using System;
 using System.Collections.Generic;
@@ -298,6 +299,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 Array.Copy(folded_key, 0, ret, 16, 16);
             }
             return ret;
+        }
+
+        internal byte[] ToArray()
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)KeyEncryption));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(Key));
+            }
+
+            return builder.ToArray();
         }
 
         #endregion

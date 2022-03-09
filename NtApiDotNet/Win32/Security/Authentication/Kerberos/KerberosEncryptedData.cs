@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.IO;
@@ -25,6 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public class KerberosEncryptedData
     {
+        #region Public Properties
         /// <summary>
         /// Encryption type for the CipherText.
         /// </summary>
@@ -37,7 +39,71 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Cipher Text.
         /// </summary>
         public byte[] CipherText { get; private set; }
+        #endregion
 
+        #region Public Static Methods
+        /// <summary>
+        /// Create a new Kerberos EncryptedData object.
+        /// </summary>
+        /// <param name="encryption_type">The encryption type.</param>
+        /// <param name="key_version">The optional key version number.</param>
+        /// <param name="cipher_text">The cipher text.</param>
+        /// <returns>The new EncryptedData object.</returns>
+        public static KerberosEncryptedData Create(KerberosEncryptionType encryption_type, int? key_version, byte[] cipher_text)
+        {
+            if (cipher_text is null)
+            {
+                throw new ArgumentNullException(nameof(cipher_text));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)encryption_type));
+                if (key_version.HasValue)
+                {
+                    seq.WriteContextSpecific(1, b => b.WriteInt32(key_version.Value));
+                }
+                seq.WriteContextSpecific(2, b => b.WriteOctetString(cipher_text));
+            }
+            byte[] data = builder.ToArray();
+            DERValue[] values = DERParser.ParseData(data, 0);
+            return Parse(values[0], data);
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Decrypt the encrypted data.
+        /// </summary>
+        /// <param name="key">The key to decrypt the data.</param>
+        /// <param name="key_usage">The Kerberos key usage for the decryption.</param>
+        /// <returns>The decrypted data.</returns>
+        public KerberosEncryptedData Decrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage)
+        {
+            byte[] cipher_text = CipherText;
+            if (EncryptionType != KerberosEncryptionType.NULL)
+                cipher_text = key.Decrypt(cipher_text, key_usage);
+            return Create(KerberosEncryptionType.NULL, null, cipher_text);
+        }
+
+        /// <summary>
+        /// Encrypt the data.
+        /// </summary>
+        /// <param name="key">The key to encrypt the data.</param>
+        /// <param name="key_usage">The Kerberos key usage for the encryption.</param>
+        /// <param name="key_version">Optional key version number.</param>
+        /// <returns>The encrypted data.</returns>
+        public KerberosEncryptedData Encrypt(KerberosAuthenticationKey key, int? key_version, KerberosKeyUsage key_usage)
+        {
+            if (EncryptionType != KerberosEncryptionType.NULL)
+                throw new ArgumentException("Encryption type must be NULL.", nameof(EncryptionType));
+            byte[] cipher_text = key.Encrypt(CipherText, key_usage);
+            return Create(key.KeyEncryption, key_version, cipher_text);
+        }
+        #endregion
+
+        #region Constructors
         internal KerberosEncryptedData() 
             : this(KerberosEncryptionType.NULL, null, Array.Empty<byte>(), Array.Empty<byte>())
         {
@@ -51,7 +117,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             CipherText = cipher_text;
             Data = data;
         }
+        #endregion
 
+        #region Internal Members
         internal virtual string Format()
         {
             StringBuilder builder = new StringBuilder();
@@ -121,5 +189,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         internal byte[] Data { get; private set; }
+        #endregion
     }
 }
