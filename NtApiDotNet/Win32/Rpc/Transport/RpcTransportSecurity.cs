@@ -138,6 +138,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="auth_factory">Factory to create a non-standard authentication context, based on an existing one.</param>
+        /// <remarks>You can use this version to add functionality to the existing security context.</remarks>
+        public RpcTransportSecurity(Func<IClientAuthenticationContext, IClientAuthenticationContext> auth_factory) : this()
+        {
+            _auth_factory = r => auth_factory(r.CreateClientContext(false));
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         /// <param name="security_quality_of_service">Security quality of service.</param>
         public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
         {
@@ -186,9 +196,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         #endregion
 
         #region Internal Members
-        internal IClientAuthenticationContext CreateClientContext()
+        internal IClientAuthenticationContext CreateClientContext(bool call_auth_factory = true)
         {
-            if (_auth_factory != null)
+            if (call_auth_factory && _auth_factory != null)
                 return _auth_factory(this);
 
             switch (AuthenticationLevel)
