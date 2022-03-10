@@ -13,7 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Parser;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -44,15 +47,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return ASN1Utils.FormatDER(_values, 0);
         }
 
-        #region Internal Static Methods
         /// <summary>
-        /// Try and parse data into an ASN1 authentication token.
+        /// Convert to a list of ASN.1 objects.
         /// </summary>
-        /// <param name="data">The data to parse.</param>
-        /// <param name="token">The ASN1 authentication token.</param>
-        /// <param name="client">True if this is a token from a client.</param>
-        /// <param name="token_count">The token count number.</param>
-        /// <returns>True if parsed successfully.</returns>
+        /// <returns>The list of ASN.1 objects.</returns>
+        public IReadOnlyList<ASN1Object> ToASN1Object()
+        {
+            return _values.Select(ASN1Object.ToObject).ToList().AsReadOnly();
+        }
+
+        #region Internal Static Methods
         internal static bool TryParse(byte[] data, int token_count, bool client, out ASN1AuthenticationToken token)
         {
             token = null;
