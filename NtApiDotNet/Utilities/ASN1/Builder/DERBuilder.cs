@@ -190,7 +190,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <remarks>You should call Close or dispose on the created builder to write the tag.</remarks>
         public DERBuilderSubStructure CreateSequence()
         {
-            return new DERBuilderSubStructure(this, WriteSequence);
+            return new DERBuilderSubStructure(WriteSequence);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <remarks>You should call Close or dispose on the created builder to write the tag.</remarks>
         public DERBuilderSubStructure CreateApplication(int application)
         {
-            return new DERBuilderSubStructure(this, b => WriteApplication(application, b));
+            return new DERBuilderSubStructure(b => WriteApplication(application, b));
         }
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <remarks>You should call Close or dispose on the created builder to write the tag.</remarks>
         public DERBuilderSubStructure CreateContextSpecific(int context)
         {
-            return new DERBuilderSubStructure(this, b => WriteContextSpecific(context, b));
+            return new DERBuilderSubStructure(b => WriteContextSpecific(context, b));
         }
 
         /// <summary>

@@ -22,13 +22,11 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
     /// <remarks>You should call Close or dispose the builder to write the sub-structure.</remarks>
     public sealed class DERBuilderSubStructure : DERBuilder, IDisposable
     {
-        private readonly DERBuilder _parent;
         private readonly Action<DERBuilder> _write_value;
         private bool _is_closed;
 
-        internal DERBuilderSubStructure(DERBuilder parent, Action<DERBuilder> write_value)
+        internal DERBuilderSubStructure(Action<DERBuilder> write_value)
         {
-            _parent = parent;
             _write_value = write_value;
         }
 
