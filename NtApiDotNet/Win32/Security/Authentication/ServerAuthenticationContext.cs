@@ -205,6 +205,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public bool OwnsCredentials { get; set; }
 
+        /// <summary>
+        /// Get the current credentials handle.
+        /// </summary>
+        public CredentialHandle CredentialHandle => _creds;
+
         #endregion
 
         #region Public Methods
