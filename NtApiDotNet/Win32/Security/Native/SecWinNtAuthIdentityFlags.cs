@@ -19,5 +19,7 @@ namespace NtApiDotNet.Win32.Security.Native
     {
         Ansi = 0x1,
         Unicode = 0x2,
+        IdentityMarshalled = 0x4,
+        IdentityOnly = 0x8
     }
 }

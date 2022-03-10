@@ -36,6 +36,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// The password as a secure string.
         /// </summary>
         public SecureString Password { get; set; }
+        /// <summary>
+        /// If using Kerberos this indicates that no PAC should be included in the TGT.
+        /// </summary>
+        public bool IdentityOnly { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -133,7 +137,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal SEC_WINNT_AUTH_IDENTITY ToAuthIdentity(DisposableList list)
         {
-            return new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list);
+            var auth_id = new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list);
+            if (IdentityOnly)
+                auth_id.Flags |= SecWinNtAuthIdentityFlags.IdentityOnly;
+            return auth_id;
         }
 
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
