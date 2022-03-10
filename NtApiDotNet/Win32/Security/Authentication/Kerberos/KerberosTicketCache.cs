@@ -381,6 +381,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (!handle.IsSuccess)
                     return handle.Cast<KerberosExternalTicket>();
                 KERB_RETRIEVE_TICKET_FLAGS flags = cached_only ? KERB_RETRIEVE_TICKET_FLAGS.UseCacheOnly : KERB_RETRIEVE_TICKET_FLAGS.Default;
+                flags |= KERB_RETRIEVE_TICKET_FLAGS.UseCredHandle;
                 return QueryCachedTicket(handle.Result, target_name, flags,
                     default, credential_handle.CredHandle, throw_on_error);
             }
