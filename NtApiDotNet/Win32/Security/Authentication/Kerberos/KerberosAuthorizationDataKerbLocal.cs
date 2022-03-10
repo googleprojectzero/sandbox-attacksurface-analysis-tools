@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -26,15 +27,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] SecurityContext { get; }
 
-        private KerberosAuthorizationDataKerbLocal(byte[] data)
-            : base(KerberosAuthorizationDataType.KERB_LOCAL, data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="security_context">The security context identifier.</param>
+        public KerberosAuthorizationDataKerbLocal(byte[] security_context)
+            : base(KerberosAuthorizationDataType.KERB_LOCAL)
         {
-            SecurityContext = data;
+            if (security_context is null)
+            {
+                throw new ArgumentNullException(nameof(security_context));
+            }
+
+            SecurityContext = (byte[])security_context.Clone();
         }
 
         private protected override void FormatData(StringBuilder builder)
         {
             builder.AppendLine($"Security Context: {NtObjectUtils.ToHexString(SecurityContext)}");
+        }
+
+        private protected override byte[] GetData()
+        {
+            return SecurityContext;
         }
 
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataKerbLocal entry)

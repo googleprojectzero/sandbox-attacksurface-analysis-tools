@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -27,12 +28,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// List of supported encryption types.
         /// </summary>
-        public IEnumerable<KerberosEncryptionType> EncryptionList { get; }
+        public IReadOnlyList<KerberosEncryptionType> EncryptionList { get; }
 
-        private KerberosAuthorizationDataEncryptionNegotiation(byte[] data, IEnumerable<KerberosEncryptionType> enc_list) 
-            : base(KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION, data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="enc_list">The list of encryption types.</param>
+        public KerberosAuthorizationDataEncryptionNegotiation(IEnumerable<KerberosEncryptionType> enc_list) 
+            : base(KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
         {
-            EncryptionList = enc_list;
+            EncryptionList = enc_list.ToList().AsReadOnly();
         }
 
         private protected override void FormatData(StringBuilder builder)
@@ -61,7 +66,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return false;
             }
 
-            entry = new KerberosAuthorizationDataEncryptionNegotiation(data, enc_types.AsReadOnly());
+            entry = new KerberosAuthorizationDataEncryptionNegotiation(enc_types.AsReadOnly());
             return true;
         }
     }

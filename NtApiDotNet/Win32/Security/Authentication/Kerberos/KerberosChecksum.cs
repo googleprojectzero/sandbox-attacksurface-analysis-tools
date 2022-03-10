@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.IO;
 using System.Text;
 
@@ -41,6 +42,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             ChecksumType = type;
             Checksum = data;
+        }
+
+        private protected virtual byte[] GetData()
+        {
+            return Checksum;
+        }
+
+        internal byte[] ToArray()
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)ChecksumType));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
+            }
+            return builder.ToArray();
         }
 
         internal static KerberosChecksum Parse(DERValue value)

@@ -268,5 +268,12 @@ namespace NtApiDotNet.Utilities.ASN1
                 return null;
             return Children[index];
         }
+
+        public IReadOnlyList<T> ReadSequence<T>(Func<DERValue, T> parse_func)
+        {
+            if (!CheckSequence())
+                throw new InvalidDataException();
+            return Children.Select(parse_func).ToList().AsReadOnly();
+        }
     }
 }

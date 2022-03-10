@@ -53,8 +53,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A kerberos checksum in GSS API Format.
     /// </summary>
-    public class KerberosChecksumGSSApi : KerberosChecksum
+    public sealed class KerberosChecksumGSSApi : KerberosChecksum
     {
+        // See RFC4757
+
         /// <summary>
         /// Channel binding hash.
         /// </summary>
@@ -97,6 +99,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 hex.Complete();
                 builder.AppendLine(hex.ToString());
             }
+        }
+
+        private protected override byte[] GetData()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            writer.Write(ChannelBinding.Length);
+            writer.Write(ChannelBinding);
+            writer.Write((int)ContextFlags);
+
+            if (ContextFlags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
+            {
+                writer.Write((ushort)DelegationOptionIdentifier);
+                var creds = Credentials.ToArray();
+                writer.Write((ushort)creds.Length);
+                writer.Write(creds);
+            }
+            if (Extensions?.Length > 0)
+            {
+                writer.Write(Extensions);
+            }
+
+            return stm.ToArray();
         }
 
         private KerberosChecksumGSSApi(KerberosChecksumType type, byte[] data) 

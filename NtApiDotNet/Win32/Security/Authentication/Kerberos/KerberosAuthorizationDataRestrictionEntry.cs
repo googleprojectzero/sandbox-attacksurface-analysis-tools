@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.IO;
 using System.Text;
@@ -37,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent the KERB_AD_RESTRICTION_ENTRY AD type.
     /// </summary>
-    public class KerberosAuthorizationDataRestrictionEntry : KerberosAuthorizationData
+    public sealed class KerberosAuthorizationDataRestrictionEntry : KerberosAuthorizationData
     {
         /// <summary>
         /// Flags.
@@ -52,12 +53,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] MachineId { get; }
 
-        private protected KerberosAuthorizationDataRestrictionEntry(byte[] data, KerberosRestrictionEntryFlags flags,
-            TokenIntegrityLevel integrity_level, byte[] machine_id) : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY, data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="flags">The restriction flags.</param>
+        /// <param name="integrity_level">The integrity level.</param>
+        /// <param name="machine_id">The originating machine ID.</param>
+        public KerberosAuthorizationDataRestrictionEntry(KerberosRestrictionEntryFlags flags,
+            TokenIntegrityLevel integrity_level, byte[] machine_id) : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
         {
+            if (machine_id is null)
+            {
+                throw new ArgumentNullException(nameof(machine_id));
+            }
+
+            if (machine_id.Length != 32)
+                throw new ArgumentException("Machine ID must be 32 bytes in length.", nameof(machine_id));
+
             Flags = flags;
             IntegrityLevel = integrity_level;
-            MachineId = machine_id;
+            MachineId = (byte[])machine_id.Clone();
         }
 
         private protected override void FormatData(StringBuilder builder)
@@ -65,6 +80,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Flags           : {Flags}");
             builder.AppendLine($"Integrity Level : {IntegrityLevel}");
             builder.AppendLine($"Machine ID      : {NtObjectUtils.ToHexString(MachineId)}");
+        }
+
+        private protected override byte[] GetData()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((int)Flags);
+            writer.Write((int)IntegrityLevel);
+            writer.Write(MachineId);
+
+            DERBuilder builder = new DERBuilder();
+            using (var seq1 = builder.CreateSequence())
+            {
+                using (var seq2 = seq1.CreateSequence())
+                {
+                    seq2.WriteContextSpecific(0, b => b.WriteInt32(0));
+                    seq2.WriteContextSpecific(1, b => b.WriteOctetString(stm.ToArray()));
+                }
+            }
+
+            return builder.ToArray();
         }
 
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataRestrictionEntry entry)
@@ -86,7 +122,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     switch (next.Tag)
                     {
                         case 0:
-                            // Ignore, should always be 0.
+                            if (next.ReadChildInteger() != 0)
+                                return false;
+                            // Should always be 0.
                             break;
                         case 1:
                             lsap_data = next.ReadChildOctetString();
@@ -105,7 +143,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             int il = BitConverter.ToInt32(lsap_data, 4);
             byte[] machine_id = new byte[32];
             Buffer.BlockCopy(lsap_data, 8, machine_id, 0, 32);
-            entry = new KerberosAuthorizationDataRestrictionEntry(data, (KerberosRestrictionEntryFlags)flags, (TokenIntegrityLevel)il, machine_id);
+            entry = new KerberosAuthorizationDataRestrictionEntry((KerberosRestrictionEntryFlags)flags, (TokenIntegrityLevel)il, machine_id);
             return true;
         }
     }

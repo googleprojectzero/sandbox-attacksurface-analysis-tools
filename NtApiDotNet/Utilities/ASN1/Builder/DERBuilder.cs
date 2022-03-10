@@ -285,10 +285,18 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// Write a generalized time.
         /// </summary>
         /// <param name="time">The time to write.</param>
+        public void WriteGeneralizedTime(string time)
+        {
+            _writer.WriteUniversalValue(false, UniversalTag.GeneralizedTime, Encoding.ASCII.GetBytes(time));
+        }
+
+        /// <summary>
+        /// Write a generalized time.
+        /// </summary>
+        /// <param name="time">The time to write.</param>
         public void WriteGeneralizedTime(DateTime time)
         {
-            string time_str = time.ToUniversalTime().ToString("yyyyMMddHHmmssZ");
-            _writer.WriteUniversalValue(false, UniversalTag.GeneralizedTime, Encoding.ASCII.GetBytes(time_str));
+            WriteGeneralizedTime(time.ToUniversalTime().ToString("yyyyMMddHHmmssZ"));
         }
 
         /// <summary>

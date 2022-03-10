@@ -13,7 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,69 +22,22 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
-#pragma warning disable 1591
-    /// <summary>
-    /// Type of Authorization Data.
-    /// </summary>
-    public enum KerberosAuthorizationDataType
-    {
-        AD_IF_RELEVANT = 1,
-        AD_INTENDED_FOR_SERVER = 2,
-        AD_INTENDED_FOR_APPLICATION_CLASS = 3,
-        AD_KDC_ISSUED = 4,
-        AD_AND_OR = 5,
-        AD_MANDATORY_TICKET_EXTENSIONS = 6,
-        AD_IN_TICKET_EXTENSIONS = 7,
-        AD_MANDATORY_FOR_KDC = 8,
-        AD_INITIAL_VERIFIED_CAS = 9,
-        OSF_DCE = 64,
-        SESAME = 65,
-        AD_OSF_DCE_PKI_CERTID = 66,
-        AD_AUTHENTICATION_STRENGTH = 70,
-        AD_FX_FAST_ARMOR = 71,
-        AD_FX_FAST_USED = 72,
-        AD_LOGIN_ALIAS = 80,
-        AD_CAMMAC = 96,
-        AD_AUTHENTICATION_INDICATOR = 97,
-        AD_WIN2K_PAC = 128,
-        AD_ETYPE_NEGOTIATION = 129,
-        KERB_AD_RESTRICTION_ENTRY = 141,
-        KERB_LOCAL = 142,
-        AD_AUTH_DATA_AP_OPTIONS = 143,
-        AD_PKU2U_CLIENT_NAME = 143,
-        AD_AUTH_DATA_TARGET_NAME = 144,
-        MS_RESERVED_145 = 145,
-        AD_SIGNTICKET = 512,
-        AD_DIAMETER = 513,
-        AD_ON_BEHALF_OF = 580,
-        AD_BEARER_TOKEN_JWT = 581,
-        AD_BEARER_TOKEN_SAML = 582,
-        AD_BEARER_TOKEN_OIDC = 583,
-        AD_CERT_REQ_AUTHORIZED = 584,
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class representing Kerberos authentication data.
     /// </summary>
-    public class KerberosAuthorizationData
+    public abstract class KerberosAuthorizationData
     {
         /// <summary>
         /// Type of authentication data.
         /// </summary>
         public KerberosAuthorizationDataType DataType { get; }
-        /// <summary>
-        /// Data bytes.
-        /// </summary>
-        public byte[] Data { get; }
 
-        private protected KerberosAuthorizationData(KerberosAuthorizationDataType type, byte[] data)
+        private protected KerberosAuthorizationData(KerberosAuthorizationDataType type)
         {
             DataType = type;
-            Data = data;
         }
 
-        internal static IEnumerable<KerberosAuthorizationData> Parse(DERValue value)
+        internal static KerberosAuthorizationData Parse(DERValue value)
         {
             if (!value.CheckSequence())
                 throw new InvalidDataException();
@@ -109,22 +63,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (type == 0 || data == null)
                 throw new InvalidDataException();
 
-            List<KerberosAuthorizationData> ret = new List<KerberosAuthorizationData>();
-
             if (type == KerberosAuthorizationDataType.AD_IF_RELEVANT)
             {
-                DERValue[] values = DERParser.ParseData(data, 0);
-                if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
-                    throw new InvalidDataException();
-
-                ret.AddRange(values[0].Children.SelectMany(c => Parse(c)));
+                if (KerberosAuthorizationDataIfRelevant.Parse(data, 
+                    out KerberosAuthorizationDataIfRelevant entry))
+                {
+                    return entry;
+                }
             }
             else if (type == KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
             {
                 if (KerberosAuthorizationDataRestrictionEntry.Parse(data,
                     out KerberosAuthorizationDataRestrictionEntry entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
@@ -132,7 +84,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataEncryptionNegotiation.Parse(data,
                     out KerberosAuthorizationDataEncryptionNegotiation entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_WIN2K_PAC)
@@ -140,7 +92,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataPAC.Parse(data,
                     out KerberosAuthorizationDataPAC entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
@@ -148,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataApOptions.Parse(data,
                     out KerberosAuthorizationDataApOptions entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
             else if (type == KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
@@ -156,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataTargetName.Parse(data,
                     out KerberosAuthorizationDataTargetName entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
             else if (type == KerberosAuthorizationDataType.KERB_LOCAL)
@@ -164,35 +116,33 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (KerberosAuthorizationDataKerbLocal.Parse(data,
                     out KerberosAuthorizationDataKerbLocal entry))
                 {
-                    ret.Add(entry);
+                    return entry;
                 }
             }
 
-            if (ret.Count == 0)
-            {
-                ret.Add(new KerberosAuthorizationData(type, data));
-            }
-            return ret;
+            return new KerberosAuthorizationDataRaw(type, data);
         }
 
         internal static IReadOnlyList<KerberosAuthorizationData> ParseSequence(DERValue value)
         {
-            if (!value.CheckSequence())
-                throw new InvalidDataException();
-            var ret = new List<KerberosAuthorizationData>();
-            foreach (var next in value.Children)
-            {
-                ret.AddRange(Parse(next));
-            }
-            return ret.AsReadOnly();
+            return value.ReadSequence(Parse);
         }
 
-        private protected virtual void FormatData(StringBuilder builder)
+        private protected abstract void FormatData(StringBuilder builder);
+        private protected virtual byte[] GetData()
         {
-            HexDumpBuilder hex = new HexDumpBuilder(false, false, true, false, 0);
-            hex.Append(Data);
-            hex.Complete();
-            builder.Append(hex.ToString());
+            throw new NotSupportedException($"Conversion to an array is not supported for {DataType}");
+        }
+
+        internal byte[] ToArray()
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)DataType));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
+            }
+            return builder.ToArray();
         }
 
         internal void Format(StringBuilder builder)

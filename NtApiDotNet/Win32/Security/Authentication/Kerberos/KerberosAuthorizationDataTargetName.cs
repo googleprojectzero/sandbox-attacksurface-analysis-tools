@@ -21,10 +21,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosAuthorizationDataTargetName : KerberosAuthorizationData
     {
-        private KerberosAuthorizationDataTargetName(byte[] data, string target_name)
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME, data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="target_name">The target name.</param>
+        public KerberosAuthorizationDataTargetName(string target_name)
+            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
         {
-            TargetName = target_name;
+            TargetName = target_name ?? throw new System.ArgumentNullException(nameof(target_name));
         }
 
         /// <summary>
@@ -37,6 +41,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Target Name     : {TargetName}");
         }
 
+        private protected override byte[] GetData()
+        {
+            return Encoding.Unicode.GetBytes(TargetName);
+        }
+
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataTargetName entry)
         {
             if ((data.Length % 2) != 0)
@@ -45,7 +54,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return false;
             }
 
-            entry = new KerberosAuthorizationDataTargetName(data, Encoding.Unicode.GetString(data));
+            entry = new KerberosAuthorizationDataTargetName(Encoding.Unicode.GetString(data));
             return true;
         }
     }

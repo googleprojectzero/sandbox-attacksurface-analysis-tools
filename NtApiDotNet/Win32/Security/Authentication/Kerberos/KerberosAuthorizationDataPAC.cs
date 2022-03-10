@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -29,10 +30,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationDataPACEntry> Entries { get; }
 
-        private KerberosAuthorizationDataPAC(byte[] data, IReadOnlyList<KerberosAuthorizationDataPACEntry> entries)
-                : base(KerberosAuthorizationDataType.AD_WIN2K_PAC, data)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="entries">The list of PAC entries.</param>
+        public KerberosAuthorizationDataPAC(IEnumerable<KerberosAuthorizationDataPACEntry> entries)
+                : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)
         {
-            Entries = entries;
+            Entries = entries.ToList().AsReadOnly();
         }
 
         private protected override void FormatData(StringBuilder builder)
@@ -116,7 +121,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 entries.Add(pac_entry);
             }
 
-            auth_data = new KerberosAuthorizationDataPAC(data, entries.AsReadOnly());
+            auth_data = new KerberosAuthorizationDataPAC(entries.AsReadOnly());
             return true;
         }
     }

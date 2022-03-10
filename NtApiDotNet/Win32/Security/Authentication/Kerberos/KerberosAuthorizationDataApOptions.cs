@@ -12,35 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
 using System;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
-    /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
-    /// </summary>
-    [Flags]
-    public enum KerberosApOptionsFlags : uint
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("KERB_AP_OPTIONS_CBT")]
-        ChannelBindingToken = 0x4000,
-        UnverifiedTargetName = 0x8000,
-        MutualRequired = 0x20000000,
-        UseSessionKey = 0x40000000,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
-
-    /// <summary>
     /// Class to represent the AD-AUTH-DATA-AP-OPTIONS authorization data.
     /// </summary>
     public sealed class KerberosAuthorizationDataApOptions : KerberosAuthorizationData
     {
-        private KerberosAuthorizationDataApOptions(byte[] data, KerberosApOptionsFlags flags) 
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS, data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="flags">The AP options flags.</param>
+        public KerberosAuthorizationDataApOptions(KerberosApOptionsFlags flags) 
+            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
         {
             Flags = flags;
         }
@@ -55,6 +42,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Flags           : {Flags}");
         }
 
+        private protected override byte[] GetData()
+        {
+            return BitConverter.GetBytes((uint)Flags);
+        }
+
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataApOptions entry)
         {
             KerberosApOptionsFlags flags = KerberosApOptionsFlags.None;
@@ -64,7 +56,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return false;
             }
             flags = (KerberosApOptionsFlags)BitConverter.ToUInt32(data, 0);
-            entry = new KerberosAuthorizationDataApOptions(data, flags);
+            entry = new KerberosAuthorizationDataApOptions(flags);
             return true;
         }
     }
