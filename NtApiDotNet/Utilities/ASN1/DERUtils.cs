@@ -101,5 +101,10 @@ namespace NtApiDotNet.Utilities.ASN1
             return DateTime.TryParseExact(time_str, "yyyyMMddHHmmssZ",
                 CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out time);
         }
+
+        public static string ConvertGeneralizedTime(DateTime time)
+        {
+            return time.ToUniversalTime().ToString("yyyyMMddHHmmssZ");
+        }
     }
 }

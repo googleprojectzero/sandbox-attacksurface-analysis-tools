@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
 
@@ -21,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A Kerberos Principal Name.
     /// </summary>
-    public sealed class KerberosPrincipalName
+    public sealed class KerberosPrincipalName : IDERObject
     {
         /// <summary>
         /// The name type.
@@ -94,6 +95,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
             return ret;
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)NameType));
+                seq.WriteContextSpecific(1, b => b.WriteGeneralStringSequence(Names));
+            }
         }
     }
 }

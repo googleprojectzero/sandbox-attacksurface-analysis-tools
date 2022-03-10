@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A single kerberos key.
     /// </summary>
-    public sealed class KerberosAuthenticationKey : AuthenticationKey
+    public sealed class KerberosAuthenticationKey : AuthenticationKey, IDERObject
     {
         #region Public Properties
         /// <summary>
@@ -301,16 +301,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
-        internal byte[] ToArray()
+        void IDERObject.Write(DERBuilder builder)
         {
-            DERBuilder builder = new DERBuilder();
             using (var seq = builder.CreateSequence())
             {
                 seq.WriteContextSpecific(0, b => b.WriteInt32((int)KeyEncryption));
                 seq.WriteContextSpecific(1, b => b.WriteOctetString(Key));
             }
-
-            return builder.ToArray();
         }
 
         #endregion

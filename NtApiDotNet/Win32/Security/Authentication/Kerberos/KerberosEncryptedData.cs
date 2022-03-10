@@ -46,10 +46,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Create a new Kerberos EncryptedData object.
         /// </summary>
         /// <param name="encryption_type">The encryption type.</param>
-        /// <param name="key_version">The optional key version number.</param>
         /// <param name="cipher_text">The cipher text.</param>
+        /// <param name="key_version">The optional key version number.</param>
         /// <returns>The new EncryptedData object.</returns>
-        public static KerberosEncryptedData Create(KerberosEncryptionType encryption_type, int? key_version, byte[] cipher_text)
+        public static KerberosEncryptedData Create(KerberosEncryptionType encryption_type, byte[] cipher_text, int? key_version = null)
         {
             if (cipher_text is null)
             {
@@ -84,7 +84,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             byte[] cipher_text = CipherText;
             if (EncryptionType != KerberosEncryptionType.NULL)
                 cipher_text = key.Decrypt(cipher_text, key_usage);
-            return Create(KerberosEncryptionType.NULL, null, cipher_text);
+            return Create(KerberosEncryptionType.NULL, cipher_text, null);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (EncryptionType != KerberosEncryptionType.NULL)
                 throw new ArgumentException("Encryption type must be NULL.", nameof(EncryptionType));
             byte[] cipher_text = key.Encrypt(CipherText, key_usage);
-            return Create(key.KeyEncryption, key_version, cipher_text);
+            return Create(key.KeyEncryption, cipher_text, key_version);
         }
         #endregion
 

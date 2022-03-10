@@ -55,13 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected override byte[] GetData()
         {
             DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                foreach (var entry in Entries)
-                {
-                    seq.WriteRawBytes(entry.ToArray());
-                }
-            }
+            builder.WriteSequence(Entries);
             return builder.ToArray();
         }
 

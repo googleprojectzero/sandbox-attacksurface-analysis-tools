@@ -17,7 +17,6 @@ using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -25,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing Kerberos authentication data.
     /// </summary>
-    public abstract class KerberosAuthorizationData
+    public abstract class KerberosAuthorizationData : IDERObject
     {
         /// <summary>
         /// Type of authentication data.
@@ -134,22 +133,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             throw new NotSupportedException($"Conversion to an array is not supported for {DataType}");
         }
 
-        internal byte[] ToArray()
-        {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)DataType));
-                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
-            }
-            return builder.ToArray();
-        }
-
         internal void Format(StringBuilder builder)
         {
             builder.AppendLine($"<Authorization Data - {DataType}>");
             FormatData(builder);
             builder.AppendLine();
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)DataType));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
+            }
         }
     }
 }

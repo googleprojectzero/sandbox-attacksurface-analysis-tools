@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +27,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public class KerberosAuthenticator : KerberosEncryptedData
     {
+        /*
+            Authenticator   ::= [APPLICATION 2] SEQUENCE  {
+            authenticator-vno       [0] INTEGER (5),
+            crealm                  [1] Realm,
+            cname                   [2] PrincipalName,
+            cksum                   [3] Checksum OPTIONAL,
+            cusec                   [4] Microseconds,
+            ctime                   [5] KerberosTime,
+            subkey                  [6] EncryptionKey OPTIONAL,
+            seq-number              [7] UInt32 OPTIONAL,
+            authorization-data      [8] AuthorizationData OPTIONAL
+        }
+        */
+
         /// <summary>
         /// Authenticator version.
         /// </summary>
@@ -61,6 +77,74 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Authorization data.
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
+
+        /// <summary>
+        /// Create a new authenticator.
+        /// </summary>
+        /// <param name="client_realm">The client realm name.</param>
+        /// <param name="client_name">The client's principal name.</param>
+        /// <param name="client_usec">Client time usecs.</param>
+        /// <param name="client_time">Client time.</param>
+        /// <param name="checksum">Optional checksum.</param>
+        /// <param name="subkey">Optional subkey.</param>
+        /// <param name="sequence_number">Optional sequence number.</param>
+        /// <param name="authorization_data">Optional authorization data.</param>
+        /// <returns>The new authenticator.</returns>
+        public static KerberosAuthenticator Create(string client_realm, KerberosPrincipalName client_name, 
+            DateTime client_time, int? client_usec = null, KerberosChecksum checksum = null, KerberosAuthenticationKey subkey = null, 
+            int? sequence_number = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
+        {
+            if (client_realm is null)
+            {
+                throw new ArgumentNullException(nameof(client_realm));
+            }
+
+            if (client_name is null)
+            {
+                throw new ArgumentNullException(nameof(client_name));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication(2))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, b => b.WriteInt32(5));
+                    seq.WriteContextSpecific(1, b => b.WriteGeneralString(client_realm));
+                    seq.WriteContextSpecific(2, client_name);
+                    if (checksum != null)
+                    {
+                        seq.WriteContextSpecific(3, checksum);
+                    }
+                    seq.WriteContextSpecific(4, b => b.WriteGeneralizedTime(client_time));
+                    seq.WriteContextSpecific(5, b => b.WriteInt32(client_usec ?? 0));
+                    if (subkey != null)
+                    {
+                        seq.WriteContextSpecific(6, subkey);
+                    }
+                    if (sequence_number.HasValue)
+                    {
+                        seq.WriteContextSpecific(7, b => b.WriteInt32(sequence_number.Value));
+                    }
+                    if (authorization_data != null)
+                    {
+                        seq.WriteContextSpecific(8, b => b.WriteSequence(authorization_data));
+                    }
+                }
+            }
+
+            return new KerberosAuthenticator(Create(KerberosEncryptionType.NULL, builder.ToArray()))
+            {
+                ClientName = client_name,
+                ClientRealm = client_realm,
+                ClientTime = DERUtils.ConvertGeneralizedTime(client_time),
+                ClientUSec = client_usec ?? 0,
+                Checksum = checksum,
+                SubKey = subkey,
+                SequenceNumber = sequence_number ?? throw new ArgumentNullException(nameof(sequence_number)),
+                AuthorizationData = authorization_data.ToList().AsReadOnly()
+            };
+        }
 
         internal override string Format()
         {

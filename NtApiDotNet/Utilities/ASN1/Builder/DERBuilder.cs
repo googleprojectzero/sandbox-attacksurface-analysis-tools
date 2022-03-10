@@ -120,6 +120,15 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
+        /// Write a DER object.
+        /// </summary>
+        /// <param name="obj">The object to write.</param>
+        public void WriteObject(IDERObject obj)
+        {
+            obj.Write(this);
+        }
+
+        /// <summary>
         /// Write a sequence based on the contents of another DER builder.
         /// </summary>
         /// <param name="builder">The builder for the contents.</param>
@@ -141,7 +150,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
-        /// Write a sequence based on the contents of another DER builder.
+        /// Write a sequence based on the a set of values.
         /// </summary>
         /// <param name="values">Write a sequence of fixed values.</param>
         /// <param name="build">The build function for the contents.</param>
@@ -154,6 +163,24 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
                     build(seq, value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Write a sequence based on the a set of values.
+        /// </summary>
+        /// <param name="values">Write a sequence of DER objects.</param>
+        public void WriteSequence(IEnumerable<IDERObject> values)
+        {
+            WriteSequence(values, (b, v) => v.Write(b));
+        }
+
+        /// <summary>
+        /// Write a sequence of general strings.
+        /// </summary>
+        /// <param name="strs">The strings to write.</param>
+        public void WriteGeneralStringSequence(IEnumerable<string> strs)
+        {
+            WriteSequence(strs, (b, s) => b.WriteGeneralString(s));
         }
 
         /// <summary>
@@ -183,10 +210,20 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <param name="build">The build function for the contents.</param>
         public void WriteApplication(int application, Action<DERBuilder> build)
         {
-            using (var seq = CreateApplication(application))
+            using (var app = CreateApplication(application))
             {
-                build(seq);
+                build(app);
             }
+        }
+
+        /// <summary>
+        /// Write an application specific tag with contents from an object.
+        /// </summary>
+        /// <param name="application">The ID of the application specific tag.</param>
+        /// <param name="obj">The object to write.</param>
+        public void WriteApplication(int application, IDERObject obj)
+        {
+            WriteApplication(application, obj.Write);
         }
 
         /// <summary>
@@ -221,7 +258,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
-        /// Write an application specific tag with contents from the builder.
+        /// Write an context specific tag with contents from the builder.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
         /// <param name="build">The build function for the contents.</param>
@@ -231,6 +268,16 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             {
                 build(seq);
             }
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an object.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="obj">The object to write.</param>
+        public void WriteContextSpecific(int context, IDERObject obj)
+        {
+            WriteContextSpecific(context, b => obj.Write(b));
         }
 
         /// <summary>
@@ -296,7 +343,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <param name="time">The time to write.</param>
         public void WriteGeneralizedTime(DateTime time)
         {
-            WriteGeneralizedTime(time.ToUniversalTime().ToString("yyyyMMddHHmmssZ"));
+            WriteGeneralizedTime(DERUtils.ConvertGeneralizedTime(time));
         }
 
         /// <summary>

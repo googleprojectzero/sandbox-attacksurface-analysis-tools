@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Kerberos Checksum.
     /// </summary>
-    public class KerberosChecksum
+    public class KerberosChecksum : IDERObject
     {
         /// <summary>
         /// Type of kerberos checksum.
@@ -47,17 +47,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected virtual byte[] GetData()
         {
             return Checksum;
-        }
-
-        internal byte[] ToArray()
-        {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)ChecksumType));
-                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
-            }
-            return builder.ToArray();
         }
 
         internal static KerberosChecksum Parse(DERValue value)
@@ -90,6 +79,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return chksum;
             }
             return new KerberosChecksum(type, data);
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)ChecksumType));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
+            }
         }
     }
 }
