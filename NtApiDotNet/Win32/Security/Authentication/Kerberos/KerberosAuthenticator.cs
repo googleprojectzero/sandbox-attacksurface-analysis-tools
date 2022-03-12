@@ -122,8 +122,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     {
                         seq.WriteContextSpecific(3, checksum);
                     }
-                    seq.WriteContextSpecific(4, b => b.WriteGeneralizedTime(client_time));
-                    seq.WriteContextSpecific(5, b => b.WriteInt32(client_usec ?? 0));
+                    seq.WriteContextSpecific(4, b => b.WriteInt32(client_usec ?? 0));
+                    seq.WriteContextSpecific(5, b => b.WriteGeneralizedTime(client_time));
                     if (subkey != null)
                     {
                         seq.WriteContextSpecific(6, subkey);
