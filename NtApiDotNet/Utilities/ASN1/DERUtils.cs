@@ -96,10 +96,19 @@ namespace NtApiDotNet.Utilities.ASN1
             return true;
         }
 
-        public static bool ParseGeneralizedTime(string time_str, out DateTime time)
+        public static bool TryParseGeneralizedTime(string time_str, out DateTime time)
         {
             return DateTime.TryParseExact(time_str, "yyyyMMddHHmmssZ",
                 CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out time);
+        }
+
+        public static DateTime ParseGeneralizedTime(string time_str)
+        {
+            if (!TryParseGeneralizedTime(time_str, out DateTime time))
+            {
+                throw new FormatException("Invalid generalized time string.");
+            }
+            return time;
         }
 
         public static string ConvertGeneralizedTime(DateTime time)

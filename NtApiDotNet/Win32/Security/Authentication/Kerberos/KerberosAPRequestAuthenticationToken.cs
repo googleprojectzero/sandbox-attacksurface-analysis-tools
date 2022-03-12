@@ -68,7 +68,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_AP_REQ)
         {
-            Ticket = new KerberosTicket(new byte[0]);
+            Ticket = new KerberosTicket();
             Authenticator = new KerberosEncryptedData();
         }
         #endregion
@@ -97,7 +97,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
         public override AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
         {
-            KerberosEncryptedData authenticator = null;
+            KerberosAuthenticator authenticator = null;
 
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
             if (!Ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
@@ -107,7 +107,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (Authenticator.Decrypt(tmp_keys, Ticket.Realm, Ticket.ServerName, KerberosKeyUsage.ApReqAuthSubKey, out byte[] auth_decrypt))
             {
-                if (!KerberosAuthenticator.Parse(Ticket, Authenticator, auth_decrypt, tmp_keys, out authenticator))
+                if (!KerberosAuthenticator.TryParse(Ticket, auth_decrypt, tmp_keys, out authenticator))
                 {
                     authenticator = null;
                 }
@@ -157,7 +157,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     seq.WriteKerberosHeader(KerberosMessageType.KRB_AP_REQ);
                     seq.WriteContextSpecific(2, b => b.WriteBitString(option_bits));
                     seq.WriteContextSpecific(3, b => b.WriteRawBytes(ticket.ToArray()));
-                    seq.WriteContextSpecific(4, b => b.WriteRawBytes(authenticator.Data));
+                    seq.WriteContextSpecific(4, authenticator);
                 }
             }
             return (KerberosAPRequestAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x100));

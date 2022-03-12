@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent Kerberos Encrypted Data.
     /// </summary>
-    public class KerberosEncryptedData
+    public class KerberosEncryptedData : IDERObject
     {
         #region Public Properties
         /// <summary>
@@ -56,19 +56,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentNullException(nameof(cipher_text));
             }
 
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)encryption_type));
-                if (key_version.HasValue)
-                {
-                    seq.WriteContextSpecific(1, b => b.WriteInt32(key_version.Value));
-                }
-                seq.WriteContextSpecific(2, b => b.WriteOctetString(cipher_text));
-            }
-            byte[] data = builder.ToArray();
-            DERValue[] values = DERParser.ParseData(data, 0);
-            return Parse(values[0], data);
+            return new KerberosEncryptedData(encryption_type, key_version, cipher_text);
         }
         #endregion
 
@@ -105,17 +93,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         #region Constructors
         internal KerberosEncryptedData() 
-            : this(KerberosEncryptionType.NULL, null, Array.Empty<byte>(), Array.Empty<byte>())
+            : this(KerberosEncryptionType.NULL, null, Array.Empty<byte>())
         {
         }
 
         private protected KerberosEncryptedData(KerberosEncryptionType type, 
-            int? key_version, byte[] cipher_text, byte[] data)
+            int? key_version, byte[] cipher_text)
         {
             EncryptionType = type;
             KeyVersion = key_version;
             CipherText = cipher_text;
-            Data = data;
         }
         #endregion
 
@@ -165,7 +152,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new InvalidDataException();
 
             KerberosEncryptedData ret = new KerberosEncryptedData();
-            ret.Data = data;
             foreach (var next in value.Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -188,7 +174,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
-        internal byte[] Data { get; private set; }
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)EncryptionType));
+                if (KeyVersion.HasValue)
+                {
+                    seq.WriteContextSpecific(1, b => b.WriteInt32(KeyVersion.Value));
+                }
+                seq.WriteContextSpecific(2, b => b.WriteOctetString(CipherText));
+            }
+        }
         #endregion
     }
 }

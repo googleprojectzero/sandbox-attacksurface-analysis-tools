@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,20 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public class KerberosAuthenticator : KerberosEncryptedData
     {
-        /*
-            Authenticator   ::= [APPLICATION 2] SEQUENCE  {
-            authenticator-vno       [0] INTEGER (5),
-            crealm                  [1] Realm,
-            cname                   [2] PrincipalName,
-            cksum                   [3] Checksum OPTIONAL,
-            cusec                   [4] Microseconds,
-            ctime                   [5] KerberosTime,
-            subkey                  [6] EncryptionKey OPTIONAL,
-            seq-number              [7] UInt32 OPTIONAL,
-            authorization-data      [8] AuthorizationData OPTIONAL
-        }
-        */
-
         /// <summary>
         /// Authenticator version.
         /// </summary>
@@ -77,6 +64,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Authorization data.
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
+
+        /// <summary>
+        /// Convert the authenticator a builder based on the current values.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public KerberosAuthenticatorBuilder ToBuilder()
+        {
+            return new KerberosAuthenticatorBuilder()
+            {
+                ClientName = ClientName,
+                ClientRealm = ClientRealm,
+                AuthorizationData = AuthorizationData?.ToList(),
+                Checksum = Checksum,
+                ClientTime = DERUtils.ParseGeneralizedTime(ClientTime),
+                ClientUSec = ClientUSec,
+                SequenceNumber = SequenceNumber,
+                SubKey = SubKey
+            };
+        }
 
         /// <summary>
         /// Create a new authenticator.
@@ -133,7 +139,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
 
-            return new KerberosAuthenticator(Create(KerberosEncryptionType.NULL, builder.ToArray()))
+            return new KerberosAuthenticator(builder.ToArray())
             {
                 ClientName = client_name,
                 ClientRealm = client_realm,
@@ -141,8 +147,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ClientUSec = client_usec ?? 0,
                 Checksum = checksum,
                 SubKey = subkey,
-                SequenceNumber = sequence_number ?? throw new ArgumentNullException(nameof(sequence_number)),
-                AuthorizationData = authorization_data.ToList().AsReadOnly()
+                SequenceNumber = sequence_number,
+                AuthorizationData = authorization_data?.ToList().AsReadOnly()
             };
         }
 
@@ -181,15 +187,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToString();
         }
 
-        private KerberosAuthenticator(KerberosEncryptedData orig_data) 
-            : base(orig_data.EncryptionType, orig_data.KeyVersion, orig_data.CipherText, orig_data.Data)
+        /// <summary>
+        /// Try and parse an authenticator from DER encoded data.
+        /// </summary>
+        /// <param name="data">The DER encoded data.</param>
+        /// <param name="authenticator">The parsed authenticator.</param>
+        /// <returns>True the parse was successful.</returns>
+        public static bool TryParse(byte[] data, out KerberosAuthenticator authenticator)
+        {
+            return TryParse(null, data, null, out authenticator);
+        }
+
+        /// <summary>
+        /// Parse an authenticator from DER encoded data.
+        /// </summary>
+        /// <param name="data">The DER encoded data.</param>
+        public static KerberosAuthenticator Parse(byte[] data)
+        {
+            if (!TryParse(data, out KerberosAuthenticator authenticator))
+                return authenticator;
+            throw new InvalidDataException("Failed to parse authenticator.");
+        }
+
+        private KerberosAuthenticator(byte[] decrypted) 
+            : base(KerberosEncryptionType.NULL, null, decrypted)
         {
             AuthenticatorVersion = 5;
         }
 
-        internal static bool Parse(KerberosTicket orig_ticket, KerberosEncryptedData orig_data, byte[] decrypted, KerberosKeySet keyset, out KerberosEncryptedData ticket)
+        internal static bool TryParse(KerberosTicket ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosAuthenticator authenticator)
         {
-            ticket = null;
+            authenticator = null;
             try
             {
                 DERValue[] values = DERParser.ParseData(decrypted, 0);
@@ -200,7 +228,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return false;
                 if (!value.Children[0].CheckSequence())
                     return false;
-                var ret = new KerberosAuthenticator(orig_data);
+                var ret = new KerberosAuthenticator(decrypted);
                 foreach (var next in value.Children[0].Children)
                 {
                     if (next.Type != DERTagType.ContextSpecific)
@@ -233,7 +261,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 6:
                             if (!next.HasChildren())
                                 return false;
-                            ret.SubKey = KerberosAuthenticationKey.Parse(next.Children[0], orig_ticket.Realm, orig_ticket.ServerName);
+                            ret.SubKey = KerberosAuthenticationKey.Parse(next.Children[0], ticket?.Realm ?? "Unknown", 
+                                ticket.ServerName ?? new KerberosPrincipalName());
                             break;
                         case 7:
                             ret.SequenceNumber = next.ReadChildInteger();
@@ -250,7 +279,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                 if (ret.Checksum is KerberosChecksumGSSApi gssapi && gssapi.Credentials != null)
                 {
-                    KerberosKeySet tmp_keyset = new KerberosKeySet(keyset.AsEnumerable() ?? new KerberosAuthenticationKey[0]);
+                    KerberosKeySet tmp_keyset = new KerberosKeySet(keyset?.AsEnumerable() ?? new KerberosAuthenticationKey[0]);
                     if (ret.SubKey != null)
                     {
                         tmp_keyset.Add(ret.SubKey);
@@ -259,7 +288,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     gssapi.Decrypt(tmp_keyset);
                 }
 
-                ticket = ret;
+                authenticator = ret;
             }
             catch (InvalidDataException)
             {

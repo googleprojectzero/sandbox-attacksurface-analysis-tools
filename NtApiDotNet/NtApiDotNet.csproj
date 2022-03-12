@@ -510,6 +510,7 @@
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationContextDelegate.cs" />
     <Compile Include="Win32\Security\Authentication\ClientAuthenticationContextDelegate.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthenticatorBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosBuilderUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosApOptionsFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataIfRelevant.cs" />

@@ -155,7 +155,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal static DateTime ParseKerberosTime(string s, int usec)
         {
-            if (DERUtils.ParseGeneralizedTime(s, out DateTime time))
+            if (DERUtils.TryParseGeneralizedTime(s, out DateTime time))
             {
                 return time.AddMilliseconds(usec / 1000);
             }

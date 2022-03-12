@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             using (var seq = builder.CreateSequence())
             {
                 seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REP);
-                seq.WriteContextSpecific(2, ticket.TicketData);
+                seq.WriteContextSpecific(2, ticket);
             }
             return builder;
         }

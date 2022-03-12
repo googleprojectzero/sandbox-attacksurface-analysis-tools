@@ -56,7 +56,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return $"{FullName}@{realm}";
         }
 
-        internal KerberosPrincipalName() 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public KerberosPrincipalName() 
             : this(KerberosNameType.UNKNOWN, new string[0])
         {
         }

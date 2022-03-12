@@ -218,7 +218,7 @@ namespace NtApiDotNet.Win32
                 throw new ArgumentNullException(nameof(service_ticket));
             }
 
-            return LsaLogonTicket(type, service_ticket.TicketData, tgt_ticket?.ToArray(), throw_on_error);
+            return LsaLogonTicket(type, service_ticket.ToArray(), tgt_ticket?.ToArray(), throw_on_error);
         }
 
         /// <summary>

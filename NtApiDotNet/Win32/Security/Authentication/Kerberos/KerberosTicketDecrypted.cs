@@ -154,7 +154,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private KerberosTicketDecrypted(
             KerberosTicket ticket) 
-            : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, ticket.EncryptedData, ticket.TicketData)
+            : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, ticket.EncryptedData)
         {
             HostAddresses = new List<KerberosHostAddress>().AsReadOnly();
             AuthorizationData = new List<KerberosAuthorizationData>().AsReadOnly();

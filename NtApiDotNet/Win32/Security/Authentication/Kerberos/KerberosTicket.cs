@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.IO;
 using System.Text;
@@ -22,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Kerberos ticket.
     /// </summary>
-    public class KerberosTicket
+    public class KerberosTicket :IDERObject
     {
         /// <summary>
         /// Version number for the ticket.
@@ -48,8 +49,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Indicates that the ticket has been decrypted.
         /// </summary>
         public bool Decrypted => this is KerberosTicketDecrypted;
-
-        internal byte[] TicketData { get; }
 
         internal bool Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
         {
@@ -104,25 +103,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The ticket as an array.</returns>
         public byte[] ToArray()
         {
-            return (byte[])TicketData.Clone();
+            DERBuilder builder = new DERBuilder();
+            builder.WriteObject(this);
+            return builder.ToArray();
         }
 
         private protected KerberosTicket(
             int ticket_version,
             string realm, 
             KerberosPrincipalName server_name, 
-            KerberosEncryptedData encrypted_data,
-            byte[] ticket_data)
+            KerberosEncryptedData encrypted_data)
         {
             TicketVersion = ticket_version;
             Realm = realm ?? string.Empty;
             ServerName = server_name ?? new KerberosPrincipalName();
             EncryptedData = encrypted_data;
-            TicketData = ticket_data;
         }
 
-        internal KerberosTicket(byte[] ticket_data) 
-            : this(5, null, null, null, ticket_data)
+        internal KerberosTicket() : this(5, null, null, null)
         {
         }
 
@@ -134,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (!value.Children[0].CheckSequence())
                 throw new InvalidDataException();
 
-            KerberosTicket ret = new KerberosTicket(data);
+            KerberosTicket ret = new KerberosTicket();
             foreach (var next in value.Children[0].Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -164,6 +162,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
             return ret;
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var app = builder.CreateApplication(1))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, b => b.WriteInt32(TicketVersion));
+                    seq.WriteContextSpecific(1, b => b.WriteGeneralString(Realm));
+                    seq.WriteContextSpecific(2, ServerName);
+                    seq.WriteContextSpecific(3, EncryptedData);
+                }
+            }
         }
     }
 }
