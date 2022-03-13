@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -27,7 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The kerberos session key.
         /// </summary>
         public KerberosAuthenticationKey Key { get; private set; }
-
         /// <summary>
         /// Ticket flags.
         /// </summary>
@@ -68,6 +68,49 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// List of host addresses for ticket.
         /// </summary>
         public IReadOnlyList<KerberosHostAddress> HostAddresses { get; private set; }
+
+        internal string Format()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.AppendLine($"Realm           : {Realm}");
+            builder.AppendLine($"Server Name     : {ServerName}");
+            builder.AppendLine($"Client Name     : {ClientName}");
+            builder.AppendLine($"Client Realm    : {ClientRealm}");
+
+            if (!string.IsNullOrEmpty(AuthTime))
+            {
+                builder.AppendLine($"Auth Time       : {KerberosUtils.ParseKerberosTime(AuthTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(StartTime))
+            {
+                builder.AppendLine($"Start Time     : {KerberosUtils.ParseKerberosTime(StartTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(EndTime))
+            {
+                builder.AppendLine($"End Time       : {KerberosUtils.ParseKerberosTime(EndTime, 0)}");
+            }
+            if (!string.IsNullOrEmpty(RenewTill))
+            {
+                builder.AppendLine($"Renew Time     : {KerberosUtils.ParseKerberosTime(EndTime, 0)}");
+            }
+            builder.AppendLine($"Ticket Flags    : {Flags}");
+
+            builder.AppendLine("<Session Key>");
+            builder.AppendLine($"Encryption Type : {Key.KeyEncryption}");
+            builder.AppendLine($"Encryption Key  : {NtObjectUtils.ToHexString(Key.Key)}");
+
+            if (HostAddresses?.Count > 0)
+            {
+                builder.AppendLine("<Host Addresses>");
+                foreach (var addr in HostAddresses)
+                {
+                    builder.AppendLine(addr.ToString());
+                }
+            }
+
+            return builder.ToString();
+        }
 
         internal static KerberosCredentialInfo Parse(DERValue value, KerberosKeySet keyset, KerberosTicket orig_ticket)
         {
@@ -130,17 +173,5 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return ret;
         }
-
-//        key[0] EncryptionKey,
-//prealm[1] Realm OPTIONAL,
-//pname[2] PrincipalName OPTIONAL,
-//flags[3] TicketFlags OPTIONAL,
-//authtime[4] KerberosTime OPTIONAL,
-//starttime[5] KerberosTime OPTIONAL,
-//endtime[6] KerberosTime OPTIONAL,
-//renew-till[7] KerberosTime OPTIONAL,
-//        srealm[8] Realm OPTIONAL,
-//        sname[9] PrincipalName OPTIONAL,
-//        caddr[10] HostAddresses OPTIONAL
     }
 }

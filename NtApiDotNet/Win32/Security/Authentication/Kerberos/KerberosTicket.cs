@@ -50,7 +50,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public bool Decrypted => this is KerberosTicketDecrypted;
 
-        internal bool Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
+        internal bool TryDecrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
         {
             if (this is KerberosTicketDecrypted)
             {
@@ -78,9 +78,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The decrypted kerberos ticket.</returns>
         public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage)
         {
-            if (!Decrypt(keyset, key_usage, out KerberosTicket ticket))
+            if (!TryDecrypt(keyset, key_usage, out KerberosTicket ticket))
                 throw new ArgumentException("Couldn't decrypt the kerberos ticket.");
             return ticket;
+        }
+
+        /// <summary>
+        /// Encrypt the ticket.
+        /// </summary>
+        /// <param name="key">The key to encrypt the ticket.</param>
+        /// <param name="key_usage">The Kerberos key usage for the encryption.</param>
+        /// <param name="key_version">Optional key version number.</param>
+        /// <returns>The encrypted ticket.</returns>
+        public KerberosTicket Encrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, int? key_version = null)
+        {
+            return new KerberosTicket(TicketVersion, Realm, ServerName, EncryptedData.Encrypt(key, key_usage, key_version));
         }
 
         /// <summary>

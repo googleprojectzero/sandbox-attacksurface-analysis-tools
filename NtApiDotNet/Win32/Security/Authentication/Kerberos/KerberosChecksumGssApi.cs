@@ -55,7 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosChecksumGSSApi : KerberosChecksum
     {
-        // See RFC4757
+        // See RFC1964 and RFC4757
 
         /// <summary>
         /// Channel binding hash.

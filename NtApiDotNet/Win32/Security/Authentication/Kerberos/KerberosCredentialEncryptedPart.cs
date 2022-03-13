@@ -16,6 +16,7 @@ using NtApiDotNet.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -57,6 +58,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private KerberosCredentialEncryptedPart(KerberosEncryptedData data) : 
             base(data.EncryptionType, data.KeyVersion, data.CipherText)
         {
+        }
+
+        internal override string Format()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (Nonce.HasValue)
+            {
+                builder.AppendLine($"Nonce           : {Nonce.Value}");
+            }
+            if (!string.IsNullOrEmpty(Timestamp))
+            {
+                builder.AppendLine($"Timestamp       : {KerberosUtils.ParseKerberosTime(Timestamp, USec)}");
+            }
+            if (SenderAddress != null)
+            {
+                builder.AppendLine($"Sender Address  : {SenderAddress}");
+            }
+            if (RecipientAddress != null)
+            {
+                builder.AppendLine($"Recipient Address: {RecipientAddress}");
+            }
+
+            for (int i = 0; i < TicketInfo.Count; ++i)
+            {
+                builder.AppendLine($"<Ticket Info {i}>");
+                builder.Append(TicketInfo[i].Format());
+            }
+            return builder.ToString();
         }
 
         internal static bool TryParse(KerberosEncryptedData orig_data, byte[] decrypted, IReadOnlyList<KerberosTicket> tickets, 

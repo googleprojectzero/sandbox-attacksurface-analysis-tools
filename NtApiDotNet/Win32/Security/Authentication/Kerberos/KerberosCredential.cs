@@ -72,7 +72,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             bool decrypted_ticket = false;
             foreach (var ticket in Tickets)
             {
-                if (ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket dec_ticket))
+                if (ticket.TryDecrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket dec_ticket))
                 {
                     dec_tickets.Add(dec_ticket);
                     decrypted_ticket = true;

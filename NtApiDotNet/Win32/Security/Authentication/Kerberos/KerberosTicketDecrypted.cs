@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Decrypted Kerberos ticket.
     /// </summary>
-    public class KerberosTicketDecrypted : KerberosTicket
+    public sealed class KerberosTicketDecrypted : KerberosTicket
     {
         /// <summary>
         /// Ticket flags.
@@ -152,9 +152,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        private KerberosTicketDecrypted(
-            KerberosTicket ticket) 
-            : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, ticket.EncryptedData)
+        private KerberosTicketDecrypted(KerberosTicket ticket, byte[] decrypted) 
+            : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, 
+                  KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted))
         {
             HostAddresses = new List<KerberosHostAddress>().AsReadOnly();
             AuthorizationData = new List<KerberosAuthorizationData>().AsReadOnly();
@@ -173,7 +173,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return false;
                 if (!value.Children[0].CheckSequence())
                     return false;
-                var ret = new KerberosTicketDecrypted(orig_ticket);
+                var ret = new KerberosTicketDecrypted(orig_ticket, decrypted);
                 foreach (var next in value.Children[0].Children)
                 {
                     if (next.Type != DERTagType.ContextSpecific)

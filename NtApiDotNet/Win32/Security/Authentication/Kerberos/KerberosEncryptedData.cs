@@ -82,7 +82,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="key_usage">The Kerberos key usage for the encryption.</param>
         /// <param name="key_version">Optional key version number.</param>
         /// <returns>The encrypted data.</returns>
-        public KerberosEncryptedData Encrypt(KerberosAuthenticationKey key, int? key_version, KerberosKeyUsage key_usage)
+        public KerberosEncryptedData Encrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, int? key_version = null)
         {
             if (EncryptionType != KerberosEncryptionType.NULL)
                 throw new ArgumentException("Encryption type must be NULL.", nameof(EncryptionType));

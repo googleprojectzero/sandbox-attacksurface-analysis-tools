@@ -47,7 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Kerberos AP Request.
     /// </summary>
-    public class KerberosAPRequestAuthenticationToken : KerberosAuthenticationToken
+    public sealed class KerberosAPRequestAuthenticationToken : KerberosAuthenticationToken
     {
         #region Public Properties
         /// <summary>
@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #endregion
 
         #region Constructors
-        private protected KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
+        private KerberosAPRequestAuthenticationToken(byte[] data, DERValue[] values)
             : base(data, values, KerberosMessageType.KRB_AP_REQ)
         {
             Ticket = new KerberosTicket();
@@ -100,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             KerberosAuthenticator authenticator = null;
 
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
-            if (!Ticket.Decrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
+            if (!Ticket.TryDecrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket ticket))
             {
                 ticket = null;
             }
@@ -129,11 +129,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Create a new KRB AP-REQ token.
         /// </summary>
-        /// <param name="options">The AP-REQ options.</param>
         /// <param name="ticket">The service ticket.</param>
         /// <param name="authenticator">The authenticator.</param>
+        /// <param name="options">The AP-REQ options.</param>
+        /// <param name="authenticator_key">Optional key to encrypt the authenticator.</param>
+        /// <param name="authenticator_key_version">Optional key version for authenticator encryption.</param>
+        /// <param name="ticket_key">Optional key to encrypt the ticket.</param>
+        /// <param name="ticket_key_version">Optional key version for ticket encryption.</param>
+        /// <param name="raw_token">Specify to return a raw token without the GSS API header.</param>
         /// <returns>The new AP-REQ token.</returns>
-        public static KerberosAPRequestAuthenticationToken Create(KerberosAPRequestOptions options, KerberosTicket ticket, KerberosEncryptedData authenticator)
+        public static KerberosAPRequestAuthenticationToken Create(KerberosTicket ticket, KerberosEncryptedData authenticator, 
+            KerberosAPRequestOptions options = KerberosAPRequestOptions.None, KerberosAuthenticationKey authenticator_key = null, 
+            int? authenticator_key_version = null, KerberosAuthenticationKey ticket_key = null, int? ticket_key_version = null, 
+            bool raw_token = false)
         {
             if (ticket is null)
             {
@@ -143,6 +151,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (authenticator is null)
             {
                 throw new ArgumentNullException(nameof(authenticator));
+            }
+
+            if (ticket_key != null)
+            {
+                ticket = ticket.Encrypt(ticket_key, KerberosKeyUsage.AsRepTgsRepTicket, ticket_key_version);
+            }
+
+            if (authenticator_key != null)
+            {
+                authenticator = authenticator.Encrypt(authenticator_key, KerberosKeyUsage.ApReqAuthSubKey, authenticator_key_version);
             }
 
             DERBuilder builder = new DERBuilder();
@@ -160,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     seq.WriteContextSpecific(4, authenticator);
                 }
             }
-            return (KerberosAPRequestAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x100));
+            return (KerberosAPRequestAuthenticationToken)Parse(raw_token ? builder.ToArray() : builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x100));
         }
         #endregion
 

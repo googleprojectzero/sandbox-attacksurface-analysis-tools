@@ -378,3 +378,48 @@ function New-KerberosAuthenticator {
                 $ClientUSec, $Checksum, $SubKey, $SequenceNumber, $AuthorizationData)
     }
 }
+
+<#
+.SYNOPSIS
+Create a new Kerberos AP-REQ token.
+.DESCRIPTION
+This cmdlet creates a new Kerberos AP-REQ token.
+.PARAMETER Ticket
+Specify a Kerberos ticket.
+.PARAMETER Authenticator
+Specify the authenticator.
+.PARAMETER AuthenticatorKey
+Specify the key to encrypt the authenticator.
+.PARAMETER AuthenticatorKeyVersion
+Specify the key version to encrypt the authenticator.
+.PARAMETER TicketKey
+Specify the key to encrypt the ticket.
+.PARAMETER AuthenticatorKeyVersion
+Specify the key version to encrypt the ticket.
+.PARAMETER RawToken
+Specify to return a raw token with no GSSAPI header.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken
+#>
+function New-KerberosAPRequest {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
+        [Parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$Authenticator,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestOptions]$Options = 0,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$AuthenticatorKey,
+        [System.Nullable[int]]$AuthenticatorKeyVersion,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$TicketKey,
+        [System.Nullable[int]]$TicketKeyVersion,
+        [switch]$RawToken
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken]::Create($Ticket, $Authenticator, $Options, `
+                $AuthenticatorKey, $AuthenticatorKeyVersion, $TicketKey, $TicketKeyVersion, $RawToken)
+    }
+}
