@@ -94,6 +94,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public int CountOfTickets;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KERB_PURGE_TKT_CACHE_REQUEST
+    {
+        public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
+        public Luid LogonId;
+        public UnicodeString ServerName;
+        public UnicodeString RealmName;
+    }
+
     [Flags]
     internal enum KERB_RETRIEVE_TICKET_FLAGS
     {
@@ -195,11 +204,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList(SafeLsaLogonHandle handle, Luid logon_id, bool throw_on_error)
+        private static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
         {
             var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
             if (!package.IsSuccess)
-                return package.Cast<KerberosTicketCacheInfo[]>();
+                return package.Cast<LsaCallPackageResponse>();
+            return handle.CallPackage(package.Result, buffer, throw_on_error);
+        }
+
+        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList(SafeLsaLogonHandle handle, Luid logon_id, bool throw_on_error)
+        {
             var request_struct = new KERB_QUERY_TKT_CACHE_REQUEST()
             {
                 LogonId = logon_id,
@@ -207,7 +221,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             };
             using (var request = request_struct.ToBuffer())
             {
-                using (var result = handle.CallPackage(package.Result, request, throw_on_error))
+                using (var result = CallPackage(handle, request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<KerberosTicketCacheInfo[]>();
@@ -237,10 +251,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private static NtResult<SafeLsaReturnBufferHandle> QueryCachedTicketBuffer(SafeLsaLogonHandle handle, string target_name, KERB_RETRIEVE_TICKET_FLAGS flags,
             Luid logon_id, SecHandle sec_handle, bool throw_on_error)
         {
-            var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
-            if (!package.IsSuccess)
-                return package.Cast<SafeLsaReturnBufferHandle>();
-
             int string_length = (target_name.Length) * 2;
             int max_string_length = string_length + 2;
             using (var request = new SafeStructureInOutBuffer<KERB_RETRIEVE_TKT_REQUEST>(max_string_length, true))
@@ -260,7 +270,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                 };
                 request.Result = request_str;
-                using (var result = handle.CallPackage(package.Result, request, throw_on_error))
+                using (var result = CallPackage(handle, request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<SafeLsaReturnBufferHandle>();
@@ -457,6 +467,49 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static KerberosExternalTicket[] QueryTicketCache()
         {
             return QueryTicketCache(new Luid());
+        }
+
+        /// <summary>
+        /// Purge the ticket cache.
+        /// </summary>
+        /// <param name="logon_id">The Logon Session ID to purge.</param>
+        /// <param name="server_name">The name of the service tickets to delete.</param>
+        /// <param name="realm_name">The realm of the tickets to delete.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus PurgeTicketCache(Luid logon_id, string server_name, string realm_name, bool throw_on_error)
+        {
+            KERB_PURGE_TKT_CACHE_REQUEST req = new KERB_PURGE_TKT_CACHE_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheMessage,
+                LogonId = logon_id,
+                ServerName = new UnicodeString(server_name ?? string.Empty),
+                RealmName = new UnicodeString(realm_name ?? string.Empty)
+            };
+
+            using (var buffer = req.ToBuffer())
+            {
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Status;
+                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        return result.Status;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Purge the ticket cache.
+        /// </summary>
+        /// <param name="logon_id">The Logon Session ID to purge.</param>
+        /// <param name="server_name">The name of the service tickets to delete.</param>
+        /// <param name="realm_name">The realm of the tickets to delete.</param>
+        public static void PurgeTicketCache(Luid logon_id, string server_name, string realm_name)
+        {
+            PurgeTicketCache(logon_id, server_name, realm_name, true);
         }
     }
 }
