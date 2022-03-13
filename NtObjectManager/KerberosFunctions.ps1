@@ -237,3 +237,56 @@ function Format-KerberosTicket {
         $Ticket.Format()
     }
 }
+
+<#
+.SYNOPSIS
+Create a new Kerberos checksum.
+.DESCRIPTION
+This cmdlet creates a new Kerberos checksum. It defaults to creating a GSSAPI checksum
+which is the most common type.
+.PARAMETER Credential
+Specify a Kerberos credentials to use for delegation.
+.PARAMETER ContextFlags
+Specify context flags for the checksum.
+.PARAMETER ChannelBinding
+Specify the channel binding.
+.PARAMETER Extenstion
+Specify additional extension data.
+.PARAMETER DelegationOptionIdentifier
+Specify the delegation options identifier.
+.PARAMETER Type
+Specify the type of checksum.
+.PARAMETER Checksum
+Specify the checksum value.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum
+#>
+function New-KerberosChecksum {
+    [CmdletBinding(DefaultParameterSetName="FromGssApi")]
+    Param(
+        [Parameter(ParameterSetName="FromGssApi")]
+        [byte[]]$ChannelBinding,
+        [Parameter(ParameterSetName="FromGssApi")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApiFlags]$ContextFlags = 0,
+        [Parameter(ParameterSetName="FromGssApi")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(ParameterSetName="FromGssApi")]
+        [int]$DelegationOptionIdentifier = 0,
+        [Parameter(ParameterSetName="FromGssApi")]
+        [byte[]]$Extension,
+        [Parameter(Mandatory, ParameterSetName="FromRaw")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumType]$Type,
+        [Parameter(Mandatory, ParameterSetName="FromRaw")]
+        [byte[]]$Checksum
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromGssApi" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApi]::new($ContextFlags, $ChannelBinding, $DelegationOptionIdentifier, $Credential, $Extension)
+            }
+        }
+    }
+}

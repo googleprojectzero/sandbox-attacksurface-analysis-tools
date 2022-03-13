@@ -82,6 +82,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] Extensions { get; private set; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public KerberosChecksumGSSApi() 
+            : base(KerberosChecksumType.GSSAPI, Array.Empty<byte>())
+        {
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="channel_binding">The channel binding.</param>
+        /// <param name="context_flags">Checksum context flags.</param>
+        /// <param name="delegation_option_identifier">Delegation options identifier.</param>
+        /// <param name="credentials">Kerberos credentials for delegation.</param>
+        /// <param name="extensions">Additional extensions.</param>
+        public KerberosChecksumGSSApi(KerberosChecksumGSSApiFlags context_flags, byte[] channel_binding,
+            int delegation_option_identifier, KerberosCredential credentials, byte[] extensions) : this()
+        {
+            ChannelBinding = channel_binding ?? Array.Empty<byte>();
+            ContextFlags = context_flags;
+            DelegationOptionIdentifier = delegation_option_identifier;
+            Credentials = credentials;
+            Extensions = extensions;
+        }
+
         internal override void Format(StringBuilder builder)
         {
             builder.AppendLine("Checksum        : GSSAPI");
