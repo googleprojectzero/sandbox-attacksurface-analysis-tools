@@ -97,7 +97,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="authorization_data">Optional authorization data.</param>
         /// <returns>The new authenticator.</returns>
         public static KerberosAuthenticator Create(string client_realm, KerberosPrincipalName client_name, 
-            DateTime client_time, int? client_usec = null, KerberosChecksum checksum = null, KerberosAuthenticationKey subkey = null, 
+            DateTime client_time, int client_usec = 0, KerberosChecksum checksum = null, KerberosAuthenticationKey subkey = null, 
             int? sequence_number = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (client_realm is null)
@@ -122,7 +122,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     {
                         seq.WriteContextSpecific(3, checksum);
                     }
-                    seq.WriteContextSpecific(4, b => b.WriteInt32(client_usec ?? 0));
+                    seq.WriteContextSpecific(4, b => b.WriteInt32(client_usec));
                     seq.WriteContextSpecific(5, b => b.WriteGeneralizedTime(client_time));
                     if (subkey != null)
                     {
@@ -144,7 +144,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ClientName = client_name,
                 ClientRealm = client_realm,
                 ClientTime = DERUtils.ConvertGeneralizedTime(client_time),
-                ClientUSec = client_usec ?? 0,
+                ClientUSec = client_usec,
                 Checksum = checksum,
                 SubKey = subkey,
                 SequenceNumber = sequence_number,

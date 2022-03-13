@@ -38,10 +38,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Checksum        : {ChecksumType} - {NtObjectUtils.ToHexString(Checksum)}");
         }
 
-        private protected KerberosChecksum(KerberosChecksumType type, byte[] data)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="type">The type of checksum.</param>
+        /// <param name="data">The checksum data.</param>
+        public KerberosChecksum(KerberosChecksumType type, byte[] data)
         {
             ChecksumType = type;
-            Checksum = data;
+            Checksum = data ?? throw new System.ArgumentNullException(nameof(data));
         }
 
         private protected virtual byte[] GetData()

@@ -76,6 +76,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Names = new List<string>(names).AsReadOnly();
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="name_type">The type of the principal name.</param>
+        /// <param name="name">The name for the principal. Will be split up on / characters.</param>
+        public KerberosPrincipalName(KerberosNameType name_type,
+            string name) : this(name_type, name.Split('/'))
+        {
+        }
+
         internal static KerberosPrincipalName Parse(DERValue value)
         {
             if (!value.HasChildren())

@@ -287,6 +287,94 @@ function New-KerberosChecksum {
             "FromGssApi" {
                 [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApi]::new($ContextFlags, $ChannelBinding, $DelegationOptionIdentifier, $Credential, $Extension)
             }
+            "FromRaw" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]::new($Type, $Checksum)
+            }
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new Kerberos principal name.
+.DESCRIPTION
+This cmdlet creates a new Kerberos principal name.
+.PARAMETER Type
+Specify the type of principal name.
+.PARAMETER NamePart
+Specify the list of name parts.
+.PARAMETER Name
+Specify the name parts as a single name with forward slashes.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName
+#>
+function New-KerberosPrincipalName {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosNameType]$Type,
+        [Parameter(Mandatory, Position = 1, ParameterSetName = "FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName = "FromNamePart")]
+        [string[]]$NamePart
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromName" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $Name)
+            }
+            "FromNamePart" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $NamePart)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new Kerberos authenticator.
+.DESCRIPTION
+This cmdlet creates a new Kerberos authenticator. Note this doesn't encrypt it, it'll be in plain text.
+.PARAMETER Checksum
+Specify a Kerberos checksum.
+.PARAMETER ClientRealm
+Specify the realm for the client.
+.PARAMETER ClientName
+Specify the name for the client.
+.PARAMETER SubKey
+Specify a subkey.
+.PARAMETER SequenceNumber
+Specify a sequence number.
+.PARAMETER AuthorizationData
+Specify authorization data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator
+#>
+function New-KerberosAuthenticator {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$ClientRealm,
+        [Parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [datetime]$ClientTime = [datetime]::MinValue,
+        [int]$ClientUSec = 0,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]$Checksum,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
+        [System.Nullable[int]]$SequenceNumber = $null,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData
+    )
+
+    PROCESS {
+        if ($ClientTime -eq [datetime]::MinValue) {
+            $ClientTime = [datetime]::Now
+        }
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator]::Create($ClientRealm, $ClientName, $ClientTime, `
+                $ClientUSec, $Checksum, $SubKey, $SequenceNumber, $AuthorizationData)
     }
 }
