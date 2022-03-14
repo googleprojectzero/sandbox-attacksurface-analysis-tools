@@ -101,8 +101,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     {
         public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
         public Luid LogonId;
-        public UnicodeString ServerName;
-        public UnicodeString RealmName;
+        public UnicodeStringOut ServerName;
+        public UnicodeStringOut RealmName;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -224,11 +224,39 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        private static int CalculateLength(this int? length)
+        private static int CalculateLength(params string[] strs)
         {
-            if (length.HasValue)
-                return length.Value + 1;
-            return 1;
+            int ret = 0;
+            foreach (var s in strs)
+            {
+                ret += CalculateLength(s?.Length);
+            }
+            return ret;
+        }
+
+        private static int CalculateLength(int? length)
+        {
+            int ret = length ?? 0;
+            return (ret + 1) * 2;
+        }
+
+        private static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, byte[] value)
+        {
+            var ret = new UnicodeStringOut();
+            if (value != null)
+            {
+                ret.Length = (ushort)value.Length;
+                ret.MaximumLength = (ushort)(ret.Length + 2);
+                ret.Buffer = buffer.DangerousGetHandle() + (int)writer.BaseStream.Position;
+                writer.Write(value);
+            }
+            writer.Write((ushort)0);
+            return ret;
+        }
+
+        private static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, string value)
+        {
+            return MarshalString(buffer, writer, value != null ? Encoding.Unicode.GetBytes(value) : null);
         }
 
         private static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
@@ -418,7 +446,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 if (!handle.IsSuccess)
                     return handle.Cast<KerberosExternalTicket>();
                 KERB_RETRIEVE_TICKET_FLAGS flags = cached_only ? KERB_RETRIEVE_TICKET_FLAGS.UseCacheOnly : KERB_RETRIEVE_TICKET_FLAGS.Default;
-                flags |= KERB_RETRIEVE_TICKET_FLAGS.UseCredHandle;
+                flags |= KERB_RETRIEVE_TICKET_FLAGS.UseCredHandle | KERB_RETRIEVE_TICKET_FLAGS.AsKerbCred;
                 return QueryCachedTicket(handle.Result, target_name, flags,
                     default, credential_handle.CredHandle, throw_on_error);
             }
@@ -506,16 +534,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The NT status code.</returns>
         public static NtStatus PurgeTicketCache(Luid logon_id, string server_name, string realm_name, bool throw_on_error)
         {
-            KERB_PURGE_TKT_CACHE_REQUEST req = new KERB_PURGE_TKT_CACHE_REQUEST()
+            using (var buffer = new SafeStructureInOutBuffer<KERB_PURGE_TKT_CACHE_REQUEST>(CalculateLength(server_name, realm_name), true))
             {
-                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheMessage,
-                LogonId = logon_id,
-                ServerName = new UnicodeString(server_name ?? string.Empty),
-                RealmName = new UnicodeString(realm_name ?? string.Empty)
-            };
-
-            using (var buffer = req.ToBuffer())
-            {
+                using (var stm = buffer.Data.GetStream())
+                {
+                    BinaryWriter writer = new BinaryWriter(stm);
+                    buffer.Result = new KERB_PURGE_TKT_CACHE_REQUEST()
+                    {
+                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheMessage,
+                        LogonId = logon_id,
+                        ServerName = MarshalString(buffer.Data, writer, server_name),
+                        RealmName = MarshalString(buffer.Data, writer, realm_name)
+                    };
+                }
                 using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
                 {
                     if (!handle.IsSuccess)
@@ -557,48 +588,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             using (var list = new DisposableList())
             {
-                int total_str_size = (CalculateLength(credentials.UserName?.Length) + CalculateLength(credentials.Domain?.Length) + CalculateLength(credentials.Password?.Length)) * 2;
+                int total_str_size = CalculateLength(credentials.UserName, credentials.Domain) + CalculateLength(credentials.Password?.Length);
                 var buffer = new SafeStructureInOutBuffer<KERB_RETRIEVE_KEY_TAB_REQUEST>(total_str_size, true);
 
-                UnicodeStringOut username = new UnicodeStringOut();
-                UnicodeStringOut domain = new UnicodeStringOut();
-                UnicodeStringOut password = new UnicodeStringOut();
                 using (var strs = buffer.Data.GetStream())
                 {
                     BinaryWriter writer = new BinaryWriter(strs);
-                    if (credentials.UserName != null)
-                    {
-                        username.Length = (ushort)(credentials.UserName.Length * 2);
-                        username.MaximumLength = (ushort)(username.Length + 2);
-                        username.Buffer = buffer.Data.DangerousGetHandle() + (int)strs.Position;
-                        writer.Write(Encoding.Unicode.GetBytes(credentials.UserName));
-                    }
-                    writer.Write((ushort)0);
-                    if (credentials.Domain != null)
-                    {
-                        domain.Length = (ushort)(credentials.Domain.Length * 2);
-                        domain.MaximumLength = (ushort)(domain.Length + 2);
-                        domain.Buffer = buffer.Data.DangerousGetHandle() + (int)strs.Position;
-                        writer.Write(Encoding.Unicode.GetBytes(credentials.Domain));
-                    }
-                    writer.Write((ushort)0);
-                    if (credentials.Password != null)
-                    {
-                        password.Length = (ushort)(credentials.Password.Length * 2);
-                        password.MaximumLength = (ushort)(password.Length + 2);
-                        password.Buffer = buffer.Data.DangerousGetHandle() + (int)strs.Position;
-                        writer.Write(credentials.GetPasswordBytes());
-                    }
-                    writer.Write((ushort)0);
-                }
+                    UnicodeStringOut username = MarshalString(buffer.Data, writer, credentials.UserName);
+                    UnicodeStringOut domain = MarshalString(buffer.Data, writer, credentials.Domain);
+                    UnicodeStringOut password = MarshalString(buffer.Data, writer, credentials.GetPasswordBytes());
 
-                buffer.Result = new KERB_RETRIEVE_KEY_TAB_REQUEST()
-                {
-                    MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage,
-                    UserName = username,
-                    DomainName = domain,
-                    Password = password
-                };
+                    buffer.Result = new KERB_RETRIEVE_KEY_TAB_REQUEST()
+                    {
+                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage,
+                        UserName = username,
+                        DomainName = domain,
+                        Password = password
+                    };
+                }
 
                 using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
                 {

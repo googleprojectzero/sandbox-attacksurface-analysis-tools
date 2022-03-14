@@ -102,7 +102,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Create a new TGT-REP authentication token.
         /// </summary>
         /// <param name="ticket">The TGT ticket to embed in the token.</param>
-        /// <returns>The </returns>
+        /// <returns>The TGT-REP token.</returns>
         public static KerberosTGTReplyAuthenticationToken Create(KerberosTicket ticket)
         {
             return (KerberosTGTReplyAuthenticationToken)Parse(CreateBuilder(ticket)
@@ -113,7 +113,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Create a new TGT-REP authentication token.
         /// </summary>
         /// <param name="ticket">The TGT ticket to embed in the token.</param>
-        /// <returns>The </returns>
+        /// <returns>The TGT-REP token.</returns>
         public static KerberosTGTReplyAuthenticationToken CreateNoGSSAPI(KerberosTicket ticket)
         {
             return (KerberosTGTReplyAuthenticationToken)Parse(CreateBuilder(ticket).ToArray());
