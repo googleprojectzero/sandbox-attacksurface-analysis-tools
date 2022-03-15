@@ -136,7 +136,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
         }
 
-        internal static KerberosTicket Parse(DERValue value, byte[] data)
+        internal static KerberosTicket Parse(DERValue value)
         {
             if (!value.CheckApplication(1) || !value.HasChildren())
                 throw new InvalidDataException();

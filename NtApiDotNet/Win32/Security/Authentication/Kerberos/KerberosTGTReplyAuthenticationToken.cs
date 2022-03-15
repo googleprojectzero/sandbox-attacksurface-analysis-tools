@@ -155,7 +155,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         case 2:
                             if (!next.HasChildren())
                                 return false;
-                            ret.Ticket = KerberosTicket.Parse(next.Children[0], next.Data);
+                            ret.Ticket = KerberosTicket.Parse(next.Children[0]);
                             break;
                         default:
                             return false;

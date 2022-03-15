@@ -23,13 +23,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosKDCRequestAuthenticationToken : KerberosAuthenticationToken
     {
-        #region Internal Members
-        internal KerberosKDCRequestAuthenticationToken(byte[] data, DERValue[] values, KerberosMessageType message_type) 
-            : base(data, values, message_type)
-        {
-        }
-        #endregion
-
         #region Public Properties
         /// <summary>
         /// List of pre-authentication data.
@@ -169,6 +162,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #endregion
 
         #region Private Members
+        private KerberosKDCRequestAuthenticationToken(byte[] data, DERValue[] values, KerberosMessageType message_type)
+            : base(data, values, message_type)
+        {
+        }
+
         private static bool TryParseRequestBody(DERValue value, KerberosKDCRequestAuthenticationToken ret)
         {
             foreach (var next in value.Children)
@@ -211,7 +209,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         ret.AuthorizationData = next.ReadChildEncryptedData();
                         break;
                     case 11:
-                        ret.AdditionalTickets = next.ReadChildSequence(v => v.ReadChildTicket()).AsReadOnly();
+                        ret.AdditionalTickets = next.ReadChildSequence(v => KerberosTicket.Parse(v)).AsReadOnly();
                         break;
                     default:
                         return false;

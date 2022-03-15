@@ -146,7 +146,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
                 else
                 {
-                    ret.Ticket = KerberosTicket.Parse(values[0], ticket_data);
+                    ret.Ticket = KerberosTicket.Parse(values[0]);
                 }
                 result = ret;
                 return true;

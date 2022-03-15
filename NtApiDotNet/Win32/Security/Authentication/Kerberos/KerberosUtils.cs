@@ -178,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             if (!value.HasChildren())
                 throw new InvalidDataException();
-            return KerberosTicket.Parse(value.Children[0], value.Data);
+            return KerberosTicket.Parse(value.Children[0]);
         }
 
         /// <summary>

@@ -140,7 +140,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             List<KerberosTicket> tickets = new List<KerberosTicket>();
                             foreach (var child in next.Children[0].Children)
                             {
-                                tickets.Add(KerberosTicket.Parse(child, next.Children[0].Data));
+                                tickets.Add(KerberosTicket.Parse(child));
                             }
                             ret.Tickets = tickets.AsReadOnly();
                             break;
