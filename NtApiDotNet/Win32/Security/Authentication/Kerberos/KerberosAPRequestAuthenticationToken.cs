@@ -137,11 +137,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="ticket_key">Optional key to encrypt the ticket.</param>
         /// <param name="ticket_key_version">Optional key version for ticket encryption.</param>
         /// <param name="raw_token">Specify to return a raw token without the GSS API header.</param>
+        /// <param name="tgs_req">True to indicate this AP-REQ is for a TGS-REP.</param>
         /// <returns>The new AP-REQ token.</returns>
         public static KerberosAPRequestAuthenticationToken Create(KerberosTicket ticket, KerberosEncryptedData authenticator, 
             KerberosAPRequestOptions options = KerberosAPRequestOptions.None, KerberosAuthenticationKey authenticator_key = null, 
             int? authenticator_key_version = null, KerberosAuthenticationKey ticket_key = null, int? ticket_key_version = null, 
-            bool raw_token = false)
+            bool raw_token = false, bool tgs_req = false)
         {
             if (ticket is null)
             {
@@ -160,7 +161,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (authenticator_key != null)
             {
-                authenticator = authenticator.Encrypt(authenticator_key, KerberosKeyUsage.ApReqAuthSubKey, authenticator_key_version);
+                authenticator = authenticator.Encrypt(authenticator_key, tgs_req ? KerberosKeyUsage.TgsReqPaTgaReqApReq : KerberosKeyUsage.ApReqAuthSubKey, authenticator_key_version);
             }
 
             DERBuilder builder = new DERBuilder();

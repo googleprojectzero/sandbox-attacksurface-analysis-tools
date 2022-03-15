@@ -120,6 +120,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToArray();
         }
 
+        /// <summary>
+        /// Create a new ticket.
+        /// </summary>
+        /// <param name="realm">The server realm.</param>
+        /// <param name="server_name">The server name.</param>
+        /// <param name="encrypted_data">The ticket encrypted data.</param>
+        /// <returns>The new kerberos ticket.</returns>
+        public static KerberosTicket Create(string realm,
+            KerberosPrincipalName server_name,
+            KerberosEncryptedData encrypted_data)
+        {
+            if (string.IsNullOrEmpty(realm))
+            {
+                throw new ArgumentException($"'{nameof(realm)}' cannot be null or empty.", nameof(realm));
+            }
+
+            if (server_name is null)
+            {
+                throw new ArgumentNullException(nameof(server_name));
+            }
+
+            if (encrypted_data is null)
+            {
+                throw new ArgumentNullException(nameof(encrypted_data));
+            }
+
+            return new KerberosTicket(5, realm, server_name, encrypted_data);
+        }
+
+
         private protected KerberosTicket(
             int ticket_version,
             string realm, 
