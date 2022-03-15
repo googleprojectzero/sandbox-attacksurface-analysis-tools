@@ -251,6 +251,58 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     throw new InvalidDataException("Unsupported encryption algorithm.");
             }
         }
+
+        /// <summary>
+        /// Compute a hash for a set of data.
+        /// </summary>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="offset">Offset into the data to hash.</param>
+        /// <param name="length">The length of the data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The computed hash.</returns>
+        public byte[] ComputeHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+        {
+            return GetHashAlgorithm(key_usage, out int hash_length).ComputeHash(data, 
+                offset, length).Take(hash_length).ToArray();
+        }
+
+        /// <summary>
+        /// Compute a hash for a set of data.
+        /// </summary>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The computed hash.</returns>
+        public byte[] ComputeHash(byte[] data, KerberosKeyUsage key_usage)
+        {
+            return ComputeHash(data, 0, data.Length, key_usage);
+        }
+
+        /// <summary>
+        /// Verify a hash.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="offset">Offset into the data to hash.</param>
+        /// <param name="length">The length of the data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>True if the hash matches.</returns>
+        public bool VerifyHash(byte[] hash, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+        {
+            return NtObjectUtils.EqualByteArray(hash, ComputeHash(data, offset, length, key_usage));
+        }
+
+        /// <summary>
+        /// Verify a hash.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>True if the hash matches.</returns>
+        public bool VerifyHash(byte[] hash, byte[] data, KerberosKeyUsage key_usage)
+        {
+            return VerifyHash(hash, data, 0, data.Length, key_usage);
+        }
+
         #endregion
 
         #region Internal Members
@@ -314,6 +366,35 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         #region Private Members
         private readonly byte[] _key;
+
+        private HMACMD5 GetRC4HashAlgorithm(KerberosKeyUsage key_usage)
+        {
+            HMACMD5 hmac = new HMACMD5(_key);
+            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
+            return new HMACMD5(key1);
+        }
+
+        private HMACSHA1 GetAESHashAlgorithm(KerberosKeyUsage key_usage)
+        {
+            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
+            return new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
+        }
+
+        private KeyedHashAlgorithm GetHashAlgorithm(KerberosKeyUsage key_usage, out int length)
+        {
+            switch (KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    length = MD5_CHECKSUM_SIZE;
+                    return GetRC4HashAlgorithm(key_usage);
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    length = AES_CHECKSUM_SIZE;
+                    return GetAESHashAlgorithm(key_usage);
+                default:
+                    throw new InvalidDataException("Unsupported hash algorithm.");
+            }
+        }
 
         private static string MakeSalt(string salt, string principal)
         {

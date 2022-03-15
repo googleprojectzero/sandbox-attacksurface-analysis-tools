@@ -49,6 +49,47 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Checksum = data ?? throw new System.ArgumentNullException(nameof(data));
         }
 
+        /// <summary>
+        /// Create a kerberos checksum.
+        /// </summary>
+        /// <param name="key">The key for the hash algorithm.</param>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="offset">Offset into the data to hash.</param>
+        /// <param name="length">The length of the data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The new kerberos checksum.</returns>
+        public static KerberosChecksum Create(KerberosAuthenticationKey key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+        {
+            KerberosChecksumType checksum_type;
+            switch (key.KeyEncryption)
+            {
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    checksum_type = KerberosChecksumType.HMAC_SHA1_96_AES_128;
+                    break;
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    checksum_type = KerberosChecksumType.HMAC_SHA1_96_AES_256;
+                    break;
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    checksum_type = KerberosChecksumType.HMAC_MD5;
+                    break;
+                default:
+                    throw new InvalidDataException("Unsupported hash algorithm.");
+            }
+            return new KerberosChecksum(checksum_type, key.ComputeHash(data, offset, length, key_usage));
+        }
+
+        /// <summary>
+        /// Create a kerberos checksum.
+        /// </summary>
+        /// <param name="key">The key for the hash algorithm.</param>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The new kerberos checksum.</returns>
+        public static KerberosChecksum Create(KerberosAuthenticationKey key, byte[] data, KerberosKeyUsage key_usage)
+        {
+            return Create(key, data, 0, data.Length, key_usage);
+        }
+
         private protected virtual byte[] GetData()
         {
             return Checksum;
