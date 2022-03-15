@@ -200,17 +200,32 @@ namespace NtApiDotNet.Utilities.ASN1
             return Children[0].ReadGeneralizedTime();
         }
 
-        public List<string> ReadChildStringSequence()
+        public List<T> ReadChildSequence<T>(Func<DERValue, T> func)
         {
-            List<string> ret = new List<string>();
+            List<T> ret = new List<T>();
             if (!HasChildren() || Children[0].CheckSequence())
             {
                 foreach (var v in Children[0].Children)
                 {
-                    ret.Add(v.ReadGeneralString());
+                    ret.Add(func(v));
                 }
             }
             return ret;
+        }
+
+        public List<string> ReadChildStringSequence()
+        {
+            return ReadChildSequence(v => v.ReadGeneralString());
+        }
+
+        public List<int> ReadChildIntegerSequence()
+        {
+            return ReadChildSequence(v => v.ReadInteger());
+        }
+
+        public List<T> ReadChildEnumSequence<T>() where T : Enum
+        {
+            return ReadChildSequence(v => (T)(object)v.ReadInteger());
         }
 
         public BitArray ReadChildBitString()
@@ -225,11 +240,12 @@ namespace NtApiDotNet.Utilities.ASN1
         public T ReadChildBitFlags<T>() where T : Enum
         {
             var flags = ReadChildBitString();
-            int ret = 0;
-            for (int i = 0; i < flags.Length; ++i)
+            uint ret = 0;
+            int total_length = Math.Min(32, flags.Length);
+            for (int i = 0; i < total_length; ++i)
             {
                 if (flags[i])
-                    ret |= (1 << i);
+                    ret |= (1U << i);
             }
             return (T)Enum.ToObject(typeof(T), ret);
         }

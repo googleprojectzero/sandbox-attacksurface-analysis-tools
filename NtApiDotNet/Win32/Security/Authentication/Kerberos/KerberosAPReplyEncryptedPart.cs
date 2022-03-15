@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Client time.
         /// </summary>
-        public string ClientTime { get; private set; }
+        public KerberosTime ClientTime { get; private set; }
         /// <summary>
         /// Subkey.
         /// </summary>
@@ -43,9 +43,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         internal override string Format()
         {
             StringBuilder builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(ClientTime))
+            if (ClientTime != null)
             {
-                builder.AppendLine($"Client Time     : {KerberosUtils.ParseKerberosTime(ClientTime, ClientUSec)}");
+                builder.AppendLine($"Client Time     : {ClientTime.ToDateTime(ClientUSec)}");
             }
             if (SubKey != null)
             {
@@ -87,7 +87,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     switch (next.Tag)
                     {
                         case 0:
-                            ret.ClientTime = next.ReadChildGeneralizedTime();
+                            ret.ClientTime = next.ReadChildKerberosTime();
                             break;
                         case 1:
                             ret.ClientUSec = next.ReadChildInteger();

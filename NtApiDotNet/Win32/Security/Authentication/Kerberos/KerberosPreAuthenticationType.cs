@@ -57,5 +57,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         TD_REQ_NONCE = 107,
         TD_REQ_SEQ = 108,
         PA_PAC_REQUEST = 128,
+        PA_PAC_OPTIONS = 167,
     }
 }

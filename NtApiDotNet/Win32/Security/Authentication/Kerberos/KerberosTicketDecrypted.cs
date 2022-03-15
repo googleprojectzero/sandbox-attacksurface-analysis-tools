@@ -25,7 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// Flags for a Kerberos Ticket.
     /// </summary>
     [Flags]
-    public enum KerberosTicketFlags
+    public enum KerberosTicketFlags : uint
     {
         None = 0,
         Reserved = 0x1,
@@ -68,19 +68,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Authentication time,
         /// </summary>
-        public string AuthTime { get; private set; }
+        public KerberosTime AuthTime { get; private set; }
         /// <summary>
         /// Start time.
         /// </summary>
-        public string StartTime { get; private set; }
+        public KerberosTime StartTime { get; private set; }
         /// <summary>
         /// End time.
         /// </summary>
-        public string EndTime { get; private set; }
+        public KerberosTime EndTime { get; private set; }
         /// <summary>
         /// Renew till time.
         /// </summary>
-        public string RenewTill { get; private set; }
+        public KerberosTime RenewTill { get; private set; }
         /// <summary>
         /// The kerberos session key.
         /// </summary>
@@ -103,21 +103,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Flags           : {Flags}");
             builder.AppendLine($"Client Name     : {ClientName}");
             builder.AppendLine($"Client Realm    : {ClientRealm}");
-            if (!string.IsNullOrEmpty(AuthTime))
+            if (AuthTime != null)
             {
-                builder.AppendLine($"Auth Time       : {KerberosUtils.ParseKerberosTime(AuthTime, 0)}");
+                builder.AppendLine($"Auth Time       : {AuthTime.ToDateTime()}");
             }
-            if (!string.IsNullOrEmpty(StartTime))
+            if (StartTime != null)
             {
-                builder.AppendLine($"Start Time      : {KerberosUtils.ParseKerberosTime(StartTime, 0)}");
+                builder.AppendLine($"Start Time      : {StartTime.ToDateTime()}");
             }
-            if (!string.IsNullOrEmpty(EndTime))
+            if (EndTime != null)
             {
-                builder.AppendLine($"End Time        : {KerberosUtils.ParseKerberosTime(EndTime, 0)}");
+                builder.AppendLine($"End Time        : {EndTime.ToDateTime()}");
             }
-            if (!string.IsNullOrEmpty(RenewTill))
+            if (RenewTill != null)
             {
-                builder.AppendLine($"Renew Till Time : {KerberosUtils.ParseKerberosTime(RenewTill, 0)}");
+                builder.AppendLine($"Renew Till Time : {RenewTill.ToDateTime()}");
             }
             builder.AppendLine();
             if (Key != null)
@@ -203,16 +203,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             ret.TransitedType = KerberosTransitedEncoding.Parse(next.Children[0]);
                             break;
                         case 5:
-                            ret.AuthTime = next.ReadChildGeneralizedTime();
+                            ret.AuthTime = next.ReadChildKerberosTime();
                             break;
                         case 6:
-                            ret.StartTime = next.ReadChildGeneralizedTime();
+                            ret.StartTime = next.ReadChildKerberosTime();
                             break;
                         case 7:
-                            ret.EndTime = next.ReadChildGeneralizedTime();
+                            ret.EndTime = next.ReadChildKerberosTime();
                             break;
                         case 8:
-                            ret.RenewTill = next.ReadChildGeneralizedTime();
+                            ret.RenewTill = next.ReadChildKerberosTime();
                             break;
                         case 9:
                             if (!next.HasChildren())

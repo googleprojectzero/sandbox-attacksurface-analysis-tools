@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing a Kerberos Host Address.
     /// </summary>
-    public class KerberosHostAddress
+    public sealed class KerberosHostAddress
     {
         /// <summary>
         /// Type of host address.

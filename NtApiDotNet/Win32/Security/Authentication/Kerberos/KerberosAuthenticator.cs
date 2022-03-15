@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Client time.
         /// </summary>
-        public string ClientTime { get; private set; }
+        public KerberosTime ClientTime { get; private set; }
         /// <summary>
         /// Subkey.
         /// </summary>
@@ -77,7 +77,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ClientRealm = ClientRealm,
                 AuthorizationData = AuthorizationData?.ToList(),
                 Checksum = Checksum,
-                ClientTime = DERUtils.ParseGeneralizedTime(ClientTime),
+                ClientTime = ClientTime,
                 ClientUSec = ClientUSec,
                 SequenceNumber = SequenceNumber,
                 SubKey = SubKey
@@ -97,7 +97,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="authorization_data">Optional authorization data.</param>
         /// <returns>The new authenticator.</returns>
         public static KerberosAuthenticator Create(string client_realm, KerberosPrincipalName client_name, 
-            DateTime client_time, int client_usec = 0, KerberosChecksum checksum = null, KerberosAuthenticationKey subkey = null, 
+            KerberosTime client_time, int client_usec = 0, KerberosChecksum checksum = null, KerberosAuthenticationKey subkey = null, 
             int? sequence_number = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (client_realm is null)
@@ -108,6 +108,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (client_name is null)
             {
                 throw new ArgumentNullException(nameof(client_name));
+            }
+
+            if (client_time is null)
+            {
+                throw new ArgumentNullException(nameof(client_time));
             }
 
             DERBuilder builder = new DERBuilder();
@@ -123,7 +128,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         seq.WriteContextSpecific(3, checksum);
                     }
                     seq.WriteContextSpecific(4, b => b.WriteInt32(client_usec));
-                    seq.WriteContextSpecific(5, b => b.WriteGeneralizedTime(client_time));
+                    seq.WriteContextSpecific(5, client_time);
                     if (subkey != null)
                     {
                         seq.WriteContextSpecific(6, subkey);
@@ -143,7 +148,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 ClientName = client_name,
                 ClientRealm = client_realm,
-                ClientTime = DERUtils.ConvertGeneralizedTime(client_time),
+                ClientTime = client_time,
                 ClientUSec = client_usec,
                 Checksum = checksum,
                 SubKey = subkey,
@@ -157,9 +162,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"Client Name     : {ClientName}");
             builder.AppendLine($"Client Realm    : {ClientRealm}");
-            if (!string.IsNullOrEmpty(ClientTime))
+            if (ClientTime != null)
             {
-                builder.AppendLine($"Client Time     : {KerberosUtils.ParseKerberosTime(ClientTime, ClientUSec)}");
+                builder.AppendLine($"Client Time     : {ClientTime.ToDateTime(ClientUSec)}");
             }
             if (Checksum != null)
             {
@@ -256,7 +261,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             ret.ClientUSec = next.ReadChildInteger();
                             break;
                         case 5:
-                            ret.ClientTime = next.ReadChildGeneralizedTime();
+                            ret.ClientTime = next.ReadChildKerberosTime();
                             break;
                         case 6:
                             if (!next.HasChildren())

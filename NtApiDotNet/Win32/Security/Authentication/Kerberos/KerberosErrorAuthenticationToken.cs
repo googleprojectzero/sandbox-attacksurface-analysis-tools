@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Client time.
         /// </summary>
-        public string ClientTime { get; private set; }
+        public KerberosTime ClientTime { get; private set; }
         /// <summary>
         /// Client micro-seconds.
         /// </summary>
@@ -39,7 +39,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Server time.
         /// </summary>
-        public string ServerTime { get; private set; }
+        public KerberosTime ServerTime { get; private set; }
         /// <summary>
         /// Server micro-seconds.
         /// </summary>
@@ -80,10 +80,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             ClientRealm = string.Empty;
             ClientName = new KerberosPrincipalName();
-            ClientTime = string.Empty;
+            ClientTime = null;
             ServerRealm = string.Empty;
             ServerName = new KerberosPrincipalName();
-            ServerTime = string.Empty;
+            ServerTime = null;
             ErrorText = string.Empty;
             ErrorData = new byte[0];
         }
@@ -98,9 +98,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
-            if (!string.IsNullOrEmpty(ClientTime))
+            if (ClientTime != null)
             {
-                builder.AppendLine($"Client Time       : {KerberosUtils.ParseKerberosTime(ClientTime, ClientUSec)}");
+                builder.AppendLine($"Client Time       : {ClientTime.ToDateTime(ClientUSec)}");
             }
             if (!string.IsNullOrEmpty(ClientRealm))
             {
@@ -108,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 builder.AppendLine($"Client Name        : {ClientName}");
             }
 
-            builder.AppendLine($"Server Time       : {KerberosUtils.ParseKerberosTime(ServerTime, ServerUSec)}");
+            builder.AppendLine($"Server Time       : {ServerTime.ToDateTime(ServerUSec)}");
             builder.AppendLine($"Server Realm      : {ServerRealm}");
             builder.AppendLine($"Server Name       : {ServerName}");
             builder.AppendLine($"Error Code        : {ErrorCode}");
@@ -133,7 +133,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Create a new KRB-ERROR authentication token.
         /// </summary>
         /// <param name="client_time">Optional client time.</param>
+        /// <param name="client_usec">Optional client time usecs.</param>
         /// <param name="server_time">Server time.</param>
+        /// <param name="server_usec">Server time usecs.</param>
         /// <param name="error_code">Error code.</param>
         /// <param name="client_realm">Optional client realm.</param>
         /// <param name="client_name">Optional client name.</param>
@@ -142,8 +144,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="error_text">Optional error text.</param>
         /// <param name="error_data">Optional error data.</param>
         /// <returns>The KRB-ERROR authentication token.</returns>
-        public static KerberosErrorAuthenticationToken Create(DateTime server_time, KerberosErrorType error_code,
-            string server_realm, KerberosPrincipalName server_name, DateTime? client_time = null, string client_realm = null,
+        public static KerberosErrorAuthenticationToken Create(KerberosTime server_time, int server_usec, KerberosErrorType error_code,
+            string server_realm, KerberosPrincipalName server_name, KerberosTime client_time = null, int? client_usec = null, string client_realm = null,
             KerberosPrincipalName client_name = null,string error_text = null, byte[] error_data = null)
         {
             if (server_realm is null)
@@ -162,11 +164,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 using (var seq = app.CreateSequence())
                 {
                     seq.WriteKerberosHeader(KerberosMessageType.KRB_ERROR);
-                    if (client_time.HasValue)
+                    if (client_time != null)
                     {
-                        seq.WriteKerberosTime(2, client_time.Value);
+                        seq.WriteContextSpecific(2, client_time);
                     }
-                    seq.WriteKerberosTime(4, server_time);
+                    if (client_usec.HasValue)
+                    {
+                        builder.WriteContextSpecific(3, b => b.WriteInt32(client_usec.Value));
+                    }
+                    seq.WriteContextSpecific(4, server_time);
+                    seq.WriteContextSpecific(5, b => b.WriteInt32(server_usec));
                     seq.WriteContextSpecific(6, b => b.WriteInt32((int)error_code));
                     if (client_realm != null)
                         seq.WriteContextSpecific(7, b => b.WriteGeneralString(client_realm));
@@ -220,13 +227,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                                 return false;
                             break;
                         case 2:
-                            ret.ClientTime = next.ReadChildGeneralizedTime();
+                            ret.ClientTime = next.ReadChildKerberosTime();
                             break;
                         case 3:
                             ret.ClientUSec = next.ReadChildInteger();
                             break;
                         case 4:
-                            ret.ServerTime = next.ReadChildGeneralizedTime();
+                            ret.ServerTime = next.ReadChildKerberosTime();
                             break;
                         case 5:
                             ret.ServerUSec = next.ReadChildInteger();

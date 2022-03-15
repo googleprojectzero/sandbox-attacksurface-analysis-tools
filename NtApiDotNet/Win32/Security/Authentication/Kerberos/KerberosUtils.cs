@@ -153,13 +153,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return value.CheckApplication((int)msg);
         }
 
-        internal static DateTime ParseKerberosTime(string s, int usec)
+        internal static KerberosTime ReadChildKerberosTime(this DERValue value)
         {
-            if (DERUtils.TryParseGeneralizedTime(s, out DateTime time))
+            return new KerberosTime(value.ReadChildGeneralizedTime());
+        }
+
+        internal static KerberosPrincipalName ReadChildPrincipalName(this DERValue value)
+        {
+            if (!value.HasChildren() || !value.Children[0].CheckSequence())
             {
-                return time.AddMilliseconds(usec / 1000);
+                throw new InvalidDataException();
             }
-            return DateTime.MinValue;
+            return KerberosPrincipalName.Parse(value.Children[0]);
+        }
+
+        internal static KerberosEncryptedData ReadChildEncryptedData(this DERValue value)
+        {
+            if (!value.HasChildren())
+                throw new InvalidDataException();
+            return KerberosEncryptedData.Parse(value.Children[0], value.Data);
+        }
+
+        internal static KerberosTicket ReadChildTicket(this DERValue value)
+        {
+            if (!value.HasChildren())
+                throw new InvalidDataException();
+            return KerberosTicket.Parse(value.Children[0], value.Data);
         }
 
         /// <summary>

@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The ticket timestamp.
         /// </summary>
-        public string Timestamp { get; private set; }
+        public KerberosTime Timestamp { get; private set; }
 
         /// <summary>
         /// The ticket usecs.
@@ -67,9 +67,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 builder.AppendLine($"Nonce           : {Nonce.Value}");
             }
-            if (!string.IsNullOrEmpty(Timestamp))
+            if (Timestamp != null)
             {
-                builder.AppendLine($"Timestamp       : {KerberosUtils.ParseKerberosTime(Timestamp, USec)}");
+                builder.AppendLine($"Timestamp       : {Timestamp.ToDateTime(USec)}");
             }
             if (SenderAddress != null)
             {
@@ -119,7 +119,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             ret.Nonce = next.ReadChildInteger();
                             break;
                         case 2:
-                            ret.Timestamp = next.ReadChildGeneralizedTime();
+                            ret.Timestamp = next.ReadChildKerberosTime();
                             break;
                         case 3:
                             ret.USec = next.ReadChildInteger();

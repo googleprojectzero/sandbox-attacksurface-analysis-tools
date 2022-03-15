@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// Options for AP Request
     /// </summary>
     [Flags]
-    public enum KerberosAPRequestOptions
+    public enum KerberosAPRequestOptions : uint
     {
         /// <summary>
         /// None.
