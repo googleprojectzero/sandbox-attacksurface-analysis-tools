@@ -59,7 +59,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         throw new InvalidDataException();
                 }
             }
-            return new KerberosPreAuthenticationDataUnknown(type, data);
+            switch (type)
+            {
+                case KerberosPreAuthenticationType.PA_TGS_REQ:
+                    return KerberosPreAuthenticationDataTGSRequest.Parse(data);
+                default:
+                    return new KerberosPreAuthenticationDataUnknown(type, data);
+            }
         }
 
         void IDERObject.Write(DERBuilder builder)
