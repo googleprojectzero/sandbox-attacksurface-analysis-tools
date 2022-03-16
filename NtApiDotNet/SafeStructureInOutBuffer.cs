@@ -149,6 +149,11 @@ namespace NtApiDotNet
                 return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
             }
         }
+
+        /// <summary>
+        /// Get the offset of the data structure.
+        /// </summary>
+        public int DataOffset => BufferUtils.GetStructDataOffset<T>();
         #endregion
 
         #region Public Methods

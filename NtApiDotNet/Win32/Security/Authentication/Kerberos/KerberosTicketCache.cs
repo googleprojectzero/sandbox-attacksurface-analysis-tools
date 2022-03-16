@@ -197,6 +197,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KERB_CRYPTO_KEY32
+    {
+        public KerberosEncryptionType KeyType;
+        public int Length;
+        public int Offset;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KERB_SUBMIT_TKT_REQUEST
+    {
+        public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
+        public Luid LogonId;
+        public int Flags;
+        public KERB_CRYPTO_KEY32 Key; // key to decrypt KERB_CRED
+        public int KerbCredSize;
+        public int KerbCredOffset;
+    }
+
     internal struct KerberosTicketCacheInfo
     {
         public string ServerName;
@@ -636,6 +655,71 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static KerberosKeySet GetKeyTab(UserCredentials credentials)
         {
             return GetKeyTab(credentials, true).Result;
+        }
+
+        /// <summary>
+        /// Submit a ticket to the cache.
+        /// </summary>
+        /// <param name="ticket">The ticket to add in Kerberos Credential format.</param>
+        /// <param name="logon_id">The Logon Session ID to submit the ticket to. 0 uses callers logon session.</param>
+        /// <param name="key">Optional key to use if the credentials are encrypted.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SubmitTicket(KerberosCredential ticket, Luid logon_id, KerberosAuthenticationKey key, bool throw_on_error)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            byte[] ticket_data = ticket.ToArray();
+            int additional_length = ticket_data.Length + (key?.Key.Length ?? 0);
+
+            using (var buffer = new SafeStructureInOutBuffer<KERB_SUBMIT_TKT_REQUEST>(additional_length, true))
+            {
+                buffer.Data.WriteBytes(ticket_data);
+                int base_offset = buffer.DataOffset;
+                KERB_CRYPTO_KEY32 key_struct = new KERB_CRYPTO_KEY32();
+                if (key != null)
+                {
+                    key_struct.KeyType = key.KeyEncryption;
+                    key_struct.Length = key.Key.Length;
+                    key_struct.Offset = base_offset + ticket_data.Length;
+                    buffer.Data.WriteBytes((ulong)ticket_data.Length, key.Key);
+                }
+
+                buffer.Result = new KERB_SUBMIT_TKT_REQUEST()
+                {
+                    MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbSubmitTicketMessage,
+                    LogonId = logon_id,
+                    KerbCredOffset = base_offset,
+                    KerbCredSize = ticket_data.Length,
+                    Key = key_struct
+                };
+
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Status;
+                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        if (!result.IsSuccess)
+                            return result.Status;
+                        return result.Result.Status.ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Submit a ticket to the cache.
+        /// </summary>
+        /// <param name="ticket">The ticket to add in Kerberos Credential format.</param>
+        /// <param name="logon_id">The Logon Session ID to submit the ticket to. 0 uses callers logon session.</param>
+        /// <param name="key">Optional key to use if the credentials are encrypted.</param>
+        public static void SubmitTicket(KerberosCredential ticket, Luid logon_id = new Luid(), KerberosAuthenticationKey key = null)
+        {
+            SubmitTicket(ticket, logon_id, key, true);
         }
     }
 }

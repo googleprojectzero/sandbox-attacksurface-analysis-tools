@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,6 +44,57 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Create a new kerberos credential token.
+        /// </summary>
+        /// <param name="tickets">The list of tickets.</param>
+        /// <param name="encrypted_part">The encrypted data.</param>
+        /// <returns>The new kerberos credential.</returns>
+        public static KerberosCredential Create(IEnumerable<KerberosTicket> tickets, KerberosEncryptedData encrypted_part)
+        {
+            if (tickets is null)
+            {
+                throw new ArgumentNullException(nameof(tickets));
+            }
+
+            if (encrypted_part is null)
+            {
+                throw new ArgumentNullException(nameof(encrypted_part));
+            }
+
+            if (!tickets.Any())
+                throw new ArgumentException("Must specify at least one ticket.");
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication((int)KerberosMessageType.KRB_CRED))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, b => b.WriteInt32(5));
+                    seq.WriteContextSpecific(1, b => b.WriteInt32((int)KerberosMessageType.KRB_CRED));
+                    seq.WriteContextSpecific(2, b => b.WriteSequence(tickets));
+                    seq.WriteContextSpecific(3, encrypted_part);
+                }
+            }
+            var ret = Parse(builder.ToArray());
+            if (encrypted_part is KerberosCredentialEncryptedPart)
+                ret.EncryptedPart = encrypted_part;
+            return ret;
+        }
+
+        /// <summary>
+        /// Parse a DER encoding KRB-CRED structure.
+        /// </summary>
+        /// <param name="data">The DER encoded data.</param>
+        /// <returns>The parsed Kerberos credentials.</returns>
+        new public static KerberosCredential Parse(byte[] data)
+        {
+            DERValue[] values = DERParser.ParseData(data, 0);
+            if (!TryParse(data, values, out KerberosCredential ret))
+                throw new InvalidDataException("Invalid kerberos data.");
+            return ret;
+        }
+
+        /// <summary>
         /// Format the Authentication Token.
         /// </summary>
         /// <returns>The Formatted Token.</returns>
@@ -66,47 +119,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
         public override AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
         {
-            KerberosEncryptedData encdata = null;
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
-            List<KerberosTicket> dec_tickets = new List<KerberosTicket>();
-            bool decrypted_ticket = false;
-            foreach (var ticket in Tickets)
-            {
-                if (ticket.TryDecrypt(tmp_keys, KerberosKeyUsage.AsRepTgsRepTicket, out KerberosTicket dec_ticket))
-                {
-                    dec_tickets.Add(dec_ticket);
-                    decrypted_ticket = true;
-                }
-                else
-                {
-                    dec_tickets.Add(ticket);
-                }
-            }
 
             if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.KrbCred, out byte[] decrypted))
             {
-                if (KerberosCredentialEncryptedPart.TryParse(EncryptedPart, decrypted, Tickets, tmp_keys, out KerberosCredentialEncryptedPart enc_part))
-                {
-                    EncryptedPart = enc_part;
-                }
+                return Create(Tickets, KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted));
             }
 
-            if (decrypted_ticket || encdata != null)
-            {
-                KerberosCredential ret = (KerberosCredential)MemberwiseClone();
-                ret.Tickets = dec_tickets.AsReadOnly();
-                ret.EncryptedPart = encdata ?? ret.EncryptedPart;
-                return ret;
-            }
             return base.Decrypt(keyset);
         }
 
-        /// <summary>
-        /// Try and parse data into an ASN1 authentication token.
-        /// </summary>
-        /// <param name="data">The data to parse.</param>
-        /// <param name="token">The Negotiate authentication token.</param>
-        /// <param name="values">Parsed DER Values.</param>
         internal static bool TryParse(byte[] data, DERValue[] values, out KerberosCredential token)
         {
             token = null;
