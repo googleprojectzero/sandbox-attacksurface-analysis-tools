@@ -189,15 +189,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return (KerberosErrorAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300));
         }
+
+        /// <summary>
+        /// Try and parse data into an Kerberos error authentication token.
+        /// </summary>
+        /// <param name="data">The data to parse.</param>
+        /// <param name="token">The error authentication token.</param>
+        /// <returns>True if successfully parsed.</returns>
+        public static bool TryParse(byte[] data,  out KerberosErrorAuthenticationToken token)
+        {
+            DERValue[] values = DERParser.ParseData(data, 0);
+            token = null;
+            if (!TryParse(data, values, out KerberosAuthenticationToken tmp_token))
+            {
+                return false;
+            }
+
+            token = (KerberosErrorAuthenticationToken)tmp_token;
+            return true;
+        }
         #endregion
 
         #region Internal Static Methods
-        /// <summary>
-        /// Try and parse data into an ASN1 authentication token.
-        /// </summary>
-        /// <param name="data">The data to parse.</param>
-        /// <param name="token">The Negotiate authentication token.</param>
-        /// <param name="values">Parsed DER Values.</param>
         internal static bool TryParse(byte[] data, DERValue[] values, out KerberosAuthenticationToken token)
         {
             token = null;

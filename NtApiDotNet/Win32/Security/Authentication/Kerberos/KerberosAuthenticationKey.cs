@@ -184,6 +184,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return new KerberosAuthenticationKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
+
+        /// <summary>
+        /// Generate a random key.
+        /// </summary>
+        /// <param name="key_encryption">The encryption type for the key.</param>
+        /// <returns>The generated key.</returns>
+        public static KerberosAuthenticationKey GenerateKey(KerberosEncryptionType key_encryption)
+        {
+            int key_length;
+            switch (key_encryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    key_length = 16;
+                    break;
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    key_length = 32;
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported key encryption type.");
+            }
+
+            byte[] key = new byte[key_length];
+            new Random().NextBytes(key);
+            return new KerberosAuthenticationKey(key_encryption, key, KerberosNameType.UNKNOWN, string.Empty, DateTime.Now, 0);
+        }
         #endregion
 
         #region Public Methods

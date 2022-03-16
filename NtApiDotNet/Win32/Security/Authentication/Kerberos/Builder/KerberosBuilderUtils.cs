@@ -67,5 +67,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             }
             return builder.ToArray();
         }
+
+        internal static int GetRandomNonce()
+        {
+            return new Random().Next();
+        }
     }
 }

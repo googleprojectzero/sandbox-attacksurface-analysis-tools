@@ -212,17 +212,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             IEnumerable<KerberosHostAddress> addresses, KerberosEncryptedData enc_authorization_data,
             IEnumerable<KerberosTicket> additional_tickets)
         {
-            if (till_time == null)
-                till_time = KerberosTime.MaximumTime;
-
-            if (encryption_type == null)
+            if (realm is null)
             {
-                encryption_type = new List<KerberosEncryptionType>()
-                {
-                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
-                };
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            if (till_time is null)
+            {
+                throw new ArgumentNullException(nameof(till_time));
             }
 
             using (var body = builder.CreateSequence())

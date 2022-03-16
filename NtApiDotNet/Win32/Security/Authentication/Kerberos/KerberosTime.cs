@@ -33,6 +33,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Specify the maximum kerberos time.
         /// </summary>
         public static KerberosTime MaximumTime => new KerberosTime("20370913024805Z");
+
+        /// <summary>
+        /// Get current time as a kerberos time.
+        /// </summary>
+        public static KerberosTime Now => new KerberosTime(DateTime.Now);
         #endregion
 
         #region Constructors

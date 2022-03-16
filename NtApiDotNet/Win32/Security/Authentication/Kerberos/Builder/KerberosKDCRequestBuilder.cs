@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
@@ -103,6 +104,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         private protected KerberosKDCRequestBuilder(KerberosMessageType type)
         {
             MessageType = type;
+        }
+
+        internal byte[] EncodeBody()
+        {
+            DERBuilder builder = new DERBuilder();
+            KerberosKDCRequestAuthenticationToken.EncodeBody(builder, Realm, TillTime, Nonce,
+                EncryptionTypes, KDCOptions, ClientName, ServerName,
+                null, null, null, null, null);
+            return builder.ToArray();
         }
     }
 }
