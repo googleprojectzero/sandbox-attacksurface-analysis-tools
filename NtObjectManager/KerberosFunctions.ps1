@@ -423,3 +423,99 @@ function New-KerberosAPRequest {
                 $AuthenticatorKey, $AuthenticatorKeyVersion, $TicketKey, $TicketKeyVersion, $RawToken)
     }
 }
+
+<#
+.SYNOPSIS
+Create a new Kerberos  ticket.
+.DESCRIPTION
+This cmdlet creates a new Kerberos ticket.
+.PARAMETER Realm
+Specify the ticket realm.
+.PARAMETER ServerName
+Specify the server name.
+.PARAMETER EncryptedData
+Specify the ticket encrypted data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket
+#>
+function New-KerberosTicket {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Realm,
+        [Parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [Parameter(Mandatory, Position = 2)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$EncryptedData
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $ServerName, $EncryptedData)
+    }
+}
+
+<#
+.SYNOPSIS
+Add a kerberos ticket to the cache.
+.DESCRIPTION
+This cmdlet adds an existing kerberos ticket to the local cache.
+.PARAMETER Credential
+Specify the ticket credential.
+.PARAMETER Key
+Specify the ticket credential key if needed.
+.PARAMETER LogonId
+Specify the logon ID for the ticket cache.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Add-KerberosTicket {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtApiDotNet.Luid]$LogonId = 0
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
+    }
+}
+
+<#
+.SYNOPSIS
+Remove a kerberos ticket from the cache.
+.DESCRIPTION
+This cmdlet removes a kerberos ticket from the user's ticket cache.
+.PARAMETER Realm
+Specify the ticket realm.
+.PARAMETER ServerName
+Specify the server name.
+.PARAMETER LogonId
+Specify the logon ID for the ticket cache.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-KerberosTicket {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Realm,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [string]$ServerName,
+        [Parameter(Position = 2, ParameterSetName="FromName")]
+        [NtApiDotNet.Luid]$LogonId = 0,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromAll")]
+        [switch]$All
+    )
+
+    PROCESS {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
+    }
+}

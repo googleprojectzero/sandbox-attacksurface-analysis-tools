@@ -572,9 +572,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         return handle.Status;
                     using (var result = CallPackage(handle.Result, buffer, throw_on_error))
                     {
-                        if (!result.Result.Status.IsSuccess())
-                            return result.Result.Status.ToNtException(throw_on_error);
-                        return result.Status;
+                        return result.Result.Status.ToNtException(throw_on_error);
                     }
                 }
             }
