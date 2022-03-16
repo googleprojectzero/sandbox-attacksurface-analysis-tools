@@ -258,6 +258,12 @@ Specify the delegation options identifier.
 Specify the type of checksum.
 .PARAMETER Checksum
 Specify the checksum value.
+.PARAMETER Key
+Specify a kerberos key to generate the checksum.
+.PARAMETER KeyUsage
+Specify the key usage for the checksum calculation.
+.PARAMETER Data
+Specify the data to checksum.
 .INPUTS
 None
 .OUTPUTS
@@ -279,7 +285,13 @@ function New-KerberosChecksum {
         [Parameter(Mandatory, ParameterSetName="FromRaw")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumType]$Type,
         [Parameter(Mandatory, ParameterSetName="FromRaw")]
-        [byte[]]$Checksum
+        [byte[]]$Checksum,
+        [Parameter(Mandatory, ParameterSetName="FromKey")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [Parameter(Mandatory, ParameterSetName="FromKey")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeyUsage]$KeyUsage,
+         [Parameter(Mandatory, ParameterSetName="FromKey")]
+        [byte[]]$Data
     )
 
     PROCESS {
@@ -289,6 +301,9 @@ function New-KerberosChecksum {
             }
             "FromRaw" {
                 [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]::new($Type, $Checksum)
+            }
+            "FromKey" {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]::Create($Key, $Data, $KeyUsage)
             }
         }
     }
