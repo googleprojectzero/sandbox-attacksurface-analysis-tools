@@ -14,7 +14,9 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -88,6 +90,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static KerberosChecksum Create(KerberosAuthenticationKey key, byte[] data, KerberosKeyUsage key_usage)
         {
             return Create(key, data, 0, data.Length, key_usage);
+        }
+
+        /// <summary>
+        /// Create a kerberos a non-keyed checksum.
+        /// </summary>
+        /// <param name="type">The type of checksum.</param>
+        /// <param name="data">The data to hash.</param>
+        /// <returns>The new kerberos checksum.</returns>
+        public static KerberosChecksum Create(KerberosChecksumType type, byte[] data)
+        {
+            System.Security.Cryptography.HashAlgorithm alg;
+            switch (type)
+            {
+                case KerberosChecksumType.RSA_MD5:
+                    alg = MD5.Create();
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported non-keyed hash algorithm: {type}", nameof(type));
+            }
+
+            return new KerberosChecksum(type, alg.ComputeHash(data));
         }
 
         private protected virtual byte[] GetData()

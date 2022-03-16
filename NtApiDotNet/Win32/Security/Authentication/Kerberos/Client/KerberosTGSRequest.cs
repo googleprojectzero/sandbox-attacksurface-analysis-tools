@@ -99,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Create a request from a kerberos credential.
         /// </summary>
         /// <param name="credential">The kerberos TGT for the the request.</param>
-        public KerberosTGSRequest CreateFromCredential(KerberosCredential credential)
+        public static KerberosTGSRequest CreateFromCredential(KerberosCredential credential)
         {
             if (credential is null)
             {
@@ -186,7 +186,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 KDCOptions = KDCOptions,
                 Realm = Realm,
                 ServerName = ServerName,
-                Nonce = KerberosBuilderUtils.GetRandomNonce()
+                Nonce = KerberosBuilderUtils.GetRandomNonce(),
+                TillTime = TillTime
             };
         }
 

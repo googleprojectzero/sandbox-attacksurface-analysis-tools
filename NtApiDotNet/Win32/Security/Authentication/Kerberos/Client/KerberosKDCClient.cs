@@ -92,12 +92,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var tgs_req = request.ToBuilder();
-            var checksum = KerberosChecksum.Create(request.SessionKey, tgs_req.EncodeBody(), KerberosKeyUsage.TgsReqPaTgsReqApReqChksum);
+            var checksum = KerberosChecksum.Create(KerberosChecksumType.RSA_MD5, tgs_req.EncodeBody());
             var subkey = KerberosAuthenticationKey.GenerateKey(request.SessionKey.KeyEncryption);
             KerberosAuthenticator authenticator = KerberosAuthenticator.Create(request.Realm, request.ClientName, KerberosTime.Now, 0, checksum, subkey,
                 KerberosBuilderUtils.GetRandomNonce(), null);
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,
-                authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq, request.Ticket.EncryptedData.KeyVersion)));
+                authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq)));
 
             return new KerberosTGSReply(ExchangeTokens(tgs_req.Create()), request.SessionKey, subkey);
         }

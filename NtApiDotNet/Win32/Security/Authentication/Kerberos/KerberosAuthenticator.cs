@@ -209,7 +209,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="data">The DER encoded data.</param>
         public static KerberosAuthenticator Parse(byte[] data)
         {
-            if (!TryParse(data, out KerberosAuthenticator authenticator))
+            if (TryParse(data, out KerberosAuthenticator authenticator))
                 return authenticator;
             throw new InvalidDataException("Failed to parse authenticator.");
         }
