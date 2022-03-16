@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// The nonce.
         /// </summary>
-        public int? Nonce { get; set; }
+        public int Nonce { get; set; }
         /// <summary>
         /// List of supported encryption types.
         /// </summary>
@@ -77,6 +77,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// List of additional tickets.
         /// </summary>
         public List<KerberosTicket> AdditionalTickets { get; set; }
+
+        /// <summary>
+        /// Add some pre-authentication data.
+        /// </summary>
+        /// <param name="data">The data to add.</param>
+        public void AddPreAuthenticationData(KerberosPreAuthenticationData data)
+        {
+            if (PreAuthenticationData == null)
+                PreAuthenticationData = new List<KerberosPreAuthenticationData>();
+            PreAuthenticationData.Add(data);
+        }
 
         /// <summary>
         /// Create the KDC-REQ authentication token.
