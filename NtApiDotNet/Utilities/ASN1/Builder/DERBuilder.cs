@@ -277,7 +277,45 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <param name="obj">The object to write.</param>
         public void WriteContextSpecific(int context, IDERObject obj)
         {
+            if (obj == null)
+                return;
             WriteContextSpecific(context, b => obj.Write(b));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an int32.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, int? value)
+        {
+            if (!value.HasValue)
+                return;
+            WriteContextSpecific(context, b => b.WriteInt32(value.Value));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an sequence of objects.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="objs">The objects to write.</param>
+        public void WriteContextSpecific(int context, IEnumerable<IDERObject> objs)
+        {
+            if (objs == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteSequence(objs));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an general string.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, string value)
+        {
+            if (value == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteGeneralString(value));
         }
 
         /// <summary>
@@ -380,6 +418,22 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
                 data[0] = (byte)(7 - remaining);
             }
             _writer.WriteUniversalValue(false, UniversalTag.BIT_STRING, data);
+        }
+
+        /// <summary>
+        /// Write a 32-bit value as a bit string.
+        /// </summary>
+        /// <param name="convertible">The value. Must be convertable to UInt32.</param>
+        public void WriteBitString(IConvertible convertible)
+        {
+            uint value = convertible.ToUInt32(null);
+            BitArray bits = new BitArray(32, false);
+            for (int i = 0; i < 32; ++i)
+            {
+                uint mask = (1U << i);
+                bits[i] = ((value & mask) != 0);
+            }
+            WriteBitString(bits);
         }
 
         /// <summary>

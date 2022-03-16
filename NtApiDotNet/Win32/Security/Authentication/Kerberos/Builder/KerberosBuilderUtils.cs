@@ -44,6 +44,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             builder.WriteContextSpecific(context + 1, b => b.WriteInt32(time.Millisecond * 1000));
         }
 
+        internal static DERBuilderSubStructure CreateMsg(this DERBuilder builder, KerberosMessageType type)
+        {
+            return builder.CreateApplication((int)type);
+        }
+
         internal static byte[] CreateGssApiWrapper(this DERBuilder inner_token, string oid, ushort token_id)
         {
             return CreateGssApiWrapper(inner_token.ToArray(), oid, token_id);

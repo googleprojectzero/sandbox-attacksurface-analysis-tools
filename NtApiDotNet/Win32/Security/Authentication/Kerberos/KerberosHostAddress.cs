@@ -13,9 +13,11 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -40,7 +42,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class representing a Kerberos Host Address.
     /// </summary>
-    public sealed class KerberosHostAddress
+    public sealed class KerberosHostAddress : IDERObject
     {
         /// <summary>
         /// Type of host address.
@@ -71,6 +73,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         return $"IPv6: {new IPAddress(Address)}";
                     }
                     break;
+                case KerberosHostAddressType.NetBios:
+                    return $"NetBios: {Encoding.ASCII.GetString(Address).TrimEnd()}";
             }
             return $"{AddressType} - {NtObjectUtils.ToHexString(Address)}";
         }
@@ -129,6 +133,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ret.Add(Parse(next));
             }
             return ret.AsReadOnly();
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, (int)AddressType);
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(Address));
+            }
         }
     }
 }

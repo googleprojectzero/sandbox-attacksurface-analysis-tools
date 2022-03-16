@@ -13,8 +13,12 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -78,7 +82,96 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public IReadOnlyList<KerberosTicket> AdditionalTickets { get; private set; }
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Create a builder for this token.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public KerberosKDCRequestBuilder ToBuilder()
+        {
+            KerberosKDCRequestBuilder builder;
+            if (MessageType == KerberosMessageType.KRB_AS_REQ)
+            {
+                builder = new KerberosASRequestBuilder();
+            }
+            else
+            {
+                builder = new KerberosTGSRequestBuilder();
+            }
+            builder.PreAuthenticationData = PreAuthenticationData?.ToList();
+            builder.KDCOptions = KDCOptions;
+            builder.ClientName = ClientName;
+            builder.Nonce = Nonce;
+            builder.Realm = Realm;
+            builder.ServerName = ServerName;
+            builder.FromTime = FromTime;
+            builder.TillTime = TillTime;
+            builder.RenewTill = RenewTill;
+            builder.EncryptionTypes = EncryptionTypes?.ToList();
+            builder.Addresses = Addresses?.ToList();
+            builder.AuthorizationData = AuthorizationData;
+            builder.AdditionalTickets = AdditionalTickets?.ToList();
+            return builder;
+        }
+        #endregion
+
         #region Public Static Members
+        /// <summary>
+        /// Create an KRB-AS-REQ token.
+        /// </summary>
+        /// <param name="realm">The realm.</param>
+        /// <param name="till_time">The expiry time of the ticket.</param>
+        /// <param name="nonce">Random nonce.</param>
+        /// <param name="encryption_type">The list of supported encryption types.</param>
+        /// <param name="options">KDC options.</param>
+        /// <param name="pre_auth_data">Pre-authentication data.</param>
+        /// <param name="client_name">The client principal name.</param>
+        /// <param name="server_name">The server principal name.</param>
+        /// <param name="from_time">The start time for the ticket.</param>
+        /// <param name="renew_time">The renew time for the ticket.</param>
+        /// <param name="addresses">List of host addresses.</param>
+        /// <param name="enc_authorization_data">Encrypted authorization data.</param>
+        /// <param name="additional_tickets">Additional tickets.</param>
+        /// <returns>The authentication token.</returns>
+        public static KerberosKDCRequestAuthenticationToken CreateAsReq(string realm, KerberosTime till_time = null, int? nonce = null,
+            IEnumerable<KerberosEncryptionType> encryption_type = null, KerberosKDCOptions options = KerberosKDCOptions.None,
+            IEnumerable<KerberosPreAuthenticationData> pre_auth_data = null, KerberosPrincipalName client_name = null, 
+            KerberosPrincipalName server_name = null, KerberosTime from_time = null, KerberosTime renew_time = null, 
+            IEnumerable<KerberosHostAddress> addresses = null, KerberosEncryptedData enc_authorization_data = null, 
+            IEnumerable<KerberosTicket> additional_tickets = null)
+        {
+            return Create(KerberosMessageType.KRB_AS_REQ, realm, till_time, nonce, encryption_type, options, pre_auth_data,
+                client_name, server_name, from_time, renew_time, addresses, enc_authorization_data, additional_tickets);
+        }
+
+        /// <summary>
+        /// Create an KRB-TGS-REQ token.
+        /// </summary>
+        /// <param name="realm">The realm.</param>
+        /// <param name="till_time">The expiry time of the ticket.</param>
+        /// <param name="nonce">Random nonce.</param>
+        /// <param name="encryption_type">The list of supported encryption types.</param>
+        /// <param name="options">KDC options.</param>
+        /// <param name="pre_auth_data">Pre-authentication data.</param>
+        /// <param name="client_name">The client principal name.</param>
+        /// <param name="server_name">The server principal name.</param>
+        /// <param name="from_time">The start time for the ticket.</param>
+        /// <param name="renew_time">The renew time for the ticket.</param>
+        /// <param name="addresses">List of host addresses.</param>
+        /// <param name="enc_authorization_data">Encrypted authorization data.</param>
+        /// <param name="additional_tickets">Additional tickets.</param>
+        /// <returns>The authentication token.</returns>
+        public static KerberosKDCRequestAuthenticationToken CreateTgsReq(string realm, KerberosTime till_time = null, int? nonce = null,
+            IEnumerable<KerberosEncryptionType> encryption_type = null, KerberosKDCOptions options = KerberosKDCOptions.None,
+            IEnumerable<KerberosPreAuthenticationData> pre_auth_data = null, KerberosPrincipalName client_name = null,
+            KerberosPrincipalName server_name = null, KerberosTime from_time = null, KerberosTime renew_time = null,
+            IEnumerable<KerberosHostAddress> addresses = null, KerberosEncryptedData enc_authorization_data = null,
+            IEnumerable<KerberosTicket> additional_tickets = null)
+        {
+            return Create(KerberosMessageType.KRB_TGS_REQ, realm, till_time, nonce, encryption_type, options, pre_auth_data,
+                client_name, server_name, from_time, renew_time, addresses, enc_authorization_data, additional_tickets);
+        }
+
         /// <summary>
         /// Try and parse a KDC-REQ token.
         /// </summary>
@@ -165,6 +258,64 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private KerberosKDCRequestAuthenticationToken(byte[] data, DERValue[] values, KerberosMessageType message_type)
             : base(data, values, message_type)
         {
+        }
+        #endregion
+
+        #region Internal Members
+        internal static KerberosKDCRequestAuthenticationToken Create(KerberosMessageType type,
+            string realm, KerberosTime till_time, int? nonce, IEnumerable<KerberosEncryptionType> encryption_type, 
+            KerberosKDCOptions options, IEnumerable<KerberosPreAuthenticationData> pre_auth_data, KerberosPrincipalName client_name,
+            KerberosPrincipalName server_name, KerberosTime from_time, KerberosTime renew_till,
+            IEnumerable<KerberosHostAddress> addresses, KerberosEncryptedData enc_authorization_data,
+            IEnumerable<KerberosTicket> additional_tickets)
+        {
+            if (till_time == null)
+                till_time = KerberosTime.MaximumTime;
+            if (!nonce.HasValue)
+                nonce = new Random().Next();
+            if (encryption_type == null)
+            {
+                encryption_type = new List<KerberosEncryptionType>()
+                {
+                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
+                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
+                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
+                };
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateMsg(type))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteContextSpecific(1, b => b.WriteInt32(5));
+                    seq.WriteContextSpecific(2, b => b.WriteInt32((int)type));
+                    if ((pre_auth_data != null) && pre_auth_data.Any())
+                    {
+                        seq.WriteContextSpecific(3, b => b.WriteSequence(pre_auth_data));
+                    }
+                    using (var ctx = seq.CreateContextSpecific(4))
+                    {
+                        using (var body = ctx.CreateSequence())
+                        {
+                            body.WriteContextSpecific(0, b => b.WriteBitString(options));
+                            body.WriteContextSpecific(1, client_name);
+                            body.WriteContextSpecific(2, b => b.WriteGeneralString(realm));
+                            body.WriteContextSpecific(3, server_name);
+                            body.WriteContextSpecific(4, from_time);
+                            body.WriteContextSpecific(5, till_time);
+                            body.WriteContextSpecific(6, renew_till);
+                            body.WriteContextSpecific(7, nonce);
+                            body.WriteContextSpecific(8, b => b.WriteSequence(encryption_type, (r, i) => r.WriteInt32((int)i)));
+                            body.WriteContextSpecific(9, addresses);
+                            body.WriteContextSpecific(10, enc_authorization_data);
+                            body.WriteContextSpecific(11, additional_tickets);
+                        }
+                    }
+                }
+            }
+
+            return Parse(builder.ToArray());
         }
 
         private static bool TryParseRequestBody(DERValue value, KerberosKDCRequestAuthenticationToken ret)
