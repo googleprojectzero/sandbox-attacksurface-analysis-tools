@@ -12,11 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -44,6 +40,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// The decrypted reply data.
         /// </summary>
         public KerberosKDCReplyEncryptedPart ReplyData { get; }
+
+        /// <summary>
+        /// Convert the TGS reply to a KRB-CRED.
+        /// </summary>
+        /// <returns>The kerberos credentials.</returns>
+        public KerberosCredential ToCredential()
+        {
+            List<KerberosCredentialInfo> cred_info = new List<KerberosCredentialInfo>();
+            cred_info.Add(new KerberosCredentialInfo(ReplyData.Key, ReplyToken.ClientRealm, ReplyToken.ClientName,
+                ReplyData.TicketFlags, ReplyData.AuthTime, ReplyData.StartTime, ReplyData.EndTime,
+                ReplyData.RenewTill, ReplyData.Realm, ReplyData.ServerName, ReplyData.ClientAddress));
+            return KerberosCredential.Create(new KerberosTicket[] { Ticket }, 
+                KerberosCredentialEncryptedPart.Create(cred_info, ReplyData.Nonce, KerberosTime.Now, 0));
+        }
 
         internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
         {

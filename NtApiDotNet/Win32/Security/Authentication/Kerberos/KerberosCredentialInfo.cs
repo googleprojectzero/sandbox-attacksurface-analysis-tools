@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -22,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Represents a KrbCredInfo structure.
     /// </summary>
-    public sealed class KerberosCredentialInfo
+    public sealed class KerberosCredentialInfo : IDERObject
     {
         /// <summary>
         /// The kerberos session key.
@@ -31,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Ticket flags.
         /// </summary>
-        public KerberosTicketFlags Flags { get; private set; }
+        public KerberosTicketFlags? TicketFlags { get; private set; }
         /// <summary>
         /// Client Realm.
         /// </summary>
@@ -41,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public KerberosPrincipalName ClientName { get; private set; }
         /// <summary>
-        /// Authentication time,
+        /// Authentication time.
         /// </summary>
         public KerberosTime AuthTime { get; private set; }
         /// <summary>
@@ -69,6 +71,43 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosHostAddress> HostAddresses { get; private set; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="key">The kerberos session key.</param>
+        /// <param name="client_realm">Client realm.</param>
+        /// <param name="client_name">Client name.</param>
+        /// <param name="ticket_flags">Ticket flags.</param>
+        /// <param name="auth_time">Authentication time.</param>
+        /// <param name="start_time">Start time.</param>
+        /// <param name="end_time">End time.</param>
+        /// <param name="renew_till">Renew till time.</param>
+        /// <param name="realm">Server Realm.</param>
+        /// <param name="server_name">Server name.</param>
+        /// <param name="host_addresses">List of host addresses for ticket.</param>
+        public KerberosCredentialInfo(KerberosAuthenticationKey key, string client_realm = null,
+            KerberosPrincipalName client_name = null, KerberosTicketFlags? ticket_flags = null,
+            KerberosTime auth_time = null, KerberosTime start_time = null, KerberosTime end_time = null,
+            KerberosTime renew_till = null, string realm = null, KerberosPrincipalName server_name = null,
+            IEnumerable<KerberosHostAddress> host_addresses = null)
+        {
+            Key = key;
+            ClientRealm = client_realm;
+            ClientName = client_name;
+            TicketFlags = ticket_flags;
+            AuthTime = auth_time;
+            StartTime = start_time;
+            EndTime = end_time;
+            RenewTill = renew_till;
+            Realm = realm;
+            ServerName = server_name;
+            HostAddresses = host_addresses?.ToList().AsReadOnly();
+        }
+
+        private KerberosCredentialInfo()
+        {
+        }
+
         internal string Format()
         {
             StringBuilder builder = new StringBuilder();
@@ -94,7 +133,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 builder.AppendLine($"Renew Time     : {EndTime.ToDateTime()}");
             }
-            builder.AppendLine($"Ticket Flags    : {Flags}");
+            builder.AppendLine($"Ticket Flags    : {TicketFlags}");
 
             builder.AppendLine("<Session Key>");
             builder.AppendLine($"Encryption Type : {Key.KeyEncryption}");
@@ -139,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         ret.ClientName = KerberosPrincipalName.Parse(next.Children[0]);
                         break;
                     case 3:
-                        ret.Flags = next.ReadChildBitFlags<KerberosTicketFlags>();
+                        ret.TicketFlags = next.ReadChildBitFlags<KerberosTicketFlags>();
                         break;
                     case 4:
                         ret.AuthTime = next.ReadChildKerberosTime();
@@ -172,6 +211,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             return ret;
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, Key);
+                seq.WriteContextSpecific(1, ClientRealm);
+                seq.WriteContextSpecific(2, ClientName);
+                if (TicketFlags.HasValue)
+                {
+                    seq.WriteContextSpecific(3, b => b.WriteBitString(TicketFlags.Value));
+                }
+                seq.WriteContextSpecific(4, AuthTime);
+                seq.WriteContextSpecific(5, StartTime);
+                seq.WriteContextSpecific(6, EndTime);
+                seq.WriteContextSpecific(7, RenewTill);
+                seq.WriteContextSpecific(8, Realm);
+                seq.WriteContextSpecific(9, ServerName);
+                seq.WriteContextSpecific(10, HostAddresses);
+            }
         }
     }
 }

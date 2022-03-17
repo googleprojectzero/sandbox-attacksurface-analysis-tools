@@ -34,6 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         KRB_CRED = 22,
         KRB_AS_REP_ENC_PART = 25,
         KRB_TGS_REP_ENC_PART = 26,
+        KRB_CRED_ENC_PART = 29,
         KRB_ERROR = 30,
     }
 }
