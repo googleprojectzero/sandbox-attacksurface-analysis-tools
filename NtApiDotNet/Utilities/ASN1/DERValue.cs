@@ -103,6 +103,13 @@ namespace NtApiDotNet.Utilities.ASN1
             return (int)ReadBigInteger();
         }
 
+        public bool ReadBoolean()
+        {
+            if (!CheckPrimitive(UniversalTag.BOOLEAN))
+                throw new InvalidDataException();
+            return Data[0] != 0;
+        }
+
         public long ReadLong()
         {
             return (long)ReadBigInteger();
@@ -248,6 +255,15 @@ namespace NtApiDotNet.Utilities.ASN1
                     ret |= (1U << i);
             }
             return (T)Enum.ToObject(typeof(T), ret);
+        }
+
+        public bool ReadChildBoolean()
+        {
+            if (!HasChildren() || !Children[0].CheckPrimitive(UniversalTag.BOOLEAN))
+            {
+                throw new InvalidDataException();
+            }
+            return Children[0].ReadBoolean();
         }
 
         public string FormatValue()

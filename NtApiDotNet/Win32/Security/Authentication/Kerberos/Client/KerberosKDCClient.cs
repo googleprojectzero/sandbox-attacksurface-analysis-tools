@@ -91,9 +91,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var tgs_req = request.ToBuilder();
-            var checksum = KerberosChecksum.Create(KerberosChecksumType.RSA_MD5, tgs_req.EncodeBody());
             var subkey = KerberosAuthenticationKey.GenerateKey(request.SessionKey.KeyEncryption);
+            var tgs_req = request.ToBuilder();
+            if (tgs_req.AuthorizationData != null)
+            {
+                tgs_req.AuthorizationData = tgs_req.AuthorizationData.Encrypt(subkey, KerberosKeyUsage.TgsReqKdcReqBodyAuthSubkey);
+            }
+
+            var checksum = KerberosChecksum.Create(KerberosChecksumType.RSA_MD5, tgs_req.EncodeBody());
             KerberosAuthenticator authenticator = KerberosAuthenticator.Create(request.Realm, request.ClientName, KerberosTime.Now, 0, checksum, subkey,
                 KerberosBuilderUtils.GetRandomNonce(), null);
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,

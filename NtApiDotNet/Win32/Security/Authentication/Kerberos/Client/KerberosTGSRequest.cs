@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -68,6 +70,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Specify the end time for the ticket.
         /// </summary>
         public KerberosTime TillTime { get; }
+
+        /// <summary>
+        /// Encrypted authorization data.
+        /// </summary>
+        public List<KerberosAuthorizationData> AuthorizationData { get; set; }
+
+        /// <summary>
+        /// List of additional tickets.
+        /// </summary>
+        public List<KerberosTicket> AdditionalTickets { get; set; }
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Add authorization data to the request.
+        /// </summary>
+        /// <param name="auth_data">The authorization data to add.</param>
+        public void AddAuthorizationData(KerberosAuthorizationData auth_data)
+        {
+            if (AuthorizationData == null)
+                AuthorizationData = new List<KerberosAuthorizationData>();
+            AuthorizationData.Add(auth_data);
+        }
         #endregion
 
         #region Constructors
@@ -160,6 +186,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
         }
 
+        private KerberosEncryptedData GetAuthorizationData()
+        {
+            if (AuthorizationData == null || AuthorizationData.Count == 0)
+                return null;
+            DERBuilder builder = new DERBuilder();
+            builder.WriteSequence(AuthorizationData);
+            return KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
+        }
+
         internal KerberosTGSRequestBuilder ToBuilder()
         {
             Validate();
@@ -187,7 +222,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 Realm = Realm,
                 ServerName = ServerName,
                 Nonce = KerberosBuilderUtils.GetRandomNonce(),
-                TillTime = TillTime
+                TillTime = TillTime,
+                AdditionalTickets = AdditionalTickets?.ToList(),
+                AuthorizationData = GetAuthorizationData(),
             };
         }
 

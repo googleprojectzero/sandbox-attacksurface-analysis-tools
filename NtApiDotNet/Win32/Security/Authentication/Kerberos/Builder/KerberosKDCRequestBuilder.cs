@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// List of supported encryption types.
         /// </summary>
-        public IReadOnlyList<KerberosEncryptionType> EncryptionTypes { get; set; }
+        public List<KerberosEncryptionType> EncryptionTypes { get; set; }
         /// <summary>
         /// List of host addresses.
         /// </summary>
@@ -111,7 +111,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             DERBuilder builder = new DERBuilder();
             KerberosKDCRequestAuthenticationToken.EncodeBody(builder, Realm, TillTime, Nonce,
                 EncryptionTypes, KDCOptions, ClientName, ServerName,
-                null, null, null, null, null);
+                FromTime, RenewTill, Addresses, AuthorizationData, AdditionalTickets);
             return builder.ToArray();
         }
     }

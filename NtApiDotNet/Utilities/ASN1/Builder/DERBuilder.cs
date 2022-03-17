@@ -120,6 +120,15 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
+        /// Write a boolean.
+        /// </summary>
+        /// <param name="value">The boolean value to write.</param>
+        public void WriteBoolean(bool value)
+        {
+            _writer.WriteUniversalValue(false, UniversalTag.BOOLEAN, new byte[] { (byte)(value ? 0xFF : 0) });
+        }
+
+        /// <summary>
         /// Write a DER object.
         /// </summary>
         /// <param name="obj">The object to write.</param>

@@ -523,6 +523,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataIfRelevant.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataApOptions.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataKerbLocal.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACRequest.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataTargetName.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataRaw.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataType.cs" />
