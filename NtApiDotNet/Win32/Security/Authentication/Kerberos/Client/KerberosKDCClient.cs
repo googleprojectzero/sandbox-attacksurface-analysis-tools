@@ -103,6 +103,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 KerberosBuilderUtils.GetRandomNonce(), null);
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,
                 authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq)));
+            if (request.PACOptionsFlags != KerberosPreAuthenticationPACOptionsFlags.None)
+            {
+                tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationPACOptions(request.PACOptionsFlags));
+            }
 
             var reply = ExchangeTokens(tgs_req.Create());
             var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptionPartAuthSubkey);

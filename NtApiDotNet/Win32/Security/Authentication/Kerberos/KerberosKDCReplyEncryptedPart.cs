@@ -89,6 +89,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosHostAddress> ClientAddress { get; private set; }
 
+        /// <summary>
+        /// Encypted pre-authentication data.
+        /// </summary>
+        public IReadOnlyList<KerberosPreAuthenticationData> EncryptedPreAuthentication { get; private set; }
+
         private KerberosKDCReplyEncryptedPart(byte[] data) 
             : base(KerberosEncryptionType.NULL, null, data)
         {
@@ -157,6 +162,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             break;
                         case 11:
                             ret.ClientAddress = next.ReadChildSequence(KerberosHostAddress.Parse).ToList().AsReadOnly();
+                            break;
+                        case 12:
+                            ret.EncryptedPreAuthentication = next.ReadChildSequence(KerberosPreAuthenticationData.Parse);
                             break;
                         default:
                             return false;

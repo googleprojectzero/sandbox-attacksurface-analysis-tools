@@ -80,6 +80,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// List of additional tickets.
         /// </summary>
         public List<KerberosTicket> AdditionalTickets { get; set; }
+
+        /// <summary>
+        /// The PA-PAC-OPTIONS pre-authentication flags.
+        /// </summary>
+        public KerberosPreAuthenticationPACOptionsFlags PACOptionsFlags { get; set; }
+
         #endregion
 
         #region Public Methods
