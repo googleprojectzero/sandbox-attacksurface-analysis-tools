@@ -288,8 +288,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The computed hash.</returns>
         public byte[] ComputeHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
-            return GetHashAlgorithm(key_usage, out int hash_length).ComputeHash(data, 
-                offset, length).Take(hash_length).ToArray();
+            switch (KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    return ComputeMD5HMACHash(data, offset, length, key_usage);
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return ComputeSHA1HMACHash(data, offset, length, key_usage);
+                default:
+                    throw new InvalidDataException("Unsupported hash algorithm.");
+            }
         }
 
         /// <summary>
@@ -393,33 +401,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #region Private Members
         private readonly byte[] _key;
 
-        private HMACMD5 GetRC4HashAlgorithm(KerberosKeyUsage key_usage)
+        private byte[] ComputeMD5HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
-            HMACMD5 hmac = new HMACMD5(_key);
-            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
-            return new HMACMD5(key1);
+            byte[] sign_key = new HMACMD5(_key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((int)key_usage);
+            writer.Write(data, offset, length);
+
+            byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
+            return new HMACMD5(sign_key).ComputeHash(tmp);
         }
 
-        private HMACSHA1 GetAESHashAlgorithm(KerberosKeyUsage key_usage)
+        private byte[] ComputeSHA1HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
             byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
-            return new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
-        }
-
-        private KeyedHashAlgorithm GetHashAlgorithm(KerberosKeyUsage key_usage, out int length)
-        {
-            switch (KeyEncryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    length = MD5_CHECKSUM_SIZE;
-                    return GetRC4HashAlgorithm(key_usage);
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    length = AES_CHECKSUM_SIZE;
-                    return GetAESHashAlgorithm(key_usage);
-                default:
-                    throw new InvalidDataException("Unsupported hash algorithm.");
-            }
+            return new HMACSHA1(DeriveAesKey(_key, derive_mac_key)).ComputeHash(data, 
+                offset, length).Take(AES_CHECKSUM_SIZE).ToArray();
         }
 
         private static string MakeSalt(string salt, string principal)
