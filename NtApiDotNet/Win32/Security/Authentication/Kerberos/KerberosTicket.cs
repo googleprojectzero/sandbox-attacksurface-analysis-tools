@@ -149,6 +149,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosTicket(5, realm, server_name, encrypted_data);
         }
 
+        /// <summary>
+        /// Parse a Kerberos ticket from a DER encoded byte array.
+        /// </summary>
+        /// <param name="data">The DER encoded ticket.</param>
+        /// <returns></returns>
+        public static KerberosTicket Parse(byte[] data)
+        {
+            DERValue[] values = DERParser.ParseData(data, 0);
+            if (values.Length != 1)
+                throw new InvalidDataException("Invalid kerberos ticket structure.");
+            return Parse(values[0]);
+        }
 
         private protected KerberosTicket(
             int ticket_version,

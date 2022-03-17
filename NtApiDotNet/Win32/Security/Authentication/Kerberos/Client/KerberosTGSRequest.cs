@@ -89,17 +89,38 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Public Methods
-
         /// <summary>
         /// Add authorization data to the request.
         /// </summary>
         /// <param name="auth_data">The authorization data to add.</param>
         public void AddAuthorizationData(KerberosAuthorizationData auth_data)
         {
+            if (auth_data is null)
+            {
+                throw new ArgumentNullException(nameof(auth_data));
+            }
+
             if (AuthorizationData == null)
                 AuthorizationData = new List<KerberosAuthorizationData>();
             AuthorizationData.Add(auth_data);
         }
+
+        /// <summary>
+        /// Add an additional ticket to the request.
+        /// </summary>
+        /// <param name="ticket">The ticket to add.</param>
+        public void AddAdditionalTicket(KerberosTicket ticket)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            if (AdditionalTickets == null)
+                AdditionalTickets = new List<KerberosTicket>();
+            AdditionalTickets.Add(ticket);
+        }
+
         #endregion
 
         #region Constructors
@@ -130,7 +151,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// Create a request from a kerberos credential.
         /// </summary>
-        /// <param name="credential">The kerberos TGT for the the request.</param>
+        /// <param name="credential">The kerberos TGT for the request.</param>
         public static KerberosTGSRequest CreateFromCredential(KerberosCredential credential)
         {
             if (credential is null)

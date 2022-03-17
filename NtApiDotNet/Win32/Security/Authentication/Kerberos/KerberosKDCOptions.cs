@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         Postdated = (1 << 6),
         Renewable = (1 << 8),
         OptHardwareAuth = (1 << 11),
-        ConstrainedDelegation = (1 << 14),
+        ClientNameInAdditionalTicket = (1 << 14),
         Canonicalize = (1 << 15),
         RequestAnonymous = (1 << 16),
         DisableTransitedCheck = (1 << 26),
