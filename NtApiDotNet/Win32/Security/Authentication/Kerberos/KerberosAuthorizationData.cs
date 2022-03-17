@@ -128,10 +128,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         private protected abstract void FormatData(StringBuilder builder);
-        private protected virtual byte[] GetData()
-        {
-            throw new NotSupportedException($"Conversion to an array is not supported for {DataType}");
-        }
+
+        private protected abstract byte[] GetData();
+
+        //private protected virtual byte[] GetData()
+        //{
+        //    throw new NotSupportedException($"Conversion to an array is not supported for {DataType}");
+        //}
 
         internal void Format(StringBuilder builder)
         {

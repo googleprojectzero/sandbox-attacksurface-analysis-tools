@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -68,6 +69,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             entry = new KerberosAuthorizationDataEncryptionNegotiation(enc_types.AsReadOnly());
             return true;
+        }
+
+        private protected override byte[] GetData()
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                foreach (var value in EncryptionList)
+                {
+                    seq.WriteInt32((int)value);
+                }
+            }
+            return builder.ToArray();
         }
     }
 }
