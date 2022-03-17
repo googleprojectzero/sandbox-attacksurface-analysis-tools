@@ -49,16 +49,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     BinaryReader reader = new BinaryReader(stm, Encoding.ASCII, true);
                     int return_length = IPAddress.NetworkToHostOrder(reader.ReadInt32());
                     data = reader.ReadAllBytes(return_length);
-                    if (KerberosKDCReplyAuthenticationToken.TryParse(data, out KerberosKDCReplyAuthenticationToken reply))
+                    if (!KerberosKDCReplyAuthenticationToken.TryParse(data, out KerberosKDCReplyAuthenticationToken reply))
                     {
-                        return reply;
+                        if (KerberosErrorAuthenticationToken.TryParse(data, out KerberosErrorAuthenticationToken error))
+                        {
+                            throw new KerberosKDCClientException(error);
+                        }
+                        throw new KerberosKDCClientException("Unknown KDC reply.");
                     }
 
-                    if (KerberosErrorAuthenticationToken.TryParse(data, out KerberosErrorAuthenticationToken error))
-                    {
-                        throw new KerberosKDCClientException(error);
-                    }
-                    throw new InvalidDataException("Unexpected return value from KDC.");
+                    return reply;
                 }
             }
         }
@@ -99,7 +99,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,
                 authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq)));
 
-            return new KerberosTGSReply(ExchangeTokens(tgs_req.Create()), request.SessionKey, subkey);
+            var reply = ExchangeTokens(tgs_req.Create());
+            var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptionPartAuthSubkey);
+            if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
+            {
+                throw new KerberosKDCClientException("Invalid KDC reply encrypted part..");
+            }
+
+            return new KerberosTGSReply(reply, reply_part);
         }
         #endregion
 

@@ -31,8 +31,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         public KerberosErrorAuthenticationToken Error { get; }
 
+        internal KerberosKDCClientException(string message) : base(message)
+        {
+        }
+
         internal KerberosKDCClientException(KerberosErrorAuthenticationToken error) 
-            : base($"{error.ErrorCode} - {error.ErrorText}")
+            : base($"Kerberos Error: {error.ErrorCode}")
         {
             Error = error;
         }

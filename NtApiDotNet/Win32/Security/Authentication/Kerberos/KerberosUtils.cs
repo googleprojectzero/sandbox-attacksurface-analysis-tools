@@ -167,6 +167,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return KerberosPrincipalName.Parse(value.Children[0]);
         }
 
+        internal static KerberosAuthenticationKey ReadChildAuthenticationKey(this DERValue value)
+        {
+            if (!value.HasChildren() || !value.Children[0].CheckSequence())
+            {
+                throw new InvalidDataException();
+            }
+            return KerberosAuthenticationKey.Parse(value.Children[0], string.Empty, new KerberosPrincipalName());
+        }
+
         internal static KerberosEncryptedData ReadChildEncryptedData(this DERValue value)
         {
             if (!value.HasChildren())

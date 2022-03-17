@@ -28,16 +28,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// The service ticket.
         /// </summary>
-        public KerberosTicket Ticket { get; }
+        public KerberosTicket Ticket => ReplyToken.Ticket;
 
         /// <summary>
         /// The ticket's session key.
         /// </summary>
-        public KerberosAuthenticationKey SessionKey { get; }
+        public KerberosAuthenticationKey SessionKey => ReplyData.Key;
 
-        internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosAuthenticationKey session_key, KerberosAuthenticationKey sub_session_key)
+        /// <summary>
+        /// The reply token.
+        /// </summary>
+        public KerberosKDCReplyAuthenticationToken ReplyToken { get; }
+
+        /// <summary>
+        /// The decrypted reply data.
+        /// </summary>
+        public KerberosKDCReplyEncryptedPart ReplyData { get; }
+
+        internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
         {
-            // Decrypt the token.
+            ReplyToken = token;
+            ReplyData = enc_part;
         }
     }
 }
