@@ -81,6 +81,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
         }
+        /// <summary>
+        /// Returns whether the key is all zeros typically indicating it's invalid.
+        /// </summary>
+        public bool IsZeroKey => NtObjectUtils.EqualByteArray(Key, new byte[Key.Length]);
         #endregion
 
         #region Constructors

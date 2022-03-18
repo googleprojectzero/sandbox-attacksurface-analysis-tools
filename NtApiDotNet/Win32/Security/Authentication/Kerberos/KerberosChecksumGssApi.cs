@@ -98,13 +98,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="delegation_option_identifier">Delegation options identifier.</param>
         /// <param name="credentials">Kerberos credentials for delegation.</param>
         /// <param name="extensions">Additional extensions.</param>
-        public KerberosChecksumGSSApi(KerberosChecksumGSSApiFlags context_flags, byte[] channel_binding,
-            int delegation_option_identifier, KerberosCredential credentials, byte[] extensions) : this()
+        public KerberosChecksumGSSApi(KerberosChecksumGSSApiFlags context_flags, byte[] channel_binding = null,
+            int delegation_option_identifier = 0, KerberosCredential credentials = null, byte[] extensions = null) : this()
         {
             ChannelBinding = channel_binding ?? Array.Empty<byte>();
             ContextFlags = context_flags;
-            DelegationOptionIdentifier = delegation_option_identifier;
-            Credentials = credentials;
+            if (ContextFlags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
+            {
+                DelegationOptionIdentifier = delegation_option_identifier;
+                Credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
+            }
             Extensions = extensions;
         }
 

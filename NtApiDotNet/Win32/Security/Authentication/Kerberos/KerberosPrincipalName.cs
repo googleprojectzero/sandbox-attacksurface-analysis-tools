@@ -14,8 +14,10 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -54,6 +56,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public string GetPrincipal(string realm)
         {
             return $"{FullName}@{realm}";
+        }
+
+        /// <summary>
+        /// Overridden equals.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if the objects are equal.</returns>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is KerberosPrincipalName other))
+                return false;
+            if (other.NameType != NameType)
+                return false;
+            if (other.Names.Count != Names.Count)
+                return false;
+            for (int i = 0; i < other.Names.Count; ++i)
+            {
+                if (!other.Names[i].Equals(Names[i], StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Overridden ToHashCode.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return NameType.GetHashCode() ^ Names.Aggregate(0, (a, v) => a ^ v.GetHashCode());
         }
 
         /// <summary>

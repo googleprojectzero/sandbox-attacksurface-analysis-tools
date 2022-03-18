@@ -181,7 +181,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 builder.AppendLine($"Sequence Number : 0x{SequenceNumber:X}");
             }
 
-            if (AuthorizationData.Count > 0)
+            if (AuthorizationData?.Count > 0)
             {
                 foreach (var ad in AuthorizationData)
                 {

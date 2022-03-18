@@ -170,12 +170,8 @@ Specify a target name to query for a ticket. If it doesn't exist get a new one.
 Specify to only lookup the TargetName in the cache.
 .PARAMETER CredHandle
 Specify a credential handle to query the ticket from.
-.PARAMETER Request
-Specify a TGS request to directly query a KDC rather than through LSA.
-.PARAMETER Hostname
-Specify the hostname of the KDC. Defaults to the current logon server.
-.PARAMETER Port
-Specify the port of the KDC. Defaults to 88.
+.PARAMETER Cache
+Specify to get a ticket from a local cache.
 .INPUTS
 None
 .OUTPUTS
@@ -184,53 +180,52 @@ NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
 function Get-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="CurrentLuid")]
     Param(
+        [Parameter(Position = 0, ParameterSetName="FromTarget", Mandatory)]
+        [Parameter(Position = 0, ParameterSetName="FromTargetCredHandle", Mandatory)]
+        [Parameter(Position = 0, ParameterSetName="FromLocalCache", Mandatory)]
+        [string]$TargetName,
         [Parameter(Position = 0, ParameterSetName="FromLuid", Mandatory)]
-        [Parameter(ParameterSetName="FromTarget")]
+        [Parameter(Position = 1, ParameterSetName="FromTarget")]
         [NtApiDotNet.Luid]$LogonId = [NtApiDotNet.Luid]::new(0),
         [Parameter(Position = 0, ParameterSetName="FromLogonSession", ValueFromPipeline, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.LogonSession[]]$LogonSession,
-        [Parameter(Position = 0, ParameterSetName="FromTarget", Mandatory)]
-        [Parameter(Position = 0, ParameterSetName="FromTargetCredHandle", Mandatory)]
-        [string]$TargetName,
-        [Parameter(ParameterSetName="FromTarget")]
-        [Parameter(ParameterSetName="FromTargetCredHandle")]
-        [switch]$CacheOnly,
         [Parameter(ParameterSetName="FromTargetCredHandle", Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
-        [Parameter(ParameterSetName="FromTgsRequest", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]$Request,
-        [Parameter(ParameterSetName="FromTgsRequest")]
-        [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
-        [Parameter(ParameterSetName="FromTgsRequest")]
-        [int]$Port = 88
+        [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [Parameter(ParameterSetName="FromTarget")]
+        [Parameter(ParameterSetName="FromTargetCredHandle")]
+        [Parameter(ParameterSetName="FromLocalCache")]
+        [switch]$CacheOnly
     )
 
-    try {
-        switch($PSCmdlet.ParameterSetName) {
-            "CurrentLuid" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
-            }
-            "FromLuid" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
-            }
-            "FromLogonSession" {
-                foreach($l in $LogonSession) {
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+    PROCESS {
+        try {
+            switch($PSCmdlet.ParameterSetName) {
+                "CurrentLuid" {
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
+                }
+                "FromLuid" {
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
+                }
+                "FromLogonSession" {
+                    foreach($l in $LogonSession) {
+                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+                    }
+                }
+                "FromTarget" {
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $LogonId, $CacheOnly) | Write-Output
+                }
+                "FromTargetCredHandle" {
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $CredHandle, $CacheOnly) | Write-Output
+                }
+                "FromLocalCache" {
+                    $Cache.GetTicket($TargetName, $CacheOnly)
                 }
             }
-            "FromTarget" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $LogonId, $CacheOnly) | Write-Output
-            }
-            "FromTargetCredHandle" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $CredHandle, $CacheOnly) | Write-Output
-            }
-            "FromTgsRequest" {
-                $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
-                $client.RequestServiceTicket($Request).ToExternalTicket()
-            }
+        } catch {
+            Write-Error $_
         }
-    } catch {
-        Write-Error $_
     }
 }
 
@@ -356,14 +351,13 @@ function New-KerberosPrincipalName {
         [string[]]$NamePart
     )
 
-    PROCESS {
-        switch($PSCmdlet.ParameterSetName) {
-            "FromName" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $Name)
-            }
-            "FromNamePart" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $NamePart)
-            }
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $Name)
+        }
+        "FromNamePart" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $NamePart)
         }
     }
 }
@@ -489,28 +483,41 @@ function New-KerberosTicket {
 .SYNOPSIS
 Add a kerberos ticket to the cache.
 .DESCRIPTION
-This cmdlet adds an existing kerberos ticket to the local cache.
+This cmdlet adds an existing kerberos ticket to the system cache.
 .PARAMETER Credential
 Specify the ticket credential.
 .PARAMETER Key
 Specify the ticket credential key if needed.
 .PARAMETER LogonId
 Specify the logon ID for the ticket cache.
+.PARAMETER Cache
+Specify a local cache to add the ticket to.
 .INPUTS
 None
 .OUTPUTS
 None
 #>
 function Add-KerberosTicket {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromSystem")]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(ParameterSetName="FromSystem")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
-        [NtApiDotNet.Luid]$LogonId = 0
+        [Parameter(ParameterSetName="FromSystem")]
+        [NtApiDotNet.Luid]$LogonId = 0,
+        [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSystem" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
+        }
+        "FromLocalCache" {
+            $Cache.AddTicket($Credential)
+        }
+    }
 }
 
 <#
@@ -543,4 +550,58 @@ function Remove-KerberosTicket {
     )
 
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
+}
+
+<#
+.SYNOPSIS
+Create a new local Kerberos cache.
+.DESCRIPTION
+This cmdlet creates a new local Kerberos ticket cache. Defaults to populating from the current system cache.
+.PARAMETER CreateClient
+Create a client when initializing from the system cache.
+.PARAMETER LogonId
+Specify the logon ID for the system cache to use.
+.PARAMETER Hostname
+Specify the hostname of the KDC to use for the cache.
+.PARAMETER Port
+Specify the port number of the KDC to use for the cache.
+.PARAMETER Credential
+Specify the TGT credentials to use for the cache.
+.PARAMETER Realm
+Specify the realm to use for the cache.
+.PARAMETER AdditionalTicket
+Specify additional tickets to add to the new cache.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+#>
+function New-KerberosTicketCache {
+    [CmdletBinding(DefaultParameterSetName="FromSystem")]
+    Param(
+        [Parameter(ParameterSetName="FromSystem")]
+        [switch]$CreateClient,
+        [Parameter(ParameterSetName="FromSystem")]
+        [NtApiDotNet.Luid]$LogonId = 0,
+        [Parameter(ParameterSetName="FromTgt", Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(ParameterSetName="FromTgt")]
+        [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
+        [Parameter(ParameterSetName="FromTgt")]
+        [int]$Port = 88,
+        [Parameter(ParameterSetName="FromTgt")]
+        [string]$Realm = [NullString]::Value,
+        [Parameter(ParameterSetName="FromTgt")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket[]]$AdditionalTicket
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSystem" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromSystemCache($CreateClient, $LogonId)
+        }
+        "FromTgt" {
+            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::new($Credential, $client, $Realm, $AdditionalTicket)
+        }
+    }
 }

@@ -290,7 +290,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
-        /// Continue the authentication..
+        /// Continue the authentication.
         /// </summary>
         /// <param name="token">The server token to continue authentication.</param>
         /// <param name="additional_input">Additional input buffers for the continue, does not need to include the token.</param>

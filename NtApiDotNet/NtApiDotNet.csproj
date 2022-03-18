@@ -517,9 +517,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCClient.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCClientException.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosLocalTicketCache.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTGSReply.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTGSRequest.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosApOptionsFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataIfRelevant.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataApOptions.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataKerbLocal.cs" />

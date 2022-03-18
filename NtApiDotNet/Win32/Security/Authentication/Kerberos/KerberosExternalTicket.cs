@@ -88,14 +88,67 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             SessionKey = ticket_info.Key;
             TicketFlags = ticket_info.TicketFlags ?? KerberosTicketFlags.None;
             KeyExpirationTime = DateTime.MinValue;
-            StartTime = ticket_info.StartTime.ToDateTime();
-            EndTime = ticket_info.EndTime.ToDateTime();
-            RenewUntil = ticket_info.RenewTill.ToDateTime();
+            StartTime = ticket_info.StartTime?.ToDateTime() ?? DateTime.MinValue;
+            EndTime = ticket_info.EndTime?.ToDateTime() ?? DateTime.MinValue;
+            RenewUntil = ticket_info.RenewTill?.ToDateTime() ?? DateTime.MinValue;
             Ticket = credential.Tickets[0];
             Credential = credential;
         }
+
+        internal static bool TryParse(KERB_EXTERNAL_TICKET ticket, bool krb_cred, out KerberosExternalTicket result)
+        {
+            result = null;
+            try
+            {
+                var ret = new KerberosExternalTicket();
+                ret.ServiceName = ParseName(ticket.ServiceName);
+                ret.TargetName = ParseName(ticket.TargetName);
+                ret.ClientName = ParseName(ticket.ClientName);
+                ret.DomainName = ticket.DomainName.ToString();
+                ret.TargetDomainName = ticket.TargetDomainName.ToString();
+                ret.AltTargetDomainName = ticket.AltTargetDomainName.ToString();
+                ret.SessionKey = ParseKey(ret.ServiceName, ret.DomainName, ticket.SessionKey);
+                ret.TicketFlags = (KerberosTicketFlags)ticket.TicketFlags.SwapEndian();
+                ret.Flags = ticket.Flags;
+                ret.KeyExpirationTime = ticket.KeyExpirationTime.ToDateTime();
+                ret.StartTime = ticket.StartTime.ToDateTime();
+                ret.EndTime = ticket.EndTime.ToDateTime();
+                ret.RenewUntil = ticket.RenewUntil.ToDateTime();
+                ret.TimeSkew = new TimeSpan(ticket.TimeSkew.QuadPart);
+                byte[] ticket_data = ticket.ReadTicket();
+                DERValue[] values = DERParser.ParseData(ticket_data, 0);
+                if (values.Length != 1)
+                    return false;
+                if (krb_cred)
+                {
+                    if (!KerberosCredential.TryParse(ticket_data, values, out KerberosCredential cred))
+                        return false;
+                    ret.Credential = cred;
+                    ret.Ticket = cred.Tickets.FirstOrDefault();
+                }
+                else
+                {
+                    ret.Ticket = KerberosTicket.Parse(values[0]);
+                }
+                result = ret;
+                return true;
+            }
+            catch (InvalidDataException)
+            {
+                return false;
+            }
+        }
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The ticket as a string.</returns>
+        public override string ToString() => ServiceName.ToString();
+        #endregion
+
+        #region Public Properties
         /// <summary>
         /// Service name.
         /// </summary>
@@ -160,49 +213,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The ticket if a KRB_CRED was requested.
         /// </summary>
         public KerberosCredential Credential { get; private set; }
-
-        internal static bool TryParse(KERB_EXTERNAL_TICKET ticket, bool krb_cred, out KerberosExternalTicket result)
-        {
-            result = null;
-            try
-            {
-                var ret = new KerberosExternalTicket();
-                ret.ServiceName = ParseName(ticket.ServiceName);
-                ret.TargetName = ParseName(ticket.TargetName);
-                ret.ClientName = ParseName(ticket.ClientName);
-                ret.DomainName = ticket.DomainName.ToString();
-                ret.TargetDomainName = ticket.TargetDomainName.ToString();
-                ret.AltTargetDomainName = ticket.AltTargetDomainName.ToString();
-                ret.SessionKey = ParseKey(ret.ServiceName, ret.DomainName, ticket.SessionKey);
-                ret.TicketFlags = (KerberosTicketFlags)ticket.TicketFlags.SwapEndian();
-                ret.Flags = ticket.Flags;
-                ret.KeyExpirationTime = ticket.KeyExpirationTime.ToDateTime();
-                ret.StartTime = ticket.StartTime.ToDateTime();
-                ret.EndTime = ticket.EndTime.ToDateTime();
-                ret.RenewUntil = ticket.RenewUntil.ToDateTime();
-                ret.TimeSkew = new TimeSpan(ticket.TimeSkew.QuadPart);
-                byte[] ticket_data = ticket.ReadTicket();
-                DERValue[] values = DERParser.ParseData(ticket_data, 0);
-                if (values.Length != 1)
-                    return false;
-                if (krb_cred)
-                {
-                    if (!KerberosCredential.TryParse(ticket_data, values, out KerberosCredential cred))
-                        return false;
-                    ret.Credential = cred;
-                    ret.Ticket = cred.Tickets.FirstOrDefault();
-                }
-                else
-                {
-                    ret.Ticket = KerberosTicket.Parse(values[0]);
-                }
-                result = ret;
-                return true;
-            }
-            catch (InvalidDataException)
-            {
-                return false;
-            }
-        }
+        #endregion
     }
 }
