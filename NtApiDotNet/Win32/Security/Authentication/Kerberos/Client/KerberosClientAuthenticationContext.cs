@@ -17,9 +17,8 @@ using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -54,6 +53,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 ret |= KerberosChecksumGSSApiFlags.Delegate;
 
             return ret;
+        }
+
+        private bool UseSequenceNumber()
+        {
+            return _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Replay) || _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Sequence);
+        }
+
+        private const int CHECKSUM_HEADER_SIZE = 16;
+
+        private byte[] GenerateChecksumHeader()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(new byte[] {
+                0x04, 0x04, // TOK_ID
+                0x00,       // Flags
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF // Filler
+            });
+
+            if (UseSequenceNumber())
+            {
+                writer.Write(_send_sequence_number++.SwapEndian());
+            }
+            else
+            {
+                writer.Write(0L);
+            }
+            return stm.ToArray();
         }
 
         #endregion
@@ -101,7 +128,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public string PackageName => AuthenticationPackage.KERBEROS_NAME;
 
-        public int MaxSignatureSize => throw new NotImplementedException();
+        public int MaxSignatureSize => CHECKSUM_HEADER_SIZE + _subkey.ChecksumSize;
 
         public int SecurityTrailerSize => throw new NotImplementedException();
 
@@ -177,22 +204,74 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public byte[] MakeSignature(byte[] message, int sequence_no)
         {
-            throw new NotImplementedException();
+            return MakeSignature(new SecurityBuffer[]
+                { new SecurityBufferInOut(SecurityBufferType.Data,
+                    message) }, sequence_no);
         }
 
         public byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            throw new NotImplementedException();
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] header = GenerateChecksumHeader();
+            writer.Write(header);
+
+
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.InitiatorSign);
+            byte[] ret = new byte[header.Length + hash.Length];
+            Buffer.BlockCopy(header, 0, ret, 0, header.Length);
+            Buffer.BlockCopy(hash, 0, ret, header.Length, hash.Length);
+            return ret;
         }
 
         public bool VerifySignature(byte[] message, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            return VerifySignature(new SecurityBuffer[]
+                { new SecurityBufferInOut(SecurityBufferType.Data,
+                    message) }, signature, sequence_no);
         }
 
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            if (signature.Length < MaxSignatureSize)
+            {
+                throw new ArgumentException("Signature token is too small.");
+            }
+
+            if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFFFF010404U)
+            {
+                return false;
+            }
+
+            if (UseSequenceNumber())
+            {
+                if (BitConverter.ToInt64(signature, 8) != _recv_sequence_number++.SwapEndian())
+                {
+                    return false;
+                }
+            }
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+            writer.Write(signature, 0, CHECKSUM_HEADER_SIZE);
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
+            byte[] verify_hash = new byte[_subkey.ChecksumSize];
+            Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);
+            return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         #endregion
