@@ -103,6 +103,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 KerberosBuilderUtils.GetRandomNonce(), null);
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,
                 authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq)));
+            if (request.S4UUserName != null && !string.IsNullOrEmpty(request.S4URealm))
+            {
+                tgs_req.AddPreAuthenticationDataForUser(request.S4UUserName, request.S4URealm, request.SessionKey);
+            }
             if (request.PACOptionsFlags != KerberosPreAuthenticationPACOptionsFlags.None)
             {
                 tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationPACOptions(request.PACOptionsFlags));
@@ -118,6 +122,5 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return new KerberosTGSReply(reply, reply_part);
         }
         #endregion
-
     }
 }

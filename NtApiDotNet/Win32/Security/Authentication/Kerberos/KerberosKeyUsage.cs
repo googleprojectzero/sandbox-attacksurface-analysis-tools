@@ -35,7 +35,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         KrbPriv = 13,
         KrbCred = 14,
         KrbSafe = 15,
-        S4UUserChecksum = 17,
+        KerbNonKerbSalt = 16,
+        KerbNonKerbChksumSalt = 17,
         S4UX509Checksum = 26,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }

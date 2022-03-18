@@ -168,6 +168,14 @@ Specify a logon session to query for tickets.
 Specify a target name to query for a ticket. If it doesn't exist get a new one.
 .PARAMETER CacheOnly
 Specify to only lookup the TargetName in the cache.
+.PARAMETER CredHandle
+Specify a credential handle to query the ticket from.
+.PARAMETER Request
+Specify a TGS request to directly query a KDC rather than through LSA.
+.PARAMETER Hostname
+Specify the hostname of the KDC. Defaults to the current logon server.
+.PARAMETER Port
+Specify the port of the KDC. Defaults to 88.
 .INPUTS
 None
 .OUTPUTS
@@ -188,10 +196,16 @@ function Get-KerberosTicket {
         [Parameter(ParameterSetName="FromTargetCredHandle")]
         [switch]$CacheOnly,
         [Parameter(ParameterSetName="FromTargetCredHandle", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle
+        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [Parameter(ParameterSetName="FromTgsRequest", Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]$Request,
+        [Parameter(ParameterSetName="FromTgsRequest")]
+        [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
+        [Parameter(ParameterSetName="FromTgsRequest")]
+        [int]$Port = 88
     )
 
-    PROCESS {
+    try {
         switch($PSCmdlet.ParameterSetName) {
             "CurrentLuid" {
                 [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
@@ -210,7 +224,13 @@ function Get-KerberosTicket {
             "FromTargetCredHandle" {
                 [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $CredHandle, $CacheOnly) | Write-Output
             }
+            "FromTgsRequest" {
+                $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+                $client.RequestServiceTicket($Request).ToExternalTicket()
+            }
         }
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -290,7 +310,7 @@ function New-KerberosChecksum {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(Mandatory, ParameterSetName="FromKey")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeyUsage]$KeyUsage,
-         [Parameter(Mandatory, ParameterSetName="FromKey")]
+        [Parameter(Mandatory, ParameterSetName="FromKey")]
         [byte[]]$Data
     )
 
@@ -385,13 +405,11 @@ function New-KerberosAuthenticator {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData
     )
 
-    PROCESS {
-        if ($ClientTime -eq [datetime]::MinValue) {
-            $ClientTime = [datetime]::Now
-        }
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator]::Create($ClientRealm, $ClientName, $ClientTime, `
-                $ClientUSec, $Checksum, $SubKey, $SequenceNumber, $AuthorizationData)
+    if ($ClientTime -eq [datetime]::MinValue) {
+        $ClientTime = [datetime]::Now
     }
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator]::Create($ClientRealm, $ClientName, $ClientTime, `
+            $ClientUSec, $Checksum, $SubKey, $SequenceNumber, $AuthorizationData)
 }
 
 <#
@@ -433,10 +451,8 @@ function New-KerberosAPRequest {
         [switch]$RawToken
     )
 
-    PROCESS {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken]::Create($Ticket, $Authenticator, $Options, `
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken]::Create($Ticket, $Authenticator, $Options, `
                 $AuthenticatorKey, $AuthenticatorKeyVersion, $TicketKey, $TicketKeyVersion, $RawToken)
-    }
 }
 
 <#
@@ -466,9 +482,7 @@ function New-KerberosTicket {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$EncryptedData
     )
 
-    PROCESS {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $ServerName, $EncryptedData)
-    }
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $ServerName, $EncryptedData)
 }
 
 <#
@@ -496,9 +510,7 @@ function Add-KerberosTicket {
         [NtApiDotNet.Luid]$LogonId = 0
     )
 
-    PROCESS {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
-    }
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
 }
 
 <#
@@ -530,7 +542,5 @@ function Remove-KerberosTicket {
         [switch]$All
     )
 
-    PROCESS {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
-    }
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
 }

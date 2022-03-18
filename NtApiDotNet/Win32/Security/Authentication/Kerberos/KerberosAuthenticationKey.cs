@@ -312,6 +312,38 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Compute an MD5 HMAC hash for a set of data.
+        /// </summary>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="offset">Offset into the data to hash.</param>
+        /// <param name="length">The length of the data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The computed hash.</returns>
+        public byte[] ComputeMD5HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+        {
+            byte[] sign_key = new HMACMD5(_key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((int)key_usage);
+            writer.Write(data, offset, length);
+
+            byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
+            return new HMACMD5(sign_key).ComputeHash(tmp);
+        }
+
+        /// <summary>
+        /// Compute an MD5 HMAC hash for a set of data.
+        /// </summary>
+        /// <param name="data">The data to hash.</param>
+        /// <param name="key_usage">The key usage.</param>
+        /// <returns>The computed hash.</returns>
+        public byte[] ComputeMD5HMACHash(byte[] data, KerberosKeyUsage key_usage)
+        {
+            return ComputeMD5HMACHash(data, 0, data.Length, key_usage);
+        }
+
+        /// <summary>
         /// Verify a hash.
         /// </summary>
         /// <param name="hash">The hash to verify.</param>
@@ -400,19 +432,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         #region Private Members
         private readonly byte[] _key;
-
-        private byte[] ComputeMD5HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
-        {
-            byte[] sign_key = new HMACMD5(_key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((int)key_usage);
-            writer.Write(data, offset, length);
-
-            byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
-            return new HMACMD5(sign_key).ComputeHash(tmp);
-        }
 
         private byte[] ComputeSHA1HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {

@@ -25,6 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosExternalTicket
     {
+        #region Private Members
         private static KerberosPrincipalName ParseName(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
@@ -47,6 +48,53 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Marshal.Copy(key.Value, key_data, 0, key.Length);
             return new KerberosAuthenticationKey(key.KeyType, key_data, server_name.NameType, realm, server_name.Names, DateTime.Now, 0);
         }
+
+        private KerberosExternalTicket()
+        {
+        }
+        #endregion
+
+        #region Internal Members
+        internal KerberosExternalTicket(KerberosCredential credential)
+        {
+            if (credential is null)
+            {
+                throw new ArgumentNullException(nameof(credential));
+            }
+
+            if (credential.Tickets.Count != 1)
+            {
+                throw new ArgumentException("Credential must only have one ticket.", nameof(credential));
+            }
+
+            if (!(credential.EncryptedPart is KerberosCredentialEncryptedPart enc_part))
+            {
+                throw new ArgumentException("Credential must be decrypted.", nameof(credential));
+            }
+
+            if (enc_part.TicketInfo.Count != 1)
+            {
+                throw new ArgumentException("Credential must only have one ticket information.", nameof(enc_part.TicketInfo));
+            }
+
+            var ticket_info = enc_part.TicketInfo[0];
+
+            ServiceName = ticket_info.ServerName;
+            TargetName = ticket_info.ServerName;
+            ClientName = ticket_info.ClientName;
+            DomainName = ticket_info.Realm;
+            TargetDomainName = ticket_info.ClientRealm;
+            AltTargetDomainName = TargetDomainName;
+            SessionKey = ticket_info.Key;
+            TicketFlags = ticket_info.TicketFlags ?? KerberosTicketFlags.None;
+            KeyExpirationTime = DateTime.MinValue;
+            StartTime = ticket_info.StartTime.ToDateTime();
+            EndTime = ticket_info.EndTime.ToDateTime();
+            RenewUntil = ticket_info.RenewTill.ToDateTime();
+            Ticket = credential.Tickets[0];
+            Credential = credential;
+        }
+        #endregion
 
         /// <summary>
         /// Service name.

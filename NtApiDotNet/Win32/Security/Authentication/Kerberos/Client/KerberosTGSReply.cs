@@ -55,6 +55,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 KerberosCredentialEncryptedPart.Create(cred_info, ReplyData.Nonce, KerberosTime.Now, 0));
         }
 
+        /// <summary>
+        /// Convert the TGS reply to an external ticket.
+        /// </summary>
+        /// <returns>The kerberos external ticket.</returns>
+        public KerberosExternalTicket ToExternalTicket()
+        {
+            return new KerberosExternalTicket(ToCredential());
+        }
+
         internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
         {
             ReplyToken = token;

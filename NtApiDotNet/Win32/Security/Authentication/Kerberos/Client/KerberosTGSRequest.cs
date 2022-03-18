@@ -27,12 +27,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     {
         #region Public Properties
         /// <summary>
-        /// The kerberos TGT for the the request.
+        /// The kerberos ticket for the the request.
         /// </summary>
         public KerberosTicket Ticket { get; set; }
 
         /// <summary>
-        /// The kerberos session key for the TGT.
+        /// The kerberos session key for the ticket.
         /// </summary>
         public KerberosAuthenticationKey SessionKey { get; set; }
 
@@ -85,6 +85,70 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// The PA-PAC-OPTIONS pre-authentication flags.
         /// </summary>
         public KerberosPreAuthenticationPACOptionsFlags PACOptionsFlags { get; set; }
+
+        /// <summary>
+        /// The name of the user for S4U.
+        /// </summary>
+        public KerberosPrincipalName S4UUserName { get; set; }
+
+        /// <summary>
+        /// The realm for S4U.
+        /// </summary>
+        public string S4URealm { get; set; }
+
+        /// <summary>
+        /// Get or set the forwardable ticket option.
+        /// </summary>
+        public bool Forwardable
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Forwardable);
+            set => SetKDCOption(KerberosKDCOptions.Forwardable, value);
+        }
+
+        /// <summary>
+        /// Get or set the forwarded ticket option.
+        /// </summary>
+        public bool Forwarded
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Forwarded);
+            set => SetKDCOption(KerberosKDCOptions.Forwarded, value);
+        }
+
+        /// <summary>
+        /// Get or set the renew ticket option.
+        /// </summary>
+        public bool Renew
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Renew);
+            set => SetKDCOption(KerberosKDCOptions.Renew, value);
+        }
+
+        /// <summary>
+        /// Get or set the renewable ticket option.
+        /// </summary>
+        public bool Renewable
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Renewable);
+            set => SetKDCOption(KerberosKDCOptions.Renewable, value);
+        }
+
+        /// <summary>
+        /// Get or set the ENC-TKT-IN-SKEY ticket option.
+        /// </summary>
+        public bool EncryptTicketInSessionKey
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.EncTicketInSessionKey);
+            set => SetKDCOption(KerberosKDCOptions.EncTicketInSessionKey, value);
+        }
+
+        /// <summary>
+        /// Get or set the CNAME-IN-ADDL-TKT ticket option. Better known as constrained delegation.
+        /// </summary>
+        public bool ClientNameInAdditionalTicket
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.ClientNameInAdditionalTicket);
+            set => SetKDCOption(KerberosKDCOptions.ClientNameInAdditionalTicket, value);
+        }
 
         #endregion
 
@@ -152,32 +216,91 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Create a request from a kerberos credential.
         /// </summary>
         /// <param name="credential">The kerberos TGT for the request.</param>
-        public static KerberosTGSRequest CreateFromCredential(KerberosCredential credential)
+        /// <param name="server_name">The server name for the request.</param>
+        /// <param name="realm">The server realm for the request.</param>
+        /// <returns>The new request object.</returns>
+        public static KerberosTGSRequest Create(KerberosCredential credential, KerberosPrincipalName server_name, string realm)
         {
-            if (credential is null)
+
+            if (server_name is null)
             {
-                throw new ArgumentNullException(nameof(credential));
+                throw new ArgumentNullException(nameof(server_name));
             }
 
-            if (credential.Tickets.Count != 1)
+            if (realm is null)
             {
-                throw new ArgumentException("Credential must only have one ticket.", nameof(credential));
+                throw new ArgumentNullException(nameof(realm));
             }
 
-            if (!(credential.EncryptedPart is KerberosCredentialEncryptedPart enc_part))
-            {
-                throw new ArgumentException("Credential must be decrypted.", nameof(credential));
-            }
-
-            if (enc_part.TicketInfo.Count != 1)
-            {
-                throw new ArgumentException("Credential must only have one ticket information.", nameof(enc_part.TicketInfo));
-            }
-
-            var ticket_info = enc_part.TicketInfo[0];
-
-            return new KerberosTGSRequest(credential.Tickets[0], ticket_info.Key, ticket_info.ClientName, ticket_info.ClientRealm);
+            var ret = Create(credential);
+            ret.ServerName = server_name;
+            ret.Realm = realm;
+            return ret;
         }
+
+        /// <summary>
+        /// Create a request from a kerberos credential for renewal.
+        /// </summary>
+        /// <param name="credential">The kerberos credentials for the request.</param>
+        /// <returns>The new request object.</returns>
+        public static KerberosTGSRequest CreateForRenewal(KerberosCredential credential)
+        {
+            var ret = Create(credential);
+            ret.ServerName = ret.Ticket.ServerName;
+            ret.Realm = ret.Ticket.Realm;
+            ret.Renew = true;
+            return ret;
+        }
+
+        /// <summary>
+        /// Create a request from a kerberos credential for S4U2Self.
+        /// </summary>
+        /// <param name="credential">The kerberos TGT for the request.</param>
+        /// <param name="username">The name of the user for S4U.</param>
+        /// <param name="realm">The realm for S4U.</param>
+        public static KerberosTGSRequest CreateForS4U2Self(KerberosCredential credential, string username, string realm)
+        {
+            if (username is null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            if (realm is null)
+            {
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            var ret = Create(credential);
+            ret.EncryptTicketInSessionKey = true;
+            ret.AddAdditionalTicket(ret.Ticket);
+            ret.ServerName = ret.ClientName;
+            ret.Realm = ret.ClientRealm;
+            ret.S4UUserName = new KerberosPrincipalName(KerberosNameType.ENTERPRISE_PRINCIPAL, username);
+            ret.S4URealm = realm;
+            return ret;
+        }
+
+        /// <summary>
+        /// Create a request from a kerberos credential for S4U2Proxy.
+        /// </summary>
+        /// <param name="credential">The kerberos TGT for the request.</param>
+        /// <param name="server_name">The server name for the request.</param>
+        /// <param name="realm">The server realm for the request.</param>
+        /// <param name="user_ticket">The user ticket for the caller's service for the user to delegate.</param>
+        public static KerberosTGSRequest CreateForS4U2Proxy(KerberosCredential credential, KerberosPrincipalName server_name, string realm, KerberosTicket user_ticket)
+        {
+            if (user_ticket is null)
+            {
+                throw new ArgumentNullException(nameof(user_ticket));
+            }
+
+            var ret = Create(credential, server_name, realm);
+            ret.ClientNameInAdditionalTicket = true;
+            ret.PACOptionsFlags = KerberosPreAuthenticationPACOptionsFlags.ResourceBasedConstrainedDelegation;
+            ret.AddAdditionalTicket(user_ticket);
+            return ret;
+        }
+
         #endregion
 
         #region Internal Members
@@ -253,6 +376,48 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 AdditionalTickets = AdditionalTickets?.ToList(),
                 AuthorizationData = GetAuthorizationData(),
             };
+        }
+
+        #endregion
+
+        #region Private Members
+        void SetKDCOption(KerberosKDCOptions opt, bool value)
+        {
+            if (value)
+            {
+                KDCOptions |= opt;
+            }
+            else
+            {
+                KDCOptions &= ~opt;
+            }
+        }
+
+        private static KerberosTGSRequest Create(KerberosCredential credential)
+        {
+            if (credential is null)
+            {
+                throw new ArgumentNullException(nameof(credential));
+            }
+
+            if (credential.Tickets.Count != 1)
+            {
+                throw new ArgumentException("Credential must only have one ticket.", nameof(credential));
+            }
+
+            if (!(credential.EncryptedPart is KerberosCredentialEncryptedPart enc_part))
+            {
+                throw new ArgumentException("Credential must be decrypted.", nameof(credential));
+            }
+
+            if (enc_part.TicketInfo.Count != 1)
+            {
+                throw new ArgumentException("Credential must only have one ticket information.", nameof(enc_part.TicketInfo));
+            }
+
+            var ticket_info = enc_part.TicketInfo[0];
+
+            return new KerberosTGSRequest(credential.Tickets[0], ticket_info.Key, ticket_info.ClientName, ticket_info.ClientRealm);
         }
 
         #endregion

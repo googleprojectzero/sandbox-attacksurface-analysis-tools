@@ -535,6 +535,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosKDCRequestAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosLastRequest.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationData.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataForUser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataTGSRequest.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataUnknown.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationPACOptions.cs" />

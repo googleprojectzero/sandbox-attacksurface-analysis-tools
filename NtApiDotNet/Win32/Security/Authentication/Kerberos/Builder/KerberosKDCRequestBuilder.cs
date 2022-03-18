@@ -13,7 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 {
@@ -89,6 +92,64 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 PreAuthenticationData = new List<KerberosPreAuthenticationData>();
             PreAuthenticationData.Add(data);
         }
+
+
+        /// <summary>
+        /// Add an additional ticket to the request.
+        /// </summary>
+        /// <param name="ticket">The ticket to add.</param>
+        public void AddAdditionalTicket(KerberosTicket ticket)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            if (AdditionalTickets == null)
+                AdditionalTickets = new List<KerberosTicket>();
+            AdditionalTickets.Add(ticket);
+        }
+
+        /// <summary>
+        /// Add a PA-FOR-USER structure and generate checksum.
+        /// </summary>
+        /// <param name="username">The user's principal name.</param>
+        /// <param name="userrealm">The user's realm.</param>
+        /// <param name="key">The key to generate the checksum.</param>
+        public void AddPreAuthenticationDataForUser(KerberosPrincipalName username, 
+            string userrealm, KerberosAuthenticationKey key)
+        {
+            if (username is null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            if (userrealm is null)
+            {
+                throw new ArgumentNullException(nameof(userrealm));
+            }
+
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm, Encoding.UTF8);
+            writer.Write((int)username.NameType);
+            foreach (var part in username.Names)
+            {
+                writer.Write(part.ToCharArray());
+            }
+            writer.Write(userrealm.ToCharArray());
+            writer.Write("Kerberos".ToCharArray());
+
+            KerberosChecksum checksum = new KerberosChecksum(KerberosChecksumType.HMAC_MD5,
+                key.ComputeMD5HMACHash(stm.ToArray(), KerberosKeyUsage.KerbNonKerbChksumSalt));
+
+            AddPreAuthenticationData(new KerberosPreAuthenticationDataForUser(username, userrealm, checksum, "Kerberos"));
+        }
+
 
         /// <summary>
         /// Create the KDC-REQ authentication token.
