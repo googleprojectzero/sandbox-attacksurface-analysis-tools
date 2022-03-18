@@ -128,7 +128,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             int sequence_no)
         {
             return MakeSignature(context, flags, new SecurityBuffer[]
-                { new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
+                { new SecurityBufferInOut(SecurityBufferType.Data,
                     message) }, sequence_no);
         }
 
@@ -155,7 +155,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             int sequence_no)
         {
             return VerifySignature(context, new SecurityBuffer[]
-                { new SecurityBufferInOut(SecurityBufferType.Data | SecurityBufferType.ReadOnly,
+                { new SecurityBufferInOut(SecurityBufferType.Data,
                     message) }, signature, sequence_no);
         }
 
