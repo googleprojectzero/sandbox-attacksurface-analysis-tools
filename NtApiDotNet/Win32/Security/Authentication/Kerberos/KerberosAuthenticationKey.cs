@@ -435,7 +435,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private byte[] ComputeSHA1HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
-            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
+            byte[] derive_mac_key = DeriveTempKey(key_usage, SignatureKey);
             return new HMACSHA1(DeriveAesKey(_key, derive_mac_key)).ComputeHash(data, 
                 offset, length).Take(AES_CHECKSUM_SIZE).ToArray();
         }
@@ -571,6 +571,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private const byte EncryptionKey = 0xAA;
         private const byte VerificationKey = 0x55;
+        private const byte SignatureKey = 0x99;
 
         private static byte[] DeriveAesKey(string password, string salt, int iterations, int key_size)
         {

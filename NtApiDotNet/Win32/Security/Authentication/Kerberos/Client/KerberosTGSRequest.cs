@@ -133,6 +133,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
+        /// Get or set the renewableok ticket option.
+        /// </summary>
+        public bool RenewableOK
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.RenewableOk);
+            set => SetKDCOption(KerberosKDCOptions.RenewableOk, value);
+        }
+
+        /// <summary>
         /// Get or set the ENC-TKT-IN-SKEY ticket option.
         /// </summary>
         public bool EncryptTicketInSessionKey
@@ -148,6 +157,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             get => KDCOptions.HasFlagSet(KerberosKDCOptions.ClientNameInAdditionalTicket);
             set => SetKDCOption(KerberosKDCOptions.ClientNameInAdditionalTicket, value);
+        }
+
+        /// <summary>
+        /// Get or set the canonicalize ticket option.
+        /// </summary>
+        public bool Canonicalize
+        {
+            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Canonicalize);
+            set => SetKDCOption(KerberosKDCOptions.Canonicalize, value);
         }
 
         #endregion
