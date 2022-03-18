@@ -62,6 +62,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Key Version Number (KVNO).
         /// </summary>
         public uint Version { get; }
+        /// <summary>
+        /// Size of the checksum.
+        /// </summary>
+        public int ChecksumSize
+        {
+            get
+            {
+                switch (KeyEncryption)
+                {
+                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                        return MD5_CHECKSUM_SIZE;
+                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                        return AES_CHECKSUM_SIZE;
+                    default:
+                        throw new InvalidDataException("Unsupported encryption algorithm.");
+                }
+            }
+        }
         #endregion
 
         #region Constructors
