@@ -44,12 +44,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 ret |= KerberosChecksumGSSApiFlags.ExtendedError;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.MutualAuth))
                 ret |= KerberosChecksumGSSApiFlags.Mutual;
-            if (request_attributes.HasFlagSet(InitializeContextReqFlags.ReplayDetect)
-                || request_attributes.HasFlagSet(InitializeContextReqFlags.SequenceDetect)
-                || request_attributes.HasFlagSet(InitializeContextReqFlags.Integrity))
-            {
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.ReplayDetect))
+                ret |= KerberosChecksumGSSApiFlags.Replay | KerberosChecksumGSSApiFlags.Integrity;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.SequenceDetect))
+                ret |= KerberosChecksumGSSApiFlags.Sequence | KerberosChecksumGSSApiFlags.Integrity;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.Integrity))
                 ret |= KerberosChecksumGSSApiFlags.Integrity;
-            }
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.Delegate))
                 ret |= KerberosChecksumGSSApiFlags.Delegate;
 

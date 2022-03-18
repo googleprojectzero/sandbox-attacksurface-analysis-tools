@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
@@ -122,6 +123,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Authentication capabilities.
         /// </summary>
         public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
+
+        /// <summary>
+        /// Specify a 
+        /// </summary>
+        public KerberosLocalTicketCache TicketCache { get; set; }
         #endregion
 
         #region Constructors
@@ -211,6 +217,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     break;
                 default:
                     throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
+            }
+
+            if (_auth_type == RpcAuthenticationType.Kerberos && TicketCache != null)
+            {
+                return TicketCache.CreateClientContext(ServicePrincipalName, GetContextRequestFlags());
             }
 
             return new ClientAuthenticationContext(CredentialHandle.Create(GetAuthPackageName(),
