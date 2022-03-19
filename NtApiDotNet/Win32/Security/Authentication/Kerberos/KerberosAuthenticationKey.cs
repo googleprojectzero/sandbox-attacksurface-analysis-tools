@@ -82,6 +82,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
         /// <summary>
+        /// Size of any additional encryption artifacts.
+        /// </summary>
+        public int AdditionalEncryptionSize
+        {
+            get
+            {
+                switch (KeyEncryption)
+                {
+                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                        return MD5_CHECKSUM_SIZE + RC4_NONCE_LENGTH;
+                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                        return AES_CHECKSUM_SIZE + AES_CONFOUNDER_SIZE;
+                    default:
+                        throw new InvalidDataException("Unsupported encryption algorithm.");
+                }
+            }
+        }
+        /// <summary>
         /// Returns whether the key is all zeros typically indicating it's invalid.
         /// </summary>
         public bool IsZeroKey => NtObjectUtils.EqualByteArray(Key, new byte[Key.Length]);

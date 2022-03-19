@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// <summary>
     /// A security buffer which can only be an output.
     /// </summary>
-    public sealed class SecurityBufferOut : SecurityBuffer
+    public sealed class SecurityBufferOut : SecurityBuffer, ISecurityBufferOut
     {
         private byte[] _array;
         private int _size;
@@ -56,6 +56,15 @@ namespace NtApiDotNet.Win32.Security.Buffers
             _array = buffer.ToArray();
             _size = _array.Length;
             _type = buffer.BufferType;
+        }
+
+        int ISecurityBufferOut.Size => _size;
+
+        void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
+        {
+            _array = data;
+            _size = data.Length;
+            _type = type;
         }
     }
 }

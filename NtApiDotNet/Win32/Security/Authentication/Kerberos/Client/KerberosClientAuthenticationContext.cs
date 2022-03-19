@@ -38,7 +38,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             KerberosChecksumGSSApiFlags ret = KerberosChecksumGSSApiFlags.None;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.Confidentiality))
-                ret |= KerberosChecksumGSSApiFlags.Confidentiality;
+                ret |= KerberosChecksumGSSApiFlags.Confidentiality | KerberosChecksumGSSApiFlags.Integrity 
+                    | KerberosChecksumGSSApiFlags.Replay | KerberosChecksumGSSApiFlags.Sequence;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.ExtendedError))
                 ret |= KerberosChecksumGSSApiFlags.ExtendedError;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.MutualAuth))
@@ -60,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Replay) || _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Sequence);
         }
 
-        private const int CHECKSUM_HEADER_SIZE = 16;
+        private const int SECURITY_HEADER_SIZE = 16;
 
         private byte[] GenerateChecksumHeader()
         {
@@ -83,6 +84,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return stm.ToArray();
         }
 
+        private byte[] GenerateWrapHeader()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(new byte[] {
+                0x05, 0x04, // TOK_ID
+                0x02,       // Flags
+                0xFF,       // Filler
+                0, 0,       // Extra Count
+                0, 0        // Right rotation count
+            });
+
+            if (UseSequenceNumber())
+            {
+                writer.Write(_send_sequence_number++.SwapEndian());
+            }
+            else
+            {
+                writer.Write(0L);
+            }
+            return stm.ToArray();
+        }
         #endregion
 
         #region Constructors
@@ -128,9 +151,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public string PackageName => AuthenticationPackage.KERBEROS_NAME;
 
-        public int MaxSignatureSize => CHECKSUM_HEADER_SIZE + _subkey.ChecksumSize;
+        public int MaxSignatureSize => SECURITY_HEADER_SIZE + _subkey.ChecksumSize;
 
-        public int SecurityTrailerSize => throw new NotImplementedException();
+        public int SecurityTrailerSize => (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
 
         public void Continue(AuthenticationToken token)
         {
@@ -179,17 +202,69 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public EncryptedMessage EncryptMessage(byte[] message, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message);
+            var signature = EncryptMessage(new[] { buffer }, quality_of_protection, sequence_no);
+            return new EncryptedMessage(buffer.ToArray(), signature);
         }
 
         public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, SecurityTrailerSize);
+            sig_buffers.Add(out_sig_buffer);
+            EncryptMessageNoSignature(sig_buffers, quality_of_protection, sequence_no);
+            return out_sig_buffer.ToArray();
         }
 
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            // The message buffer gets the last X bytes of the encrypted data. The rest goes into the signature.
+            // To make it simpler you could rotate the bytes, but that isn't really necessary for us as we're not putting that much effort in.
+            List<ISecurityBufferOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferOut token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token && !b.ReadOnly)
+                                            .OfType<ISecurityBufferOut>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in data_buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+            byte[] header = GenerateWrapHeader();
+            writer.Write(header);
+
+            byte[] cipher_text = _subkey.Encrypt(stm.ToArray(), KerberosKeyUsage.InitiatorSeal);
+            stm = new MemoryStream(cipher_text);
+            BinaryReader reader = new BinaryReader(stm);
+            byte[] confounder = reader.ReadAllBytes(16);
+            foreach (var buffer in data_buffers)
+            {
+                byte[] data = reader.ReadAllBytes(buffer.Size);
+                buffer.Update(SecurityBufferType.Data, data);
+            }
+
+            stm = new MemoryStream();
+            writer = new BinaryWriter(stm);
+            header[7] = 0x1C;
+            writer.Write(header);
+            writer.Write(reader.ReadToEnd());
+            writer.Write(confounder);
+            token_buffer.Update(SecurityBufferType.Token, stm.ToArray());
         }
 
         public ExportedSecurityContext Export()
@@ -267,7 +342,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             {
                 writer.Write(buffer.ToArray());
             }
-            writer.Write(signature, 0, CHECKSUM_HEADER_SIZE);
+            writer.Write(signature, 0, SECURITY_HEADER_SIZE);
             byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
             byte[] verify_hash = new byte[_subkey.ChecksumSize];
             Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);

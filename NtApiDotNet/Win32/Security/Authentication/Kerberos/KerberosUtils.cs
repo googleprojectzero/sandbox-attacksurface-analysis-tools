@@ -143,6 +143,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return Encoding.UTF8.GetString(ReadOctets(reader));
         }
 
+        internal static ushort SwapEndian(this ushort value)
+        {
+            return BitConverter.ToUInt16(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
+        }
+
         internal static int SwapEndian(this int value)
         {
             return BitConverter.ToInt32(BitConverter.GetBytes(value).Reverse().ToArray(), 0);

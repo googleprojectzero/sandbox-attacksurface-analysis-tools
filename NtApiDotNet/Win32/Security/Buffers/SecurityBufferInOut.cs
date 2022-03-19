@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     /// <remarks>If you create with the ReadOnly or ReadOnlyWithCheck types then the 
     /// array will not be updated.</remarks>
-    public sealed class SecurityBufferInOut : SecurityBuffer
+    public sealed class SecurityBufferInOut : SecurityBuffer, ISecurityBufferOut
     {
         private ArraySegment<byte> _array;
 
@@ -71,6 +71,18 @@ namespace NtApiDotNet.Win32.Security.Buffers
             }
             _array = new ArraySegment<byte>(buffer.ToArray());
             _type = buffer.BufferType;
+        }
+
+        int ISecurityBufferOut.Size => _array.Count;
+
+        void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
+        {
+            if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
+            {
+                return;
+            }
+            _array = new ArraySegment<byte>(data);
+            _type = type;
         }
     }
 }
