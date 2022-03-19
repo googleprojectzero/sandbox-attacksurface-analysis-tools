@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         private const int SECURITY_HEADER_SIZE = 16;
 
-        private byte[] GenerateChecksumHeader()
+        private byte[] GenerateAESChecksumHeader()
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
@@ -105,6 +105,158 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 writer.Write(0L);
             }
             return stm.ToArray();
+        }
+
+        private void EncryptMessageNoSignatureAES(IEnumerable<SecurityBuffer> messages)
+        {
+            // The message buffer gets the last X bytes of the encrypted data. The rest goes into the signature.
+            // To make it simpler you could rotate the bytes, but that isn't really necessary for us as we're not putting that much effort in.
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferOut token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token && !b.ReadOnly)
+                                            .OfType<ISecurityBufferOut>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in data_buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+            byte[] header = GenerateWrapHeader();
+            writer.Write(header);
+
+            byte[] cipher_text = _subkey.Encrypt(stm.ToArray(), KerberosKeyUsage.InitiatorSeal);
+            stm = new MemoryStream(cipher_text);
+            BinaryReader reader = new BinaryReader(stm);
+            byte[] confounder = reader.ReadAllBytes(16);
+            foreach (var buffer in data_buffers)
+            {
+                byte[] data = reader.ReadAllBytes(buffer.Size);
+                buffer.Update(SecurityBufferType.Data, data);
+            }
+
+            stm = new MemoryStream();
+            writer = new BinaryWriter(stm);
+            header[7] = 0x1C;
+            writer.Write(header);
+            writer.Write(reader.ReadToEnd());
+            writer.Write(confounder);
+            token_buffer.Update(SecurityBufferType.Token, stm.ToArray());
+        }
+
+        private void DecryptMessageNoSignatureAES(IEnumerable<SecurityBuffer> messages)
+        {
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferIn token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token)
+                                            .OfType<ISecurityBufferIn>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            byte[] signature = token_buffer.ToArray();
+
+            if (signature.Length < SecurityTrailerSize)
+            {
+                throw new ArgumentException("Encryption token is too small.");
+            }
+
+            Array.Resize(ref signature, SecurityTrailerSize);
+
+            if (BitConverter.ToUInt64(signature, 0) != 0x1C000000FF030405U)
+            {
+                throw new ArgumentException("Invalid signature buffer header.");
+            }
+
+            if (UseSequenceNumber())
+            {
+                if (BitConverter.ToInt64(signature, 8) != _recv_sequence_number++.SwapEndian())
+                {
+                    throw new ArgumentException("Invalid sequence number.");
+                }
+            }
+
+            MemoryStream stm = new MemoryStream();
+            // Confounder.
+            stm.Write(signature, signature.Length - 16, 16);
+            foreach (var buffer in data_buffers)
+            {
+                byte[] ba = buffer.ToArray();
+                stm.Write(ba, 0, ba.Length);
+            }
+            stm.Write(signature, 16, signature.Length - 32);
+
+            byte[] plain_text = _subkey.Decrypt(stm.ToArray(), KerberosKeyUsage.AcceptorSeal);
+            stm = new MemoryStream(plain_text);
+            BinaryReader reader = new BinaryReader(stm);
+            foreach (var buffer in data_buffers)
+            {
+                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
+            }
+
+            _ = reader.ReadAllBytes(16);
+            // We should perhaps verify the trailing header to be sure?
+        }
+
+        private byte[] MakeSignatureAES(IEnumerable<SecurityBuffer> messages, int sequence_no)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] header = GenerateAESChecksumHeader();
+            writer.Write(header);
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.InitiatorSign);
+            byte[] ret = new byte[header.Length + hash.Length];
+            Buffer.BlockCopy(header, 0, ret, 0, header.Length);
+            Buffer.BlockCopy(hash, 0, ret, header.Length, hash.Length);
+            return ret;
+        }
+
+        private bool VerifySignatureAES(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
+        {
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            if (signature.Length < MaxSignatureSize)
+            {
+                throw new ArgumentException("Signature token is too small.");
+            }
+
+            if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFFFF010404U)
+            {
+                return false;
+            }
+
+            if (UseSequenceNumber())
+            {
+                if (BitConverter.ToInt64(signature, 8) != _recv_sequence_number++.SwapEndian())
+                {
+                    return false;
+                }
+            }
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+            writer.Write(signature, 0, SECURITY_HEADER_SIZE);
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
+            byte[] verify_hash = new byte[_subkey.ChecksumSize];
+            Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);
+            return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
         #endregion
 
@@ -183,17 +335,44 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public byte[] DecryptMessage(EncryptedMessage message, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message.Message);
+            DecryptMessage(new[] { buffer }, message.Signature, sequence_no);
+            return buffer.ToArray();
         }
 
         public void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
+            DecryptMessageNoSignature(sig_buffers, sequence_no);
         }
 
         public void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            throw new NotImplementedException();
+            switch (_subkey.KeyEncryption)
+            {
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    DecryptMessageNoSignatureAES(messages);
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
+            }
         }
 
         public void Dispose()
@@ -228,43 +407,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            // The message buffer gets the last X bytes of the encrypted data. The rest goes into the signature.
-            // To make it simpler you could rotate the bytes, but that isn't really necessary for us as we're not putting that much effort in.
-            List<ISecurityBufferOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
-                                                        .OfType<ISecurityBufferOut>().ToList();
-            if (data_buffers.Count == 0)
-                throw new ArgumentException("Must specify a buffer to encrypt.");
-            ISecurityBufferOut token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token && !b.ReadOnly)
-                                            .OfType<ISecurityBufferOut>().FirstOrDefault();
-            if (token_buffer == null)
-                throw new ArgumentException("Must specify a buffer for the token signature.");
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            foreach (var buffer in data_buffers)
+            if (quality_of_protection != SecurityQualityOfProtectionFlags.None)
+                throw new ArgumentException("Quality of protection flags unsupported.", nameof(quality_of_protection));
+            switch (_subkey.KeyEncryption)
             {
-                writer.Write(buffer.ToArray());
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    EncryptMessageNoSignatureAES(messages);
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }
-            byte[] header = GenerateWrapHeader();
-            writer.Write(header);
-
-            byte[] cipher_text = _subkey.Encrypt(stm.ToArray(), KerberosKeyUsage.InitiatorSeal);
-            stm = new MemoryStream(cipher_text);
-            BinaryReader reader = new BinaryReader(stm);
-            byte[] confounder = reader.ReadAllBytes(16);
-            foreach (var buffer in data_buffers)
-            {
-                byte[] data = reader.ReadAllBytes(buffer.Size);
-                buffer.Update(SecurityBufferType.Data, data);
-            }
-
-            stm = new MemoryStream();
-            writer = new BinaryWriter(stm);
-            header[7] = 0x1C;
-            writer.Write(header);
-            writer.Write(reader.ReadToEnd());
-            writer.Write(confounder);
-            token_buffer.Update(SecurityBufferType.Token, stm.ToArray());
         }
 
         public ExportedSecurityContext Export()
@@ -286,22 +439,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            switch (_subkey.KeyEncryption)
             {
-                writer.Write(buffer.ToArray());
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return MakeSignatureAES(messages, sequence_no);
+                default:
+                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }
-
-            byte[] header = GenerateChecksumHeader();
-            writer.Write(header);
-
-
-            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.InitiatorSign);
-            byte[] ret = new byte[header.Length + hash.Length];
-            Buffer.BlockCopy(header, 0, ret, 0, header.Length);
-            Buffer.BlockCopy(hash, 0, ret, header.Length, hash.Length);
-            return ret;
         }
 
         public bool VerifySignature(byte[] message, byte[] signature, int sequence_no)
@@ -313,40 +458,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            if (signature is null)
+            switch (_subkey.KeyEncryption)
             {
-                throw new ArgumentNullException(nameof(signature));
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return VerifySignatureAES(messages, signature, sequence_no);
+                default:
+                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }
-
-            if (signature.Length < MaxSignatureSize)
-            {
-                throw new ArgumentException("Signature token is too small.");
-            }
-
-            if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFFFF010404U)
-            {
-                return false;
-            }
-
-            if (UseSequenceNumber())
-            {
-                if (BitConverter.ToInt64(signature, 8) != _recv_sequence_number++.SwapEndian())
-                {
-                    return false;
-                }
-            }
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
-            {
-                writer.Write(buffer.ToArray());
-            }
-            writer.Write(signature, 0, SECURITY_HEADER_SIZE);
-            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
-            byte[] verify_hash = new byte[_subkey.ChecksumSize];
-            Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);
-            return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         #endregion

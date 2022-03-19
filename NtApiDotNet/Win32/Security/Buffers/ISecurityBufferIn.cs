@@ -14,9 +14,8 @@
 
 namespace NtApiDotNet.Win32.Security.Buffers
 {
-    internal interface ISecurityBufferOut
+    internal interface ISecurityBufferIn
     {
-        int Size { get; }
-        void Update(SecurityBufferType type, byte[] data);
+        byte[] ToArray();
     }
 }
