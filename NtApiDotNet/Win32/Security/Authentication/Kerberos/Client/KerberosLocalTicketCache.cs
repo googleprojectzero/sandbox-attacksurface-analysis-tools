@@ -157,16 +157,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="server_name">The server name.</param>
         /// <param name="request_attributes">The request attributes.</param>
         /// <param name="cache_only">If true then only the cache will be queried, a request won't be made to the KDC.</param>
+        /// <param name="config">Additional configuration for the security context.</param>
         /// <returns>The client authentication context.</returns>
-        public KerberosClientAuthenticationContext CreateClientContext(KerberosPrincipalName server_name, 
-            InitializeContextReqFlags request_attributes, bool cache_only = false)
+        public KerberosClientAuthenticationContext CreateClientContext(KerberosPrincipalName server_name,
+            InitializeContextReqFlags request_attributes, bool cache_only = false, KerberosClientAuthenticationContextConfig config = null)
         {
             if (server_name is null)
             {
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            return new KerberosClientAuthenticationContext(GetTicket(server_name, cache_only), request_attributes);
+            return new KerberosClientAuthenticationContext(GetTicket(server_name, cache_only), request_attributes, config);
         }
 
         /// <summary>
@@ -175,10 +176,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="server_name">The server name.</param>
         /// <param name="request_attributes">The request attributes.</param>
         /// <param name="cache_only">If true then only the cache will be queried, a request won't be made to the KDC.</param>
+        /// <param name="config">Additional configuration for the security context.</param>
         /// <returns>The client authentication context.</returns>
-        public KerberosClientAuthenticationContext CreateClientContext(string server_name, InitializeContextReqFlags request_attributes, bool cache_only = false)
+        public KerberosClientAuthenticationContext CreateClientContext(string server_name, InitializeContextReqFlags request_attributes, 
+            bool cache_only = false, KerberosClientAuthenticationContextConfig config = null)
         {
-            return CreateClientContext(ConvertSPN(server_name), request_attributes, cache_only);
+            return CreateClientContext(ConvertSPN(server_name), request_attributes, cache_only, config);
         }
 
         /// <summary>

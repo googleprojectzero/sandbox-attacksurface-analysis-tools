@@ -261,12 +261,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Constructors
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="ticket">The kerberos ticket for the target.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
-        public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes)
+        /// <param name="config">Additional configuration for the context..</param>
+        public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes, 
+            KerberosClientAuthenticationContextConfig config = null)
         {
             if (ticket is null)
             {
@@ -274,10 +277,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             _ticket = ticket;
-            _subkey = KerberosAuthenticationKey.GenerateKey(_ticket.SessionKey.KeyEncryption);
+
+            _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
             _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
             bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);
-            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, new byte[16]);
+            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, config?.ChannelBinding ?? new byte[16]);
             int sequence_number = KerberosBuilderUtils.GetRandomNonce();
             _send_sequence_number = _recv_sequence_number = sequence_number;
 

@@ -303,25 +303,56 @@ Data representation format.
 Optional channel binding token.
 .PARAMETER NoInit
 Don't initialize the client authentication context.
+.PARAMETER Cache
+Specify a local kerberos ticket cache.
+.PARAMETER CacheOnly
+Only use cached Kerberos tickets.
+.PARAMETER SubKeyEncryptionType
+Specify the type of sub-key encryption to use.
+.PARAMETER SubKey
+Specify a specify key to use for the authenticator subkey.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
 #>
 function New-LsaClientContext {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromCredHandle")]
     Param(
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromCredHandle")]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicketCache")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
+        [Parameter(ParameterSetName="FromCredHandle")]
+        [Parameter(Mandatory, ParameterSetName="FromTicketCache")]
         [string]$Target,
         [byte[]]$ChannelBinding,
+        [Parameter(ParameterSetName="FromCredHandle")]
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
-        [switch]$NoInit
+        [Parameter(ParameterSetName="FromCredHandle")]
+        [switch]$NoInit,
+        [Parameter(ParameterSetName="FromTicketCache")]
+        [System.Nullable[NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]]$SubKeyEncryptionType,
+        [Parameter(ParameterSetName="FromTicketCache")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
+        [Parameter(ParameterSetName="FromTicketCache")]
+        [switch]$CacheOnly
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromCredHandle" {
+            [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
+                $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
+        }
+        "FromTicketCache" {
+            $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
+            $config.SubKeyEncryptionType = $SubKeyEncryptionType
+            $config.SubKey = $SubKey
+            $config.ChannelBinding = $ChannelBinding
+            $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
+        }
+    }
 }
 
 <#
