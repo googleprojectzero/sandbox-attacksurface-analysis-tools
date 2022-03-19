@@ -401,7 +401,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// If you need to return a signature then it must be specified in a buffer.</remarks>
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            SecurityContextUtils.EncryptMessage(Context, quality_of_protection, messages, sequence_no);
+            SecurityContextUtils.EncryptMessageNoSignature(Context, quality_of_protection, messages, sequence_no);
         }
 
         /// <summary>
