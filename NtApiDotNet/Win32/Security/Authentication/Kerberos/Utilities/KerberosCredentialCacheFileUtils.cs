@@ -271,5 +271,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                     ticket, second_ticket));
             }
         }
+
+        public static KerberosTime ToKerbTime(this DateTime time)
+        {
+            if (time == DateTime.MinValue)
+                return null;
+            return new KerberosTime(time);
+        }
     }
 }

@@ -61,6 +61,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ticket">The external ticket.</param>
+        public KerberosCredentialCacheFileCredential(KerberosExternalTicket ticket) 
+            : this(new KerberosCredentialCacheFilePrincipal(ticket.ClientName, ticket.TargetDomainName),
+                    new KerberosCredentialCacheFilePrincipal(ticket.ServiceName, ticket.DomainName),
+                    ticket.SessionKey, null, ticket.StartTime.ToKerbTime(), ticket.EndTime.ToKerbTime(), 
+                    ticket.RenewUntil.ToKerbTime(), false, ticket.TicketFlags, null, null, ticket.Ticket, null)
+        {
+        }
+
+        /// <summary>
         /// The ticket client principal.
         /// </summary>
         public KerberosCredentialCacheFilePrincipal Client { get; }
@@ -112,6 +124,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         /// The secondary ticket, used when encrypted using a session key.
         /// </summary>
         public KerberosTicket SecondTicket { get; }
+
+        /// <summary>
+        /// Convert the cached entry to a KRB-CRED.
+        /// </summary>
+        /// <returns>The KRB-CRED structure.</returns>
+        public KerberosCredential ToCredential()
+        {
+            var cred_info = new KerberosCredentialInfo(Key, Client.Realm,
+                Client.Name, TicketFlags, AuthTime, StartTime, EndTime, RenewTill, Server.Realm, Server.Name, Addresses);
+            var enc_part = KerberosCredentialEncryptedPart.Create(new[] { cred_info });
+            return KerberosCredential.Create(new[] { Ticket }, enc_part);
+        }
+
+        /// <summary>
+        /// Convert the cached entry to an external ticket.
+        /// </summary>
+        /// <returns>The external ticket.</returns>
+        public KerberosExternalTicket ToTicket()
+        {
+            return new KerberosExternalTicket(ToCredential());
+        }
 
         internal void Write(BinaryWriter writer)
         {

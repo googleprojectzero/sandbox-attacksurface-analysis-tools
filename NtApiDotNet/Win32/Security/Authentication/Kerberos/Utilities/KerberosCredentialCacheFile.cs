@@ -59,10 +59,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 
         #region Public Methods
         /// <summary>
-        /// Write the cache file to a stream.
+        /// Export the cache file to a stream.
         /// </summary>
         /// <param name="stm">The stream to write to.</param>
-        public void Write(Stream stm)
+        public void Export(Stream stm)
         {
             BinaryWriter writer = new BinaryWriter(stm);
             writer.WriteFileHeader(KDCTimeOffset);
@@ -78,25 +78,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         }
 
         /// <summary>
-        /// Write the cache file to a file.
+        /// Export the cache file to a file.
         /// </summary>
         /// <param name="path">The file to write to.</param>
-        public void Write(string path)
+        public void Export(string path)
         {
             using (var file = File.OpenWrite(path))
             {
-                Write(file);
+                Export(file);
             }
         }
         #endregion
 
         #region Public Static Methods
         /// <summary>
-        /// Read a cache file from a path.
+        /// Import a cache file from a path.
         /// </summary>
         /// <param name="stm">The file stream.</param>
         /// <returns>The cache file.</returns>
-        public static KerberosCredentialCacheFile Read(Stream stm)
+        public static KerberosCredentialCacheFile Import(Stream stm)
         {
             BinaryReader reader = new BinaryReader(stm);
             int version = reader.ReadFileHeader();
@@ -119,15 +119,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         }
 
         /// <summary>
-        /// Read a cache file from a path.
+        /// Import a cache file from a path.
         /// </summary>
         /// <param name="path">The path to the cache file.</param>
         /// <returns>The cache file.</returns>
-        public static KerberosCredentialCacheFile Read(string path)
+        public static KerberosCredentialCacheFile Import(string path)
         {
             using (var stm = File.OpenRead(path))
             {
-                return Read(stm);
+                return Import(stm);
             }
         }
         #endregion

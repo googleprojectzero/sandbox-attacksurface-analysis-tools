@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         private readonly ConcurrentDictionary<KerberosPrincipalName, KerberosExternalTicket> _cache;
         private readonly KerberosKDCClient _kdc_client;
         private readonly string _realm;
-        private KerberosExternalTicket _tgt_ticket;
+        private readonly KerberosExternalTicket _tgt_ticket;
 
         private static KerberosPrincipalName ConvertSPN(string server_name)
         {
@@ -55,7 +56,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             KerberosTGSRequest request = KerberosTGSRequest.Create(_tgt_ticket.Credential, server_name, _realm);
             return _kdc_client.RequestServiceTicket(request).ToExternalTicket();
         }
-
         #endregion
 
         #region Constructors
@@ -109,6 +109,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Static Methods
         /// <summary>
+        /// Populate a local cache a list of tickets.
+        /// </summary>
+        /// <param name="tickets">The list of tickets.</param>
+        /// <param name="create_client">True to create a KDC client based on the system's domain.</param>
+        /// <returns>The local ticket cache.</returns>
+        public static KerberosLocalTicketCache FromTickets(IEnumerable<KerberosExternalTicket> tickets, bool create_client = false)
+        {
+            if (tickets is null)
+            {
+                throw new ArgumentNullException(nameof(tickets));
+            }
+
+            if (create_client)
+            {
+                var tgt_ticket = tickets.FirstOrDefault(t => t.ServiceName.FullName.StartsWith("krbtgt/") && !t.SessionKey.IsZeroKey);
+                if (tgt_ticket == null)
+                    throw new ArgumentException("No cached TGT for the system with a valid session key.");
+                Domain domain = Domain.GetComputerDomain();
+                return new KerberosLocalTicketCache(tgt_ticket,
+                    KerberosKDCClient.CreateTCPClient(domain.PdcRoleOwner.IPAddress), domain.Name, tickets);
+            }
+            return new KerberosLocalTicketCache(tickets);
+        }
+
+        /// <summary>
         /// Populate a local cache using the system cache in LSA.
         /// </summary>
         /// <param name="logon_id">The logon ID for the cache to query.</param>
@@ -116,18 +141,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The local ticket cache.</returns>
         public static KerberosLocalTicketCache FromSystemCache(bool create_client = false, Luid logon_id = new Luid())
         {
-            var tickets = KerberosTicketCache.QueryTicketCache(logon_id);
-            if (create_client)
-            {
-                var tgt_ticket = tickets.FirstOrDefault(t => t.ServiceName.FullName.StartsWith("krbtgt/") && !t.SessionKey.IsZeroKey);
-                if (tgt_ticket == null)
-                    throw new ArgumentException("No cached TGT for the system with a valid session key.");
-                Domain domain = logon_id.ToInt64() == 0 ? Domain.GetCurrentDomain() : Domain.GetComputerDomain();
-                return new KerberosLocalTicketCache(tgt_ticket,
-                    KerberosKDCClient.CreateTCPClient(domain.PdcRoleOwner.IPAddress), domain.Name, tickets);
-            }
-            return new KerberosLocalTicketCache(tickets);
+            return FromTickets(KerberosTicketCache.QueryTicketCache(logon_id), create_client);
         }
+
+        /// <summary>
+        /// Populate a local cache using an MIT style cache file.
+        /// </summary>
+        /// <param name="path">The path to the cache file.</param>
+        /// <param name="create_client">True to create a KDC client based on the system's domain.</param>
+        /// <returns>The local ticket cache.</returns>
+        public static KerberosLocalTicketCache FromFile(string path, bool create_client = false)
+        {
+            var cache = KerberosCredentialCacheFile.Import(path);
+            return FromTickets(cache.Credentials.Select(c => c.ToTicket()), create_client);
+        }
+
         #endregion
 
         #region Public Methods
@@ -178,7 +206,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="cache_only">If true then only the cache will be queried, a request won't be made to the KDC.</param>
         /// <param name="config">Additional configuration for the security context.</param>
         /// <returns>The client authentication context.</returns>
-        public KerberosClientAuthenticationContext CreateClientContext(string server_name, InitializeContextReqFlags request_attributes, 
+        public KerberosClientAuthenticationContext CreateClientContext(string server_name, InitializeContextReqFlags request_attributes,
             bool cache_only = false, KerberosClientAuthenticationContextConfig config = null)
         {
             return CreateClientContext(ConvertSPN(server_name), request_attributes, cache_only, config);
@@ -234,6 +262,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             AddTicket(new KerberosExternalTicket(credential));
+        }
+
+        /// <summary>
+        /// Export the cache to an MIT style cache file.
+        /// </summary>
+        /// <param name="path">The path to the file to create.</param>
+        /// <remarks>This process is lossy, if you imported and file using FromFile and then exported again it might not contain all the original information.</remarks>
+        public void Export(string path)
+        {
+            if (_cache.Count == 0)
+                return;
+
+            KerberosExternalTicket default_ticket = _tgt_ticket ?? _cache.Values.First();
+            KerberosCredentialCacheFilePrincipal default_principal = 
+                new KerberosCredentialCacheFilePrincipal(default_ticket.ClientName, default_ticket.TargetDomainName);
+            KerberosCredentialCacheFile file = new KerberosCredentialCacheFile();
+            file.DefaultPrincipal = default_principal;
+            file.Credentials.AddRange(_cache.Values.Select(t => new KerberosCredentialCacheFileCredential(t)));
+            file.Export(path);
         }
 
         #endregion
