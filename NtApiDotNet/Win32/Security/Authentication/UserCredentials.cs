@@ -40,6 +40,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// If using Kerberos this indicates that no PAC should be included in the TGT.
         /// </summary>
         public bool IdentityOnly { get; set; }
+        /// <summary>
+        /// If using negotiate specify the list of packages to use. For example specifying !ntlm disabled NTLM.
+        /// </summary>
+        public string PackageList { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -143,6 +147,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return auth_id;
         }
 
+        internal SEC_WINNT_AUTH_IDENTITY_EX ToAuthIdentityEx(DisposableList list)
+        {
+            var auth_id = new SEC_WINNT_AUTH_IDENTITY_EX(UserName, Domain, Password, PackageList, list);
+            if (IdentityOnly)
+                auth_id.Flags |= SecWinNtAuthIdentityFlags.IdentityOnly;
+            return auth_id;
+        }
+
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
             if (package == null)
@@ -152,10 +164,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
             switch (package.ToLower())
             {
                 case "ntlm":
-                case "negotiate":
                 case "kerberos":
                 case "wdigest":
                     return ToAuthIdentity(list).ToBuffer();
+                case "negotiate":
+                    if (string.IsNullOrWhiteSpace(PackageList))
+                    {
+                        return ToAuthIdentity(list).ToBuffer();
+                    }
+                    else
+                    {
+                        return ToAuthIdentityEx(list).ToBuffer();
+                    }
                 case "credssp":
                     return new KERB_INTERACTIVE_LOGON(UserName, Domain, Password, list).ToBuffer(); 
                 default:

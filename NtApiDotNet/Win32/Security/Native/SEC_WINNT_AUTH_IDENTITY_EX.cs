@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Native
         {
         }
 
-        public SEC_WINNT_AUTH_IDENTITY_EX(string user, string domain, SecureString password, DisposableList list)
+        public SEC_WINNT_AUTH_IDENTITY_EX(string user, string domain, SecureString password, string package_list, DisposableList list)
         {
             Version = SEC_WINNT_AUTH_IDENTITY_VERSION;
             Length = Marshal.SizeOf(this);
@@ -56,6 +56,8 @@ namespace NtApiDotNet.Win32.Security.Native
                 Password = list.AddResource(new SecureStringMarshalBuffer(password));
                 PasswordLength = password.Length;
             }
+            PackageList = package_list;
+            PackageListLength = PackageList?.Length ?? 0;
             Flags = SecWinNtAuthIdentityFlags.Unicode;
         }
     }
