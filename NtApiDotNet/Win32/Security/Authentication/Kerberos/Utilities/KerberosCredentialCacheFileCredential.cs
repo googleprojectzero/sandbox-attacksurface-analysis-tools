@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
@@ -111,5 +112,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         /// The secondary ticket, used when encrypted using a session key.
         /// </summary>
         public KerberosTicket SecondTicket { get; }
+
+        internal void Write(BinaryWriter writer)
+        {
+            writer.WritePrincipal(Client);
+            writer.WritePrincipal(Server);
+            writer.WriteKeyBlock(Key);
+            writer.WriteUnixTime(AuthTime);
+            writer.WriteUnixTime(StartTime);
+            writer.WriteUnixTime(EndTime);
+            writer.WriteUnixTime(RenewTill);
+            writer.Write((byte)(IsSessionKey ? 1 : 0));
+            writer.WriteInt32BE(((int)TicketFlags).RotateBits());
+            writer.WriteAddresses(Addresses);
+            writer.WriteAuthData(AuthData);
+            writer.WriteTicket(Ticket);
+            writer.WriteTicket(SecondTicket);
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 {
     internal static class KerberosCredentialCacheFileUtils
     {
-        private const int CACHE_FILE_MAGIC = 5;
+        private const byte CACHE_FILE_MAGIC = 5;
 
         private static DateTime BaseUnixTime = new DateTime(1970, 1, 1,
                 0, 0, 0, DateTimeKind.Utc);
@@ -35,6 +35,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return reader.ReadByte();
         }
 
+        public static void WriteFileHeader(this BinaryWriter writer, TimeSpan kdc_offset)
+        {
+            writer.Write(CACHE_FILE_MAGIC);
+            writer.Write((byte)4);
+            writer.WriteUInt16BE(12);
+            writer.WriteUInt16BE(1);
+            writer.WriteUInt16BE(8);
+            uint seconds = (uint)kdc_offset.TotalSeconds;
+            uint milliseconds = ((uint)(kdc_offset.TotalMilliseconds % 1000.0)) * 1000;
+            writer.WriteUInt32BE(seconds);
+            writer.WriteUInt32BE(milliseconds);
+        }
+
         public static byte[] ReadData(this BinaryReader reader)
         {
             int length = reader.ReadInt32BE();
@@ -43,9 +56,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return reader.ReadAllBytes(length);
         }
 
+        public static void WriteData(this BinaryWriter writer, byte[] data)
+        {
+            int length = data?.Length ?? 0;
+            writer.WriteInt32BE(length);
+            if (length > 0)
+                writer.Write(data);
+        }
+
         public static string ReadDataString(this BinaryReader reader)
         {
             return Encoding.UTF8.GetString(ReadData(reader));
+        }
+
+        public static void WriteDataString(this BinaryWriter writer, string value)
+        {
+            WriteData(writer, Encoding.UTF8.GetBytes(value ?? string.Empty));
         }
 
         public static List<KerberosHostAddress> ReadAddresses(this BinaryReader reader)
@@ -61,6 +87,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return ret;
         }
 
+        public static void WriteAddresses(this BinaryWriter writer, IReadOnlyCollection<KerberosHostAddress> addresses)
+        {
+            int count = addresses?.Count ?? 0;
+            writer.WriteInt32BE(count);
+            if (count > 0)
+            {
+                foreach (var addr in addresses)
+                {
+                    writer.WriteUInt16BE((int)addr.AddressType);
+                    writer.WriteData(addr.Address);
+                }
+            }
+        }
+
         public static List<KerberosAuthorizationData> ReadAuthData(this BinaryReader reader)
         {
             List<KerberosAuthorizationData> ret = new List<KerberosAuthorizationData>();
@@ -72,6 +112,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                 count--;
             }
             return ret;
+        }
+
+        public static void WriteAuthData(this BinaryWriter writer, IReadOnlyCollection<KerberosAuthorizationData> auth_data)
+        {
+            int count = auth_data?.Count ?? 0;
+            writer.WriteInt32BE(count);
+            if (count > 0)
+            {
+                foreach (var data in auth_data)
+                {
+                    writer.WriteUInt16BE((int)data.DataType);
+                    writer.WriteData(data.ToArray());
+                }
+            }
         }
 
         public static KerberosCredentialCacheFilePrincipal ReadPrincipal(this BinaryReader reader)
@@ -88,19 +142,54 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                 new KerberosPrincipalName(type, components), realm);
         }
 
-        public static KerberosAuthenticationKey ReadKeyBlock(this BinaryReader reader)
+        public static void WritePrincipal(this BinaryWriter writer, KerberosCredentialCacheFilePrincipal principal)
         {
-            KerberosEncryptionType type = (KerberosEncryptionType)reader.ReadUInt16();
-            return new KerberosAuthenticationKey(type, ReadData(reader), KerberosNameType.UNKNOWN, string.Empty, DateTime.Now, 0);
+
+            writer.WriteInt32BE((int)principal.Name.NameType);
+            writer.WriteInt32BE(principal.Name.Names.Count);
+            writer.WriteDataString(principal.Realm);
+            foreach (string name in principal.Name.Names)
+            {
+                writer.WriteDataString(name);
+            }
+        }
+
+        public static KerberosAuthenticationKey ReadKeyBlock(this BinaryReader reader, KerberosCredentialCacheFilePrincipal server)
+        {
+            KerberosEncryptionType type = (KerberosEncryptionType)reader.ReadUInt16BE();
+            return new KerberosAuthenticationKey(type, ReadData(reader), server.Name.NameType, server.Name.GetPrincipal(server.Realm), DateTime.Now, 0);
+        }
+
+        public static void WriteKeyBlock(this BinaryWriter writer, KerberosAuthenticationKey key)
+        {
+            if (key == null)
+            {
+                writer.WriteUInt16BE((int)KerberosEncryptionType.NULL);
+                writer.WriteData(null);
+            }
+            else
+            {
+                writer.WriteUInt16BE((int)key.KeyEncryption);
+                writer.WriteData(key.Key);
+            }
         }
 
         public static KerberosTime ReadUnixTime(this BinaryReader reader)
         {
-            int time = reader.ReadInt32BE();
+            uint time = reader.ReadUInt32BE();
             if (time == 0)
                 return null;
             return new KerberosTime(new DateTime(1970, 1, 1,
                 0, 0, 0, DateTimeKind.Utc).AddSeconds(time));
+        }
+
+        public static void WriteUnixTime(this BinaryWriter writer, KerberosTime time)
+        {
+            var curr = time?.ToDateTime().Subtract(new DateTime(1970, 1, 1,
+                0, 0, 0, DateTimeKind.Utc)).TotalSeconds ?? 0;
+            if (curr < 0 || curr > uint.MaxValue)
+                curr = 0;
+            writer.WriteUInt32BE((uint)curr);
         }
 
         public static KerberosTicket ReadTicket(this BinaryReader reader)
@@ -109,6 +198,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             if (data.Length == 0)
                 return null;
             return KerberosTicket.Parse(data);
+        }
+
+        public static void WriteTicket(this BinaryWriter writer, KerberosTicket ticket)
+        {
+            writer.WriteData(ticket?.ToArray());
         }
 
         public static TimeSpan ReadKDCOffset(this BinaryReader reader)
@@ -122,9 +216,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                 int length = new_reader.ReadUInt16BE();
                 if (tag == 1 && length == 8)
                 {
-                    double seconds = new_reader.ReadInt32BE();
-                    double microseconds = new_reader.ReadInt32BE();
-                    return TimeSpan.FromSeconds(seconds + microseconds / 1000000.0);
+                    double seconds = new_reader.ReadUInt32BE();
+                    double microseconds = new_reader.ReadUInt32BE();
+                    return TimeSpan.FromSeconds(seconds).Add(TimeSpan.FromMilliseconds(microseconds / 1000.0));
                 }
                 else
                 {
@@ -134,7 +228,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return new TimeSpan();
         }
 
-        private static int RotateBits(this int value)
+        public static int RotateBits(this int value)
         {
             var bits = new BitArray(new int[] { value });
             bits = new BitArray(bits.Cast<bool>().Reverse().ToArray());
@@ -151,7 +245,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         {
             var client = reader.ReadPrincipal();
             var server = reader.ReadPrincipal();
-            var key = reader.ReadKeyBlock();
+            var key = reader.ReadKeyBlock(server);
             var auth_time = reader.ReadUnixTime();
             var start_time = reader.ReadUnixTime();
             var end_time = reader.ReadUnixTime();

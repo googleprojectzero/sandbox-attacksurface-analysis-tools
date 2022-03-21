@@ -12,6 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Collections.Generic;
+using System.IO;
+
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 {
     /// <summary>
@@ -45,6 +48,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             Key = key ?? throw new System.ArgumentNullException(nameof(key));
             Data = data ?? throw new System.ArgumentNullException(nameof(data));
             Principal = principal;
+        }
+
+        internal void Write(BinaryWriter writer, KerberosCredentialCacheFilePrincipal default_principal)
+        {
+            List<string> parts = new List<string>()
+            {
+                "krb5_ccache_conf_data",
+                Key
+            };
+            if (!string.IsNullOrEmpty(Principal))
+            {
+                parts.Add(Principal);
+            }
+            var server = new KerberosCredentialCacheFilePrincipal(new KerberosPrincipalName(KerberosNameType.UNKNOWN, parts), "X-CACHECONF:");
+
+            writer.WritePrincipal(default_principal);
+            writer.WritePrincipal(server);
+            writer.WriteKeyBlock(null);
+            writer.WriteUnixTime(null);
+            writer.WriteUnixTime(null);
+            writer.WriteUnixTime(null);
+            writer.WriteUnixTime(null);
+            writer.Write((byte)0);
+            writer.Write(0);
+            writer.WriteAddresses(null);
+            writer.WriteAuthData(null);
+            writer.WriteData(Data);
+            writer.WriteData(null);
         }
     }
 }

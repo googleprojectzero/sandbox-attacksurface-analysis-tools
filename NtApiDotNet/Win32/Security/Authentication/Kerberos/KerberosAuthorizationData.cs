@@ -151,5 +151,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
             }
         }
+
+        internal byte[] ToArray()
+        {
+            DERBuilder builder = new DERBuilder();
+            builder.WriteObject(this);
+            return builder.ToArray();
+        }
     }
 }

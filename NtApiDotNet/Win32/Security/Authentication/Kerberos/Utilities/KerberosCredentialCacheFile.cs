@@ -39,7 +39,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         /// <summary>
         /// The KDC time offset.
         /// </summary>
-        public TimeSpan KDCOffset { get; set; }
+        public TimeSpan KDCTimeOffset { get; set; }
 
         /// <summary>
         /// The default principal name.
@@ -57,14 +57,46 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         public List<KerberosCredentialCacheFileConfigEntry> Configuration { get; }
         #endregion
 
-        #region Public Static Methods
+        #region Public Methods
+        /// <summary>
+        /// Write the cache file to a stream.
+        /// </summary>
+        /// <param name="stm">The stream to write to.</param>
+        public void Write(Stream stm)
+        {
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.WriteFileHeader(KDCTimeOffset);
+            writer.WritePrincipal(DefaultPrincipal ?? throw new ArgumentException("Must specify a default principal.", nameof(DefaultPrincipal)));
+            foreach (var cred in Credentials)
+            {
+                cred.Write(writer);
+            }
+            foreach (var config in Configuration)
+            {
+                config.Write(writer, DefaultPrincipal);
+            }
+        }
 
+        /// <summary>
+        /// Write the cache file to a file.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        public void Write(string path)
+        {
+            using (var file = File.OpenWrite(path))
+            {
+                Write(file);
+            }
+        }
+        #endregion
+
+        #region Public Static Methods
         /// <summary>
         /// Read a cache file from a path.
         /// </summary>
         /// <param name="stm">The file stream.</param>
         /// <returns>The cache file.</returns>
-        public static KerberosCredentialCacheFile ReadCacheFileFromStream(Stream stm)
+        public static KerberosCredentialCacheFile Read(Stream stm)
         {
             BinaryReader reader = new BinaryReader(stm);
             int version = reader.ReadFileHeader();
@@ -73,7 +105,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 
             var ret = new KerberosCredentialCacheFile
             {
-                KDCOffset = reader.ReadKDCOffset(),
+                KDCTimeOffset = reader.ReadKDCOffset(),
                 DefaultPrincipal = reader.ReadPrincipal()
             };
 
@@ -91,11 +123,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         /// </summary>
         /// <param name="path">The path to the cache file.</param>
         /// <returns>The cache file.</returns>
-        public static KerberosCredentialCacheFile ReadCacheFile(string path)
+        public static KerberosCredentialCacheFile Read(string path)
         {
             using (var stm = File.OpenRead(path))
             {
-                return ReadCacheFileFromStream(stm);
+                return Read(stm);
             }
         }
         #endregion
