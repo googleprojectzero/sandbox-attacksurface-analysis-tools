@@ -79,7 +79,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return $"{AddressType} - {NtObjectUtils.ToHexString(Address)}";
         }
 
-        private KerberosHostAddress(KerberosHostAddressType type, byte[] address)
+        internal KerberosHostAddress(KerberosHostAddressType type, byte[] address)
         {
             AddressType = type;
             Address = address;

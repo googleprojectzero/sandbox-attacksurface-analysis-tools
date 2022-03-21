@@ -158,6 +158,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return BitConverter.ToInt64(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
         }
 
+        internal static ushort ReadUInt16BE(this BinaryReader reader)
+        {
+            return reader.ReadUInt16().SwapEndian();
+        }
+
+        internal static int ReadInt32BE(this BinaryReader reader)
+        {
+            return reader.ReadInt32().SwapEndian();
+        }
+
         internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
         {
             return value.CheckApplication((int)msg);
