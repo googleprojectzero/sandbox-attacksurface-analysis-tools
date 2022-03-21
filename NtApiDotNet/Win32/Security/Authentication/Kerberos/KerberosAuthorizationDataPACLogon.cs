@@ -84,111 +84,115 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Logon time.
         /// </summary>
-        public DateTime LogonTime { get; }
+        public DateTime LogonTime { get; set; }
         /// <summary>
         /// Logoff time.
         /// </summary>
-        public DateTime LogoffTime { get; }
+        public DateTime LogoffTime { get; set; }
         /// <summary>
         /// Kick off time.
         /// </summary>
-        public DateTime KickOffTime { get; }
+        public DateTime KickOffTime { get; set; }
         /// <summary>
         /// Time password last set.
         /// </summary>
-        public DateTime PasswordLastSet { get; }
+        public DateTime PasswordLastSet { get; set; }
         /// <summary>
         /// Time password can change.
         /// </summary>
-        public DateTime PasswordCanChange { get; }
+        public DateTime PasswordCanChange { get; set; }
         /// <summary>
         /// Time password must change.
         /// </summary>
-        public DateTime PasswordMustChange { get; }
+        public DateTime PasswordMustChange { get; set; }
         /// <summary>
         /// Effective name.
         /// </summary>
-        public string EffectiveName { get; }
+        public string EffectiveName { get; set; }
         /// <summary>
         /// Full name.
         /// </summary>
-        public string FullName { get; }
+        public string FullName { get; set; }
         /// <summary>
         /// Logon script path.
         /// </summary>
-        public string LogonScript { get; }
+        public string LogonScript { get; set; }
         /// <summary>
         /// Profile path.
         /// </summary>
-        public string ProfilePath { get; }
+        public string ProfilePath { get; set; }
         /// <summary>
         /// Home directory path.
         /// </summary>
-        public string HomeDirectory { get; }
+        public string HomeDirectory { get; set; }
         /// <summary>
         /// Home directory drive.
         /// </summary>
-        public string HomeDirectoryDrive { get; }
+        public string HomeDirectoryDrive { get; set; }
         /// <summary>
         /// Logon count.
         /// </summary>
-        public int LogonCount { get; }
+        public int LogonCount { get; set; }
         /// <summary>
         /// Bad password count.
         /// </summary>
-        public int BadPasswordCount { get; }
+        public int BadPasswordCount { get; set; }
         /// <summary>
         /// User SID.
         /// </summary>
-        public Sid User { get; }
+        public Sid User { get; set; }
         /// <summary>
         /// Primary group SID.
         /// </summary>
-        public Sid PrimaryGroup { get; }
+        public Sid PrimaryGroup { get; set; }
         /// <summary>
         /// Group list.
         /// </summary>
-        public IReadOnlyList<UserGroup> Groups { get; }
+        public List<UserGroup> Groups { get; set; }
         /// <summary>
         /// User flags.
         /// </summary>
-        public KerberosUserFlags UserFlags { get; }
+        public KerberosUserFlags UserFlags { get; set; }
         /// <summary>
         /// User session key.
         /// </summary>
-        public byte[] UserSessionKey { get; }
+        public byte[] UserSessionKey { get; set; }
         /// <summary>
         /// Logon server name.
         /// </summary>
-        public string LogonServer { get; }
+        public string LogonServer { get; set; }
         /// <summary>
         /// Logon domain name.
         /// </summary>
-        public string LogonDomainName { get; }
+        public string LogonDomainName { get; set; }
         /// <summary>
         /// Logon domain sid.
         /// </summary>
-        public Sid LogonDomainSid { get; }
+        public Sid LogonDomainSid { get; set; }
         /// <summary>
         /// Extra SIDs.
         /// </summary>
-        public IReadOnlyList<UserGroup> ExtraSids { get; }
+        public List<UserGroup> ExtraSids { get; set; }
         /// <summary>
         /// User account control flags.
         /// </summary>
-        public UserAccountControlFlags UserAccountControl { get; }
+        public UserAccountControlFlags UserAccountControl { get; set; }
         /// <summary>
         /// Resource domain group SID.
         /// </summary>
-        public Sid ResourceGroupDomainSid { get; }
+        public Sid ResourceGroupDomainSid { get; set; }
         /// <summary>
         /// Resource groups.
         /// </summary>
-        public IReadOnlyList<UserGroup> ResourceGroups { get; }
+        public List<UserGroup> ResourceGroups { get; set;  }
+
+        private KERB_VALIDATION_INFO _logon_info;
 
         internal KerberosAuthorizationDataPACLogon(KerberosAuthorizationDataPACEntryType type,
             byte[] data, KERB_VALIDATION_INFO logon_info) : base(type, data)
         {
+            this._logon_info = logon_info;
+
             LogonTime = logon_info.LogonTime.ToTime();
             LogoffTime = logon_info.LogoffTime.ToTime();
             KickOffTime = logon_info.KickOffTime.ToTime();
@@ -211,11 +215,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (logon_info.GroupIds != null)
             {
-                Groups = logon_info.GroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
+                Groups = logon_info.GroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList();
             }
             else
             {
-                Groups = new UserGroup[0];
+                Groups = new List<UserGroup>(0);
             }
 
             UserFlags = (KerberosUserFlags)logon_info.UserFlags;
@@ -237,11 +241,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (logon_info.ExtraSids != null)
             {
-                ExtraSids = logon_info.ExtraSids.GetValue().Select(r => new UserGroup(r.Sid.GetValue().ToSid(), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
+                ExtraSids = logon_info.ExtraSids.GetValue().Select(r => new UserGroup(r.Sid.GetValue().ToSid(), (GroupAttributes)r.Attributes)).ToList();
             }
             else
             {
-                ExtraSids = new UserGroup[0];
+                ExtraSids = new List<UserGroup>(0);
             }
 
             UserAccountControl = (UserAccountControlFlags)logon_info.UserAccountControl;
@@ -252,11 +256,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (logon_info.ResourceGroupIds != null)
             {
-                ResourceGroups = logon_info.ResourceGroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
+                ResourceGroups = logon_info.ResourceGroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList();
             }
             else
             {
-                ResourceGroups = new UserGroup[0];
+                ResourceGroups = new List<UserGroup>(0);
             }
         }
 
@@ -275,6 +279,69 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 return false;
             }
+        }
+
+        internal protected override byte[] Encode()
+        {
+            KERB_VALIDATION_INFO logon_info = new KERB_VALIDATION_INFO()
+            {
+                // Tracking and inserting this._logon_info values is inefficient, but our casting
+                // can slightly alter values and we want to maintain checksums where possible
+                LogonTime = LogonTime == DateTime.MaxValue ? _logon_info.LogonTime : new FILETIME(LogonTime),
+                LogoffTime = LogoffTime == DateTime.MaxValue ? _logon_info.LogoffTime : new FILETIME(LogoffTime),
+                KickOffTime = KickOffTime == DateTime.MaxValue ? _logon_info.KickOffTime : new FILETIME(KickOffTime),
+                PasswordLastSet = PasswordLastSet == DateTime.MaxValue ? _logon_info.PasswordLastSet : new FILETIME(PasswordLastSet),
+                PasswordCanChange = PasswordCanChange == DateTime.MaxValue ? _logon_info.PasswordCanChange : new FILETIME(PasswordCanChange),
+                PasswordMustChange = PasswordMustChange == DateTime.MaxValue ? _logon_info.PasswordMustChange : new FILETIME(PasswordMustChange),
+                EffectiveName = EffectiveName == _logon_info.EffectiveName.ToString() ? _logon_info.EffectiveName : new RPC_UNICODE_STRING(EffectiveName),
+                FullName = FullName == _logon_info.FullName.ToString() ? _logon_info.FullName : new RPC_UNICODE_STRING(FullName),
+                LogonScript = LogonScript == _logon_info.LogonScript.ToString() ? _logon_info.LogonScript : new RPC_UNICODE_STRING(LogonScript),
+                ProfilePath = ProfilePath == _logon_info.ProfilePath.ToString() ? _logon_info.ProfilePath : new RPC_UNICODE_STRING(ProfilePath),
+                HomeDirectory = HomeDirectory == _logon_info.HomeDirectory.ToString() ? _logon_info.HomeDirectory : new RPC_UNICODE_STRING(HomeDirectory),
+                HomeDirectoryDrive = HomeDirectoryDrive == _logon_info.HomeDirectoryDrive.ToString() ? _logon_info.HomeDirectoryDrive : new RPC_UNICODE_STRING(HomeDirectoryDrive),
+                LogonCount = (short)LogonCount,
+                BadPasswordCount = (short)BadPasswordCount,
+                UserId = (int)User.SubAuthorities.Last(),
+                PrimaryGroupId = (int)PrimaryGroup.SubAuthorities.Last(),
+                GroupCount = Groups.Count,
+                GroupIds = Groups.Select(g => new GROUP_MEMBERSHIP() { RelativeId = (int)g.Sid.SubAuthorities.Last(), Attributes = (int)g.Attributes }).ToArray(),
+                UserFlags = (int)UserFlags,
+                LogonServer = LogonServer == _logon_info.LogonServer.ToString() ? _logon_info.LogonServer : new RPC_UNICODE_STRING(LogonServer),
+                LogonDomainName = LogonDomainName == _logon_info.LogonDomainName.ToString() ? _logon_info.LogonDomainName : new RPC_UNICODE_STRING(LogonDomainName),
+                LogonDomainId = new RPC_SID(LogonDomainSid),
+                Reserved1 = _logon_info.Reserved1,
+                UserAccountControl = (int)UserAccountControl,
+                Reserved3 = _logon_info.Reserved3,
+                SidCount = ExtraSids.Count,
+                ExtraSids = ExtraSids.Select(s => new KERB_SID_AND_ATTRIBUTES() { Sid = new RPC_SID(s.Sid), Attributes = (int)s.Attributes }).ToArray(),
+                ResourceGroupCount = ResourceGroups.Count,
+                ResourceGroupIds = ResourceGroups.Count > 0 ? ResourceGroups.Select(g => new GROUP_MEMBERSHIP() { RelativeId = (int)g.Sid.SubAuthorities.Last(), Attributes = (int)g.Attributes }).ToArray() : null,
+            };
+
+            if (ResourceGroupDomainSid != null)
+            {
+                logon_info.ResourceGroupDomainSid = new RPC_SID(ResourceGroupDomainSid);
+            }
+
+            if (UserSessionKey.Length > 0)
+            {
+                if (UserSessionKey.Length != 16)
+                {
+                    throw new NotImplementedException();
+                }
+
+                logon_info.UserSessionKey = new USER_SESSION_KEY()
+                {
+                    data = new CYPHER_BLOCK[]
+                    {
+                        new CYPHER_BLOCK() { data = (sbyte[])(object)UserSessionKey.Take(8).ToArray() },
+                        new CYPHER_BLOCK() { data = (sbyte[])(object)UserSessionKey.Skip(8).ToArray() },
+                    }
+                };
+            }
+
+
+            return KerbValidationInfoParser.Encode(logon_info);
         }
 
         private protected override void FormatData(StringBuilder builder)

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using System;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -63,6 +64,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             hex.Append(Data);
             hex.Complete();
             builder.Append(hex.ToString());
+        }
+
+        internal protected virtual byte[] Encode()
+        {
+            throw new NotImplementedException();
         }
 
         internal void Format(StringBuilder builder)

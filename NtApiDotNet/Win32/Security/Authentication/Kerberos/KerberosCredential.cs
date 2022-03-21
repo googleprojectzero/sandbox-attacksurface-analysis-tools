@@ -121,7 +121,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             KerberosKeySet tmp_keys = new KerberosKeySet(keyset.OfType<KerberosAuthenticationKey>());
 
-            if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.KrbCred, out byte[] decrypted))
+            if (EncryptedPart.Decrypt(tmp_keys, string.Empty, new KerberosPrincipalName(), KerberosKeyUsage.KrbCred, out byte[] decrypted, out _))
             {
                 return Create(Tickets, KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted));
             }

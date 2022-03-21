@@ -50,8 +50,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public bool Decrypted => this is KerberosTicketDecrypted;
 
-        internal bool TryDecrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
+        internal bool TryDecrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket, out KerberosAuthenticationKey used_key)
         {
+            used_key = null;
+
             if (this is KerberosTicketDecrypted)
             {
                 ticket = this;
@@ -59,10 +61,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             ticket = null;
-            if (!EncryptedData.Decrypt(keyset, Realm, ServerName, key_usage, out byte[] decrypted))
+            if (!EncryptedData.Decrypt(keyset, Realm, ServerName, key_usage, out byte[] decrypted, out used_key))
                 return false;
 
-            return KerberosTicketDecrypted.Parse(this, decrypted, keyset, out ticket);
+            var result = KerberosTicketDecrypted.Parse(this, decrypted, keyset, out ticket);
+            if (!result)
+            {
+                return result;
+            }
+
+            // Give the PAC it's key for checksum re-calculation
+            if ((ticket as KerberosTicketDecrypted).AuthorizationData != null && used_key != null)
+            {
+                foreach (var authData in (ticket as KerberosTicketDecrypted).AuthorizationData)
+                {
+                    if (authData is KerberosAuthorizationDataIfRelevant ifRelevant)
+                    {
+                        foreach (var nestedAuthData in ifRelevant.Entries)
+                        {
+                            if (nestedAuthData is KerberosAuthorizationDataPAC pac)
+                            {
+                                pac.Key = used_key;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         private protected virtual void FormatTicketData(StringBuilder builder)
@@ -78,7 +104,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The decrypted kerberos ticket.</returns>
         public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage)
         {
-            if (!TryDecrypt(keyset, key_usage, out KerberosTicket ticket))
+            if (!TryDecrypt(keyset, key_usage, out KerberosTicket ticket, out _))
                 throw new ArgumentException("Couldn't decrypt the kerberos ticket.");
             return ticket;
         }
@@ -224,8 +250,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 using (var seq = app.CreateSequence())
                 {
-                    seq.WriteContextSpecific(0, b => b.WriteInt32(TicketVersion));
-                    seq.WriteContextSpecific(1, b => b.WriteGeneralString(Realm));
+                    seq.WriteContextSpecific(0, TicketVersion);
+                    seq.WriteContextSpecific(1, Realm);
                     seq.WriteContextSpecific(2, ServerName);
                     seq.WriteContextSpecific(3, EncryptedData);
                 }

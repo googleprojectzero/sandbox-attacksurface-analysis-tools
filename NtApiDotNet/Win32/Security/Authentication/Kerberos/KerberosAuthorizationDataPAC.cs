@@ -30,13 +30,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationDataPACEntry> Entries { get; }
 
+        public KerberosAuthenticationKey Key { get; set; }
+
         private readonly byte[] _data;
 
-        private KerberosAuthorizationDataPAC(IEnumerable<KerberosAuthorizationDataPACEntry> entries, byte[] data)
+        private int _version;
+
+        private KerberosAuthorizationDataPAC(IEnumerable<KerberosAuthorizationDataPACEntry> entries, byte[] data, int version)
                 : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)
         {
             Entries = entries.ToList().AsReadOnly();
             _data = data;
+            _version = version;
         }
 
         private protected override void FormatData(StringBuilder builder)
@@ -53,7 +58,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (data.Length < 8)
                 return false;
             BinaryReader reader = new BinaryReader(new MemoryStream(data));
-            long count = reader.ReadInt32();
+            int count = reader.ReadInt32();
             int version = reader.ReadInt32();
             if (version != 0)
             {
@@ -65,7 +70,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             List<KerberosAuthorizationDataPACEntry> entries = new List<KerberosAuthorizationDataPACEntry>();
-            for (long i = 0; i < count; ++i)
+            for (int i = 0; i < count; ++i)
             {
                 int type = reader.ReadInt32();
                 int length = reader.ReadInt32();
@@ -120,13 +125,98 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 entries.Add(pac_entry);
             }
 
-            auth_data = new KerberosAuthorizationDataPAC(entries.AsReadOnly(), data);
+            auth_data = new KerberosAuthorizationDataPAC(entries.AsReadOnly(), data, version);
             return true;
+        }
+
+        private protected byte[] _Encode(int version, IEnumerable<KerberosAuthorizationDataPACEntry> entries)
+        {
+            MemoryStream stream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            writer.Write(Entries.Count);
+            writer.Write(_version);
+
+            // sizeof(PACTYPE) + sizeof(PAC_INFO_BUFFER) * EntryCount
+            long offset = 8 + 16 * Entries.Count;
+
+            foreach (var entry in Entries)
+            {
+                var entryData = entry.Data;
+                if (entry is KerberosAuthorizationDataPACLogon ||
+                    entry is KerberosAuthorizationDataPACSignature)
+                {
+                    entryData = entry.Encode();
+                }
+
+                // Write the PAC_INFO_BUFFER
+                writer.Write((int)entry.PACType);
+                writer.Write(entryData.Length);
+                writer.Write(offset);
+
+                // Write the actual data
+                int current = (int)writer.BaseStream.Position;
+                writer.BaseStream.Position = offset;
+                writer.Write(entryData); 
+                offset = (offset + entryData.Length + 7) / 8 * 8;
+                while (writer.BaseStream.Position < offset)
+                {
+                    // MS always rounds data boundaries
+                    writer.Write('\x00');
+                }
+                writer.BaseStream.Position = current;
+            }
+
+            var t1 = BitConverter.ToString(stream.ToArray()).Replace("-", "");
+            var t2 = BitConverter.ToString(_data).Replace("-", "");
+
+            return stream.ToArray();
+        }
+
+        private protected byte[] Encode()
+        {
+            if (Key == null)
+            {
+                return _Encode(_version, Entries);
+            }
+
+            // Re-calculate checksums - we're only assuming we have the service key (not KDC)
+
+            var entries = new List<KerberosAuthorizationDataPACEntry>(Entries);
+
+            var serverChecksum = entries.First(e => e.PACType == KerberosAuthorizationDataPACEntryType.ServerChecksum) as KerberosAuthorizationDataPACSignature;
+            var kdcChecksum = entries.First(e => e.PACType == KerberosAuthorizationDataPACEntryType.KDCChecksum) as KerberosAuthorizationDataPACSignature;
+            var ticketChecksum = entries.FirstOrDefault(e => e.PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum) as KerberosAuthorizationDataPACSignature;
+
+            byte[] serverChecksumSignature = serverChecksum.Signature;
+            byte[] kdcChecksumSignature = kdcChecksum.Signature;
+            
+            serverChecksum.Signature = new byte[serverChecksum.Signature.Length];
+            kdcChecksum.Signature = new byte[kdcChecksum.Signature.Length];
+
+            byte[] ticketChecksumSignature = null;
+            if (ticketChecksum != null)
+            {
+                ticketChecksumSignature = ticketChecksum.Signature;
+                ticketChecksum.Signature = new byte[ticketChecksum.Signature.Length];
+            }
+                
+            byte[] encodedForHashing = _Encode(_version, entries);
+
+            serverChecksum.Signature = KerberosChecksum.Create(Key, encodedForHashing, 0, encodedForHashing.Length, KerberosKeyUsage.KerbNonKerbChksumSalt).Checksum;
+            kdcChecksum.Signature = kdcChecksumSignature;
+
+            if (ticketChecksumSignature != null)
+            {
+                ticketChecksum.Signature = ticketChecksumSignature;
+            }
+
+            return _Encode(_version, entries);
         }
 
         private protected override byte[] GetData()
         {
-            return _data;
+            return Encode();
         }
     }
 }

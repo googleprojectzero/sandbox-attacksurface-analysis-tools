@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.IO;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -29,13 +30,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Signature.
         /// </summary>
-        public byte[] Signature { get; }
+        public byte[] Signature { get; set; }
         /// <summary>
         /// Read-only Domain Controller Identifier.
         /// </summary>
         public int? RODCIdentifier { get; }
 
-        private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
+        internal KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
             byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)
             : base(type, data)
         {
@@ -87,6 +88,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             entry = new KerberosAuthorizationDataPACSignature(type, data, signature_type, signature, rodc_id);
             return true;
+        }
+
+        internal protected override byte[] Encode()
+        {
+            MemoryStream stream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            writer.Write((int)SignatureType);
+            writer.Write(Signature);
+
+            if (RODCIdentifier != null)
+            {
+                writer.Write((int)RODCIdentifier);
+            }
+
+            return stream.ToArray();
         }
     }
 }

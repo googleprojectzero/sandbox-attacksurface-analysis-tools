@@ -123,8 +123,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return builder.ToString();
         }
 
-        internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted)
+        internal bool Decrypt(KerberosKeySet keyset, string realm, KerberosPrincipalName server_name, KerberosKeyUsage key_usage, out byte[] decrypted, out KerberosAuthenticationKey used_key)
         {
+            used_key = null;
             if (EncryptionType == KerberosEncryptionType.NULL)
             {
                 decrypted = (byte[])CipherText.Clone();
@@ -135,12 +136,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (key != null)
             {
                 if (key.TryDecrypt(CipherText, key_usage, out decrypted))
+                {
+                    used_key = key;
                     return true;
+                }
             }
             foreach (var next in keyset.GetKeysForEncryption(EncryptionType))
             {
                 if (next.TryDecrypt(CipherText, key_usage, out decrypted))
+                {
+                    used_key = next;
                     return true;
+                }
             }
             decrypted = null;
             return false;

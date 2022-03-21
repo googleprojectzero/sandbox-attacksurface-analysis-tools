@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -239,6 +240,57 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return false;
             }
             return true;
+        }
+
+        public static KerberosTicketDecrypted Create(string realm,
+            KerberosPrincipalName server_name, KerberosTicketFlags flags, KerberosAuthenticationKey session_key, string client_realm,
+            KerberosPrincipalName client_name, KerberosTransitedEncoding transitied, KerberosTime auth_time, 
+            KerberosTime start_time, KerberosTime end_time, KerberosTime renew_till,
+            IEnumerable<KerberosHostAddress> host_addresses = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication(3))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, b => b.WriteBitString(flags));
+                    seq.WriteContextSpecific(1, session_key);
+                    seq.WriteContextSpecific(2, client_realm);
+                    seq.WriteContextSpecific(3, client_name);
+                    seq.WriteContextSpecific(4, transitied);
+                    seq.WriteContextSpecific(5, auth_time);
+                    seq.WriteContextSpecific(6, start_time);
+                    seq.WriteContextSpecific(7, end_time);
+                    seq.WriteContextSpecific(8, renew_till);
+                    if (host_addresses != null)
+                    {
+                        seq.WriteContextSpecific(9, host_addresses);
+                    }
+                    if (authorization_data != null)
+                    {
+                        seq.WriteContextSpecific(10, authorization_data);
+                    }
+                }
+            }
+
+            byte[] encoded = builder.ToArray();
+            KerberosTicket outerTicket = Create(realm, server_name, KerberosEncryptedData.Create(KerberosEncryptionType.NULL, encoded));
+            Parse(outerTicket, encoded, new KerberosKeySet(), out KerberosTicket ticket);
+
+            return ticket as KerberosTicketDecrypted;
+        }
+
+        public static KerberosTicket Create(string realm,
+            KerberosPrincipalName server_name, KerberosTicketFlags flags, KerberosAuthenticationKey session_key, string client_realm,
+            KerberosPrincipalName client_name, KerberosTransitedEncoding transitied, KerberosTime auth_time,
+            KerberosTime start_time, KerberosTime end_time, KerberosTime renew_till, KerberosAuthenticationKey ticket_key,
+            IEnumerable<KerberosHostAddress> host_addresses = null, IEnumerable<KerberosAuthorizationData> authorization_data = null,
+            int? ticket_key_version = null)
+        {
+            KerberosTicket ticket = Create(realm, server_name, flags, session_key, client_realm, client_name,
+                transitied, auth_time, start_time, end_time, renew_till, host_addresses, authorization_data);
+
+            return ticket.Encrypt(ticket_key, KerberosKeyUsage.AsRepTgsRepTicket, ticket_key_version);
         }
     }
 }

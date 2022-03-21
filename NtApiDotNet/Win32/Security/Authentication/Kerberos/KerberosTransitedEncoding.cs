@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -35,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent a Kerberos Transiting Encoding.
     /// </summary>
-    public sealed class KerberosTransitedEncoding
+    public sealed class KerberosTransitedEncoding : IDERObject
     {
         /// <summary>
         /// Transited encoding type.
@@ -79,6 +80,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (data == null)
                 throw new InvalidDataException();
             return new KerberosTransitedEncoding(type, data);
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, b => b.WriteInt32((int)TransitedType));
+                seq.WriteContextSpecific(1, b => b.WriteOctetString(Data));
+            }
         }
     }
 }
