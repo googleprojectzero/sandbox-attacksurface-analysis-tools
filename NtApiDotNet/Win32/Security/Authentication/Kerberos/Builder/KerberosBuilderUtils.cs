@@ -24,24 +24,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
     {
         internal static void WriteKerberosHeader(this DERBuilder builder, KerberosMessageType msg_type)
         {
-            builder.WriteContextSpecific(0, b => b.WriteInt32(5));
-            builder.WriteContextSpecific(1, b => b.WriteInt32((int)msg_type));
-        }
-
-        internal static void WritePrincipalName(this DERBuilder builder, KerberosPrincipalName name)
-        {
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)name.NameType));
-                seq.WriteContextSpecific(1, b => b.WriteSequence(name.Names, 
-                    (s, v) => s.WriteGeneralString(v)));
-            }
-        }
-
-        internal static void WriteKerberosTime(this DERBuilder builder, int context, DateTime time)
-        {
-            builder.WriteContextSpecific(context, b => b.WriteGeneralizedTime(time));
-            builder.WriteContextSpecific(context + 1, b => b.WriteInt32(time.Millisecond * 1000));
+            builder.WriteContextSpecific(0, 5);
+            builder.WriteContextSpecific(1, (int)msg_type);
         }
 
         internal static DERBuilderSubStructure CreateMsg(this DERBuilder builder, KerberosMessageType type)

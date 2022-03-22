@@ -224,8 +224,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 using (var seq = app.CreateSequence())
                 {
-                    seq.WriteContextSpecific(0, b => b.WriteInt32(TicketVersion));
-                    seq.WriteContextSpecific(1, b => b.WriteGeneralString(Realm));
+                    seq.WriteContextSpecific(0, TicketVersion);
+                    seq.WriteContextSpecific(1, Realm);
                     seq.WriteContextSpecific(2, ServerName);
                     seq.WriteContextSpecific(3, EncryptedData);
                 }

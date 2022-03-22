@@ -178,11 +178,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             using (var seq = builder.CreateSequence())
             {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)EncryptionType));
-                if (KeyVersion.HasValue)
-                {
-                    seq.WriteContextSpecific(1, b => b.WriteInt32(KeyVersion.Value));
-                }
+                seq.WriteContextSpecific(0, (int)EncryptionType);
+                seq.WriteContextSpecific(1, KeyVersion);
                 seq.WriteContextSpecific(2, b => b.WriteOctetString(CipherText));
             }
         }

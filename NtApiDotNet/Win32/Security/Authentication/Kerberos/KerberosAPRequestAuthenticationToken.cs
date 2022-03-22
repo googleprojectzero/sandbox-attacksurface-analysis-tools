@@ -175,7 +175,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
                     seq.WriteKerberosHeader(KerberosMessageType.KRB_AP_REQ);
                     seq.WriteContextSpecific(2, b => b.WriteBitString(option_bits));
-                    seq.WriteContextSpecific(3, b => b.WriteRawBytes(ticket.ToArray()));
+                    seq.WriteContextSpecific(3, ticket);
                     seq.WriteContextSpecific(4, authenticator);
                 }
             }

@@ -69,9 +69,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 using (var seq = app.CreateSequence())
                 {
-                    seq.WriteContextSpecific(0, b => b.WriteInt32(5));
-                    seq.WriteContextSpecific(1, b => b.WriteInt32((int)KerberosMessageType.KRB_CRED));
-                    seq.WriteContextSpecific(2, b => b.WriteSequence(tickets));
+                    seq.WriteContextSpecific(0, 5);
+                    seq.WriteContextSpecific(1, (int)KerberosMessageType.KRB_CRED);
+                    seq.WriteContextSpecific(2, tickets);
                     seq.WriteContextSpecific(3, encrypted_part);
                 }
             }

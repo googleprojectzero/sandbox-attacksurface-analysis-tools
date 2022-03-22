@@ -50,10 +50,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             using (var seq = builder.CreateSequence())
             {
                 seq.WriteKerberosHeader(KerberosMessageType.KRB_TGT_REQ);
-                if (server_name != null)
-                    seq.WriteContextSpecific(2, b => b.WritePrincipalName(server_name));
-                if (realm != null)
-                    seq.WriteContextSpecific(3, b => b.WriteGeneralString(realm));
+                seq.WriteContextSpecific(2, server_name);
+                seq.WriteContextSpecific(3, realm);
             }
             return builder;
         }

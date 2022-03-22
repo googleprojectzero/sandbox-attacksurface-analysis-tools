@@ -164,27 +164,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 using (var seq = app.CreateSequence())
                 {
                     seq.WriteKerberosHeader(KerberosMessageType.KRB_ERROR);
-                    if (client_time != null)
-                    {
-                        seq.WriteContextSpecific(2, client_time);
-                    }
-                    if (client_usec.HasValue)
-                    {
-                        builder.WriteContextSpecific(3, b => b.WriteInt32(client_usec.Value));
-                    }
+                    seq.WriteContextSpecific(2, client_time);
+                    seq.WriteContextSpecific(3, client_usec);
                     seq.WriteContextSpecific(4, server_time);
-                    seq.WriteContextSpecific(5, b => b.WriteInt32(server_usec));
-                    seq.WriteContextSpecific(6, b => b.WriteInt32((int)error_code));
-                    if (client_realm != null)
-                        seq.WriteContextSpecific(7, b => b.WriteGeneralString(client_realm));
-                    if (client_name != null)
-                        seq.WriteContextSpecific(8, b => b.WritePrincipalName(client_name));
-                    seq.WriteContextSpecific(9, b => b.WriteGeneralString(server_realm));
-                    seq.WriteContextSpecific(10, b => b.WritePrincipalName(server_name));
-                    if (error_text != null)
-                        seq.WriteContextSpecific(11, b => b.WriteGeneralString(error_text));
-                    if (error_data != null)
-                        seq.WriteContextSpecific(12, b => b.WriteOctetString(error_data));
+                    seq.WriteContextSpecific(5, server_usec);
+                    seq.WriteContextSpecific(6, (int)error_code);
+                    seq.WriteContextSpecific(7, client_realm);
+                    seq.WriteContextSpecific(8, client_name);
+                    seq.WriteContextSpecific(9, server_realm);
+                    seq.WriteContextSpecific(10, server_name);
+                    seq.WriteContextSpecific(11, error_text);
+                    seq.WriteContextSpecific(12, b => b.WriteOctetString(error_data));
                 }
             }
             return (KerberosErrorAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300));

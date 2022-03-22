@@ -251,11 +251,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 using (var seq = app.CreateSequence())
                 {
-                    seq.WriteContextSpecific(1, b => b.WriteInt32(5));
-                    seq.WriteContextSpecific(2, b => b.WriteInt32((int)type));
+                    seq.WriteContextSpecific(1, 5);
+                    seq.WriteContextSpecific(2, (int)type);
                     if ((pre_auth_data != null) && pre_auth_data.Any())
                     {
-                        seq.WriteContextSpecific(3, b => b.WriteSequence(pre_auth_data));
+                        seq.WriteContextSpecific(3, pre_auth_data);
                     }
                     using (var ctx = seq.CreateContextSpecific(4))
                     {

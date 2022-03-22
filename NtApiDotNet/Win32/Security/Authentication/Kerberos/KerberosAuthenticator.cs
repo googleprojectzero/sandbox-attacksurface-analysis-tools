@@ -120,27 +120,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 using (var seq = app.CreateSequence())
                 {
-                    seq.WriteContextSpecific(0, b => b.WriteInt32(5));
-                    seq.WriteContextSpecific(1, b => b.WriteGeneralString(client_realm));
+                    seq.WriteContextSpecific(0, 5);
+                    seq.WriteContextSpecific(1, client_realm);
                     seq.WriteContextSpecific(2, client_name);
-                    if (checksum != null)
-                    {
-                        seq.WriteContextSpecific(3, checksum);
-                    }
-                    seq.WriteContextSpecific(4, b => b.WriteInt32(client_usec));
+                    seq.WriteContextSpecific(3, checksum);
+                    seq.WriteContextSpecific(4, client_usec);
                     seq.WriteContextSpecific(5, client_time);
-                    if (subkey != null)
-                    {
-                        seq.WriteContextSpecific(6, subkey);
-                    }
-                    if (sequence_number.HasValue)
-                    {
-                        seq.WriteContextSpecific(7, b => b.WriteInt32(sequence_number.Value));
-                    }
-                    if (authorization_data != null)
-                    {
-                        seq.WriteContextSpecific(8, b => b.WriteSequence(authorization_data));
-                    }
+                    seq.WriteContextSpecific(6, subkey);
+                    seq.WriteContextSpecific(7, sequence_number);
+                    seq.WriteContextSpecific(8, authorization_data);
                 }
             }
 

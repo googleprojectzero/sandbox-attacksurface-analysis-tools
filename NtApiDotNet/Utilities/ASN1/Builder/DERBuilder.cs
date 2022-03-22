@@ -27,9 +27,12 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
     /// </summary>
     public class DERBuilder
     {
+        #region Private Members
         private readonly Stream _stm;
         private readonly BinaryWriter _writer;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -46,7 +49,9 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         public DERBuilder() : this(new MemoryStream())
         {
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Write an object ID.
         /// </summary>
@@ -247,23 +252,13 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
-        /// Write a context specific tag with specified contents.
+        /// Write an context specific tag with contents from the builder.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
-        /// <param name="data">The contents of the context specific value.</param>
-        public void WriteContextSpecific(int context, byte[] data)
-        {
-            _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, data);
-        }
-
-        /// <summary>
-        /// Write a context specific tag with contents from the builder.
-        /// </summary>
-        /// <param name="context">The ID of the context specific tag.</param>
-        /// <param name="builder">The builder for the contents.</param>
+        /// <param name="builder">The DER builder to write..</param>
         public void WriteContextSpecific(int context, DERBuilder builder)
         {
-            WriteContextSpecific(context, builder.ToArray());
+            _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, builder.ToArray());
         }
 
         /// <summary>
@@ -316,7 +311,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
-        /// Write an context specific tag with an general string.
+        /// Write an context specific tag with a general string.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
         /// <param name="value">The value to write.</param>
@@ -325,6 +320,18 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             if (value == null)
                 return;
             WriteContextSpecific(context, b => b.WriteGeneralString(value));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with a sequence of general strings.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, IEnumerable<string> value)
+        {
+            if (value == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteGeneralStringSequence(value));
         }
 
         /// <summary>
@@ -455,5 +462,6 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
                 return stm.ToArray();
             throw new InvalidOperationException("Inner stream must be a MemoryStream to convert to a byte array.");
         }
+        #endregion
     }
 }

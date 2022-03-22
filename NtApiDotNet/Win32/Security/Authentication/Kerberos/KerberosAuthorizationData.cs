@@ -147,7 +147,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             using (var seq = builder.CreateSequence())
             {
-                seq.WriteContextSpecific(0, b => b.WriteInt32((int)DataType));
+                seq.WriteContextSpecific(0, (int)DataType);
                 seq.WriteContextSpecific(1, b => b.WriteOctetString(GetData()));
             }
         }
