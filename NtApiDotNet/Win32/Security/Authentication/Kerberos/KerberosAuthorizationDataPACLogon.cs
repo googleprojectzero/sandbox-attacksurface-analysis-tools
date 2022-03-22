@@ -219,7 +219,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             UserFlags = (KerberosUserFlags)logon_info.UserFlags;
-            List<sbyte> session_key = new List<sbyte>();
+            List<byte> session_key = new List<byte>();
             if (logon_info.UserSessionKey.data != null)
             {
                 foreach (var key in logon_info.UserSessionKey.data)
@@ -231,7 +231,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
 
-            UserSessionKey = (byte[])(object)session_key.ToArray();
+            UserSessionKey = session_key.ToArray();
             LogonServer = logon_info.LogonServer.ToString();
             LogonDomainName = logon_info.LogonDomainName.ToString();
 
