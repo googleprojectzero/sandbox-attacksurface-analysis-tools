@@ -73,15 +73,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             switch (entry.ClaimType.Value)
             {
                 case 1:
-                    return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.Int64, 0, entry.Values.Arm_1.Int64Values.GetValue().Cast<object>());
+                    return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.Int64, 0, entry.Values.ValueInt64.Int64Values.GetValue().Cast<object>());
                 case 2:
                     return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.UInt64, 0, 
-                        entry.Values.Arm_2.Uint64Values.GetValue().Select(l => (ulong)l).Cast<object>());
+                        entry.Values.ValueUInt64.Uint64Values.GetValue().Select(l => (ulong)l).Cast<object>());
                 case 3:
-                    return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.String, 0, entry.Values.Arm_3.StringValues.GetValue());
+                    return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.String, 0, entry.Values.ValueString.StringValues.GetValue());
                 case 4:
                     return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.Boolean, 0, 
-                        entry.Values.Arm_6.BooleanValues.GetValue().Select(l => l != 0).Cast<object>());
+                        entry.Values.ValueBoolean.BooleanValues.GetValue().Select(l => l != 0).Cast<object>());
                 default:
                     return new ClaimSecurityAttribute(entry.Id, ClaimSecurityValueType.Int64, 0, new object[0]);
             }
