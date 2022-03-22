@@ -88,5 +88,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 throw new InvalidDataException("PAC signature entry is invalid.");
             return entry;
         }
+
+        /// <summary>
+        /// Update the signature using a key and data.
+        /// </summary>
+        /// <param name="key">The key to use for the update.</param>
+        /// <param name="data">The data to use for the signature.</param>
+        public void UpdateSignature(KerberosAuthenticationKey key, byte[] data)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            KerberosChecksum chksum = KerberosChecksum.Create(key, data, KerberosKeyUsage.KerbNonKerbChksumSalt);
+            SignatureType = chksum.ChecksumType;
+            Signature = chksum.Checksum;
+        }
     }
 }

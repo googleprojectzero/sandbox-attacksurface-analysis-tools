@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -54,29 +55,54 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         }
 
         /// <summary>
-        /// Resign the PAC's server checksum.
+        /// Compute the PAC's server and optionally KDC signatures.
         /// </summary>
-        /// <param name="key">The authentication key to use for the signature.</param>
-        public void ResignForServer(KerberosAuthenticationKey key)
+        /// <param name="server_key">The server's key to use for the signature.</param>
+        /// <param name="kdc_key">The KDC key if known.</param>
+        public void ComputeSignatures(KerberosAuthenticationKey server_key, KerberosAuthenticationKey kdc_key = null)
         {
+            if (server_key is null)
+            {
+                throw new ArgumentNullException(nameof(server_key));
+            }
+
             List<KerberosAuthorizationDataPACEntryBuilder> entries = new List<KerberosAuthorizationDataPACEntryBuilder>(Entries);
             KerberosAuthorizationDataPACSignatureBuilder server_checksum = null;
+            KerberosAuthorizationDataPACSignatureBuilder kdc_checksum = null;
             for (int i = 0; i < entries.Count; ++i)
             {
-                if (entries[i] is KerberosAuthorizationDataPACSignatureBuilder sig_builder)
+                if (!(entries[i] is KerberosAuthorizationDataPACSignatureBuilder sig_builder)
+                    || entries[i].PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum)
                 {
-                    entries[i] = new KerberosAuthorizationDataPACSignatureBuilder(sig_builder.PACType,
-                        sig_builder.SignatureType, new byte[sig_builder.Signature.Length], sig_builder.RODCIdentifier);
-                    if (sig_builder.PACType == KerberosAuthorizationDataPACEntryType.ServerChecksum)
-                        server_checksum = sig_builder;
+                    continue;
                 }
-            }
-            // No need to do anything if no server checksum.
-            if (server_checksum == null)
-                return;
+                switch (entries[i].PACType)
+                {
+                    case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+                        server_checksum = sig_builder;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+                        kdc_checksum = sig_builder;
+                        break;
+                    default:
+                        continue;
+                }
 
-            server_checksum.Signature = KerberosChecksum.Create(key, Encode(Version, entries), 
-                KerberosKeyUsage.KerbNonKerbChksumSalt).Checksum;
+                entries[i] = new KerberosAuthorizationDataPACSignatureBuilder(sig_builder.PACType,
+                     sig_builder.SignatureType, new byte[sig_builder.Signature.Length], sig_builder.RODCIdentifier);
+            }
+
+            if (server_checksum == null)
+                throw new ArgumentException("No server checksum found int the PAC.");
+            server_checksum.UpdateSignature(server_key, Encode(Version, entries));
+
+            if (kdc_key != null)
+            {
+                if (kdc_checksum == null)
+                    throw new ArgumentException("No KDC checksum found int the PAC.");
+
+                kdc_checksum.UpdateSignature(kdc_key, server_checksum.Signature);
+            }
         }
 
         /// <summary>
