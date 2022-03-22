@@ -140,7 +140,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             using (var seq = builder.CreateSequence())
             {
                 seq.WriteContextSpecific(0, (int)AddressType);
-                seq.WriteContextSpecific(1, b => b.WriteOctetString(Address));
+                seq.WriteContextSpecific(1, Address);
             }
         }
     }

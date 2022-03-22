@@ -174,7 +174,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     seq.WriteContextSpecific(9, server_realm);
                     seq.WriteContextSpecific(10, server_name);
                     seq.WriteContextSpecific(11, error_text);
-                    seq.WriteContextSpecific(12, b => b.WriteOctetString(error_data));
+                    seq.WriteContextSpecific(12, error_data);
                 }
             }
             return (KerberosErrorAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300));

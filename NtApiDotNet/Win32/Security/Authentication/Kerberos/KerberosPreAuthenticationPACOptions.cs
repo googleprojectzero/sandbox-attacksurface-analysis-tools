@@ -69,7 +69,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             DERBuilder builder = new DERBuilder();
             using (var seq = builder.CreateSequence())
             {
-                seq.WriteContextSpecific(0, b => b.WriteBitString(bits));
+                seq.WriteContextSpecific(0, bits);
             }
             return builder.ToArray();
         }

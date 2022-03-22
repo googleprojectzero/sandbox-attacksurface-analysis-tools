@@ -466,7 +466,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             using (var seq = builder.CreateSequence())
             {
                 seq.WriteContextSpecific(0, (int)KeyEncryption);
-                seq.WriteContextSpecific(1, b => b.WriteOctetString(Key));
+                seq.WriteContextSpecific(1, Key);
             }
         }
 

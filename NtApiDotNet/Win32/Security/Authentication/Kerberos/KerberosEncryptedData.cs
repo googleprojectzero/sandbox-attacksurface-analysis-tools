@@ -180,7 +180,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 seq.WriteContextSpecific(0, (int)EncryptionType);
                 seq.WriteContextSpecific(1, KeyVersion);
-                seq.WriteContextSpecific(2, b => b.WriteOctetString(CipherText));
+                seq.WriteContextSpecific(2, CipherText);
             }
         }
         #endregion

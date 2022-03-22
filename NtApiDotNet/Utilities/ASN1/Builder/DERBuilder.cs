@@ -255,7 +255,7 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// Write an context specific tag with contents from the builder.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
-        /// <param name="builder">The DER builder to write..</param>
+        /// <param name="builder">The DER builder to write.</param>
         public void WriteContextSpecific(int context, DERBuilder builder)
         {
             _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, builder.ToArray());
@@ -332,6 +332,31 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             if (value == null)
                 return;
             WriteContextSpecific(context, b => b.WriteGeneralStringSequence(value));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an OCTET STRING.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, byte[] value)
+        {
+            if (value == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteOctetString(value));
+        }
+
+
+        /// <summary>
+        /// Write an context specific tag with an BITSTRING
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, BitArray value)
+        {
+            if (value == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteBitString(value));
         }
 
         /// <summary>

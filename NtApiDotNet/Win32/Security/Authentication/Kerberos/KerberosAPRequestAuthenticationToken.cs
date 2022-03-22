@@ -174,7 +174,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     option_bits[2] = options.HasFlagSet(KerberosAPRequestOptions.MutualAuthRequired);
 
                     seq.WriteKerberosHeader(KerberosMessageType.KRB_AP_REQ);
-                    seq.WriteContextSpecific(2, b => b.WriteBitString(option_bits));
+                    seq.WriteContextSpecific(2, option_bits);
                     seq.WriteContextSpecific(3, ticket);
                     seq.WriteContextSpecific(4, authenticator);
                 }
