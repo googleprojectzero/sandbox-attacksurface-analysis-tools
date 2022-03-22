@@ -707,26 +707,50 @@ function Export-LsaAuthToken {
 
 <#
 .SYNOPSIS
-Imports an authentication token to a file.
+Imports an authentication token from a file.
 .DESCRIPTION
 This cmdlet imports an authentication token from a file.
 .PARAMETER Path
 The path to the file to import.
+.PARAMETER Context
+The authentication context to use to determine the token type.
+.PARAMETER Package
+The authentication package to use to determine the token type.
+.PARAMETER Client
+Specifies that the token is from a client. Advisory only.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
 function Import-LsaAuthToken {
-    [CmdletBinding(DefaultParameterSetName="FromContext")]
+    [CmdletBinding(DefaultParameterSetName="FromPath")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [string]$Path
+        [string]$Path,
+        [parameter(Position = 1, ParameterSetName="FromContext", Mandatory)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [parameter(Position = 1, ParameterSetName="FromPackage", Mandatory)]
+        [string]$Package,
+        [parameter(ParameterSetName="FromContext")]
+        [switch]$Client
     )
 
-    $token = [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken][byte[]](Get-Content -Path $Path -Encoding Byte)
-    Write-Output $token
+    $ba = [byte[]](Get-Content -Path $Path -Encoding Byte)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromContext" {
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
+        }
+        "FromPackage" {
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
+        }
+        "FromPath" {
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($ba)
+        }
+    }
 }
+
+Register-ArgumentCompleter -CommandName Import-LsaAuthToken -ParameterName Package -ScriptBlock $package_completer
 
 <#
 .SYNOPSIS
