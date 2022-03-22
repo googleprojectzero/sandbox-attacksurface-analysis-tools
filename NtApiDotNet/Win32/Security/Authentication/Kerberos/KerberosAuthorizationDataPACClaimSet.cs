@@ -93,7 +93,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ClaimsArray = claims_array;
         }
 
-        private static NtResult<byte[]> DecompressBuffer(CLAIM_SET_METADATA set)
+        private static NtResult<byte[]> DecompressBuffer(CLAIMS_SET_METADATA set)
         {
             RtlCompressionFormat format = (RtlCompressionFormat)set.usCompressionFormat.Value;
             if (format == RtlCompressionFormat.None)
