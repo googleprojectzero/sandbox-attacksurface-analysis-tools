@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -50,6 +51,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The PAC data.
         /// </summary>
         public byte[] Data { get; }
+
+        /// <summary>
+        /// Convert the entry into a builder.
+        /// </summary>
+        /// <returns>The builder entry.</returns>
+        public virtual KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACEntryRawBuilder(this);
+        }
 
         internal KerberosAuthorizationDataPACEntry(KerberosAuthorizationDataPACEntryType type, byte[] data)
         {

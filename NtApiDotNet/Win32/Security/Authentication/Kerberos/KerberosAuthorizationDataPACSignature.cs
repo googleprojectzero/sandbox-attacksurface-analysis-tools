@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
@@ -34,6 +35,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Read-only Domain Controller Identifier.
         /// </summary>
         public int? RODCIdentifier { get; }
+
+        /// <summary>
+        /// Convert to a builder.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACSignatureBuilder(PACType, SignatureType, Signature, RODCIdentifier);
+        }
 
         private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
             byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)

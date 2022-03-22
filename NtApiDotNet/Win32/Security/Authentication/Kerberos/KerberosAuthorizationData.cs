@@ -14,7 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
-using System;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -30,6 +30,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Type of authentication data.
         /// </summary>
         public KerberosAuthorizationDataType DataType { get; }
+
+        /// <summary>
+        /// Convert the authorization data into a builder.
+        /// </summary>
+        /// <returns>The authorization builder.</returns>
+        public virtual KerberosAuthorizationDataBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataRawBuilder(DataType, GetData());
+        }
 
         private protected KerberosAuthorizationData(KerberosAuthorizationDataType type)
         {
@@ -130,11 +139,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         private protected abstract void FormatData(StringBuilder builder);
 
         private protected abstract byte[] GetData();
-
-        //private protected virtual byte[] GetData()
-        //{
-        //    throw new NotSupportedException($"Conversion to an array is not supported for {DataType}");
-        //}
 
         internal void Format(StringBuilder builder)
         {

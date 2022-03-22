@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -98,6 +99,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
 
+        /// <summary>
+        /// Create a builder object from this ticket.
+        /// </summary>
+        /// <returns></returns>
+        public KerberosTicketBuilder ToBuilder()
+        {
+            return new KerberosTicketBuilder(TicketVersion, Realm, ServerName, Flags, ClientRealm, ClientName,
+                AuthTime, StartTime, EndTime, RenewTill, Key, TransitedType, HostAddresses, AuthorizationData);
+        }
+
         private protected override void FormatTicketData(StringBuilder builder)
         {
             builder.AppendLine($"Flags           : {Flags}");
@@ -133,7 +144,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 builder.AppendLine($"{NtObjectUtils.ToHexString(TransitedType.Data)}");
                 builder.AppendLine();
             }
-            if (HostAddresses.Count > 0)
+            if (HostAddresses?.Count > 0)
             {
                 builder.AppendLine("<Host Addresses>");
                 foreach (var addr in HostAddresses)
@@ -142,7 +153,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
                 builder.AppendLine();
             }
-            if (AuthorizationData.Count > 0)
+            if (AuthorizationData?.Count > 0)
             {
                 foreach (var ad in AuthorizationData)
                 {
@@ -156,8 +167,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, 
                   KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted))
         {
-            HostAddresses = new List<KerberosHostAddress>().AsReadOnly();
-            AuthorizationData = new List<KerberosAuthorizationData>().AsReadOnly();
         }
 
         internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicket ticket)

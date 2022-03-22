@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,11 +31,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationDataPACEntry> Entries { get; }
 
+        /// <summary>
+        /// The PAC version.
+        /// </summary>
+        public int Version { get; }
+
+        /// <summary>
+        /// Convert the authorization data into a builder.
+        /// </summary>
+        /// <returns>The authorization builder.</returns>
+        public override KerberosAuthorizationDataBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACBuilder(Version, Entries);
+        }
+
         private readonly byte[] _data;
 
-        private KerberosAuthorizationDataPAC(IEnumerable<KerberosAuthorizationDataPACEntry> entries, byte[] data)
+        private KerberosAuthorizationDataPAC(int version, IEnumerable<KerberosAuthorizationDataPACEntry> entries, byte[] data)
                 : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)
         {
+            Version = version;
             Entries = entries.ToList().AsReadOnly();
             _data = data;
         }
@@ -55,10 +71,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             BinaryReader reader = new BinaryReader(new MemoryStream(data));
             long count = reader.ReadInt32();
             int version = reader.ReadInt32();
-            if (version != 0)
-            {
-                return false;
-            }
             if (reader.RemainingLength() < count * 16)
             {
                 return false;
@@ -120,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 entries.Add(pac_entry);
             }
 
-            auth_data = new KerberosAuthorizationDataPAC(entries.AsReadOnly(), data);
+            auth_data = new KerberosAuthorizationDataPAC(version, entries, data);
             return true;
         }
 

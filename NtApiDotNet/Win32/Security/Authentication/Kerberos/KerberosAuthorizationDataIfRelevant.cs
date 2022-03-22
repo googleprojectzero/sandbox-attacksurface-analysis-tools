@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,6 +39,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             : base(KerberosAuthorizationDataType.AD_IF_RELEVANT)
         {
             Entries = entries.ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Create a builder for this AD data.
+        /// </summary>
+        /// <returns>The builder.</returns>
+        public override KerberosAuthorizationDataBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataIfRelevantBuilder(Entries);
         }
 
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataIfRelevant entry)
