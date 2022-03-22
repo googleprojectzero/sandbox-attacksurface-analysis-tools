@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
 using System;
 using System.Collections.Generic;
@@ -186,6 +187,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<UserGroup> ResourceGroups { get; }
 
+        /// <summary>
+        /// Convert to a builder.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACLogonBuilder(Data);
+        }
+
         internal KerberosAuthorizationDataPACLogon(KerberosAuthorizationDataPACEntryType type,
             byte[] data, KERB_VALIDATION_INFO logon_info) : base(type, data)
         {
@@ -195,16 +205,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             PasswordLastSet = logon_info.PasswordLastSet.ToTime();
             PasswordCanChange = logon_info.PasswordCanChange.ToTime();
             PasswordMustChange = logon_info.PasswordMustChange.ToTime();
-            EffectiveName = logon_info.EffectiveName.ToString();
-            FullName = logon_info.FullName.ToString();
-            LogonScript = logon_info.LogonScript.ToString();
-            ProfilePath = logon_info.ProfilePath.ToString();
-            HomeDirectory = logon_info.HomeDirectory.ToString();
-            HomeDirectoryDrive = logon_info.HomeDirectoryDrive.ToString();
+            EffectiveName = logon_info.EffectiveName.ToString() ?? string.Empty;
+            FullName = logon_info.FullName.ToString() ?? string.Empty;
+            LogonScript = logon_info.LogonScript.ToString() ?? string.Empty;
+            ProfilePath = logon_info.ProfilePath.ToString() ?? string.Empty;
+            HomeDirectory = logon_info.HomeDirectory.ToString() ?? string.Empty;
+            HomeDirectoryDrive = logon_info.HomeDirectoryDrive.ToString() ?? string.Empty;
             LogonCount = logon_info.LogonCount;
             BadPasswordCount = logon_info.BadPasswordCount;
             LogonDomainSid = logon_info.LogonDomainId.GetValue().ToSid();
-            LogonDomainName = logon_info.LogonDomainName.ToString();
+            LogonDomainName = logon_info.LogonDomainName.ToString() ?? string.Empty;
 
             User = LogonDomainSid.CreateRelative((uint)logon_info.UserId);
             PrimaryGroup = LogonDomainSid.CreateRelative((uint) logon_info.PrimaryGroupId);
@@ -219,21 +229,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             UserFlags = (KerberosUserFlags)logon_info.UserFlags;
-            List<byte> session_key = new List<byte>();
-            if (logon_info.UserSessionKey.data != null)
-            {
-                foreach (var key in logon_info.UserSessionKey.data)
-                {
-                    if (key.data != null)
-                    {
-                        session_key.AddRange(key.data);
-                    }
-                }
-            }
-
-            UserSessionKey = session_key.ToArray();
-            LogonServer = logon_info.LogonServer.ToString();
-            LogonDomainName = logon_info.LogonDomainName.ToString();
+            UserSessionKey = logon_info.UserSessionKey.ToArray();
+            LogonServer = logon_info.LogonServer.ToString() ?? string.Empty;
+            LogonDomainName = logon_info.LogonDomainName.ToString() ?? string.Empty;
 
             if (logon_info.ExtraSids != null)
             {

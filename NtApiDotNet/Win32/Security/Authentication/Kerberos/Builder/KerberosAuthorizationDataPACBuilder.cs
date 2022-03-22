@@ -35,6 +35,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public int Version { get; set; }
 
         /// <summary>
+        /// Get the logon info PAC entry.
+        /// </summary>
+        public KerberosAuthorizationDataPACLogonBuilder LogonInfo => Entries.OfType<KerberosAuthorizationDataPACLogonBuilder>().FirstOrDefault();
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public KerberosAuthorizationDataPACBuilder() : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)

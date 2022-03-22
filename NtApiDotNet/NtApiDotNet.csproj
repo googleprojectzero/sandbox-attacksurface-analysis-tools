@@ -517,9 +517,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACEntryBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACEntryRawBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACLogonBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACSignatureBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataRawBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosBuilderUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosGroupMembership.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTicketBuilder.cs" />
