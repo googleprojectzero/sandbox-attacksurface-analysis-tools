@@ -106,9 +106,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 throw new ArgumentNullException(nameof(data));
             }
 
-            KerberosChecksum chksum = KerberosChecksum.Create(key, data, KerberosKeyUsage.KerbNonKerbChksumSalt);
-            SignatureType = chksum.ChecksumType;
-            Signature = chksum.Checksum;
+            SignatureType = key.ChecksumType;
+            Signature = key.ComputeHash(data, KerberosKeyUsage.KerbNonKerbChksumSalt);
         }
     }
 }

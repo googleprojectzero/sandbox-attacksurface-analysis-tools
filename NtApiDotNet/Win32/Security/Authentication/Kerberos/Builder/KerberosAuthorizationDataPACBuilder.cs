@@ -76,12 +76,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 {
                     continue;
                 }
+
+                KerberosAuthenticationKey key;
                 switch (entries[i].PACType)
                 {
                     case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+                        key = server_key;
                         server_checksum = sig_builder;
                         break;
                     case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+                        key = kdc_key;
                         kdc_checksum = sig_builder;
                         break;
                     default:
@@ -89,7 +93,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 }
 
                 entries[i] = new KerberosAuthorizationDataPACSignatureBuilder(sig_builder.PACType,
-                     sig_builder.SignatureType, new byte[sig_builder.Signature.Length], sig_builder.RODCIdentifier);
+                     key?.ChecksumType ?? sig_builder.SignatureType, 
+                     new byte[key?.ChecksumSize ?? sig_builder.Signature.Length], 
+                     sig_builder.RODCIdentifier);
             }
 
             if (server_checksum == null)

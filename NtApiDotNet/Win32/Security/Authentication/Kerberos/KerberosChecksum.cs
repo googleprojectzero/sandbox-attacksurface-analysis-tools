@@ -62,22 +62,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The new kerberos checksum.</returns>
         public static KerberosChecksum Create(KerberosAuthenticationKey key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
-            KerberosChecksumType checksum_type;
-            switch (key.KeyEncryption)
-            {
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                    checksum_type = KerberosChecksumType.HMAC_SHA1_96_AES_128;
-                    break;
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    checksum_type = KerberosChecksumType.HMAC_SHA1_96_AES_256;
-                    break;
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    checksum_type = KerberosChecksumType.HMAC_MD5;
-                    break;
-                default:
-                    throw new InvalidDataException("Unsupported hash algorithm.");
-            }
-            return new KerberosChecksum(checksum_type, key.ComputeHash(data, offset, length, key_usage));
+            return new KerberosChecksum(key.ChecksumType, key.ComputeHash(data, offset, length, key_usage));
         }
 
         /// <summary>

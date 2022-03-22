@@ -104,6 +104,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Returns whether the key is all zeros typically indicating it's invalid.
         /// </summary>
         public bool IsZeroKey => NtObjectUtils.EqualByteArray(Key, new byte[Key.Length]);
+
+        /// <summary>
+        /// Get the checksum type associated with the key algorithm.
+        /// </summary>
+        public KerberosChecksumType ChecksumType
+        {
+            get
+            {
+                switch (KeyEncryption)
+                {
+                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                        return KerberosChecksumType.HMAC_SHA1_96_AES_128;
+                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                        return KerberosChecksumType.HMAC_SHA1_96_AES_256;
+                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                        return KerberosChecksumType.HMAC_MD5;
+                    default:
+                        throw new InvalidDataException("Unsupported hash algorithm.");
+                }
+            }
+        }
         #endregion
 
         #region Constructors
