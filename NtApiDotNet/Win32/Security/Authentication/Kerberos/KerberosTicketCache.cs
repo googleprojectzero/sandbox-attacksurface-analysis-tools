@@ -181,6 +181,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         AsKerbCred = 8,
         WithSecCred = 0x10,
         CacheTicket = 0x20,
+        MaxLifetime = 0x40
     }
 
     [StructLayout(LayoutKind.Sequential)]
