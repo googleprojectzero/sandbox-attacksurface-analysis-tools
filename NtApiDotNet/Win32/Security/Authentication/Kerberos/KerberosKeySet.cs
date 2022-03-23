@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -126,6 +127,73 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static KerberosKeySet ReadKeyTabFile(string path)
         {
             return new KerberosKeySet(KerberosUtils.ReadKeyTabFile(path));
+        }
+
+        /// <summary>
+        /// Get a key tab for a user from the LSA.
+        /// </summary>
+        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The kerberos keytab.</returns>
+        [SupportedVersion(SupportedVersion.Windows10)]
+        public static NtResult<KerberosKeySet> GetKeyTab(UserCredentials credentials, bool throw_on_error)
+        {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
+            using (var list = new DisposableList())
+            {
+                int total_str_size = KerberosTicketCache.CalculateLength(credentials.UserName, credentials.Domain) 
+                    + KerberosTicketCache.CalculateLength(credentials.Password?.Length);
+                var buffer = new SafeStructureInOutBuffer<KERB_RETRIEVE_KEY_TAB_REQUEST>(total_str_size, true);
+
+                using (var strs = buffer.Data.GetStream())
+                {
+                    BinaryWriter writer = new BinaryWriter(strs);
+                    UnicodeStringOut username = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.UserName);
+                    UnicodeStringOut domain = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.Domain);
+                    UnicodeStringOut password = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.GetPasswordBytes());
+
+                    buffer.Result = new KERB_RETRIEVE_KEY_TAB_REQUEST()
+                    {
+                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage,
+                        UserName = username,
+                        DomainName = domain,
+                        Password = password
+                    };
+                }
+
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Cast<KerberosKeySet>();
+                    using (var result = KerberosTicketCache.CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        if (!result.IsSuccess)
+                            return result.Status.CreateResultFromError<KerberosKeySet>(throw_on_error);
+                        if (!result.Result.Status.IsSuccess())
+                            return result.Result.Status.CreateResultFromError<KerberosKeySet>(throw_on_error);
+
+                        var keytab = result.Result.Buffer.Read<KERB_RETRIEVE_KEY_TAB_RESPONSE>(0);
+                        var keytab_buffer = new SafeHGlobalBuffer(keytab.KeyTab, keytab.KeyTabLength, false);
+
+                        return KerberosKeySet.ReadKeyTabFile(keytab_buffer.GetStream()).CreateResult();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get a key tab for a user from the LSA.
+        /// </summary>
+        /// <param name="credentials">The user's credentials.</param>
+        /// <returns>The kerberos keytab.</returns>
+        [SupportedVersion(SupportedVersion.Windows10)]
+        public static KerberosKeySet GetKeyTab(UserCredentials credentials)
+        {
+            return GetKeyTab(credentials, true).Result;
         }
 
         IEnumerator<KerberosAuthenticationKey> IEnumerable<KerberosAuthenticationKey>.GetEnumerator()

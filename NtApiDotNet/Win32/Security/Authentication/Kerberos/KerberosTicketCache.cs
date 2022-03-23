@@ -269,7 +269,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        private static int CalculateLength(params string[] strs)
+        internal static int CalculateLength(params string[] strs)
         {
             int ret = 0;
             foreach (var s in strs)
@@ -279,13 +279,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
-        private static int CalculateLength(int? length)
+        internal static int CalculateLength(int? length)
         {
             int ret = length ?? 0;
             return (ret + 1) * 2;
         }
 
-        private static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, byte[] value)
+        internal static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, byte[] value)
         {
             var ret = new UnicodeStringOut();
             if (value != null)
@@ -299,12 +299,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
-        private static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, string value)
+        internal static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, string value)
         {
             return MarshalString(buffer, writer, value != null ? Encoding.Unicode.GetBytes(value) : null);
         }
 
-        private static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
+        internal static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
         {
             var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
             if (!package.IsSuccess)
@@ -720,72 +720,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static void PurgeTicketCacheEx(bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template)
         {
             PurgeTicketCacheEx(purge_all_tickets, logon_id, ticket_template, true);
-        }
-
-        /// <summary>
-        /// Get a key tab for a user.
-        /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The kerberos keytab.</returns>
-        [SupportedVersion(SupportedVersion.Windows10)]
-        public static NtResult<KerberosKeySet> GetKeyTab(UserCredentials credentials, bool throw_on_error)
-        {
-            if (credentials is null)
-            {
-                throw new ArgumentNullException(nameof(credentials));
-            }
-
-            using (var list = new DisposableList())
-            {
-                int total_str_size = CalculateLength(credentials.UserName, credentials.Domain) + CalculateLength(credentials.Password?.Length);
-                var buffer = new SafeStructureInOutBuffer<KERB_RETRIEVE_KEY_TAB_REQUEST>(total_str_size, true);
-
-                using (var strs = buffer.Data.GetStream())
-                {
-                    BinaryWriter writer = new BinaryWriter(strs);
-                    UnicodeStringOut username = MarshalString(buffer.Data, writer, credentials.UserName);
-                    UnicodeStringOut domain = MarshalString(buffer.Data, writer, credentials.Domain);
-                    UnicodeStringOut password = MarshalString(buffer.Data, writer, credentials.GetPasswordBytes());
-
-                    buffer.Result = new KERB_RETRIEVE_KEY_TAB_REQUEST()
-                    {
-                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage,
-                        UserName = username,
-                        DomainName = domain,
-                        Password = password
-                    };
-                }
-
-                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-                {
-                    if (!handle.IsSuccess)
-                        return handle.Cast<KerberosKeySet>();
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
-                    {
-                        if (!result.IsSuccess)
-                            return result.Status.CreateResultFromError<KerberosKeySet>(throw_on_error);
-                        if (!result.Result.Status.IsSuccess())
-                            return result.Result.Status.CreateResultFromError<KerberosKeySet>(throw_on_error);
-
-                        var keytab = result.Result.Buffer.Read<KERB_RETRIEVE_KEY_TAB_RESPONSE>(0);
-                        var keytab_buffer = new SafeHGlobalBuffer(keytab.KeyTab, keytab.KeyTabLength, false);
-
-                        return KerberosKeySet.ReadKeyTabFile(keytab_buffer.GetStream()).CreateResult();
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get a key tab for a user.
-        /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
-        /// <returns>The kerberos keytab.</returns>
-        [SupportedVersion(SupportedVersion.Windows10)]
-        public static KerberosKeySet GetKeyTab(UserCredentials credentials)
-        {
-            return GetKeyTab(credentials, true).Result;
         }
 
         /// <summary>
