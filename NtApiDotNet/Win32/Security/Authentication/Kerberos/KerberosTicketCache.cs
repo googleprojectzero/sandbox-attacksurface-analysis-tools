@@ -611,6 +611,61 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Query for the TGT for a logon session.
+        /// </summary>
+        /// <param name="logon_id">The logon session ID. Specify 0 to use the caller's logon session.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The queries TGT.</returns>
+        /// <remarks>Note that the session key will only be available if running with TCB privileges or the AllowTgtSessionKey option is enabled.</remarks>
+        public static NtResult<KerberosExternalTicket> QueryTgt(Luid logon_id, bool throw_on_error)
+        {
+            var req_struct = new KERB_QUERY_TKT_CACHE_REQUEST() {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveTicketMessage,
+                LogonId = logon_id
+            };
+            using (var request = req_struct.ToBuffer())
+            {
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Cast<KerberosExternalTicket>();
+                    using (var result = CallPackage(handle.Result, request, throw_on_error))
+                    {
+                        if (!result.IsSuccess)
+                            return result.Cast<KerberosExternalTicket>();
+                        if (!result.Result.Status.IsSuccess())
+                            return result.Result.Status.CreateResultFromError<KerberosExternalTicket>(throw_on_error);
+                        KERB_EXTERNAL_TICKET ticket = result.Result.Buffer.Read<KERB_EXTERNAL_TICKET>(0);
+                        if (!KerberosExternalTicket.TryParse(ticket, false, out KerberosExternalTicket ret))
+                            return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<KerberosExternalTicket>(throw_on_error);
+                        return ret.CreateResult();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query for the TGT for a logon session.
+        /// </summary>
+        /// <param name="logon_id">The logon session ID. Specify 0 to use the caller's logon session.</param>
+        /// <returns>The queries TGT.</returns>
+        /// <remarks>Note that the session key will only be available if running with TCB privileges or the AllowTgtSessionKey option is enabled.</remarks>
+        public static KerberosExternalTicket QueryTgt(Luid logon_id)
+        {
+            return QueryTgt(logon_id, true).Result;
+        }
+
+        /// <summary>
+        /// Query for the TGT for the current logon session.
+        /// </summary>
+        /// <returns>The queries TGT.</returns>
+        /// <remarks>Note that the session key will only be available if running with TCB privileges or the AllowTgtSessionKey option is enabled.</remarks>
+        public static KerberosExternalTicket QueryTgt()
+        {
+            return QueryTgt(new Luid());
+        }
+
+        /// <summary>
         /// Purge the ticket cache.
         /// </summary>
         /// <param name="logon_id">The Logon Session ID to purge.</param>
