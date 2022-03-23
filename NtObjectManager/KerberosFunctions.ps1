@@ -172,6 +172,8 @@ Specify to only lookup the TargetName in the cache.
 Specify a credential handle to query the ticket from.
 .PARAMETER Cache
 Specify to get a ticket from a local cache.
+.PARAMETER InfoOnly
+Specify to only return information from the cache not the tickets themselves.
 .INPUTS
 None
 .OUTPUTS
@@ -196,21 +198,37 @@ function Get-KerberosTicket {
         [Parameter(ParameterSetName="FromTarget")]
         [Parameter(ParameterSetName="FromTargetCredHandle")]
         [Parameter(ParameterSetName="FromLocalCache")]
-        [switch]$CacheOnly
+        [switch]$CacheOnly,
+        [Parameter(ParameterSetName="FromLuid")]
+        [Parameter(ParameterSetName="CurrentLuid")]
+        [Parameter(ParameterSetName="FromLogonSession")]
+        [switch]$InfoOnly
     )
 
     PROCESS {
         try {
             switch($PSCmdlet.ParameterSetName) {
                 "CurrentLuid" {
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
+                    if ($InfoOnly) {
+                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo() | Write-Output
+                    } else {
+                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
+                    }
                 }
                 "FromLuid" {
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
+                    if ($InfoOnly) {
+                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($LogonId) | Write-Output
+                    } else {
+                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
+                    }
                 }
                 "FromLogonSession" {
                     foreach($l in $LogonSession) {
-                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+                        if ($InfoOnly) {
+                            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($l.LogonId) | Write-Output
+                        } else {
+                            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+                        }
                     }
                 }
                 "FromTarget" {

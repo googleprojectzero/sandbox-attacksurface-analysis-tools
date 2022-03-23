@@ -525,6 +525,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTicketBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketCacheInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFile.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosClientAuthenticationContextConfig.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCClient.cs" />
