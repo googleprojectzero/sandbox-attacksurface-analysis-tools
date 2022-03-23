@@ -83,20 +83,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct KERB_TICKET_CACHE_INFO_EX_IN
-    {
-        public UnicodeString ClientName;
-        public UnicodeString ClientRealm;
-        public UnicodeString ServerName;
-        public UnicodeString ServerRealm;
-        public LargeIntegerStruct StartTime;
-        public LargeIntegerStruct EndTime;
-        public LargeIntegerStruct RenewTime;
-        public KerberosEncryptionType EncryptionType;
-        public int TicketFlags;
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct KERB_TICKET_CACHE_INFO_EX
     {
         public UnicodeStringOut ClientName;
@@ -164,7 +150,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
         public Luid LogonId;
         public KerberosPurgeTicketCacheExFlags Flags;
-        public KERB_TICKET_CACHE_INFO_EX_IN TicketTemplate;
+        public KERB_TICKET_CACHE_INFO_EX TicketTemplate;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -667,6 +653,73 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public static void PurgeTicketCache(Luid logon_id, string server_name, string realm_name)
         {
             PurgeTicketCache(logon_id, server_name, realm_name, true);
+        }
+
+        /// <summary>
+        /// Purge the ticket cache.
+        /// </summary>
+        /// <param name="purge_all_tickets">Purge all tickets.</param>
+        /// <param name="logon_id">The Logon Session ID to purge.</param>
+        /// <param name="ticket_template">Ticket template to purge.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus PurgeTicketCacheEx(bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template, bool throw_on_error)
+        {
+            int length = 0;
+            if (ticket_template != null)
+            {
+                length = CalculateLength(ticket_template.ClientName, ticket_template.ClientRealm,
+                    ticket_template.ServerName, ticket_template.ServerRealm);
+            }
+
+            using (var buffer = new SafeStructureInOutBuffer<KERB_PURGE_TKT_CACHE_EX_REQUEST>(length, true))
+            {
+                using (var stm = buffer.Data.GetStream())
+                {
+                    KERB_TICKET_CACHE_INFO_EX ticket_info = new KERB_TICKET_CACHE_INFO_EX();
+                    if (length > 0)
+                    {
+                        BinaryWriter writer = new BinaryWriter(stm);
+                        ticket_info.ClientName = MarshalString(buffer.Data, writer, ticket_template.ClientName);
+                        ticket_info.ClientRealm = MarshalString(buffer.Data, writer, ticket_template.ClientRealm);
+                        ticket_info.ServerName = MarshalString(buffer.Data, writer, ticket_template.ServerName);
+                        ticket_info.ServerRealm = MarshalString(buffer.Data, writer, ticket_template.ServerRealm);
+                        ticket_info.EncryptionType = ticket_template.EncryptionType;
+                        ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
+                        ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
+                        ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
+                        ticket_info.TicketFlags = ((int)ticket_template.TicketFlags).SwapEndian();
+                    }
+
+                    buffer.Result = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
+                    {
+                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheExMessage,
+                        LogonId = logon_id,
+                        Flags = purge_all_tickets ? KerberosPurgeTicketCacheExFlags.PurgeAllTickets : 0,
+                        TicketTemplate = ticket_info
+                    };
+                }
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Status;
+                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        return result.Result.Status.ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Purge the ticket cache.
+        /// </summary>
+        /// <param name="purge_all_tickets">Purge all tickets.</param>
+        /// <param name="logon_id">The Logon Session ID to purge.</param>
+        /// <param name="ticket_template">Ticket template to purge.</param>
+        public static void PurgeTicketCacheEx(bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template)
+        {
+            PurgeTicketCacheEx(purge_all_tickets, logon_id, ticket_template, true);
         }
 
         /// <summary>

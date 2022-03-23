@@ -119,5 +119,51 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             CacheFlags = info.CacheFlags;
             KdcCalled = info.KdcCalled.ToString();
         }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="client_name">The client name.</param>
+        /// <param name="client_realm">The client realm.</param>
+        /// <param name="server_name">The server name.</param>
+        /// <param name="server_realm">The server realm.</param>
+        /// <param name="start_time">The ticket start time.</param>
+        /// <param name="end_time">The ticket end time.</param>
+        /// <param name="renew_time">The ticket renew time.</param>
+        /// <param name="encryption_type">The ticket encryption type.</param>
+        /// <param name="ticket_flags">The ticket flags.</param>
+        public KerberosTicketCacheInfo(string client_name, string client_realm, string server_name, string server_realm, 
+            DateTime start_time, DateTime end_time, DateTime renew_time, KerberosEncryptionType encryption_type, KerberosTicketFlags ticket_flags)
+        {
+            if (string.IsNullOrEmpty(client_name))
+            {
+                throw new ArgumentException($"'{nameof(client_name)}' cannot be null or empty.", nameof(client_name));
+            }
+
+            if (string.IsNullOrEmpty(client_realm))
+            {
+                throw new ArgumentException($"'{nameof(client_realm)}' cannot be null or empty.", nameof(client_realm));
+            }
+
+            if (string.IsNullOrEmpty(server_name))
+            {
+                throw new ArgumentException($"'{nameof(server_name)}' cannot be null or empty.", nameof(server_name));
+            }
+
+            if (string.IsNullOrEmpty(server_realm))
+            {
+                throw new ArgumentException($"'{nameof(server_realm)}' cannot be null or empty.", nameof(server_realm));
+            }
+
+            ClientName = client_name;
+            ClientRealm = client_realm;
+            ServerName = server_name;
+            ServerRealm = server_realm;
+            StartTime = start_time;
+            EndTime = end_time;
+            RenewTime = renew_time;
+            EncryptionType = encryption_type;
+            TicketFlags = ticket_flags;
+        }
     }
 }
