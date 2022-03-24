@@ -45,18 +45,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// List of domain groups.
         /// </summary>
         public IReadOnlyList<UserGroup> DomainGroups { get; }
+        /// <summary>
+        /// The device account domain SID.
+        /// </summary>
+        public Sid AccountDomainSid { get; }
 
         private KerberosAuthorizationDataPACDevice(byte[] data, PAC_DEVICE_INFO device_info)
             : base(KerberosAuthorizationDataPACEntryType.Device, data)
         {
-            Sid account_domain_sid = device_info.AccountDomainId.GetValue().ToSid();
-            DeviceId = account_domain_sid.CreateRelative((uint)device_info.UserId);
-            PrimaryGroupId = account_domain_sid.CreateRelative((uint)device_info.PrimaryGroupId);
+            AccountDomainSid = device_info.AccountDomainId.GetValue().ToSid();
+            DeviceId = AccountDomainSid?.CreateRelative((uint)device_info.UserId);
+            PrimaryGroupId = AccountDomainSid?.CreateRelative((uint)device_info.PrimaryGroupId);
             List <UserGroup> groups = new List<UserGroup>();
             if (device_info.AccountGroupIds != null)
             {
                 groups.AddRange(device_info.AccountGroupIds.GetValue()
-                    .Select(g => new UserGroup(account_domain_sid.CreateRelative((uint)g.RelativeId), (GroupAttributes)g.Attributes)));
+                    .Select(g => new UserGroup(AccountDomainSid?.CreateRelative((uint)g.RelativeId), (GroupAttributes)g.Attributes)));
             }
             AccountGroups = groups.AsReadOnly();
 
