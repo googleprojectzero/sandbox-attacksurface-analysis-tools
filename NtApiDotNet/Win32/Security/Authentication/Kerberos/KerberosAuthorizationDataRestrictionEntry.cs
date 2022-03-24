@@ -23,6 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Flags for KerberosAuthorizationDataRestrictionEntry
     /// </summary>
+    [Flags]
     public enum KerberosRestrictionEntryFlags
     {
         /// <summary>

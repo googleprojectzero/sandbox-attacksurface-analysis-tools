@@ -49,14 +49,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataApOptions entry)
         {
-            KerberosApOptionsFlags flags = KerberosApOptionsFlags.None;
             if (data.Length != 4)
             {
                 entry = null;
                 return false;
             }
-            flags = (KerberosApOptionsFlags)BitConverter.ToUInt32(data, 0);
-            entry = new KerberosAuthorizationDataApOptions(flags);
+            entry = new KerberosAuthorizationDataApOptions((KerberosApOptionsFlags)BitConverter.ToUInt32(data, 0));
             return true;
         }
     }

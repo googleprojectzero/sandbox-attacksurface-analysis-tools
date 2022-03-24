@@ -41,10 +41,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="entries">List of authorization entries.</param>
-        public KerberosAuthorizationDataIfRelevantBuilder(IEnumerable<KerberosAuthorizationData> entries) : this()
+        /// <param name="entries">List of authorization entry builders.</param>
+        public KerberosAuthorizationDataIfRelevantBuilder(IEnumerable<KerberosAuthorizationDataBuilder> entries) : this()
         {
-            Entries.AddRange(entries.Select(e => e.ToBuilder()));
+            Entries.AddRange(entries);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="entries">List of authorization entries.</param>
+        public KerberosAuthorizationDataIfRelevantBuilder(IEnumerable<KerberosAuthorizationData> entries) 
+            : this(entries.Select(e => e.ToBuilder()))
+        {
         }
 
         /// <summary>
