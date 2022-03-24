@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The device account domain SID.
         /// </summary>
         public Sid AccountDomainSid { get; }
+
+        /// <summary>
+        /// Convert to a builder.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACDeviceBuilder(Data);
+        }
 
         private KerberosAuthorizationDataPACDevice(byte[] data, PAC_DEVICE_INFO device_info)
             : base(KerberosAuthorizationDataPACEntryType.Device, data)

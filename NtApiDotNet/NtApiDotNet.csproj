@@ -517,6 +517,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataIfRelevantBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataKerbLocalBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACDeviceBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACEntryBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACEntryRawBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACLogonBuilder.cs" />
@@ -525,6 +526,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataRestrictionEntryBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataTargetNameBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosBuilderUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosDomainGroupMembership.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosGroupMembership.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />

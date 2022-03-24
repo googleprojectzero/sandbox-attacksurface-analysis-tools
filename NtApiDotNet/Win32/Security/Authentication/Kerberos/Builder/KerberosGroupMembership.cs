@@ -12,25 +12,63 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 {
     /// <summary>
     /// A kerberos group membership.
     /// </summary>
-    public struct KerberosGroupMembership
+    public class KerberosGroupMembership
     {
         /// <summary>
         /// The group SID's relative ID.
         /// </summary>
-        public uint RelativeId;
+        public uint RelativeId { get; set; }
         /// <summary>
         /// The group's attributes.
         /// </summary>
-        public GroupAttributes Attributes;
+        public GroupAttributes Attributes { get; set; }
 
-        internal static KerberosGroupMembership Create(GROUP_MEMBERSHIP s)
+        internal static List<KerberosGroupMembership> CreateGroup(NdrEmbeddedPointer<GROUP_MEMBERSHIP_DEVICE[]> ptr)
+        {
+            if (ptr == null)
+                return null;
+            return ptr.GetValue().Select(Create).ToList();
+        }
+
+        internal static List<KerberosGroupMembership> CreateGroup(NdrEmbeddedPointer<GROUP_MEMBERSHIP[]> ptr)
+        {
+            if (ptr == null)
+                return null;
+            return ptr.GetValue().Select(Create).ToList();
+        }
+
+        internal static NdrEmbeddedPointer<GROUP_MEMBERSHIP[]> FromGroup(IList<KerberosGroupMembership> groups, ref int count)
+        {
+            count = groups?.Count ?? 0;
+            if (groups != null)
+            {
+                return groups.Select(ToStruct).ToArray();
+            }
+            return null;
+        }
+
+        internal static NdrEmbeddedPointer<GROUP_MEMBERSHIP_DEVICE[]> FromGroupDevice(IList<KerberosGroupMembership> groups, ref int count)
+        {
+            count = groups?.Count ?? 0;
+            if (groups != null)
+            {
+                return groups.Select(ToStructDevice).ToArray();
+            }
+            return null;
+        }
+
+        private static KerberosGroupMembership Create(GROUP_MEMBERSHIP s)
         {
             return new KerberosGroupMembership()
             {
@@ -39,9 +77,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             };
         }
 
-        internal static GROUP_MEMBERSHIP ToStruct(KerberosGroupMembership s)
+        private static KerberosGroupMembership Create(GROUP_MEMBERSHIP_DEVICE s)
         {
+            return new KerberosGroupMembership()
+            {
+                RelativeId = (uint)s.RelativeId,
+                Attributes = (GroupAttributes)s.Attributes
+            };
+        }
+
+        private static GROUP_MEMBERSHIP ToStruct(KerberosGroupMembership s)
+        {
+            if (s is null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+
             return new GROUP_MEMBERSHIP()
+            {
+                RelativeId = (int)s.RelativeId,
+                Attributes = (int)s.Attributes
+            };
+        }
+
+        private static GROUP_MEMBERSHIP_DEVICE ToStructDevice(KerberosGroupMembership s)
+        {
+            if (s is null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+
+            return new GROUP_MEMBERSHIP_DEVICE()
             {
                 RelativeId = (int)s.RelativeId,
                 Attributes = (int)s.Attributes

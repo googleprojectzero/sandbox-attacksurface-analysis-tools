@@ -28,24 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
     {
         #region Private Members
         private KERB_VALIDATION_INFO _info;
-
-        private List<KerberosGroupMembership> CreateGroup(NdrEmbeddedPointer<GROUP_MEMBERSHIP[]> ptr)
-        {
-            if (ptr == null)
-                return null;
-            return ptr.GetValue().Select(KerberosGroupMembership.Create).ToList();
-        }
-
-        private NdrEmbeddedPointer<GROUP_MEMBERSHIP[]> FromGroup(IList<KerberosGroupMembership> groups, ref int count)
-        {
-            count = groups?.Count ?? 0;
-            if (groups != null)
-            {
-                return groups.Select(KerberosGroupMembership.ToStruct).ToArray();
-            }
-            return null;
-        }
-
         #endregion
 
         #region Public Properties
@@ -138,7 +120,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// </summary>
         public Sid LogonDomainId
         {
-            get => _info.LogonDomainId.GetValue().ToSid();
+            get => _info.LogonDomainId?.GetValue().ToSid();
             set
             {
                 if (value == null)
@@ -179,7 +161,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// </summary>
         public Sid ResourceGroupDomainSid 
         { 
-            get => _info.ResourceGroupDomainSid.GetValue().ToSid(); 
+            get => _info.ResourceGroupDomainSid?.GetValue().ToSid(); 
             set
             {
                 if (value == null)
@@ -216,8 +198,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         {
             _info = KerbValidationInfoParser.Decode(new NdrPickledType(data))
                 ?? throw new ArgumentException("Invalid KERB_VALIDATION_INFO buffer.");
-            GroupIds = CreateGroup(_info.GroupIds);
-            ResourceGroupIds = CreateGroup(_info.ResourceGroupIds);
+            GroupIds = KerberosGroupMembership.CreateGroup(_info.GroupIds);
+            ResourceGroupIds = KerberosGroupMembership.CreateGroup(_info.ResourceGroupIds);
             if (_info.ExtraSids != null)
             {
                 ExtraSids = _info.ExtraSids.GetValue().Select(KERB_SID_AND_ATTRIBUTES.ToGroup).ToList();
@@ -268,9 +250,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <returns>The authorization data object.</returns>
         public override KerberosAuthorizationDataPACEntry Create()
         {
-            _info.GroupIds = FromGroup(GroupIds, ref _info.GroupCount);
-            _info.ResourceGroupIds = FromGroup(ResourceGroupIds, ref _info.ResourceGroupCount);
-            _info.SidCount = ExtraSids?.Count ?? 0;;
+            _info.GroupIds = KerberosGroupMembership.FromGroup(GroupIds, ref _info.GroupCount);
+            _info.ResourceGroupIds = KerberosGroupMembership.FromGroup(ResourceGroupIds, ref _info.ResourceGroupCount);
+            _info.SidCount = ExtraSids?.Count ?? 0;
             if (ExtraSids != null)
             {
                 _info.ExtraSids = ExtraSids.Select(KERB_SID_AND_ATTRIBUTES.ToStruct).ToArray();
