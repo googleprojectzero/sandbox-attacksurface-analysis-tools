@@ -156,7 +156,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// </summary>
         public int[] Reserved1 { 
             get => _info.Reserved1; 
-            set => _info.Reserved1 = value.Length == 2 ? value : throw new ArgumentException("Reserved1 must be 2 integers in size", nameof(value)); 
+            set => _info.Reserved1 = value?.Length == 2 ? value : throw new ArgumentException("Reserved1 must be 2 integers in size", nameof(value)); 
         }
         /// <summary>
         /// User account control flags.
@@ -172,7 +172,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public int[] Reserved3
         {
             get => _info.Reserved3;
-            set => _info.Reserved3 = value.Length == 7 ? value : throw new ArgumentException("Reserved3 must be 7 integers in size", nameof(value));
+            set => _info.Reserved3 = value?.Length == 7 ? value : throw new ArgumentException("Reserved3 must be 7 integers in size", nameof(value));
         }
         /// <summary>
         /// Resource domain group SID.
@@ -200,7 +200,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// </summary>
         public KerberosAuthorizationDataPACLogonBuilder() : base(KerberosAuthorizationDataPACEntryType.Logon)
         {
-            _info = new KERB_VALIDATION_INFO();
+            _info = KERB_VALIDATION_INFO.CreateDefault();
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="logon_domain_id">The base logon domain SID.</param>
+        public KerberosAuthorizationDataPACLogonBuilder(Sid logon_domain_id) : this()
+        {
+            LogonDomainId = logon_domain_id ?? throw new ArgumentNullException(nameof(logon_domain_id));
         }
 
         internal KerberosAuthorizationDataPACLogonBuilder(byte[] data) : this()

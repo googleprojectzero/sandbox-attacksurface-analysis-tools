@@ -213,15 +213,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             HomeDirectoryDrive = logon_info.HomeDirectoryDrive.ToString() ?? string.Empty;
             LogonCount = logon_info.LogonCount;
             BadPasswordCount = logon_info.BadPasswordCount;
-            LogonDomainSid = logon_info.LogonDomainId.GetValue().ToSid();
+            LogonDomainSid = logon_info.LogonDomainId?.GetValue().ToSid();
             LogonDomainName = logon_info.LogonDomainName.ToString() ?? string.Empty;
 
-            User = LogonDomainSid.CreateRelative((uint)logon_info.UserId);
-            PrimaryGroup = LogonDomainSid.CreateRelative((uint) logon_info.PrimaryGroupId);
+            User = LogonDomainSid?.CreateRelative((uint)logon_info.UserId);
+            PrimaryGroup = LogonDomainSid?.CreateRelative((uint) logon_info.PrimaryGroupId);
 
             if (logon_info.GroupIds != null)
             {
-                Groups = logon_info.GroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
+                Groups = logon_info.GroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid?.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
             }
             else
             {
@@ -250,7 +250,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (logon_info.ResourceGroupIds != null)
             {
-                ResourceGroups = logon_info.ResourceGroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
+                ResourceGroups = logon_info.ResourceGroupIds.GetValue().Select(r => new UserGroup(LogonDomainSid?.CreateRelative((uint)r.RelativeId), (GroupAttributes)r.Attributes)).ToList().AsReadOnly();
             }
             else
             {
@@ -343,7 +343,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 builder.AppendLine($"Logon Server     : {LogonServer}");
             if (!string.IsNullOrEmpty(LogonDomainName))
                 builder.AppendLine($"Logon Domain     : {LogonDomainName}");
-            builder.AppendLine($"Logon Domain SID : {LogonDomainSid}");
+            if (LogonDomainSid != null)
+                builder.AppendLine($"Logon Domain SID : {LogonDomainSid}");
             builder.AppendLine($"User Flags       : {UserFlags}");
             builder.AppendLine($"User Account Cntl: {UserAccountControl}");
             builder.AppendLine($"Session Key      : {NtObjectUtils.ToHexString(UserSessionKey)}");
