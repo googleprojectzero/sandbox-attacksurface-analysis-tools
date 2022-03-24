@@ -22,11 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
     /// </summary>
     public sealed class KerberosAuthorizationDataPACSignatureBuilder : KerberosAuthorizationDataPACEntryBuilder
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="pac_type">The PAC type, must be TicketChecksum, ServerChecksum or KDCChecksum.</param>
-        public KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type) : base(pac_type)
+        internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type) : base(pac_type)
         {
             switch (pac_type)
             {
@@ -35,18 +31,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 case KerberosAuthorizationDataPACEntryType.KDCChecksum:
                     break;
                 default:
-                    throw new ArgumentException("The type must be one of the checksum types.", nameof(pac_type));
+                    System.Diagnostics.Debug.Assert(false, "The type must be one of the checksum types.");
+                    break;
             }
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="pac_type">The PAC type, must be TicketChecksum, ServerChecksum or KDCChecksum.</param>
-        /// <param name="signature_type">The signature type.</param>
-        /// <param name="signature">The signature data.</param>
-        /// <param name="rodc_identifier">Optional readonly DC identifier.</param>
-        public KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type, 
+        internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type, 
             KerberosChecksumType signature_type, byte[] signature, int? rodc_identifier) : this(pac_type)
         {
             SignatureType = signature_type;
@@ -108,6 +98,33 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 
             SignatureType = key.ChecksumType;
             Signature = key.ComputeHash(data, KerberosKeyUsage.KerbNonKerbChksumSalt);
+        }
+
+        /// <summary>
+        /// Create a ticket checksum builder.
+        /// </summary>
+        /// <returns>The ticket checksum builder.</returns>
+        public static KerberosAuthorizationDataPACSignatureBuilder CreateTicketChecksum()
+        {
+            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.TicketChecksum);
+        }
+
+        /// <summary>
+        /// Create a server checksum builder.
+        /// </summary>
+        /// <returns>The server checksum builder.</returns>
+        public static KerberosAuthorizationDataPACSignatureBuilder CreateServerChecksum()
+        {
+            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.ServerChecksum);
+        }
+
+        /// <summary>
+        /// Create a KDC checksum builder.
+        /// </summary>
+        /// <returns>The KDC checksum builder.</returns>
+        public static KerberosAuthorizationDataPACSignatureBuilder CreateKDCChecksum()
+        {
+            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.KDCChecksum);
         }
     }
 }
