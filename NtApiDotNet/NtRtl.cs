@@ -61,7 +61,7 @@ namespace NtApiDotNet
           int CompressedBufferSize,
           int UncompressedChunkSize,
           out int FinalCompressedSize,
-          [Out] byte[] WorkSpace
+          byte[] WorkSpace
         );
 
         [DllImport("ntdll.dll")]
@@ -82,7 +82,7 @@ namespace NtApiDotNet
           [Out] byte[] CompressedBuffer,
           int CompressedBufferSize,
           out int FinalUncompressedSize,
-          [Out] byte[] WorkSpace
+          byte[] WorkSpace
         );
     }
 #pragma warning restore 1591
