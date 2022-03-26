@@ -277,7 +277,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             _ticket = ticket;
-
             _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
             _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
             bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);

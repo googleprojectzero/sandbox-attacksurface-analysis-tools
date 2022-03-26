@@ -356,7 +356,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// The TGT if known.
         /// </summary>
-        public KerberosExternalTicket Tgt => _tgt_ticket;
+        public KerberosExternalTicket TicketGrantingTicket => _tgt_ticket;
 
         /// <summary>
         /// The cache realm.
