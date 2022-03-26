@@ -33,5 +33,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Channel binding hash.
         /// </summary>
         public byte[] ChannelBinding { get; set; }
+
+        /// <summary>
+        /// Specify a ticket to generate a U2U ticket.
+        /// </summary>
+        public KerberosTicket SessionKeyTicket { get; set; }
     }
 }

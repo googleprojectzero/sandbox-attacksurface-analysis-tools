@@ -14,8 +14,6 @@
 
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
-using System.IO;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {

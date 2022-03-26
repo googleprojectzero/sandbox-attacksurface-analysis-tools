@@ -125,6 +125,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
         }
+
+        /// <summary>
+        /// The kerberos principal name.
+        /// </summary>
+        public KerberosPrincipalName Name => new KerberosPrincipalName(NameType, Components);
         #endregion
 
         #region Constructors

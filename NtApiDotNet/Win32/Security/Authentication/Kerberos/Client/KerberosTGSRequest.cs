@@ -23,11 +23,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// <summary>
     /// Class to represent a TGS request.
     /// </summary>
-    public sealed class KerberosTGSRequest
+    public sealed class KerberosTGSRequest : KerberosKDCRequest
     {
         #region Public Properties
         /// <summary>
-        /// The kerberos ticket for the the request.
+        /// The kerberos ticket for the request.
         /// </summary>
         public KerberosTicket Ticket { get; set; }
 
@@ -37,39 +37,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosAuthenticationKey SessionKey { get; set; }
 
         /// <summary>
-        /// The realm of the service.
-        /// </summary>
-        public string Realm { get; set; }
-
-        /// <summary>
         /// Specify name of the service to request.
         /// </summary>
         public KerberosPrincipalName ServerName { get; set; }
 
         /// <summary>
-        /// The name of the client principal.
-        /// </summary>
-        public KerberosPrincipalName ClientName { get; set; }
-
-        /// <summary>
         /// The client's realm.
         /// </summary>
         public string ClientRealm { get; set; }
-
-        /// <summary>
-        /// Specify options for the new ticket.
-        /// </summary>
-        public KerberosKDCOptions KDCOptions { get; set; }
-
-        /// <summary>
-        /// Specify a list of encryption types.
-        /// </summary>
-        public List<KerberosEncryptionType> EncryptionTypes { get; }
-
-        /// <summary>
-        /// Specify the end time for the ticket.
-        /// </summary>
-        public KerberosTime TillTime { get; }
 
         /// <summary>
         /// Encrypted authorization data.
@@ -95,79 +70,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// The realm for S4U.
         /// </summary>
         public string S4URealm { get; set; }
-
-        /// <summary>
-        /// Get or set the forwardable ticket option.
-        /// </summary>
-        public bool Forwardable
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Forwardable);
-            set => SetKDCOption(KerberosKDCOptions.Forwardable, value);
-        }
-
-        /// <summary>
-        /// Get or set the forwarded ticket option.
-        /// </summary>
-        public bool Forwarded
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Forwarded);
-            set => SetKDCOption(KerberosKDCOptions.Forwarded, value);
-        }
-
-        /// <summary>
-        /// Get or set the renew ticket option.
-        /// </summary>
-        public bool Renew
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Renew);
-            set => SetKDCOption(KerberosKDCOptions.Renew, value);
-        }
-
-        /// <summary>
-        /// Get or set the renewable ticket option.
-        /// </summary>
-        public bool Renewable
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Renewable);
-            set => SetKDCOption(KerberosKDCOptions.Renewable, value);
-        }
-
-        /// <summary>
-        /// Get or set the renewableok ticket option.
-        /// </summary>
-        public bool RenewableOK
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.RenewableOk);
-            set => SetKDCOption(KerberosKDCOptions.RenewableOk, value);
-        }
-
-        /// <summary>
-        /// Get or set the ENC-TKT-IN-SKEY ticket option.
-        /// </summary>
-        public bool EncryptTicketInSessionKey
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.EncTicketInSessionKey);
-            set => SetKDCOption(KerberosKDCOptions.EncTicketInSessionKey, value);
-        }
-
-        /// <summary>
-        /// Get or set the CNAME-IN-ADDL-TKT ticket option. Better known as constrained delegation.
-        /// </summary>
-        public bool ClientNameInAdditionalTicket
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.ClientNameInAdditionalTicket);
-            set => SetKDCOption(KerberosKDCOptions.ClientNameInAdditionalTicket, value);
-        }
-
-        /// <summary>
-        /// Get or set the canonicalize ticket option.
-        /// </summary>
-        public bool Canonicalize
-        {
-            get => KDCOptions.HasFlagSet(KerberosKDCOptions.Canonicalize);
-            set => SetKDCOption(KerberosKDCOptions.Canonicalize, value);
-        }
-
         #endregion
 
         #region Public Methods
@@ -202,7 +104,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 AdditionalTickets = new List<KerberosTicket>();
             AdditionalTickets.Add(ticket);
         }
-
         #endregion
 
         #region Constructors
@@ -363,7 +264,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
         }
 
-        internal KerberosTGSRequestBuilder ToBuilder()
+        internal override KerberosKDCRequestBuilder ToBuilder()
         {
             Validate();
 

@@ -39,10 +39,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            return new KerberosPrincipalName(KerberosNameType.SRV_INST, server_name);
+            bool server_inst = server_name.Contains("/");
+
+            return new KerberosPrincipalName(server_inst ? KerberosNameType.SRV_INST : KerberosNameType.PRINCIPAL, server_name);
         }
 
-        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false)
+        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false, KerberosTicket session_key_ticket = null)
         {
             if (cache_only)
                 throw new ArgumentException($"Ticket for {server_name} doesn't exist in the cache.");
@@ -54,6 +56,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException($"No TGT ticket to request the ticket for {server_name}");
 
             KerberosTGSRequest request = KerberosTGSRequest.Create(_tgt_ticket.Credential, server_name, _realm);
+            if (session_key_ticket != null)
+            {
+                request.AddAdditionalTicket(session_key_ticket);
+                request.EncryptTicketInSessionKey = true;
+            }
             return _kdc_client.RequestServiceTicket(request).ToExternalTicket();
         }
         #endregion
@@ -109,6 +116,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Static Methods
         /// <summary>
+        /// Populate a local cache for a client with authentication.
+        /// </summary>
+        /// <param name="client">A KDC client for the domain.</param>
+        /// <param name="key">The user's authentication key.</param>
+        /// <returns>The local ticket cache.</returns>
+        public static KerberosLocalTicketCache FromClient(KerberosKDCClient client, 
+            KerberosAuthenticationKey key)
+        {
+            KerberosASRequest request = new KerberosASRequest(key, key.Name, key.Realm);
+            var reply = client.Authenticate(request);
+            return new KerberosLocalTicketCache(reply.ToCredential(), client);
+        }
+
+        /// <summary>
         /// Populate a local cache a list of tickets.
         /// </summary>
         /// <param name="tickets">The list of tickets.</param>
@@ -155,7 +176,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             var cache = KerberosCredentialCacheFile.Import(path);
             return FromTickets(cache.Credentials.Select(c => c.ToTicket()), create_client);
         }
-
         #endregion
 
         #region Public Methods
@@ -195,7 +215,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            return new KerberosClientAuthenticationContext(GetTicket(server_name, cache_only), request_attributes, config);
+            KerberosExternalTicket ticket = config.SessionKeyTicket == null ? 
+                GetTicket(server_name, cache_only) : GetTicket(server_name, config.SessionKeyTicket, cache_only);
+
+            return new KerberosClientAuthenticationContext(ticket, request_attributes, config);
         }
 
         /// <summary>
@@ -220,6 +243,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The ticket.</returns>
         public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, bool cache_only = false)
         {
+            if (server_name is null)
+            {
+                throw new ArgumentNullException(nameof(server_name));
+            }
+
             return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only));
         }
 
@@ -232,6 +260,40 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosExternalTicket GetTicket(string server_name, bool cache_only = false)
         {
             return GetTicket(ConvertSPN(server_name), cache_only);
+        }
+
+        /// <summary>
+        /// Get a U2U ticket for a server name.
+        /// </summary>
+        /// <param name="server_name">The user principal name.</param>
+        /// <param name="session_key_ticket">The ticket for the session key.</param>
+        /// <param name="cache_only">True to only query the cache.</param>
+        /// <returns>The ticket.</returns>
+        public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, KerberosTicket session_key_ticket, bool cache_only = false)
+        {
+            if (server_name is null)
+            {
+                throw new ArgumentNullException(nameof(server_name));
+            }
+
+            if (session_key_ticket is null)
+            {
+                throw new ArgumentNullException(nameof(session_key_ticket));
+            }
+
+            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, session_key_ticket));
+        }
+
+        /// <summary>
+        /// Get a U2U ticket for a server name.
+        /// </summary>
+        /// <param name="server_name">The user principal name.</param>
+        /// <param name="tgt_ticket">The TGT ticket for the target user.</param>
+        /// <param name="cache_only">True to only query the cache.</param>
+        /// <returns>The ticket.</returns>
+        public KerberosExternalTicket GetTicket(string server_name, KerberosTicket tgt_ticket, bool cache_only = false)
+        {
+            return GetTicket(ConvertSPN(server_name), tgt_ticket, cache_only);
         }
 
         /// <summary>
@@ -290,6 +352,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Get the list of cached tickets.
         /// </summary>
         public IEnumerable<KerberosExternalTicket> Tickets => _cache.Values.ToArray();
+
+        /// <summary>
+        /// The TGT if known.
+        /// </summary>
+        public KerberosExternalTicket Tgt => _tgt_ticket;
+
+        /// <summary>
+        /// The cache realm.
+        /// </summary>
+        public string Realm => _realm;
         #endregion
     }
 }

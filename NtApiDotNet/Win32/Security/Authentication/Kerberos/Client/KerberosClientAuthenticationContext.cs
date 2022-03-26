@@ -285,10 +285,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             int sequence_number = KerberosBuilderUtils.GetRandomNonce();
             _send_sequence_number = _recv_sequence_number = sequence_number;
 
+            KerberosAPRequestOptions opts = KerberosAPRequestOptions.None;
+            if (mutual_auth_required)
+                opts |= KerberosAPRequestOptions.MutualAuthRequired;
+            if (config.SessionKeyTicket != null)
+                opts |= KerberosAPRequestOptions.UseSessionKey;
+
             var authenticator = KerberosAuthenticator.Create(_ticket.TargetDomainName, _ticket.ClientName,
                 KerberosTime.Now, 0, cksum, _subkey, sequence_number, null);
             Token = KerberosAPRequestAuthenticationToken.Create(_ticket.Ticket,
-                authenticator, mutual_auth_required ? KerberosAPRequestOptions.MutualAuthRequired : 0, authenticator_key: _ticket.SessionKey);
+                authenticator, opts, authenticator_key: _ticket.SessionKey);
             Done = !mutual_auth_required;
         }
         #endregion

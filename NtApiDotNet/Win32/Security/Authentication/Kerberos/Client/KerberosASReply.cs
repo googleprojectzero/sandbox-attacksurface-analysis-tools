@@ -15,12 +15,12 @@
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
     /// <summary>
-    /// Class to represent TGS-REP message.
+    /// Class to represent a AS-REP message.
     /// </summary>
-    public sealed class KerberosTGSReply : KerberosKDCReply
+    public sealed class KerberosASReply : KerberosKDCReply
     {
-        internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part) 
-            : base(token, enc_part)
+        internal KerberosASReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
+                : base(token, enc_part)
         {
         }
     }

@@ -531,6 +531,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTicketBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASReply.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASRequest.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCReply.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCRequest.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncTimestamp.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketCacheInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFile.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosClientAuthenticationContextConfig.cs" />

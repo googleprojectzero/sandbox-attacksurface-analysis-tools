@@ -80,6 +80,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Methods
         /// <summary>
+        /// Authenticate a user.
+        /// </summary>
+        /// <param name="request">The details of the AS request.</param>
+        /// <returns>The AS reply.</returns>
+        public KerberosASReply Authenticate(KerberosASRequest request)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var as_req = request.ToBuilder();
+            var reply = ExchangeTokens(as_req.Create());
+            var reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.AsRepEncryptedPart);
+            if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
+            {
+                throw new KerberosKDCClientException("Invalid KDC reply encrypted part..");
+            }
+
+            return new KerberosASReply(reply, reply_part);
+        }
+
+        /// <summary>
         /// Request a service ticket.
         /// </summary>
         /// <param name="request">The details of the TGS request.</param>

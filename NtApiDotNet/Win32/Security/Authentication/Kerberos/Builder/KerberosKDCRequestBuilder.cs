@@ -93,7 +93,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             PreAuthenticationData.Add(data);
         }
 
-
         /// <summary>
         /// Add an additional ticket to the request.
         /// </summary>
