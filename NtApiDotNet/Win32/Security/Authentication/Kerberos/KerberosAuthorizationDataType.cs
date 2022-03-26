@@ -20,6 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public enum KerberosAuthorizationDataType
     {
+        UNKNOWN = 0,
         AD_IF_RELEVANT = 1,
         AD_INTENDED_FOR_SERVER = 2,
         AD_INTENDED_FOR_APPLICATION_CLASS = 3,

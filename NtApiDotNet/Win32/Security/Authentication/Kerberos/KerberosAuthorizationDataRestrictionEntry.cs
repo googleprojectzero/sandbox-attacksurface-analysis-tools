@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.IO;
 using System.Text;
@@ -74,6 +75,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Flags = flags;
             IntegrityLevel = integrity_level;
             MachineId = (byte[])machine_id.Clone();
+        }
+
+        /// <summary>
+        /// Convert the authorization data into a builder.
+        /// </summary>
+        /// <returns>The authorization builder.</returns>
+        public override KerberosAuthorizationDataBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataRestrictionEntryBuilder()
+            {
+                Flags = Flags,
+                IntegrityLevel = IntegrityLevel,
+                MachineId = (byte[])MachineId.Clone()
+            };
         }
 
         private protected override void FormatData(StringBuilder builder)

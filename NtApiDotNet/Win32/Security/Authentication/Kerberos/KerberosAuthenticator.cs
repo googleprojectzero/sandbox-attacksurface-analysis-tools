@@ -75,7 +75,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 ClientName = ClientName,
                 ClientRealm = ClientRealm,
-                AuthorizationData = AuthorizationData?.ToList(),
+                AuthorizationData = AuthorizationData?.Select(a => a.ToBuilder()).ToList(),
                 Checksum = Checksum,
                 ClientTime = ClientTime,
                 ClientUSec = ClientUSec,

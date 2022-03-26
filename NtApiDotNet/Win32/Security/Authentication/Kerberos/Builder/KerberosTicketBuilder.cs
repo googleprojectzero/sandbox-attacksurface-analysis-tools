@@ -12,6 +12,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -131,9 +132,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <returns>The list of builders. And empty list if not found.</returns>
         public IEnumerable<KerberosAuthorizationDataBuilder> FindAuthorizationDataBuilder(KerberosAuthorizationDataType data_type)
         {
-            List<KerberosAuthorizationDataBuilder> ret = new List<KerberosAuthorizationDataBuilder>();
-            FindBuildersInList(ret, AuthorizationData, data_type);
-            return ret.AsReadOnly();
+            return AuthorizationData.FindAuthorizationDataBuilder(data_type);
+        }
+
+        /// <summary>
+        /// Find the first builder for a specific AD type.
+        /// </summary>
+        /// <param name="data_type">The AD type.</param>
+        /// <returns>The first builder. Returns null if not found.</returns>
+        public KerberosAuthorizationDataBuilder FindFirstAuthorizationDataBuilder(KerberosAuthorizationDataType data_type)
+        {
+            return FindAuthorizationDataBuilder(data_type).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Find a list of builders for a specific .NET type.
+        /// </summary>
+        /// <returns>The list of builders. And empty list if not found.</returns>
+        /// <typeparam name="T">The type of builder to find.</typeparam>
+        public IEnumerable<T> FindAuthorizationDataBuilder<T>() where T : KerberosAuthorizationDataBuilder
+        {
+            return AuthorizationData.FindAuthorizationDataBuilder<T>();
+        }
+
+        /// <summary>
+        /// Find the first builder for a specific .NET type.
+        /// </summary>
+        /// <returns>The first builder. Returns null if not found.</returns>
+        /// <typeparam name="T">The type of builder to find.</typeparam>
+        public T FindFirstAuthorizationDataBuilder<T>() where T : KerberosAuthorizationDataBuilder
+        {
+            return FindAuthorizationDataBuilder<T>().FirstOrDefault();
         }
 
         /// <summary>
@@ -177,23 +206,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 new KerberosKeySet(), out KerberosTicket ticket));
 
             return ticket as KerberosTicketDecrypted;
-        }
-
-        private static void FindBuildersInList(
-            List<KerberosAuthorizationDataBuilder> ret, IEnumerable<KerberosAuthorizationDataBuilder> list, 
-            KerberosAuthorizationDataType data_type)
-        {
-            if (list == null)
-                return;
-            foreach (var entry in list)
-            {
-                if (entry.DataType == data_type)
-                    ret.Add(entry);
-                if (entry is KerberosAuthorizationDataIfRelevantBuilder if_relevant)
-                {
-                    FindBuildersInList(ret, if_relevant.Entries, data_type);
-                }
-            }
         }
     }
 }
