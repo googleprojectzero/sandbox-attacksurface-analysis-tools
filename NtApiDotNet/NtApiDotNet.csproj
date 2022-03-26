@@ -611,6 +611,8 @@
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_SID2.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
+    <Compile Include="Win32\Security\Native\SECPKG_CRED_ATTR.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_INFORMATION_CLASS.cs" />
     <Compile Include="Win32\Security\Native\USERNAME_TARGET_CREDENTIAL_INFO.cs" />

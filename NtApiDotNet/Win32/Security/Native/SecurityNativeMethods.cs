@@ -77,6 +77,14 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SetCredentialsAttributes(
+            [In] SecHandle phCredential,
+            SECPKG_CRED_ATTR ulAttribute,
+            SafeBuffer pBuffer,
+            int cbBuffer
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode CompleteAuthToken(SecHandle phContext,
             SecBufferDesc pToken
         );

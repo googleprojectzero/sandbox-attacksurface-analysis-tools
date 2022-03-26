@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -128,6 +129,33 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Set the KDC proxy.
+        /// </summary>
+        /// <param name="proxy_server">The proxy server to use.</param>
+        /// <param name="force_proxy">True to force the proxy.</param>
+        public void SetKdcProxy(string proxy_server, bool force_proxy = false)
+        {
+            if (proxy_server is null)
+            {
+                throw new ArgumentNullException(nameof(proxy_server));
+            }
+
+            byte[] proxy = Encoding.Unicode.GetBytes(proxy_server);
+            using (var buffer = new SafeStructureInOutBuffer<SecPkgCredentials_KdcProxySettings>(proxy.Length, true))
+            {
+                buffer.Data.WriteBytes(proxy);
+                buffer.Result = new SecPkgCredentials_KdcProxySettings()
+                {
+                    Version = SecPkgCredentials_KdcProxySettings.KDC_PROXY_SETTINGS_V1,
+                    Flags = force_proxy ? SecPkgCredentials_KdcProxySettings.KDC_PROXY_SETTINGS_FLAGS_FORCEPROXY : 0,
+                    ProxyServerLength = (ushort)proxy.Length,
+                    ProxyServerOffset = (ushort)buffer.DataOffset
+                };
+                SetAttribute(SECPKG_CRED_ATTR.SECPKG_CRED_ATTR_KDC_PROXY_SETTINGS, buffer);
+            }
+        }
+
+        /// <summary>
         /// Dispose.
         /// </summary>
         public void Dispose()
@@ -139,6 +167,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private void Dispose(bool _)
         {
             SecurityNativeMethods.FreeCredentialsHandle(CredHandle);
+        }
+
+        private void SetAttribute(SECPKG_CRED_ATTR attr, SafeBufferGeneric buffer)
+        {
+            SecurityNativeMethods.SetCredentialsAttributes(CredHandle, 
+                attr, buffer, buffer.Length).CheckResult();
         }
 
         /// <summary>
