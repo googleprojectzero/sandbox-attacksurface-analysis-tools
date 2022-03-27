@@ -58,8 +58,38 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                DERValue[] values = DERParser.ParseData(data, 0);
+                bool result = TryParse(data, DERParser.ParseData(data, 0), out KerberosAuthenticationToken reply);
+                token = (KerberosKDCReplyAuthenticationToken)reply;
+                return result;
+            }
+            catch (InvalidDataException)
+            {
+            }
 
+            return false;
+        }
+
+        /// <summary>
+        /// Parse a KDC-REQ token.
+        /// </summary>
+        /// <param name="data">The token in DER format.</param>
+        /// <returns>The parsed token.</returns>
+        new public static KerberosKDCReplyAuthenticationToken Parse(byte[] data)
+        {
+            if (!TryParse(data, out KerberosKDCReplyAuthenticationToken token))
+            {
+                throw new InvalidDataException("Invalid KDC-REP data structure.");
+            }
+            return token;
+        }
+        #endregion
+
+        #region Internal Members
+        internal static bool TryParse(byte[] data, DERValue[] values, out KerberosAuthenticationToken token)
+        {
+            token = null;
+            try
+            {
                 if (values.Length != 1 || !values[0].HasChildren())
                     return false;
 
@@ -116,20 +146,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Parse a KDC-REQ token.
-        /// </summary>
-        /// <param name="data">The token in DER format.</param>
-        /// <returns>The parsed token.</returns>
-        new public static KerberosKDCReplyAuthenticationToken Parse(byte[] data)
-        {
-            if (!TryParse(data, out KerberosKDCReplyAuthenticationToken token))
-            {
-                throw new InvalidDataException("Invalid KDC-REP data structure.");
-            }
-            return token;
         }
         #endregion
 

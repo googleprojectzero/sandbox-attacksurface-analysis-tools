@@ -15,9 +15,6 @@
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -27,42 +24,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     public sealed class KerberosKDCClient
     {
         #region Private Members
-        private readonly string _hostname;
-        private readonly int _port;
-
-        private KerberosKDCClient(string hostname, int port)
-        {
-            _hostname = hostname;
-            _port = port;
-        }
+        private readonly IKerberosKDCClientTransport _transport;
 
         private KerberosKDCReplyAuthenticationToken ExchangeTokens(KerberosKDCRequestAuthenticationToken token)
         {
-            using (var socket = new TcpClient(_hostname, _port))
-            {
-                using (var stm = socket.GetStream())
-                {
-                    BinaryWriter writer = new BinaryWriter(stm, Encoding.ASCII, true);
-                    byte[] data = token.ToArray();
-                    writer.Write(IPAddress.HostToNetworkOrder(data.Length));
-                    writer.Write(data);
-                    BinaryReader reader = new BinaryReader(stm, Encoding.ASCII, true);
-                    int return_length = IPAddress.NetworkToHostOrder(reader.ReadInt32());
-                    data = reader.ReadAllBytes(return_length);
-                    if (!KerberosKDCReplyAuthenticationToken.TryParse(data, out KerberosKDCReplyAuthenticationToken reply))
-                    {
-                        if (KerberosErrorAuthenticationToken.TryParse(data, out KerberosErrorAuthenticationToken error))
-                        {
-                            throw new KerberosKDCClientException(error);
-                        }
-                        throw new KerberosKDCClientException("Unknown KDC reply.");
-                    }
-
-                    return reply;
-                }
-            }
+            var reply = SendReceive(token);
+            if (reply is KerberosErrorAuthenticationToken error)
+                throw new KerberosKDCClientException(error);
+            if (reply is KerberosKDCReplyAuthenticationToken result)
+                return result;
+            throw new KerberosKDCClientException("Unknown KDC reply.");
         }
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="transport">The KDC client transport.</param>
+        public KerberosKDCClient(IKerberosKDCClientTransport transport)
+        {
+            _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+        }
         #endregion
 
         #region Public Static Members
@@ -74,7 +57,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The created client.</returns>
         public static KerberosKDCClient CreateTCPClient(string hostname, int port = 88)
         {
-            return new KerberosKDCClient(hostname, port);
+            return new KerberosKDCClient(new KerberosKDCClientTransportTCP(hostname, port));
         }
         #endregion
 
@@ -143,6 +126,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             return new KerberosTGSReply(reply, reply_part);
+        }
+
+        /// <summary>
+        /// Method to send and receive Kerberos authentication tokens to the KDC.
+        /// </summary>
+        /// <param name="token">The output request token.</param>
+        /// <returns>Returns either a <see cref="KerberosKDCReplyAuthenticationToken"/> or a <see cref="KerberosErrorAuthenticationToken"/>.</returns>
+        public KerberosAuthenticationToken SendReceive(KerberosAuthenticationToken token)
+        {
+            var data = _transport.SendReceive(token.ToArray());
+            if (!KerberosAuthenticationToken.TryParse(data, 0, false, out KerberosAuthenticationToken ret))
+                throw new InvalidDataException("Invalid KDC data.");
+            return ret;
         }
         #endregion
     }

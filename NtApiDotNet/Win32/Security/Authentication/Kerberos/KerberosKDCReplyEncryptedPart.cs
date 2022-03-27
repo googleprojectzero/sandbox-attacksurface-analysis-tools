@@ -104,8 +104,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                DERValue[] values = DERParser.ParseData(data, 0);
+                return TryParse(data, DERParser.ParseData(data, 0), out token);
+            }
+            catch (InvalidDataException)
+            {
+            }
 
+            return false;
+        }
+
+        internal static bool TryParse(byte[] data, DERValue[] values, out KerberosKDCReplyEncryptedPart token)
+        {
+            token = null;
+            try
+            {
                 if (values.Length != 1 || !values[0].HasChildren())
                     return false;
 

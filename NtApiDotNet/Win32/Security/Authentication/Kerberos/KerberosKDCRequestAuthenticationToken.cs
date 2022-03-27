@@ -127,54 +127,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
-                DERValue[] values = DERParser.ParseData(data, 0);
-
-                if (values.Length != 1 || !values[0].HasChildren())
-                    return false;
-
-                if (!values[0].CheckMsg(KerberosMessageType.KRB_AS_REQ) && !values[0].CheckMsg(KerberosMessageType.KRB_TGS_REQ))
-                {
-                    return false;
-                }
-
-                KerberosKDCRequestAuthenticationToken ret = new KerberosKDCRequestAuthenticationToken(data, values, (KerberosMessageType)values[0].Tag);
-
-                values = values[0].Children;
-                if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
-                    return false;
-
-                foreach (var next in values[0].Children)
-                {
-                    if (next.Type != DERTagType.ContextSpecific)
-                        return false;
-                    switch (next.Tag)
-                    {
-                        case 1:
-                            if (next.ReadChildInteger() != 5)
-                                return false;
-                            break;
-                        case 2:
-                            KerberosMessageType type = (KerberosMessageType)next.ReadChildInteger();
-                            if (type != ret.MessageType)
-                                return false;
-                            break;
-                        case 3:
-                            ret.PreAuthenticationData = next.ReadChildSequence(v => KerberosPreAuthenticationData.Parse(v)).AsReadOnly();
-                            break;
-                        case 4:
-                            if (!next.Children[0].CheckSequence())
-                            {
-                                return false;
-                            }
-                            if (!TryParseRequestBody(next.Children[0], ret))
-                                return false;
-                            break;
-                        default:
-                            return false;
-                    }
-                }
-                token = ret;
-                return true;
+                bool result = TryParse(data, DERParser.ParseData(data, 0), out KerberosAuthenticationToken tmp);
+                token = (KerberosKDCRequestAuthenticationToken)tmp;
+                return result;
             }
             catch (InvalidDataException)
             {
@@ -266,6 +221,64 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
 
             return Parse(builder.ToArray());
+        }
+
+        internal static bool TryParse(byte[] data, DERValue[] values, out KerberosAuthenticationToken token)
+        {
+            token = null;
+            try
+            {
+                if (values.Length != 1 || !values[0].HasChildren())
+                    return false;
+
+                if (!values[0].CheckMsg(KerberosMessageType.KRB_AS_REQ) && !values[0].CheckMsg(KerberosMessageType.KRB_TGS_REQ))
+                {
+                    return false;
+                }
+
+                KerberosKDCRequestAuthenticationToken ret = new KerberosKDCRequestAuthenticationToken(data, values, (KerberosMessageType)values[0].Tag);
+
+                values = values[0].Children;
+                if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
+                    return false;
+
+                foreach (var next in values[0].Children)
+                {
+                    if (next.Type != DERTagType.ContextSpecific)
+                        return false;
+                    switch (next.Tag)
+                    {
+                        case 1:
+                            if (next.ReadChildInteger() != 5)
+                                return false;
+                            break;
+                        case 2:
+                            KerberosMessageType type = (KerberosMessageType)next.ReadChildInteger();
+                            if (type != ret.MessageType)
+                                return false;
+                            break;
+                        case 3:
+                            ret.PreAuthenticationData = next.ReadChildSequence(v => KerberosPreAuthenticationData.Parse(v)).AsReadOnly();
+                            break;
+                        case 4:
+                            if (!next.Children[0].CheckSequence())
+                            {
+                                return false;
+                            }
+                            if (!TryParseRequestBody(next.Children[0], ret))
+                                return false;
+                            break;
+                        default:
+                            return false;
+                    }
+                }
+                token = ret;
+                return true;
+            }
+            catch (InvalidDataException)
+            {
+            }
+            return false;
         }
 
         private static bool TryParseRequestBody(DERValue value, KerberosKDCRequestAuthenticationToken ret)
