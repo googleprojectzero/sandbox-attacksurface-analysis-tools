@@ -255,7 +255,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             if (!next.HasChildren())
                                 return false;
                             ret.SubKey = KerberosAuthenticationKey.Parse(next.Children[0], ticket?.Realm ?? "Unknown", 
-                                ticket.ServerName ?? new KerberosPrincipalName());
+                                ticket?.ServerName ?? new KerberosPrincipalName());
                             break;
                         case 7:
                             ret.SequenceNumber = next.ReadChildInteger();

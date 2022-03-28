@@ -510,6 +510,7 @@
     <Compile Include="Win32\SafeHandles\SafeSamMemoryBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationContextDelegate.cs" />
     <Compile Include="Win32\Security\Authentication\ClientAuthenticationContextDelegate.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataApOptionsBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASRequestBuilder.cs" />
@@ -528,7 +529,9 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosBuilderUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosDomainGroupMembership.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosGroupMembership.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCReplyBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSReplyBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTicketBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\IKerberosKDCClientTransport.cs" />

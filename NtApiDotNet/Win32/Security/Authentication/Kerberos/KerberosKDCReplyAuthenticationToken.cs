@@ -13,8 +13,12 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -84,6 +88,33 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Create a builder for this token.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public KerberosKDCReplyBuilder ToBuilder()
+        {
+            KerberosKDCReplyBuilder builder;
+            if (MessageType == KerberosMessageType.KRB_AS_REP)
+            {
+                builder = new KerberosASReplyBuilder();
+            }
+            else
+            {
+                builder = new KerberosTGSReplyBuilder();
+            }
+
+            builder.PreAuthenticationData = PreAuthenticationData?.ToList();
+            builder.ClientName = ClientName;
+            builder.ClientRealm = ClientRealm;
+            builder.Ticket = Ticket;
+            builder.EncryptedData = EncryptedData;
+
+            return builder;
+        }
+        #endregion
+
         #region Internal Members
         internal static bool TryParse(byte[] data, DERValue[] values, out KerberosAuthenticationToken token)
         {
@@ -147,6 +178,50 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return false;
         }
+
+        internal static KerberosKDCReplyAuthenticationToken Create(KerberosMessageType message_type, IEnumerable<KerberosPreAuthenticationData> pre_auth_data,
+            string client_realm, KerberosPrincipalName client_name, KerberosTicket ticket, KerberosEncryptedData encrypted_data)
+        {
+            if (client_realm is null)
+            {
+                throw new ArgumentNullException(nameof(client_realm));
+            }
+
+            if (client_name is null)
+            {
+                throw new ArgumentNullException(nameof(client_name));
+            }
+
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            if (encrypted_data is null)
+            {
+                throw new ArgumentNullException(nameof(encrypted_data));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateMsg(message_type))
+            {
+                using (var seq = app.CreateSequence())
+                {
+                    seq.WriteKerberosHeader(message_type);
+                    if ((pre_auth_data != null) && pre_auth_data.Any())
+                    {
+                        seq.WriteContextSpecific(2, pre_auth_data);
+                    }
+                    seq.WriteContextSpecific(3, client_realm);
+                    seq.WriteContextSpecific(4, client_name);
+                    seq.WriteContextSpecific(5, ticket);
+                    seq.WriteContextSpecific(6, encrypted_data);
+                }
+            }
+
+            return Parse(builder.ToArray());
+        }
+
         #endregion
 
         #region Private Members

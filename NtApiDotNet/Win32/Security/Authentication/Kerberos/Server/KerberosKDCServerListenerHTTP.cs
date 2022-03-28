@@ -115,7 +115,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             DERBuilder builder = new DERBuilder();
             using (var seq = builder.CreateSequence())
             {
-                seq.WriteContextSpecific(0, data);
+                MemoryStream stm = new MemoryStream();
+                BinaryWriter writer = new BinaryWriter(stm);
+                writer.WriteInt32BE(data.Length);
+                writer.Write(data);
+                seq.WriteContextSpecific(0, stm.ToArray());
             }
             return builder.ToArray();
         }

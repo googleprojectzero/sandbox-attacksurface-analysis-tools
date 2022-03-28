@@ -161,7 +161,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (authenticator_key != null)
             {
-                authenticator = authenticator.Encrypt(authenticator_key, tgs_req ? KerberosKeyUsage.TgsReqPaTgaReqApReq : KerberosKeyUsage.ApReqAuthSubKey, authenticator_key_version);
+                authenticator = authenticator.Encrypt(authenticator_key, tgs_req ? KerberosKeyUsage.TgsReqPaTgsReqApReq : KerberosKeyUsage.ApReqAuthSubKey, authenticator_key_version);
             }
 
             DERBuilder builder = new DERBuilder();

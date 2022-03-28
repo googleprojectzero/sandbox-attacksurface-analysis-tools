@@ -108,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             KerberosAuthenticator authenticator = KerberosAuthenticator.Create(request.Realm, request.ClientName, KerberosTime.Now, 0, checksum, subkey,
                 KerberosBuilderUtils.GetRandomNonce(), null);
             tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataTGSRequest(0, request.Ticket,
-                authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgaReqApReq)));
+                authenticator.Encrypt(request.SessionKey, KerberosKeyUsage.TgsReqPaTgsReqApReq)));
             if (request.S4UUserName != null && !string.IsNullOrEmpty(request.S4URealm))
             {
                 tgs_req.AddPreAuthenticationDataForUser(request.S4UUserName, request.S4URealm, request.SessionKey);
@@ -119,10 +119,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var reply = ExchangeTokens(tgs_req.Create());
-            var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptionPartAuthSubkey);
+            var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptedPartAuthSubkey);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
-                throw new KerberosKDCClientException("Invalid KDC reply encrypted part..");
+                throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
             }
 
             return new KerberosTGSReply(reply, reply_part);

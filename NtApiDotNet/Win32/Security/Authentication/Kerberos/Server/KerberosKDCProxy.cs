@@ -45,10 +45,5 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         {
             return _client_transport.SendReceive(request);
         }
-
-        public static KerberosKDCProxy Create(X509Certificate cert)
-        {
-            return new KerberosKDCProxy(new KerberosKDCServerListenerHTTP(IPAddress.Loopback, 80, cert), new KerberosKDCClientTransportTCP("localhost", 88));
-        }
     }
 }

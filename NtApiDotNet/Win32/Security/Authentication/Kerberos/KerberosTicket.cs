@@ -76,7 +76,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="keyset">The Kerberos key set containing the keys.</param>
         /// <param name="key_usage">The key usage for the decryption.</param>
         /// <returns>The decrypted kerberos ticket.</returns>
-        public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage)
+        public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage = KerberosKeyUsage.AsRepTgsRepTicket)
         {
             if (!TryDecrypt(keyset, key_usage, out KerberosTicket ticket))
                 throw new ArgumentException("Couldn't decrypt the kerberos ticket.");
@@ -90,7 +90,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="key_usage">The Kerberos key usage for the encryption.</param>
         /// <param name="key_version">Optional key version number.</param>
         /// <returns>The encrypted ticket.</returns>
-        public KerberosTicket Encrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, int? key_version = null)
+        public KerberosTicket Encrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage = KerberosKeyUsage.AsRepTgsRepTicket, int? key_version = null)
         {
             return new KerberosTicket(TicketVersion, Realm, ServerName, EncryptedData.Encrypt(key, key_usage, key_version));
         }
