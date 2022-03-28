@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
+
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
     /// <summary>
@@ -42,6 +44,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         InitiatorSeal = 24,
         InitiatorSign = 25,
         S4UX509Checksum = 26,
+        [SDKName("KEY_USAGE_FAST_REQ_CHKSUM")]
+        FastReqChksum = 50,
+        [SDKName("KEY_USAGE_FAST_ENC")]
+        FastEnc = 51,
+        [SDKName("KEY_USAGE_FAST_REP")]
+        FastRep = 52,
+        [SDKName("KEY_USAGE_FAST_FINISHED")]
+        FastFinished = 53,
+        [SDKName("KEY_USAGE_ENC_CHALLENGE_CLIENT")]
+        EncChallengeClient = 54,
+        [SDKName("KEY_USAGE_ENC_CHALLENGE_KDC")]
+        EncChallengeKDC = 55
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
