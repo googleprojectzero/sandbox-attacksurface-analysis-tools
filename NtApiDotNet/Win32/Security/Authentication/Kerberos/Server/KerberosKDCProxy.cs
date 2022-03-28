@@ -13,8 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
 {

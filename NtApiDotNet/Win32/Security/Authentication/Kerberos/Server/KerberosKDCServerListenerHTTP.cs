@@ -81,9 +81,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
 
         private async Task SendHttpResponse(Stream stm, int status_code, byte[] data)
         {
-            await stm.WriteLineASync($"HTTP/1.1 {status_code}");
-            await stm.WriteLineASync($"Content-Length: {data.Length}");
-            await stm.WriteLineASync(string.Empty);
+            await stm.WriteLineAsync($"HTTP/1.1 {status_code}");
+            await stm.WriteLineAsync($"Content-Length: {data.Length}");
+            await stm.WriteLineAsync(string.Empty);
             if (data.Length > 0)
                 await stm.WriteAsync(data, 0, data.Length);
         }
@@ -93,7 +93,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             DERValue[] values = DERParser.ParseData(data, 0);
             if (values.Length != 1 || !values[0].CheckSequence())
                 throw new InvalidDataException("Invalid KDC_PROXY_MESSAGE");
-            byte[] ret = null;
             foreach (var next in values[0].Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -102,7 +101,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
                 {
                     case 0:
                         byte[] msg = next.ReadChildOctetString();
-                        ret = new byte[msg.Length - 4];
+                        byte[] ret = new byte[msg.Length - 4];
                         Buffer.BlockCopy(msg, 4, ret, 0, ret.Length);
                         return ret;
                 }

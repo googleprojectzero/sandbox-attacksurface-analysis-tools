@@ -56,11 +56,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             return (char)ret[0];
         }
 
-        internal static async Task<string> ReadLineAsync(this Stream stm)
+        internal static async Task<string> ReadLineAsync(this Stream stm, int maximum_length = 8*1024)
         {
             StringBuilder builder = new StringBuilder();
             do
             {
+                if (builder.Length > maximum_length)
+                    throw new InvalidDataException("Header length too large.");
                 char ch = await stm.ReadCharAsync();
                 if (ch == '\n')
                     break;
@@ -70,7 +72,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             return builder.ToString().TrimEnd();
         }
 
-        internal static async Task WriteLineASync(this Stream stm, string line)
+        internal static async Task WriteLineAsync(this Stream stm, string line)
         {
             byte[] data = Encoding.ASCII.GetBytes(line + "\r\n");
             await stm.WriteAsync(data, 0, data.Length);
