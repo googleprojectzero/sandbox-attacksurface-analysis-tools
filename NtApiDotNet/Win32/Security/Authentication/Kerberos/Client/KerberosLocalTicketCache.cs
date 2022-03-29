@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return new KerberosPrincipalName(server_inst ? KerberosNameType.SRV_INST : KerberosNameType.PRINCIPAL, server_name);
         }
 
-        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false, KerberosTicket session_key_ticket = null)
+        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false, KerberosTicket session_key_ticket = null, bool s4u = false)
         {
             if (cache_only)
                 throw new ArgumentException($"Ticket for {server_name} doesn't exist in the cache.");
@@ -55,11 +55,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             if (_tgt_ticket is null)
                 throw new ArgumentNullException($"No TGT ticket to request the ticket for {server_name}");
 
-            KerberosTGSRequest request = KerberosTGSRequest.Create(_tgt_ticket.Credential, server_name, _realm);
-            if (session_key_ticket != null)
+            KerberosTGSRequest request;
+            if (!s4u)
             {
-                request.AddAdditionalTicket(session_key_ticket);
-                request.EncryptTicketInSessionKey = true;
+                request = KerberosTGSRequest.Create(_tgt_ticket.Credential, server_name, _realm);
+                if (session_key_ticket != null)
+                {
+                    request.AddAdditionalTicket(session_key_ticket);
+                    request.EncryptTicketInSessionKey = true;
+                }
+            }
+            else
+            {
+                request = KerberosTGSRequest.CreateForS4U2Self(_tgt_ticket.Credential, server_name.FullName, _realm);
             }
             return _kdc_client.RequestServiceTicket(request).ToExternalTicket();
         }
@@ -294,6 +302,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosExternalTicket GetTicket(string server_name, KerberosTicket tgt_ticket, bool cache_only = false)
         {
             return GetTicket(ConvertSPN(server_name), tgt_ticket, cache_only);
+        }
+
+        /// <summary>
+        /// Get an S4USelf ticket.
+        /// </summary>
+        /// <param name="username">The name of the user for S4U.</param>
+        /// <param name="cache_only">True to only query the cache.</param>
+        /// <returns>The ticket.</returns>
+        public KerberosExternalTicket GetS4USelfTicket(string username, bool cache_only = false)
+        {
+            if (username is null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            var server_name = new KerberosPrincipalName(KerberosNameType.PRINCIPAL, username);
+            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, s4u: true));
         }
 
         /// <summary>
