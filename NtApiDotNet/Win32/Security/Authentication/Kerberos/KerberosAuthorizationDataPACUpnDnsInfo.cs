@@ -121,6 +121,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AppendLine($"Flags            : {Flags}");
             builder.AppendLine($"Name             : {UserPrincipalName}");
             builder.AppendLine($"DNS Name         : {DnsDomainName}");
+            if (Flags.HasFlagSet(KerberosUpnDnsInfoFlags.Extended))
+            {
+                builder.AppendLine($"SAM Name         : {SamName}");
+                builder.AppendLine($"SID              : {Sid}");
+            }
         }
     }
 }
