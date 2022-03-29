@@ -583,6 +583,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFileCredential.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFilePrincipal.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFileUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosPasswordUtils.cs" />
     <Compile Include="Win32\Security\Authentication\LsaLogonHandle.cs" />
     <Compile Include="Win32\Security\Authentication\LsaLogonResult.cs" />
     <Compile Include="Win32\Security\Authentication\ServerAuthenticationContextDelegate.cs" />
