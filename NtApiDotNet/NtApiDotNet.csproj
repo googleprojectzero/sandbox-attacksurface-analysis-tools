@@ -540,6 +540,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCClientTransportTCP.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCReply.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCRequest.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACAttributes.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACRequestor.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncTimestamp.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketCacheInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\IKerberosKDCServerListener.cs" />

@@ -111,7 +111,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             pac_entry = null;
                         break;
                     case KerberosAuthorizationDataPACEntryType.UserPrincipalName:
-                        if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(entry_type, entry_data, out pac_entry))
+                        if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(entry_data, out pac_entry))
                             pac_entry = null;
                         break;
                     case KerberosAuthorizationDataPACEntryType.Logon:
@@ -120,6 +120,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         break;
                     case KerberosAuthorizationDataPACEntryType.Device:
                         if (!KerberosAuthorizationDataPACDevice.Parse(entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.Attributes:
+                        if (!KerberosAuthorizationDataPACAttributes.Parse(entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
+                    case KerberosAuthorizationDataPACEntryType.Requestor:
+                        if (!KerberosAuthorizationDataPACRequestor.Parse(entry_data, out pac_entry))
                             pac_entry = null;
                         break;
                 }

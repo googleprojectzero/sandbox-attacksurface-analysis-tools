@@ -30,6 +30,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The user has no UPN.
         /// </summary>
         NoUpn = 1,
+        /// <summary>
+        /// The UPN_DNS_INFO has been extended with the SAM name and SID.
+        /// </summary>
+        Extended,
     }
     
     /// <summary>
@@ -49,17 +53,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The DNS Domain Name.
         /// </summary>
         public string DnsDomainName { get; }
+        /// <summary>
+        /// The user's SAM name.
+        /// </summary>
+        public string SamName { get; }
+        /// <summary>
+        /// The user's SID.
+        /// </summary>
+        public Sid Sid { get; }
 
-        private KerberosAuthorizationDataPACUpnDnsInfo(KerberosAuthorizationDataPACEntryType type, byte[] data, 
-            KerberosUpnDnsInfoFlags flags, string upn, string dns)
-            : base(type, data)
+        private KerberosAuthorizationDataPACUpnDnsInfo(byte[] data, 
+            KerberosUpnDnsInfoFlags flags, string upn, string dns, string sam_name, Sid sid)
+            : base(KerberosAuthorizationDataPACEntryType.UserPrincipalName, data)
         {
             Flags = flags;
             UserPrincipalName = upn;
             DnsDomainName = dns;
+            SamName = sam_name;
+            Sid = sid;
         }
 
-        internal static bool Parse(KerberosAuthorizationDataPACEntryType type, byte[] data, out KerberosAuthorizationDataPACEntry entry)
+        internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
         {
             entry = null;
             if (data.Length < 12)
@@ -76,7 +90,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             string upn = Encoding.Unicode.GetString(data, upn_offset, upn_length);
             string dns = Encoding.Unicode.GetString(data, dns_offset, dns_length);
-            entry = new KerberosAuthorizationDataPACUpnDnsInfo(type, data, flags, upn, dns);
+            string sam_name = string.Empty;
+            Sid sid = null;
+
+            if (flags.HasFlagSet(KerberosUpnDnsInfoFlags.Extended))
+            {
+                if (data.Length < 20)
+                    return false;
+                int sam_name_length = BitConverter.ToUInt16(data, 12);
+                int sam_name_offset = BitConverter.ToUInt16(data, 14);
+                int sid_length = BitConverter.ToUInt16(data, 16);
+                int sid_offset = BitConverter.ToUInt16(data, 18);
+                if (sam_name_length + sam_name_offset > data.Length || sid_length + sid_offset > data.Length)
+                    return false;
+                sam_name = Encoding.Unicode.GetString(data, sam_name_offset, sam_name_length);
+                byte[] sid_bytes = new byte[sid_length];
+                Buffer.BlockCopy(data, sid_offset, sid_bytes, 0, sid_length);
+                var sid_result = Sid.Parse(sid_bytes, false);
+                if (!sid_result.IsSuccess)
+                    return false;
+                sid = sid_result.Result;
+            }
+
+            entry = new KerberosAuthorizationDataPACUpnDnsInfo(data, flags, upn, dns, sam_name, sid);
             return true;
         }
 
