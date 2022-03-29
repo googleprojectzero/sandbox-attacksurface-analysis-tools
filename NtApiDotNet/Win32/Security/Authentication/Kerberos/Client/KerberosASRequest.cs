@@ -33,6 +33,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         public bool? IncludePac { get; set; }
 
+        /// <summary>
+        /// Specify name of the service to request.
+        /// </summary>
+        public KerberosPrincipalName ServerName { get; set; }
+
         #region Constructors
         /// <summary>
         /// Constructor.
@@ -95,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 EncryptionTypes = encryption_types,
                 KDCOptions = KDCOptions,
                 Realm = Realm,
-                ServerName = new KerberosPrincipalName(KerberosNameType.SRV_INST, $"krbtgt/{Realm.ToUpper()}"),
+                ServerName = ServerName ?? new KerberosPrincipalName(KerberosNameType.SRV_INST, $"krbtgt/{Realm.ToUpper()}"),
                 Nonce = KerberosBuilderUtils.GetRandomNonce(),
                 TillTime = TillTime
             };
