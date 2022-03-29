@@ -122,8 +122,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentException("Ticket must be encrypted.", nameof(ticket));
             }
             SessionKey = session_key ?? throw new ArgumentNullException(nameof(session_key));
-            ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
-            ClientRealm = client_realm ?? throw new ArgumentNullException(nameof(client_realm));
+            ClientName = client_name;
+            ClientRealm = client_realm;
             Realm = ticket.Realm;
             TillTime = KerberosTime.MaximumTime;
             EncryptionTypes = new List<KerberosEncryptionType>();
@@ -245,14 +245,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             {
                 throw new ArgumentNullException(nameof(TillTime));
             }
-            if (string.IsNullOrEmpty(ClientRealm))
-            {
-                throw new ArgumentException($"{nameof(ClientRealm)} must not be empty.");
-            }
-            if (ClientName is null)
-            {
-                throw new ArgumentNullException(nameof(ClientName));
-            }
         }
 
         private KerberosEncryptedData GetAuthorizationData()
@@ -300,18 +292,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Private Members
-        void SetKDCOption(KerberosKDCOptions opt, bool value)
-        {
-            if (value)
-            {
-                KDCOptions |= opt;
-            }
-            else
-            {
-                KDCOptions &= ~opt;
-            }
-        }
-
         private static KerberosTGSRequest Create(KerberosCredential credential)
         {
             if (credential is null)
