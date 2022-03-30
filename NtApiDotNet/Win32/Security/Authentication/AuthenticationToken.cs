@@ -33,11 +33,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Decrypt the Authentication Token using a keyset.
         /// </summary>
-        /// <param name="keyset">The set of keys to decrypt the </param>
+        /// <param name="keyset">The set of keys to decrypt the token.</param>
         /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
         public virtual AuthenticationToken Decrypt(IEnumerable<AuthenticationKey> keyset)
         {
             return this;
+        }
+
+        /// <summary>
+        /// Decrypt the Authentication Token using a key.
+        /// </summary>
+        /// <param name="key">The keys to decrypt the token.</param>
+        /// <returns>The decrypted token, or the same token if nothing could be decrypted.</returns>
+        public AuthenticationToken Decrypt(AuthenticationKey key)
+        {
+            return Decrypt(new[] { key });
         }
 
         /// <summary>
@@ -88,12 +98,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             if (context is null)
             {
-                throw new System.ArgumentNullException(nameof(context));
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (token is null)
             {
-                throw new System.ArgumentNullException(nameof(token));
+                throw new ArgumentNullException(nameof(token));
             }
 
             return Parse(context.PackageName, 0, context is IClientAuthenticationContext, token);
@@ -116,7 +126,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
             if (token is null)
             {
-                throw new System.ArgumentNullException(nameof(token));
+                throw new ArgumentNullException(nameof(token));
             }
 
             return Parse(package_name, 0, client, token);
