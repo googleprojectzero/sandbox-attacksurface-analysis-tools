@@ -188,9 +188,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>True if successfully parsed.</returns>
         public static bool TryParse(byte[] data,  out KerberosErrorAuthenticationToken token)
         {
-            DERValue[] values = DERParser.ParseData(data, 0);
             token = null;
-            if (!TryParse(data, values, out KerberosAuthenticationToken tmp_token))
+            if (!TryParse(data, null, out KerberosAuthenticationToken tmp_token))
             {
                 return false;
             }
@@ -206,6 +205,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
+                if (values == null)
+                    values = DERParser.ParseData(data, 0);
                 var ret = new KerberosErrorAuthenticationToken(data, values);
 
                 if (values.Length != 1 || !values[0].CheckMsg(KerberosMessageType.KRB_ERROR) || !values[0].HasChildren())
@@ -278,6 +279,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return true;
             }
             catch (InvalidDataException)
+            {
+                return false;
+            }
+            catch (EndOfStreamException)
             {
                 return false;
             }

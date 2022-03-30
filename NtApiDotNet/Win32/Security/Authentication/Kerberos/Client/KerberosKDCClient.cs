@@ -12,9 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.IO;
+using System.Net;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -25,16 +28,58 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     {
         #region Private Members
         private readonly IKerberosKDCClientTransport _transport;
+        private readonly IKerberosKDCClientTransport _password_transport;
 
-        private KerberosKDCReplyAuthenticationToken ExchangeTokens(KerberosKDCRequestAuthenticationToken token)
+        private KerberosKDCReplyAuthenticationToken ExchangeKDCTokens(KerberosKDCRequestAuthenticationToken token)
         {
-            var reply = SendReceive(token);
-            if (reply is KerberosErrorAuthenticationToken error)
+            var data = _transport.SendReceive(token.ToArray());
+            if (KerberosErrorAuthenticationToken.TryParse(data, out KerberosErrorAuthenticationToken error))
                 throw new KerberosKDCClientException(error);
-            if (reply is KerberosKDCReplyAuthenticationToken result)
+            if (KerberosKDCReplyAuthenticationToken.TryParse(data, out KerberosKDCReplyAuthenticationToken result))
                 return result;
             throw new KerberosKDCClientException("Unknown KDC reply.");
         }
+
+        private KerberosChangePasswordStatus ChangePassword(KerberosExternalTicket ticket, ushort protocol_version, byte[] user_data)
+        {
+            if (_password_transport is null)
+                throw new ArgumentException("Password transport not specified.");
+
+            var auth_builder = new KerberosAuthenticatorBuilder
+            {
+                SequenceNumber = KerberosBuilderUtils.GetRandomNonce(),
+                SubKey = KerberosAuthenticationKey.GenerateKey(ticket.SessionKey.KeyEncryption),
+                ClientName = ticket.ClientName,
+                ClientRealm = ticket.DomainName,
+                ClientTime = KerberosTime.Now
+            };
+
+            var ap_req = KerberosAPRequestAuthenticationToken.Create(ticket.Ticket, auth_builder.Create(), 
+                KerberosAPRequestOptions.None, ticket.SessionKey, raw_token: true);
+
+            var priv_part = KerberosPrivateEncryptedPart.Create(user_data,
+                    KerberosHostAddress.FromIPAddress(IPAddress.Any), auth_builder.SequenceNumber);
+            var priv = KerberosPrivate.Create(priv_part.Encrypt(auth_builder.SubKey, KerberosKeyUsage.KrbPriv));
+            var chpasswd = new KerberosKDCChangePasswordPacket(protocol_version, ap_req, priv);
+
+            var bytes = _password_transport.SendReceive(chpasswd.ToArray());
+            if (KerberosKDCChangePasswordPacket.TryParse(bytes, out KerberosKDCChangePasswordPacket reply_packet))
+            {
+                var dec_token = reply_packet.Token.Decrypt(ticket.SessionKey);
+                var dec_priv = reply_packet.Message.Decrypt(auth_builder.SubKey);
+
+                var result = new KerberosKDCChangePasswordPacket(reply_packet.ProtocolVersion, (KerberosAuthenticationToken)dec_token, (KerberosPrivate)dec_priv);
+                if (!(result.Message.EncryptedPart is KerberosPrivateEncryptedPart enc_part))
+                    throw new KerberosKDCClientException("Couldn't decrypt the reply.");
+                if (enc_part.UserData.Length < 2)
+                    throw new KerberosKDCClientException("Invalid user data.");
+                return (KerberosChangePasswordStatus)((enc_part.UserData[0] << 8) | enc_part.UserData[1]);
+            }
+            if (KerberosErrorAuthenticationToken.TryParse(bytes, out KerberosErrorAuthenticationToken error))
+                throw new KerberosKDCClientException(error);
+            throw new KerberosKDCClientException("Unknown KDC reply.");
+        }
+
         #endregion
 
         #region Constructors
@@ -42,9 +87,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Constructor.
         /// </summary>
         /// <param name="transport">The KDC client transport.</param>
-        public KerberosKDCClient(IKerberosKDCClientTransport transport)
+        /// <param name="password_transport">The KDC client transport for the password server.</param>
+        public KerberosKDCClient(IKerberosKDCClientTransport transport, IKerberosKDCClientTransport password_transport = null)
         {
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+            _password_transport = password_transport;
         }
         #endregion
 
@@ -54,10 +101,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="hostname">The hostname of the KDC server.</param>
         /// <param name="port">The port number of the KDC server.</param>
+        /// <param name="password_port">The port number of the KDC password server.</param>
         /// <returns>The created client.</returns>
-        public static KerberosKDCClient CreateTCPClient(string hostname, int port = 88)
+        public static KerberosKDCClient CreateTCPClient(string hostname, int port = 88, int password_port = 464)
         {
-            return new KerberosKDCClient(new KerberosKDCClientTransportTCP(hostname, port));
+            return new KerberosKDCClient(new KerberosKDCClientTransportTCP(hostname, port), 
+                new KerberosKDCClientTransportTCP(hostname, password_port));
         }
         #endregion
 
@@ -75,7 +124,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var as_req = request.ToBuilder();
-            var reply = ExchangeTokens(as_req.Create());
+            var reply = ExchangeKDCTokens(as_req.Create());
             var reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.AsRepEncryptedPart);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
@@ -118,7 +167,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationPACOptions(request.PACOptionsFlags));
             }
 
-            var reply = ExchangeTokens(tgs_req.Create());
+            var reply = ExchangeKDCTokens(tgs_req.Create());
             var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptedPartAuthSubkey);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
@@ -129,16 +178,56 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
-        /// Method to send and receive Kerberos authentication tokens to the KDC.
+        /// Change a user's password.
         /// </summary>
-        /// <param name="token">The output request token.</param>
-        /// <returns>Returns either a <see cref="KerberosKDCReplyAuthenticationToken"/> or a <see cref="KerberosErrorAuthenticationToken"/>.</returns>
-        public KerberosAuthenticationToken SendReceive(KerberosAuthenticationToken token)
+        /// <param name="key">The user's authentication key.</param>
+        /// <param name="new_password">The user's new password.</param>
+        /// <returns>The status of the operation.</returns>
+        public KerberosChangePasswordStatus ChangePassword(KerberosAuthenticationKey key, string new_password)
         {
-            var data = _transport.SendReceive(token.ToArray());
-            if (!KerberosAuthenticationToken.TryParse(data, 0, false, out KerberosAuthenticationToken ret))
-                throw new InvalidDataException("Invalid KDC data.");
-            return ret;
+            KerberosASRequest request = new KerberosASRequest(key, key.Name, key.Realm)
+            {
+                ServerName = new KerberosPrincipalName(KerberosNameType.SRV_INST, "kadmin/changepw")
+            };
+            var reply = Authenticate(request);
+
+            return ChangePassword(reply.ToExternalTicket(), 1, Encoding.UTF8.GetBytes(new_password));
+        }
+
+
+        /// <summary>
+        /// Set a user's password.
+        /// </summary>
+        /// <param name="tgt_ticket">The TGT ticket for the service ticket request.</param>
+        /// <param name="client_name">The name of the client to change.</param>
+        /// <param name="realm">The realm of the client to change.</param>
+        /// <param name="new_password">The user's new password.</param>
+        /// <returns>The status of the operation.</returns>
+        public KerberosChangePasswordStatus SetPassword(KerberosExternalTicket tgt_ticket, KerberosPrincipalName client_name, string realm, string new_password)
+        {
+            if (client_name is null)
+            {
+                throw new ArgumentNullException(nameof(client_name));
+            }
+
+            if (realm is null)
+            {
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            var request = new KerberosTGSRequest(tgt_ticket.Ticket, tgt_ticket.SessionKey, tgt_ticket.ClientName, tgt_ticket.DomainName);
+            request.ServerName = new KerberosPrincipalName(KerberosNameType.SRV_INST, "kadmin/changepw");
+            var reply = RequestServiceTicket(request);
+
+            DERBuilder der_builder = new DERBuilder();
+            using (var seq = der_builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, Encoding.UTF8.GetBytes(new_password));
+                seq.WriteContextSpecific(1, client_name);
+                seq.WriteContextSpecific(2, realm);
+            }
+
+            return ChangePassword(reply.ToExternalTicket(), 0xFF80, der_builder.ToArray());
         }
         #endregion
     }

@@ -14,9 +14,11 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -52,6 +54,39 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Address bytes.
         /// </summary>
         public byte[] Address { get; }
+
+        /// <summary>
+        /// Create a host address from an IP Address.
+        /// </summary>
+        /// <param name="host">The NetBIOS hostname.</param>
+        /// <returns>The new host address.</returns>
+        public static KerberosHostAddress FromNetBios(string host)
+        {
+            if (host is null)
+            {
+                throw new ArgumentNullException(nameof(host));
+            }
+
+            return new KerberosHostAddress(KerberosHostAddressType.NetBios, Encoding.ASCII.GetBytes(host));
+        }
+
+        /// <summary>
+        /// Create a host address from an IP Address.
+        /// </summary>
+        /// <param name="address">The IP address.</param>
+        /// <returns>The new host address.</returns>
+        public static KerberosHostAddress FromIPAddress(IPAddress address)
+        {
+            switch (address.AddressFamily)
+            {
+                case AddressFamily.InterNetwork:
+                    return new KerberosHostAddress(KerberosHostAddressType.IPv4, address.GetAddressBytes());
+                case AddressFamily.InterNetworkV6:
+                    return new KerberosHostAddress(KerberosHostAddressType.IPv6, address.GetAddressBytes());
+                default:
+                    throw new ArgumentException("Unknown address family.");
+            }
+        }
 
         /// <summary>
         /// ToString Method.

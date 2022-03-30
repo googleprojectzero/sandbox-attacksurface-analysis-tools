@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         /// <param name="new_password">The user's new password.</param>
         /// <param name="impersonating">True if impersonating.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns></returns>
+        /// <returns>The NT status code.</returns>
         public static NtStatus ChangePasswordRequest(UserCredentials credentials, string new_password, bool impersonating, bool throw_on_error)
         {
             if(credentials is null)
@@ -88,6 +88,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Change a user's password.
+        /// </summary>
+        /// <param name="credentials">The existing user's credentials.</param>
+        /// <param name="new_password">The user's new password.</param>
+        /// <param name="impersonating">True if impersonating.</param>
+        public static void ChangePasswordRequest(UserCredentials credentials, string new_password, bool impersonating)
+        {
+            ChangePasswordRequest(credentials, new_password, impersonating, true);
         }
     }
 }

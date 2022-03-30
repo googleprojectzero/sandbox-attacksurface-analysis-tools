@@ -531,6 +531,9 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosGroupMembership.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCReplyBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCRequestBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosChangePasswordStatus.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosKDCChangePasswordPacket.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPrivateEncryptedPart.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSReplyBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSRequestBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTicketBuilder.cs" />
@@ -543,6 +546,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACAttributes.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACRequestor.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncTimestamp.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPrivate.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketCacheInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\IKerberosKDCServerListener.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCProxy.cs" />
