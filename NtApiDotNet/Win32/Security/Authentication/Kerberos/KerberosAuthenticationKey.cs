@@ -437,6 +437,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return VerifyHash(hash, data, 0, data.Length, key_usage);
         }
 
+        /// <summary>
+        /// Generate a random key based on this key's encryption type.
+        /// </summary>
+        /// <returns>The generated key.</returns>
+        public KerberosAuthenticationKey GenerateKey()
+        {
+            return GenerateKey(KeyEncryption);
+        }
+
         #endregion
 
         #region Internal Members

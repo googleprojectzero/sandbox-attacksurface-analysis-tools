@@ -157,6 +157,36 @@ function Get-KerberosKey {
 
 <#
 .SYNOPSIS
+Create a new random kerbero key.
+.DESCRIPTION
+This cmdlet creates a new Kerberos Key.
+.PARAMETER KeyType
+The key encryption type.
+.PARAMETER Key
+The existing key to use the encryption type from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
+#>
+function New-KerberosKey {
+    [CmdletBinding(DefaultParameterSetName="FromEncType")]
+    Param(
+        [Parameter(Mandatory, ParameterSetName="FromEncType", Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
+        [Parameter(Mandatory, ParameterSetName="FromKey", Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromKey") {
+        $Key.GenerateKey()
+    } else {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::GenerateKey($KeyType)
+    }
+}
+
+<#
+.SYNOPSIS
 Get Kerberos Ticket.
 .DESCRIPTION
 This cmdlet gets a kerberos Ticket, or multiple tickets.
