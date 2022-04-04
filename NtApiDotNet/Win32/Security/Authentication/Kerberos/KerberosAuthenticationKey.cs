@@ -446,6 +446,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return GenerateKey(KeyEncryption);
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The formatting string.</returns>
+        public override string ToString()
+        {
+            return $"{KeyEncryption} {Convert.ToBase64String(Key)}";
+        }
+
         #endregion
 
         #region Internal Members
