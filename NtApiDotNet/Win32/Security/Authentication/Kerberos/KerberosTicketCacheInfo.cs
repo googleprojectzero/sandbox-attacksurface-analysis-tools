@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             EndTime = info.EndTime.ToDateTime();
             RenewTime = info.RenewTime.ToDateTime();
             EncryptionType = info.EncryptionType;
-            TicketFlags = (KerberosTicketFlags)info.TicketFlags.SwapEndian();
+            TicketFlags = (KerberosTicketFlags)info.TicketFlags.RotateBits();
         }
 
         internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX2 info) : this(info.InfoEx)

@@ -143,6 +143,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return Encoding.UTF8.GetString(ReadOctets(reader));
         }
 
+        internal static uint RotateBits(this uint value)
+        {
+            uint ret = 0;
+            for (int i = 0; i < 32; ++i)
+            {
+                if ((value & (1U << i)) != 0)
+                {
+                    ret |= (0x80000000U >> i);
+                }
+            }
+            return ret;
+        }
+
         internal static ushort SwapEndian(this ushort value)
         {
             return BitConverter.ToUInt16(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
@@ -173,6 +186,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             writer.Write(value.SwapEndian());
         }
 
+        internal static void WriteUInt32BE(this BinaryWriter writer, uint value)
+        {
+            writer.Write(value.SwapEndian());
+        }
+
         internal static void WriteUInt16BE(this BinaryWriter writer, int value)
         {
             writer.Write(((ushort)value).SwapEndian());
@@ -186,11 +204,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         internal static uint ReadUInt32BE(this BinaryReader reader)
         {
             return reader.ReadUInt32().SwapEndian();
-        }
-
-        internal static void WriteUInt32BE(this BinaryWriter writer, uint value)
-        {
-            writer.Write(value.SwapEndian());
         }
 
         internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)

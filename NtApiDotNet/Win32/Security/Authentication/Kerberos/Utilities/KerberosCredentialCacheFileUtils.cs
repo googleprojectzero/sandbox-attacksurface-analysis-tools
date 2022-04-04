@@ -13,11 +13,9 @@
 //  limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 {
@@ -228,19 +226,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return new TimeSpan();
         }
 
-        public static int RotateBits(this int value)
-        {
-            var bits = new BitArray(new int[] { value });
-            bits = new BitArray(bits.Cast<bool>().Reverse().ToArray());
-            int ret = 0;
-            for (int i = 0; i < bits.Length; ++i)
-            {
-                if (bits[i])
-                    ret |= (1 << i);
-            }
-            return ret;
-        }
-
         public static void ReadCredential(this BinaryReader reader, KerberosCredentialCacheFile file)
         {
             var client = reader.ReadPrincipal();
@@ -251,7 +236,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             var end_time = reader.ReadUnixTime();
             var renew_till = reader.ReadUnixTime();
             var is_skey = reader.ReadByte() != 0;
-            var ticket_flags = (KerberosTicketFlags)reader.ReadInt32BE().RotateBits();
+            var ticket_flags = (KerberosTicketFlags)reader.ReadUInt32BE().RotateBits();
             var addresses = reader.ReadAddresses();
             var auth_data = reader.ReadAuthData();
 

@@ -108,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 ret.TargetDomainName = ticket.TargetDomainName.ToString();
                 ret.AltTargetDomainName = ticket.AltTargetDomainName.ToString();
                 ret.SessionKey = ParseKey(ret.ServiceName, ret.DomainName, ticket.SessionKey);
-                ret.TicketFlags = (KerberosTicketFlags)ticket.TicketFlags.SwapEndian();
+                ret.TicketFlags = (KerberosTicketFlags)ticket.TicketFlags.RotateBits();
                 ret.Flags = ticket.Flags;
                 ret.KeyExpirationTime = ticket.KeyExpirationTime.ToDateTime();
                 ret.StartTime = ticket.StartTime.ToDateTime();

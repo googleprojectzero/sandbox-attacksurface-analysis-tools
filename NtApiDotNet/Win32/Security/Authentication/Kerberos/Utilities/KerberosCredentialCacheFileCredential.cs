@@ -156,7 +156,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             writer.WriteUnixTime(EndTime);
             writer.WriteUnixTime(RenewTill);
             writer.Write((byte)(IsSessionKey ? 1 : 0));
-            writer.WriteInt32BE(((int)TicketFlags).RotateBits());
+            writer.WriteUInt32BE(((uint)TicketFlags).RotateBits());
             writer.WriteAddresses(Addresses);
             writer.WriteAuthData(AuthData);
             writer.WriteTicket(Ticket);

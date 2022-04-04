@@ -79,7 +79,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public LargeIntegerStruct EndTime;
         public LargeIntegerStruct RenewTime;
         public KerberosEncryptionType EncryptionType;
-        public int TicketFlags;
+        public uint TicketFlags;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -93,7 +93,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public LargeIntegerStruct EndTime;
         public LargeIntegerStruct RenewTime;
         public KerberosEncryptionType EncryptionType;
-        public int TicketFlags;
+        public uint TicketFlags;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -171,27 +171,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public IntPtr KeyTab;
     }
 
-    [Flags]
-    internal enum KERB_RETRIEVE_TICKET_FLAGS
-    {
-        Default = 0,
-        DontUseCache = 1,
-        UseCacheOnly = 2,
-        UseCredHandle = 4,
-        AsKerbCred = 8,
-        WithSecCred = 0x10,
-        CacheTicket = 0x20,
-        MaxLifetime = 0x40
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct KERB_RETRIEVE_TKT_REQUEST
     {
         public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
         public Luid LogonId;
         public UnicodeStringOut TargetName;
-        public int TicketFlags;
-        public KERB_RETRIEVE_TICKET_FLAGS CacheOptions;
+        public uint TicketFlags;
+        public KerberosRetrieveTicketFlags CacheOptions;
         public KerberosEncryptionType EncryptionType;
         public SecHandle CredentialsHandle;
     }
@@ -228,7 +215,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public UnicodeStringOut TargetDomainName;
         public UnicodeStringOut AltTargetDomainName;
         public KERB_CRYPTO_KEY SessionKey;
-        public int TicketFlags;
+        public uint TicketFlags;
         public int Flags;
         public LargeIntegerStruct KeyExpirationTime;
         public LargeIntegerStruct StartTime;
@@ -263,6 +250,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KERB_CRYPTO_KEY32 Key; // key to decrypt KERB_CRED
         public int KerbCredSize;
         public int KerbCredOffset;
+    }
+
+    /// <summary>
+    /// Flags for retrieving a ticket.
+    /// </summary>
+    [Flags]
+    public enum KerberosRetrieveTicketFlags
+    {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        [SDKName("KERB_RETRIEVE_TICKET_DEFAULT")]
+        Default = 0,
+        [SDKName("KERB_RETRIEVE_TICKET_DONT_USE_CACHE")]
+        DontUseCache = 1,
+        [SDKName("KERB_RETRIEVE_TICKET_USE_CACHE_ONLY")]
+        UseCacheOnly = 2,
+        [SDKName("KERB_RETRIEVE_TICKET_USE_CREDHANDLE")]
+        UseCredHandle = 4,
+        [SDKName("KERB_RETRIEVE_TICKET_AS_KERB_CRED")]
+        AsKerbCred = 8,
+        [SDKName("KERB_RETRIEVE_TICKET_WITH_SEC_CRED")]
+        WithSecCred = 0x10,
+        [SDKName("KERB_RETRIEVE_TICKET_CACHE_TICKET")]
+        CacheTicket = 0x20,
+        [SDKName("KERB_RETRIEVE_TICKET_MAX_LIFETIME")]
+        MaxLifetime = 0x40
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 
     /// <summary>
@@ -350,8 +363,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         }
 
-        private static NtResult<SafeLsaReturnBufferHandle> QueryCachedTicketBuffer(SafeLsaLogonHandle handle, string target_name, KERB_RETRIEVE_TICKET_FLAGS flags,
-            Luid logon_id, SecHandle sec_handle, bool throw_on_error)
+        private static NtResult<SafeLsaReturnBufferHandle> QueryCachedTicketBuffer(SafeLsaLogonHandle handle, string target_name, KerberosRetrieveTicketFlags flags,
+            Luid logon_id, SecHandle sec_handle, KerberosTicketFlags ticket_flags, KerberosEncryptionType encryption_type, bool throw_on_error)
         {
             int string_length = (target_name.Length) * 2;
             int max_string_length = string_length + 2;
@@ -364,6 +377,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     CredentialsHandle = sec_handle,
                     LogonId = logon_id,
                     MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveEncodedTicketMessage,
+                    TicketFlags = ((uint)ticket_flags).RotateBits(),
+                    EncryptionType = encryption_type,
                     TargetName = new UnicodeStringOut()
                     {
                         Length = (ushort)string_length,
@@ -383,19 +398,61 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        private static NtResult<KerberosExternalTicket> QueryCachedTicket(SafeLsaLogonHandle handle, string target_name, KERB_RETRIEVE_TICKET_FLAGS flags, 
-            Luid logon_id, SecHandle sec_handle, bool throw_on_error)
+        private static NtResult<KerberosExternalTicket> QueryCachedTicket(SafeLsaLogonHandle handle, string target_name, KerberosRetrieveTicketFlags flags,
+            Luid logon_id, SecHandle sec_handle, KerberosTicketFlags ticket_flags, KerberosEncryptionType encryption_type, bool throw_on_error)
         {
-            using (var buffer = QueryCachedTicketBuffer(handle, target_name, flags, logon_id, sec_handle, throw_on_error))
+            using (var buffer = QueryCachedTicketBuffer(handle, target_name, flags, logon_id, sec_handle, ticket_flags, encryption_type, throw_on_error))
             {
                 if (!buffer.IsSuccess)
                     return buffer.Cast<KerberosExternalTicket>();
 
                 KERB_EXTERNAL_TICKET ticket = buffer.Result.Read<KERB_EXTERNAL_TICKET>(0);
-                if (!KerberosExternalTicket.TryParse(ticket, flags.HasFlagSet(KERB_RETRIEVE_TICKET_FLAGS.AsKerbCred), out KerberosExternalTicket ret))
+                if (!KerberosExternalTicket.TryParse(ticket, flags.HasFlagSet(KerberosRetrieveTicketFlags.AsKerbCred), out KerberosExternalTicket ret))
                     return NtStatus.STATUS_INVALID_PARAMETER.CreateResultFromError<KerberosExternalTicket>(throw_on_error);
                 return ret.CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Retrieve a Kerberos Ticket.
+        /// </summary>
+        /// <param name="target_name">The target service for the Ticket.</param>
+        /// <param name="logon_id">The Logon Session ID to query.</param>
+        /// <param name="cred_handle">Optional credential handle.</param>
+        /// <param name="flags">Flags for retrieving the ticket.</param>
+        /// <param name="ticket_flags">Ticket flags for the ticket.</param>
+        /// <param name="encryption_type">Encryption type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Kerberos Ticket.</returns>
+        public static NtResult<KerberosExternalTicket> RetrieveTicket(string target_name, Luid logon_id, 
+            CredentialHandle cred_handle, KerberosRetrieveTicketFlags flags, KerberosTicketFlags ticket_flags,
+            KerberosEncryptionType encryption_type, bool throw_on_error)
+        {
+            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!handle.IsSuccess)
+                    return handle.Cast<KerberosExternalTicket>();
+                return QueryCachedTicket(handle.Result, target_name, flags,
+                    logon_id, cred_handle?.CredHandle ?? new SecHandle(), 
+                    ticket_flags, encryption_type, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Retrieve a Kerberos Ticket.
+        /// </summary>
+        /// <param name="target_name">The target service for the Ticket.</param>
+        /// <param name="logon_id">The Logon Session ID to query.</param>
+        /// <param name="cred_handle">Optional credential handle.</param>
+        /// <param name="flags">Flags for retrieving the ticket.</param>
+        /// <param name="ticket_flags">Ticket flags for the ticket.</param>
+        /// <param name="encryption_type">Encryption type.</param>
+        /// <returns>The Kerberos Ticket.</returns>
+        public static KerberosExternalTicket RetrieveTicket(string target_name, Luid logon_id,
+            CredentialHandle cred_handle, KerberosRetrieveTicketFlags flags, KerberosTicketFlags ticket_flags,
+            KerberosEncryptionType encryption_type)
+        {
+            return RetrieveTicket(target_name, logon_id, cred_handle, flags, ticket_flags, encryption_type, true).Result;
         }
 
         /// <summary>
@@ -408,15 +465,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The Kerberos Ticket.</returns>
         public static NtResult<KerberosExternalTicket> GetTicket(string target_name, Luid logon_id, bool cached_only, bool throw_on_error)
         {
-            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-            {
-                if (!handle.IsSuccess)
-                    return handle.Cast<KerberosExternalTicket>();
-                Luid luid = logon_id;
-                KERB_RETRIEVE_TICKET_FLAGS flags = cached_only ? KERB_RETRIEVE_TICKET_FLAGS.UseCacheOnly : KERB_RETRIEVE_TICKET_FLAGS.Default;
-                return QueryCachedTicket(handle.Result, target_name, flags | KERB_RETRIEVE_TICKET_FLAGS.AsKerbCred,
-                    luid, new SecHandle(), throw_on_error);
-            }
+            KerberosRetrieveTicketFlags flags = cached_only ? KerberosRetrieveTicketFlags.UseCacheOnly : KerberosRetrieveTicketFlags.Default;
+            flags |= KerberosRetrieveTicketFlags.AsKerbCred;
+            return RetrieveTicket(target_name, logon_id, null, flags, KerberosTicketFlags.None, KerberosEncryptionType.NULL, throw_on_error);
         }
 
         /// <summary>
@@ -488,15 +539,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The Kerberos Ticket.</returns>
         public static NtResult<KerberosExternalTicket> GetTicket(string target_name, CredentialHandle credential_handle, bool cached_only, bool throw_on_error)
         {
-            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-            {
-                if (!handle.IsSuccess)
-                    return handle.Cast<KerberosExternalTicket>();
-                KERB_RETRIEVE_TICKET_FLAGS flags = cached_only ? KERB_RETRIEVE_TICKET_FLAGS.UseCacheOnly : KERB_RETRIEVE_TICKET_FLAGS.Default;
-                flags |= KERB_RETRIEVE_TICKET_FLAGS.UseCredHandle | KERB_RETRIEVE_TICKET_FLAGS.AsKerbCred;
-                return QueryCachedTicket(handle.Result, target_name, flags,
-                    default, credential_handle.CredHandle, throw_on_error);
-            }
+            KerberosRetrieveTicketFlags flags = cached_only ? KerberosRetrieveTicketFlags.UseCacheOnly : KerberosRetrieveTicketFlags.Default;
+            flags |= KerberosRetrieveTicketFlags.AsKerbCred | KerberosRetrieveTicketFlags.UseCredHandle;
+            return RetrieveTicket(target_name, default, credential_handle, flags, KerberosTicketFlags.None, KerberosEncryptionType.NULL, throw_on_error);
         }
 
         /// <summary>
@@ -542,8 +587,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 foreach (var info in list.Result)
                 {
                     var ticket = QueryCachedTicket(handle.Result, $"{info.ServerName}@{info.ServerRealm}",
-                        KERB_RETRIEVE_TICKET_FLAGS.UseCacheOnly | KERB_RETRIEVE_TICKET_FLAGS.AsKerbCred, 
-                        logon_id, new SecHandle(), false);
+                        KerberosRetrieveTicketFlags.UseCacheOnly | KerberosRetrieveTicketFlags.AsKerbCred,
+                        logon_id, new SecHandle(), KerberosTicketFlags.None, KerberosEncryptionType.NULL, false);
                     if (ticket.IsSuccess)
                     {
                         tickets.Add(ticket.Result);
@@ -744,7 +789,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
                         ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
                         ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
-                        ticket_info.TicketFlags = ((int)ticket_template.TicketFlags).SwapEndian();
+                        ticket_info.TicketFlags = ((uint)ticket_template.TicketFlags).RotateBits();
                     }
 
                     buffer.Result = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
