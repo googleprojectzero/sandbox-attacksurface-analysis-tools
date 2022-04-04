@@ -474,6 +474,7 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
+    <Compile Include="Win32\Security\Authentication\LsaCallPackageResult.cs" />
     <Compile Include="Win32\SafeHandles\SafeDirectoryServiceHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSecurityPrincipal.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceReferenceClass.cs" />

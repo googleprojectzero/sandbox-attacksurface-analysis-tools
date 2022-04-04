@@ -83,21 +83,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="local_groups">Additional local groups.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The LSA logon result.</returns>
-        public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
+        public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
             TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
-                var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
-                if (!auth_pkg.IsSuccess)
-                    return auth_pkg.Cast<LsaLogonResult>();
-
                 var groups = local_groups == null ? SafeTokenGroupsBuffer.Null
                     : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
 
                 QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
                 return SecurityNativeMethods.LsaLogonUser(_handle, new LsaString(origin_name),
-                    type, auth_pkg.Result, buffer, buffer.GetLength(), groups,
+                    type, auth_package, buffer, buffer.GetLength(), groups,
                     source_context, out SafeLsaReturnBufferHandle profile,
                     out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
                     quota_limits, out NtStatus subStatus).CreateResult(throw_on_error, () =>
@@ -118,10 +114,116 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="buffer">The authentication credentials buffer.</param>
         /// <param name="local_groups">Additional local groups.</param>
         /// <returns>The LSA logon result.</returns>
+        public LsaLogonResult LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
+            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups)
+        {
+            return LsaLogonUser(type, auth_package, origin_name, source_context, buffer, local_groups, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="origin_name">The name of the origin.</param>
+        /// <param name="source_context">The token source context.</param>
+        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="local_groups">Additional local groups.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The LSA logon result.</returns>
+        public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
+            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+        {
+            var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
+            if (!auth_pkg.IsSuccess)
+                return auth_pkg.Cast<LsaLogonResult>();
+            return LsaLogonUser(type, auth_pkg.Result, origin_name, source_context, buffer, local_groups, throw_on_error);
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="origin_name">The name of the origin.</param>
+        /// <param name="source_context">The token source context.</param>
+        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="local_groups">Additional local groups.</param>
+        /// <returns>The LSA logon result.</returns>
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
             TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups)
         {
             return LsaLogonUser(type, auth_package, origin_name, source_context, buffer, local_groups, true).Result;
+        }
+
+        /// <summary>
+        /// Lookup the ID of an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The authentication package ID.</returns>
+        public NtResult<uint> LsaLookupAuthenticationPackage(string auth_package, bool throw_on_error)
+        {
+            return _handle.LookupAuthPackage(auth_package, throw_on_error);
+        }
+
+        /// <summary>
+        /// Lookup the ID of an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <returns>The authentication package ID.</returns>
+        public uint LsaLookupAuthenticationPackage(string auth_package)
+        {
+            return LsaLookupAuthenticationPackage(auth_package, true).Result;
+        }
+
+        /// <summary>
+        /// Call an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to call.</param>
+        /// <param name="buffer">The buffer to pass to the authentication package.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the call.</returns>
+        public NtResult<LsaCallPackageResult> LsaCallAuthenticationPackage(uint auth_package, SafeBuffer buffer, bool throw_on_error)
+        {
+            return _handle.CallPackage(auth_package, buffer, throw_on_error).Map(r => new LsaCallPackageResult(r));
+        }
+
+        /// <summary>
+        /// Call an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to call.</param>
+        /// <param name="buffer">The buffer to pass to the authentication package.</param>
+        /// <returns>The result of the call.</returns>
+        public LsaCallPackageResult LsaCallAuthenticationPackage(uint auth_package, SafeBuffer buffer)
+        {
+            return LsaCallAuthenticationPackage(auth_package, buffer, true).Result;
+        }
+
+        /// <summary>
+        /// Call an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to call.</param>
+        /// <param name="buffer">The buffer to pass to the authentication package.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the call.</returns>
+        public NtResult<LsaCallPackageResult> LsaCallAuthenticationPackage(string auth_package, SafeBuffer buffer, bool throw_on_error)
+        {
+            var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
+            if (!auth_pkg.IsSuccess)
+                return auth_pkg.Cast<LsaCallPackageResult>();
+            return LsaCallAuthenticationPackage(auth_pkg.Result, buffer, throw_on_error);
+        }
+
+        /// <summary>
+        /// Call an authentication package.
+        /// </summary>
+        /// <param name="auth_package">The authentication package to call.</param>
+        /// <param name="buffer">The buffer to pass to the authentication package.</param>
+        /// <returns>The result of the call.</returns>
+        public LsaCallPackageResult LsaCallAuthenticationPackage(string auth_package, SafeBuffer buffer)
+        {
+            return LsaCallAuthenticationPackage(auth_package, buffer, true).Result;
         }
 
         /// <summary>
