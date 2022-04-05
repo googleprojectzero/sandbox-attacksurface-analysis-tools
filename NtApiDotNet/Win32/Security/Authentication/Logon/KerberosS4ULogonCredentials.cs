@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// Flags for the S4U logon.
     /// </summary>
     [Flags]
-    public enum KerbS4ULogonFlags
+    public enum KerberosS4ULogonFlags
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
@@ -37,12 +37,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_S4U_LOGON structure.
     /// </summary>
-    public sealed class KerbS4ULogonCredentials : ILogonCredentials
+    public sealed class KerberosS4ULogonCredentials : ILogonCredentials
     {
         /// <summary>
         /// Flags for the logon.
         /// </summary>
-        public KerbS4ULogonFlags Flags { get; set; }
+        public KerberosS4ULogonFlags Flags { get; set; }
 
         /// <summary>
         /// The client user principal name.

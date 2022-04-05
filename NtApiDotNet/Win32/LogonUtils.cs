@@ -218,7 +218,21 @@ namespace NtApiDotNet.Win32
                 throw new ArgumentNullException(nameof(service_ticket));
             }
 
-            return LsaLogonTicket(type, service_ticket.ToArray(), tgt_ticket?.ToArray(), throw_on_error);
+            using (var logon_handle = LsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!logon_handle.IsSuccess)
+                    return logon_handle.Cast<NtToken>();
+                var creds = new KerberosTicketLogonCredentials()
+                {
+                    ServiceTicket = service_ticket,
+                    TicketGrantingTicket = tgt_ticket
+                };
+                using (var result = logon_handle.Result.LsaLogonUser(type, AuthenticationPackage.KERBEROS_NAME, "KTIK",
+                    new TokenSource("NT.NET"), creds, null, throw_on_error))
+                {
+                    return result.Map(r => r.Token.Duplicate());
+                }
+            }
         }
 
         /// <summary>
@@ -247,27 +261,21 @@ namespace NtApiDotNet.Win32
             {
                 throw new ArgumentNullException(nameof(service_ticket));
             }
-            int total_size = service_ticket.Length + (tgt_ticket?.Length ?? 0);
 
-            using (var buffer = new SafeStructureInOutBuffer<KERB_TICKET_LOGON>(total_size, true))
+            if (KerberosTicket.TryParse(service_ticket, out KerberosTicket ticket))
             {
-                KERB_TICKET_LOGON logon_struct = new KERB_TICKET_LOGON
-                {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
-                    ServiceTicketLength = service_ticket.Length,
-                    ServiceTicket = buffer.Data.DangerousGetHandle(),
-                    TicketGrantingTicket = tgt_ticket != null ? buffer.Data.DangerousGetHandle() + service_ticket.Length : IntPtr.Zero,
-                    TicketGrantingTicketLength = tgt_ticket?.Length ?? 0
-                };
-                buffer.Data.WriteArray(0, service_ticket, 0, service_ticket.Length);
-                if (tgt_ticket != null)
-                {
-                    buffer.Data.WriteArray((ulong)service_ticket.Length, tgt_ticket, 0, tgt_ticket.Length);
-                }
-
-                buffer.Result = logon_struct;
-                return LsaLogonUser(type, AuthenticationPackage.KERBEROS_NAME, "KTIK", buffer, null, throw_on_error);
+                throw new ArgumentException("Invalid service ticket.", nameof(service_ticket));
             }
+
+            KerberosCredential credential = null;
+            if (tgt_ticket != null)
+            {
+                if (!KerberosCredential.TryParse(tgt_ticket, null, out credential))
+                {
+                    throw new ArgumentException("Invalid ticket granting ticket.", nameof(tgt_ticket));
+                }
+            }
+            return LsaLogonTicket(type, ticket, credential, throw_on_error);
         }
 
         /// <summary>
@@ -307,7 +315,7 @@ namespace NtApiDotNet.Win32
             {
                 if (!logon_handle.IsSuccess)
                     return logon_handle.Cast<NtToken>();
-                KerbS4ULogonCredentials creds = new KerbS4ULogonCredentials()
+                KerberosS4ULogonCredentials creds = new KerberosS4ULogonCredentials()
                 {
                     ClientRealm = realm,
                     ClientUpn = user

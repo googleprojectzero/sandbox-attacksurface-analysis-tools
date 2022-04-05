@@ -31,16 +31,17 @@ namespace NtApiDotNet.Win32.Security.Native
 
     internal class LsaBufferBuilder<T> where T : new()
     {
-        struct StringEntry
+        struct BufferEntry
         {
             public FieldInfo field;
+            public FieldInfo length_field;
             public int position;
             public int length;
         }
 
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
-        private readonly List<StringEntry> _strs;
+        private readonly List<BufferEntry> _buffers;
         private readonly T _value;
         private static readonly Dictionary<string, FieldInfo> _type_fields = typeof(T).GetFields().ToDictionary(f => f.Name);
 
@@ -48,7 +49,7 @@ namespace NtApiDotNet.Win32.Security.Native
         {
             _stm = new MemoryStream();
             _writer = new BinaryWriter(_stm);
-            _strs = new List<StringEntry>();
+            _buffers = new List<BufferEntry>();
             _value = value;
         }
 
@@ -57,14 +58,18 @@ namespace NtApiDotNet.Win32.Security.Native
             return (int)_stm.Position;
         }
 
-        private static FieldInfo GetUnicodeStringField(string name)
+        private static FieldInfo GetField<U>(string name)
         {
             if (!_type_fields.ContainsKey(name))
                 throw new ArgumentException($"Unknown field {name}.", nameof(name));
-            if (_type_fields[name].FieldType != typeof(UnicodeStringOut))
+            if (_type_fields[name].FieldType != typeof(U))
                 throw new ArgumentException($"Invalid field type {_type_fields[name].FieldType}.", nameof(name));
             return _type_fields[name];
         }
+
+        private static FieldInfo GetUnicodeStringField(string name) => GetField<UnicodeStringOut>(name);
+        private static FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
+        private static FieldInfo GetInt32Field(string name) => GetField<int>(name);
 
         public void AddUnicodeString(string name, byte[] ba)
         {
@@ -78,7 +83,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
             if (ba != null)
             {
-                _strs.Add(new StringEntry()
+                _buffers.Add(new BufferEntry()
                 {
                     position = pos,
                     length = ba.Length,
@@ -92,6 +97,21 @@ namespace NtApiDotNet.Win32.Security.Native
             AddUnicodeString(name, str != null ? Encoding.Unicode.GetBytes(str) : null);
         }
 
+        public void AddPointerBuffer(string ptr_name, string length_name, byte[] buffer)
+        {
+            if (buffer == null)
+                return;
+            int pos = GetCurrentPos();
+            _writer.Write(buffer);
+            _buffers.Add(new BufferEntry()
+            {
+                position = pos,
+                length = buffer.Length,
+                field = GetIntPtrField(ptr_name),
+                length_field = GetInt32Field(length_name)
+            });
+        }
+
         public SafeStructureInOutBuffer<T> ToBuffer()
         {
             byte[] ba = _stm.ToArray();
@@ -99,15 +119,24 @@ namespace NtApiDotNet.Win32.Security.Native
             {
                 object obj = _value;
                 buffer.Data.WriteBytes(ba);
-                foreach (var entry in _strs)
+                foreach (var entry in _buffers)
                 {
-                    UnicodeStringOut str = new UnicodeStringOut
+                    if (entry.field.FieldType == typeof(UnicodeStringOut))
                     {
-                        Buffer = buffer.Data.DangerousGetHandle() + entry.position,
-                        Length = (ushort)entry.length,
-                        MaximumLength = (ushort)(entry.length + 2)
-                    };
-                    entry.field.SetValue(obj, str);
+                        UnicodeStringOut str = new UnicodeStringOut
+                        {
+                            Buffer = buffer.Data.DangerousGetHandle() + entry.position,
+                            Length = (ushort)entry.length,
+                            MaximumLength = (ushort)(entry.length + 2)
+                        };
+                        entry.field.SetValue(obj, str);
+                    }
+                    else if (entry.field.FieldType == typeof(IntPtr))
+                    {
+                        IntPtr ptr = buffer.Data.DangerousGetHandle() + entry.position;
+                        entry.field.SetValue(obj, ptr);
+                        entry.length_field.SetValue(obj, entry.length);
+                    }
                 }
                 buffer.Result = (T)obj;
                 return buffer.Detach();

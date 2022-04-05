@@ -162,6 +162,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return Parse(values[0]);
         }
 
+        internal static bool TryParse(byte[] data, out KerberosTicket ticket)
+        {
+            ticket = null;
+            try
+            {
+                ticket = Parse(data);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         private protected KerberosTicket(
             int ticket_version,
             string realm, 

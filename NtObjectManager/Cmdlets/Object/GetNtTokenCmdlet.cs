@@ -328,13 +328,13 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify Service Ticket for Logon.</para>
         /// </summary>
         [Parameter(Position = 0, ParameterSetName = "Ticket", Mandatory = true)]
-        public KerberosTicket Ticket { get; }
+        public KerberosTicket Ticket { get; set; }
 
         /// <summary>
         /// <para type="description">Specify optional TGT for logon.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "Ticket", Mandatory = true)]
-        public KerberosCredential KerbCred { get; }
+        [Parameter(ParameterSetName = "Ticket")]
+        public KerberosCredential KerbCred { get; set; }
 
         /// <summary>
         /// <para type="description">Get anonymous token.</para>

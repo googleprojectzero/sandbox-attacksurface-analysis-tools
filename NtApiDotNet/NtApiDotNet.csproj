@@ -475,7 +475,8 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILogonCredentials.cs" />
-    <Compile Include="Win32\Security\Authentication\Logon\KerbS4ULogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\KerberosTicketLogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\KerberosS4ULogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaCallPackageResult.cs" />
     <Compile Include="Win32\SafeHandles\SafeDirectoryServiceHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSecurityPrincipal.cs" />

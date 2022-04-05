@@ -134,6 +134,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             token = null;
             try
             {
+                if (values == null)
+                {
+                    values = DERParser.ParseData(data, 0);
+                }
                 var ret = new KerberosCredential(data, values);
                 if (values.Length != 1 || !values[0].CheckMsg(KerberosMessageType.KRB_CRED) || !values[0].HasChildren())
                     return false;
