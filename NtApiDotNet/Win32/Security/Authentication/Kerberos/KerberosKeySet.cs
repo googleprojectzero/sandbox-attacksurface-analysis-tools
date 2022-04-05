@@ -179,7 +179,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         var keytab = result.Result.Buffer.Read<KERB_RETRIEVE_KEY_TAB_RESPONSE>(0);
                         var keytab_buffer = new SafeHGlobalBuffer(keytab.KeyTab, keytab.KeyTabLength, false);
 
-                        return KerberosKeySet.ReadKeyTabFile(keytab_buffer.GetStream()).CreateResult();
+                        return ReadKeyTabFile(keytab_buffer.GetStream()).CreateResult();
                     }
                 }
             }

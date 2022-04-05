@@ -15,7 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtApiDotNet.Win32.Security.Authentication.Logon
 {
     /// <summary>
     /// Class to represent the result of a package call.

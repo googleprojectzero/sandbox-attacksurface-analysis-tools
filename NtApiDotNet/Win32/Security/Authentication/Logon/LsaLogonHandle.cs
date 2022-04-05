@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtApiDotNet.Win32.Security.Authentication.Logon
 {
     /// <summary>
     /// Class to represent an LSA logon handle.
@@ -73,23 +73,43 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Connect to LSA and register as a logon process, falling back to an untrusted connection.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The LSA logon handle.</returns>
+        public static NtResult<LsaLogonHandle> Connect(bool throw_on_error)
+        {
+            return SafeLsaLogonHandle.Connect(throw_on_error).Map(h => new LsaLogonHandle(h));
+        }
+
+        /// <summary>
+        /// Connect to LSA and register as a logon process, falling back to an untrusted connection.
+        /// </summary>
+        /// <returns>The LSA logon handle.</returns>
+        public static LsaLogonHandle Connect()
+        {
+            return Connect(true).Result;
+        }
+
+        /// <summary>
         /// Logon a user.
         /// </summary>
         /// <param name="type">The type of logon.</param>
         /// <param name="auth_package">The authentication package to use.</param>
         /// <param name="origin_name">The name of the origin.</param>
         /// <param name="source_context">The token source context.</param>
-        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="credentials">The authentication .</param>
         /// <param name="local_groups">Additional local groups.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The LSA logon result.</returns>
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
-            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
                 var groups = local_groups == null ? SafeTokenGroupsBuffer.Null
                     : list.AddResource(SafeTokenGroupsBuffer.Create(local_groups));
+                var buffer = list.AddResource(credentials.ToBuffer(list));
 
                 QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
                 return SecurityNativeMethods.LsaLogonUser(_handle, new LsaString(origin_name),
@@ -111,13 +131,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="auth_package">The authentication package to use.</param>
         /// <param name="origin_name">The name of the origin.</param>
         /// <param name="source_context">The token source context.</param>
-        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="credentials">The authentication credentials.</param>
         /// <param name="local_groups">Additional local groups.</param>
         /// <returns>The LSA logon result.</returns>
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
-            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups)
+            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups)
         {
-            return LsaLogonUser(type, auth_package, origin_name, source_context, buffer, local_groups, true).Result;
+            return LsaLogonUser(type, auth_package, origin_name, source_context, credentials, local_groups, true).Result;
         }
 
         /// <summary>
@@ -127,17 +147,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="auth_package">The authentication package to use.</param>
         /// <param name="origin_name">The name of the origin.</param>
         /// <param name="source_context">The token source context.</param>
-        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="credentials">The authentication credentials.</param>
         /// <param name="local_groups">Additional local groups.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The LSA logon result.</returns>
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
-            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
             var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
             if (!auth_pkg.IsSuccess)
                 return auth_pkg.Cast<LsaLogonResult>();
-            return LsaLogonUser(type, auth_pkg.Result, origin_name, source_context, buffer, local_groups, throw_on_error);
+            return LsaLogonUser(type, auth_pkg.Result, origin_name, source_context, credentials, local_groups, throw_on_error);
         }
 
         /// <summary>
@@ -147,13 +167,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="auth_package">The authentication package to use.</param>
         /// <param name="origin_name">The name of the origin.</param>
         /// <param name="source_context">The token source context.</param>
-        /// <param name="buffer">The authentication credentials buffer.</param>
+        /// <param name="credentials">The authentication credentials.</param>
         /// <param name="local_groups">Additional local groups.</param>
         /// <returns>The LSA logon result.</returns>
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
-            TokenSource source_context, SafeBuffer buffer, IEnumerable<UserGroup> local_groups)
+            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups)
         {
-            return LsaLogonUser(type, auth_package, origin_name, source_context, buffer, local_groups, true).Result;
+            return LsaLogonUser(type, auth_package, origin_name, source_context, credentials, local_groups, true).Result;
         }
 
         /// <summary>

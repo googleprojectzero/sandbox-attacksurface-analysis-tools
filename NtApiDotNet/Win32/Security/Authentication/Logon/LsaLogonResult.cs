@@ -15,7 +15,7 @@
 using NtApiDotNet.Win32.Security.Native;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtApiDotNet.Win32.Security.Authentication.Logon
 {
     /// <summary>
     /// Result from an LsaLogonUser call.
@@ -41,6 +41,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Paged pool quota.
         /// </summary>
         public long PagedPoolLimit { get; }
+
         /// <summary>
         /// Non paged pool quota.
         /// </summary>

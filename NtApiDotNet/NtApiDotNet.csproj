@@ -474,7 +474,9 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
-    <Compile Include="Win32\Security\Authentication\LsaCallPackageResult.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\ILogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\KerbS4ULogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\LsaCallPackageResult.cs" />
     <Compile Include="Win32\SafeHandles\SafeDirectoryServiceHandle.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceSecurityPrincipal.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceReferenceClass.cs" />
@@ -589,8 +591,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFilePrincipal.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosCredentialCacheFileUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Utilities\KerberosPasswordUtils.cs" />
-    <Compile Include="Win32\Security\Authentication\LsaLogonHandle.cs" />
-    <Compile Include="Win32\Security\Authentication\LsaLogonResult.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\LsaLogonHandle.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\LsaLogonResult.cs" />
     <Compile Include="Win32\Security\Authentication\ServerAuthenticationContextDelegate.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContextInitializeSidFlags.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZGroupSidType.cs" />
@@ -623,6 +625,7 @@
     <Compile Include="Win32\Security\Native\GROUP_INFORMATION_CLASS_STRUCT.cs" />
     <Compile Include="Win32\Security\Native\GROUP_MEMBERSHIP.cs" />
     <Compile Include="Win32\Security\Native\Logon32Provider.cs" />
+    <Compile Include="Win32\Security\Native\LsaBufferBuilder.cs" />
     <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_ENUM_BUFFER.cs" />
     <Compile Include="Win32\Security\Native\LSAPR_ACCOUNT_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\LSA_REFERENCED_DOMAIN_LIST.cs" />

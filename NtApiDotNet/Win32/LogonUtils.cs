@@ -16,13 +16,13 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Native;
 using NtApiDotNet.Win32.Security.Policy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace NtApiDotNet.Win32
 {
@@ -303,29 +303,20 @@ namespace NtApiDotNet.Win32
                 throw new ArgumentNullException(nameof(realm));
             }
 
-            byte[] user_bytes = Encoding.Unicode.GetBytes(user);
-            byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
-
-            using (var buffer = new SafeStructureInOutBuffer<KERB_S4U_LOGON>(user_bytes.Length + realm_bytes.Length, true))
+            using (var logon_handle = LsaLogonHandle.Connect(throw_on_error))
             {
-                KERB_S4U_LOGON logon_struct = new KERB_S4U_LOGON
+                if (!logon_handle.IsSuccess)
+                    return logon_handle.Cast<NtToken>();
+                KerbS4ULogonCredentials creds = new KerbS4ULogonCredentials()
                 {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon
+                    ClientRealm = realm,
+                    ClientUpn = user
                 };
-                SafeHGlobalBuffer data_buffer = buffer.Data;
-
-                logon_struct.ClientUpn.Buffer = data_buffer.DangerousGetHandle();
-                data_buffer.WriteArray(0, user_bytes, 0, user_bytes.Length);
-                logon_struct.ClientUpn.Length = (ushort)user_bytes.Length;
-                logon_struct.ClientUpn.MaximumLength = (ushort)user_bytes.Length;
-
-                logon_struct.ClientRealm.Buffer = data_buffer.DangerousGetHandle() + user_bytes.Length;
-                data_buffer.WriteArray((ulong)user_bytes.Length, realm_bytes, 0, realm_bytes.Length);
-                logon_struct.ClientRealm.Length = (ushort)realm_bytes.Length;
-                logon_struct.ClientRealm.MaximumLength = (ushort)realm_bytes.Length;
-                buffer.Result = logon_struct;
-
-                return LsaLogonUser(type, auth_package, "S4U", buffer, null, throw_on_error);
+                using (var result = logon_handle.Result.LsaLogonUser(type, auth_package, "S4U", 
+                    new TokenSource("NT.NET"), creds, null, throw_on_error))
+                {
+                    return result.Map(r => r.Token.Duplicate());
+                }
             }
         }
 
