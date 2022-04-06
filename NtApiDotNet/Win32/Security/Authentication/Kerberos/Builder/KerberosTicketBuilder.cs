@@ -202,8 +202,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             byte[] encoded = builder.ToArray();
             KerberosTicket outerTicket = KerberosTicket.Create(Realm, ServerName, 
                     KerberosEncryptedData.Create(KerberosEncryptionType.NULL, encoded));
-            System.Diagnostics.Debug.Assert(KerberosTicketDecrypted.Parse(outerTicket, encoded, 
-                new KerberosKeySet(), out KerberosTicket ticket));
+            bool result = KerberosTicketDecrypted.Parse(outerTicket, encoded, 
+                new KerberosKeySet(), out KerberosTicket ticket);
+            System.Diagnostics.Debug.Assert(result);
 
             return ticket as KerberosTicketDecrypted;
         }
