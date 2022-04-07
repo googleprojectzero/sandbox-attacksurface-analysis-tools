@@ -2421,7 +2421,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Get break on termination flag.
         /// </summary>
-        public bool BreakOnTermination => Query<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
+        public bool BreakOnTermination
+        {
+            get => Query<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
+            set => Set<int>(ProcessInformationClass.ProcessBreakOnTermination, value ? 1 : 0);
+        }
 
         /// <summary>
         /// Get or set debug flags.
