@@ -73,10 +73,10 @@ namespace NtApiDotNet.Win32.Security.Native
 
         public void AddUnicodeString(string name, byte[] ba)
         {
-            if ((ba.Length % 2) != 0)
-                throw new ArgumentOutOfRangeException(nameof(ba), "Array must have a two byte aligned length.");
             if (ba == null)
                 return;
+            if ((ba.Length % 2) != 0)
+                throw new ArgumentOutOfRangeException(nameof(ba), "Array must have a two byte aligned length.");
             int pos = GetCurrentPos();
             _writer.Write(ba);
             _writer.Write((short)0);
