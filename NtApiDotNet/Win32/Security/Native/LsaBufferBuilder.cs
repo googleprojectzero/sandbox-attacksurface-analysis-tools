@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Native
@@ -44,6 +46,18 @@ namespace NtApiDotNet.Win32.Security.Native
         private readonly List<BufferEntry> _buffers;
         private readonly T _value;
         private static readonly Dictionary<string, FieldInfo> _type_fields = typeof(T).GetFields().ToDictionary(f => f.Name);
+
+        private static byte[] GetSecureStringBytes(SecureString str)
+        {
+            if (str == null)
+                return null;
+            using (var buffer = new SecureStringMarshalBuffer(str))
+            {
+                byte[] ret = new byte[str.Length * 2];
+                Marshal.Copy(buffer.Ptr, ret, 0, ret.Length);
+                return ret;
+            }
+        }
 
         public LsaBufferBuilder(T value)
         {
@@ -90,6 +104,11 @@ namespace NtApiDotNet.Win32.Security.Native
                     field = GetUnicodeStringField(name)
                 });
             }
+        }
+
+        public void AddUnicodeString(string name, SecureString str)
+        {
+            AddUnicodeString(name, GetSecureStringBytes(str));
         }
 
         public void AddUnicodeString(string name, string str)

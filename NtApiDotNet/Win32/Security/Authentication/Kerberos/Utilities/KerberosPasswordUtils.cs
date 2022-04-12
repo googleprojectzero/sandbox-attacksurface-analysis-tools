@@ -15,7 +15,6 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
@@ -59,44 +58,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         private const int KERB_SETPASS_USE_LOGONID = 1;
         private const int KERB_SETPASS_USE_CREDHANDLE = 2;
 
-        private static NtStatus SetPassword(KERB_PROTOCOL_MESSAGE_TYPE message_type, UserCredentials credentials, int flags, Luid logon_id, 
-            SecHandle cred_handle, string client_realm, string client_name, bool impersonating, string kdc_address, int kdc_address_type, bool throw_on_error)
+        private static NtStatus DoCall<T>(LsaBufferBuilder<T> builder, bool throw_on_error) where T : new()
         {
-            if (credentials is null)
+            using (var buffer = builder.ToBuffer())
             {
-                throw new ArgumentNullException(nameof(credentials));
-            }
-
-            using (var list = new DisposableList())
-            {
-                int total_str_size = KerberosTicketCache.CalculateLength(credentials.UserName, credentials.Domain, 
-                    client_name, client_realm, kdc_address)
-                    + KerberosTicketCache.CalculateLength(credentials.Password?.Length);
-                var buffer = new SafeStructureInOutBuffer<KERB_SETPASSWORD_EX_REQUEST>(total_str_size, true);
-
-                using (var strs = buffer.Data.GetStream())
-                {
-                    BinaryWriter writer = new BinaryWriter(strs);
-
-                    var res = new KERB_SETPASSWORD_EX_REQUEST()
-                    {
-                        MessageType = message_type,
-                        Flags = flags,
-                        LogonId = logon_id,
-                        CredentialsHandle = cred_handle,
-                        AccountName = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.UserName),
-                        DomainName = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.Domain),
-                        Password = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.GetPasswordBytes()),
-                        ClientRealm = KerberosTicketCache.MarshalString(buffer.Data, writer, client_realm),
-                        ClientName = KerberosTicketCache.MarshalString(buffer.Data, writer, client_name),
-                        Impersonating = impersonating,
-                        KdcAddress = KerberosTicketCache.MarshalString(buffer.Data, writer, kdc_address),
-                        KdcAddressType = kdc_address_type,
-                    };
-
-                    buffer.Result = res;
-                }
-
                 using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
                 {
                     if (!handle.IsSuccess)
@@ -109,6 +74,33 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                     }
                 }
             }
+        }
+
+        private static NtStatus SetPassword(KERB_PROTOCOL_MESSAGE_TYPE message_type, UserCredentials credentials, int flags, Luid logon_id, 
+            SecHandle cred_handle, string client_realm, string client_name, bool impersonating, string kdc_address, int kdc_address_type, bool throw_on_error)
+        {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
+            var builder = new KERB_SETPASSWORD_EX_REQUEST()
+            {
+                MessageType = message_type,
+                Flags = flags,
+                LogonId = logon_id,
+                CredentialsHandle = cred_handle,
+                Impersonating = impersonating,
+                KdcAddressType = kdc_address_type
+            }.ToBuilder();
+
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.AccountName), credentials.UserName);
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.DomainName), credentials.Domain);
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.Password), credentials.Password);
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.ClientRealm), client_realm);
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.ClientName), client_name);
+            builder.AddUnicodeString(nameof(KERB_SETPASSWORD_EX_REQUEST.KdcAddress), kdc_address);
+            return DoCall(builder, throw_on_error);
         }
 
         /// <summary>
@@ -126,43 +118,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
                 throw new ArgumentNullException(nameof(credentials));
             }
 
-            using (var list = new DisposableList())
+            var builder = new KERB_CHANGEPASSWORD_REQUEST()
             {
-                int total_str_size = KerberosTicketCache.CalculateLength(credentials.UserName, credentials.Domain, new_password)
-                    + KerberosTicketCache.CalculateLength(credentials.Password?.Length);
-                var buffer = new SafeStructureInOutBuffer<KERB_CHANGEPASSWORD_REQUEST>(total_str_size, true);
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbChangePasswordMessage,
+                Impersonating = impersonating
+            }.ToBuilder();
 
-                using (var strs = buffer.Data.GetStream())
-                {
-                    BinaryWriter writer = new BinaryWriter(strs);
-                    UnicodeStringOut username = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.UserName);
-                    UnicodeStringOut domain = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.Domain);
-                    UnicodeStringOut password = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.GetPasswordBytes());
-                    UnicodeStringOut new_pass = KerberosTicketCache.MarshalString(buffer.Data, writer, new_password);
+            builder.AddUnicodeString(nameof(KERB_CHANGEPASSWORD_REQUEST.AccountName), credentials.UserName);
+            builder.AddUnicodeString(nameof(KERB_CHANGEPASSWORD_REQUEST.DomainName), credentials.Domain);
+            builder.AddUnicodeString(nameof(KERB_CHANGEPASSWORD_REQUEST.OldPassword), credentials.Password);
+            builder.AddUnicodeString(nameof(KERB_CHANGEPASSWORD_REQUEST.NewPassword), new_password);
 
-                    buffer.Result = new KERB_CHANGEPASSWORD_REQUEST()
-                    {
-                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbChangePasswordMessage,
-                        AccountName = username,
-                        DomainName = domain,
-                        OldPassword = password,
-                        NewPassword = new_pass,
-                        Impersonating = impersonating
-                    };
-                }
-
-                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-                {
-                    if (!handle.IsSuccess)
-                        return handle.Status;
-                    using (var result = KerberosTicketCache.CallPackage(handle.Result, buffer, throw_on_error))
-                    {
-                        if (!result.IsSuccess)
-                            return result.Status.ToNtException(throw_on_error);
-                        return result.Result.Status.ToNtException(throw_on_error);
-                    }
-                }
-            }
+            return DoCall(builder, throw_on_error);
         }
 
         /// <summary>
