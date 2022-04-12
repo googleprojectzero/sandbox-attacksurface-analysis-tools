@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.IO;
 using System.Linq;

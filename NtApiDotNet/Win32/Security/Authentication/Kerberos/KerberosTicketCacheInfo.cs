@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Native;
 using System;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
