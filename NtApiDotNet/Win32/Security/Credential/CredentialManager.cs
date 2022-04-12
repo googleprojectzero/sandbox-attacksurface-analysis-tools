@@ -396,5 +396,53 @@ namespace NtApiDotNet.Win32.Security.Credential
         {
             return GetCredentialProtectionType(credential, true).Result;
         }
+
+        /// <summary>
+        /// Write a credential to the manager.
+        /// </summary>
+        /// <param name="credential">The credential to write.</param>
+        /// <param name="flags">The flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status of the write.</returns>
+        public static NtStatus SetCredential(Credential credential, CredentialWriteFlags flags, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                return SecurityNativeMethods.CredWrite(credential.ToCredential(list), 
+                    flags).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Write a credential to the manager.
+        /// </summary>
+        /// <param name="credential">The credential to write.</param>
+        /// <param name="flags">The flags.</param>
+        public static void SetCredential(Credential credential, CredentialWriteFlags flags = CredentialWriteFlags.None)
+        {
+            SetCredential(credential, flags, true);
+        }
+
+        /// <summary>
+        /// Delete a credential by name.
+        /// </summary>
+        /// <param name="target_name">The name of the credential.</param>
+        /// <param name="type">The type of credential.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status of the delete.</returns>
+        public static NtStatus DeleteCredential(string target_name, CredentialType type, bool throw_on_error)
+        {
+            return SecurityNativeMethods.CredDelete(target_name, type, 0).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a credential by name.
+        /// </summary>
+        /// <param name="target_name">The name of the credential.</param>
+        /// <param name="type">The type of credential.</param>
+        public static void DeleteCredential(string target_name, CredentialType type)
+        {
+            DeleteCredential(target_name, type, true);
+        }
     }
 }

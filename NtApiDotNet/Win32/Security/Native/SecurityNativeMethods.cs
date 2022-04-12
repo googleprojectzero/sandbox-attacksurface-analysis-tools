@@ -957,6 +957,21 @@ namespace NtApiDotNet.Win32.Security.Native
             IntPtr Buffer
         );
 
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredWrite(
+          in CREDENTIAL Credential,
+          CredentialWriteFlags Flags
+        );
+
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredDelete(
+          string TargetName,
+          CredentialType Type,
+          int Flags
+        );
+
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus LsaQuerySecurityObject(
             SafeLsaHandle ObjectHandle,

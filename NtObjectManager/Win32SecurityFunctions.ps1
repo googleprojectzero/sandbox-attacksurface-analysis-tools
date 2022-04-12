@@ -93,6 +93,10 @@ This cmdlet gets available credentials from the credential mananger.
 Specify a filter for the credential target, for example DOMAIN*.
 .PARAMETER All
 Specify to return all credentials.
+.PARAMETER TargetName
+Specify to return a specific credential.
+.PARAMETER Type
+Specify the type of credential.
 .INPUTS
 None
 .OUTPUTS
@@ -165,4 +169,72 @@ function Backup-Win32Credential {
 
     Enable-NtTokenPrivilege SeTrustedCredmanAccessPrivilege
     [NtApiDotNet.Win32.Security.Credential.CredentialManager]::Backup($Token, $Key, $KeyEncoded)
+}
+
+<#
+.SYNOPSIS
+Delete a credential manager credential.
+.DESCRIPTION
+This cmdlet deletes a credential from the credential mananger.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-Win32Credential {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$TargetName,
+        [Parameter(Position = 1, Mandatory)]
+        [NtApiDotNet.Win32.Security.Credential.CredentialType]$Type
+    )
+
+    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::DeleteCredential($TargetName, $Type)
+}
+
+<#
+.SYNOPSIS
+Set a credential manager credential.
+.DESCRIPTION
+This cmdlet sets a available credential in the credential mananger.
+.PARAMETER TargetName
+Specify the target name.
+.PARAMETER Username
+Specify the username.
+.PARAMETER Password
+Specify the password.
+.PARAMETER Certificate
+Specify the certificate.
+.PARAMETER Pin
+Specify the certificate's PIN.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-Win32Credential {
+    [CmdletBinding(DefaultParameterSetName = "FromPassword")]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$TargetName,
+        [Parameter(ParameterSetName = "FromPassword", Position = 1, Mandatory)]
+        [string]$Username,
+        [Parameter(ParameterSetName = "FromPassword", Position = 2, Mandatory)]
+        [string]$Password,
+        [Parameter(ParameterSetName = "FromCertificate", Position = 1, Mandatory)]
+        [X509Certificate]$Certificate,
+        [Parameter(ParameterSetName = "FromCertificate", Position = 2)]
+        [string]$Pin
+    )
+
+    $cred = switch($PSCmdlet.ParameterSetName) {
+        "FromPassword" {
+            [NtApiDotNet.Win32.Security.Credential.Credential]::CreateFromPassword($TargetName, $Username, $Password)
+        }
+        "FromCertificate" {
+            [NtApiDotNet.Win32.Security.Credential.Credential]::CreateFromCertificate($TargetName, $Certificate, $Pin)
+        }
+    }
+    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::SetCredential($cred)
 }

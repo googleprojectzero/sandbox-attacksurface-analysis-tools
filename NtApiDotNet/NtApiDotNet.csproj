@@ -624,6 +624,7 @@
     <Compile Include="Win32\Security\Credential\CredentialFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredentialType.cs" />
     <Compile Include="Win32\Security\Credential\CredentialEnumerateFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialWriteFlags.cs" />
     <Compile Include="Win32\Security\Native\CREDENTIAL_ATTRIBUTE.cs" />
     <Compile Include="Win32\Security\Native\DOMAIN_PASSWORD_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\GROUP_INFORMATION_CLASS_STRUCT.cs" />

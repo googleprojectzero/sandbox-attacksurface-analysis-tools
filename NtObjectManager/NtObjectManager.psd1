@@ -137,7 +137,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Update-Win32Environment', 'New-KerberosChecksum', 'New-KerberosPrincipalName',
           'New-KerberosAuthenticator', 'New-KerberosAPRequest', 'New-KerberosTicket',
           'Add-KerberosTicket', 'Remove-KerberosTicket', 'New-KerberosTicketCache',
-          'New-KerberosKey'
+          'New-KerberosKey', 'Remove-Win32Credential', 'Set-Win32Credential'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
