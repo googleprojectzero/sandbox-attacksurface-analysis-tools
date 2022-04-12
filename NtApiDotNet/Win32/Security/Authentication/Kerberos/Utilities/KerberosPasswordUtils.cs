@@ -103,6 +103,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return DoCall(builder, throw_on_error);
         }
 
+        private static NtStatus RefreshSmartcardCredentials(Luid logon_id, KERB_REFRESH_SCCRED_REQUEST_FLAGS flags, 
+            string credential_blob, bool throw_on_error)
+        {
+            var builder = new KERB_REFRESH_SCCRED_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRefreshSmartcardCredentialsMessage,
+                LogonId = logon_id,
+                Flags = flags
+            }.ToBuilder();
+            builder.AddUnicodeString(nameof(KERB_REFRESH_SCCRED_REQUEST.CredentialBlob), credential_blob);
+            return DoCall(builder, throw_on_error);
+        }
+
         /// <summary>
         /// Change a user's password.
         /// </summary>
@@ -345,6 +358,54 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             bool impersonating, string kdc_address)
         {
             SetPassword(credentials, credential_handle, client_name, client_realm, impersonating, kdc_address, true);
+        }
+
+        /// <summary>
+        /// Release smartcard credentials.
+        /// </summary>
+        /// <param name="logon_id">The logon ID to use for the call.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ReleaseSmartcardCredentials(Luid logon_id, bool throw_on_error)
+        {
+            return RefreshSmartcardCredentials(logon_id, KERB_REFRESH_SCCRED_REQUEST_FLAGS.KERB_REFRESH_SCCRED_RELEASE, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Release smartcard credentials.
+        /// </summary>
+        /// <param name="logon_id">The logon ID to use for the call.</param>
+        public static void ReleaseSmartcardCredentials(Luid logon_id)
+        {
+            ReleaseSmartcardCredentials(logon_id, true);
+        }
+
+        /// <summary>
+        /// Tickle the smart card credentials.
+        /// </summary>
+        /// <param name="credential_blob">The credentials to tickle.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="ArgumentNullException">Throw on null argument.</exception>
+        public static NtStatus TickleSmartcardCredentials(string credential_blob, bool throw_on_error)
+        {
+            if (credential_blob is null)
+            {
+                throw new ArgumentNullException(nameof(credential_blob));
+            }
+
+            return RefreshSmartcardCredentials(default, KERB_REFRESH_SCCRED_REQUEST_FLAGS.KERB_REFRESH_SCCRED_GETTGT, 
+                credential_blob, throw_on_error);
+        }
+
+        /// <summary>
+        /// Tickle the smart card credentials.
+        /// </summary>
+        /// <param name="credential_blob">The credentials to tickle.</param>
+        /// <exception cref="ArgumentNullException">Throw on null argument.</exception>
+        public static void TickleSmartcardCredentials(string credential_blob)
+        {
+            TickleSmartcardCredentials(credential_blob, true);
         }
     }
 }

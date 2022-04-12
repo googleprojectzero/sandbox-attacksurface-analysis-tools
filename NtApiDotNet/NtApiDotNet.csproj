@@ -485,6 +485,7 @@
     <Compile Include="Win32\Security\Native\KERB_QUERY_TKT_CACHE_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_QUERY_TKT_CACHE_RESPONSE.cs" />
     <Compile Include="Win32\Security\Native\KERB_QUERY_TKT_CACHE_RESPONSE_HEADER.cs" />
+    <Compile Include="Win32\Security\Native\KERB_REFRESH_SCCRED_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_RETRIEVE_KEY_TAB_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_RETRIEVE_KEY_TAB_RESPONSE.cs" />
     <Compile Include="Win32\Security\Native\KERB_RETRIEVE_TKT_REQUEST.cs" />
