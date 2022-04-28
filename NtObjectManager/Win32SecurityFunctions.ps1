@@ -238,3 +238,103 @@ function Set-Win32Credential {
     }
     [NtApiDotNet.Win32.Security.Credential.CredentialManager]::SetCredential($cred)
 }
+
+<#
+.SYNOPSIS
+Protect a Win32 credential password.
+.DESCRIPTION
+This cmdlet protects a credential password.
+.PARAMETER Password
+Specify the password.
+.PARAMETER AsSelf
+Specify to encrypt the credentials for the current process.
+.PARAMETER AllowToSystem
+Specify to encrypt for the system user.
+.PARAMETER Byte
+Specify to protect an arbitrary byte array.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Protect-Win32Credential {
+    [CmdletBinding(DefaultParameterSetName = "FromPassword")]
+    Param(
+        [Parameter(ParameterSetName = "FromPassword", Position = 0, Mandatory)]
+        [string]$Password,
+        [switch]$AsSelf,
+        [switch]$AllowToSystem,
+        [Parameter(ParameterSetName = "FromByte", Position = 0, Mandatory)]
+        [byte[]]$Byte
+    )
+
+    $flags = [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::None
+    if ($AsSelf) {
+        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::AsSelf
+    }
+    if ($AllowToSystem) {
+        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::AllowToSystem
+    }
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPassword" {
+            if ($AllowToSystem) {
+                [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Password)
+            } else {
+                [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredential($AsSelf, $Password)
+            }
+        }
+        "FromByte" {
+            [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Byte)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Unprotect a Win32 credential password.
+.DESCRIPTION
+This cmdlet unprotects a credential password.
+.PARAMETER Credential
+Specify the protected credential
+.PARAMETER AsSelf
+Specify to decrypt the credentials for the current process.
+.PARAMETER AllowToSystem
+Specify to decrypt for the system user.
+.PARAMETER AsByte
+Specify to unprotect as a byte array.
+.INPUTS
+None
+.OUTPUTS
+string
+byte[]
+#>
+function Unprotect-Win32Credential {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [string]$Credential,
+        [switch]$AsSelf,
+        [switch]$AllowToSystem,
+        [switch]$AsByte
+    )
+
+    $flags = [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::None
+    if ($AsSelf) {
+        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::AsSelf
+    }
+    if ($AllowToSystem) {
+        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::AllowToSystem
+    }
+
+    if ($AllowToSystem -or $AsByte) {
+        $ba = [NtApiDotNet.Win32.Security.Credential.CredentialManager]::UnprotectCredentialEx($flags, $Credential)
+        if ($AsByte) {
+            $ba
+        } else {
+            [System.Text.Encoding]::Unicode.GetString($ba)
+        }
+    } else {
+        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::UnprotectCredential($AsSelf, $Credential)
+    }
+}
