@@ -234,6 +234,14 @@ namespace NtApiDotNet
         {
             return values.ToArray().ToBuffer();
         }
+
+        internal static IntPtr AddBuffer(this DisposableList list, SafeBuffer buffer)
+        {
+            if (buffer == null)
+                return IntPtr.Zero;
+            return list.AddResource(buffer).DangerousGetHandle();
+        }
+
     }
 
     /// <summary>

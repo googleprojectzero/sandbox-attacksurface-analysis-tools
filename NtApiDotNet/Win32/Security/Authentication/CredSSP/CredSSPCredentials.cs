@@ -58,8 +58,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
             CREDSSP_CRED ret = new CREDSSP_CRED
             {
                 Type = CREDSSP_SUBMIT_TYPE.CredsspSubmitBufferBoth,
-                pSchannelCred = list.AddResource(_schannel.ToBuffer(list, package)).DangerousGetHandle(),
-                pSpnegoCred = list.AddResource(_user.ToBuffer(list, package)).DangerousGetHandle()
+                pSchannelCred = list.AddBuffer(_schannel?.ToBuffer(list, package)),
+                pSpnegoCred = list.AddBuffer(_user?.ToBuffer(list, package))
             };
 
             return ret.ToBuffer();
