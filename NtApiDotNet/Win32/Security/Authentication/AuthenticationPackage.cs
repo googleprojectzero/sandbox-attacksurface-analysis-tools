@@ -61,6 +61,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public const string CREDSSP_NAME = "CredSSP";
 
         /// <summary>
+        /// Authentication package name for TSSSP.
+        /// </summary>
+        public const string TSSSP_NAME = "TSSSP";
+
+        /// <summary>
         /// Capabilities of the package.
         /// </summary>
         public SecPkgCapabilityFlag Capabilities { get; }
@@ -172,6 +177,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         internal static bool CheckCredSSP(string package_name)
         {
             return package_name.Equals(CREDSSP_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckTSSSP(string package_name)
+        {
+            return package_name.Equals(TSSSP_NAME, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

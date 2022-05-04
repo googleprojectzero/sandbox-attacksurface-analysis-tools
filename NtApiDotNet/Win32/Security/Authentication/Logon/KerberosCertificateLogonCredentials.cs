@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_CERTIFICATE_LOGON structure.
     /// </summary>
-    public class KerberosCertificateLogonCredentials : ILogonCredentials
+    public class KerberosCertificateLogonCredentials : ILsaLogonCredentials
     {
         /// <summary>
         /// The domain name.
@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// </summary>
         public KerberosCertificateLogonData CspData { get; set; }
 
-        SafeBuffer ILogonCredentials.ToBuffer(DisposableList list)
+        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
         {
             if (CspData is null)
             {

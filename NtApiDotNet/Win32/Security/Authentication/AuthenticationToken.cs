@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.CredSSP;
 using NtApiDotNet.Win32.Security.Authentication.Digest;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
@@ -179,6 +180,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 && SchannelAuthenticationToken.TryParse(token, token_count, client, out SchannelAuthenticationToken schannel_token))
             {
                 return schannel_token;
+            }
+
+            if (AuthenticationPackage.CheckTSSSP(package_name)
+                && TSAuthenticationToken.TryParse(token, token_count,
+                client, out TSAuthenticationToken credssp_token))
+            {
+                return credssp_token;
             }
 
             if (ASN1AuthenticationToken.TryParse(token, token_count, 

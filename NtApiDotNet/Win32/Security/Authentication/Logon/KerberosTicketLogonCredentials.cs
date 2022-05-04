@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_TICKET_LOGON structure.
     /// </summary>
-    public sealed class KerberosTicketLogonCredentials : ILogonCredentials
+    public sealed class KerberosTicketLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
     {
         /// <summary>
         /// The Kerberos service ticket.
@@ -55,7 +55,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// </summary>
         public KerberosTicketLogonFlags Flags { get; set; }
 
-        SafeBuffer ILogonCredentials.ToBuffer(DisposableList list)
+        byte[] ILsaLogonCredentialsSerializable.ToArray()
+        {
+            using (var buffer = ToBuffer(true))
+            {
+                return buffer.ToArray();
+            }
+        }
+
+        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        {
+            return ToBuffer(false);
+        }
+
+        private SafeBufferGeneric ToBuffer(bool relative)
         {
             if (ServiceTicket is null)
             {
@@ -68,10 +81,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
                 Flags = (int)Flags
             }.ToBuilder();
 
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket), 
-                nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray());
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket), 
-                nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray());
+            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket),
+                nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray(), relative);
+            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket),
+                nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray(), relative);
 
             return builder.ToBuffer();
         }

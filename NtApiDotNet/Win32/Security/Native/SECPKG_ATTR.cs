@@ -55,5 +55,7 @@ namespace NtApiDotNet.Win32.Security.Native
         REMOTE_CERT_CONTEXT = 83,
         LOCAL_CERT_CONTEXT = 84,
         CONNECTION_INFO = 90,
+        CRED = 128,
+        CREDS_2 = 134,
     }
 }

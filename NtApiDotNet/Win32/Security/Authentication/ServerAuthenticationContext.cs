@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Authentication.Schannel;
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
@@ -458,6 +459,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
             var context = SecurityContextUtils.ExportContext(Context, SecPkgContextExportFlags.DeleteOld, _creds.PackageName, false);
             Dispose();
             return context;
+        }
+
+        /// <summary>
+        /// Query for client credentials. Only for CredSSP.
+        /// </summary>
+        /// <returns>The marshalled client creds.</returns>
+        public LsaLogonCredentialsBuffer GetClientCreds()
+        {
+            var creds = SecurityContextUtils.QueryContextAttribute<SecPkgContext_ClientCreds>(_context, SECPKG_ATTR.CREDS_2);
+            byte[] ret = new byte[creds.AuthBufferLen];
+            Marshal.Copy(creds.AuthBuffer, ret, 0, ret.Length);
+            SecurityNativeMethods.FreeContextBuffer(creds.AuthBuffer);
+            return new LsaLogonCredentialsBuffer(ret);
         }
 
         #endregion

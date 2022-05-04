@@ -103,7 +103,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The LSA logon result.</returns>
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
-            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+            TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
@@ -135,7 +135,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// <param name="local_groups">Additional local groups.</param>
         /// <returns>The LSA logon result.</returns>
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
-            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups)
+            TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups)
         {
             return LsaLogonUser(type, auth_package, origin_name, source_context, credentials, local_groups, true).Result;
         }
@@ -152,7 +152,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The LSA logon result.</returns>
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
-            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
+            TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
             var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
             if (!auth_pkg.IsSuccess)
@@ -171,9 +171,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// <param name="local_groups">Additional local groups.</param>
         /// <returns>The LSA logon result.</returns>
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
-            TokenSource source_context, ILogonCredentials credentials, IEnumerable<UserGroup> local_groups)
+            TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups)
         {
             return LsaLogonUser(type, auth_package, origin_name, source_context, credentials, local_groups, true).Result;
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="credentials">The authentication credentials.</param>
+        /// <returns>The LSA logon result.</returns>
+        public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, ILsaLogonCredentials credentials)
+        {
+            return LsaLogonUser(type, auth_package, "TEMP", new TokenSource("NT.NET"), credentials, null);
         }
 
         /// <summary>

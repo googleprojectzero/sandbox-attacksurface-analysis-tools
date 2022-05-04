@@ -39,6 +39,14 @@ namespace NtApiDotNet.Win32.Security.Native
             public FieldInfo length_field;
             public int position;
             public int length;
+            public bool relative;
+
+            public IntPtr GetPointer(SafeStructureInOutBuffer<T> buffer)
+            {
+                if (relative)
+                    return new IntPtr(buffer.DataOffset + position);
+                return buffer.Data.DangerousGetHandle() + position;
+            }
         }
 
         private readonly MemoryStream _stm;
@@ -85,7 +93,7 @@ namespace NtApiDotNet.Win32.Security.Native
         private static FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
         private static FieldInfo GetInt32Field(string name) => GetField<int>(name);
 
-        public void AddUnicodeString(string name, byte[] ba)
+        public void AddUnicodeString(string name, byte[] ba, bool relative = false)
         {
             if (ba == null)
                 return;
@@ -101,22 +109,23 @@ namespace NtApiDotNet.Win32.Security.Native
                 {
                     position = pos,
                     length = ba.Length,
-                    field = GetUnicodeStringField(name)
+                    field = GetUnicodeStringField(name),
+                    relative = relative
                 });
             }
         }
 
-        public void AddUnicodeString(string name, SecureString str)
+        public void AddUnicodeString(string name, SecureString str, bool relative = false)
         {
-            AddUnicodeString(name, GetSecureStringBytes(str));
+            AddUnicodeString(name, GetSecureStringBytes(str), relative);
         }
 
-        public void AddUnicodeString(string name, string str)
+        public void AddUnicodeString(string name, string str, bool relative = false)
         {
-            AddUnicodeString(name, str != null ? Encoding.Unicode.GetBytes(str) : null);
+            AddUnicodeString(name, str != null ? Encoding.Unicode.GetBytes(str) : null, relative);
         }
 
-        public void AddPointerBuffer(string ptr_name, string length_name, byte[] buffer)
+        public void AddPointerBuffer(string ptr_name, string length_name, byte[] buffer, bool relative = false)
         {
             if (buffer == null)
                 return;
@@ -127,7 +136,8 @@ namespace NtApiDotNet.Win32.Security.Native
                 position = pos,
                 length = buffer.Length,
                 field = GetIntPtrField(ptr_name),
-                length_field = GetInt32Field(length_name)
+                length_field = GetInt32Field(length_name),
+                relative = relative
             });
         }
 
@@ -144,7 +154,7 @@ namespace NtApiDotNet.Win32.Security.Native
                     {
                         UnicodeStringOut str = new UnicodeStringOut
                         {
-                            Buffer = buffer.Data.DangerousGetHandle() + entry.position,
+                            Buffer = entry.GetPointer(buffer),
                             Length = (ushort)entry.length,
                             MaximumLength = (ushort)(entry.length + 2)
                         };
@@ -152,8 +162,7 @@ namespace NtApiDotNet.Win32.Security.Native
                     }
                     else if (entry.field.FieldType == typeof(IntPtr))
                     {
-                        IntPtr ptr = buffer.Data.DangerousGetHandle() + entry.position;
-                        entry.field.SetValue(obj, ptr);
+                        entry.field.SetValue(obj, entry.GetPointer(buffer));
                         entry.length_field.SetValue(obj, entry.length);
                     }
                 }

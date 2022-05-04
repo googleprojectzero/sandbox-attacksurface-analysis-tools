@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_S4U_LOGON structure.
     /// </summary>
-    public sealed class KerberosS4ULogonCredentials : ILogonCredentials
+    public sealed class KerberosS4ULogonCredentials : ILsaLogonCredentials
     {
         /// <summary>
         /// Flags for the logon.
@@ -54,7 +54,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// </summary>
         public string ClientRealm { get; set; }
 
-        SafeBuffer ILogonCredentials.ToBuffer(DisposableList list)
+        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
         {
             if (ClientUpn is null)
             {

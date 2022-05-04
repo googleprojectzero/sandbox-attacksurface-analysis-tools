@@ -474,7 +474,15 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentialsType.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY32.cs" />
     <Compile Include="Win32\Security\Native\KERB_EXTERNAL_NAME.cs" />
@@ -495,7 +503,7 @@
     <Compile Include="Win32\Security\Native\KERB_TICKET_CACHE_INFO_EX.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_CACHE_INFO_EX2.cs" />
     <Compile Include="Win32\Security\Native\KERB_TICKET_CACHE_INFO_EX3.cs" />
-    <Compile Include="Win32\Security\Authentication\Logon\ILogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\KerberosCertificateHashInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\KerberosCertificateLogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\KerberosCertificateLogonData.cs" />
@@ -660,6 +668,7 @@
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_SID2.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_CRED_ATTR.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />

@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// Interface for logon credentials to use with LsaLogonUser.
     /// </summary>
     /// <remarks>Use <see cref="AuthenticationCredentials"/> for SSPI calls.</remarks>
-    public interface ILogonCredentials
+    public interface ILsaLogonCredentials
     {
         /// <summary>
         /// Convert the credentials into a safe buffer.
