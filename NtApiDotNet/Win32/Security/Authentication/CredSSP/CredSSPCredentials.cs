@@ -27,16 +27,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
     {
         private readonly SchannelCredentials _schannel;
         private readonly UserCredentials _user;
+        private readonly bool _redirect;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="schannel">The credentials for the Schannel connection.</param>
         /// <param name="user">The credentials for the user.</param>
-        public CredSSPCredentials(SchannelCredentials schannel, UserCredentials user)
+        /// <param name="redirect">Indicates that the credentials should be redirected.</param>
+        public CredSSPCredentials(SchannelCredentials schannel, UserCredentials user, bool redirect)
         {
-            _schannel = schannel ?? throw new ArgumentNullException(nameof(schannel));
-            _user = user ?? throw new ArgumentNullException(nameof(user));
+            _schannel = schannel;
+            _user = user;
+            _redirect = redirect;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="schannel">The credentials for the Schannel connection.</param>
+        /// <param name="credentials">The credentials for the user.</param>
+        public CredSSPCredentials(SchannelCredentials schannel, UserCredentials credentials) : this(schannel, credentials, false)
+        {
+            if (schannel is null)
+            {
+                throw new ArgumentNullException(nameof(schannel));
+            }
+
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
         }
 
         /// <summary>
@@ -50,7 +71,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
 
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
-            if (!AuthenticationPackage.CheckCredSSP(package))
+            if (!AuthenticationPackage.CheckCredSSP(package) && !AuthenticationPackage.CheckTSSSP(package))
             {
                 throw new ArgumentException("Can only use CredSSPCredentials for the CredSSP package.", nameof(package));
             }
@@ -62,7 +83,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
                 pSpnegoCred = list.AddBuffer(_user?.ToBuffer(list, package))
             };
 
-            return ret.ToBuffer();
+            if (!AuthenticationPackage.CheckTSSSP(package) && !_redirect)
+                return ret.ToBuffer();
+
+            return new CREDSSP_CRED_EX()
+            {
+                Type = CREDSSP_SUBMIT_TYPE.CredsspCredEx,
+                Version = 0,
+                Flags = _redirect ? CredSspExFlags.Redirect : 0,
+                Cred = ret
+            }.ToBuffer();
         }
     }
 }
