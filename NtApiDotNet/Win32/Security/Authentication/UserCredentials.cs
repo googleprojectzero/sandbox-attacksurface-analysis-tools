@@ -168,6 +168,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 case "wdigest":
                     return ToAuthIdentity(list).ToBuffer();
                 case "negotiate":
+                case "tsssp":
                     if (string.IsNullOrWhiteSpace(PackageList))
                     {
                         return ToAuthIdentity(list).ToBuffer();
