@@ -80,26 +80,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
                 }
             }
         }
-
-        private static byte[] EncryptData(IAuthenticationContext context, byte[] data)
-        {
-            List<SecurityBuffer> buffers = new List<SecurityBuffer>
-            {
-                new SecurityBufferOut(SecurityBufferType.Token, context.SecurityTrailerSize),
-                new SecurityBufferInOut(SecurityBufferType.Data, data),
-                new SecurityBufferOut(SecurityBufferType.Padding, 16)
-            };
-
-            context.EncryptMessageNoSignature(buffers, 0, 0);
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            foreach (var buffer in buffers)
-            {
-                writer.Write(buffer.ToArray());
-            }
-            return stm.ToArray();
-        }
         #endregion
 
         #region Public Members
@@ -276,6 +256,60 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
             }
 
             return Create(version, auth_info: EncryptData(context, credentials.ToArray()));
+        }
+
+        /// <summary>
+        /// Decrypt a TSSSP data buffer.
+        /// </summary>
+        /// <param name="context">The authentication context.</param>
+        /// <param name="data">The buffer to decrypt.</param>
+        /// <returns>The decrypted data.</returns>
+        public static byte[] DecryptData(IAuthenticationContext context, byte[] data)
+        {
+            List<SecurityBuffer> buffers = new List<SecurityBuffer>
+            {
+                new SecurityBufferInOut(SecurityBufferType.Stream, data),
+                new SecurityBufferOut(SecurityBufferType.Data, 0)
+            };
+
+            context.DecryptMessageNoSignature(buffers, 0);
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in buffers)
+            {
+                if (buffer.Type == SecurityBufferType.Data)
+                {
+                    writer.Write(buffer.ToArray());
+                }
+            }
+            return stm.ToArray();
+        }
+
+        /// <summary>
+        /// Encrypt a TSSSP data buffer.
+        /// </summary>
+        /// <param name="context">The authentication context.</param>
+        /// <param name="data">The buffer to encrypt.</param>
+        /// <returns>The encrypted data.</returns>
+        public static byte[] EncryptData(IAuthenticationContext context, byte[] data)
+        {
+            List<SecurityBuffer> buffers = new List<SecurityBuffer>
+            {
+                new SecurityBufferOut(SecurityBufferType.Token, context.SecurityTrailerSize),
+                new SecurityBufferInOut(SecurityBufferType.Data, data),
+                new SecurityBufferOut(SecurityBufferType.Padding, 16)
+            };
+
+            context.EncryptMessageNoSignature(buffers, 0, 0);
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+            return stm.ToArray();
         }
 
         #endregion

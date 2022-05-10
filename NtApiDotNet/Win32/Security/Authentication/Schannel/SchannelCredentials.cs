@@ -93,7 +93,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Schannel
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
             if (!AuthenticationPackage.CheckSChannel(package) 
-                && !AuthenticationPackage.CheckCredSSP(package))
+                && !AuthenticationPackage.CheckCredSSP(package)
+                && !AuthenticationPackage.CheckTSSSP(package))
             {
                 throw new ArgumentException("Can only use SchannelCredentials for the Schannel or CredSSP package.", nameof(package));
             }
