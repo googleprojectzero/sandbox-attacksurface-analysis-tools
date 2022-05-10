@@ -484,6 +484,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY32.cs" />
     <Compile Include="Win32\Security\Native\KERB_EXTERNAL_NAME.cs" />

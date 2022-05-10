@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
     /// <summary>
     /// Class to represent the negTokenInit message in SPNEGO.
     /// </summary>
-    public sealed class NegotiateInitAuthenticationToken : NegotiateAuthenticationToken
+    public class NegotiateInitAuthenticationToken : NegotiateAuthenticationToken
     {
         /// <summary>
         /// List of supported negotiation mechanisms.
@@ -53,7 +53,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// Context flags.
         /// </summary>
         public NegotiateContextFlags ContextFlags { get; }
-
 
         /// <summary>
         /// Create a NegTokenInit token.

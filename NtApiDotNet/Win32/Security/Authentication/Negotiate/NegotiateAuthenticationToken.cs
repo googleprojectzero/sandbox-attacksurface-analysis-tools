@@ -122,6 +122,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             return (NegotiateContextFlags)ret;
         }
 
+        private static bool ParseNegoHint(DERValue value, out string hint_name, out byte[] hint_address)
+        {
+            hint_name = null;
+            hint_address = null;
+
+            foreach (var next in value.Children)
+            {
+                if (next.Type != DERTagType.ContextSpecific)
+                    return false;
+                switch (next.Tag)
+                {
+                    case 0:
+                        hint_name = next.ReadChildGeneralString();
+                        break;
+                    case 1:
+                        hint_address = next.ReadChildOctetString();
+                        break;
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         private static bool ParseInit(byte[] data, DERValue[] values, int token_count, bool client, out NegotiateAuthenticationToken token)
         {
             token = null;
@@ -133,6 +158,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             IEnumerable<string> mech_list = null;
             NegotiateContextFlags flags = NegotiateContextFlags.None;
             AuthenticationToken auth_token = null;
+            string hint_name = null;
+            byte[] hint_address = null;
+            bool init2 = false;
             byte[] mic = null;
 
             foreach (var next in values[0].Children)
@@ -153,8 +181,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                     case 3:
                         // If NegTokenInit2 then just ignore neg hints.
                         if (next.HasChildren() && next.Children[0].CheckSequence())
-                            break;
-                        mic = next.ReadChildOctetString();
+                        {
+                            init2 = true;
+                            if (!ParseNegoHint(next.Children[0], out hint_name, out hint_address))
+                                return false;
+                        }
+                        else
+                        {
+                            mic = next.ReadChildOctetString();
+                        }
                         break;
                     case 4:
                         // Used if NegTokenInit2.
@@ -165,7 +200,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                 }
             }
 
-            token = new NegotiateInitAuthenticationToken(data, mech_list, flags, auth_token, mic);
+            if (init2)
+            {
+                token = new NegotiateInit2AuthenticationToken(data, mech_list, flags, auth_token, mic, hint_name, hint_address);
+            }
+            else
+            {
+                token = new NegotiateInitAuthenticationToken(data, mech_list, flags, auth_token, mic);
+            }
             return true;
         }
 
