@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Utilities.ASN1.Builder
 {
@@ -101,6 +102,15 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             if (value < 0 || value > byte.MaxValue)
                 throw new ArgumentOutOfRangeException("Value too large for a byte.", nameof(value));
             writer.Write((byte)value);
+        }
+
+        public static void WriteObjectId(this BinaryWriter writer, int[] values)
+        {
+            writer.WriteByte(values[0] * 40 + values[1]);
+            foreach (var value in values.Skip(2))
+            {
+                writer.WriteEncodedInt(value);
+            }
         }
     }
 }

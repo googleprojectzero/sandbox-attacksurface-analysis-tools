@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -49,6 +50,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 return false;
             }
         }
+
+        internal static byte[] Wrap(string oid, byte[] token)
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var app = builder.CreateApplication(0))
+            {
+                app.WriteObjectId(oid);
+                app.WriteRawBytes(token);
+            }
+            return builder.ToArray();
+        }
+
         #endregion
     }
 }

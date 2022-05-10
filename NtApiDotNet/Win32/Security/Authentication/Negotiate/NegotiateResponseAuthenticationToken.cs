@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
@@ -54,6 +55,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// Current state of the negotiation.
         /// </summary>
         public NegotiateAuthenticationState State { get; }
+
+        /// <summary>
+        /// Create a NegTokenInit token.
+        /// </summary>
+        /// <param name="state">The authentication state.</param>
+        /// <param name="mech_type">The authentication mechanisms we support.</param>
+        /// <param name="response_token">An initial authentication token.</param>
+        /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
+        /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
+        /// <returns>The response token.</returns>
+        public static NegotiateResponseAuthenticationToken Create(NegotiateAuthenticationState state,
+            string mech_type = null, AuthenticationToken response_token = null, byte[] mech_list_mic = null,
+            bool wrap_gssapi = false)
+        {
+            DERBuilder builder = new DERBuilder();
+            using (var context = builder.CreateContextSpecific(1))
+            {
+                using (var seq = context.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, b => b.WriteEnumerated(state));
+                    if (mech_type != null)
+                    {
+                        seq.WriteContextSpecific(1, b => b.WriteObjectId(mech_type));
+                    }
+                    seq.WriteContextSpecific(2, response_token?.ToArray());
+                    seq.WriteContextSpecific(3, mech_list_mic);
+                }
+            }
+            byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
+            return (NegotiateResponseAuthenticationToken)Parse(token);
+        }
 
         private protected override void FormatData(StringBuilder builder)
         {

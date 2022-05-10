@@ -30,6 +30,13 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         #region Private Members
         private readonly Stream _stm;
         private readonly BinaryWriter _writer;
+
+        private void WriteInteger(BigInteger value, UniversalTag tag)
+        {
+            _writer.WriteUniversalValue(false, tag, 
+                value.ToByteArray().Reverse().ToArray());
+        }
+
         #endregion
 
         #region Constructors
@@ -56,19 +63,21 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// Write an object ID.
         /// </summary>
         /// <param name="oid">The object ID to write.</param>
+        public void WriteObjectId(IEnumerable<int> oid)
+        {
+            int[] values = oid.ToArray();
+            if (values.Length < 2)
+                throw new ArgumentException("Invalid OID, needs at least two components.", nameof(oid));
+            _writer.WriteUniversalValue(false, UniversalTag.OBJECT_IDENTIFIER, w => w.WriteObjectId(values));
+        }
+
+        /// <summary>
+        /// Write an object ID.
+        /// </summary>
+        /// <param name="oid">The object ID to write.</param>
         public void WriteObjectId(string oid)
         {
-            var values = oid.Split('.').Select(i => int.Parse(i)).ToArray();
-            if (values.Length < 2)
-                throw new ArgumentException("Invalid OID string, needs at least two components.", nameof(oid));
-            _writer.WriteUniversalValue(false, UniversalTag.OBJECT_IDENTIFIER, w =>
-            {
-                w.WriteByte(values[0] * 40 + values[1]);
-                foreach (var value in values.Skip(2))
-                {
-                    w.WriteEncodedInt(value);
-                }
-            });
+            WriteObjectId(oid.Split('.').Select(i => int.Parse(i)));
         }
 
         /// <summary>
@@ -121,7 +130,45 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// <param name="value">The integer value.</param>
         public void WriteInteger(BigInteger value)
         {
-            _writer.WriteUniversalValue(false, UniversalTag.INTEGER, value.ToByteArray().Reverse().ToArray()); 
+            WriteInteger(value, UniversalTag.INTEGER);
+        }
+
+        /// <summary>
+        /// Write an enumerated value as an integer.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        public void WriteEnumInt32(Enum value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            IConvertible c = value;
+            WriteInt32(c.ToInt32(null));
+        }
+
+        /// <summary>
+        /// Write an enumerated value.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        public void WriteEnumerated(int value)
+        {
+            WriteInteger(new BigInteger(value), UniversalTag.ENUMERATED);
+        }
+
+        /// <summary>
+        /// Write an enumerated value.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        public void WriteEnumerated(Enum value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            IConvertible c = value;
+            WriteEnumerated(c.ToInt32(null));
         }
 
         /// <summary>
@@ -296,6 +343,18 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             if (!value.HasValue)
                 return;
             WriteContextSpecific(context, b => b.WriteInt32(value.Value));
+        }
+
+        /// <summary>
+        /// Write an context specific tag with an enum as a int32.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="value">The value to write.</param>
+        public void WriteContextSpecific(int context, Enum value)
+        {
+            if (value == null)
+                return;
+            WriteContextSpecific(context, b => b.WriteEnumInt32(value));
         }
 
         /// <summary>

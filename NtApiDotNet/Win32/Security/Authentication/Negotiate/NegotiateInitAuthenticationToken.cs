@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
@@ -23,7 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
     /// Flags for negotiation context.
     /// </summary>
     [Flags]
-    public enum NegotiateContextFlags
+    public enum NegotiateContextFlags : uint
     {
 #pragma warning disable CS1591
         None = 0,
@@ -51,6 +53,43 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// Context flags.
         /// </summary>
         public NegotiateContextFlags ContextFlags { get; }
+
+
+        /// <summary>
+        /// Create a NegTokenInit token.
+        /// </summary>
+        /// <param name="mech_types">The list of authentication mechanisms we support.</param>
+        /// <param name="flags">Optional flags.</param>
+        /// <param name="mech_token">An initial authentication token.</param>
+        /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
+        /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
+        /// <returns>The init token.</returns>
+        public static NegotiateInitAuthenticationToken Create(IEnumerable<string> mech_types,
+            NegotiateContextFlags? flags = null, AuthenticationToken mech_token = null, byte[] mech_list_mic = null,
+            bool wrap_gssapi = true)
+        {
+            if (mech_types is null)
+            {
+                throw new ArgumentNullException(nameof(mech_types));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            using (var context = builder.CreateContextSpecific(0))
+            {
+                using (var seq = context.CreateSequence())
+                {
+                    seq.WriteContextSpecific(0, mech_types.Select(t => new DERObjectIdentifier(t)));
+                    if (flags.HasValue)
+                    {
+                        seq.WriteContextSpecific(1, b => b.WriteBitString(flags.Value));
+                    }
+                    seq.WriteContextSpecific(2, mech_token?.ToArray());
+                    seq.WriteContextSpecific(3, mech_list_mic);
+                }
+            }
+            byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
+            return (NegotiateInitAuthenticationToken)Parse(token);
+        }
 
         private protected override void FormatData(StringBuilder builder)
         {

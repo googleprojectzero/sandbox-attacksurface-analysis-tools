@@ -17,17 +17,24 @@ namespace NtApiDotNet.Utilities.ASN1
     /// <summary>
     /// Class containing known OID values.
     /// </summary>
-    internal static class OIDValues
+    public static class OIDValues
     {
-        internal const string KERBEROS_NAME = "1.2.840.113554.1.2.2.1";
-        internal const string KERBEROS_PRINCIPAL = "1.2.840.113554.1.2.2.2";
-        internal const string KERBEROS_USER_TO_USER = "1.2.840.113554.1.2.2.3";
-        internal const string KERBEROS = "1.2.840.113554.1.2.2";
-        internal const string MS_KERBEROS = "1.2.840.48018.1.2.2";
-        internal const string NTLM_SSP = "1.3.6.1.4.1.311.2.2.10";
-        internal const string MS_NEGOX = "1.3.6.1.4.1.311.2.2.30";
-        internal const string SPNEGO = "1.3.6.1.5.5.2";
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        public const string KERBEROS_NAME = "1.2.840.113554.1.2.2.1";
+        public const string KERBEROS_PRINCIPAL = "1.2.840.113554.1.2.2.2";
+        public const string KERBEROS_USER_TO_USER = "1.2.840.113554.1.2.2.3";
+        public const string KERBEROS = "1.2.840.113554.1.2.2";
+        public const string MS_KERBEROS = "1.2.840.48018.1.2.2";
+        public const string NTLM_SSP = "1.3.6.1.4.1.311.2.2.10";
+        public const string MS_NEGOX = "1.3.6.1.4.1.311.2.2.30";
+        public const string SPNEGO = "1.3.6.1.5.5.2";
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+        /// <summary>
+        /// Convert an OID to a human readable name.
+        /// </summary>
+        /// <param name="oid">The OID to convert.</param>
+        /// <returns>The human readable name if known.</returns>
         public static string ToString(string oid)
         {
             switch (oid)
