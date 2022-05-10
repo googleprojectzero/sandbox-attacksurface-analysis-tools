@@ -75,7 +75,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                 using (var seq = context.CreateSequence())
                 {
                     seq.WriteContextSpecific(0, b => b.WriteEnumerated(state));
-                    if (mech_type != null)
+                    if (!string.IsNullOrEmpty(mech_type))
                     {
                         seq.WriteContextSpecific(1, b => b.WriteObjectId(mech_type));
                     }

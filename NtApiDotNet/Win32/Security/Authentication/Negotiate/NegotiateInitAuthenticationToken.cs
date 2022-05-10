@@ -55,6 +55,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         public NegotiateContextFlags ContextFlags { get; }
 
         /// <summary>
+        /// Get the encoded mechlist. Used for calculating the MIC.
+        /// </summary>
+        /// <returns>The encoded mech list.</returns>
+        public byte[] GetEncodedMechList()
+        {
+            DERBuilder builder = new DERBuilder();
+            builder.WriteSequence(MechanismList.Select(t => new DERObjectIdentifier(t)));
+            return builder.ToArray();
+        }
+
+        /// <summary>
         /// Create a NegTokenInit token.
         /// </summary>
         /// <param name="mech_types">The list of authentication mechanisms we support.</param>
