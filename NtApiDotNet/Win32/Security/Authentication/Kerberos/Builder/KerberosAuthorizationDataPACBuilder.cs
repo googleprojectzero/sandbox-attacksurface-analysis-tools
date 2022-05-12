@@ -104,13 +104,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             }
 
             if (server_checksum == null)
-                throw new ArgumentException("No server checksum found int the PAC.");
+                throw new ArgumentException("No server checksum found in the PAC.");
             server_checksum.UpdateSignature(server_key, Encode(Version, entries));
 
             if (kdc_key != null)
             {
                 if (kdc_checksum == null)
-                    throw new ArgumentException("No KDC checksum found int the PAC.");
+                    throw new ArgumentException("No KDC checksum found in the PAC.");
 
                 kdc_checksum.UpdateSignature(kdc_key, server_checksum.Signature);
             }
@@ -132,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             MemoryStream stream = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stream);
 
-            // Based on code form monoxgas.
+            // Based on code from monoxgas.
             writer.Write(entries.Count);
             writer.Write(version);
 

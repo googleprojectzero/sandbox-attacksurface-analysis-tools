@@ -46,17 +46,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             IEnumerable<KerberosHostAddress> host_addresses, IEnumerable<KerberosAuthorizationData> authorization_data)
         {
             TicketVersion = ticket_version;
-            Realm = realm ?? throw new System.ArgumentNullException(nameof(realm));
-            ServerName = server_name ?? throw new System.ArgumentNullException(nameof(server_name));
+            Realm = realm ?? throw new ArgumentNullException(nameof(realm));
+            ServerName = server_name ?? throw new ArgumentNullException(nameof(server_name));
             Flags = flags;
-            ClientRealm = client_realm ?? throw new System.ArgumentNullException(nameof(client_realm));
-            ClientName = client_name ?? throw new System.ArgumentNullException(nameof(client_name));
-            AuthTime = auth_time ?? throw new System.ArgumentNullException(nameof(auth_time));
+            ClientRealm = client_realm ?? throw new ArgumentNullException(nameof(client_realm));
+            ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
+            AuthTime = auth_time ?? throw new ArgumentNullException(nameof(auth_time));
             StartTime = start_time;
-            EndTime = end_time ?? throw new System.ArgumentNullException(nameof(end_time));
+            EndTime = end_time ?? throw new ArgumentNullException(nameof(end_time));
             RenewTill = renew_till;
-            Key = key ?? throw new System.ArgumentNullException(nameof(key));
-            TransitedType = transited_type ?? throw new System.ArgumentNullException(nameof(transited_type));
+            Key = key ?? throw new ArgumentNullException(nameof(key));
+            TransitedType = transited_type ?? throw new ArgumentNullException(nameof(transited_type));
             HostAddresses = host_addresses?.ToList();
             AuthorizationData = authorization_data?.Select(a => a.ToBuilder()).ToList();
         }
