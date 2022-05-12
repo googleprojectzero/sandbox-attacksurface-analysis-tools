@@ -31,12 +31,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         public KerberosErrorAuthenticationToken Error { get; }
 
+        private static string FormatError(KerberosErrorAuthenticationToken error)
+        {
+            var status = error.Status;
+            if (status.HasValue)
+                return $"{error.ErrorCode} - {status.Value}";
+            return error.ErrorCode.ToString();
+        }
+
         internal KerberosKDCClientException(string message) : base(message)
         {
         }
 
         internal KerberosKDCClientException(KerberosErrorAuthenticationToken error) 
-            : base($"Kerberos Error: {error.ErrorCode}")
+            : base($"Kerberos Error: {FormatError(error)}")
         {
             Error = error;
         }

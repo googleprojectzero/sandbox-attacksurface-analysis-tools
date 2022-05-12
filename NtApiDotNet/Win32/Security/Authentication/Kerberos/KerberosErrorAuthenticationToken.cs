@@ -17,7 +17,9 @@ using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Text;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -72,6 +74,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Error data.
         /// </summary>
         public byte[] ErrorData { get; private set; }
+        /// <summary>
+        /// The list of parsed error data.
+        /// </summary>
+        public IReadOnlyList<KerberosErrorData> ErrorDataList { get; private set; }
+        /// <summary>
+        /// The NT status if extended error data is present.
+        /// </summary>
+        public NtStatus? Status => ErrorDataList.OfType<KerberosErrorDataExtended>().FirstOrDefault()?.Status;
         #endregion
 
         #region Private Members
@@ -86,6 +96,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ServerTime = null;
             ErrorText = string.Empty;
             ErrorData = new byte[0];
+            ErrorDataList = new List<KerberosErrorData>().AsReadOnly();
         }
         #endregion
 
@@ -117,10 +128,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (ErrorData.Length > 0)
             {
                 builder.AppendLine($"Error Data        :");
-                HexDumpBuilder hex = new HexDumpBuilder();
-                hex.Append(ErrorData);
-                hex.Complete();
-                builder.Append(hex);
+                if (ErrorDataList.Count > 0)
+                {
+                    foreach (var data in ErrorDataList)
+                    {
+                        builder.AppendLine(data.ToString());
+                    }
+                }
+                else
+                {
+                    HexDumpBuilder hex = new HexDumpBuilder();
+                    hex.Append(ErrorData);
+                    hex.Complete();
+                    builder.Append(hex);
+                }
             }
 
             return builder.ToString();
@@ -275,6 +296,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             return false;
                     }
                 }
+
+                if (ret.ErrorData.Length > 0 && ret.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                {
+                    ret.ErrorDataList = KerberosErrorData.Parse(ret.ErrorData).AsReadOnly();
+                }
+
                 token = ret;
                 return true;
             }
