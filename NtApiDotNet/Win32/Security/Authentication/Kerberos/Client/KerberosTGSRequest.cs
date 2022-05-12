@@ -177,7 +177,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="credential">The kerberos TGT for the request.</param>
         /// <param name="username">The name of the user for S4U.</param>
         /// <param name="realm">The realm for S4U.</param>
-        public static KerberosTGSRequest CreateForS4U2Self(KerberosCredential credential, string username, string realm)
+        /// <param name="encrypt_to_session_key">Specify to encrypt the S4U ticket to a session key.</param>
+        public static KerberosTGSRequest CreateForS4U2Self(KerberosCredential credential, string username, string realm, bool encrypt_to_session_key = true)
         {
             if (username is null)
             {
@@ -190,8 +191,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var ret = Create(credential);
-            ret.EncryptTicketInSessionKey = true;
-            ret.AddAdditionalTicket(ret.Ticket);
+            ret.EncryptTicketInSessionKey = encrypt_to_session_key;
+            if (encrypt_to_session_key)
+            {
+                ret.AddAdditionalTicket(ret.Ticket);
+            }
             ret.ServerName = ret.ClientName;
             ret.Realm = ret.ClientRealm;
             ret.S4UUserName = new KerberosPrincipalName(KerberosNameType.ENTERPRISE_PRINCIPAL, username);
