@@ -16,6 +16,7 @@ using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 
@@ -27,94 +28,281 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
     public sealed class KerberosAuthorizationDataPACLogonBuilder : KerberosAuthorizationDataPACEntryBuilder
     {
         #region Private Members
+        private readonly byte[] _data;
         private KERB_VALIDATION_INFO _info;
+        private bool _modified;
+        private IList<KerberosGroupMembership> group_ids;
+        private IList<UserGroup> extra_sids;
+        private IList<KerberosGroupMembership> resource_group_ids;
+
+        private IList<T> WrapList<T>(IEnumerable<T> list)
+        {
+            if (list == null)
+                return null;
+            var ret = new ObservableCollection<T>(list);
+            ret.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Collection Modified.");
+                _modified = true;
+            };
+            return ret;
+        }
+
         #endregion
 
         #region Public Properties
         /// <summary>
         /// Logon time.
         /// </summary>
-        public DateTime LogonTime { get => _info.LogonTime.ToTime(); set => _info.LogonTime.Set(value); }
+        public DateTime LogonTime
+        {
+            get => _info.LogonTime.ToTime();
+            set
+            {
+                _modified = true;
+                _info.LogonTime.Set(value);
+            }
+        }
         /// <summary>
         /// Logoff time.
         /// </summary>
-        public DateTime LogoffTime { get => _info.LogoffTime.ToTime(); set => _info.LogoffTime.Set(value); }
+        public DateTime LogoffTime
+        {
+            get => _info.LogoffTime.ToTime();
+            set
+            {
+                _modified = true;
+                _info.LogoffTime.Set(value);
+            }
+        }
         /// <summary>
         /// Kick off time.
         /// </summary>
-        public DateTime KickOffTime { get => _info.KickOffTime.ToTime(); set => _info.KickOffTime.Set(value); }
+        public DateTime KickOffTime
+        {
+            get => _info.KickOffTime.ToTime();
+            set
+            {
+                _modified = true;
+                _info.KickOffTime.Set(value);
+            }
+        }
         /// <summary>
         /// Time password last set.
         /// </summary>
-        public DateTime PasswordLastSet { get => _info.PasswordLastSet.ToTime(); set => _info.PasswordLastSet.Set(value); }
+        public DateTime PasswordLastSet
+        {
+            get => _info.PasswordLastSet.ToTime();
+            set
+            {
+                _modified = true;
+                _info.PasswordLastSet.Set(value);
+            }
+        }
         /// <summary>
         /// Time password can change.
         /// </summary>
-        public DateTime PasswordCanChange { get => _info.PasswordCanChange.ToTime(); set => _info.PasswordCanChange.Set(value); }
+        public DateTime PasswordCanChange
+        {
+            get => _info.PasswordCanChange.ToTime();
+            set
+            {
+                _modified = true;
+                _info.PasswordCanChange.Set(value);
+            }
+        }
         /// <summary>
         /// Time password must change.
         /// </summary>
-        public DateTime PasswordMustChange { get => _info.PasswordMustChange.ToTime(); set => _info.PasswordMustChange.Set(value); }
+        public DateTime PasswordMustChange
+        {
+            get => _info.PasswordMustChange.ToTime();
+            set
+            {
+                _modified = true;
+                _info.PasswordMustChange.Set(value);
+            }
+        }
         /// <summary>
         /// Effective name.
         /// </summary>
-        public string EffectiveName { get => _info.EffectiveName.ToString(); set => _info.EffectiveName.Set(value); }
+        public string EffectiveName
+        {
+            get => _info.EffectiveName.ToString();
+            set
+            {
+                _modified = true;
+                _info.EffectiveName.Set(value);
+            }
+        }
         /// <summary>
         /// Full name.
         /// </summary>
-        public string FullName { get => _info.FullName.ToString(); set => _info.FullName.Set(value); }
+        public string FullName
+        {
+            get => _info.FullName.ToString();
+            set
+            {
+                _modified = true;
+                _info.FullName.Set(value);
+            }
+        }
         /// <summary>
         /// Logon script path.
         /// </summary>
-        public string LogonScript { get => _info.LogonScript.ToString(); set => _info.LogonScript.Set(value); }
+        public string LogonScript
+        {
+            get => _info.LogonScript.ToString();
+            set
+            {
+                _modified = true;
+                _info.LogonScript.Set(value);
+            }
+        }
         /// <summary>
         /// Profile path.
         /// </summary>
-        public string ProfilePath { get => _info.ProfilePath.ToString(); set => _info.ProfilePath.Set(value); }
+        public string ProfilePath
+        {
+            get => _info.ProfilePath.ToString();
+            set
+            {
+                _modified = true;
+                _info.ProfilePath.Set(value);
+            }
+        }
         /// <summary>
         /// Home directory path.
         /// </summary>
-        public string HomeDirectory { get => _info.HomeDirectory.ToString(); set => _info.HomeDirectory.Set(value); }
+        public string HomeDirectory
+        {
+            get => _info.HomeDirectory.ToString();
+            set
+            {
+                _modified = true;
+                _info.HomeDirectory.Set(value);
+            }
+        }
         /// <summary>
         /// Home directory drive.
         /// </summary>
-        public string HomeDirectoryDrive { get => _info.HomeDirectoryDrive.ToString(); set => _info.HomeDirectoryDrive.Set(value); }
+        public string HomeDirectoryDrive
+        {
+            get => _info.HomeDirectoryDrive.ToString();
+            set
+            {
+                _modified = true;
+                _info.HomeDirectoryDrive.Set(value);
+            }
+        }
         /// <summary>
         /// Logon count.
         /// </summary>
-        public short LogonCount { get => _info.LogonCount; set => _info.LogonCount = value; }
+        public short LogonCount
+        {
+            get => _info.LogonCount;
+            set
+            {
+                _modified = true;
+                _info.LogonCount = value;
+            }
+        }
         /// <summary>
         /// Bad password count.
         /// </summary>
-        public short BadPasswordCount { get => _info.BadPasswordCount; set => _info.BadPasswordCount = value; }
+        public short BadPasswordCount
+        {
+            get => _info.BadPasswordCount;
+            set
+            {
+                _modified = true;
+                _info.BadPasswordCount = value;
+            }
+        }
         /// <summary>
         /// User RID.
         /// </summary>
-        public uint UserId { get => (uint) _info.UserId; set => _info.UserId = (int) value; }
+        public uint UserId
+        {
+            get => (uint)_info.UserId;
+            set
+            {
+                _modified = true;
+                _info.UserId = (int)value;
+            }
+        }
         /// <summary>
         /// Primary group RID.
         /// </summary>
-        public uint PrimaryGroupId { get => (uint)_info.PrimaryGroupId; set => _info.PrimaryGroupId = (int)value; }
+        public uint PrimaryGroupId
+        {
+            get => (uint)_info.PrimaryGroupId;
+            set
+            {
+                _modified = true;
+                _info.PrimaryGroupId = (int)value;
+            }
+        }
         /// <summary>
         /// Group list.
         /// </summary>
-        public IList<KerberosGroupMembership> GroupIds { get; set; }
+        public IList<KerberosGroupMembership> GroupIds
+        {
+            get => group_ids;
+            set
+            {
+                _modified = true;
+                group_ids = value;
+            }
+        }
         /// <summary>
         /// User flags.
         /// </summary>
-        public KerberosUserFlags UserFlags { get => (KerberosUserFlags)_info.UserFlags; set => _info.UserFlags = (int)value; }
+        public KerberosUserFlags UserFlags
+        {
+            get => (KerberosUserFlags)_info.UserFlags;
+            set
+            {
+                _modified = true;
+                _info.UserFlags = (int)value;
+            }
+        }
         /// <summary>
         /// User session key.
         /// </summary>
-        public byte[] UserSessionKey { get => _info.UserSessionKey.ToArray(); set => _info.UserSessionKey.Set(value); }
+        public byte[] UserSessionKey
+        {
+            get => _info.UserSessionKey.ToArray();
+            set
+            {
+                _modified = true;
+                _info.UserSessionKey.Set(value);
+            }
+        }
         /// <summary>
         /// Logon server name.
         /// </summary>
-        public string LogonServer { get => _info.LogonServer.ToString(); set => _info.LogonServer.Set(value); }
+        public string LogonServer
+        {
+            get => _info.LogonServer.ToString();
+            set
+            {
+                _modified = true;
+                _info.LogonServer.Set(value);
+            }
+        }
         /// <summary>
         /// Logon domain name.
         /// </summary>
-        public string LogonDomainName { get => _info.LogonDomainName.ToString(); set => _info.LogonDomainName.Set(value); }
+        public string LogonDomainName
+        {
+            get => _info.LogonDomainName.ToString();
+            set
+            {
+                _modified = true;
+                _info.LogonDomainName.Set(value);
+            }
+        }
         /// <summary>
         /// Logon domain sid.
         /// </summary>
@@ -123,6 +311,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             get => _info.LogonDomainId?.GetValue().ToSid();
             set
             {
+                _modified = true;
                 if (value == null)
                     _info.LogonDomainId = null;
                 else
@@ -132,21 +321,38 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// Extra SIDs.
         /// </summary>
-        public IList<UserGroup> ExtraSids { get; set; }
+        public IList<UserGroup> ExtraSids
+        {
+            get => extra_sids;
+            set
+            {
+                _modified = true;
+                extra_sids = value;
+            }
+        }
         /// <summary>
         /// Reserved1 field.
         /// </summary>
-        public int[] Reserved1 { 
-            get => _info.Reserved1; 
-            set => _info.Reserved1 = value?.Length == 2 ? value : throw new ArgumentException("Reserved1 must be 2 integers in size", nameof(value)); 
+        public int[] Reserved1
+        {
+            get => _info.Reserved1;
+            set
+            {
+                _modified = true;
+                _info.Reserved1 = value?.Length == 2 ? value : throw new ArgumentException("Reserved1 must be 2 integers in size", nameof(value));
+            }
         }
         /// <summary>
         /// User account control flags.
         /// </summary>
-        public UserAccountControlFlags UserAccountControl 
-        { 
-            get => (UserAccountControlFlags)_info.UserAccountControl; 
-            set => _info.UserAccountControl = (int)value; 
+        public UserAccountControlFlags UserAccountControl
+        {
+            get => (UserAccountControlFlags)_info.UserAccountControl;
+            set
+            {
+                _modified = true;
+                _info.UserAccountControl = (int)value;
+            }
         }
         /// <summary>
         /// Reserved3 field.
@@ -154,16 +360,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public int[] Reserved3
         {
             get => _info.Reserved3;
-            set => _info.Reserved3 = value?.Length == 7 ? value : throw new ArgumentException("Reserved3 must be 7 integers in size", nameof(value));
+            set
+            {
+                _modified = true;
+                _info.Reserved3 = value?.Length == 7 ? value : throw new ArgumentException("Reserved3 must be 7 integers in size", nameof(value));
+            }
         }
         /// <summary>
         /// Resource domain group SID.
         /// </summary>
-        public Sid ResourceGroupDomainSid 
-        { 
-            get => _info.ResourceGroupDomainSid?.GetValue().ToSid(); 
+        public Sid ResourceGroupDomainSid
+        {
+            get => _info.ResourceGroupDomainSid?.GetValue().ToSid();
             set
             {
+                _modified = true;
                 if (value == null)
                     _info.ResourceGroupDomainSid = null;
                 else
@@ -173,7 +384,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// Resource groups.
         /// </summary>
-        public IList<KerberosGroupMembership> ResourceGroupIds { get; set; }
+        public IList<KerberosGroupMembership> ResourceGroupIds
+        {
+            get => resource_group_ids; 
+            set
+            {
+                _modified = true;
+                resource_group_ids = value;
+            }
+        }
         #endregion
 
         #region Constructors
@@ -183,6 +402,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public KerberosAuthorizationDataPACLogonBuilder() : base(KerberosAuthorizationDataPACEntryType.Logon)
         {
             _info = KERB_VALIDATION_INFO.CreateDefault();
+            _modified = true;
         }
 
         /// <summary>
@@ -196,14 +416,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 
         internal KerberosAuthorizationDataPACLogonBuilder(byte[] data) : this()
         {
+            _data = data;
             _info = KerbValidationInfoParser.Decode(new NdrPickledType(data))
                 ?? throw new ArgumentException("Invalid KERB_VALIDATION_INFO buffer.");
-            GroupIds = KerberosGroupMembership.CreateGroup(_info.GroupIds);
-            ResourceGroupIds = KerberosGroupMembership.CreateGroup(_info.ResourceGroupIds);
+            GroupIds = WrapList(KerberosGroupMembership.CreateGroup(_info.GroupIds));
+            ResourceGroupIds = WrapList(KerberosGroupMembership.CreateGroup(_info.ResourceGroupIds));
             if (_info.ExtraSids != null)
             {
-                ExtraSids = _info.ExtraSids.GetValue().Select(KERB_SID_AND_ATTRIBUTES.ToGroup).ToList();
+                ExtraSids = WrapList(_info.ExtraSids.GetValue().Select(KERB_SID_AND_ATTRIBUTES.ToGroup));
             }
+            _modified = false;
         }
         #endregion
 
@@ -250,20 +472,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <returns>The authorization data object.</returns>
         public override KerberosAuthorizationDataPACEntry Create()
         {
-            _info.GroupIds = KerberosGroupMembership.FromGroup(GroupIds, ref _info.GroupCount);
-            _info.ResourceGroupIds = KerberosGroupMembership.FromGroup(ResourceGroupIds, ref _info.ResourceGroupCount);
-            _info.SidCount = ExtraSids?.Count ?? 0;
-            if (ExtraSids != null)
+            byte[] data = _data;
+
+            // If not modified then return original data. This is because the referent ordering can change 
+            // between the MS NDR marshaler and the libraries. This doesn't impact the logical structure,
+            // just the binary representation.
+            if (_modified)
             {
-                _info.ExtraSids = ExtraSids.Select(KERB_SID_AND_ATTRIBUTES.ToStruct).ToArray();
-            }
-            else
-            {
-                _info.ExtraSids = null;
+                _info.GroupIds = KerberosGroupMembership.FromGroup(GroupIds, ref _info.GroupCount);
+                _info.ResourceGroupIds = KerberosGroupMembership.FromGroup(ResourceGroupIds, ref _info.ResourceGroupCount);
+                _info.SidCount = ExtraSids?.Count ?? 0;
+                if (ExtraSids != null)
+                {
+                    _info.ExtraSids = ExtraSids.Select(KERB_SID_AND_ATTRIBUTES.ToStruct).ToArray();
+                }
+                else
+                {
+                    _info.ExtraSids = null;
+                }
+                data = KerbValidationInfoParser.Encode(_info).ToArray();
             }
 
-            var data = KerbValidationInfoParser.Encode(_info);
-            if (!KerberosAuthorizationDataPACLogon.Parse(PACType, data.ToArray(), out KerberosAuthorizationDataPACEntry entry))
+            if (!KerberosAuthorizationDataPACLogon.Parse(PACType, data, out KerberosAuthorizationDataPACEntry entry))
                 throw new InvalidDataException("PAC Logon type is invalid.");
             return entry;
         }

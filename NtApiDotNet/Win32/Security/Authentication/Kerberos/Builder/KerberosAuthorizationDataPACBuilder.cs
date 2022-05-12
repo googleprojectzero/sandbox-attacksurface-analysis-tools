@@ -60,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         }
 
         /// <summary>
-        /// Compute the PAC's server and optionally KDC signatures.
+        /// Compute the PAC's server and optionally KDC signature.
         /// </summary>
         /// <param name="server_key">The server's key to use for the signature.</param>
         /// <param name="kdc_key">The KDC key if known.</param>

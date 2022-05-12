@@ -45,6 +45,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosAuthorizationDataPACSignatureBuilder(PACType, SignatureType, Signature, RODCIdentifier);
         }
 
+        /// <summary>
+        /// Compare the signature against another.
+        /// </summary>
+        /// <param name="obj">The signature to check.</param>
+        /// <returns>True if the signatures are equal.</returns>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is KerberosAuthorizationDataPACSignature other))
+                return false;
+            return other.SignatureType == SignatureType && other.RODCIdentifier == RODCIdentifier &&
+                NtObjectUtils.EqualByteArray(other.Signature, Signature);
+        }
+
+        /// <summary>
+        /// Calculate hash code.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return SignatureType.GetHashCode() ^ RODCIdentifier.GetHashCode() 
+                ^ NtObjectUtils.GetHashCodeByteArray(Signature);
+        }
+
         private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
             byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)
             : base(type, data)

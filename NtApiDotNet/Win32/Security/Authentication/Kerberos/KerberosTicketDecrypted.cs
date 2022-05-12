@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -161,6 +162,44 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
                 builder.AppendLine();
             }
+        }
+
+        /// <summary>
+        /// Find the PAC for the ticket.
+        /// </summary>
+        /// <returns>The PAC for the ticket. Returns null if no PAC present.</returns>
+        public KerberosAuthorizationDataPAC FindPAC()
+        {
+            return FindAuthorizationData<KerberosAuthorizationDataPAC>(AuthorizationData, 
+                KerberosAuthorizationDataType.AD_WIN2K_PAC);
+        }
+
+        private static T FindAuthorizationData<T>(
+            IEnumerable<KerberosAuthorizationData> auth_data,
+            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+        {
+            List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
+            FindAuthorizationData(list, auth_data, type);
+            return list.OfType<T>().FirstOrDefault();
+        }
+
+        private static void FindAuthorizationData(
+            List<KerberosAuthorizationData> list,
+            IEnumerable<KerberosAuthorizationData> auth_data,
+            KerberosAuthorizationDataType type)
+        {
+            if (auth_data == null)
+                return;
+            foreach (var next in auth_data)
+            {
+                if (next.DataType == type)
+                    list.Add(next);
+                if (next is KerberosAuthorizationDataIfRelevant if_rel)
+                {
+                    FindAuthorizationData(list, if_rel.Entries, type);
+                }
+            }
+            return;
         }
 
         private KerberosTicketDecrypted(KerberosTicket ticket, byte[] decrypted) 

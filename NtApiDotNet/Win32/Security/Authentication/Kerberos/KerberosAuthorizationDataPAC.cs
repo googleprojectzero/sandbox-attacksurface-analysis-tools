@@ -45,6 +45,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosAuthorizationDataPACBuilder(Version, Entries);
         }
 
+        /// <summary>
+        /// Validate the PAC's server and optionally KDC signature.
+        /// </summary>
+        /// <param name="server_key">The server's key to use for the signature.</param>
+        /// <param name="kdc_key">The KDC key if known.</param>
+        /// <returns>True if the signatures are correct. Also assumes true if there are no signatures to check.</returns>
+        public bool ValidateSignatures(KerberosAuthenticationKey server_key, KerberosAuthenticationKey kdc_key = null)
+        {
+            var builder = (KerberosAuthorizationDataPACBuilder)ToBuilder();
+            builder.ComputeSignatures(server_key, kdc_key);
+            var result = (KerberosAuthorizationDataPAC)builder.Create();
+            System.Diagnostics.Debug.Assert(result.Entries.Count == Entries.Count);
+            for (int i = 0; i < Entries.Count; ++i)
+            {
+                System.Diagnostics.Debug.Assert(result.Entries[i].PACType == Entries[i].PACType);
+                if (result.Entries[i] is KerberosAuthorizationDataPACSignature sig_left &&
+                    Entries[i] is KerberosAuthorizationDataPACSignature sig_right)
+                {
+                    if (!sig_left.Equals(sig_right))
+                        return false;
+                }
+            }
+            return true;
+        }
+
         private readonly byte[] _data;
 
         private KerberosAuthorizationDataPAC(int version, IEnumerable<KerberosAuthorizationDataPACEntry> entries, byte[] data)
