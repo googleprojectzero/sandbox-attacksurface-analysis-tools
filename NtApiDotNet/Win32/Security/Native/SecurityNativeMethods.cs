@@ -1181,6 +1181,11 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus SamiChangePasswordUser(
+            SafeSamHandle UserHandle, bool LmPresent, byte[] OldLM, byte[] NewLM,
+            bool NtPresent, byte[] OldNt, byte[] NewNt);
+
+        [DllImport("samlib.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus SamGetGroupsForUser(
             SafeSamHandle UserHandle,
             out SafeSamMemoryBuffer Groups, // PGROUP_MEMBERSHIP

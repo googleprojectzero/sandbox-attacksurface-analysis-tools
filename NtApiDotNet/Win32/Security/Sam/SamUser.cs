@@ -36,6 +36,21 @@ namespace NtApiDotNet.Win32.Security.Sam
                 }
             });
         }
+
+        private static bool CheckHash(bool present, ref byte[] old_hash, ref byte[] new_hash)
+        {
+            if (!present)
+            {
+                old_hash = new byte[16];
+                new_hash = old_hash;
+                return true;
+            }
+            if (old_hash?.Length != 16)
+                return false;
+            if (new_hash?.Length != 16)
+                return false;
+            return true;
+        }
         #endregion
 
         #region Internal Members
@@ -148,6 +163,47 @@ namespace NtApiDotNet.Win32.Security.Sam
         public void SetPassword(SecureString password, bool expired)
         {
             SetPassword(password, expired, true);
+        }
+
+        /// <summary>
+        /// Change password using NT/LM hashes.
+        /// </summary>
+        /// <param name="lm_present">Is the LM hash present.</param>
+        /// <param name="old_lm">The old LM hash.</param>
+        /// <param name="new_lm">The new LM hash.</param>
+        /// <param name="nt_present">Is the NT hash present.</param>
+        /// <param name="old_nt">The old NT hash.</param>
+        /// <param name="new_nt">The new NT hash.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="ArgumentException">Thrown if arguments invalid.</exception>
+        public NtStatus ChangePassword(bool lm_present, byte[] old_lm, byte[] new_lm, 
+            bool nt_present, byte[] old_nt, byte[] new_nt, bool throw_on_error)
+        {
+            if (!CheckHash(lm_present, ref old_lm, ref new_lm))
+                throw new ArgumentException("Must provide valid LM hashes if present.", nameof(lm_present));
+
+            if (!CheckHash(nt_present, ref old_nt, ref new_nt))
+                throw new ArgumentException("Must provide valid NT hashes if present.", nameof(nt_present));
+
+            return SecurityNativeMethods.SamiChangePasswordUser(Handle,
+                lm_present, old_lm, new_lm, nt_present, old_nt, new_nt).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Change password using NT/LM hashes.
+        /// </summary>
+        /// <param name="lm_present">Is the LM hash present.</param>
+        /// <param name="old_lm">The old LM hash.</param>
+        /// <param name="new_lm">The new LM hash.</param>
+        /// <param name="nt_present">Is the NT hash present.</param>
+        /// <param name="old_nt">The old NT hash.</param>
+        /// <param name="new_nt">The new NT hash.</param>
+        /// <exception cref="ArgumentException">Thrown if arguments invalid.</exception>
+        public void ChangePassword(bool lm_present, byte[] old_lm, byte[] new_lm,
+            bool nt_present, byte[] old_nt, byte[] new_nt)
+        {
+            ChangePassword(lm_present, old_lm, new_lm, nt_present, old_nt, new_nt, true);
         }
 
         #endregion
