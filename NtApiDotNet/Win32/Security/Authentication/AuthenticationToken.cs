@@ -66,6 +66,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public virtual int Length => _data.Length;
 
         /// <summary>
+        /// Get whether the token is empty.
+        /// </summary>
+        public virtual bool IsEmpty => _data.Length == 0;
+
+        /// <summary>
         /// Format the authentication token.
         /// </summary>
         /// <returns>The token as a formatted string.</returns>
