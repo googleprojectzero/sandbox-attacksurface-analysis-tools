@@ -233,7 +233,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
             writer.Write(certificate.GetPublicKey());
 
             var hash = EncryptData(context, SHA256.Create().ComputeHash(stm.ToArray()));
-            return Create(version, public_key_auth: hash, client_nonce: nonce);
+
+            AuthenticationToken[] tokens = null;
+            if (!context.Token.IsEmpty)
+                tokens = new[] { context.Token };
+
+            return Create(version, public_key_auth: hash, client_nonce: nonce, nego_tokens: tokens);
         }
 
         /// <summary>
