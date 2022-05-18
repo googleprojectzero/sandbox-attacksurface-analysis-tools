@@ -619,6 +619,8 @@ Specify the TGT credentials to use for the cache.
 Specify the realm to use for the cache.
 .PARAMETER AdditionalTicket
 Specify additional tickets to add to the new cache.
+.PARAMETER Key
+Specify the user key to authenticate the new ticket cache.
 .INPUTS
 None
 .OUTPUTS
@@ -633,9 +635,13 @@ function New-KerberosTicketCache {
         [NtApiDotNet.Luid]$LogonId = 0,
         [Parameter(ParameterSetName="FromTgt", Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(ParameterSetName="FromKey", Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(ParameterSetName="FromTgt")]
+        [Parameter(ParameterSetName="FromKey")]
         [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
         [Parameter(ParameterSetName="FromTgt")]
+        [Parameter(ParameterSetName="FromKey")]
         [int]$Port = 88,
         [Parameter(ParameterSetName="FromTgt")]
         [string]$Realm = [NullString]::Value,
@@ -650,6 +656,10 @@ function New-KerberosTicketCache {
         "FromTgt" {
             $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::new($Credential, $client, $Realm, $AdditionalTicket)
+        }
+        "FromKey" {
+            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Key)
         }
     }
 }
