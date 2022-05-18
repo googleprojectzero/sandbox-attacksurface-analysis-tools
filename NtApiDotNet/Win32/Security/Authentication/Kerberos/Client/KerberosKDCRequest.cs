@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
-using System;
 using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client

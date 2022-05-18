@@ -15,7 +15,6 @@
 using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
-using System.IO;
 using System.Net;
 using System.Text;
 
