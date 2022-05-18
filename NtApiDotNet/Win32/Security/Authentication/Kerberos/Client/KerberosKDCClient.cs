@@ -124,7 +124,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             var as_req = request.ToBuilder();
             var reply = ExchangeKDCTokens(as_req.Create());
-            var reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.AsRepEncryptedPart);
+
+            // RC4 encryption uses TgsRep for the AsRep.
+            if (!reply.EncryptedData.TryDecrypt(request.Key, KerberosKeyUsage.AsRepEncryptedPart, out KerberosEncryptedData reply_dec))
+                reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.TgsRepEncryptedPart);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
                 throw new KerberosKDCClientException("Invalid KDC reply encrypted part..");
