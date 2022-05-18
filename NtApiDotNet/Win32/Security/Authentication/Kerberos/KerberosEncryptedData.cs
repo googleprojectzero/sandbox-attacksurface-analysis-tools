@@ -61,6 +61,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// Try and decrypt the encrypted data.
+        /// </summary>
+        /// <param name="key">The key to decrypt the data.</param>
+        /// <param name="key_usage">The Kerberos key usage for the decryption.</param>
+        /// <param name="enc_data">The decrypted data.</param>
+        /// <returns>True if the decryption was successful.</returns>
+        public bool TryDecrypt(KerberosAuthenticationKey key, KerberosKeyUsage key_usage, out KerberosEncryptedData enc_data)
+        {
+            if (EncryptionType == KerberosEncryptionType.NULL)
+            {
+                enc_data = Create(KerberosEncryptionType.NULL, CipherText);
+                return true;
+            }
+
+            bool success = key.TryDecrypt(CipherText, key_usage, out byte[] plain_text);
+            enc_data = success ? Create(KerberosEncryptionType.NULL, plain_text, null) : null;
+            return success;
+        }
+
         /// <summary>
         /// Decrypt the encrypted data.
         /// </summary>
