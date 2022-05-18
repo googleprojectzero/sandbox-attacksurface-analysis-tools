@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             int name_type = ReadInt32(reader);
             uint timestamp = ReadUInt32(reader);
             uint version = reader.ReadByte();
-            int key_type = ReadUInt16(reader);
+            int key_type = ReadInt16(reader);
             byte[] key = ReadOctets(reader);
             if (reader.BaseStream.Position <= reader.BaseStream.Length - 4)
             {
@@ -125,6 +125,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (BitConverter.IsLittleEndian)
             {
                 value = BitConverter.ToUInt16(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
+            }
+            return value;
+        }
+
+        private static short ReadInt16(BinaryReader reader)
+        {
+            short value = reader.ReadInt16();
+            if (BitConverter.IsLittleEndian)
+            {
+                value = BitConverter.ToInt16(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
             }
             return value;
         }
