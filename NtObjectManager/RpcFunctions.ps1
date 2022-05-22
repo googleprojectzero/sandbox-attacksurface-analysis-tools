@@ -452,6 +452,8 @@ This cmdlet gets a list of ALPC RPC servers. This relies on being able to access
 The ID of a process to query for ALPC servers.
 .PARAMETER AlpcPort
 The path to the ALPC port to query.
+.PARAMETER IgnoreComInterface
+Ignore COM only interfaces.
 .INPUTS
 None
 .OUTPUTS
@@ -472,19 +474,20 @@ function Get-RpcAlpcServer {
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProcessId")]
         [int]$ProcessId,
         [parameter(Mandatory, ParameterSetName = "FromAlpc")]
-        [string]$AlpcPort
+        [string]$AlpcPort,
+        [switch]$IgnoreComInterface
     )
 
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
     switch ($PsCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers()
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($IgnoreComInterface)
         }
         "FromProcessId" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($ProcessId)
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($ProcessId, $IgnoreComInterface)
         }
         "FromAlpc" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServer($AlpcPort)
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServer($AlpcPort, $IgnoreComInterface)
         }
     }
 }

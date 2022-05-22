@@ -49,18 +49,18 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public SecurityDescriptor SecurityDescriptor { get; }
 
-        private RpcAlpcServer(int process_id, string name, SecurityDescriptor sd, string process_name, IEnumerable<RpcEndpoint> endpoints)
+        private RpcAlpcServer(int process_id, string name, SecurityDescriptor sd, string process_name, IEnumerable<RpcEndpoint> endpoints, bool ignore_com_interfaces)
         {
             ProcessId = process_id;
             ProcessName = process_name;
             Name = name;
             SecurityDescriptor = sd;
-            Endpoints = new List<RpcEndpoint>(endpoints).AsReadOnly();
+            Endpoints = new List<RpcEndpoint>(ignore_com_interfaces ? endpoints.Where(e => !e.IsComInterface) : endpoints).AsReadOnly();
             EndpointCount = Endpoints.Count;
         }
 
-        private RpcAlpcServer(NtHandle handle, string process_name, IEnumerable<RpcEndpoint> endpoints) 
-            : this(handle.ProcessId, handle.Name, handle.SecurityDescriptor, process_name, endpoints)
+        private RpcAlpcServer(NtHandle handle, string process_name, IEnumerable<RpcEndpoint> endpoints, bool ignore_com_interfaces) 
+            : this(handle.ProcessId, handle.Name, handle.SecurityDescriptor, process_name, endpoints, ignore_com_interfaces)
         {
         }
 
@@ -68,15 +68,16 @@ namespace NtApiDotNet.Win32
         /// Get RPC ALPC servers for a specific process.
         /// </summary>
         /// <param name="process_id">The ID of the process.</param>
+        /// <param name="ignore_com_interfaces">Specify to ignore registered COM interfaces.</param>
         /// <returns>The list of RPC ALPC servers.</returns>
         /// <remarks>If the process is suspended or frozen this call can hang.</remarks>
-        public static IEnumerable<RpcAlpcServer> GetAlpcServers(int process_id)
+        public static IEnumerable<RpcAlpcServer> GetAlpcServers(int process_id, bool ignore_com_interfaces = false)
         {
             using (var proc = NtProcess.Open(process_id, ProcessAccessRights.QueryInformation | ProcessAccessRights.DupHandle))
             {
                 List<RpcAlpcServer> ret = new List<RpcAlpcServer>();
                 GetAlpcServersInternal(proc.Duplicate(), NtObjectUtils.IsWindows7OrLess ? NtSystemInfo.GetHandles(process_id, true) :
-                    proc.GetHandles(true), ret);
+                    proc.GetHandles(true), ret, ignore_com_interfaces);
                 if (ret.Count == 0)
                     Win32Error.RPC_S_SERVER_UNAVAILABLE.ToNtException();
                 return ret.AsReadOnly();
@@ -86,10 +87,11 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get a list of all RPC ALPC servers.
         /// </summary>
+        /// <param name="ignore_com_interfaces">Specify to ignore registered COM interfaces.</param>
         /// <remarks>This works by discovering any server ALPC ports owned by the process and querying for interfaces.
         /// This will ignore any frozen processes (primarily UWP) as they can't respond to the endpoint enumeration.</remarks>
         /// <returns>The list of RPC ALPC servers.</returns>
-        public static IEnumerable<RpcAlpcServer> GetAlpcServers()
+        public static IEnumerable<RpcAlpcServer> GetAlpcServers(bool ignore_com_interfaces = false)
         {
             List<RpcAlpcServer> ret = new List<RpcAlpcServer>();
 
@@ -102,7 +104,7 @@ namespace NtApiDotNet.Win32
                         continue;
                     if (proc.Result.Frozen)
                         continue;
-                    GetAlpcServersInternal(proc.Result, group, ret);
+                    GetAlpcServersInternal(proc.Result, group, ret, ignore_com_interfaces);
                 }
             }
             return ret.AsReadOnly();
@@ -112,20 +114,21 @@ namespace NtApiDotNet.Win32
         /// Get the RPC ALPC server for an ALPC port object path.
         /// </summary>
         /// <param name="path">The object manager path to the ALPC port.</param>
+        /// <param name="ignore_com_interfaces">Specify to ignore registered COM interfaces.</param>
         /// <returns>The ALPC RPC server.</returns>
         /// <remarks>Needs an API which is only available from Windows 10 19H1.</remarks>
         [SupportedVersion(SupportedVersion.Windows10_19H1)]
-        public static RpcAlpcServer GetAlpcServer(string path)
+        public static RpcAlpcServer GetAlpcServer(string path, bool ignore_com_interfaces = false)
         {
             using (var transport = new RpcAlpcClientTransport(path, null))
             {
                 var server = transport.ServerProcess;
                 return new RpcAlpcServer(server.ProcessId, path, null, server.Name,
-                    RpcEndpointMapper.QueryEndpointsForAlpcPort(path));
+                    RpcEndpointMapper.QueryEndpointsForAlpcPort(path), ignore_com_interfaces);
             }
         }
 
-        private static void GetAlpcServersInternal(NtProcess process, IEnumerable<NtHandle> handles, List<RpcAlpcServer> servers)
+        private static void GetAlpcServersInternal(NtProcess process, IEnumerable<NtHandle> handles, List<RpcAlpcServer> servers, bool ignore_com_interfaces)
         {
             NtType alpc_type = NtType.GetTypeByType<NtAlpc>();
             string process_name = process.Name;
@@ -135,7 +138,7 @@ namespace NtApiDotNet.Win32
                 var eps = RpcEndpointMapper.QueryEndpointsForAlpcPort(handle.Name, false);
                 if (eps.IsSuccess)
                 {
-                    servers.Add(new RpcAlpcServer(handle, process_name, eps.Result));
+                    servers.Add(new RpcAlpcServer(handle, process_name, eps.Result, ignore_com_interfaces));
                 }
             }
         }

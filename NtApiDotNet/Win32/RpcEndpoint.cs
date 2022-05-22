@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Microsoft.Win32;
 using NtApiDotNet.Win32.Rpc;
 using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
+using System.Collections.Concurrent;
 
 namespace NtApiDotNet.Win32
 {
@@ -26,12 +28,21 @@ namespace NtApiDotNet.Win32
     {
         #region Private Members
         private readonly Lazy<RpcServerProcessInformation> _server_process_info;
+        private static ConcurrentDictionary<Guid, bool> _com_interface_check = new ConcurrentDictionary<Guid, bool>();
 
         private RpcServerProcessInformation GetServerProcessInformation()
         {
             using (var transport = RpcClientTransportFactory.ConnectEndpoint(this, new RpcTransportSecurity() { AuthenticationLevel = RpcAuthenticationLevel.None }))
             {
                 return transport.ServerProcess;
+            }
+        }
+
+        private static bool GetIsComInterface(Guid interface_id)
+        {
+            using (var key = Registry.ClassesRoot.OpenSubKey($@"Interface\{interface_id:B}"))
+            {
+                return key != null;
             }
         }
 
@@ -119,6 +130,10 @@ namespace NtApiDotNet.Win32
         /// Indicates this endpoint is registered with the endpoint mapper.
         /// </summary>
         public bool Registered { get; }
+        /// <summary>
+        /// Indicates this endpoint is a COM interface.
+        /// </summary>
+        public bool IsComInterface => _com_interface_check.GetOrAdd(InterfaceId, GetIsComInterface);
         #endregion
 
         #region Internal Members
