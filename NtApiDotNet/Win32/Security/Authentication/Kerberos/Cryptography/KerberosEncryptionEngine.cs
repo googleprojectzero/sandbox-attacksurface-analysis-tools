@@ -27,9 +27,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         #region Private Members
         private static Dictionary<KerberosEncryptionType, KerberosEncryptionEngine> _engines;
 
-        private static void AddEngine(KerberosEncryptionEngine engine)
+        private static KerberosEncryptionEngine AddEngine(KerberosEncryptionEngine engine)
         {
             _engines.Add(engine.EncryptionType, engine);
+            return engine;
         }
 
         private static void InitDefaultEngines()
@@ -177,9 +178,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         public static KerberosEncryptionEngine Get(KerberosEncryptionType encryption_type)
         {
             InitDefaultEngines();
-            if (!_engines.TryGetValue(encryption_type, out KerberosEncryptionEngine engine))
-                throw new ArgumentException("Unsupported encryption algorithm.", nameof(encryption_type));
-            return engine;
+            if (_engines.TryGetValue(encryption_type, out KerberosEncryptionEngine engine))
+                return engine;
+
+            return AddEngine(KerberosEncryptionEngineNative.GetNative(encryption_type));
         }
         #endregion
     }

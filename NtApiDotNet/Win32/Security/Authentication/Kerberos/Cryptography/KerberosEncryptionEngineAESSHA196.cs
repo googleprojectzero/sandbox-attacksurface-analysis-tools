@@ -27,7 +27,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
     {
         #region Private Members
         private const int AES_BLOCK_SIZE = 16;
-        private const int AES_CHECKSUM_SIZE = 12;
         private const int AES_CONFOUNDER_SIZE = 16;
         private const byte EncryptionKey = 0xAA;
         private const byte VerificationKey = 0x55;

@@ -25,9 +25,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         #region Private Members
         private static Dictionary<KerberosChecksumType, KerberosChecksumEngine> _engines;
 
-        private static void AddEngine(KerberosChecksumEngine engine)
+        private static KerberosChecksumEngine AddEngine(KerberosChecksumEngine engine)
         {
             _engines.Add(engine.ChecksumType, engine);
+            return engine;
         }
 
         private static void InitDefaultEngines()
@@ -144,9 +145,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         public static KerberosChecksumEngine Get(KerberosChecksumType checksum_type)
         {
             InitDefaultEngines();
-            if (!_engines.TryGetValue(checksum_type, out KerberosChecksumEngine engine))
-                throw new ArgumentException("Unsupported checksum algorithm.", nameof(checksum_type));
-            return engine;
+            if (_engines.TryGetValue(checksum_type, out KerberosChecksumEngine engine))
+                return engine;
+            return AddEngine(KerberosChecksumEngineNative.GetNative(checksum_type));
         }
         #endregion
     }

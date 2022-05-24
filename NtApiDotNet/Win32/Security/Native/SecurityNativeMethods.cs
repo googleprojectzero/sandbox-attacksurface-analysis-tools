@@ -1232,6 +1232,12 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus RtlMapSecurityErrorToNtStatus(SecStatusCode Error);
 
+        [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CDLocateCSystem(Authentication.Kerberos.KerberosEncryptionType type, out IntPtr enc_engine);
+
+        [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CDLocateCheckSum(Authentication.Kerberos.KerberosChecksumType type, out IntPtr chk_engine);
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;
