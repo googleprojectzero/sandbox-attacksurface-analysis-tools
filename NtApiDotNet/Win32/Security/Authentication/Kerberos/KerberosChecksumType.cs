@@ -36,6 +36,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         HMAC_SHA1_96_AES_128 = 15,
         HMAC_SHA1_96_AES_256 = 16,
         GSSAPI = 32771,
+        SHA1_OLD = -131,
+        CRC32_OLD = -132,
+        DES_MAC_OLD = -133,
         HMAC_MD5 = -138,
         HMAC_MD5_ENC = -1138
     }

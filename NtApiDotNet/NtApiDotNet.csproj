@@ -481,6 +481,13 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngine.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineAESSHA196.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineHMACMD5.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngine.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineAESSHA196.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineARC4MD5.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorData.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />

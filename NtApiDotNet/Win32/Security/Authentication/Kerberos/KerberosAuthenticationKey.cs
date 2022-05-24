@@ -221,7 +221,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="salt">Salt for the key.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
-        /// <returns></returns>
+        /// <returns>The derived key.</returns>
         public static KerberosAuthenticationKey DeriveKey(KerberosEncryptionType key_encryption, string password, 
             int iterations, KerberosNameType name_type, string principal, string salt, uint version)
         {
