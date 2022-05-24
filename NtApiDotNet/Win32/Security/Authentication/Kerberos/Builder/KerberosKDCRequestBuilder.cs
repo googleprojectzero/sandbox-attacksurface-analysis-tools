@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -143,8 +144,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             writer.Write(userrealm.ToCharArray());
             writer.Write("Kerberos".ToCharArray());
 
+            KerberosChecksumEngine chk_engine = KerberosChecksumEngine.Get(KerberosChecksumType.HMAC_MD5);
+
             KerberosChecksum checksum = new KerberosChecksum(KerberosChecksumType.HMAC_MD5,
-                key.ComputeMD5HMACHash(stm.ToArray(), KerberosKeyUsage.KerbNonKerbChksumSalt));
+                chk_engine.ComputeHash(key.Key, stm.ToArray(), KerberosKeyUsage.KerbNonKerbChksumSalt));
 
             AddPreAuthenticationData(new KerberosPreAuthenticationDataForUser(username, userrealm, checksum, "Kerberos"));
         }

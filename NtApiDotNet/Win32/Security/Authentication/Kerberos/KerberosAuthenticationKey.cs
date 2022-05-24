@@ -14,13 +14,11 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
-using NtApiDotNet.Utilities.Security;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -33,73 +31,53 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The Key encryption type.
         /// </summary>
-        public KerberosEncryptionType KeyEncryption { get; }
+        public KerberosEncryptionType KeyEncryption => _enc_engine.EncryptionType;
+
         /// <summary>
         /// The key.
         /// </summary>
         public byte[] Key => (byte[])_key.Clone();
+
         /// <summary>
         /// The key name type.
         /// </summary>
-        public KerberosNameType NameType { get; }
+        public KerberosNameType NameType => Name.NameType;
+
         /// <summary>
         /// The Realm for the key.
         /// </summary>
         public string Realm { get; }
+
         /// <summary>
         /// The name components for the key.
         /// </summary>
-        public IEnumerable<string> Components { get; }
+        public IEnumerable<string> Components => Name.Names;
+
         /// <summary>
         /// Principal name as a string.
         /// </summary>
-        public string Principal => $"{string.Join("/", Components)}@{Realm}";
+        public string Principal => Name.GetPrincipal(Realm);
+
         /// <summary>
         /// Timestamp when key was created.
         /// </summary>
         public DateTime Timestamp { get; }
+
         /// <summary>
         /// Key Version Number (KVNO).
         /// </summary>
         public uint Version { get; }
+
         /// <summary>
         /// Size of the checksum.
         /// </summary>
-        public int ChecksumSize
-        {
-            get
-            {
-                switch (KeyEncryption)
-                {
-                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                        return MD5_CHECKSUM_SIZE;
-                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                        return AES_CHECKSUM_SIZE;
-                    default:
-                        throw new InvalidDataException("Unsupported encryption algorithm.");
-                }
-            }
-        }
+        public int ChecksumSize => _enc_engine.ChecksumSize;
+
         /// <summary>
         /// Size of any additional encryption artifacts.
         /// </summary>
-        public int AdditionalEncryptionSize
-        {
-            get
-            {
-                switch (KeyEncryption)
-                {
-                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                        return MD5_CHECKSUM_SIZE + RC4_NONCE_LENGTH;
-                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                        return AES_CHECKSUM_SIZE + AES_CONFOUNDER_SIZE;
-                    default:
-                        throw new InvalidDataException("Unsupported encryption algorithm.");
-                }
-            }
-        }
+        public int AdditionalEncryptionSize => _enc_engine.AdditionalEncryptionSize;
+
         /// <summary>
         /// Returns whether the key is all zeros typically indicating it's invalid.
         /// </summary>
@@ -108,31 +86,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Get the checksum type associated with the key algorithm.
         /// </summary>
-        public KerberosChecksumType ChecksumType
-        {
-            get
-            {
-                switch (KeyEncryption)
-                {
-                    case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                        return KerberosChecksumType.HMAC_SHA1_96_AES_128;
-                    case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                        return KerberosChecksumType.HMAC_SHA1_96_AES_256;
-                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                        return KerberosChecksumType.HMAC_MD5;
-                    default:
-                        throw new InvalidDataException("Unsupported hash algorithm.");
-                }
-            }
-        }
+        public KerberosChecksumType ChecksumType => _enc_engine.ChecksumType;
 
         /// <summary>
         /// The kerberos principal name.
         /// </summary>
-        public KerberosPrincipalName Name => new KerberosPrincipalName(NameType, Components);
+        public KerberosPrincipalName Name { get; }
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="key_encryption">The Key encryption type.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="realm">The Realm for the key.</param>
+        /// <param name="name">The principal name for the key.</param>
+        /// <param name="timestamp">Timestamp when key was created.</param>
+        /// <param name="version">Key Version Number (KVNO).</param>
+        public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key,
+            string realm, KerberosPrincipalName name, DateTime timestamp, uint version)
+        {
+            _enc_engine = KerberosEncryptionEngine.Get(key_encryption);
+            _chk_engine = KerberosChecksumEngine.Get(_enc_engine.ChecksumType);
+            _key = key;
+            Name = name;
+            Realm = realm;
+            Timestamp = timestamp;
+            Version = version;
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -144,15 +127,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
         public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type, 
-            string realm, string[] components, DateTime timestamp, uint version)
+            string realm, string[] components, DateTime timestamp, uint version) : this(key_encryption, 
+                key, realm, new KerberosPrincipalName(name_type, components), timestamp, version)
         {
-            KeyEncryption = key_encryption;
-            _key = key;
-            NameType = name_type;
-            Realm = realm;
-            Components = components;
-            Timestamp = timestamp;
-            Version = version;
         }
 
         /// <summary>
@@ -166,15 +143,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="timestamp">Timestamp when key was created.</param>
         /// <param name="version">Key Version Number (KVNO).</param>
         public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key, KerberosNameType name_type,
-            string realm, IEnumerable<string> components, DateTime timestamp, uint version)
+            string realm, IEnumerable<string> components, DateTime timestamp, uint version) : this(key_encryption,
+                key, name_type, realm, components.ToArray(), timestamp, version)
         {
-            KeyEncryption = key_encryption;
-            _key = (byte[])key.Clone();
-            NameType = name_type;
-            Realm = realm;
-            Components = components.ToArray();
-            Timestamp = timestamp;
-            Version = version;
         }
 
         /// <summary>
@@ -230,26 +201,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentNullException(nameof(principal));
             }
 
-            byte[] key;
-
-            switch (key_encryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5_56:
-                case KerberosEncryptionType.ARCFOUR_HMAC_OLD:
-                case KerberosEncryptionType.ARCFOUR_HMAC_OLD_EXP:
-                    key = MD4.CalculateHash(Encoding.Unicode.GetBytes(password));
-                    break;
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                    key = DeriveAesKey(password, MakeSalt(salt, principal), iterations, 16);
-                    break;
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    key = DeriveAesKey(password, MakeSalt(salt, principal), iterations, 32);
-                    break;
-                default:
-                    throw new ArgumentException($"Unsupported key type {key_encryption}", nameof(key_encryption));
-            }
-
+            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption);
+            byte[] key = enc_engine.DeriveKey(password, iterations, MakeSalt(salt, principal));
             return new KerberosAuthenticationKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
 
@@ -260,22 +213,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The generated key.</returns>
         public static KerberosAuthenticationKey GenerateKey(KerberosEncryptionType key_encryption)
         {
-            int key_length;
-            switch (key_encryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                    key_length = 16;
-                    break;
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    key_length = 32;
-                    break;
-                default:
-                    throw new ArgumentException("Unsupported key encryption type.");
-            }
-
-            byte[] key = new byte[key_length];
-            new Random().NextBytes(key);
+            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption);
+            byte[] key = enc_engine.GenerateKey();
             return new KerberosAuthenticationKey(key_encryption, key, KerberosNameType.UNKNOWN, string.Empty, DateTime.Now, 0);
         }
         #endregion
@@ -290,16 +229,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>True if successfully decrypted.</returns>
         public bool TryDecrypt(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
         {
-            switch (KeyEncryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    return DecryptRC4(cipher_text, key_usage, out plain_text);
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    return DecryptAES(cipher_text, key_usage, out plain_text);
-            }
-            plain_text = null;
-            return false;
+            return _enc_engine.TryDecrypt(_key, cipher_text, key_usage, out plain_text);
         }
 
         /// <summary>
@@ -311,18 +241,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <exception cref="InvalidDataException">Thrown if can't decrypt.</exception>
         public byte[] Decrypt(byte[] cipher_text, KerberosKeyUsage key_usage)
         {
-            switch (KeyEncryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    break;
-                default:
-                    throw new InvalidDataException("Unsupported encryption algorithm.");
-            }
-            if (!TryDecrypt(cipher_text, key_usage, out byte[] plain_text))
-                throw new InvalidDataException("Can't decrypt the cipher text.");
-            return plain_text;
+            return _enc_engine.Decrypt(_key, cipher_text, key_usage);
         }
 
         /// <summary>
@@ -334,16 +253,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <exception cref="InvalidDataException">Thrown in can't encrypt.</exception>
         public byte[] Encrypt(byte[] plain_text, KerberosKeyUsage key_usage)
         {
-            switch (KeyEncryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    return EncryptRC4(plain_text, key_usage);
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    return EncryptAES(plain_text, key_usage);
-                default:
-                    throw new InvalidDataException("Unsupported encryption algorithm.");
-            }
+            return _enc_engine.Encrypt(_key, plain_text, key_usage);
         }
 
         /// <summary>
@@ -356,16 +266,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The computed hash.</returns>
         public byte[] ComputeHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
         {
-            switch (KeyEncryption)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    return ComputeMD5HMACHash(data, offset, length, key_usage);
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                    return ComputeSHA1HMACHash(data, offset, length, key_usage);
-                default:
-                    throw new InvalidDataException("Unsupported hash algorithm.");
-            }
+            return _chk_engine.ComputeHash(_key, data, offset, length, key_usage);
         }
 
         /// <summary>
@@ -377,38 +278,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public byte[] ComputeHash(byte[] data, KerberosKeyUsage key_usage)
         {
             return ComputeHash(data, 0, data.Length, key_usage);
-        }
-
-        /// <summary>
-        /// Compute an MD5 HMAC hash for a set of data.
-        /// </summary>
-        /// <param name="data">The data to hash.</param>
-        /// <param name="offset">Offset into the data to hash.</param>
-        /// <param name="length">The length of the data to hash.</param>
-        /// <param name="key_usage">The key usage.</param>
-        /// <returns>The computed hash.</returns>
-        public byte[] ComputeMD5HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
-        {
-            byte[] sign_key = new HMACMD5(_key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((int)key_usage);
-            writer.Write(data, offset, length);
-
-            byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
-            return new HMACMD5(sign_key).ComputeHash(tmp);
-        }
-
-        /// <summary>
-        /// Compute an MD5 HMAC hash for a set of data.
-        /// </summary>
-        /// <param name="data">The data to hash.</param>
-        /// <param name="key_usage">The key usage.</param>
-        /// <returns>The computed hash.</returns>
-        public byte[] ComputeMD5HMACHash(byte[] data, KerberosKeyUsage key_usage)
-        {
-            return ComputeMD5HMACHash(data, 0, data.Length, key_usage);
         }
 
         /// <summary>
@@ -486,25 +355,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosAuthenticationKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
         }
 
-        internal static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)
-        {
-            Aes encrypt = new AesManaged();
-            encrypt.Mode = CipherMode.ECB;
-
-            folded_key = (byte[])folded_key.Clone();
-
-            byte[] ret = new byte[base_key.Length];
-            var transform = encrypt.CreateEncryptor(base_key, new byte[16]);
-            transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-            Array.Copy(folded_key, ret, 16);
-            if (ret.Length > 16)
-            {
-                transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-                Array.Copy(folded_key, 0, ret, 16, 16);
-            }
-            return ret;
-        }
-
         void IDERObject.Write(DERBuilder builder)
         {
             using (var seq = builder.CreateSequence())
@@ -513,18 +363,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 seq.WriteContextSpecific(1, Key);
             }
         }
-
         #endregion
 
         #region Private Members
         private readonly byte[] _key;
-
-        private byte[] ComputeSHA1HMACHash(byte[] data, int offset, int length, KerberosKeyUsage key_usage)
-        {
-            byte[] derive_mac_key = DeriveTempKey(key_usage, SignatureKey);
-            return new HMACSHA1(DeriveAesKey(_key, derive_mac_key)).ComputeHash(data, 
-                offset, length).Take(AES_CHECKSUM_SIZE).ToArray();
-        }
+        private readonly KerberosEncryptionEngine _enc_engine;
+        private readonly KerberosChecksumEngine _chk_engine;
 
         private static string MakeSalt(string salt, string principal)
         {
@@ -560,201 +404,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return ret;
         }
-
-        private const int MD5_CHECKSUM_SIZE = 16;
-        private const int RC4_NONCE_LENGTH = 8;
-
-        private bool DecryptRC4(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
-        {
-            HMACMD5 hmac = new HMACMD5(_key);
-            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
-            hmac = new HMACMD5(key1);
-
-            byte[] checksum = new byte[MD5_CHECKSUM_SIZE];
-            Buffer.BlockCopy(cipher_text, 0, checksum, 0, checksum.Length);
-            byte[] key2 = hmac.ComputeHash(checksum);
-
-            byte[] result = ARC4.Transform(cipher_text, MD5_CHECKSUM_SIZE, cipher_text.Length - MD5_CHECKSUM_SIZE, key2);
-            hmac = new HMACMD5(key1);
-            byte[] calculated_checksum = hmac.ComputeHash(result);
-
-            plain_text = new byte[result.Length - RC4_NONCE_LENGTH];
-            Buffer.BlockCopy(result, RC4_NONCE_LENGTH, plain_text, 0, plain_text.Length);
-            return NtObjectUtils.EqualByteArray(checksum, calculated_checksum);
-        }
-
-        private byte[] EncryptRC4(byte[] plain_text, KerberosKeyUsage key_usage)
-        {
-            HMACMD5 hmac = new HMACMD5(_key);
-            byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
-            hmac = new HMACMD5(key1);
-
-            byte[] enc_buffer = new byte[RC4_NONCE_LENGTH];
-            new Random().NextBytes(enc_buffer);
-            Array.Resize(ref enc_buffer, RC4_NONCE_LENGTH + plain_text.Length);
-            Buffer.BlockCopy(plain_text, 0, enc_buffer, RC4_NONCE_LENGTH, plain_text.Length);
-
-            byte[] checksum = hmac.ComputeHash(enc_buffer);
-            byte[] key2 = hmac.ComputeHash(checksum);
-            enc_buffer = ARC4.Transform(enc_buffer, 0, enc_buffer.Length, key2);
-            byte[] cipher_text = new byte[enc_buffer.Length + MD5_CHECKSUM_SIZE];
-            Buffer.BlockCopy(checksum, 0, cipher_text, 0, MD5_CHECKSUM_SIZE);
-            Buffer.BlockCopy(enc_buffer, 0, cipher_text, MD5_CHECKSUM_SIZE, enc_buffer.Length);
-            return cipher_text;
-        }
-
-        private const int AES_BLOCK_SIZE = 16;
-        private const int AES_CHECKSUM_SIZE = 12;
-        private const int AES_CONFOUNDER_SIZE = 16;
-
-        private static void SwapEndBlocks(byte[] cipher_text)
-        {
-            if (cipher_text.Length < AES_BLOCK_SIZE * 2)
-            {
-                return;
-            }
-
-            byte[] block = new byte[AES_BLOCK_SIZE];
-            Array.Copy(cipher_text, cipher_text.Length - AES_BLOCK_SIZE, block, 0, AES_BLOCK_SIZE);
-            Array.Copy(cipher_text, cipher_text.Length - (2 * AES_BLOCK_SIZE), cipher_text, cipher_text.Length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-            Array.Copy(block, 0, cipher_text, cipher_text.Length - (2 * AES_BLOCK_SIZE), AES_BLOCK_SIZE);
-        }
-
-        private static int AlignBlock(int size)
-        {
-            return (size + (AES_BLOCK_SIZE - 1)) & ~(AES_BLOCK_SIZE - 1);
-        }
-
-        private byte[] DecryptAESBlock(byte[] key, byte[] cipher_text, int offset)
-        {
-            AesManaged aes = new AesManaged
-            {
-                Mode = CipherMode.ECB,
-                Padding = PaddingMode.None,
-                Key = key,
-                IV = new byte[16]
-            };
-            var dec = aes.CreateDecryptor();
-            byte[] block = new byte[AES_BLOCK_SIZE];
-            dec.TransformBlock(cipher_text, offset, AES_BLOCK_SIZE, block, 0);
-            return block;
-        }
-
-        private byte[] EncryptAESBlock(byte[] key, byte[] cipher_text, int offset)
-        {
-            AesManaged aes = new AesManaged
-            {
-                Mode = CipherMode.ECB,
-                Padding = PaddingMode.None,
-                Key = key,
-                IV = new byte[16]
-            };
-            var enc = aes.CreateEncryptor();
-            byte[] block = new byte[AES_BLOCK_SIZE];
-            enc.TransformBlock(cipher_text, offset, AES_BLOCK_SIZE, block, 0);
-            return block;
-        }
-
-        private const byte EncryptionKey = 0xAA;
-        private const byte VerificationKey = 0x55;
-        private const byte SignatureKey = 0x99;
-
-        private static byte[] DeriveAesKey(string password, string salt, int iterations, int key_size)
-        {
-            Rfc2898DeriveBytes pbkdf = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(password), Encoding.UTF8.GetBytes(salt), iterations);
-            return DeriveAesKey(pbkdf.GetBytes(key_size), NFold.Compute("kerberos", 16));
-        }
-
-        private byte[] DeriveTempKey(KerberosKeyUsage key_usage, byte key_type)
-        {
-            byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
-            Array.Resize(ref r, 5);
-            r[4] = key_type;
-            return NFold.Compute(r, 16);
-        }
-
-        private bool DecryptAES(byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
-        {
-            byte[] derive_enc_key = DeriveTempKey(key_usage, EncryptionKey);
-            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
-
-            byte[] new_key = DeriveAesKey(_key, derive_enc_key);
-
-            int cipher_text_length = cipher_text.Length - AES_CHECKSUM_SIZE;
-            int remaining = AES_BLOCK_SIZE - (cipher_text_length % AES_BLOCK_SIZE);
-            plain_text = new byte[AlignBlock(cipher_text_length)];
-            Array.Copy(cipher_text, plain_text, cipher_text_length);
-
-            if (remaining > 0 && remaining != AES_BLOCK_SIZE)
-            {
-                byte[] decrypted_block = DecryptAESBlock(new_key, plain_text, plain_text.Length - (AES_BLOCK_SIZE * 2));
-                Array.Copy(decrypted_block, AES_BLOCK_SIZE - remaining, plain_text, plain_text.Length - remaining, remaining);
-            }
-
-            SwapEndBlocks(plain_text);
-
-            AesManaged aes = new AesManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                Key = new_key,
-                IV = new byte[16]
-            };
-            var dec = aes.CreateDecryptor();
-            dec.TransformBlock(plain_text, 0, plain_text.Length, plain_text, 0);
-
-            // Obviously not a secure check. This is for information only.
-            HMACSHA1 hmac = new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
-            byte[] hash = hmac.ComputeHash(plain_text, 0, cipher_text_length);
-            for (int i = 0; i < AES_CHECKSUM_SIZE; ++i)
-            {
-                if (hash[i] != cipher_text[cipher_text_length + i])
-                    return false;
-            }
-            Array.Copy(plain_text, AES_CONFOUNDER_SIZE, plain_text, 0, cipher_text_length - AES_CONFOUNDER_SIZE);
-            Array.Resize(ref plain_text, cipher_text_length - AES_CONFOUNDER_SIZE);
-            return true;
-        }
-
-        private byte[] EncryptAES(byte[] plain_text, KerberosKeyUsage key_usage)
-        {
-            byte[] derive_enc_key = DeriveTempKey(key_usage, EncryptionKey);
-            byte[] derive_mac_key = DeriveTempKey(key_usage, VerificationKey);
-
-            byte[] cipher_text = new byte[AES_CONFOUNDER_SIZE];
-            new Random().NextBytes(cipher_text);
-            int plain_text_length = plain_text.Length + AES_CONFOUNDER_SIZE;
-
-            HMACSHA1 hmac = new HMACSHA1(DeriveAesKey(_key, derive_mac_key));
-            Array.Resize(ref cipher_text, AlignBlock(plain_text_length));
-            Array.Copy(plain_text, 0, cipher_text, AES_CONFOUNDER_SIZE, plain_text.Length);
-            byte[] hash = hmac.ComputeHash(cipher_text, 0, plain_text_length);
-
-            byte[] new_key = DeriveAesKey(_key, derive_enc_key);
-            AesManaged aes = new AesManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                Key = new_key,
-                IV = new byte[16]
-            };
-            var enc = aes.CreateEncryptor();
-            enc.TransformBlock(cipher_text, 0, cipher_text.Length, cipher_text, 0);
-
-            SwapEndBlocks(cipher_text);
-
-            int remaining = AES_BLOCK_SIZE - (plain_text_length % AES_BLOCK_SIZE);
-            if (remaining > 0 && remaining != AES_BLOCK_SIZE)
-            {
-                byte[] encrypted_block = EncryptAESBlock(new_key, cipher_text, cipher_text.Length - (AES_BLOCK_SIZE * 2));
-                Array.Copy(encrypted_block, AES_BLOCK_SIZE - remaining, cipher_text, cipher_text.Length - remaining, remaining);
-            }
-
-            Array.Resize(ref cipher_text, plain_text_length + AES_CHECKSUM_SIZE);
-            Buffer.BlockCopy(hash, 0, cipher_text, cipher_text.Length - AES_CHECKSUM_SIZE, AES_CHECKSUM_SIZE);
-            return cipher_text;
-        }
-
         #endregion
     }
 }
