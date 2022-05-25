@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
@@ -178,6 +179,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         public static KerberosEncryptionEngine Get(KerberosEncryptionType encryption_type)
         {
             return Get(encryption_type, true);
+        }
+
+        /// <summary>
+        /// Get the encryption algorithms supported on this system.
+        /// </summary>
+        /// <returns>The list of supported encryption systems.</returns>
+        public static IReadOnlyCollection<KerberosEncryptionEngine> GetSystemSupported()
+        {
+            var types = KerberosEncryptionEngineNative.GetSupportedTypes();
+            if (types.Length == 0)
+                return _engines.Values.ToList().AsReadOnly();
+            return types.Select(t => Get(t, false)).ToList().AsReadOnly();
         }
 
         internal static KerberosEncryptionEngine Get(KerberosEncryptionType encryption_type, bool throw_on_unsupported)

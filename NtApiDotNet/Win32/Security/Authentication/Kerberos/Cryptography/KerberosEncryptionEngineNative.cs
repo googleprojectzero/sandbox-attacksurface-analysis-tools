@@ -109,5 +109,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
                 throw new ArgumentException("Unsupported encryption algorithm.", nameof(encryption_type));
             return new KerberosEncryptionEngineUnsupported(encryption_type);
         }
+
+        internal static KerberosEncryptionType[] GetSupportedTypes()
+        {
+            try
+            {
+                int count = 0;
+                if (!SecurityNativeMethods.CDBuildIntegrityVect(ref count, null).IsSuccess())
+                    return new KerberosEncryptionType[0];
+                var ret = new KerberosEncryptionType[count];
+                if (!SecurityNativeMethods.CDBuildIntegrityVect(ref count, ret).IsSuccess())
+                    return new KerberosEncryptionType[0];
+                return ret;
+            }
+            catch (EntryPointNotFoundException)
+            {
+            }
+            catch (DllNotFoundException)
+            {
+            }
+            return new KerberosEncryptionType[0];
+        }
     }
 }

@@ -1238,6 +1238,9 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus CDLocateCheckSum(Authentication.Kerberos.KerberosChecksumType type, out IntPtr chk_engine);
 
+        [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CDBuildIntegrityVect(ref int count, [Out] Authentication.Kerberos.KerberosEncryptionType[] encryption_types);
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;
