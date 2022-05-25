@@ -177,12 +177,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         /// <exception cref="ArgumentException">Thrown if unknown encryption type.</exception>
         public static KerberosEncryptionEngine Get(KerberosEncryptionType encryption_type)
         {
+            return Get(encryption_type, true);
+        }
+
+        internal static KerberosEncryptionEngine Get(KerberosEncryptionType encryption_type, bool throw_on_unsupported)
+        {
             InitDefaultEngines();
             if (_engines.TryGetValue(encryption_type, out KerberosEncryptionEngine engine))
                 return engine;
 
-            return AddEngine(KerberosEncryptionEngineNative.GetNative(encryption_type));
+            return AddEngine(KerberosEncryptionEngineNative.GetNative(encryption_type, throw_on_unsupported));
         }
+
         #endregion
     }
 }

@@ -107,8 +107,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosAuthenticationKey(KerberosEncryptionType key_encryption, byte[] key,
             string realm, KerberosPrincipalName name, DateTime timestamp, uint version)
         {
-            _enc_engine = KerberosEncryptionEngine.Get(key_encryption);
-            _chk_engine = KerberosChecksumEngine.Get(_enc_engine.ChecksumType);
+            _enc_engine = KerberosEncryptionEngine.Get(key_encryption, false);
+            _chk_engine = KerberosChecksumEngine.Get(_enc_engine.ChecksumType, false);
             _key = key;
             Name = name;
             Realm = realm;
@@ -201,7 +201,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentNullException(nameof(principal));
             }
 
-            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption);
+            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption, false);
             byte[] key = enc_engine.DeriveKey(password, iterations, MakeSalt(salt, principal));
             return new KerberosAuthenticationKey(key_encryption, key, name_type, principal, DateTime.Now, version);
         }
@@ -213,7 +213,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The generated key.</returns>
         public static KerberosAuthenticationKey GenerateKey(KerberosEncryptionType key_encryption)
         {
-            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption);
+            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption, false);
             byte[] key = enc_engine.GenerateKey();
             return new KerberosAuthenticationKey(key_encryption, key, KerberosNameType.UNKNOWN, string.Empty, DateTime.Now, 0);
         }

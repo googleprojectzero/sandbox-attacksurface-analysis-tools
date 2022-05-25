@@ -144,10 +144,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         /// <exception cref="ArgumentException">Thrown if unknown checksum type.</exception>
         public static KerberosChecksumEngine Get(KerberosChecksumType checksum_type)
         {
+            return Get(checksum_type, true);
+        }
+
+        internal static KerberosChecksumEngine Get(KerberosChecksumType checksum_type, bool throw_on_unsupported)
+        {
             InitDefaultEngines();
             if (_engines.TryGetValue(checksum_type, out KerberosChecksumEngine engine))
                 return engine;
-            return AddEngine(KerberosChecksumEngineNative.GetNative(checksum_type));
+            return AddEngine(KerberosChecksumEngineNative.GetNative(checksum_type, throw_on_unsupported));
         }
         #endregion
     }

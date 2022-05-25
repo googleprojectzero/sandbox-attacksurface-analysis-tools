@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         private readonly KERB_ECRYPT _engine;
 
         private KerberosEncryptionEngineNative(KERB_ECRYPT engine)
-            : base(engine.Type, engine.ChecksumType, KerberosChecksumEngineNative.GetNative(engine.ChecksumType).ChecksumSize,
+            : base(engine.Type, engine.ChecksumType, KerberosChecksumEngine.Get(engine.ChecksumType, false).ChecksumSize,
                   engine.AdditionalEncryptionSize, engine.BlockSize, engine.KeySize)
         {
             _engine = engine;
@@ -92,7 +92,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             }
         }
 
-        internal static KerberosEncryptionEngineNative GetNative(KerberosEncryptionType encryption_type)
+        internal static KerberosEncryptionEngine GetNative(KerberosEncryptionType encryption_type, bool throw_on_unsupported)
         {
             try
             {
@@ -105,7 +105,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             catch (DllNotFoundException)
             {
             }
-            throw new ArgumentException("Unsupported encryption algorithm.", nameof(encryption_type));
+            if (throw_on_unsupported)
+                throw new ArgumentException("Unsupported encryption algorithm.", nameof(encryption_type));
+            return new KerberosEncryptionEngineUnsupported(encryption_type);
         }
     }
 }

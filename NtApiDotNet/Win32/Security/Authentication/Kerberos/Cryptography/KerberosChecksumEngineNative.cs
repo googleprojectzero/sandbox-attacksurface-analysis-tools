@@ -49,7 +49,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             }
         }
 
-        internal static KerberosChecksumEngineNative GetNative(KerberosChecksumType checksum_type)
+        internal static KerberosChecksumEngine GetNative(KerberosChecksumType checksum_type, bool throw_on_unsupported)
         {
             try
             {
@@ -62,7 +62,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             catch (DllNotFoundException)
             {
             }
-            throw new ArgumentException("Unsupported checksum algorithm.", nameof(checksum_type));
+            if (throw_on_unsupported)
+                throw new ArgumentException("Unsupported checksum algorithm.", nameof(checksum_type));
+            return new KerberosChecksumEngineUnsupported(checksum_type);
         }
     }
 }
