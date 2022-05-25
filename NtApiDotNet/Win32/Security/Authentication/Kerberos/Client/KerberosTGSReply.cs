@@ -19,7 +19,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// </summary>
     public sealed class KerberosTGSReply : KerberosKDCReply
     {
-        internal KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part) 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="token">The base authentication token.</param>
+        /// <param name="enc_part">The decrypted KDC reply part.</param>
+        public KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part) 
             : base(token, enc_part)
         {
         }
