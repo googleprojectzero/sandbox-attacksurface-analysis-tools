@@ -191,11 +191,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             {
                 ServerName = new KerberosPrincipalName(KerberosNameType.SRV_INST, "kadmin/changepw")
             };
-            var reply = Authenticate(request);
-
-            return ChangePassword(reply.ToExternalTicket(), 1, Encoding.UTF8.GetBytes(new_password));
+            return ChangePassword(Authenticate(request).ToExternalTicket(), new_password);
         }
 
+        /// <summary>
+        /// Change a user's password.
+        /// </summary>
+        /// <param name="ticket">The user's ticket for kadmin/changepw.</param>
+        /// <param name="new_password">The user's new password.</param>
+        /// <returns>The status of the operation.</returns>
+        public KerberosChangePasswordStatus ChangePassword(KerberosExternalTicket ticket, string new_password)
+        {
+            return ChangePassword(ticket, 1, Encoding.UTF8.GetBytes(new_password));
+        }
 
         /// <summary>
         /// Set a user's password.
