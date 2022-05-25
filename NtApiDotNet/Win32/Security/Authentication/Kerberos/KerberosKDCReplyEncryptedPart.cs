@@ -94,6 +94,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public IReadOnlyList<KerberosPreAuthenticationData> EncryptedPreAuthentication { get; private set; }
 
+        /// <summary>
+        /// Parse a KDC reply part.
+        /// </summary>
+        /// <param name="data">The KDC reply ASN.1 data.</param>
+        /// <returns>The parsed KDC reply part.</returns>
+        public static KerberosKDCReplyEncryptedPart Parse(byte[] data)
+        {
+            if (!TryParse(data, out KerberosKDCReplyEncryptedPart enc_part))
+            {
+                throw new InvalidDataException("Invalid KDC reply part.");
+            }
+            return enc_part;
+        }
+
         private KerberosKDCReplyEncryptedPart(byte[] data) 
             : base(KerberosEncryptionType.NULL, null, data)
         {
