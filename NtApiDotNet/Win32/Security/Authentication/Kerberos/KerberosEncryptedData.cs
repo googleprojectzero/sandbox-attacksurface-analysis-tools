@@ -58,6 +58,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             return new KerberosEncryptedData(encryption_type, key_version, cipher_text);
         }
+
+        /// <summary>
+        /// Parse a DER encoded Kerberos EncryptedData object.
+        /// </summary>
+        /// <param name="data">The DER encoded object.</param>
+        /// <returns>The encrypted data.</returns>
+        public static KerberosEncryptedData Parse(byte[] data)
+        {
+            DERValue[] values = DERParser.ParseData(data, 0);
+            if (values.Length != 1)
+                throw new InvalidDataException("Invalid encrypted data object.");
+            return Parse(values[0], data);
+        }
         #endregion
 
         #region Public Methods

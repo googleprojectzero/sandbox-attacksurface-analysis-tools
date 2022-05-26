@@ -99,7 +99,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="data">The KDC reply ASN.1 data.</param>
         /// <returns>The parsed KDC reply part.</returns>
-        public static KerberosKDCReplyEncryptedPart Parse(byte[] data)
+        new public static KerberosKDCReplyEncryptedPart Parse(byte[] data)
         {
             if (!TryParse(data, out KerberosKDCReplyEncryptedPart enc_part))
             {
