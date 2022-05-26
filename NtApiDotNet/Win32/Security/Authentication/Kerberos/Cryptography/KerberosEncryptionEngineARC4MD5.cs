@@ -89,7 +89,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             byte[] key1 = hmac.ComputeHash(BitConverter.GetBytes((int)key_usage));
             hmac = new HMACMD5(key1);
 
-            byte[] checksum = new byte[KerberosEncryptionUtils.MD5_CHECKSUM_SIZE];
+            byte[] checksum = new byte[MD5_CHECKSUM_SIZE];
             Buffer.BlockCopy(cipher_text, 0, checksum, 0, checksum.Length);
             byte[] key2 = hmac.ComputeHash(checksum);
 
