@@ -23,6 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// </summary>
     public sealed class KerberosASRequest : KerberosKDCRequest
     {
+        #region Public Properties
         /// <summary>
         /// The key for the principal.
         /// </summary>
@@ -37,6 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Specify name of the service to request.
         /// </summary>
         public KerberosPrincipalName ServerName { get; set; }
+        #endregion
 
         #region Constructors
         /// <summary>
@@ -55,27 +57,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
         #endregion
 
-        private void Validate()
-        {
-            if (Key is null)
-            {
-                throw new ArgumentNullException(nameof(Key));
-            }
-            if (string.IsNullOrEmpty(Realm))
-            {
-                throw new ArgumentException($"{nameof(Realm)} must not be empty.");
-            }
-            if (TillTime is null)
-            {
-                throw new ArgumentNullException(nameof(TillTime));
-            }
-            if (ClientName is null)
-            {
-                throw new ArgumentNullException(nameof(ClientName));
-            }
-        }
-
-        internal override KerberosKDCRequestBuilder ToBuilder()
+        #region Public Methods
+        /// <summary>
+        /// Convert the request to a builder.
+        /// </summary>
+        /// <returns>The builder.</returns>
+        public override KerberosKDCRequestBuilder ToBuilder()
         {
             Validate();
 
@@ -111,5 +98,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
             return ret;
         }
+        #endregion
+
+        #region Private Members
+        private void Validate()
+        {
+            if (Key is null)
+            {
+                throw new ArgumentNullException(nameof(Key));
+            }
+            if (string.IsNullOrEmpty(Realm))
+            {
+                throw new ArgumentException($"{nameof(Realm)} must not be empty.");
+            }
+            if (TillTime is null)
+            {
+                throw new ArgumentNullException(nameof(TillTime));
+            }
+            if (ClientName is null)
+            {
+                throw new ArgumentNullException(nameof(ClientName));
+            }
+        }
+        #endregion
     }
 }

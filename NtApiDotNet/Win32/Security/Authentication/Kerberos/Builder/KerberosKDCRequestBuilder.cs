@@ -164,18 +164,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 RenewTill, Addresses, AuthorizationData, AdditionalTickets);
         }
 
-        private protected KerberosKDCRequestBuilder(KerberosMessageType type)
-        {
-            MessageType = type;
-        }
-
-        internal byte[] EncodeBody()
+        /// <summary>
+        /// Encode the body of the request. Commonly used for checksuming.
+        /// </summary>
+        /// <returns>The encoded body.</returns>
+        public byte[] EncodeBody()
         {
             DERBuilder builder = new DERBuilder();
             KerberosKDCRequestAuthenticationToken.EncodeBody(builder, Realm, TillTime, Nonce,
                 EncryptionTypes, KDCOptions, ClientName, ServerName,
                 FromTime, RenewTill, Addresses, AuthorizationData, AdditionalTickets);
             return builder.ToArray();
+        }
+
+        private protected KerberosKDCRequestBuilder(KerberosMessageType type)
+        {
+            MessageType = type;
         }
     }
 }

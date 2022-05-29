@@ -104,6 +104,43 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 AdditionalTickets = new List<KerberosTicket>();
             AdditionalTickets.Add(ticket);
         }
+
+        /// <summary>
+        /// Convert the request to a builder.
+        /// </summary>
+        /// <returns>The builder.</returns>
+        public override KerberosKDCRequestBuilder ToBuilder()
+        {
+            Validate();
+
+            List<KerberosEncryptionType> encryption_types;
+            if (EncryptionTypes.Count > 0)
+            {
+                encryption_types = EncryptionTypes;
+            }
+            else
+            {
+                encryption_types = new List<KerberosEncryptionType>()
+                {
+                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
+                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
+                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
+                };
+            }
+
+            return new KerberosTGSRequestBuilder
+            {
+                ClientName = ClientName,
+                EncryptionTypes = encryption_types,
+                KDCOptions = KDCOptions,
+                Realm = Realm,
+                ServerName = ServerName,
+                Nonce = KerberosBuilderUtils.GetRandomNonce(),
+                TillTime = TillTime,
+                AdditionalTickets = AdditionalTickets?.ToList(),
+                AuthorizationData = GetAuthorizationData(),
+            };
+        }
         #endregion
 
         #region Constructors
@@ -259,40 +296,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             builder.WriteSequence(AuthorizationData);
             return KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
         }
-
-        internal override KerberosKDCRequestBuilder ToBuilder()
-        {
-            Validate();
-
-            List<KerberosEncryptionType> encryption_types;
-            if (EncryptionTypes.Count > 0)
-            {
-                encryption_types = EncryptionTypes;
-            }
-            else
-            {
-                encryption_types = new List<KerberosEncryptionType>()
-                {
-                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
-                };
-            }
-
-            return new KerberosTGSRequestBuilder
-            {
-                ClientName = ClientName,
-                EncryptionTypes = encryption_types,
-                KDCOptions = KDCOptions,
-                Realm = Realm,
-                ServerName = ServerName,
-                Nonce = KerberosBuilderUtils.GetRandomNonce(),
-                TillTime = TillTime,
-                AdditionalTickets = AdditionalTickets?.ToList(),
-                AuthorizationData = GetAuthorizationData(),
-            };
-        }
-
         #endregion
 
         #region Private Members

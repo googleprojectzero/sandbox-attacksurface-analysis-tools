@@ -136,8 +136,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
         #endregion
 
-        #region Internal Members
-        internal abstract KerberosKDCRequestBuilder ToBuilder();
+        #region Public Methods
+        /// <summary>
+        /// Convert the request to a builder.
+        /// </summary>
+        /// <returns>The builder.</returns>
+        public abstract KerberosKDCRequestBuilder ToBuilder();
         #endregion
     }
 }
