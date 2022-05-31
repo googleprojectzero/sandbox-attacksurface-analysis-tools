@@ -1241,6 +1241,12 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus CDBuildIntegrityVect(ref int count, [Out] Authentication.Kerberos.KerberosEncryptionType[] encryption_types);
 
+        [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CDBuildVect(out int count, [Out] Authentication.Kerberos.KerberosEncryptionType[] encryption_types);
+
+        [DllImport("cryptdll.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CDGetIntegrityVect(out uint supported_encryption_types);
+
         internal static bool IsSuccess(this SecStatusCode result)
         {
             return (int)result >= 0;

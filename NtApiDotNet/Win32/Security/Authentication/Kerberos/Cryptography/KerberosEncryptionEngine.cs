@@ -134,6 +134,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         /// Get the checksum type associated with the encryption algorithm.
         /// </summary>
         public KerberosChecksumType ChecksumType { get; }
+
+        /// <summary>
+        /// The name of the encryption type.
+        /// </summary>
+        public string Name { get; }
         #endregion
 
         #region Constructors
@@ -145,10 +150,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         /// <param name="checksum_size">Size of the checksum.</param>
         /// <param name="additional_encryption_size">Size of any additional encryption artifacts.</param>
         /// <param name="block_size">The size of an encrypted block.</param>
-        /// <param name="key_size"></param>
-        protected KerberosEncryptionEngine(KerberosEncryptionType encryption_type, 
+        /// <param name="key_size">The size of the key.</param>
+        /// <param name="name">The name of the encryption type.</param>
+        protected KerberosEncryptionEngine(KerberosEncryptionType encryption_type,
             KerberosChecksumType checksum_type, int checksum_size, int additional_encryption_size,
-            int block_size, int key_size)
+            int block_size, int key_size, string name = null)
         {
             EncryptionType = encryption_type;
             ChecksumType = checksum_type;
@@ -156,6 +162,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             AdditionalEncryptionSize = additional_encryption_size;
             BlockSize = block_size;
             KeySize = key_size;
+            Name = name ?? encryption_type.ToString();
         }
         #endregion
 
@@ -188,6 +195,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         public static IReadOnlyCollection<KerberosEncryptionEngine> GetSystemSupported()
         {
             var types = KerberosEncryptionEngineNative.GetSupportedTypes();
+            if (types.Length == 0)
+                return _engines.Values.ToList().AsReadOnly();
+            return types.Select(t => Get(t, false)).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get all the encryption algorithms on this system.
+        /// </summary>
+        /// <returns>The list of all encryption systems.</returns>
+        public static IReadOnlyCollection<KerberosEncryptionEngine> GetAll()
+        {
+            var types = KerberosEncryptionEngineNative.GetAllTypes();
             if (types.Length == 0)
                 return _engines.Values.ToList().AsReadOnly();
             return types.Select(t => Get(t, false)).ToList().AsReadOnly();

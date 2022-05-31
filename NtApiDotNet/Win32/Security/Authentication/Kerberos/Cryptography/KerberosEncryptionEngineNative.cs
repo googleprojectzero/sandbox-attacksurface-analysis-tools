@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
 
         private KerberosEncryptionEngineNative(KERB_ECRYPT engine)
             : base(engine.Type, engine.ChecksumType, KerberosChecksumEngine.Get(engine.ChecksumType, false).ChecksumSize,
-                  engine.AdditionalEncryptionSize, engine.BlockSize, engine.KeySize)
+                  engine.AdditionalEncryptionSize, engine.BlockSize, engine.KeySize, engine.AlgName)
         {
             _engine = engine;
         }
@@ -114,11 +114,34 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         {
             try
             {
+                // Refresh the enabled types.
+                SecurityNativeMethods.CDGetIntegrityVect(out uint _);
+
                 int count = 0;
                 if (!SecurityNativeMethods.CDBuildIntegrityVect(ref count, null).IsSuccess())
                     return new KerberosEncryptionType[0];
                 var ret = new KerberosEncryptionType[count];
                 if (!SecurityNativeMethods.CDBuildIntegrityVect(ref count, ret).IsSuccess())
+                    return new KerberosEncryptionType[0];
+                return ret;
+            }
+            catch (EntryPointNotFoundException)
+            {
+            }
+            catch (DllNotFoundException)
+            {
+            }
+            return new KerberosEncryptionType[0];
+        }
+
+        internal static KerberosEncryptionType[] GetAllTypes()
+        {
+            try
+            {
+                if (!SecurityNativeMethods.CDBuildVect(out int count, null).IsSuccess())
+                    return new KerberosEncryptionType[0];
+                var ret = new KerberosEncryptionType[count];
+                if (!SecurityNativeMethods.CDBuildVect(out count, ret).IsSuccess())
                     return new KerberosEncryptionType[0];
                 return ret;
             }
