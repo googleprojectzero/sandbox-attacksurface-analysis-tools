@@ -669,12 +669,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Set a KDC pin for this process.
         /// </summary>
-        /// <param name="domain">The domain name.</param>
+        /// <param name="realm">The KDC realm name.</param>
         /// <param name="kdc_address">The KDC address.</param>
         /// <param name="flags">Flags.</param>
-        public static void PinKdc(string domain, string kdc_address, int flags)
+        public static void PinKdc(string realm, string kdc_address, int flags)
         {
-            PinKdc(domain, kdc_address, flags, true);
+            PinKdc(realm, kdc_address, flags, true);
         }
 
         /// <summary>
