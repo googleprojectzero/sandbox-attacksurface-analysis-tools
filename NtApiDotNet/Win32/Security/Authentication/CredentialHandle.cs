@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -133,7 +134,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         /// <param name="proxy_server">The proxy server to use.</param>
         /// <param name="force_proxy">True to force the proxy.</param>
-        public void SetKdcProxy(string proxy_server, bool force_proxy = false)
+        /// <param name="credentials">Specify the client TLS credentials.</param>
+        /// <remarks>The credentials should represent a marshaled certificate from the user's certificate store.</remarks>
+        public void SetKdcProxy(string proxy_server, bool force_proxy = false, UserCredentials credentials = null)
         {
             if (proxy_server is null)
             {
@@ -141,18 +144,35 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
 
             byte[] proxy = Encoding.Unicode.GetBytes(proxy_server);
-            using (var buffer = new SafeStructureInOutBuffer<SecPkgCredentials_KdcProxySettings>(proxy.Length, true))
+            byte[] creds = credentials?.ToArray() ?? Array.Empty<byte>();
+            using (var buffer = new SafeStructureInOutBuffer<SecPkgCredentials_KdcProxySettings>(proxy.Length + creds.Length, true))
             {
                 buffer.Data.WriteBytes(proxy);
+                buffer.Data.WriteBytes((ulong)proxy.Length, creds);
+
                 buffer.Result = new SecPkgCredentials_KdcProxySettings()
                 {
                     Version = SecPkgCredentials_KdcProxySettings.KDC_PROXY_SETTINGS_V1,
                     Flags = force_proxy ? SecPkgCredentials_KdcProxySettings.KDC_PROXY_SETTINGS_FLAGS_FORCEPROXY : 0,
                     ProxyServerLength = (ushort)proxy.Length,
-                    ProxyServerOffset = (ushort)buffer.DataOffset
+                    ProxyServerOffset = (ushort)buffer.DataOffset,
+                    ClientTlsCredLength = (ushort)creds.Length,
+                    ClientTlsCredOffset = (ushort)(creds.Length > 0 ? buffer.DataOffset + proxy.Length : 0)
                 };
                 SetAttribute(SECPKG_CRED_ATTR.SECPKG_CRED_ATTR_KDC_PROXY_SETTINGS, buffer);
             }
+        }
+
+        /// <summary>
+        /// Set the KDC proxy.
+        /// </summary>
+        /// <param name="proxy_server">The proxy server to use.</param>
+        /// <param name="force_proxy">True to force the proxy.</param>
+        /// <param name="certificate">Specify the client TLS certificate.</param>
+        /// <remarks>The certificate must be in the user's personal certificate store.</remarks>
+        public void SetKdcProxy(string proxy_server, X509Certificate certificate, bool force_proxy = false)
+        {
+            SetKdcProxy(proxy_server, force_proxy, new UserCredentials(certificate));
         }
 
         /// <summary>
