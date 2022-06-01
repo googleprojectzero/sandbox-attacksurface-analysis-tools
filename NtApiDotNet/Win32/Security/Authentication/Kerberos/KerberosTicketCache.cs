@@ -632,5 +632,83 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             SubmitTicket(ticket, logon_id, key, true);
         }
+
+        /// <summary>
+        /// Set a KDC pin for this process.
+        /// </summary>
+        /// <param name="realm">The KDC realm name.</param>
+        /// <param name="kdc_address">The KDC address.</param>
+        /// <param name="flags">Flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus PinKdc(string realm, string kdc_address, int flags, bool throw_on_error)
+        {
+            var builder = new KERB_PIN_KDC_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPinKdcMessage,
+                Flags = flags
+            }.ToBuilder();
+
+            builder.AddUnicodeString(nameof(KERB_PIN_KDC_REQUEST.Realm), realm, true);
+            builder.AddUnicodeString(nameof(KERB_PIN_KDC_REQUEST.KdcAddress), kdc_address, true);
+
+            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!handle.IsSuccess)
+                    return handle.Status;
+                using (var buffer = builder.ToBuffer())
+                {
+                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        return result.Result.Status.ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set a KDC pin for this process.
+        /// </summary>
+        /// <param name="domain">The domain name.</param>
+        /// <param name="kdc_address">The KDC address.</param>
+        /// <param name="flags">Flags.</param>
+        public static void PinKdc(string domain, string kdc_address, int flags)
+        {
+            PinKdc(domain, kdc_address, flags, true);
+        }
+
+        /// <summary>
+        /// Unpin all KDCs for this process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus UnpinAllKdcs(bool throw_on_error)
+        {
+            var builder = new KERB_UNPIN_ALL_KDCS_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbUnpinAllKdcsMessage
+            }.ToBuilder();
+
+            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!handle.IsSuccess)
+                    return handle.Status;
+                using (var buffer = builder.ToBuffer())
+                {
+                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    {
+                        return result.Result.Status.ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Unpin all KDCs for this process.
+        /// </summary>
+        public static void UnpinAllKdcs()
+        {
+            UnpinAllKdcs(true);
+        }
     }
 }
