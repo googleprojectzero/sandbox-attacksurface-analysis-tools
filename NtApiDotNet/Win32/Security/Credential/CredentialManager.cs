@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Credential
@@ -211,6 +212,16 @@ namespace NtApiDotNet.Win32.Security.Credential
         public static CredentialMarshalBase UnmarshalCredential(string credential)
         {
             return UnmarshalCredential(credential, true).Result;
+        }
+
+        /// <summary>
+        /// Marshal a certificate to a string.
+        /// </summary>
+        /// <param name="certificate">The certificate.</param>
+        /// <returns>The marshalled certificate.</returns>
+        public static string MarshalCertificate(X509Certificate certificate)
+        {
+            return MarshalCredential(new CredentialMarshalCertificate(certificate));
         }
 
         /// <summary>

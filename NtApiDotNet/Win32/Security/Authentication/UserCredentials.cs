@@ -13,10 +13,12 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -100,6 +102,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public UserCredentials()
         {
         }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="certificate">A certificate to use.</param>
+        /// <param name="pin">Optional PIN for the certificate's private key.</param>
+        /// <remarks>This marshals the certificate's thumbprint into the username field. Note that the certificate must be
+        /// in the current user's personal store for most services to find it.</remarks>
+        public UserCredentials(X509Certificate certificate, SecureString pin = null) 
+            : this(CredentialManager.MarshalCertificate(certificate), null, pin)
+        {
+        }
+
         #endregion
 
         #region Public Methods
