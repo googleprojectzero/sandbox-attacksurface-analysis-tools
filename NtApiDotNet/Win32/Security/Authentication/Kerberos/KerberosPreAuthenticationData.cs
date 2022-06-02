@@ -65,6 +65,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return KerberosPreAuthenticationDataTGSRequest.Parse(data);
                 case KerberosPreAuthenticationType.PA_PAC_OPTIONS:
                     return KerberosPreAuthenticationPACOptions.Parse(data);
+                case KerberosPreAuthenticationType.PA_ENC_TIMESTAMP:
+                    return KerberosPreAuthenticationDataEncTimestamp.Parse(data);
                 default:
                     return new KerberosPreAuthenticationDataUnknown(type, data);
             }

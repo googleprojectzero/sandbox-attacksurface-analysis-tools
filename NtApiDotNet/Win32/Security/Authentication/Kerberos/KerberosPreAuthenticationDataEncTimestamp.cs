@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 
@@ -66,6 +67,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             var enc_data = KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
             return new KerberosPreAuthenticationDataEncTimestamp(enc_data.Encrypt(key, KerberosKeyUsage.AsReqPaEncTimestamp, key_version));
+        }
+
+        internal static KerberosPreAuthenticationDataEncTimestamp Parse(byte[] data)
+        {
+            return new KerberosPreAuthenticationDataEncTimestamp(KerberosEncryptedData.Parse(data));
         }
 
         private protected override byte[] GetData()
