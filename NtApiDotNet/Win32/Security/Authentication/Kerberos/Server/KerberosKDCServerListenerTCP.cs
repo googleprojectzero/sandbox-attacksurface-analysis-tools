@@ -113,6 +113,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
                     int length = await stm.ReadInt32Async();
                     byte[] data = await stm.ReadBytesAsync(length);
                     data = handle_request(data);
+                    await stm.WriteInt32Async(data.Length);
                     await stm.WriteBytesAsync(data);
                 }
             }
