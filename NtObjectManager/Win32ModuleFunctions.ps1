@@ -369,6 +369,7 @@ function Get-EmbeddedAuthenticodeSignature {
         }
 
         $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($path)
+        $all_certs = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetCertificates($path) | Write-Output
         $ppl = $false
         $pp = $false
         $tcb = $false
@@ -398,6 +399,7 @@ function Get-EmbeddedAuthenticodeSignature {
         $props = @{
             Path                  = $Path;
             Certificate           = $cert;
+            AllCertificates       = $all_certs;
             ProtectedProcess      = $pp;
             ProtectedProcessLight = $ppl;
             Tcb                   = $tcb;

@@ -361,6 +361,9 @@
     <None Include="SocketFunctions.ps1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="TypeExtensions.ps1xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="UtilityFunctions.ps1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

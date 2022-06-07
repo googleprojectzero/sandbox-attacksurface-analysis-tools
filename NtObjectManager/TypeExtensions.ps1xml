@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Types>
+  <Type>
+    <Name>System.Security.Cryptography.X509Certificates.X509Certificate</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>ToBeSignedHash</Name>
+        <GetScriptBlock>
+            [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetToBeSignedHashString($this)
+        </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+</Types>

@@ -47,6 +47,9 @@ CLRVersion = '4.0'
 # Format files (.ps1xml) to be loaded when importing this module
 FormatsToProcess = 'Formatters.ps1xml'
 
+# Type files (.ps1xml) to be loaded when importing this module
+TypesToProcess = 'TypeExtensions.ps1xml'
+
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Set-NtTokenIntegrityLevel', 'Get-NtProcessMitigations', 'New-NtKernelCrashDump', 'New-NtObjectAttributes',
