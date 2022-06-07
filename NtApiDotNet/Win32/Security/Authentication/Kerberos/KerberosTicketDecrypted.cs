@@ -55,6 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public sealed class KerberosTicketDecrypted : KerberosTicket
     {
+        #region Public Properties
         /// <summary>
         /// Ticket flags.
         /// </summary>
@@ -99,7 +100,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// List of authorization data.
         /// </summary>
         public IReadOnlyList<KerberosAuthorizationData> AuthorizationData { get; private set; }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Create a builder object from this ticket.
         /// </summary>
@@ -110,6 +113,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 AuthTime, StartTime, EndTime, RenewTill, Key, TransitedType, HostAddresses, AuthorizationData);
         }
 
+        /// <summary>
+        /// Find the PAC for the ticket.
+        /// </summary>
+        /// <returns>The PAC for the ticket. Returns null if no PAC present.</returns>
+        public KerberosAuthorizationDataPAC FindPAC()
+        {
+            return FindAuthorizationData<KerberosAuthorizationDataPAC>(AuthorizationData,
+                KerberosAuthorizationDataType.AD_WIN2K_PAC);
+        }
+
+        /// <summary>
+        /// Create a credential info structure for this ticket.
+        /// </summary>
+        /// <returns>The ticket's credential info.</returns>
+        public KerberosCredentialInfo ToCredentialInfo()
+        {
+            return new KerberosCredentialInfo(Key, ClientRealm, ClientName, Flags, AuthTime, StartTime, EndTime, RenewTill, Realm, ServerName, HostAddresses);
+        }
+        #endregion
+
+        #region Private Members
         private protected override void FormatTicketData(StringBuilder builder)
         {
             builder.AppendLine($"Flags           : {Flags}");
@@ -164,16 +188,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        /// <summary>
-        /// Find the PAC for the ticket.
-        /// </summary>
-        /// <returns>The PAC for the ticket. Returns null if no PAC present.</returns>
-        public KerberosAuthorizationDataPAC FindPAC()
-        {
-            return FindAuthorizationData<KerberosAuthorizationDataPAC>(AuthorizationData, 
-                KerberosAuthorizationDataType.AD_WIN2K_PAC);
-        }
-
         private static T FindAuthorizationData<T>(
             IEnumerable<KerberosAuthorizationData> auth_data,
             KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
@@ -207,7 +221,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                   KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted))
         {
         }
+        #endregion
 
+        #region Internal Members
         internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicket ticket)
         {
             ticket = null;
@@ -288,5 +304,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return true;
         }
+        #endregion
     }
 }

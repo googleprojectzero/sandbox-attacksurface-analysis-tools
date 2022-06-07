@@ -481,6 +481,7 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosCredentialBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngine.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineAESSHA196.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineHMACMD5.cs" />
