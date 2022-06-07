@@ -67,6 +67,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         PA_ENCRYPTED_CHALLENGE = 138,
         KERB_KEY_LIST_REQ = 161,
         KERB_KEY_LIST_REP = 162,
+        PA_SUPPORTED_ENCTYPES = 165,
         PA_PAC_OPTIONS = 167,
     }
 }
