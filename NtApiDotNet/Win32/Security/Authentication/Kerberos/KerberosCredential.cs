@@ -38,11 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosEncryptedData EncryptedPart { get; private set; }
         #endregion
 
-        private KerberosCredential(byte[] data, DERValue[] values) 
-            : base(data, values, KerberosMessageType.KRB_CRED)
-        {
-        }
-
+        #region Public Static Methods
         /// <summary>
         /// Create a new kerberos credential token.
         /// </summary>
@@ -82,6 +78,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Create a new kerberos credential token.
+        /// </summary>
+        /// <param name="ticket">The ticket.</param>
+        /// <param name="ticket_info">The ticket info.</param>
+        /// <returns>The new kerberos credential.</returns>
+        public static KerberosCredential Create(KerberosTicket ticket, KerberosCredentialInfo ticket_info)
+        {
+            if (ticket is null)
+            {
+                throw new ArgumentNullException(nameof(ticket));
+            }
+
+            if (ticket_info is null)
+            {
+                throw new ArgumentNullException(nameof(ticket_info));
+            }
+
+            var enc_part = KerberosCredentialEncryptedPart.Create(new[] { ticket_info });
+
+            return Create(new[] { ticket }, enc_part);
+        }
+
+        /// <summary>
         /// Parse a DER encoding KRB-CRED structure.
         /// </summary>
         /// <param name="data">The DER encoded data.</param>
@@ -93,7 +112,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new InvalidDataException("Invalid kerberos data.");
             return ret;
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Format the Authentication Token.
         /// </summary>
@@ -129,6 +150,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return base.Decrypt(keyset);
         }
 
+        /// <summary>
+        /// Encrypt the kerberos credential.
+        /// </summary>
+        /// <param name="key">The key to encrypt with.</param>
+        /// <param name="key_version">The key version.</param>
+        /// <returns>The encrypted credential.</returns>
+        public KerberosCredential Encrypt(KerberosAuthenticationKey key, int? key_version = null)
+        {
+            return Create(Tickets, EncryptedPart.Encrypt(key, KerberosKeyUsage.KrbCred, key_version));
+        }
+
+        /// <summary>
+        /// Convert credential to an external ticket type.
+        /// </summary>
+        /// <returns>The external ticket.</returns>
+        public KerberosExternalTicket ToExternalTicket()
+        {
+            return new KerberosExternalTicket(this);
+        }
+        #endregion
+
+        #region Internal Members
         internal static bool TryParse(byte[] data, DERValue[] values, out KerberosCredential token)
         {
             token = null;
@@ -196,5 +239,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return false;
             }
         }
+        #endregion
+
+        #region Private Members
+        private KerberosCredential(byte[] data, DERValue[] values)
+            : base(data, values, KerberosMessageType.KRB_CRED)
+        {
+        }
+        #endregion
     }
 }
