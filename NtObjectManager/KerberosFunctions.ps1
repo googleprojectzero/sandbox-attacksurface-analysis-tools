@@ -663,3 +663,44 @@ function New-KerberosTicketCache {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Rename the kerberos ticket's server name.
+.DESCRIPTION
+This cmdlet renames the server name of a Kerberos ticket.
+.PARAMETER Ticket
+Specify the ticket to rename.
+.PARAMETER Name
+Specify the principal name
+.PARAMETER ServiceName
+Specify a service name of type SRV_INST.
+.PARAMETER Realm
+Specify the realm
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket
+#>
+function Rename-KerberosTicket {
+    [CmdletBinding(DefaultParameterSetName="FromServiceName")]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromServiceName")]
+        [string]$ServiceName,
+        [string]$Realm
+    )
+
+    if ("" -eq $Realm) {
+        $Realm = $Ticket.Realm
+    }
+
+    if($PSCmdlet.ParameterSetName -eq "FromServiceName") {
+        $Name = New-KerberosPrincipalName -Type SRV_INST -Name $ServiceName
+    }
+
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $Name, $Ticket.EncryptedData)
+}
