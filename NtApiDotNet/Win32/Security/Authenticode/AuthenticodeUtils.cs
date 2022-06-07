@@ -12,12 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+
+using HashAlg = System.Security.Cryptography.HashAlgorithm;
 
 namespace NtApiDotNet.Win32.Security.Authenticode
 {
@@ -26,6 +32,26 @@ namespace NtApiDotNet.Win32.Security.Authenticode
     /// </summary>
     public static class AuthenticodeUtils
     {
+        private static string GetHashAlgorithmName(Oid oid)
+        {
+            switch (oid.Value)
+            {
+                case "1.2.840.113549.1.1.4":
+                    return "MD5";
+                case "1.2.840.113549.1.1.5":
+                case "1.3.14.3.2.29":
+                    return "SHA1";
+                case "1.2.840.113549.1.1.11":
+                    return "SHA256";
+                case "1.2.840.113549.1.1.12":
+                    return "SHA384";
+                case "1.2.840.113549.1.1.13":
+                    return "SHA512";
+                default:
+                    throw new ArgumentException("Unknown algorithm OID", nameof(oid));
+            }
+        }
+
         /// <summary>
         /// Get certificates from a PE file.
         /// </summary>
@@ -181,6 +207,48 @@ namespace NtApiDotNet.Win32.Security.Authenticode
         public static EnclaveConfiguration GetEnclaveConfiguration(string path)
         {
             return GetEnclaveConfiguration(path, true).Result;
+        }
+
+        /// <summary>
+        /// Get the to be signed (TBS) hash for a certificate.
+        /// </summary>
+        /// <param name="certificate">The certificate to generate the hash from.</param>
+        /// <returns>The TBS hash.</returns>
+        public static byte[] GetToBeSignedHash(X509Certificate certificate)
+        {
+            if (certificate is null)
+            {
+                throw new ArgumentNullException(nameof(certificate));
+            }
+
+            byte[] cert_data = certificate.GetRawCertData();
+
+            if (!(certificate is X509Certificate2 cert2))
+            {
+                cert2 = new X509Certificate2(cert_data);
+            }
+
+            DERValue[] values = DERParser.ParseData(cert_data, 0);
+            if (values.Length != 1 || !values[0].CheckSequence() || !values[0].HasChildren())
+                throw new ArgumentException("Invalid certificate format.");
+
+            DERBuilder builder = new DERBuilder();
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteRawBytes(values[0].Children[0].Data);
+            }
+
+            return HashAlg.Create(GetHashAlgorithmName(cert2.SignatureAlgorithm)).ComputeHash(builder.ToArray());
+        }
+
+        /// <summary>
+        /// Get the to be signed (TBS) hash for a certificate.
+        /// </summary>
+        /// <param name="certificate">The certificate to generate the hash from.</param>
+        /// <returns>The TBS hash as a hex string.</returns>
+        public static string GetToBeSignedHashString(X509Certificate certificate)
+        {
+            return NtObjectUtils.ToHexString(GetToBeSignedHash(certificate));
         }
     }
 }
