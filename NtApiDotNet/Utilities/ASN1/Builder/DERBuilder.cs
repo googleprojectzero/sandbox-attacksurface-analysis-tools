@@ -547,5 +547,21 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
             throw new InvalidOperationException("Inner stream must be a MemoryStream to convert to a byte array.");
         }
         #endregion
+
+        #region Internal Members
+        internal void WriteTaggedValue(DERTagType tag_type, bool constructed, int tag, byte[] data)
+        {
+            _writer.WriteTaggedValue(tag_type, constructed, tag, data);
+        }
+
+        internal void WriteTaggedValue(DERTagType tag_type, bool constructed, int tag, IEnumerable<IDERObject> children)
+        {
+            DERBuilder builder = new DERBuilder();
+            foreach (var child in children)
+                builder.WriteObject(child);
+
+            _writer.WriteTaggedValue(tag_type, constructed, tag, builder.ToArray());
+        }
+        #endregion
     }
 }
