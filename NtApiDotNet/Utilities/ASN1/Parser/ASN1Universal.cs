@@ -20,14 +20,27 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
     public class ASN1Universal : ASN1Object
     {
         /// <summary>
-        /// The universal type tag;
+        /// The universal type tag.
         /// </summary>
-        public UniversalTag Tag { get; }
+        new public ASN1UniversalTag Tag => (ASN1UniversalTag)base.Tag;
+
+        private protected override string FormatTag()
+        {
+            return Tag.ToString();
+        }
+
+        new internal static ASN1Object ToObject(DERValue value)
+        {
+            if (value.Constructed)
+            {
+                return new ASN1Universal(value);
+            }
+            return new ASN1UniversalPrimitive(value);
+        }
 
         internal ASN1Universal(DERValue value) : base(value)
         {
             System.Diagnostics.Debug.Assert(value.Type == DERTagType.Universal);
-            Tag = (UniversalTag)value.Tag;
         }
     }
 }

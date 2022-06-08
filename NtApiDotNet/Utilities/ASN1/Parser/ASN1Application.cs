@@ -19,15 +19,9 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
     /// </summary>
     public sealed class ASN1Application : ASN1Object
     {
-        /// <summary>
-        /// Get the application tag.
-        /// </summary>
-        public int Tag { get; }
-
         internal ASN1Application(DERValue value) : base(value)
         {
             System.Diagnostics.Debug.Assert(value.Type == DERTagType.Application);
-            Tag = value.Tag;
         }
     }
 }

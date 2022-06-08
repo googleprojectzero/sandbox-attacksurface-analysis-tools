@@ -19,15 +19,9 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
     /// </summary>
     public class ASN1ContextSpecific : ASN1Object
     {
-        /// <summary>
-        /// The context specific tag.
-        /// </summary>
-        public int Tag { get; }
-
         internal ASN1ContextSpecific(DERValue value) : base(value)
         {
             System.Diagnostics.Debug.Assert(value.Type == DERTagType.ContextSpecific);
-            Tag = value.Tag;
         }
     }
 }
