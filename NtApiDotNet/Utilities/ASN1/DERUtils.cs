@@ -13,9 +13,11 @@
 //  limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Utilities.ASN1
 {
@@ -114,6 +116,25 @@ namespace NtApiDotNet.Utilities.ASN1
         public static string ConvertGeneralizedTime(DateTime time)
         {
             return time.ToUniversalTime().ToString("yyyyMMddHHmmssZ");
+        }
+
+        public static BitArray ReadBitString(byte[] data)
+        {
+            if (data.Length == 0)
+                return new BitArray(0);
+            IEnumerable<bool> bools = data.Skip(1).SelectMany(b => GetBool(b));
+            int total_count = (data.Length - 1) * 8 - data[0];
+            return new BitArray(bools.Take(total_count).ToArray());
+        }
+
+        private static IEnumerable<bool> GetBool(byte b)
+        {
+            bool[] ret = new bool[8];
+            for (int i = 0; i < 8; ++i)
+            {
+                ret[i] = ((b >> (7 - i)) & 1) != 0;
+            }
+            return ret;
         }
     }
 }
