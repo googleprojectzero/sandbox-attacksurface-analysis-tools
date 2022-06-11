@@ -130,7 +130,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.TgsRepEncryptedPart);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
-                throw new KerberosKDCClientException("Invalid KDC reply encrypted part..");
+                throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
             }
 
             return new KerberosASReply(reply, reply_part);

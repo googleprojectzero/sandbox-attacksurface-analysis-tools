@@ -38,9 +38,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Specify name of the service to request.
         /// </summary>
         public KerberosPrincipalName ServerName { get; set; }
+
+        /// <summary>
+        /// Disable sending initial pre-authentication.
+        /// </summary>
+        public bool DisablePreAuthentication { get; set; }
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="key">The kerberos key for the user.</param>
+        public KerberosASRequest(KerberosAuthenticationKey key) 
+            : this(key, key.Name, key.Realm)
+        {
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -49,7 +63,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="realm">The client and server realm realm.</param>
         public KerberosASRequest(KerberosAuthenticationKey key, KerberosPrincipalName client_name, string realm)
         {
-            Key = key;
+            Key = key ?? throw new ArgumentNullException(nameof(key));
             ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
             Realm = realm ?? throw new ArgumentNullException(nameof(realm));
             TillTime = KerberosTime.MaximumTime;
@@ -91,7 +105,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 Nonce = KerberosBuilderUtils.GetRandomNonce(),
                 TillTime = TillTime
             };
-            ret.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, Key));
+
+            if (!DisablePreAuthentication)
+            {
+                ret.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, Key));
+            }
             if (IncludePac.HasValue)
             {
                 ret.AddPreAuthenticationData(new KerberosPreAuthenticationDataPACRequest(IncludePac.Value));
