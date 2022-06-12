@@ -496,7 +496,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineNative.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineUnsupported.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptionTypeInfo2Entry.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptionTypeInfoEntry.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorData.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo2.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />

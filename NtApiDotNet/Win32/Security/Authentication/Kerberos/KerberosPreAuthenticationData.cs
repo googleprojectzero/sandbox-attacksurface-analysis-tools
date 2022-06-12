@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System.Collections.Generic;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -34,6 +35,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         private protected abstract byte[] GetData();
+
+        public static List<KerberosPreAuthenticationData> ParseErrorData(byte[] error_data)
+        {
+            List<KerberosPreAuthenticationData> ret = new List<KerberosPreAuthenticationData>();
+
+            try
+            {
+                DERValue[] values = DERParser.ParseData(error_data, 0);
+                if (!values.CheckValueSequence())
+                    return ret;
+                foreach (var next in values[0].Children)
+                {
+                    ret.Add(Parse(next));
+                }
+            }
+            catch
+            {
+            }
+            return ret;
+        }
 
         internal static KerberosPreAuthenticationData Parse(DERValue value)
         {
@@ -59,6 +80,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         throw new InvalidDataException();
                 }
             }
+
+            if (data == null || data.Length == 0)
+            {
+                return new KerberosPreAuthenticationDataUnknown(type, data);
+            }
+
             switch (type)
             {
                 case KerberosPreAuthenticationType.PA_TGS_REQ:
@@ -67,6 +94,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return KerberosPreAuthenticationPACOptions.Parse(data);
                 case KerberosPreAuthenticationType.PA_ENC_TIMESTAMP:
                     return KerberosPreAuthenticationDataEncTimestamp.Parse(data);
+                case KerberosPreAuthenticationType.PA_ETYPE_INFO:
+                    return KerberosPreAuthenticationDataEncryptionTypeInfo.Parse(data);
+                case KerberosPreAuthenticationType.PA_ETYPE_INFO2:
+                    return KerberosPreAuthenticationDataEncryptionTypeInfo2.Parse(data);
                 default:
                     return new KerberosPreAuthenticationDataUnknown(type, data);
             }

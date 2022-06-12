@@ -82,6 +82,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The NT status if extended error data is present.
         /// </summary>
         public NtStatus? Status => ErrorDataList.OfType<KerberosErrorDataExtended>().FirstOrDefault()?.Status;
+        /// <summary>
+        /// The list of PA-DATA if the error is KDC_ERR_PREAUTH_REQUIRED.
+        /// </summary>
+        public IReadOnlyList<KerberosPreAuthenticationData> PreAuthentationData { get; private set; }
         #endregion
 
         #region Private Members
@@ -97,6 +101,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ErrorText = string.Empty;
             ErrorData = new byte[0];
             ErrorDataList = new List<KerberosErrorData>().AsReadOnly();
+            PreAuthentationData = new List<KerberosPreAuthenticationData>().AsReadOnly();
         }
         #endregion
 
@@ -297,9 +302,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                 }
 
-                if (ret.ErrorData.Length > 0 && ret.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                if (ret.ErrorData?.Length > 0)
                 {
-                    ret.ErrorDataList = KerberosErrorData.Parse(ret.ErrorData).AsReadOnly();
+                    if (ret.ErrorCode == KerberosErrorType.PREAUTH_REQUIRED)
+                    {
+                        ret.PreAuthentationData = KerberosPreAuthenticationData.ParseErrorData(ret.ErrorData).AsReadOnly();
+                    }
+                    else
+                    {
+                        ret.ErrorDataList = KerberosErrorData.Parse(ret.ErrorData).AsReadOnly();
+                    }
                 }
 
                 token = ret;

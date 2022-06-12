@@ -41,7 +41,7 @@ namespace NtApiDotNet.Utilities.ASN1
             return values.ToArray();
         }
 
-        public static DERValue[] ParseData(byte[] data, int index)
+        public static DERValue[] ParseData(byte[] data, int index = 0)
         {
             return ParseData(0, data, index);
         }

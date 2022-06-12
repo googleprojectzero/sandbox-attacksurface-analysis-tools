@@ -17,9 +17,7 @@ using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
