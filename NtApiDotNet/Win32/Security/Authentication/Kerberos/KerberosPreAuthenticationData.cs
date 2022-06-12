@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private protected abstract byte[] GetData();
 
-        public static List<KerberosPreAuthenticationData> ParseErrorData(byte[] error_data)
+        internal static List<KerberosPreAuthenticationData> ParseErrorData(byte[] error_data)
         {
             List<KerberosPreAuthenticationData> ret = new List<KerberosPreAuthenticationData>();
 
