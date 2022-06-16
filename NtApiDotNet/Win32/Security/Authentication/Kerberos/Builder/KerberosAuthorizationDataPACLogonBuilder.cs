@@ -42,7 +42,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             var ret = new ObservableCollection<T>(list);
             ret.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Collection Modified.");
                 _modified = true;
             };
             return ret;
