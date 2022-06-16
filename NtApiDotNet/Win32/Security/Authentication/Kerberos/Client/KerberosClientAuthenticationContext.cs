@@ -261,6 +261,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="credential">The kerberos ticket for the target.</param>
+        /// <param name="request_attributes">Request attributes for the context.</param>
+        /// <param name="config">Additional configuration for the context..</param>
+        public KerberosClientAuthenticationContext(KerberosCredential credential, InitializeContextReqFlags request_attributes,
+            KerberosClientAuthenticationContextConfig config = null) : this(credential.ToExternalTicket(), request_attributes, config)
+        {
+        }
 
         /// <summary>
         /// Constructor.
