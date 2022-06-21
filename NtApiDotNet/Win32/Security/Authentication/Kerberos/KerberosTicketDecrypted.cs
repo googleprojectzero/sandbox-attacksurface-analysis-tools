@@ -131,6 +131,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             return new KerberosCredentialInfo(Key, ClientRealm, ClientName, Flags, AuthTime, StartTime, EndTime, RenewTill, Realm, ServerName, HostAddresses);
         }
+
+        /// <summary>
+        /// Validate the KDC ticket signature in the PAC.
+        /// </summary>
+        /// <param name="key">The KDC key.</param>
+        /// <returns>True if the signature is correct. Also assumes true if there are no signature to check.</returns>
+        public bool ValidateTicketSignature(KerberosAuthenticationKey key)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            var sig_left = FindPAC()?.Entries.FirstOrDefault(e => e.PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum);
+            if (sig_left == null)
+                return true;
+            
+            var builder = ToBuilder();
+            builder.ComputeTicketSignature(key);
+            var result = builder.Create();
+            var sig_right = result.FindPAC().Entries.FirstOrDefault(e => e.PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum);
+            System.Diagnostics.Debug.Assert(sig_right != null);
+            return sig_left.Equals(sig_right);
+        }
+
         #endregion
 
         #region Private Members

@@ -122,10 +122,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <returns>The kerberos PAC.</returns>
         public override KerberosAuthorizationData Create()
         {
+            if (EncodeForTicketSignature)
+                return new KerberosAuthorizationDataRaw(KerberosAuthorizationDataType.AD_WIN2K_PAC, new byte[1]);
             if (!KerberosAuthorizationDataPAC.Parse(Encode(Version, Entries), out KerberosAuthorizationDataPAC auth_data))
                 throw new InvalidDataException("PAC is invalid.");
             return auth_data;
         }
+
+        internal bool EncodeForTicketSignature { get; set; }
 
         private static byte[] Encode(int version, ICollection<KerberosAuthorizationDataPACEntryBuilder> entries)
         {

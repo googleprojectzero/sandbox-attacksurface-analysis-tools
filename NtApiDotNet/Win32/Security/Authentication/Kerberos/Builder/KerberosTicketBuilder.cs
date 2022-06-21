@@ -23,6 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
     /// </summary>
     public sealed class KerberosTicketBuilder
     {
+        #region Constructor
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -67,7 +68,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public KerberosTicketBuilder()
         {
         }
+        #endregion
 
+        #region Public Properties
         /// <summary>
         /// Version number for the ticket.
         /// </summary>
@@ -124,7 +127,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// List of authorization data.
         /// </summary>
         public List<KerberosAuthorizationDataBuilder> AuthorizationData { get; set; }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Find a list of builders for a specific AD type.
         /// </summary>
@@ -175,10 +180,53 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         }
 
         /// <summary>
+        /// Compute the KDC ticket signature for the ticket and add to the PAC.
+        /// </summary>
+        /// <param name="key">The krbtgt KDC key for the signature.</param>
+        public void ComputeTicketSignature(KerberosAuthenticationKey key)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            var pac = FindPACBuilder();
+            try
+            {
+                pac.EncodeForTicketSignature = true;
+                var signature = new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.TicketChecksum);
+                signature.UpdateSignature(key, EncodeEncTicketPart());
+                int index = pac.Entries.FindIndex(m => m.PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum);
+                if (index >= 0)
+                    pac.Entries[index] = signature;
+                else
+                    pac.Entries.Add(signature);
+            }
+            finally
+            {
+                pac.EncodeForTicketSignature = false;
+            }
+        }
+
+        /// <summary>
         /// Create the decrypted ticket.
         /// </summary>
         /// <returns></returns>
         public KerberosTicketDecrypted Create()
+        {
+            byte[] encoded = EncodeEncTicketPart();
+            KerberosTicket outerTicket = KerberosTicket.Create(Realm, ServerName, 
+                    KerberosEncryptedData.Create(KerberosEncryptionType.NULL, encoded));
+            bool result = KerberosTicketDecrypted.Parse(outerTicket, encoded, 
+                new KerberosKeySet(), out KerberosTicket ticket);
+            System.Diagnostics.Debug.Assert(result);
+
+            return ticket as KerberosTicketDecrypted;
+        }
+        #endregion
+
+        #region Private Members
+        private byte[] EncodeEncTicketPart()
         {
             DERBuilder builder = new DERBuilder();
             using (var app = builder.CreateApplication(3))
@@ -199,14 +247,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 }
             }
 
-            byte[] encoded = builder.ToArray();
-            KerberosTicket outerTicket = KerberosTicket.Create(Realm, ServerName, 
-                    KerberosEncryptedData.Create(KerberosEncryptionType.NULL, encoded));
-            bool result = KerberosTicketDecrypted.Parse(outerTicket, encoded, 
-                new KerberosKeySet(), out KerberosTicket ticket);
-            System.Diagnostics.Debug.Assert(result);
-
-            return ticket as KerberosTicketDecrypted;
+            return builder.ToArray();
         }
+        #endregion
     }
 }
