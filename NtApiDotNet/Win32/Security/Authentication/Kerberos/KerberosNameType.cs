@@ -29,6 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         X500_PRINCIPAL = 6,
         SMTP_NAME = 7,
         ENTERPRISE_PRINCIPAL = 10,
+        WELLKNOWN = 11,
         ENT_PRINCIPAL_AND_ID = -130,
         MS_PRINCIPAL = -128,
         MS_PRINCIPAL_AND_ID = -129

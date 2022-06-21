@@ -183,6 +183,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// Compute the KDC ticket signature for the ticket and add to the PAC.
         /// </summary>
         /// <param name="key">The krbtgt KDC key for the signature.</param>
+        /// <remarks>You should call the PAC's <see cref="KerberosAuthorizationDataPACBuilder.ComputeSignatures(KerberosAuthenticationKey, KerberosAuthenticationKey)"/> method after creating the ticket signature to finish resigning.</remarks>
         public void ComputeTicketSignature(KerberosAuthenticationKey key)
         {
             if (key is null)

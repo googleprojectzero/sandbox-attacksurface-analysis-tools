@@ -118,6 +118,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
         }
 
+        /// <summary>
+        /// Get the anonymous principal.
+        /// </summary>
+        public static KerberosPrincipalName AnonymousName => new KerberosPrincipalName(KerberosNameType.WELLKNOWN, "WELLKNOWN/ANONYMOUS");
+
         internal static KerberosPrincipalName Parse(DERValue value)
         {
             if (!value.HasChildren())
