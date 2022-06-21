@@ -22,34 +22,6 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
-#pragma warning disable 1591
-    /// <summary>
-    /// Flags for a Kerberos Ticket.
-    /// </summary>
-    [Flags]
-    public enum KerberosTicketFlags : uint
-    {
-        None = 0,
-        Reserved = 0x1,
-        Forwardable = 0x2,
-        Forwarded = 0x4,
-        Proxiable = 0x8,
-        Proxy = 0x10,
-        MayPostDate = 0x20,
-        PostDated = 0x40,
-        Invalid = 0x80,
-        Renewable = 0x100,
-        Initial = 0x200,
-        PreAuthent = 0x400,
-        HwAuthent = 0x800,
-        TransitedPolicyChecked = 0x1000,
-        OkAsDelegate = 0x2000,
-        Reserved2 = 0x4000,
-        EncPARep = 0x8000,
-        Anonymous = 0x10000,
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class to represent a Decrypted Kerberos ticket.
     /// </summary>

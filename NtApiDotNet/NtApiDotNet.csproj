@@ -502,6 +502,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo2.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />
