@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Native
         KerbQueryTicketCacheExMessage,
         KerbPurgeTicketCacheExMessage,
         KerbRefreshSmartcardCredentialsMessage,
-        KerbAddExtraCredentialsMessage2,
+        KerbAddExtraCredentialsMessage,
         KerbQuerySupplementalCredentialsMessage,
         KerbTransferCredentialsMessage,
         KerbQueryTicketCacheEx2Message,

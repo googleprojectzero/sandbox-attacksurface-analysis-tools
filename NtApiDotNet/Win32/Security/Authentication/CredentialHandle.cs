@@ -176,6 +176,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Set a flag to bypass PAC checking on Kerberos authentication.
+        /// </summary>
+        public void SetPacBypass()
+        {
+            SetAttribute(SECPKG_CRED_ATTR.SECPKG_CRED_ATTR_PAC_BYPASS, SafeHGlobalBuffer.Null);
+        }
+
+        /// <summary>
         /// Dispose.
         /// </summary>
         public void Dispose()
