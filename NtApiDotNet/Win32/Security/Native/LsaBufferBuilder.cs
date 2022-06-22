@@ -36,7 +36,6 @@ namespace NtApiDotNet.Win32.Security.Native
         private struct BufferEntry
         {
             public FieldInfo field;
-            public FieldInfo length_field;
             public int position;
             public int length;
             public bool relative;
@@ -84,7 +83,6 @@ namespace NtApiDotNet.Win32.Security.Native
                 else if (entry.field.FieldType == typeof(IntPtr))
                 {
                     entry.field.SetValue(_object, entry.GetPointer(buffer));
-                    entry.length_field.SetValue(_object, entry.length);
                 }
             }
         }
@@ -138,16 +136,13 @@ namespace NtApiDotNet.Win32.Security.Native
             _writer.Write(ba);
             _writer.Write((short)0);
 
-            if (ba != null)
+            _buffers.Add(new BufferEntry()
             {
-                _buffers.Add(new BufferEntry()
-                {
-                    position = pos,
-                    length = ba.Length,
-                    field = GetUnicodeStringField(name),
-                    relative = relative
-                });
-            }
+                position = pos,
+                length = ba.Length,
+                field = GetUnicodeStringField(name),
+                relative = relative
+            });
         }
 
         public void AddUnicodeString(string name, SecureString str, bool relative = false)
@@ -166,12 +161,12 @@ namespace NtApiDotNet.Win32.Security.Native
                 return;
             int pos = GetCurrentPos();
             _writer.Write(buffer);
+            GetInt32Field(length_name).SetValue(_object, buffer.Length);
             _buffers.Add(new BufferEntry()
             {
                 position = pos,
                 length = buffer.Length,
                 field = GetIntPtrField(ptr_name),
-                length_field = GetInt32Field(length_name),
                 relative = relative
             });
         }
