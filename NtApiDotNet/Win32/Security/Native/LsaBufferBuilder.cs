@@ -31,9 +31,9 @@ namespace NtApiDotNet.Win32.Security.Native
         }
     }
 
-    internal class LsaBufferBuilder<T> where T : new()
+    internal abstract class LsaBufferBuilder
     {
-        struct BufferEntry
+        protected struct BufferEntry
         {
             public FieldInfo field;
             public FieldInfo length_field;
@@ -41,7 +41,7 @@ namespace NtApiDotNet.Win32.Security.Native
             public int length;
             public bool relative;
 
-            public IntPtr GetPointer(SafeStructureInOutBuffer<T> buffer)
+            public IntPtr GetPointer<U>(SafeStructureInOutBuffer<U> buffer) where U : new()
             {
                 if (relative)
                     return new IntPtr(buffer.DataOffset + position);
@@ -52,8 +52,54 @@ namespace NtApiDotNet.Win32.Security.Native
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<BufferEntry> _buffers;
-        private readonly T _value;
-        private static readonly Dictionary<string, FieldInfo> _type_fields = typeof(T).GetFields().ToDictionary(f => f.Name);
+        private readonly Dictionary<FieldInfo, LsaBufferBuilder> _sub_builders;
+        private readonly object _object;
+
+        private int GetCurrentPos()
+        {
+            return (int)_stm.Position;
+        }
+
+        private void PopulateFields<U>(SafeStructureInOutBuffer<U> buffer) where U : new()
+        {
+            foreach (var pair in _sub_builders)
+            {
+                var builder = pair.Value;
+                builder.PopulateFields(buffer);
+                pair.Key.SetValue(_object, builder._object);
+            }
+
+            foreach (var entry in _buffers)
+            {
+                if (entry.field.FieldType == typeof(UnicodeStringOut))
+                {
+                    UnicodeStringOut str = new UnicodeStringOut
+                    {
+                        Buffer = entry.GetPointer(buffer),
+                        Length = (ushort)entry.length,
+                        MaximumLength = (ushort)(entry.length + 2)
+                    };
+                    entry.field.SetValue(_object, str);
+                }
+                else if (entry.field.FieldType == typeof(IntPtr))
+                {
+                    entry.field.SetValue(_object, entry.GetPointer(buffer));
+                    entry.length_field.SetValue(_object, entry.length);
+                }
+            }
+        }
+
+        protected SafeStructureInOutBuffer<U> ToBuffer<U>() where U : new()
+        {
+            byte[] ba = _stm.ToArray();
+            using (var buffer = new SafeStructureInOutBuffer<U>(ba.Length, true))
+            {
+                buffer.Data.WriteBytes(ba);
+                PopulateFields(buffer);
+                buffer.Result = (U)_object;
+                return buffer.Detach();
+            }
+        }
 
         private static byte[] GetSecureStringBytes(SecureString str)
         {
@@ -67,31 +113,20 @@ namespace NtApiDotNet.Win32.Security.Native
             }
         }
 
-        public LsaBufferBuilder(T value)
+        private protected LsaBufferBuilder(object obj, LsaBufferBuilder parent)
         {
-            _stm = new MemoryStream();
-            _writer = new BinaryWriter(_stm);
+            _stm = parent?._stm ?? new MemoryStream();
+            _writer = parent?._writer ?? new BinaryWriter(_stm);
             _buffers = new List<BufferEntry>();
-            _value = value;
+            _object = obj;
+            _sub_builders = new Dictionary<FieldInfo, LsaBufferBuilder>();
         }
 
-        private int GetCurrentPos()
-        {
-            return (int)_stm.Position;
-        }
+        protected abstract FieldInfo GetField<U>(string name);
 
-        private static FieldInfo GetField<U>(string name)
-        {
-            if (!_type_fields.ContainsKey(name))
-                throw new ArgumentException($"Unknown field {name}.", nameof(name));
-            if (_type_fields[name].FieldType != typeof(U))
-                throw new ArgumentException($"Invalid field type {_type_fields[name].FieldType}.", nameof(name));
-            return _type_fields[name];
-        }
-
-        private static FieldInfo GetUnicodeStringField(string name) => GetField<UnicodeStringOut>(name);
-        private static FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
-        private static FieldInfo GetInt32Field(string name) => GetField<int>(name);
+        private FieldInfo GetUnicodeStringField(string name) => GetField<UnicodeStringOut>(name);
+        private FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
+        private FieldInfo GetInt32Field(string name) => GetField<int>(name);
 
         public void AddUnicodeString(string name, byte[] ba, bool relative = false)
         {
@@ -141,34 +176,44 @@ namespace NtApiDotNet.Win32.Security.Native
             });
         }
 
+        public LsaBufferBuilder<U> GetSubBuilder<U>(string name) where U : new()
+        {
+            FieldInfo field = GetField<U>(name);
+            if (_sub_builders.ContainsKey(field))
+                return (LsaBufferBuilder<U>)_sub_builders[field];
+
+            object obj = field.GetValue(_object);
+            var builder = new LsaBufferBuilder<U>(obj, this);
+            _sub_builders[field] = builder;
+            return builder;
+        }
+    }
+
+    internal class LsaBufferBuilder<T> : LsaBufferBuilder where T : new()
+    {
+        private static readonly Dictionary<string, FieldInfo> _type_fields = typeof(T).GetFields().ToDictionary(f => f.Name);
+
+        public LsaBufferBuilder(object value, LsaBufferBuilder parent) 
+            : base(value, parent)
+        {
+        }
+
+        public LsaBufferBuilder(T value) : base(value, null)
+        {
+        }
+
         public SafeStructureInOutBuffer<T> ToBuffer()
         {
-            byte[] ba = _stm.ToArray();
-            using (var buffer = new SafeStructureInOutBuffer<T>(ba.Length, true))
-            {
-                object obj = _value;
-                buffer.Data.WriteBytes(ba);
-                foreach (var entry in _buffers)
-                {
-                    if (entry.field.FieldType == typeof(UnicodeStringOut))
-                    {
-                        UnicodeStringOut str = new UnicodeStringOut
-                        {
-                            Buffer = entry.GetPointer(buffer),
-                            Length = (ushort)entry.length,
-                            MaximumLength = (ushort)(entry.length + 2)
-                        };
-                        entry.field.SetValue(obj, str);
-                    }
-                    else if (entry.field.FieldType == typeof(IntPtr))
-                    {
-                        entry.field.SetValue(obj, entry.GetPointer(buffer));
-                        entry.length_field.SetValue(obj, entry.length);
-                    }
-                }
-                buffer.Result = (T)obj;
-                return buffer.Detach();
-            }
+            return ToBuffer<T>();
+        }
+
+        protected override FieldInfo GetField<U>(string name)
+        {
+            if (!_type_fields.ContainsKey(name))
+                throw new ArgumentException($"Unknown field {name}.", nameof(name));
+            if (_type_fields[name].FieldType != typeof(U))
+                throw new ArgumentException($"Invalid field type {_type_fields[name].FieldType}.", nameof(name));
+            return _type_fields[name];
         }
     }
 }
