@@ -144,32 +144,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentNullException(nameof(credentials));
             }
 
-            using (var list = new DisposableList())
+            var builder = new KERB_RETRIEVE_KEY_TAB_REQUEST()
             {
-                int total_str_size = KerberosTicketCache.CalculateLength(credentials.UserName, credentials.Domain) 
-                    + KerberosTicketCache.CalculateLength(credentials.Password?.Length);
-                var buffer = new SafeStructureInOutBuffer<KERB_RETRIEVE_KEY_TAB_REQUEST>(total_str_size, true);
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage
+            }.ToBuilder();
 
-                using (var strs = buffer.Data.GetStream())
+            builder.AddUnicodeString(nameof(KERB_RETRIEVE_KEY_TAB_REQUEST.UserName), credentials.UserName);
+            builder.AddUnicodeString(nameof(KERB_RETRIEVE_KEY_TAB_REQUEST.DomainName), credentials.Domain);
+            builder.AddUnicodeString(nameof(KERB_RETRIEVE_KEY_TAB_REQUEST.Password), credentials.Password);
+
+            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!handle.IsSuccess)
+                    return handle.Cast<KerberosKeySet>();
+                using (var buffer = builder.ToBuffer())
                 {
-                    BinaryWriter writer = new BinaryWriter(strs);
-                    UnicodeStringOut username = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.UserName);
-                    UnicodeStringOut domain = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.Domain);
-                    UnicodeStringOut password = KerberosTicketCache.MarshalString(buffer.Data, writer, credentials.GetPasswordBytes());
-
-                    buffer.Result = new KERB_RETRIEVE_KEY_TAB_REQUEST()
-                    {
-                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbRetrieveKeyTabMessage,
-                        UserName = username,
-                        DomainName = domain,
-                        Password = password
-                    };
-                }
-
-                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-                {
-                    if (!handle.IsSuccess)
-                        return handle.Cast<KerberosKeySet>();
                     using (var result = KerberosTicketCache.CallPackage(handle.Result, buffer, throw_on_error))
                     {
                         if (!result.IsSuccess)

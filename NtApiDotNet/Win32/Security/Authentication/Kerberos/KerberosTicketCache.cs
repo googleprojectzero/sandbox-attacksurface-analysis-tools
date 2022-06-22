@@ -28,41 +28,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        internal static int CalculateLength(params string[] strs)
-        {
-            int ret = 0;
-            foreach (var s in strs)
-            {
-                ret += CalculateLength(s?.Length);
-            }
-            return ret;
-        }
-
-        internal static int CalculateLength(int? length)
-        {
-            int ret = length ?? 0;
-            return (ret + 1) * 2;
-        }
-
-        internal static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, byte[] value)
-        {
-            var ret = new UnicodeStringOut();
-            if (value != null)
-            {
-                ret.Length = (ushort)value.Length;
-                ret.MaximumLength = (ushort)(ret.Length + 2);
-                ret.Buffer = buffer.DangerousGetHandle() + (int)writer.BaseStream.Position;
-                writer.Write(value);
-            }
-            writer.Write((ushort)0);
-            return ret;
-        }
-
-        internal static UnicodeStringOut MarshalString(SafeBuffer buffer, BinaryWriter writer, string value)
-        {
-            return MarshalString(buffer, writer, value != null ? Encoding.Unicode.GetBytes(value) : null);
-        }
-
         internal static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
         {
             var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
@@ -465,19 +430,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The NT status code.</returns>
         public static NtStatus PurgeTicketCache(Luid logon_id, string server_name, string realm_name, bool throw_on_error)
         {
-            using (var buffer = new SafeStructureInOutBuffer<KERB_PURGE_TKT_CACHE_REQUEST>(CalculateLength(server_name, realm_name), true))
+            var builder = new KERB_PURGE_TKT_CACHE_REQUEST()
             {
-                using (var stm = buffer.Data.GetStream())
-                {
-                    BinaryWriter writer = new BinaryWriter(stm);
-                    buffer.Result = new KERB_PURGE_TKT_CACHE_REQUEST()
-                    {
-                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheMessage,
-                        LogonId = logon_id,
-                        ServerName = MarshalString(buffer.Data, writer, server_name),
-                        RealmName = MarshalString(buffer.Data, writer, realm_name)
-                    };
-                }
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheMessage,
+                LogonId = logon_id
+            }.ToBuilder();
+            builder.AddUnicodeString(nameof(KERB_PURGE_TKT_CACHE_REQUEST.ServerName), server_name);
+            builder.AddUnicodeString(nameof(KERB_PURGE_TKT_CACHE_REQUEST.RealmName), realm_name);
+
+            using (var buffer = builder.ToBuffer())
+            {
                 using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
                 {
                     if (!handle.IsSuccess)
@@ -511,40 +473,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The NT status code.</returns>
         public static NtStatus PurgeTicketCacheEx(bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template, bool throw_on_error)
         {
-            int length = 0;
+            var builder = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheExMessage,
+                LogonId = logon_id,
+                Flags = purge_all_tickets ? KerberosPurgeTicketCacheExFlags.PurgeAllTickets : 0
+            }.ToBuilder();
+
             if (ticket_template != null)
             {
-                length = CalculateLength(ticket_template.ClientName, ticket_template.ClientRealm,
-                    ticket_template.ServerName, ticket_template.ServerRealm);
+                KERB_TICKET_CACHE_INFO_EX ticket_info = new KERB_TICKET_CACHE_INFO_EX();
+                ticket_info.EncryptionType = ticket_template.EncryptionType;
+                ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
+                ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
+                ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
+                ticket_info.TicketFlags = ((uint)ticket_template.TicketFlags).RotateBits();
+                var sub_builder = builder.GetSubBuilder(nameof(KERB_PURGE_TKT_CACHE_EX_REQUEST.TicketTemplate), ticket_info);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientName), ticket_template.ClientName);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientRealm), ticket_template.ClientRealm);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerName), ticket_template.ServerName);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerRealm), ticket_template.ServerRealm);
             }
 
-            using (var buffer = new SafeStructureInOutBuffer<KERB_PURGE_TKT_CACHE_EX_REQUEST>(length, true))
+            using (var buffer = builder.ToBuffer())
             {
-                using (var stm = buffer.Data.GetStream())
-                {
-                    KERB_TICKET_CACHE_INFO_EX ticket_info = new KERB_TICKET_CACHE_INFO_EX();
-                    if (length > 0)
-                    {
-                        BinaryWriter writer = new BinaryWriter(stm);
-                        ticket_info.ClientName = MarshalString(buffer.Data, writer, ticket_template.ClientName);
-                        ticket_info.ClientRealm = MarshalString(buffer.Data, writer, ticket_template.ClientRealm);
-                        ticket_info.ServerName = MarshalString(buffer.Data, writer, ticket_template.ServerName);
-                        ticket_info.ServerRealm = MarshalString(buffer.Data, writer, ticket_template.ServerRealm);
-                        ticket_info.EncryptionType = ticket_template.EncryptionType;
-                        ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
-                        ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
-                        ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
-                        ticket_info.TicketFlags = ((uint)ticket_template.TicketFlags).RotateBits();
-                    }
-
-                    buffer.Result = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
-                    {
-                        MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheExMessage,
-                        LogonId = logon_id,
-                        Flags = purge_all_tickets ? KerberosPurgeTicketCacheExFlags.PurgeAllTickets : 0,
-                        TicketTemplate = ticket_info
-                    };
-                }
                 using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
                 {
                     if (!handle.IsSuccess)
@@ -684,16 +636,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The NT status code.</returns>
         public static NtStatus UnpinAllKdcs(bool throw_on_error)
         {
-            var builder = new KERB_UNPIN_ALL_KDCS_REQUEST()
-            {
-                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbUnpinAllKdcsMessage
-            }.ToBuilder();
-
             using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
             {
                 if (!handle.IsSuccess)
                     return handle.Status;
-                using (var buffer = builder.ToBuffer())
+                var req = new KERB_UNPIN_ALL_KDCS_REQUEST()
+                {
+                    MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbUnpinAllKdcsMessage
+                };
+                using (var buffer = req.ToBuffer())
                 {
                     using (var result = CallPackage(handle.Result, buffer, throw_on_error))
                     {
