@@ -16,10 +16,8 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -28,12 +26,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        internal static NtResult<LsaCallPackageResponse> CallPackage(SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
+        private static NtResult<LsaCallPackageResponse> CallPackage(this SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
         {
             var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
             if (!package.IsSuccess)
                 return package.Cast<LsaCallPackageResponse>();
             return handle.CallPackage(package.Result, buffer, throw_on_error);
+        }
+
+        private static NtResult<LsaCallPackageResponse> CallPackage(this NtResult<SafeLsaLogonHandle> handle, SafeBuffer buffer, bool throw_on_error)
+        {
+            return CallPackage(handle.GetResultOrThrow(), buffer, throw_on_error);
         }
 
         private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList<T>(KERB_PROTOCOL_MESSAGE_TYPE query_type, 
@@ -46,7 +49,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             };
             using (var request = request_struct.ToBuffer())
             {
-                using (var result = CallPackage(handle, request, throw_on_error))
+                using (var result = handle.CallPackage(request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<KerberosTicketCacheInfo[]>();
@@ -97,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                 };
                 request.Result = request_str;
-                using (var result = CallPackage(handle, request, throw_on_error))
+                using (var result = handle.CallPackage(request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<SafeLsaReturnBufferHandle>();
@@ -384,7 +387,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Cast<KerberosExternalTicket>();
-                    using (var result = CallPackage(handle.Result, request, throw_on_error))
+                    using (var result = handle.CallPackage(request, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Cast<KerberosExternalTicket>();
@@ -444,7 +447,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.CallPackage(buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -501,7 +504,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.CallPackage(buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -564,7 +567,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.CallPackage(buffer, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Status;
@@ -610,7 +613,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return handle.Status;
                 using (var buffer = builder.ToBuffer())
                 {
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.CallPackage(buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -646,7 +649,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 };
                 using (var buffer = req.ToBuffer())
                 {
-                    using (var result = CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.CallPackage(buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }

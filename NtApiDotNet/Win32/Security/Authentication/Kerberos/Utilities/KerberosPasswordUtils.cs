@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
@@ -62,11 +63,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         {
             using (var buffer = builder.ToBuffer())
             {
-                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                using (var handle = LsaLogonHandle.Connect(throw_on_error))
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = KerberosTicketCache.CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.Result.LsaCallAuthenticationPackage(AuthenticationPackage.KERBEROS_NAME, buffer, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Status.ToNtException(throw_on_error);

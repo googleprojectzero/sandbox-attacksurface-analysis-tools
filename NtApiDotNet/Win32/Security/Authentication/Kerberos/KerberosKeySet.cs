@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections;
@@ -153,13 +154,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             builder.AddUnicodeString(nameof(KERB_RETRIEVE_KEY_TAB_REQUEST.DomainName), credentials.Domain);
             builder.AddUnicodeString(nameof(KERB_RETRIEVE_KEY_TAB_REQUEST.Password), credentials.Password);
 
-            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            using (var handle = LsaLogonHandle.Connect(throw_on_error))
             {
                 if (!handle.IsSuccess)
                     return handle.Cast<KerberosKeySet>();
                 using (var buffer = builder.ToBuffer())
                 {
-                    using (var result = KerberosTicketCache.CallPackage(handle.Result, buffer, throw_on_error))
+                    using (var result = handle.Result.LsaCallAuthenticationPackage(AuthenticationPackage.KERBEROS_NAME, buffer, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Status.CreateResultFromError<KerberosKeySet>(throw_on_error);
