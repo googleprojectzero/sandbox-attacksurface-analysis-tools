@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
     internal abstract class LsaBufferBuilder
     {
-        protected struct BufferEntry
+        private struct BufferEntry
         {
             public FieldInfo field;
             public FieldInfo length_field;
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Native
         private readonly BinaryWriter _writer;
         private readonly List<BufferEntry> _buffers;
         private readonly Dictionary<FieldInfo, LsaBufferBuilder> _sub_builders;
-        private readonly object _object;
+        protected object _object;
 
         private int GetCurrentPos()
         {
@@ -176,16 +176,19 @@ namespace NtApiDotNet.Win32.Security.Native
             });
         }
 
-        public LsaBufferBuilder<U> GetSubBuilder<U>(string name) where U : new()
+        public LsaBufferBuilder<U> GetSubBuilder<U>(string name, U obj) where U : new()
         {
             FieldInfo field = GetField<U>(name);
             if (_sub_builders.ContainsKey(field))
                 return (LsaBufferBuilder<U>)_sub_builders[field];
-
-            object obj = field.GetValue(_object);
             var builder = new LsaBufferBuilder<U>(obj, this);
             _sub_builders[field] = builder;
             return builder;
+        }
+
+        public LsaBufferBuilder<U> GetSubBuilder<U>(string name) where U : new()
+        {
+            return GetSubBuilder(name, new U());
         }
     }
 
@@ -214,6 +217,11 @@ namespace NtApiDotNet.Win32.Security.Native
             if (_type_fields[name].FieldType != typeof(U))
                 throw new ArgumentException($"Invalid field type {_type_fields[name].FieldType}.", nameof(name));
             return _type_fields[name];
+        }
+
+        public void SetObject(T obj)
+        {
+            _object = obj;
         }
     }
 }
