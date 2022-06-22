@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Native;
 using System;
