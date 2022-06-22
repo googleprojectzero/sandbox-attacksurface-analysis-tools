@@ -470,6 +470,8 @@ namespace NtApiDotNet
         public M128A Xmm13;
         public M128A Xmm14;
         public M128A Xmm15;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 96)]
+        public byte[] Padding;
 
         //
         // Vector registers.
