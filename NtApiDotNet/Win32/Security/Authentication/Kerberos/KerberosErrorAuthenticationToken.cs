@@ -19,7 +19,6 @@ using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos

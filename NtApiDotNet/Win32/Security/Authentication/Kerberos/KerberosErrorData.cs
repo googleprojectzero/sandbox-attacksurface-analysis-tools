@@ -17,7 +17,6 @@ using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.Text;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
