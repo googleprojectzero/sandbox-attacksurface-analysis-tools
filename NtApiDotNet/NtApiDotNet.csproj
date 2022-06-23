@@ -510,6 +510,9 @@
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUnknown.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUsernameTarget.cs" />
+    <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST.cs" />
+    <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_EX.cs" />
+    <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_FLAGS.cs" />
     <Compile Include="Win32\Security\Native\KERB_CHECKSUM.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY32.cs" />

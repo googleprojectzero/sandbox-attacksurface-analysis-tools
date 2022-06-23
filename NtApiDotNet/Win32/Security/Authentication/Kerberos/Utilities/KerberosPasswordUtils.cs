@@ -116,6 +116,53 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
             return DoCall(builder, throw_on_error);
         }
 
+        private static void PopulateAddCredentials(LsaBufferBuilder<KERB_ADD_CREDENTIALS_REQUEST> builder,
+            KERB_PROTOCOL_MESSAGE_TYPE message_type, UserCredentials credentials, Luid logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS flags)
+        {
+            var value = builder.Value;
+            value.MessageType = message_type;
+            value.LogonId = logon_id;
+            value.Flags = flags;
+            builder.Value = value;
+            builder.AddUnicodeString(nameof(KERB_ADD_CREDENTIALS_REQUEST.UserName), credentials.UserName);
+            builder.AddUnicodeString(nameof(KERB_ADD_CREDENTIALS_REQUEST.DomainName), credentials.Domain);
+            builder.AddUnicodeString(nameof(KERB_ADD_CREDENTIALS_REQUEST.Password), credentials.Password);
+        }
+
+        private static NtStatus AddCredentials(UserCredentials credentials, Luid logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS flags, bool throw_on_error)
+        {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
+            var builder = new LsaBufferBuilder<KERB_ADD_CREDENTIALS_REQUEST>();
+            PopulateAddCredentials(builder, KERB_PROTOCOL_MESSAGE_TYPE.KerbAddExtraCredentialsMessage, credentials, logon_id, flags);
+            return DoCall(builder, throw_on_error);
+        }
+
+        private static NtStatus AddCredentialsEx(UserCredentials credentials, Luid logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS flags, string principal_name, bool throw_on_error)
+        {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
+            if (principal_name is null)
+            {
+                throw new ArgumentNullException(nameof(principal_name));
+            }
+
+            var builder = new KERB_ADD_CREDENTIALS_REQUEST_EX()
+            {
+                PrincipalNameCount = 1
+            }.ToBuilder();
+            PopulateAddCredentials(builder.GetSubBuilder< KERB_ADD_CREDENTIALS_REQUEST>(nameof(KERB_ADD_CREDENTIALS_REQUEST_EX.Credentials)), 
+                KERB_PROTOCOL_MESSAGE_TYPE.KerbAddExtraCredentialsExMessage, credentials, logon_id, flags);
+            builder.AddUnicodeString(nameof(KERB_ADD_CREDENTIALS_REQUEST_EX.PrincipalNames), principal_name);
+            return DoCall(builder, throw_on_error);
+        }
+
         /// <summary>
         /// Change a user's password.
         /// </summary>
@@ -406,6 +453,99 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
         public static void TickleSmartcardCredentials(string credential_blob)
         {
             TickleSmartcardCredentials(credential_blob, true);
+        }
+
+        /// <summary>
+        /// Add additional server credentials to a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to add.</param>
+        /// <param name="principal_name">The optional principal name to add the credentials to.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus AddCredentials(UserCredentials credentials, string principal_name, Luid logon_id, bool throw_on_error)
+        {
+            if (principal_name is null)
+            {
+                return AddCredentials(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_ADD_CREDENTIAL, throw_on_error);
+            }
+            else
+            {
+                return AddCredentialsEx(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_ADD_CREDENTIAL, principal_name, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Add additional server credentials to a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to add.</param>
+        /// <param name="principal_name">The principal name to add the credentials to.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        public static void AddCredentials(UserCredentials credentials, string principal_name = null, Luid logon_id = default)
+        {
+            AddCredentials(credentials, principal_name, logon_id, true);
+        }
+
+        /// <summary>
+        /// Replace additional server credentials to a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to replace.</param>
+        /// <param name="principal_name">The optional principal name to add the credentials to.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ReplaceCredentials(UserCredentials credentials, string principal_name, Luid logon_id, bool throw_on_error)
+        {
+            if (principal_name is null)
+            {
+                return AddCredentials(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_REPLACE_CREDENTIAL, throw_on_error);
+            }
+            else
+            {
+                return AddCredentialsEx(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_REPLACE_CREDENTIAL, principal_name, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Replace additional server credentials to a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to replace.</param>
+        /// <param name="principal_name">The principal name to add the credentials to.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        public static void ReplaceCredentials(UserCredentials credentials, string principal_name = null, Luid logon_id = default)
+        {
+            ReplaceCredentials(credentials, principal_name, logon_id, true);
+        }
+
+        /// <summary>
+        /// Remove additional server credentials from a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to remove.</param>
+        /// <param name="principal_name">The optional principal name.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus RemoveCredentials(UserCredentials credentials, string principal_name, Luid logon_id, bool throw_on_error)
+        {
+            if (principal_name is null)
+            {
+                return AddCredentials(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_REMOVE_CREDENTIAL, throw_on_error);
+            }
+            else
+            {
+                return AddCredentialsEx(credentials, logon_id, KERB_ADD_CREDENTIALS_REQUEST_FLAGS.KERB_REQUEST_REMOVE_CREDENTIAL, principal_name, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Remove additional server credentials from a logon session.
+        /// </summary>
+        /// <param name="credentials">The credentials to remove.</param>
+        /// <param name="principal_name">The principal name to add the credentials to.</param>
+        /// <param name="logon_id">The logon ID, 0 to use the caller's.</param>
+        public static void RemoveCredentials(UserCredentials credentials, string principal_name = null, Luid logon_id = default)
+        {
+            RemoveCredentials(credentials, principal_name, logon_id, true);
         }
     }
 }

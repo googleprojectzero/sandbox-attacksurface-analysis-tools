@@ -116,7 +116,7 @@ namespace NtApiDotNet.Win32.Security.Native
             _stm = parent?._stm ?? new MemoryStream();
             _writer = parent?._writer ?? new BinaryWriter(_stm);
             _buffers = new List<BufferEntry>();
-            _object = obj;
+            _object = obj ?? throw new ArgumentNullException(nameof(obj));
             _sub_builders = new Dictionary<FieldInfo, LsaBufferBuilder>();
         }
 
@@ -200,6 +200,10 @@ namespace NtApiDotNet.Win32.Security.Native
         {
         }
 
+        public LsaBufferBuilder() : this(new T())
+        {
+        }
+
         public SafeStructureInOutBuffer<T> ToBuffer()
         {
             return ToBuffer<T>();
@@ -214,9 +218,16 @@ namespace NtApiDotNet.Win32.Security.Native
             return _type_fields[name];
         }
 
-        public void SetObject(T obj)
+        public T Value
         {
-            _object = obj;
+            get => (T)_object;
+            set
+            {
+                object obj = value;
+                if (obj is null)
+                    throw new ArgumentNullException(nameof(value));
+                _object = obj;
+            }
         }
     }
 }
