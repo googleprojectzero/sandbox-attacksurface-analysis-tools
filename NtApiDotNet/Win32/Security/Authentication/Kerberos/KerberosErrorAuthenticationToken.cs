@@ -75,13 +75,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] ErrorData { get; private set; }
         /// <summary>
-        /// The list of parsed error data.
+        /// The parsed error data.
         /// </summary>
-        public IReadOnlyList<KerberosErrorData> ErrorDataList { get; private set; }
+        public KerberosErrorData ErrorDataValue { get; private set; }
         /// <summary>
         /// The NT status if extended error data is present.
         /// </summary>
-        public NtStatus? Status => ErrorDataList.OfType<KerberosErrorDataExtended>().FirstOrDefault()?.Status;
+        public NtStatus? Status => (ErrorDataValue as KerberosErrorDataExtended)?.Status;
         /// <summary>
         /// The list of PA-DATA if the error is KDC_ERR_PREAUTH_REQUIRED.
         /// </summary>
@@ -100,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ServerTime = null;
             ErrorText = string.Empty;
             ErrorData = new byte[0];
-            ErrorDataList = new List<KerberosErrorData>().AsReadOnly();
+            ErrorDataValue = null;
             PreAuthentationData = new List<KerberosPreAuthenticationData>().AsReadOnly();
         }
         #endregion
@@ -133,12 +133,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (ErrorData.Length > 0)
             {
                 builder.AppendLine($"Error Data        :");
-                if (ErrorDataList.Count > 0)
+                if (ErrorDataValue != null)
                 {
-                    foreach (var data in ErrorDataList)
-                    {
-                        builder.AppendLine(data.ToString());
-                    }
+                    builder.AppendLine(ErrorDataValue.ToString());
                 }
                 else
                 {
@@ -168,12 +165,47 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="server_realm">Server realm</param>
         /// <param name="server_name">Server name.</param>
         /// <param name="error_text">Optional error text.</param>
+        /// <param name="error_data">Error data.</param>
+        /// <returns>The KRB-ERROR authentication token.</returns>
+        public static KerberosErrorAuthenticationToken Create(KerberosTime server_time, int server_usec, KerberosErrorType error_code,
+            string server_realm, KerberosPrincipalName server_name, KerberosErrorData error_data, KerberosTime client_time = null, 
+            int? client_usec = null, string client_realm = null, KerberosPrincipalName client_name = null, string error_text = null)
+        {
+            if (error_data is null)
+            {
+                throw new ArgumentNullException(nameof(error_data));
+            }
+
+            DERBuilder builder = new DERBuilder();
+            builder.WriteObject(error_data);
+            return Create(server_time, server_usec, error_code, server_realm, server_name, 
+                client_time, client_usec, client_realm, client_name, error_text, builder.ToArray());
+        }
+
+        /// <summary>
+        /// Create a new KRB-ERROR authentication token.
+        /// </summary>
+        /// <param name="client_time">Optional client time.</param>
+        /// <param name="client_usec">Optional client time usecs.</param>
+        /// <param name="server_time">Server time.</param>
+        /// <param name="server_usec">Server time usecs.</param>
+        /// <param name="error_code">Error code.</param>
+        /// <param name="client_realm">Optional client realm.</param>
+        /// <param name="client_name">Optional client name.</param>
+        /// <param name="server_realm">Server realm</param>
+        /// <param name="server_name">Server name.</param>
+        /// <param name="error_text">Optional error text.</param>
         /// <param name="error_data">Optional error data.</param>
         /// <returns>The KRB-ERROR authentication token.</returns>
         public static KerberosErrorAuthenticationToken Create(KerberosTime server_time, int server_usec, KerberosErrorType error_code,
             string server_realm, KerberosPrincipalName server_name, KerberosTime client_time = null, int? client_usec = null, string client_realm = null,
             KerberosPrincipalName client_name = null,string error_text = null, byte[] error_data = null)
         {
+            if (server_time is null)
+            {
+                throw new ArgumentNullException(nameof(server_time));
+            }
+
             if (server_realm is null)
             {
                 throw new ArgumentNullException(nameof(server_realm));
@@ -310,7 +342,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                     else
                     {
-                        ret.ErrorDataList = KerberosErrorData.Parse(ret.ErrorData).AsReadOnly();
+                        ret.ErrorDataValue = KerberosErrorData.Parse(ret.ErrorData);
                     }
                 }
 

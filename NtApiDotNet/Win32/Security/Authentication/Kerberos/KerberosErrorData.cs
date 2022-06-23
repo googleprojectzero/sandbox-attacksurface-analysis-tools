@@ -13,10 +13,12 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -37,7 +39,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Represents MS specific KERB-ERROR-DATA structure.
     /// </summary>
-    public class KerberosErrorData
+    public class KerberosErrorData : IDERObject
     {
         /// <summary>
         /// The type of the error data.
@@ -61,57 +63,57 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosErrorData(data_type, data_value);
         }
 
-        internal static List<KerberosErrorData> Parse(byte[] error_data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="data_type">The type of error.</param>
+        /// <param name="data_value">The error value.</param>
+        public KerberosErrorData(KerberosErrorDataType data_type, byte[] data_value)
         {
-            List<KerberosErrorData> ret = new List<KerberosErrorData>();
+            DataType = data_type;
+            DataValue = data_value;
+        }
+
+        internal static KerberosErrorData Parse(byte[] error_data)
+        {
             try
             {
                 DERValue[] values = DERParser.ParseData(error_data, 0);
                 if (values.Length != 1 || !values[0].CheckSequence())
-                    return ret;
-                foreach (var value in values)
+                    return null;
+                DERValue value = values[0];
+                KerberosErrorDataType data_type = 0;
+                byte[] data = null;
+                foreach (var next in value.Children)
                 {
-                    if (!value.CheckSequence())
-                        continue;
-                    KerberosErrorDataType data_type = 0;
-                    byte[] data = null;
-                    foreach (var next in value.Children)
-                    {
-                        if (next.Type != DERTagType.ContextSpecific)
-                            break;
+                    if (next.Type != DERTagType.ContextSpecific)
+                        break;
                         
-                        switch (next.Tag)
-                        {
-                            case 1:
-                                data_type = (KerberosErrorDataType)next.ReadChildInteger();
-                                break;
-                            case 2:
-                                data = next.ReadChildOctetString();
-                                break;
-                            default:
-                                data_type = 0;
-                                break;
-                        }
+                    switch (next.Tag)
+                    {
+                        case 1:
+                            data_type = (KerberosErrorDataType)next.ReadChildInteger();
+                            break;
+                        case 2:
+                            data = next.ReadChildOctetString();
+                            break;
+                        default:
+                            data_type = 0;
+                            break;
                     }
-
-                    ret.Add(Parse(data_type, data));
                 }
+
+                return Parse(data_type, data);
             }
             catch
             {
             }
-            return ret;
-        }
-
-        internal KerberosErrorData(KerberosErrorDataType error_type, byte[] data_value)
-        {
-            DataType = error_type;
-            DataValue = data_value;
+            return null;
         }
 
         private protected virtual void FormatData(StringBuilder builder)
         {
-            if (DataValue?.Length == 0)
+            if (DataValue == null || DataValue.Length == 0)
                 return;
             HexDumpBuilder hex = new HexDumpBuilder(true, true, true, true, 0);
             hex.Append(DataValue);
@@ -126,8 +128,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine($"<KerberosErrorData {DataType}");
+            builder.AppendLine($"<KerberosErrorData {DataType}>");
+            FormatData(builder);
             return builder.ToString();
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(1, (int)DataType);
+                seq.WriteContextSpecific(2, DataValue);
+            }
         }
     }
 
@@ -151,6 +163,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public int Flags { get; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="status">The NT status code.</param>
+        /// <param name="reserved">The reserved value.</param>
+        /// <param name="flags">The flags.</param>
+        public KerberosErrorDataExtended(NtStatus status, int reserved, int flags) :
+            this(BuildData(status, reserved, flags), status, reserved, flags)
+        {
+        }
+
         internal static bool TryParse(byte[] data, out KerberosErrorData result)
         {
             result = null;
@@ -163,6 +186,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 BitConverter.ToInt32(data, 4),
                 BitConverter.ToInt32(data, 8));
             return true;
+        }
+
+        private static byte[] BuildData(NtStatus status, int reserved, int flags)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((uint)status);
+            writer.Write(reserved);
+            writer.Write(flags);
+            return stm.ToArray();
         }
 
         private protected override void FormatData(StringBuilder builder)

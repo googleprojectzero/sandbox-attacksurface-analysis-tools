@@ -704,3 +704,72 @@ function Rename-KerberosTicket {
 
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $Name, $Ticket.EncryptedData)
 }
+
+<#
+.SYNOPSIS
+Creates a new Kerberos error.
+.DESCRIPTION
+This cmdlet creates a new Kerberos error authentication token.
+.PARAMETER ErrorCode
+Specify error code.
+.PARAMETER ServerName
+Specify the server principal name
+.PARAMETER ServerRealm
+Specify the server realm.
+.PARAMETER ServerTime
+Specify the server time.
+.PARAMETER ServerUsec
+Specify the server usecs.
+.PARAMETER ClientName
+Specify the client principal name.
+.PARAMETER ClientRealm
+Specify the client realm.
+.PARAMETER ClientTime
+Specify the client time.
+.PARAMETER ClientUsec
+Specify the client usecs.
+.PARAMETER ErrorText
+Specify the error text.
+.PARAMETER ErrorData
+Specify the error data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken
+#>
+function New-KerberosError {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorType]$ErrorCode,
+        [Parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [Parameter(Mandatory, Position = 2)]
+        [string]$ServerRealm,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]$ServerTime,
+        [int]$ServerUsec = 0,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [string]$ClientRealm,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]$ClientTime,
+        [System.Nullable[int]]$ClientUsec,
+        [string]$ErrorText,
+        [Parameter(ParameterSetName="FromBytes")]
+        [byte[]]$ErrorData,
+        [Parameter(Mandatory, Position = 3, ParameterSetName="FromErrorData")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorData]$ErrorDataValue
+    )
+
+    if ($ServerTime -eq $null) {
+        $ServerTime = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]::Now
+    }
+
+    if ($PSCmdlet.ParameterSetName -eq "FromErrorData") {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
+            $ErrorCode, $ServerRealm, $ServerName, $ErrorDataValue, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText
+        )
+    } else {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
+            $ErrorCode, $ServerRealm, $ServerName, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText, $ErrorData
+        )
+    }
+}
