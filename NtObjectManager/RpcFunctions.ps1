@@ -131,6 +131,8 @@ function Get-RpcEndpoint {
         [parameter(Mandatory, ParameterSetName = "FromProcessId")]
         [alias("pid")]
         [int]$ProcessId,
+        [parameter(Mandatory, ParameterSetName = "FromServiceName")]
+        [string]$ServiceName,
         [parameter(ParameterSetName = "FromIdAndVersion")]
         [parameter(ParameterSetName = "FromServer")]
         [switch]$FindAlpcPort,
@@ -184,6 +186,17 @@ function Get-RpcEndpoint {
             "FromProcessId" {
                 (Get-RpcAlpcServer -ProcessId $ProcessId).Endpoints
             }
+            "FromServiceName" {
+                try {
+                    $service = Get-Win32Service -Name $ServiceName
+                    if ($service.ProcessId -eq 0) {
+                        throw "Service $ServiceName is not running."
+                    }
+                    Get-RpcEndPoint -ProcessId $service.ProcessId
+                } catch {
+                    Write-Error $_
+                }
+            }
         }
 
         if ($ProtocolSequence.Count -gt 0) {
@@ -224,6 +237,8 @@ If private symbols available try and resolve the names of structures and paramet
 Specify to use a built-in fallback for symbol server resolving when using the system dbghelp DLL. You also need to specify a local cache directory in SymbolPath.
 .PARAMETER ProcessId
 Specify a process to extract the RPC servers from. This parses all the modules in a process for any available servers.
+.PARAMETER ServiceName
+Specify the name of a service to extract the RPC servers from.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -261,22 +276,29 @@ function Get-RpcServer {
         [parameter(Mandatory, ParameterSetName = "FromProcessId")]
         [alias("pid")]
         [int]$ProcessId,
+        [parameter(Mandatory, ParameterSetName = "FromServiceName")]
+        [string]$ServiceName,
         [parameter(ParameterSetName = "FromDll")]
         [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
         [string]$DbgHelpPath,
         [parameter(ParameterSetName = "FromDll")]
         [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
         [string]$SymbolPath,
         [parameter(ParameterSetName = "FromDll")]
         [switch]$ParseClients,
         [parameter(ParameterSetName = "FromDll")]
         [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
         [switch]$IgnoreSymbols,
         [parameter(ParameterSetName = "FromDll")]
         [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
         [switch]$ResolveStructureNames,
         [parameter(ParameterSetName = "FromDll")]
         [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
         [switch]$SymSrvFallback,
         [switch]$AsText,
         [switch]$RemoveComments
@@ -332,6 +354,15 @@ function Get-RpcServer {
                     $proc.Modules | 
                     % { 
                         Get-RpcServer -FullName $_.FileName -DbgHelpPath $DbgHelpPath -SymbolPath $SymbolPath `
+                            -IgnoreSymbols:$IgnoreSymbols -ResolveStructureNames:$ResolveStructureNames -SymSrvFallback:$SymSrvFallback 
+                    }
+                }
+                "FromServiceName" {
+                    $service = Get-Win32Service -Name $ServiceName
+                    if ($service.ProcessId -eq 0) {
+                        throw "Service $ServiceName is not running."
+                    } else {
+                        Get-RpcServer -ProcessId $service.ProcessId -DbgHelpPath $DbgHelpPath -SymbolPath $SymbolPath `
                             -IgnoreSymbols:$IgnoreSymbols -ResolveStructureNames:$ResolveStructureNames -SymSrvFallback:$SymSrvFallback 
                     }
                 }
