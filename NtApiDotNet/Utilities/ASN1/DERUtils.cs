@@ -53,25 +53,6 @@ namespace NtApiDotNet.Utilities.ASN1
             return value;
         }
 
-        public static DERValue ReadValue(this BinaryReader reader, long offset)
-        {
-            DERValue ret = new DERValue();
-            ret.Offset = offset + reader.BaseStream.Position;
-            byte id = reader.ReadByte();
-            ret.Type = (DERTagType)(id >> 6);
-            ret.Constructed = (id & 0x20) != 0;
-            ret.Tag = id & 0x1F;
-            if (ret.Tag == 0x1F)
-            {
-                ret.Tag = reader.ReadEncodedInt();
-            }
-            // TODO: Handle indefinite length?
-            int length = reader.ReadLength();
-            ret.DataOffset = offset + reader.BaseStream.Position;
-            ret.Data = reader.ReadAllBytes(length);
-            return ret;
-        }
-
         public static long RemainingLength(this BinaryReader reader)
         {
             return reader.BaseStream.Length - reader.BaseStream.Position;

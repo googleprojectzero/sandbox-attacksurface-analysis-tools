@@ -252,6 +252,7 @@
     <Compile Include="Utilities\ASN1\Builder\DERBuilderUtils.cs" />
     <Compile Include="Utilities\ASN1\Builder\DERObjectIdentifier.cs" />
     <Compile Include="Utilities\ASN1\Builder\IDERObject.cs" />
+    <Compile Include="Utilities\ASN1\DERParserStream.cs" />
     <Compile Include="Utilities\ASN1\Parser\ASN1Application.cs" />
     <Compile Include="Utilities\ASN1\Parser\ASN1ContextSpecific.cs" />
     <Compile Include="Utilities\ASN1\Parser\ASN1Object.cs" />

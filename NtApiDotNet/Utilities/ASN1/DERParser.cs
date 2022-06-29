@@ -24,14 +24,11 @@ namespace NtApiDotNet.Utilities.ASN1
     {
         private static DERValue[] ParseData(long offset, byte[] data, int index)
         {
-            MemoryStream stm = new MemoryStream();
-            stm.Write(data, index, data.Length - index);
-            stm.Position = 0;
-            BinaryReader reader = new BinaryReader(stm);
+            DERParserStream stm = new DERParserStream(data, index, data.Length - index, offset);
             List<DERValue> values = new List<DERValue>();
-            while (reader.RemainingLength() > 0)
+            while (!stm.Done)
             {
-                DERValue v = reader.ReadValue(offset);
+                DERValue v = stm.ReadValue();
                 if (v.Constructed)
                 {
                     v.Children = ParseData(v.DataOffset, v.Data, 0);
