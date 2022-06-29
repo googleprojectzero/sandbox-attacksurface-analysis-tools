@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.Security;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
@@ -19,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -61,6 +64,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Replay) || _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Sequence);
         }
 
+        private const int GSSAPI_HEADER_SIZE = 13;
         private const int SECURITY_HEADER_SIZE = 16;
 
         private byte[] GenerateAESChecksumHeader()
@@ -221,6 +225,57 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return ret;
         }
 
+        private static byte[] GenerateRC4ChecksumHeader()
+        {
+            return new byte[] {
+                0x01, 0x01, // TOK_ID
+                0x11, 0x00,
+                0xFF, 0xFF, 0xFF, 0xFF
+            };
+        }
+
+        private byte[] EncryptRC4Plain(byte[] checksum, byte[] data, int offset, int length)
+        {
+            HMACMD5 hmac = new HMACMD5(_subkey.Key);
+            var tmpkey = hmac.ComputeHash(new byte[4]);
+            hmac = new HMACMD5(tmpkey);
+            var key = hmac.ComputeHash(checksum, 0, 8);
+            return ARC4.Transform(data, offset, length, key);
+        }
+
+        private byte[] EncryptRC4Plain(byte[] checksum, byte[] data)
+        {
+            return EncryptRC4Plain(checksum, data, 0, data.Length);
+        }
+
+        private byte[] MakeSignatureRC4(IEnumerable<SecurityBuffer> messages, int sequence_no)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            byte[] header = GenerateRC4ChecksumHeader();
+            writer.Write(header);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.KrbSafe);
+
+            stm.SetLength(0);
+
+            writer.Write(header);
+
+            int seq_no = (int)_send_sequence_number;
+            _send_sequence_number++;
+            byte[] seq_bytes = BitConverter.GetBytes(seq_no.SwapEndian());
+            Array.Resize(ref seq_bytes, 8);
+            writer.Write(EncryptRC4Plain(hash, seq_bytes));
+            writer.Write(hash, 0, 8);
+
+            return GSSAPIUtils.Wrap(OIDValues.KERBEROS, stm.ToArray());
+        }
+
         private bool VerifySignatureAES(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
             if (signature is null)
@@ -258,6 +313,62 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);
             return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
+
+        private bool VerifySignatureRC4(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
+        {
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            if (signature.Length < MaxSignatureSize)
+            {
+                throw new ArgumentException("Signature token is too small.");
+            }
+
+            if (!GSSAPIUtils.TryParse(signature, out signature, out string oid))
+            {
+                return false;
+            }
+
+            if (oid != OIDValues.KERBEROS)
+            {
+               return false;
+            }
+
+            if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFF00110101U)
+            {
+                return false;
+            }
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            byte[] header = GenerateRC4ChecksumHeader();
+            writer.Write(header);
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.KrbSafe);
+            Array.Resize(ref hash, 8);
+
+            if (UseSequenceNumber())
+            {
+                int seq_no = BitConverter.ToInt32(EncryptRC4Plain(hash, signature, 8, 8), 0).SwapEndian();
+                int recv_seq_no = (int)_recv_sequence_number++;
+                if (seq_no != recv_seq_no)
+                {
+                    return false;
+                }
+            }
+
+            byte[] verify_hash = new byte[8];
+            Buffer.BlockCopy(signature, 16, verify_hash, 0, 8);
+
+            return NtObjectUtils.EqualByteArray(hash, verify_hash);
+        }
+
         #endregion
 
         #region Constructors
@@ -289,22 +400,44 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             _ticket = ticket;
             _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
             _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
+            KerberosCredential delegate_cred = null;
+            if (_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
+            {
+                if (config?.DelegationTicket == null)
+                    throw new ArgumentException($"Must specify {nameof(config.DelegationTicket)} credentials to enable delegation.", nameof(config));
+                delegate_cred = config.DelegationTicket.Encrypt(_subkey);
+            }
+
             bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);
-            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, config?.ChannelBinding ?? new byte[16]);
+            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, config?.ChannelBinding ?? new byte[16], 1, delegate_cred);
             int sequence_number = KerberosBuilderUtils.GetRandomNonce();
             _send_sequence_number = _recv_sequence_number = sequence_number;
 
             KerberosAPRequestOptions opts = KerberosAPRequestOptions.None;
             if (mutual_auth_required)
                 opts |= KerberosAPRequestOptions.MutualAuthRequired;
-            if (config.SessionKeyTicket != null)
+            if (config?.SessionKeyTicket != null)
                 opts |= KerberosAPRequestOptions.UseSessionKey;
 
+            List<KerberosAuthorizationData> auth_data = config?.AuthorizationData ?? new List<KerberosAuthorizationData>();
             var authenticator = KerberosAuthenticator.Create(_ticket.TargetDomainName, _ticket.ClientName,
-                KerberosTime.Now, 0, cksum, _subkey, sequence_number, null);
+                KerberosTime.Now, 0, cksum, _subkey, sequence_number, auth_data.Count > 0 ? auth_data : null);
             Token = KerberosAPRequestAuthenticationToken.Create(_ticket.Ticket,
                 authenticator, opts, authenticator_key: _ticket.SessionKey);
             Done = !mutual_auth_required;
+
+            switch (_subkey.KeyEncryption)
+            {
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    MaxSignatureSize = GSSAPI_HEADER_SIZE + 24;
+                    SecurityTrailerSize = GSSAPI_HEADER_SIZE + 32;
+                    break;
+                default:
+                    MaxSignatureSize = SECURITY_HEADER_SIZE + _subkey.ChecksumSize;
+                    SecurityTrailerSize = (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
+                    break;
+            }
+
         }
         #endregion
 
@@ -322,9 +455,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public string PackageName => AuthenticationPackage.KERBEROS_NAME;
 
-        public int MaxSignatureSize => SECURITY_HEADER_SIZE + _subkey.ChecksumSize;
+        public int MaxSignatureSize { get; }
 
-        public int SecurityTrailerSize => (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
+        public int SecurityTrailerSize { get; }
 
         public void Continue(AuthenticationToken token)
         {
@@ -463,6 +596,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
                     return MakeSignatureAES(messages, sequence_no);
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    return MakeSignatureRC4(messages, sequence_no);
                 default:
                     throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }
@@ -482,6 +617,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
                     return VerifySignatureAES(messages, signature, sequence_no);
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    return VerifySignatureRC4(messages, signature, sequence_no);
                 default:
                     throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }

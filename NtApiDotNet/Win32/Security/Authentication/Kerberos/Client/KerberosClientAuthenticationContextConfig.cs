@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
     /// <summary>
@@ -38,5 +40,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Specify a ticket to generate a U2U ticket.
         /// </summary>
         public KerberosTicket SessionKeyTicket { get; set; }
+
+        /// <summary>
+        /// KRB-CRED for the delegation ticket.
+        /// </summary>
+        public KerberosCredential DelegationTicket { get; set; }
+
+        /// <summary>
+        /// Authorization data for the authenticator.
+        /// </summary>
+        public List<KerberosAuthorizationData> AuthorizationData { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public KerberosClientAuthenticationContextConfig()
+        {
+            AuthorizationData = new List<KerberosAuthorizationData>();
+        }
     }
 }

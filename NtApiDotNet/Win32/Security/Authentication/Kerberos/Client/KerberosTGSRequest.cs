@@ -84,9 +84,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(auth_data));
             }
 
-            if (AuthorizationData == null)
-                AuthorizationData = new List<KerberosAuthorizationData>();
-            AuthorizationData.Add(auth_data);
+            GetAuthorizationDataList().Add(auth_data);
+        }
+
+        /// <summary>
+        /// Add authorization data to the request.
+        /// </summary>
+        /// <param name="auth_data">The authorization data to add.</param>
+        public void AddAuthorizationDataRange(IEnumerable<KerberosAuthorizationData> auth_data)
+        {
+            if (auth_data is null)
+            {
+                throw new ArgumentNullException(nameof(auth_data));
+            }
+
+            GetAuthorizationDataList().AddRange(auth_data);
         }
 
         /// <summary>
@@ -263,7 +275,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #endregion
 
-        #region Internal Members
+        #region Private Members
         private void Validate()
         {
             if (Ticket is null)
@@ -296,9 +308,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             builder.WriteSequence(AuthorizationData);
             return KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
         }
-        #endregion
 
-        #region Private Members
         private static KerberosTGSRequest Create(KerberosCredential credential)
         {
             if (credential is null)
@@ -324,6 +334,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             var ticket_info = enc_part.TicketInfo[0];
 
             return new KerberosTGSRequest(credential.Tickets[0], ticket_info.Key, ticket_info.ClientName, ticket_info.ClientRealm);
+        }
+
+        private List<KerberosAuthorizationData> GetAuthorizationDataList()
+        {
+            if (AuthorizationData == null)
+                AuthorizationData = new List<KerberosAuthorizationData>();
+            return AuthorizationData;
         }
 
         #endregion

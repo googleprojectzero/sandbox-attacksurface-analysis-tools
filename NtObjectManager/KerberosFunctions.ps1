@@ -612,7 +612,7 @@ Create a new local Kerberos cache.
 .DESCRIPTION
 This cmdlet creates a new local Kerberos ticket cache. Defaults to populating from the current system cache.
 .PARAMETER CreateClient
-Create a client when initializing from the system cache.
+Create a client when initializing from the system cache or a list of tickets.
 .PARAMETER LogonId
 Specify the logon ID for the system cache to use.
 .PARAMETER Hostname
@@ -636,6 +636,7 @@ function New-KerberosTicketCache {
     [CmdletBinding(DefaultParameterSetName="FromSystem")]
     Param(
         [Parameter(ParameterSetName="FromSystem")]
+        [Parameter(ParameterSetName="FromTickets")]
         [switch]$CreateClient,
         [Parameter(ParameterSetName="FromSystem")]
         [NtApiDotNet.Luid]$LogonId = 0,
@@ -652,6 +653,7 @@ function New-KerberosTicketCache {
         [Parameter(ParameterSetName="FromTgt")]
         [string]$Realm = [NullString]::Value,
         [Parameter(ParameterSetName="FromTgt")]
+        [Parameter(Mandatory, ParameterSetName="FromTickets")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket[]]$AdditionalTicket
     )
 
@@ -666,6 +668,9 @@ function New-KerberosTicketCache {
         "FromKey" {
             $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Key)
+        }
+        "FromTickets" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromTickets($AdditionalTicket, $CreateClient)
         }
     }
 }

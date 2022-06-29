@@ -44,7 +44,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return new KerberosPrincipalName(server_inst ? KerberosNameType.SRV_INST : KerberosNameType.PRINCIPAL, server_name);
         }
 
-        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false, KerberosTicket session_key_ticket = null, bool s4u = false)
+        private KerberosExternalTicket GetTicketFromKDC(KerberosPrincipalName server_name, bool cache_only = false, 
+            KerberosTicket session_key_ticket = null, bool s4u = false, KerberosEncryptionType? encryption_type = null,
+            IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (cache_only)
                 throw new ArgumentException($"Ticket for {server_name} doesn't exist in the cache.");
@@ -69,6 +71,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             {
                 request = KerberosTGSRequest.CreateForS4U2Self(_tgt_ticket.Credential, server_name.FullName, _realm);
             }
+
+            if (encryption_type.HasValue)
+            {
+                request.EncryptionTypes.Add(encryption_type.Value);
+            }
+
+            if (authorization_data != null)
+            {
+                request.AddAuthorizationDataRange(authorization_data);
+            }
+
             return _kdc_client.RequestServiceTicket(request).ToExternalTicket();
         }
         #endregion
@@ -129,8 +142,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="client">A KDC client for the domain.</param>
         /// <param name="key">The user's authentication key.</param>
         /// <returns>The local ticket cache.</returns>
-        public static KerberosLocalTicketCache FromClient(KerberosKDCClient client, 
-            KerberosAuthenticationKey key)
+        public static KerberosLocalTicketCache FromClient(KerberosKDCClient client, KerberosAuthenticationKey key)
         {
             KerberosASRequest request = new KerberosASRequest(key, key.Name, key.Realm);
             var reply = client.Authenticate(request);
@@ -214,17 +226,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="request_attributes">The request attributes.</param>
         /// <param name="cache_only">If true then only the cache will be queried, a request won't be made to the KDC.</param>
         /// <param name="config">Additional configuration for the security context.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The client authentication context.</returns>
         public KerberosClientAuthenticationContext CreateClientContext(KerberosPrincipalName server_name,
-            InitializeContextReqFlags request_attributes, bool cache_only = false, KerberosClientAuthenticationContextConfig config = null)
+            InitializeContextReqFlags request_attributes, bool cache_only = false, 
+            KerberosClientAuthenticationContextConfig config = null, KerberosEncryptionType? encryption_type = null,
+            IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (server_name is null)
             {
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            KerberosExternalTicket ticket = config.SessionKeyTicket == null ? 
-                GetTicket(server_name, cache_only) : GetTicket(server_name, config.SessionKeyTicket, cache_only);
+            KerberosExternalTicket ticket = config?.SessionKeyTicket == null ? 
+                GetTicket(server_name, cache_only, encryption_type, authorization_data) : 
+                GetTicket(server_name, config.SessionKeyTicket, cache_only, encryption_type, authorization_data);
 
             return new KerberosClientAuthenticationContext(ticket, request_attributes, config);
         }
@@ -236,11 +253,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="request_attributes">The request attributes.</param>
         /// <param name="cache_only">If true then only the cache will be queried, a request won't be made to the KDC.</param>
         /// <param name="config">Additional configuration for the security context.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The client authentication context.</returns>
         public KerberosClientAuthenticationContext CreateClientContext(string server_name, InitializeContextReqFlags request_attributes,
-            bool cache_only = false, KerberosClientAuthenticationContextConfig config = null)
+            bool cache_only = false, KerberosClientAuthenticationContextConfig config = null, KerberosEncryptionType? encryption_type = null,
+            IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
-            return CreateClientContext(ConvertSPN(server_name), request_attributes, cache_only, config);
+            return CreateClientContext(ConvertSPN(server_name), request_attributes, cache_only, config, encryption_type, authorization_data);
         }
 
         /// <summary>
@@ -248,15 +268,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="server_name">The server name.</param>
         /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, bool cache_only = false)
+        public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, bool cache_only = false, 
+            KerberosEncryptionType? encryption_type = null,
+            IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (server_name is null)
             {
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only));
+            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, 
+                encryption_type: encryption_type, authorization_data: authorization_data));
         }
 
         /// <summary>
@@ -264,10 +289,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="server_name">The server name.</param>
         /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetTicket(string server_name, bool cache_only = false)
+        public KerberosExternalTicket GetTicket(string server_name, bool cache_only = false, 
+            KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
-            return GetTicket(ConvertSPN(server_name), cache_only);
+            return GetTicket(ConvertSPN(server_name), cache_only, encryption_type, authorization_data);
         }
 
         /// <summary>
@@ -276,8 +304,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="server_name">The user principal name.</param>
         /// <param name="session_key_ticket">The ticket for the session key.</param>
         /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, KerberosTicket session_key_ticket, bool cache_only = false)
+        public KerberosExternalTicket GetTicket(KerberosPrincipalName server_name, KerberosTicket session_key_ticket, 
+            bool cache_only = false, KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (server_name is null)
             {
@@ -289,7 +320,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(session_key_ticket));
             }
 
-            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, session_key_ticket));
+            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, session_key_ticket, encryption_type: encryption_type, authorization_data: authorization_data));
         }
 
         /// <summary>
@@ -298,10 +329,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="server_name">The user principal name.</param>
         /// <param name="tgt_ticket">The TGT ticket for the target user.</param>
         /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetTicket(string server_name, KerberosTicket tgt_ticket, bool cache_only = false)
+        public KerberosExternalTicket GetTicket(string server_name, KerberosTicket tgt_ticket, bool cache_only = false, 
+            KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
-            return GetTicket(ConvertSPN(server_name), tgt_ticket, cache_only);
+            return GetTicket(ConvertSPN(server_name), tgt_ticket, cache_only, encryption_type, authorization_data);
         }
 
         /// <summary>
@@ -309,8 +343,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="username">The name of the user for S4U.</param>
         /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetS4USelfTicket(string username, bool cache_only = false)
+        public KerberosExternalTicket GetS4USelfTicket(string username, bool cache_only = false, 
+            KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (username is null)
             {
@@ -318,7 +355,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var server_name = new KerberosPrincipalName(KerberosNameType.PRINCIPAL, username);
-            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, s4u: true));
+            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, s4u: true, 
+                encryption_type: encryption_type, authorization_data: authorization_data));
         }
 
         /// <summary>
