@@ -213,7 +213,6 @@ function Get-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="CurrentLuid")]
     Param(
         [Parameter(Position = 0, ParameterSetName="FromTarget", Mandatory)]
-        [Parameter(Position = 0, ParameterSetName="FromTargetCredHandle", Mandatory)]
         [Parameter(Position = 0, ParameterSetName="FromLocalCache", Mandatory)]
         [string]$TargetName,
         [Parameter(Position = 0, ParameterSetName="FromLuid", Mandatory)]
@@ -221,18 +220,23 @@ function Get-KerberosTicket {
         [NtApiDotNet.Luid]$LogonId = [NtApiDotNet.Luid]::new(0),
         [Parameter(Position = 0, ParameterSetName="FromLogonSession", ValueFromPipeline, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.LogonSession[]]$LogonSession,
-        [Parameter(ParameterSetName="FromTargetCredHandle", Mandatory)]
+        [Parameter(ParameterSetName="FromTarget")]
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(ParameterSetName="FromTarget")]
-        [Parameter(ParameterSetName="FromTargetCredHandle")]
         [Parameter(ParameterSetName="FromLocalCache")]
         [switch]$CacheOnly,
         [Parameter(ParameterSetName="FromLuid")]
         [Parameter(ParameterSetName="CurrentLuid")]
         [Parameter(ParameterSetName="FromLogonSession")]
-        [switch]$InfoOnly
+        [switch]$InfoOnly,
+        [Parameter(ParameterSetName="FromTarget")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosRetrieveTicketFlags]$Flags = 0,
+        [Parameter(ParameterSetName="FromTarget")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketFlags]$TicketFlags = 0,
+        [Parameter(ParameterSetName="FromTarget")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$EncryptionType = 0
     )
 
     PROCESS {
@@ -262,10 +266,12 @@ function Get-KerberosTicket {
                     }
                 }
                 "FromTarget" {
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $LogonId, $CacheOnly) | Write-Output
-                }
-                "FromTargetCredHandle" {
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::GetTicket($TargetName, $CredHandle, $CacheOnly) | Write-Output
+                    $Flags = $Flags -bor "AsKerbCred"
+                    if ($CacheOnly) {
+                        $Flags = $Flags -bor "UseCacheOnly"
+                    }
+
+                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::RetrieveTicket($TargetName, $LogonId, $CredHandle, $Flags, $TicketFlags, $EncryptionType) | Write-Output
                 }
                 "FromLocalCache" {
                     $Cache.GetTicket($TargetName, $CacheOnly)
