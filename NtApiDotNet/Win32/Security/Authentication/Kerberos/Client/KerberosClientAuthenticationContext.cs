@@ -111,6 +111,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return stm.ToArray();
         }
 
+        private void PopulateBuffers(List<ISecurityBufferInOut> data_buffers, byte[] data, int offset, int length)
+        {
+            MemoryStream stm = new MemoryStream(data, offset, length);
+            BinaryReader reader = new BinaryReader(stm);
+            foreach (var buffer in data_buffers)
+            {
+                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
+            }
+        }
+
         private void EncryptMessageNoSignatureAES(IEnumerable<SecurityBuffer> messages)
         {
             // The message buffer gets the last X bytes of the encrypted data. The rest goes into the signature.
@@ -150,6 +160,57 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             writer.Write(reader.ReadToEnd());
             writer.Write(confounder);
             token_buffer.Update(SecurityBufferType.Token, stm.ToArray());
+        }
+
+        private void EncryptMessageNoSignatureRC4(IEnumerable<SecurityBuffer> messages)
+        {
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+
+            ISecurityBufferOut token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token && !b.ReadOnly)
+                                .OfType<ISecurityBufferOut>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            byte[] header = GenerateRC4Header(true);
+            writer.Write(header);
+            byte[] confounder = new byte[8];
+            new Random().NextBytes(confounder);
+            writer.Write(confounder);
+            foreach (var buffer in data_buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] data_to_hash = stm.ToArray();
+
+            byte[] hash = _subkey.ComputeHash(data_to_hash, KerberosKeyUsage.KrbPriv);
+            Array.Resize(ref hash, 8);
+
+            int seq_no = (int)_send_sequence_number;
+            _send_sequence_number++;
+
+            byte[] seq_bytes = BitConverter.GetBytes(seq_no.SwapEndian());
+
+            byte[] enc_data = EncryptRC4Plain(true, seq_bytes, data_to_hash, header.Length, data_to_hash.Length - header.Length);
+
+            Array.Resize(ref seq_bytes, 8);
+
+            stm.SetLength(0);
+            writer.Write(header);
+            writer.Write(EncryptRC4Plain(false, hash, seq_bytes));
+            writer.Write(hash);
+            writer.Write(enc_data);
+
+            byte[] token = GSSAPIUtils.Wrap(OIDValues.KERBEROS, stm.ToArray());
+            Array.Resize(ref token, token.Length - enc_data.Length + confounder.Length);
+            token_buffer.Update(SecurityBufferType.Token, token);
+            PopulateBuffers(data_buffers, enc_data, confounder.Length, enc_data.Length - confounder.Length);
         }
 
         private void DecryptMessageNoSignatureAES(IEnumerable<SecurityBuffer> messages)
@@ -207,6 +268,92 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             // We should perhaps verify the trailing header to be sure?
         }
 
+        private void DecryptMessageNoSignatureRC4(IEnumerable<SecurityBuffer> messages)
+        {
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferIn token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token)
+                                            .OfType<ISecurityBufferIn>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            byte[] signature = token_buffer.ToArray();
+
+            if (signature.Length < SecurityTrailerSize)
+            {
+                throw new ArgumentException("Encryption token is too small.");
+            }
+
+            // The APIs seem to include the encrypted data in the GSS-API blob, so add that extra data length.
+            Array.Resize(ref signature, SecurityTrailerSize + data_buffers.Sum(b => b.Size));
+
+            if (!GSSAPIUtils.TryParse(signature, out signature, out string oid))
+            {
+                throw new ArgumentException("Signature not a GSS-API token.");
+            }
+
+            if (oid != OIDValues.KERBEROS)
+            {
+                throw new ArgumentException("Signature has invalid OID.");
+            }
+
+            byte[] header = new byte[8];
+            Buffer.BlockCopy(signature, 0, header, 0, 8);
+            if (!NtObjectUtils.EqualByteArray(header, GenerateRC4Header(true)))
+            {
+                throw new ArgumentException("Signature has invalid header.");
+            }
+
+            byte[] seq_bytes = new byte[8];
+            Buffer.BlockCopy(signature, 8, seq_bytes, 0, 8);
+            byte[] hash = new byte[8];
+            Buffer.BlockCopy(signature, 16, hash, 0, 8);
+            byte[] confounder = new byte[8];
+            Buffer.BlockCopy(signature, 24, confounder, 0, 8);
+
+            seq_bytes = EncryptRC4Plain(false, hash, seq_bytes);
+            Array.Resize(ref seq_bytes, 4);
+            int seq_no = BitConverter.ToInt32(seq_bytes, 0).SwapEndian();
+
+            if (UseSequenceNumber())
+            {
+                if (seq_no != (int)_recv_sequence_number++)
+                {
+                    throw new ArgumentException("Invalid sequence number.");
+                }
+            }
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(confounder);
+            foreach (var buffer in data_buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] dec_data = EncryptRC4Plain(true, seq_bytes, stm.ToArray());
+            stm.SetLength(0);
+            writer.Write(header);
+            writer.Write(dec_data);
+
+            byte[] data_to_hash = stm.ToArray();
+
+            byte[] check_hash = _subkey.ComputeHash(data_to_hash, KerberosKeyUsage.KrbPriv);
+            if (!NtObjectUtils.EqualByteArray(check_hash, hash, 8))
+            {
+                throw new ArgumentException("Invalid checksum.");
+            }
+
+            stm = new MemoryStream(dec_data, 8, dec_data.Length - 8);
+            BinaryReader reader = new BinaryReader(stm);
+            foreach (var buffer in data_buffers)
+            {
+                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
+            }
+        }
+
         private byte[] MakeSignatureAES(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
             MemoryStream stm = new MemoryStream();
@@ -225,27 +372,42 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return ret;
         }
 
-        private static byte[] GenerateRC4ChecksumHeader()
+        private static byte[] GenerateRC4Header(bool encrypt)
         {
-            return new byte[] {
-                0x01, 0x01, // TOK_ID
-                0x11, 0x00,
-                0xFF, 0xFF, 0xFF, 0xFF
-            };
+            if (encrypt)
+            {
+                return new byte[] {
+                    0x02, 0x01, // TOK_ID
+                    0x11, 0x00,
+                    0x10, 0x00, 
+                    0xFF, 0xFF
+                };
+            }
+            else
+            {
+                return new byte[] {
+                    0x01, 0x01, // TOK_ID
+                    0x11, 0x00,
+                    0xFF, 0xFF, 
+                    0xFF, 0xFF
+                };
+            }
         }
 
-        private byte[] EncryptRC4Plain(byte[] checksum, byte[] data, int offset, int length)
+        private byte[] EncryptRC4Plain(bool local, byte[] checksum, byte[] data, int offset, int length)
         {
-            HMACMD5 hmac = new HMACMD5(_subkey.Key);
+            byte[] key = local ? _subkey.Key.Select(b => (byte)(b ^ 0xF0)).ToArray() : _subkey.Key;
+
+            HMACMD5 hmac = new HMACMD5(key);
             var tmpkey = hmac.ComputeHash(new byte[4]);
             hmac = new HMACMD5(tmpkey);
-            var key = hmac.ComputeHash(checksum);
+            key = hmac.ComputeHash(checksum);
             return ARC4.Transform(data, offset, length, key);
         }
 
-        private byte[] EncryptRC4Plain(byte[] checksum, byte[] data)
+        private byte[] EncryptRC4Plain(bool local, byte[] checksum, byte[] data)
         {
-            return EncryptRC4Plain(checksum, data, 0, data.Length);
+            return EncryptRC4Plain(local, checksum, data, 0, data.Length);
         }
 
         private byte[] MakeSignatureRC4(IEnumerable<SecurityBuffer> messages, int sequence_no)
@@ -253,7 +415,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
 
-            byte[] header = GenerateRC4ChecksumHeader();
+            byte[] header = GenerateRC4Header(false);
             writer.Write(header);
             foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
             {
@@ -271,7 +433,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             _send_sequence_number++;
             byte[] seq_bytes = BitConverter.GetBytes(seq_no.SwapEndian());
             Array.Resize(ref seq_bytes, 8);
-            writer.Write(EncryptRC4Plain(hash, seq_bytes));
+            writer.Write(EncryptRC4Plain(false, hash, seq_bytes));
             writer.Write(hash);
 
             return GSSAPIUtils.Wrap(OIDValues.KERBEROS, stm.ToArray());
@@ -344,7 +506,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
-            byte[] header = GenerateRC4ChecksumHeader();
+            byte[] header = GenerateRC4Header(false);
             writer.Write(header);
             foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly))
             {
@@ -356,7 +518,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             if (UseSequenceNumber())
             {
-                int seq_no = BitConverter.ToInt32(EncryptRC4Plain(hash, signature, 8, 8), 0).SwapEndian();
+                int seq_no = BitConverter.ToInt32(EncryptRC4Plain(false, hash, signature, 8, 8), 0).SwapEndian();
                 int recv_seq_no = (int)_recv_sequence_number++;
                 if (seq_no != recv_seq_no)
                 {
@@ -523,6 +685,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
                     DecryptMessageNoSignatureAES(messages);
                     break;
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    DecryptMessageNoSignatureRC4(messages);
+                    break;
                 default:
                     throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
             }
@@ -567,6 +732,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
                     EncryptMessageNoSignatureAES(messages);
+                    break;
+                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                    EncryptMessageNoSignatureRC4(messages);
                     break;
                 default:
                     throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
