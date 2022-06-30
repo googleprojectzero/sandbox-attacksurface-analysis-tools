@@ -56,8 +56,8 @@ namespace NtApiDotNet.Win32.Security.Native
         public HashPasswordFunc HashPassword;
         public RandomKeyFunc RandomKey;
         public IntPtr Control;
-        public IntPtr unk0_null;
-        public IntPtr unk1_null;
+        public IntPtr PlainEncrypt;
+        public IntPtr PlainDecrypt;
         public IntPtr PRF;
         public IntPtr PRFPlus;
     }
