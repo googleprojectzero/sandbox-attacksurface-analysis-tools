@@ -239,7 +239,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             HMACMD5 hmac = new HMACMD5(_subkey.Key);
             var tmpkey = hmac.ComputeHash(new byte[4]);
             hmac = new HMACMD5(tmpkey);
-            var key = hmac.ComputeHash(checksum, 0, 8);
+            var key = hmac.ComputeHash(checksum);
             return ARC4.Transform(data, offset, length, key);
         }
 
@@ -261,6 +261,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.KrbSafe);
+            Array.Resize(ref hash, 8);
 
             stm.SetLength(0);
 
@@ -271,7 +272,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             byte[] seq_bytes = BitConverter.GetBytes(seq_no.SwapEndian());
             Array.Resize(ref seq_bytes, 8);
             writer.Write(EncryptRC4Plain(hash, seq_bytes));
-            writer.Write(hash, 0, 8);
+            writer.Write(hash);
 
             return GSSAPIUtils.Wrap(OIDValues.KERBEROS, stm.ToArray());
         }
