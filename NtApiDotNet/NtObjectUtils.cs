@@ -824,6 +824,22 @@ namespace NtApiDotNet
             return true;
         }
 
+        internal static bool EqualByteArray(byte[] a, byte[] b, int max_length)
+        {
+            if (a == b)
+                return true;
+            if (a == null || b == null)
+                return false;
+            if (a.Length < max_length || b.Length < max_length)
+                return false;
+            for (int i = 0; i < max_length; ++i)
+            {
+                if (a[i] != b[i])
+                    return false;
+            }
+            return true;
+        }
+
         internal static int GetHashCodeByteArray(byte[] a)
         {
             if (a == null || a.Length == 0)
