@@ -5069,7 +5069,7 @@
                 <PropertyName>WritableAttributes</PropertyName>
               </ListItem>
               <ListItem>
-                <PropertyName>WriteablePropertySets</PropertyName>
+                <PropertyName>WritablePropertySets</PropertyName>
               </ListItem>
               <ListItem>
                 <PropertyName>WriteValidated</PropertyName>
