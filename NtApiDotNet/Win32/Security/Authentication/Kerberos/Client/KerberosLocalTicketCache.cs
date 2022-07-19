@@ -150,7 +150,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
-        /// Populate a local cache a list of tickets.
+        /// Populate a local cache from a list of tickets.
         /// </summary>
         /// <param name="tickets">The list of tickets.</param>
         /// <param name="create_client">True to create a KDC client based on the system's domain.</param>
@@ -172,6 +172,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     KerberosKDCClient.CreateTCPClient(domain.PdcRoleOwner.IPAddress), domain.Name, tickets);
             }
             return new KerberosLocalTicketCache(tickets);
+        }
+
+        /// <summary>
+        /// Populate a local cache from a ticket.
+        /// </summary>
+        /// <param name="ticket">The ticket to add.</param>
+        /// <param name="create_client">True to create a KDC client based on the system's domain.</param>
+        /// <returns>The local ticket cache.</returns>
+        public static KerberosLocalTicketCache FromTicket(KerberosExternalTicket ticket, bool create_client = false)
+        {
+            return FromTickets(new[] { ticket }, create_client);
         }
 
         /// <summary>
