@@ -1941,7 +1941,7 @@ namespace NtApiDotNet
         {
             try
             {
-                using (NtToken token = NtToken.OpenEffectiveToken())
+                using (NtToken token = OpenEffectiveToken())
                 {
                     return token.SetPrivilege(privilege, PrivilegeAttributes.Enabled);
                 }
