@@ -15,6 +15,7 @@
 using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
+using System.DirectoryServices.ActiveDirectory;
 using System.Net;
 using System.Text;
 
@@ -106,6 +107,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             return new KerberosKDCClient(new KerberosKDCClientTransportTCP(hostname, port), 
                 new KerberosKDCClientTransportTCP(hostname, password_port));
+        }
+
+        /// <summary>
+        /// Create a TCP KDC client for the current domain.
+        /// </summary>
+        /// <param name="port">The port number of the KDC server.</param>
+        /// <param name="password_port">The port number of the KDC password server.</param>
+        /// <returns>The created client.</returns>
+        public static KerberosKDCClient CreateTCPClient(int port = 88, int password_port = 464)
+        {
+            var dc = Domain.GetCurrentDomain().FindDomainController();
+            return CreateTCPClient(dc.Name, port, password_port);
         }
         #endregion
 
