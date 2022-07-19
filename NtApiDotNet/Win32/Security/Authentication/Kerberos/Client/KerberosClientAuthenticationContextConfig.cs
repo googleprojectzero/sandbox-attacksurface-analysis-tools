@@ -52,6 +52,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public List<KerberosAuthorizationData> AuthorizationData { get; }
 
         /// <summary>
+        /// Request an S4U2Self ticket.
+        /// </summary>
+        public bool S4U2Self { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public KerberosClientAuthenticationContextConfig()

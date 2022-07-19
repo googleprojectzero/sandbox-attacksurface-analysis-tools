@@ -339,7 +339,9 @@ function New-LsaClientContext {
         [Parameter(ParameterSetName="FromTicketCache")]
         [switch]$CacheOnly,
         [Parameter(ParameterSetName="FromTicketCache")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket,
+        [Parameter(ParameterSetName="FromTicketCache")]
+        [switch]$S4U2Self
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -353,6 +355,7 @@ function New-LsaClientContext {
             $config.SubKey = $SubKey
             $config.ChannelBinding = $ChannelBinding
             $config.SessionKeyTicket = $SessionKeyTicket
+            $config.S4U2Self = $S4U2Self
             $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
         }
     }

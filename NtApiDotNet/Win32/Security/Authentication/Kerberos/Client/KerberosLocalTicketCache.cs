@@ -69,7 +69,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
             else
             {
-                request = KerberosTGSRequest.CreateForS4U2Self(_tgt_ticket.Credential, server_name.FullName, _realm);
+                request = KerberosTGSRequest.CreateForS4U2Self(_tgt_ticket.Credential, server_name.FullName, _realm, session_key_ticket != null);
             }
 
             if (encryption_type.HasValue)
@@ -250,9 +250,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(server_name));
             }
 
-            KerberosExternalTicket ticket = config?.SessionKeyTicket == null ? 
-                GetTicket(server_name, cache_only, encryption_type, authorization_data) : 
-                GetTicket(server_name, config.SessionKeyTicket, cache_only, encryption_type, authorization_data);
+            KerberosExternalTicket ticket;
+            if (config?.S4U2Self ?? false)
+            {
+                ticket = GetS4U2SelfTicket(server_name, config?.SessionKeyTicket != null, 
+                    cache_only, encryption_type, authorization_data);
+            }
+            else if (config?.SessionKeyTicket == null)
+            {
+                ticket = GetTicket(server_name, cache_only, encryption_type, authorization_data);
+            }
+            else
+            {
+                ticket = GetTicket(server_name, config.SessionKeyTicket, cache_only, encryption_type, authorization_data);
+            }
 
             return new KerberosClientAuthenticationContext(ticket, request_attributes, config);
         }
@@ -350,14 +361,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
-        /// Get an S4USelf ticket.
+        /// Get an S4U2Self ticket.
         /// </summary>
         /// <param name="username">The name of the user for S4U.</param>
         /// <param name="cache_only">True to only query the cache.</param>
         /// <param name="encryption_type">The encryption type for the ticket.</param>
         /// <param name="authorization_data">Authorization data for the ticket.</param>
-        /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetS4USelfTicket(string username, bool cache_only = false, 
+        /// <param name="encrypt_to_session_key">True to use the user's TGT session key for the ticket.</param>
+        /// <returns>The S4U2Self ticket.</returns>
+        public KerberosExternalTicket GetS4U2SelfTicket(KerberosPrincipalName username, bool encrypt_to_session_key = true, bool cache_only = false,
             KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
             if (username is null)
@@ -365,9 +377,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(username));
             }
 
-            var server_name = new KerberosPrincipalName(KerberosNameType.PRINCIPAL, username);
-            return _cache.GetOrAdd(server_name, _ => GetTicketFromKDC(server_name, cache_only, s4u: true, 
-                encryption_type: encryption_type, authorization_data: authorization_data));
+            var session_key_ticket = encrypt_to_session_key ? TicketGrantingTicket?.Ticket : null;
+            return _cache.GetOrAdd(username, _ => GetTicketFromKDC(username, cache_only, s4u: true,
+                encryption_type: encryption_type, authorization_data: authorization_data, session_key_ticket: session_key_ticket));
+        }
+
+        /// <summary>
+        /// Get an S4U2Self ticket.
+        /// </summary>
+        /// <param name="username">The name of the user for S4U.</param>
+        /// <param name="cache_only">True to only query the cache.</param>
+        /// <param name="encryption_type">The encryption type for the ticket.</param>
+        /// <param name="authorization_data">Authorization data for the ticket.</param>
+        /// <param name="encrypt_to_session_key">True to use the user's TGT session key for the ticket.</param>
+        /// <returns>The S4U2Self ticket.</returns>
+        public KerberosExternalTicket GetS4U2SelfTicket(string username, bool encrypt_to_session_key = true, bool cache_only = false, 
+            KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
+        {
+            if (username is null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            return GetS4U2SelfTicket(new KerberosPrincipalName(KerberosNameType.PRINCIPAL, username),
+                encrypt_to_session_key, cache_only, encryption_type, authorization_data);
         }
 
         /// <summary>
