@@ -131,7 +131,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             _tgt_ticket = tgt_ticket ?? throw new ArgumentNullException(nameof(tgt_ticket));
             _kdc_client = kdc_client ?? throw new ArgumentNullException(nameof(kdc_client));
-            _realm = string.IsNullOrEmpty(realm) ? _tgt_ticket.Ticket.Realm.ToUpper() : _realm.ToUpper();
+            _realm = string.IsNullOrEmpty(realm) ? _tgt_ticket.Ticket.Realm.ToUpper() : realm.ToUpper();
         }
         #endregion
 
