@@ -48,7 +48,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public byte[] Data { get; }
 
-        private KerberosTransitedEncoding(KerberosTransitedEncodingType type, byte[] data)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">The transited encoding type.</param>
+        /// <param name="data">The transited encoding data.</param>
+        public KerberosTransitedEncoding(KerberosTransitedEncodingType type, byte[] data)
         {
             TransitedType = type;
             Data = data;
