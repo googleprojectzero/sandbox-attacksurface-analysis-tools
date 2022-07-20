@@ -20,6 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Flags for the UPN_DNS_INFO.
     /// </summary>
+    [Flags]
     public enum KerberosUpnDnsInfoFlags
     {
         /// <summary>
@@ -33,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The UPN_DNS_INFO has been extended with the SAM name and SID.
         /// </summary>
-        Extended,
+        Extended = 2,
     }
     
     /// <summary>
