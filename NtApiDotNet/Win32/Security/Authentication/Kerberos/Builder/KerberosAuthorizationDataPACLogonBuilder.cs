@@ -401,6 +401,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         public KerberosAuthorizationDataPACLogonBuilder() : base(KerberosAuthorizationDataPACEntryType.Logon)
         {
             _info = KERB_VALIDATION_INFO.CreateDefault();
+            LogoffTime = DateTime.MaxValue;
+            KickOffTime = DateTime.MaxValue;
+            PasswordMustChange = DateTime.MaxValue;
             _modified = true;
         }
 
