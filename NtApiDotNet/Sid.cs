@@ -71,6 +71,11 @@ namespace NtApiDotNet
         /// Get the account name of the SID or the SDDL form if no corresponding name.
         /// </summary>
         public string Name => NtSecurity.GetNameForSid(this).QualifiedName;
+
+        /// <summary>
+        /// Get the parent SID. Returns null if there's no parent.
+        /// </summary>
+        public Sid Parent => SubAuthorities.Count > 0 ? new Sid(Authority, SubAuthorities.Take(SubAuthorities.Count - 1).ToArray()) : null;
         #endregion
 
         #region Constructors
