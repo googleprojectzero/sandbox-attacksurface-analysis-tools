@@ -132,7 +132,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                             pac_entry = null;
                         break;
                     case KerberosAuthorizationDataPACEntryType.ClientInfo:
-                        if (!KerberosAuthorizationDataPACClientInfo.Parse(entry_type, entry_data, out pac_entry))
+                        if (!KerberosAuthorizationDataPACClientInfo.Parse(entry_data, out pac_entry))
                             pac_entry = null;
                         break;
                     case KerberosAuthorizationDataPACEntryType.UserPrincipalName:

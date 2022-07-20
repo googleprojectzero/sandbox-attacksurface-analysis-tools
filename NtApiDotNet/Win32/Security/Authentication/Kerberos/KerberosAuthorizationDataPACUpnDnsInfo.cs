@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
@@ -62,6 +63,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The user's SID.
         /// </summary>
         public Sid Sid { get; }
+
+        /// <summary>
+        /// Convert the entry into a builder.
+        /// </summary>
+        /// <returns>The builder entry.</returns>
+        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACUpnDnsInfoBuilder(this);
+        }
 
         private KerberosAuthorizationDataPACUpnDnsInfo(byte[] data, 
             KerberosUpnDnsInfoFlags flags, string upn, string dns, string sam_name, Sid sid)

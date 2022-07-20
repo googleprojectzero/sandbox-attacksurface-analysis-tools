@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
@@ -31,6 +32,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public string Name { get; }
 
+        /// <summary>
+        /// Convert the entry into a builder.
+        /// </summary>
+        /// <returns>The builder entry.</returns>
+        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataPACClientInfoBuilder(this);
+        }
+
         private KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType type, byte[] data, long client_id, string name)
             : base(type, data)
         {
@@ -38,7 +48,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Name = name;
         }
 
-        internal static bool Parse(KerberosAuthorizationDataPACEntryType type, byte[] data, out KerberosAuthorizationDataPACEntry entry)
+        internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
         {
             entry = null;
             if (data.Length < 10)
@@ -49,7 +59,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             if (name_length + 10 > data.Length)
                 return false;
             string name = Encoding.Unicode.GetString(data, 10, name_length);
-            entry = new KerberosAuthorizationDataPACClientInfo(type, data, client_id, name);
+            entry = new KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType.ClientInfo, data, client_id, name);
             return true;
         }
 

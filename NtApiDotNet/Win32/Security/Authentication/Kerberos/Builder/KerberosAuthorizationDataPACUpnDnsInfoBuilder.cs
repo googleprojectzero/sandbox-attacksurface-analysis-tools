@@ -95,8 +95,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 WriteBuffer(writer, Sid.ToArray(), ref data_offset);
             }
 
-            System.Diagnostics.Debug.Assert(KerberosAuthorizationDataPACUpnDnsInfo.Parse(stm.ToArray(), 
-                out KerberosAuthorizationDataPACEntry entry));
+            if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(stm.ToArray(),
+                out KerberosAuthorizationDataPACEntry entry))
+            {
+                throw new InvalidDataException("Invalid PAC entry.");
+            }
             return entry;
         }
 
