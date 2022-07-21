@@ -423,6 +423,23 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a random relative SID with a known RID count.
+        /// </summary>
+        /// <param name="rid_count">The number of random RIDs to add.</param>
+        /// <returns>The random SID.</returns>
+        public Sid CreateRandom(int rid_count)
+        {
+            if (rid_count < 1)
+                throw new ArgumentOutOfRangeException(nameof(rid_count), "RID count should be at least 1.");
+
+            byte[] random_rids = new byte[rid_count * 4];
+            new Random().NextBytes(random_rids);
+            uint[] rids = new uint[rid_count];
+            Buffer.BlockCopy(random_rids, 0, rids, 0, random_rids.Length);
+            return CreateRelative(rids);
+        }
+
+        /// <summary>
         /// Create a SID sibling to this SID.
         /// </summary>
         /// <param name="rids">The RIDs to replace the final RID with.</param>
@@ -431,7 +448,7 @@ namespace NtApiDotNet
         public Sid CreateSibling(params uint[] rids)
         {
             if (rids.Length < 1)
-                throw new ArgumentException("Must specify at least one RID.");
+                throw new ArgumentOutOfRangeException(nameof(rids), "RID count should be at least 1.");
 
             if (SubAuthorities.Count < 1)
                 throw new InvalidOperationException("To create a sibling SID the original must have at least 1 sub authority.");
