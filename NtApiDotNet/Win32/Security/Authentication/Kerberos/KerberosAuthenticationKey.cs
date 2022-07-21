@@ -355,6 +355,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return new KerberosAuthenticationKey(enc_type, key, name.NameType, realm, name.Names.ToArray(), DateTime.Now, 0);
         }
 
+        internal KerberosAuthenticationKey CloneWithName(KerberosPrincipalName name, string realm)
+        {
+            return new KerberosAuthenticationKey(KeyEncryption, (byte[])_key.Clone(), realm, name, DateTime.Now, Version); 
+        }
+
         void IDERObject.Write(DERBuilder builder)
         {
             using (var seq = builder.CreateSequence())

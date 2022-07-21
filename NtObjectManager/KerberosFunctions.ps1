@@ -157,7 +157,7 @@ function Get-KerberosKey {
 
 <#
 .SYNOPSIS
-Create a new random kerbero key.
+Create a new random kerberos key.
 .DESCRIPTION
 This cmdlet creates a new Kerberos Key.
 .PARAMETER KeyType

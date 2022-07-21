@@ -485,9 +485,12 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACUpnDnsInfoBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosCredentialBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCReplyEncryptedPartBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngine.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineAESSHA196.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineHMACMD5.cs" />
@@ -506,6 +509,10 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo2.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerConfig.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerImpl.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerUser.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />

@@ -95,14 +95,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="enc_type">The encryption type.</param>
         /// <param name="name_type">The name type.</param>
         /// <param name="principal">The principal.</param>
-        /// <param name="key_version">The key version.</param>
-        /// <returns></returns>
-        public KerberosAuthenticationKey FindKey(KerberosEncryptionType enc_type, KerberosNameType name_type, string principal, int key_version)
+        /// <param name="key_version">The key version, optional.</param>
+        /// <returns>The found key, or null if no key exists.</returns>
+        public KerberosAuthenticationKey FindKey(KerberosEncryptionType enc_type, KerberosNameType name_type, string principal, int? key_version)
         {
             return _keys.Where(k => k.KeyEncryption == enc_type
                 && k.NameType == name_type
                 && k.Principal.Equals(principal, StringComparison.OrdinalIgnoreCase)
-                && k.Version == (uint)key_version).FirstOrDefault();
+                && (!key_version.HasValue || k.Version == (uint)key_version.Value)).FirstOrDefault();
         }
 
         #endregion

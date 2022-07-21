@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1;
+using NtApiDotNet.Utilities.ASN1.Builder;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -37,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Kerberos last request time.
     /// </summary>
-    public class KerberosLastRequest
+    public sealed class KerberosLastRequest : IDERObject
     {
         /// <summary>
         /// Last request type.
@@ -77,6 +78,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 }
             }
             return ret;
+        }
+
+        void IDERObject.Write(DERBuilder builder)
+        {
+            using (var seq = builder.CreateSequence())
+            {
+                seq.WriteContextSpecific(0, LastRequestType);
+                seq.WriteContextSpecific(1, LastRequestTime);
+            }
         }
     }
 }

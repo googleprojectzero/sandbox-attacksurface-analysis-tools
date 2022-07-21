@@ -165,7 +165,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 return true;
             }
 
-            KerberosAuthenticationKey key = keyset.FindKey(EncryptionType, server_name.NameType, server_name.GetPrincipal(realm), KeyVersion ?? 0);
+            KerberosAuthenticationKey key = keyset.FindKey(EncryptionType, server_name.NameType, server_name.GetPrincipal(realm), KeyVersion);
             if (key != null)
             {
                 if (key.TryDecrypt(CipherText, key_usage, out decrypted))
