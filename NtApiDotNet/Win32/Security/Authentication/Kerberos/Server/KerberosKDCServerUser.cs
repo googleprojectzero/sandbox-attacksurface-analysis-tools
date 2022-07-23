@@ -69,6 +69,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public HashSet<KerberosPrincipalName> ServicePrincipalNames { get; }
 
         /// <summary>
+        /// List of extra SIDs to add.
+        /// </summary>
+        public List<UserGroup> ExtraSids { get; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="username">The username for the user.</param>
@@ -85,6 +90,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             Keys = new KerberosKeySet();
             ServicePrincipalNames = new HashSet<KerberosPrincipalName>();
             PrimaryGroupId = 513;
+            ExtraSids = new List<UserGroup>();
         }
 
         /// <summary>
@@ -127,6 +133,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             if (!GroupIds.ContainsKey(PrimaryGroupId))
             {
                 logon.AddGroupId(PrimaryGroupId, GroupAttributes.Mandatory | GroupAttributes.Enabled | GroupAttributes.EnabledByDefault);
+            }
+
+            if (ExtraSids.Count > 0)
+            {
+                logon.UserFlags |= KerberosUserFlags.ExtraSidsPresent;
+                logon.ExtraSids = ExtraSids;
             }
 
             pac.Entries.Add(logon);
