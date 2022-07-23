@@ -48,8 +48,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             public int GetHashCode(KerberosAuthenticationKey obj)
             {
-                return obj.KeyEncryption.GetHashCode() ^ obj.NameType.GetHashCode() 
-                    ^ obj.Principal.ToLower().GetHashCode() ^ obj.Version.GetHashCode() 
+                return obj.KeyEncryption.GetHashCode() ^ obj.NameType.GetHashCode()
+                    ^ obj.Principal.ToLower().GetHashCode() ^ obj.Version.GetHashCode()
                     ^ NtObjectUtils.GetHashCodeByteArray(obj.Key);
             }
         }
@@ -105,6 +105,48 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 && (!key_version.HasValue || k.Version == (uint)key_version.Value)).FirstOrDefault();
         }
 
+        /// <summary>
+        /// Find a key based on various parameters.
+        /// </summary>
+        /// <param name="principal">The principal.</param>
+        /// <returns>The found key, or null if no key exists.</returns>
+        public KerberosKeySet FindKeySetForPrincipal(KerberosPrincipalName principal)
+        {
+            return new KerberosKeySet(_keys.Where(k => k.Name == principal));
+        }
+
+        /// <summary>
+        /// Find the first key based based on a list of encryption types.
+        /// </summary>
+        /// <param name="enc_types">The encryption types.</param>
+        /// <returns>The found key, or null if no key exists.</returns>
+        public KerberosAuthenticationKey FindKey(IEnumerable<KerberosEncryptionType> enc_types)
+        {
+            if (enc_types != null)
+            {
+                foreach (var enc_type in enc_types)
+                {
+                    var key = GetKeysForEncryption(enc_type).FirstOrDefault();
+                    if (key != null)
+                        return key;
+                }
+            }
+
+            return this.FirstOrDefault();
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get the list of keys in the keyset.
+        /// </summary>
+        public IReadOnlyCollection<KerberosAuthenticationKey> Keys => _keys.ToList().AsReadOnly();
+
+        /// <summary>
+        /// Get the count of keys.
+        /// </summary>
+        public int Count => _keys.Count;
         #endregion
 
         #region Public Static Methods

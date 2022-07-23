@@ -50,11 +50,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public bool Decrypted => this is KerberosTicketDecrypted;
 
-        internal bool TryDecrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicket ticket)
+        internal bool TryDecrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage, out KerberosTicketDecrypted ticket)
         {
-            if (this is KerberosTicketDecrypted)
+            if (this is KerberosTicketDecrypted ticket_dec)
             {
-                ticket = this;
+                ticket = ticket_dec;
                 return true;
             }
 
@@ -76,9 +76,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="keyset">The Kerberos key set containing the keys.</param>
         /// <param name="key_usage">The key usage for the decryption.</param>
         /// <returns>The decrypted kerberos ticket.</returns>
-        public KerberosTicket Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage = KerberosKeyUsage.AsRepTgsRepTicket)
+        public KerberosTicketDecrypted Decrypt(KerberosKeySet keyset, KerberosKeyUsage key_usage = KerberosKeyUsage.AsRepTgsRepTicket)
         {
-            if (!TryDecrypt(keyset, key_usage, out KerberosTicket ticket))
+            if (!TryDecrypt(keyset, key_usage, out KerberosTicketDecrypted ticket))
                 throw new ArgumentException("Couldn't decrypt the kerberos ticket.");
             return ticket;
         }

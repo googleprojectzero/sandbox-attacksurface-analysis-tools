@@ -43,15 +43,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Last request type.
         /// </summary>
-        public KerberosLastRequestType LastRequestType { get; private set; }
+        public KerberosLastRequestType LastRequestType { get; }
 
         /// <summary>
         /// Last request time.
         /// </summary>
-        public KerberosTime LastRequestTime { get; private set; }
+        public KerberosTime LastRequestTime { get; }
 
-        private KerberosLastRequest()
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="last_request_type">The type of the last request.</param>
+        /// <param name="last_request_time">The time of the last request.</param>
+        public KerberosLastRequest(KerberosLastRequestType last_request_type, KerberosTime last_request_time)
         {
+            LastRequestType = last_request_type;
+            LastRequestTime = last_request_time ?? throw new System.ArgumentNullException(nameof(last_request_time));
         }
 
         internal static KerberosLastRequest Parse(DERValue value)
@@ -60,7 +67,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 throw new InvalidDataException();
             }
-            KerberosLastRequest ret = new KerberosLastRequest();
+
+            KerberosLastRequestType last_request_type = KerberosLastRequestType.None;
+            KerberosTime last_request_time = KerberosTime.Now;
+
             foreach (var next in value.Children)
             {
                 if (next.Type != DERTagType.ContextSpecific)
@@ -68,16 +78,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 switch (next.Tag)
                 {
                     case 0:
-                        ret.LastRequestType = (KerberosLastRequestType)next.ReadChildInteger();
+                        last_request_type = (KerberosLastRequestType)next.ReadChildInteger();
                         break;
                     case 1:
-                        ret.LastRequestTime = next.ReadChildKerberosTime();
+                        last_request_time = next.ReadChildKerberosTime();
                         break;
                     default:
                         throw new InvalidDataException();
                 }
             }
-            return ret;
+
+            return new KerberosLastRequest(last_request_type, last_request_time);
         }
 
         void IDERObject.Write(DERBuilder builder)

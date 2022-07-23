@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// A Kerberos Principal Name.
     /// </summary>
-    public sealed class KerberosPrincipalName : IDERObject
+    public sealed class KerberosPrincipalName : IDERObject, IEquatable<KerberosPrincipalName>
     {
         /// <summary>
         /// The name type.
@@ -63,10 +63,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="obj">The object to compare against.</param>
         /// <returns>True if the objects are equal.</returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object obj) => Equals(obj as KerberosPrincipalName);
+
+        /// <summary>
+        /// Equals implementation.
+        /// </summary>
+        /// <param name="other">The object to compare against.</param>
+        /// <returns>True if the objects are equal.</returns>
+        public bool Equals(KerberosPrincipalName other)
         {
-            if (!(obj is KerberosPrincipalName other))
+            if (other is null)
                 return false;
+            if (ReferenceEquals(this, other))
+                return true;
             if (other.NameType != NameType)
                 return false;
             if (other.Names.Count != Names.Count)
@@ -80,12 +89,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Equality operator.
+        /// </summary>
+        /// <param name="lhs">The left hand value.</param>
+        /// <param name="rhs">The right hand value.</param>
+        /// <returns>True if the names are equal.</returns>
+        public static bool operator ==(KerberosPrincipalName lhs, KerberosPrincipalName rhs)
+        {
+            if (lhs is null)
+            {
+                return rhs is null;
+            }
+
+            return lhs.Equals(rhs);
+        }
+
+        /// <summary>
+        /// Inequality operator.
+        /// </summary>
+        /// <param name="lhs">The left hand value.</param>
+        /// <param name="rhs">The right hand value.</param>
+        /// <returns>True if the names are not equal.</returns>
+        public static bool operator !=(KerberosPrincipalName lhs, KerberosPrincipalName rhs) => !(lhs == rhs);
+
+        /// <summary>
         /// Overridden ToHashCode.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return NameType.GetHashCode() ^ Names.Aggregate(0, (a, v) => a ^ v.GetHashCode());
+            return NameType.GetHashCode() ^ Names.Aggregate(0, (a, v) => a ^ (v.ToUpper().GetHashCode()));
         }
 
         /// <summary>

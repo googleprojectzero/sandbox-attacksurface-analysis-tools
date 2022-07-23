@@ -509,6 +509,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosPreAuthenticationDataEncryptionTypeInfo2.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTypedData.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerConfig.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerImpl.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerToken.cs" />

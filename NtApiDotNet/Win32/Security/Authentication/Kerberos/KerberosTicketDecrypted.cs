@@ -221,7 +221,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #endregion
 
         #region Internal Members
-        internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicket ticket)
+        internal static bool Parse(KerberosTicket orig_ticket, byte[] decrypted, KerberosKeySet keyset, out KerberosTicketDecrypted ticket)
         {
             ticket = null;
             try

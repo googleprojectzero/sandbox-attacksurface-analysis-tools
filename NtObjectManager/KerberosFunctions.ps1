@@ -164,6 +164,10 @@ This cmdlet creates a new Kerberos Key.
 The key encryption type.
 .PARAMETER Key
 The existing key to use the encryption type from.
+.PARAMETER Name
+The principal name to use.
+.PARAMETER Realm
+The realm to use.
 .INPUTS
 None
 .OUTPUTS
@@ -175,13 +179,15 @@ function New-KerberosKey {
         [Parameter(Mandatory, ParameterSetName="FromEncType", Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
         [Parameter(Mandatory, ParameterSetName="FromKey", Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
+        [string]$Realm
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromKey") {
-        $Key.GenerateKey()
+        $Key.GenerateKey($Name, $Realm)
     } else {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::GenerateKey($KeyType)
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::GenerateKey($KeyType, $Name, $Realm)
     }
 }
 

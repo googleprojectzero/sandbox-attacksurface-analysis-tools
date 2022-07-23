@@ -210,13 +210,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Generate a random key.
         /// </summary>
         /// <param name="key_encryption">The encryption type for the key.</param>
+        /// <param name="name">Optional name of the key.</param>
+        /// <param name="realm">Optional realm for the key.</param>
         /// <returns>The generated key.</returns>
-        public static KerberosAuthenticationKey GenerateKey(KerberosEncryptionType key_encryption)
+        public static KerberosAuthenticationKey GenerateKey(KerberosEncryptionType key_encryption, KerberosPrincipalName name = null, string realm = null)
         {
             KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption, false);
             byte[] key = enc_engine.GenerateKey();
-            return new KerberosAuthenticationKey(key_encryption, key, KerberosNameType.UNKNOWN, string.Empty, DateTime.Now, 0);
+            return new KerberosAuthenticationKey(key_encryption, key, realm ?? string.Empty,
+                name ?? new KerberosPrincipalName(KerberosNameType.UNKNOWN, string.Empty), DateTime.Now, 0);
         }
+
         #endregion
 
         #region Public Methods
@@ -309,10 +313,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// Generate a random key based on this key's encryption type.
         /// </summary>
+        /// <param name="name">Optional name of the key.</param>
+        /// <param name="realm">Optional realm for the key.</param>
         /// <returns>The generated key.</returns>
-        public KerberosAuthenticationKey GenerateKey()
+        public KerberosAuthenticationKey GenerateKey(KerberosPrincipalName name = null, string realm = null)
         {
-            return GenerateKey(KeyEncryption);
+            return GenerateKey(KeyEncryption, name, realm);
         }
 
         /// <summary>

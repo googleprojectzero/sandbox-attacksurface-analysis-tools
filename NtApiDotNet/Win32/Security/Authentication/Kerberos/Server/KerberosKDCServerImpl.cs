@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
@@ -46,7 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             _keys = new KerberosKeySet();
             _keys.Add(_krbtgt_key.CloneWithName(new KerberosPrincipalName(KerberosNameType.SRV_INST, "krbtgt"), _realm));
             _keys.Add(_krbtgt_key.CloneWithName(_krbtgt_name, _realm));
-            foreach (var user in _users.Values)
+            foreach (var user in _users.Values.Where(u => u.ServicePrincipalNames.Count > 0))
             {
                 foreach (var key in user.Keys)
                 {
@@ -57,24 +58,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
                     }
                 }
             }
+            foreach (var key in config.AdditionalKeys)
+            {
+                _keys.Add(key);
+            }
         }
 
         private AuthenticationToken GetGenericError()
         {
-            return GetError(KerberosErrorType.GENERIC);
+            return GetError(KerberosErrorType.GENERIC, null);
         }
 
-        private AuthenticationToken GetError(KerberosErrorType error)
+        private AuthenticationToken GetError(KerberosErrorType error, KerberosKDCRequestAuthenticationToken request, byte[] error_data = null)
         {
             return KerberosErrorAuthenticationToken.Create(KerberosTime.Now, 0, error, _realm,
-                new KerberosPrincipalName(KerberosNameType.SRV_INST, "UNKNOWN"),
-                KerberosTime.Now);
+                request?.ServerName ?? new KerberosPrincipalName(KerberosNameType.SRV_INST, "UNKNOWN"), 
+                error_data: error_data, no_gssapi_wrapper: true);
+        }
+
+        private static byte[] CreateU2UErrorData()
+        {
+            KerberosTypedData error = new KerberosTypedData(KerberosTypedDataType.MustUseUser2User, Array.Empty<byte>());
+            DERBuilder builder = new DERBuilder();
+            builder.WriteSequence(new[] { error });
+            return builder.ToArray();
         }
 
         private KerberosExternalTicket CreateTicket(KerberosAuthenticationKey key,
             KerberosPrincipalName server_name, KerberosPrincipalName client_name,
             string realm, KerberosTime auth_time, KerberosAuthorizationDataPACBuilder pac,
-            IEnumerable<KerberosEncryptionType> enc_types)
+            IEnumerable<KerberosEncryptionType> enc_types, KerberosTicketFlags flags)
         {
             if (key is null)
             {
@@ -107,7 +120,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             List<KerberosAuthorizationData> auth_data = new List<KerberosAuthorizationData>();
             auth_data.Add(if_rel.Create());
 
-            KerberosTicketBuilder ticket_builder = new KerberosTicketBuilder(5, realm, server_name, KerberosTicketFlags.Initial, realm, client_name,
+            KerberosTicketBuilder ticket_builder = new KerberosTicketBuilder(5, realm, server_name, flags, realm, client_name,
                 auth_time, KerberosTime.Now, KerberosTime.MaximumTime, KerberosTime.MaximumTime, ticket_key,
                 new KerberosTransitedEncoding(KerberosTransitedEncodingType.X500Compress, Array.Empty<byte>()), null, auth_data);
 
@@ -116,40 +129,156 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             return KerberosCredential.Create(ticket, ticket_dec.ToCredentialInfo()).ToExternalTicket();
         }
 
+        private KerberosTicketFlags OptionsToFlags(KerberosKDCOptions options)
+        {
+            var ret = KerberosTicketFlags.None;
+            if (options.HasFlagSet(KerberosKDCOptions.Forwardable))
+                ret |= KerberosTicketFlags.Forwardable;
+            if (options.HasFlagSet(KerberosKDCOptions.Renewable))
+                ret |= KerberosTicketFlags.Renewable;
+            return ret;
+        }
+
         private AuthenticationToken HandleAsRequest(KerberosKDCRequestAuthenticationToken request)
         {
             string request_realm = request.Realm?.ToUpper();
             if (request_realm != _realm && request_realm != _domain)
-                return GetError(KerberosErrorType.WRONG_REALM);
+                return GetError(KerberosErrorType.WRONG_REALM, request);
             if (!_users.TryGetValue(request.ClientName, out KerberosKDCServerUser user))
-                return GetError(KerberosErrorType.S_PRINCIPAL_UNKNOWN);
-            var key = user.FindKey(request.EncryptionTypes);
+                return GetError(KerberosErrorType.S_PRINCIPAL_UNKNOWN, request);
+            var key = user.Keys.FindKey(request.EncryptionTypes);
             if (key == null)
-                return GetError(KerberosErrorType.NOKEY);
+                return GetError(KerberosErrorType.NOKEY, request);
 
             KerberosTime auth_time = KerberosTime.Now;
             var pac = user.CreatePac(KerberosTime.Now, _domain_sid, _realm);
             var ticket = CreateTicket(_krbtgt_key, _krbtgt_name, request.ClientName, 
-                _realm, auth_time, pac, request.EncryptionTypes);
+                _realm, auth_time, pac, request.EncryptionTypes, KerberosTicketFlags.Initial | OptionsToFlags(request.KDCOptions));
+            KerberosASReplyEncryptedPartBuilder reply_enc = new KerberosASReplyEncryptedPartBuilder();
+            reply_enc.InitializeFromTicket(ticket, request);
 
-            KerberosASReplyBuilder reply = new KerberosASReplyBuilder();
-            reply.ClientName = request.ClientName;
-            reply.ClientRealm = _realm;
-            reply.Ticket = ticket.Ticket;
+            KerberosASReplyBuilder reply = new KerberosASReplyBuilder
+            {
+                ClientName = request.ClientName,
+                ClientRealm = _realm,
+                Ticket = ticket.Ticket,
+                EncryptedData = reply_enc.Create().Encrypt(key, 
+                    key.KeyEncryption == KerberosEncryptionType.ARCFOUR_HMAC_MD5 ? KerberosKeyUsage.TgsRepEncryptedPart : KerberosKeyUsage.AsRepEncryptedPart)
+            };
+
             return reply.Create();
+        }
+
+        private KerberosErrorType DecryptKrbTgtTicket(KerberosTicket ticket, out KerberosTicketDecrypted ticket_dec)
+        {
+            ticket_dec = null;
+
+            if (ticket.ServerName != _krbtgt_name)
+                return KerberosErrorType.S_PRINCIPAL_UNKNOWN;
+
+            if (ticket.Realm != _realm)
+                return KerberosErrorType.WRONG_REALM;
+
+            if (!ticket.TryDecrypt(new KerberosKeySet(_krbtgt_key), KerberosKeyUsage.AsRepTgsRepTicket, out ticket_dec))
+                return KerberosErrorType.MODIFIED;
+
+            return KerberosErrorType.NONE;
+        }
+
+        private KerberosErrorType GetTicketServiceKey(KerberosKDCRequestAuthenticationToken request, out KerberosAuthenticationKey service_key)
+        {
+            service_key = null;
+
+            if (request.KDCOptions.HasFlagSet(KerberosKDCOptions.EncTicketInSessionKey))
+            {
+                if (request.AdditionalTickets.Count == 0)
+                    return KerberosErrorType.BADOPTION;
+                var error = DecryptKrbTgtTicket(request.AdditionalTickets[0], out KerberosTicketDecrypted ticket_dec);
+                if (error != KerberosErrorType.NONE)
+                    return error;
+                service_key = ticket_dec.Key;
+            }
+            else
+            {
+                service_key = _keys.FindKeySetForPrincipal(request.ServerName).FindKey(request.EncryptionTypes);
+            }
+
+            return service_key == null ? KerberosErrorType.S_PRINCIPAL_UNKNOWN : KerberosErrorType.NONE;
         }
 
         private AuthenticationToken HandleTgsRequest(KerberosKDCRequestAuthenticationToken request)
         {
-            return GetGenericError();
+            string request_realm = request.Realm?.ToUpper();
+            if (request_realm != _realm && request_realm != _domain)
+                return GetError(KerberosErrorType.WRONG_REALM, request);
+
+            if (request.KDCOptions.HasFlagSet(KerberosKDCOptions.Renew))
+                return GetError(KerberosErrorType.BADOPTION, request);
+
+            var error = GetTicketServiceKey(request, out KerberosAuthenticationKey service_key);
+            if (error != KerberosErrorType.NONE)
+            {
+                byte[] error_data = null;
+                if (error == KerberosErrorType.S_PRINCIPAL_UNKNOWN && _users.ContainsKey(request.ServerName))
+                {
+                    error_data = CreateU2UErrorData();
+                }
+
+                return GetError(error, request, error_data);
+            }
+
+            var tgs_req = request.PreAuthenticationData.OfType<KerberosPreAuthenticationDataTGSRequest>().FirstOrDefault();
+            if (tgs_req == null)
+                return GetError(KerberosErrorType.BADOPTION, request);
+
+            error = DecryptKrbTgtTicket(tgs_req.Ticket, out KerberosTicketDecrypted ticket_dec);
+            if (error != KerberosErrorType.NONE)
+                return GetError(error, request);
+
+            if (!tgs_req.Authenticator.TryDecrypt(ticket_dec.Key, KerberosKeyUsage.TgsReqPaTgsReqApReq, out KerberosEncryptedData auth_dec))
+                return GetError(KerberosErrorType.MODIFIED, request);
+
+            if (!KerberosAuthenticator.TryParse(auth_dec.CipherText, out KerberosAuthenticator auth))
+                return GetError(KerberosErrorType.BADOPTION, request);
+
+            var pac = (KerberosAuthorizationDataPACBuilder)ticket_dec.FindPAC()?.ToBuilder();
+            if (pac == null)
+                return GetError(KerberosErrorType.C_PRINCIPAL_UNKNOWN, request);
+
+            pac.ComputeSignatures(service_key, _krbtgt_key);
+
+            var ticket = CreateTicket(service_key, request.ServerName, ticket_dec.ClientName,
+                _realm, ticket_dec.AuthTime, pac, request.EncryptionTypes, OptionsToFlags(request.KDCOptions));
+            KerberosTGSReplyEncryptedPartBuilder reply_enc = new KerberosTGSReplyEncryptedPartBuilder();
+            reply_enc.InitializeFromTicket(ticket, request);
+
+            KerberosKeyUsage key_usage = auth.SubKey != null ? KerberosKeyUsage.TgsRepEncryptedPartAuthSubkey : KerberosKeyUsage.TgsRepEncryptedPart;
+            var session_key = auth.SubKey ?? ticket_dec.Key;
+
+            var reply = new KerberosTGSReplyBuilder
+            {
+                ClientName = ticket_dec.ClientName,
+                ClientRealm = ticket_dec.ClientRealm,
+                Ticket = ticket.Ticket,
+                EncryptedData = reply_enc.Create().Encrypt(session_key, key_usage)
+            };
+
+            return reply.Create();
         }
 
         protected override AuthenticationToken HandleRequest(KerberosKDCRequestAuthenticationToken request)
         {
-            if (request.MessageType == KerberosMessageType.KRB_AS_REQ)
-                return HandleAsRequest(request);
-            if (request.MessageType == KerberosMessageType.KRB_TGS_REQ)
-                return HandleTgsRequest(request);
+            try
+            {
+                if (request.MessageType == KerberosMessageType.KRB_AS_REQ)
+                    return HandleAsRequest(request);
+                if (request.MessageType == KerberosMessageType.KRB_TGS_REQ)
+                    return HandleTgsRequest(request);
+            }
+            catch
+            {
+            }
+
             return GetGenericError();
         }
     }

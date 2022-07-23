@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
 {
@@ -35,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// List of last request times.
         /// </summary>
-        public IReadOnlyList<KerberosLastRequest> LastRequest { get; set; }
+        public List<KerberosLastRequest> LastRequest { get; }
 
         /// <summary>
         /// The nonce value.
@@ -85,12 +87,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <summary>
         /// The client addresses.
         /// </summary>
-        public IReadOnlyList<KerberosHostAddress> ClientAddress { get; set; }
+        public IList<KerberosHostAddress> ClientAddress { get; set; }
 
         /// <summary>
         /// Encypted pre-authentication data.
         /// </summary>
-        public IReadOnlyList<KerberosPreAuthenticationData> EncryptedPreAuthentication { get; set; }
+        public IList<KerberosPreAuthenticationData> EncryptedPreAuthentication { get; set; }
 
         /// <summary>
         /// Create the KDC encrypted part.
@@ -98,16 +100,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
         /// <returns>The KDC encrypted part.</returns>
         public KerberosKDCReplyEncryptedPart Create()
         {
+            if (Key is null)
+                throw new ArgumentNullException(nameof(Key));
+
+            if (AuthTime is null)
+                throw new ArgumentNullException(nameof(AuthTime));
+
+            if (EndTime is null)
+                throw new ArgumentNullException(nameof(EndTime));
+
+            if (Realm is null)
+                throw new ArgumentNullException(nameof(Realm));
+
+            if (ServerName is null)
+                throw new ArgumentNullException(nameof(ServerName));
+
             DERBuilder builder = new DERBuilder();
             using (var app = builder.CreateMsg(MessageType))
             {
                 using (var seq = app.CreateSequence())
                 {
                     seq.WriteContextSpecific(0, Key);
-                    if (LastRequest != null && LastRequest.Count > 0)
-                    {
-                        seq.WriteContextSpecific(1, LastRequest);
-                    }
+                    seq.WriteContextSpecific(1, LastRequest);
                     seq.WriteContextSpecific(2, Nonce);
                     seq.WriteContextSpecific(3, KeyExpirationTime);
                     seq.WriteContextSpecific(4, b => b.WriteBitString(TicketFlags));
@@ -126,13 +140,32 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                         seq.WriteContextSpecific(12, EncryptedPreAuthentication);
                     }
                 }
-                return KerberosKDCReplyEncryptedPart.Parse(builder.ToArray());
             }
+            return KerberosKDCReplyEncryptedPart.Parse(builder.ToArray());
         }
 
         private protected KerberosKDCReplyEncryptedPartBuilder(KerberosMessageType type)
         {
             MessageType = type;
+            LastRequest = new List<KerberosLastRequest>();
+        }
+
+        internal void InitializeFromTicket(KerberosExternalTicket ticket, KerberosKDCRequestAuthenticationToken request)
+        {
+            KerberosCredentialEncryptedPart cred = (KerberosCredentialEncryptedPart)ticket.Credential.EncryptedPart;
+            var ticket_info = cred.TicketInfo[0];
+
+            Key = ticket.SessionKey;
+            LastRequest.Add(new KerberosLastRequest(KerberosLastRequestType.LastInitialRequest, cred.TicketInfo[0].AuthTime));
+            AuthTime = ticket_info.AuthTime;
+            EndTime = ticket_info.EndTime;
+            StartTime = ticket_info.StartTime;
+            RenewTill = ticket_info.RenewTill;
+            Realm = ticket_info.Realm;
+            ServerName = ticket_info.ServerName;
+            TicketFlags = ticket_info.TicketFlags ?? KerberosTicketFlags.None;
+            Nonce = request.Nonce;
+            ClientAddress = request.Addresses?.ToList();
         }
     }
 }

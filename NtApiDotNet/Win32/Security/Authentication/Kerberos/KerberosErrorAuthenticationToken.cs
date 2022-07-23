@@ -19,6 +19,7 @@ using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -85,6 +86,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// The list of PA-DATA if the error is KDC_ERR_PREAUTH_REQUIRED.
         /// </summary>
         public IReadOnlyList<KerberosPreAuthenticationData> PreAuthentationData { get; private set; }
+        /// <summary>
+        /// The list of TYPED-DATA if returned by the server.
+        /// </summary>
+        public IReadOnlyList<KerberosTypedData> TypedData { get; private set; }
         #endregion
 
         #region Private Members
@@ -101,6 +106,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ErrorData = new byte[0];
             ErrorDataValue = null;
             PreAuthentationData = new List<KerberosPreAuthenticationData>().AsReadOnly();
+            TypedData = new List<KerberosTypedData>().AsReadOnly();
         }
         #endregion
 
@@ -165,10 +171,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="server_name">Server name.</param>
         /// <param name="error_text">Optional error text.</param>
         /// <param name="error_data">Error data.</param>
+        /// <param name="no_gssapi_wrapper">Don't wrap the token in a GSSAPI wrapper.</param>
         /// <returns>The KRB-ERROR authentication token.</returns>
         public static KerberosErrorAuthenticationToken Create(KerberosTime server_time, int server_usec, KerberosErrorType error_code,
             string server_realm, KerberosPrincipalName server_name, KerberosErrorData error_data, KerberosTime client_time = null, 
-            int? client_usec = null, string client_realm = null, KerberosPrincipalName client_name = null, string error_text = null)
+            int? client_usec = null, string client_realm = null, KerberosPrincipalName client_name = null, string error_text = null, 
+            bool no_gssapi_wrapper = false)
         {
             if (error_data is null)
             {
@@ -178,7 +186,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             DERBuilder builder = new DERBuilder();
             builder.WriteObject(error_data);
             return Create(server_time, server_usec, error_code, server_realm, server_name, 
-                client_time, client_usec, client_realm, client_name, error_text, builder.ToArray());
+                client_time, client_usec, client_realm, client_name, error_text, builder.ToArray(), 
+                no_gssapi_wrapper);
         }
 
         /// <summary>
@@ -195,10 +204,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="server_name">Server name.</param>
         /// <param name="error_text">Optional error text.</param>
         /// <param name="error_data">Optional error data.</param>
+        /// <param name="no_gssapi_wrapper">Don't wrap the token in a GSSAPI wrapper.</param>
         /// <returns>The KRB-ERROR authentication token.</returns>
         public static KerberosErrorAuthenticationToken Create(KerberosTime server_time, int server_usec, KerberosErrorType error_code,
             string server_realm, KerberosPrincipalName server_name, KerberosTime client_time = null, int? client_usec = null, string client_realm = null,
-            KerberosPrincipalName client_name = null,string error_text = null, byte[] error_data = null)
+            KerberosPrincipalName client_name = null,string error_text = null, byte[] error_data = null, bool no_gssapi_wrapper = false)
         {
             if (server_time is null)
             {
@@ -234,7 +244,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     seq.WriteContextSpecific(12, error_data);
                 }
             }
-            return (KerberosErrorAuthenticationToken)Parse(builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300));
+
+            byte[] data = no_gssapi_wrapper ? builder.ToArray() : builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x300);
+
+            return (KerberosErrorAuthenticationToken)Parse(data);
         }
 
         /// <summary>
@@ -341,7 +354,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                     else
                     {
-                        ret.ErrorDataValue = KerberosErrorData.Parse(ret.ErrorData);
+                        if (KerberosTypedData.TryParse(ret.ErrorData, out List<KerberosTypedData> typed_data))
+                        {
+                            ret.TypedData = typed_data.AsReadOnly();
+                            var extended_error_data = typed_data.FirstOrDefault(d => d.Type == KerberosTypedDataType.ExtendedError);
+                            if (extended_error_data != null)
+                            {
+                                ret.ErrorDataValue = KerberosErrorData.Parse(extended_error_data.Data);
+                            }
+                        }
+                        else
+                        {
+                            ret.ErrorDataValue = KerberosErrorData.Parse(ret.ErrorData);
+                        }
                     }
                 }
 

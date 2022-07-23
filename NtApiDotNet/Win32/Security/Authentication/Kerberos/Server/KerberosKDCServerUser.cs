@@ -98,21 +98,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             GroupIds[rid] = attributes;
         }
 
-        internal KerberosAuthenticationKey FindKey(IEnumerable<KerberosEncryptionType> enc_types)
-        {
-            if (enc_types != null)
-            {
-                foreach (var enc_type in enc_types)
-                {
-                    var key = Keys.GetKeysForEncryption(enc_type).FirstOrDefault();
-                    if (key != null)
-                        return key;
-                }
-            }
-
-            return Keys.FirstOrDefault();
-        }
-
         internal KerberosAuthorizationDataPACBuilder CreatePac(KerberosTime auth_time, Sid domain_sid, string realm)
         {
             domain_sid = DomainSid ?? domain_sid;

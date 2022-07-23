@@ -20,6 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
     /// <summary>
     /// Configuration for a KDC server.
     /// </summary>
+    /// <remarks>This created server is not secure and is designed for testing only. DO NOT use it as a replacement for a proper Kerberos KDC implementation.</remarks>
     public sealed class KerberosKDCServerConfig
     {
         private uint _curr_rid;
@@ -50,12 +51,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public List<KerberosKDCServerUser> Users { get; set; }
 
         /// <summary>
+        /// Specify additional keys. 
+        /// </summary>
+        /// <remarks>The key must contain the correct principal name for the key.</remarks>
+        public List<KerberosAuthenticationKey> AdditionalKeys { get; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public KerberosKDCServerConfig()
         {
             Users = new List<KerberosKDCServerUser>();
             _curr_rid = 1000;
+            Realm = "NTAPIDOTNET.LOCAL";
+            AdditionalKeys = new List<KerberosAuthenticationKey>();
         }
 
         /// <summary>
