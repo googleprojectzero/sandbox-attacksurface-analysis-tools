@@ -40,6 +40,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             Entries = entries.ToList().AsReadOnly();
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="encryption_type">The encryption type.</param>
+        /// <param name="salt">The optional salt for the encryption type.</param>
+        /// <param name="string_to_key_params">The optional string to key parameters.</param>
+        public KerberosPreAuthenticationDataEncryptionTypeInfo2(KerberosEncryptionType encryption_type, string salt = null, byte[] string_to_key_params = null) 
+            : this(new[] { new KerberosEncryptionTypeInfo2Entry(encryption_type, salt, string_to_key_params) })
+        {
+        }
+
         internal static KerberosPreAuthenticationDataEncryptionTypeInfo2 Parse(byte[] data)
         {
             DERValue[] values = DERParser.ParseData(data);

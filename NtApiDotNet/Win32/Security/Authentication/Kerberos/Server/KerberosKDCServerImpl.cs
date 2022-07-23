@@ -166,6 +166,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
                     key.KeyEncryption == KerberosEncryptionType.ARCFOUR_HMAC_MD5 ? KerberosKeyUsage.TgsRepEncryptedPart : KerberosKeyUsage.AsRepEncryptedPart)
             };
 
+            string salt = null;
+            switch (key.KeyEncryption)
+            {
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    salt = _realm + string.Join("", request.ClientName.Names);
+                    break;
+            }
+
+            reply.AddPreAuthenticationData(new KerberosPreAuthenticationDataEncryptionTypeInfo2(key.KeyEncryption, salt));
+
             return reply.Create();
         }
 
