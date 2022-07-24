@@ -74,6 +74,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public List<UserGroup> ExtraSids { get; }
 
         /// <summary>
+        /// The resource group domain SID.
+        /// </summary>
+        public Sid ResourceGroupDomainSid { get; set; }
+
+        /// <summary>
+        /// The list of resource group IDs for the user.
+        /// </summary>
+        public Dictionary<uint, GroupAttributes> ResourceGroupIds { get; }
+
+        /// <summary>
+        /// Authorization data to add the ticket.
+        /// </summary>
+        public List<KerberosAuthorizationData> AuthorizationData { get; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="username">The username for the user.</param>
@@ -91,6 +106,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             ServicePrincipalNames = new HashSet<KerberosPrincipalName>();
             PrimaryGroupId = 513;
             ExtraSids = new List<UserGroup>();
+            ResourceGroupIds = new Dictionary<uint, GroupAttributes>();
+            AuthorizationData = new List<KerberosAuthorizationData>();
         }
 
         /// <summary>
@@ -101,6 +118,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public void AddGroupId(uint rid, GroupAttributes attributes = GroupAttributes.Mandatory | GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)
         {
             GroupIds[rid] = attributes;
+        }
+
+        /// <summary>
+        /// Add a resource group ID with optional attributes.
+        /// </summary>
+        /// <param name="rid">The RID for the group.</param>
+        /// <param name="attributes">The group attributes.</param>
+        /// <remarks>You must also specify the ResourceGroupDomainSid value for this to be used.</remarks>
+        public void AddResourceGroupId(uint rid, GroupAttributes attributes = GroupAttributes.Mandatory | GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Resource)
+        {
+            ResourceGroupIds[rid] = attributes;
+        }
+
+        /// <summary>
+        /// Add an extra group SID with optional attributes.
+        /// </summary>
+        /// <param name="sid">The SID for the group.</param>
+        /// <param name="attributes">The group attributes.</param>
+        public void AddExtraSid(Sid sid, GroupAttributes attributes = GroupAttributes.Mandatory | GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)
+        {
+            ExtraSids.Add(new UserGroup(sid, attributes));
         }
 
         internal KerberosAuthorizationDataPACBuilder CreatePac(KerberosTime auth_time, Sid domain_sid, string realm)
@@ -139,6 +177,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             {
                 logon.UserFlags |= KerberosUserFlags.ExtraSidsPresent;
                 logon.ExtraSids = ExtraSids;
+            }
+
+            if (ResourceGroupDomainSid != null && ResourceGroupIds.Count > 0)
+            {
+                logon.UserFlags |= KerberosUserFlags.ResourceGroupsPresent;
+                logon.ResourceGroupDomainSid = ResourceGroupDomainSid;
+                foreach (var pair in ResourceGroupIds)
+                {
+                    logon.AddResourceGroupId(pair.Key, pair.Value);
+                }
             }
 
             pac.Entries.Add(logon);

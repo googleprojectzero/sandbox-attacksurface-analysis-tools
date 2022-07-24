@@ -120,6 +120,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             List<KerberosAuthorizationData> auth_data = new List<KerberosAuthorizationData>();
             auth_data.Add(if_rel.Create());
 
+            if (_users.TryGetValue(client_name, out KerberosKDCServerUser user))
+            {
+                auth_data.AddRange(user.AuthorizationData);
+            }
+
             KerberosTicketBuilder ticket_builder = new KerberosTicketBuilder(5, realm, server_name, flags, realm, client_name,
                 auth_time, KerberosTime.Now, KerberosTime.MaximumTime, KerberosTime.MaximumTime, ticket_key,
                 new KerberosTransitedEncoding(KerberosTransitedEncodingType.X500Compress, Array.Empty<byte>()), null, auth_data);
