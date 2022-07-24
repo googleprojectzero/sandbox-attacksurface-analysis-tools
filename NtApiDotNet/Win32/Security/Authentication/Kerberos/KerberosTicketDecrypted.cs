@@ -91,8 +91,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The PAC for the ticket. Returns null if no PAC present.</returns>
         public KerberosAuthorizationDataPAC FindPAC()
         {
-            return FindAuthorizationData<KerberosAuthorizationDataPAC>(AuthorizationData,
-                KerberosAuthorizationDataType.AD_WIN2K_PAC);
+            return AuthorizationData.FindAuthorizationData<KerberosAuthorizationDataPAC>(KerberosAuthorizationDataType.AD_WIN2K_PAC);
+        }
+
+        /// <summary>
+        /// Find a list of auth data for a specific AD type.
+        /// </summary>
+        /// <param name="data_type">The AD type.</param>
+        /// <returns>The list of auth data. And empty list if not found.</returns>
+        public IEnumerable<KerberosAuthorizationData> FindAuthorizationData(KerberosAuthorizationDataType data_type)
+        {
+            return AuthorizationData.FindAllAuthorizationData<KerberosAuthorizationData>(data_type);
+        }
+
+        /// <summary>
+        /// Find the first auth data for a specific AD type.
+        /// </summary>
+        /// <param name="data_type">The AD type.</param>
+        /// <returns>The first auth data. Returns null if not found.</returns>
+        public KerberosAuthorizationData FindFirstAuthorizationData(KerberosAuthorizationDataType data_type)
+        {
+            return FindAuthorizationData(data_type).FirstOrDefault();
         }
 
         /// <summary>
@@ -185,33 +204,33 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        private static T FindAuthorizationData<T>(
-            IEnumerable<KerberosAuthorizationData> auth_data,
-            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
-        {
-            List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
-            FindAuthorizationData(list, auth_data, type);
-            return list.OfType<T>().FirstOrDefault();
-        }
+        //private static T FindAuthorizationData<T>(
+        //    IEnumerable<KerberosAuthorizationData> auth_data,
+        //    KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+        //{
+        //    List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
+        //    FindAuthorizationData(list, auth_data, type);
+        //    return list.OfType<T>().FirstOrDefault();
+        //}
 
-        private static void FindAuthorizationData(
-            List<KerberosAuthorizationData> list,
-            IEnumerable<KerberosAuthorizationData> auth_data,
-            KerberosAuthorizationDataType type)
-        {
-            if (auth_data == null)
-                return;
-            foreach (var next in auth_data)
-            {
-                if (next.DataType == type)
-                    list.Add(next);
-                if (next is KerberosAuthorizationDataIfRelevant if_rel)
-                {
-                    FindAuthorizationData(list, if_rel.Entries, type);
-                }
-            }
-            return;
-        }
+        //private static void FindAuthorizationData(
+        //    List<KerberosAuthorizationData> list,
+        //    IEnumerable<KerberosAuthorizationData> auth_data,
+        //    KerberosAuthorizationDataType type)
+        //{
+        //    if (auth_data == null)
+        //        return;
+        //    foreach (var next in auth_data)
+        //    {
+        //        if (next.DataType == type)
+        //            list.Add(next);
+        //        if (next is KerberosAuthorizationDataIfRelevant if_rel)
+        //        {
+        //            FindAuthorizationData(list, if_rel.Entries, type);
+        //        }
+        //    }
+        //    return;
+        //}
 
         private KerberosTicketDecrypted(KerberosTicket ticket, byte[] decrypted) 
             : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, 

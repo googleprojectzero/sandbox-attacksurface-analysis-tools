@@ -39,6 +39,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Cipher Text.
         /// </summary>
         public byte[] CipherText { get; private set; }
+        /// <summary>
+        /// Gets whether the data is decrypted.
+        /// </summary>
+        public bool IsDecrypted => EncryptionType == KerberosEncryptionType.NULL;
         #endregion
 
         #region Public Static Methods

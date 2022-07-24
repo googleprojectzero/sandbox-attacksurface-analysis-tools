@@ -85,6 +85,35 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Find the PAC for the ticket.
+        /// </summary>
+        /// <returns>The PAC for the ticket. Returns null if no PAC present.</returns>
+        public KerberosAuthorizationDataPAC FindPAC()
+        {
+            return AuthorizationData.FindAuthorizationData<KerberosAuthorizationDataPAC>(KerberosAuthorizationDataType.AD_WIN2K_PAC);
+        }
+
+        /// <summary>
+        /// Find a list of auth data for a specific AD type.
+        /// </summary>
+        /// <param name="data_type">The AD type.</param>
+        /// <returns>The list of auth data. And empty list if not found.</returns>
+        public IEnumerable<KerberosAuthorizationData> FindAuthorizationData(KerberosAuthorizationDataType data_type)
+        {
+            return AuthorizationData.FindAllAuthorizationData<KerberosAuthorizationData>(data_type);
+        }
+
+        /// <summary>
+        /// Find the first auth data for a specific AD type.
+        /// </summary>
+        /// <param name="data_type">The AD type.</param>
+        /// <returns>The first auth data. Returns null if not found.</returns>
+        public KerberosAuthorizationData FindFirstAuthorizationData(KerberosAuthorizationDataType data_type)
+        {
+            return FindAuthorizationData(data_type).FirstOrDefault();
+        }
+
+        /// <summary>
         /// Create a new authenticator.
         /// </summary>
         /// <param name="client_realm">The client realm name.</param>

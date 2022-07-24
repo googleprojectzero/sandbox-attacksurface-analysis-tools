@@ -258,6 +258,43 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return KerberosTicket.Parse(value.Children[0]);
         }
 
+        internal static IEnumerable<T> FindAllAuthorizationData<T>(
+            this IEnumerable<KerberosAuthorizationData> auth_data,
+            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+        {
+            if (auth_data == null)
+                return default;
+            List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
+            FindAuthorizationData(list, auth_data, type);
+            return list.OfType<T>();
+        }
+
+        internal static T FindAuthorizationData<T>(
+            this IEnumerable<KerberosAuthorizationData> auth_data,
+            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+        {
+            return auth_data.FindAllAuthorizationData<T>(type).FirstOrDefault();
+        }
+
+        private static void FindAuthorizationData(
+            List<KerberosAuthorizationData> list,
+            IEnumerable<KerberosAuthorizationData> auth_data,
+            KerberosAuthorizationDataType type)
+        {
+            if (auth_data == null)
+                return;
+            foreach (var next in auth_data)
+            {
+                if (next.DataType == type)
+                    list.Add(next);
+                if (next is KerberosAuthorizationDataIfRelevant if_rel)
+                {
+                    FindAuthorizationData(list, if_rel.Entries, type);
+                }
+            }
+            return;
+        }
+
         /// <summary>
         /// Read keys from a MIT KeyTab file.
         /// </summary>
