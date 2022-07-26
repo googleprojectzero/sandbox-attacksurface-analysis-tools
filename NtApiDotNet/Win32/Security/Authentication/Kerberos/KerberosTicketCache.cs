@@ -593,15 +593,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="realm">The KDC realm name.</param>
         /// <param name="kdc_address">The KDC address.</param>
-        /// <param name="flags">Flags.</param>
+        /// <param name="dc_flags">Flags to specify the DC type.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public static NtStatus PinKdc(string realm, string kdc_address, int flags, bool throw_on_error)
+        public static NtStatus PinKdc(string realm, string kdc_address, int dc_flags, bool throw_on_error)
         {
             var builder = new KERB_PIN_KDC_REQUEST()
             {
                 MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPinKdcMessage,
-                Flags = flags
+                DcFlags = dc_flags
             }.ToBuilder();
 
             builder.AddUnicodeString(nameof(KERB_PIN_KDC_REQUEST.Realm), realm, true);
@@ -626,10 +626,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         /// <param name="realm">The KDC realm name.</param>
         /// <param name="kdc_address">The KDC address.</param>
-        /// <param name="flags">Flags.</param>
-        public static void PinKdc(string realm, string kdc_address, int flags)
+        /// <param name="dc_flags">Flags to specify the DC type.</param>
+        public static void PinKdc(string realm, string kdc_address, int dc_flags)
         {
-            PinKdc(realm, kdc_address, flags, true);
+            PinKdc(realm, kdc_address, dc_flags, true);
         }
 
         /// <summary>

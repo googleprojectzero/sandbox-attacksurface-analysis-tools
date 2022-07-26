@@ -16,10 +16,11 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
+    // Actually SECPKG_CALL_PACKAGE_UNPIN_ALL_DCS_REQUEST.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct KERB_UNPIN_ALL_KDCS_REQUEST
     {
         public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
-        public int Unknown4;
+        public int Flags;
     }
 }

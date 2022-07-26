@@ -790,3 +790,45 @@ function New-KerberosError {
         )
     }
 }
+
+<#
+.SYNOPSIS
+Add a Kerberos KDC pin.
+.DESCRIPTION
+This cmdlet adds a Kerberos KDC pin to always call a specific KDC for a realm. Only applies the pin to the current thread.
+.PARAMETER Realm
+Specify the realm.
+.PARAMETER Hostname
+Specify the hostname of the KDC.
+.PARAMETER Flags
+Specify the flags.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Add-KerberosKdcPin {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Realm,
+        [Parameter(Mandatory, Position = 1)]
+        [string]$Hostname,
+        [int]$DcFlags = 0
+    )
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PinKdc($Realm, $Hostname, $Flags)
+}
+
+<#
+.SYNOPSIS
+Clear all Kerberos KDC pins.
+.DESCRIPTION
+This cmdlet clears all Kerberos KDC pin for the current thread.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Clear-KerberosKdcPin {
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::UnpinAllKdcs()
+}

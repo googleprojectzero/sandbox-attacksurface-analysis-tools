@@ -16,13 +16,14 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
+    // SECPKG_CALL_PACKAGE_PIN_DC_REQUEST
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct KERB_PIN_KDC_REQUEST
     {
         public KERB_PROTOCOL_MESSAGE_TYPE MessageType;
-        public int Unknown4;
+        public int Flags;
         public UnicodeStringOut Realm;
         public UnicodeStringOut KdcAddress;
-        public int Flags;
+        public int DcFlags;
     }
 }
