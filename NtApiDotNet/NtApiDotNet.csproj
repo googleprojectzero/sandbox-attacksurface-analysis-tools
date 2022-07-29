@@ -515,6 +515,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerToken.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerUser.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\KerberosInteractiveLogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />

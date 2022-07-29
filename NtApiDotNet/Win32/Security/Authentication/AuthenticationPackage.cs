@@ -66,6 +66,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public const string TSSSP_NAME = "TSSSP";
 
         /// <summary>
+        /// All package ID.
+        /// </summary>
+        public const uint SECPKG_ALL_PACKAGES = unchecked((uint)-2);
+
+        /// <summary>
         /// Capabilities of the package.
         /// </summary>
         public SecPkgCapabilityFlag Capabilities { get; }

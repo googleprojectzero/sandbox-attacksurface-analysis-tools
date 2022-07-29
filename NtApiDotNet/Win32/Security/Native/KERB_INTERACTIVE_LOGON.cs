@@ -21,17 +21,8 @@ namespace NtApiDotNet.Win32.Security.Native
     internal struct KERB_INTERACTIVE_LOGON
     {
         public KERB_LOGON_SUBMIT_TYPE MessageType;
-        public UnicodeString LogonDomainName;
-        public UnicodeString UserName;
-        public UnicodeStringSecure Password;
-
-        public KERB_INTERACTIVE_LOGON(string username, string domain, SecureString password, DisposableList list)
-        {
-            MessageType = KERB_LOGON_SUBMIT_TYPE.KerbInteractiveLogon;
-            LogonDomainName = new UnicodeString(domain);
-            UserName = new UnicodeString(username);
-            var buf = list.AddResource(new SecureStringMarshalBuffer(password));
-            Password = new UnicodeStringSecure(buf, password.Length);
-        }
+        public UnicodeStringOut LogonDomainName;
+        public UnicodeStringOut UserName;
+        public UnicodeStringOut Password;
     }
 }

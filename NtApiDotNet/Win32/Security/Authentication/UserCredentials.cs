@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -225,7 +226,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                         return ToAuthIdentityEx(list).ToBuffer();
                     }
                 case "credssp":
-                    return new KERB_INTERACTIVE_LOGON(UserName, Domain, Password, list).ToBuffer();
+                    return new KerberosInteractiveLogonCredentials(this).ToBuffer(list);
                 default:
                     throw new ArgumentException($"Unknown credential type for package {package}");
             }
