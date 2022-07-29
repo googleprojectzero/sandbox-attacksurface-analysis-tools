@@ -226,7 +226,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                         return ToAuthIdentityEx(list).ToBuffer();
                     }
                 case "credssp":
-                    return new KerberosInteractiveLogonCredentials(this).ToBuffer(list);
+                    return ((ILsaLogonCredentials)new KerberosInteractiveLogonCredentials(this)).ToBuffer(list);
                 default:
                     throw new ArgumentException($"Unknown credential type for package {package}");
             }
