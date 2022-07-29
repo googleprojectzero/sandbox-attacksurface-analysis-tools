@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_INTERACTIVE_LOGON credential buffer.
     /// </summary>
-    public sealed class KerberosInteractiveLogonCredentials : ILsaLogonCredentials
+    public sealed class KerberosInteractiveLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
     {
         /// <summary>
         /// The logon domain name.
@@ -53,21 +53,29 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
             Password = credentials.Password;
         }
 
-        /// <summary>
-        /// Convert the credentials into a safe buffer.
-        /// </summary>
-        /// <param name="list">Store for any additional allocations.</param>
-        /// <returns>The safe buffer containing the credentials.</returns>
-        public SafeBuffer ToBuffer(DisposableList list)
+        private SafeBufferGeneric ToBuffer(bool relative)
         {
             var builder = new KERB_INTERACTIVE_LOGON()
             {
                 MessageType = KERB_LOGON_SUBMIT_TYPE.KerbInteractiveLogon
             }.ToBuilder();
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.LogonDomainName), LogonDomainName);
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.UserName), UserName);
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.Password), Password);
+            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.LogonDomainName), LogonDomainName, relative);
+            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.UserName), UserName, relative);
+            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.Password), Password, relative);
             return builder.ToBuffer();
+        }
+
+        byte[] ILsaLogonCredentialsSerializable.ToArray()
+        {
+            using (var buffer = ToBuffer(true))
+            {
+                return buffer.ToArray();
+            }
+        }
+
+        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        {
+            return ToBuffer(false);
         }
     }
 }
