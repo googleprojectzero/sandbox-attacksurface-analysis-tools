@@ -71,7 +71,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
                 var builder =  new KERB_INTERACTIVE_UNLOCK_LOGON()
                 {
                     LogonId = LogonId.Value
-                    
                 }.ToBuilder();
                 PopulateLogon(builder.GetSubBuilder(nameof(KERB_INTERACTIVE_UNLOCK_LOGON.Logon), 
                     new KERB_INTERACTIVE_LOGON() {

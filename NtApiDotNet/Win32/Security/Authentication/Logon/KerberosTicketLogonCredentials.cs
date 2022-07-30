@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     }
 
     /// <summary>
-    /// Class to represent a KERB_TICKET_LOGON structure.
+    /// Class to represent a KERB_TICKET_LOGON or a KERB_TICKET_UNLOCK_LOGON structure.
     /// </summary>
     public sealed class KerberosTicketLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
     {
@@ -55,6 +55,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// </summary>
         public KerberosTicketLogonFlags Flags { get; set; }
 
+        /// <summary>
+        /// If specified will create a KERB_TICKET_UNLOCK_LOGON credential buffer.
+        /// </summary>
+        public Luid? LogonId { get; set; }
+
         byte[] ILsaLogonCredentialsSerializable.ToArray()
         {
             using (var buffer = ToBuffer(true))
@@ -68,6 +73,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
             return ToBuffer(false);
         }
 
+        private void PopulateLogon(LsaBufferBuilder<KERB_TICKET_LOGON> builder, bool relative)
+        {
+            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket),
+                nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray(), relative);
+            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket),
+                nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray(), relative);
+        }
+
         private SafeBufferGeneric ToBuffer(bool relative)
         {
             if (ServiceTicket is null)
@@ -75,18 +88,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
                 throw new ArgumentNullException(nameof(ServiceTicket));
             }
 
-            var builder = new KERB_TICKET_LOGON()
+            if (LogonId.HasValue)
             {
-                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
-                Flags = (int)Flags
-            }.ToBuilder();
+                var builder = new KERB_TICKET_UNLOCK_LOGON()
+                {
+                    LogonId = LogonId.Value
+                }.ToBuilder();
+                PopulateLogon(builder.GetSubBuilder(nameof(KERB_TICKET_UNLOCK_LOGON.Logon),
+                    new KERB_TICKET_LOGON()
+                    {
+                        MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketUnlockLogon,
+                        Flags = (int)Flags
+                    }), relative);
+                return builder.ToBuffer();
+            }
+            else
+            {
+                var builder = new KERB_TICKET_LOGON()
+                {
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
+                    Flags = (int)Flags
+                }.ToBuilder();
 
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket),
-                nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray(), relative);
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket),
-                nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray(), relative);
-
-            return builder.ToBuffer();
+                PopulateLogon(builder, relative);
+                return builder.ToBuffer();
+            }
         }
     }
 }
