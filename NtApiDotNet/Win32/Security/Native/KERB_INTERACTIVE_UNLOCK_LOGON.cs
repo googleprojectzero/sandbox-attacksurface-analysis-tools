@@ -17,11 +17,9 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet.Win32.Security.Native
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct KERB_INTERACTIVE_LOGON
+    internal struct KERB_INTERACTIVE_UNLOCK_LOGON
     {
-        public KERB_LOGON_SUBMIT_TYPE MessageType;
-        public UnicodeStringOut LogonDomainName;
-        public UnicodeStringOut UserName;
-        public UnicodeStringOut Password;
+        public KERB_INTERACTIVE_LOGON Logon;
+        public Luid LogonId;
     }
 }

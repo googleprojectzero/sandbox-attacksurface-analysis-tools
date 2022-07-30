@@ -531,6 +531,7 @@
     <Compile Include="Win32\Security\Native\KERB_ECRYPT.cs" />
     <Compile Include="Win32\Security\Native\KERB_EXTERNAL_NAME.cs" />
     <Compile Include="Win32\Security\Native\KERB_EXTERNAL_TICKET.cs" />
+    <Compile Include="Win32\Security\Native\KERB_INTERACTIVE_UNLOCK_LOGON.cs" />
     <Compile Include="Win32\Security\Native\KERB_PIN_KDC_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_PROTOCOL_MESSAGE_TYPE.cs" />
     <Compile Include="Win32\Security\Native\KERB_PURGE_TKT_CACHE_EX_REQUEST.cs" />
