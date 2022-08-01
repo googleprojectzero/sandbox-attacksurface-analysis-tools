@@ -51,12 +51,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
-        internal static byte[] Wrap(string oid, byte[] token)
+        internal static byte[] Wrap(string oid, byte[] token, byte[] id = null)
         {
             DERBuilder builder = new DERBuilder();
             using (var app = builder.CreateApplication(0))
             {
                 app.WriteObjectId(oid);
+                if (id != null)
+                    app.WriteRawBytes(id);
                 app.WriteRawBytes(token);
             }
             return builder.ToArray();

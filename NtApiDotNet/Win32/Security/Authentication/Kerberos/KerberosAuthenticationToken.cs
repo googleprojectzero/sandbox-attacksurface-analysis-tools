@@ -41,6 +41,125 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             ProtocolVersion = 5;
             MessageType = message_type;
         }
+
+        internal static bool TryParseWrapped(byte[] data, byte[] tok_id, string oid, DERValue[] values, out KerberosAuthenticationToken token)
+        {
+            // RFC1964
+            switch (oid)
+            {
+                case OIDValues.KERBEROS:
+                case OIDValues.KERBEROS_USER_TO_USER:
+                    if (tok_id[0] == 1)
+                    {
+                        if (KerberosAPRequestAuthenticationToken.TryParse(data, values, out token))
+                            return true;
+                        break;
+                    }
+                    if (tok_id[0] == 2)
+                    {
+                        if (KerberosAPReplyAuthenticationToken.TryParse(data, values, out token))
+                            return true;
+                        break;
+                    }
+                    if (tok_id[0] == 3)
+                    {
+                        if (KerberosErrorAuthenticationToken.TryParse(data, values, out token))
+                            return true;
+                        break;
+                    }
+                    if (tok_id[0] != 4)
+                    {
+                        break;
+                    }
+                    if (tok_id[1] == 0)
+                    {
+                        if (KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token))
+                            return true;
+                    }
+                    if (tok_id[1] == 1)
+                    {
+                        if (KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token))
+                            return true;
+                    }
+                    break;
+            }
+            token = null;
+            return false;
+        }
+
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Remove any GSSAPI wrapper from the token.
+        /// </summary>
+        /// <returns>The unwrapped token, or the original token if already unwrapped.</returns>
+        public KerberosAuthenticationToken Unwrap()
+        {
+            if (!GSSAPIUtils.TryParse(ToArray(), out byte[] inner_token, out string oid))
+            {
+                return this;
+            }
+
+            byte[] tok_id = new byte[] { inner_token[0], inner_token[1] };
+            Buffer.BlockCopy(inner_token, 2, inner_token, 0, inner_token.Length - 2);
+            Array.Resize(ref inner_token, inner_token.Length - 2);
+            var values = DERParser.ParseData(inner_token, 0);
+            if (!TryParseWrapped(inner_token, tok_id, oid, values, out KerberosAuthenticationToken token))
+            {
+                throw new ArgumentException("Invalid wrapped token.");
+            }
+            return token;
+        }
+
+        /// <summary>
+        /// Add a GSSAPI wrapper to the token.
+        /// </summary>
+        /// <returns>The wrapped token, or the original token if already wrapped.</returns>
+        public KerberosAuthenticationToken Wrap()
+        {
+            byte[] token = ToArray();
+            if (GSSAPIUtils.TryParse(token, out byte[] _, out string _))
+            {
+                return this;
+            }
+
+            byte[] tok_id = new byte[2];
+            string oid = OIDValues.KERBEROS;
+
+            if (this is KerberosAPRequestAuthenticationToken)
+            {
+                tok_id[0] = 1;
+            }
+            else if (this is KerberosAPReplyAuthenticationToken)
+            {
+                tok_id[0] = 2;
+            }
+            else if (this is KerberosErrorAuthenticationToken)
+            {
+                tok_id[0] = 3;
+            }
+            else
+            {
+                oid = OIDValues.KERBEROS_USER_TO_USER;
+                tok_id[0] = 4;
+                if (this is KerberosTGTRequestAuthenticationToken)
+                {
+                    tok_id[1] = 0;
+                }
+                else if (this is KerberosTGTReplyAuthenticationToken)
+                {
+                    tok_id[1] = 1;
+                }
+                else
+                {
+                    throw new InvalidDataException("Unknown Kerberos token type.");
+                }
+            }
+
+            return Parse(GSSAPIUtils.Wrap(oid, token, tok_id));
+        }
+
         #endregion
 
         #region Public Static Methods
@@ -59,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
         #endregion
 
-        #region Internal Static Methods
+        #region Internal Methods
         /// <summary>
         /// Try and parse data into an Kerberos authentication token.
         /// </summary>
@@ -100,48 +219,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     byte[] tok_id = new byte[] { inner_token[0], inner_token[1] };
                     var values = DERParser.ParseData(inner_token, 2);
 
-                    switch (oid)
+                    if (!TryParseWrapped(data, tok_id, oid, values, out token))
                     {
-                        case OIDValues.KERBEROS:
-                        case OIDValues.KERBEROS_USER_TO_USER:
-                            if (tok_id[0] == 1)
-                            {
-                                if (KerberosAPRequestAuthenticationToken.TryParse(data, values, out token))
-                                    return true;
-                                break;
-                            }
-                            if (tok_id[0] == 2)
-                            {
-                                if (KerberosAPReplyAuthenticationToken.TryParse(data, values, out token))
-                                    return true;
-                                break;
-                            }
-                            if (tok_id[0] == 3)
-                            {
-                                if (KerberosErrorAuthenticationToken.TryParse(data, values, out token))
-                                    return true;
-                                break;
-                            }
-                            if (tok_id[0] != 4)
-                            {
-                                break;
-                            }
-                            if (tok_id[1] == 0)
-                            {
-                                if (KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token))
-                                    return true;
-                            }
-                            if (tok_id[1] == 1)
-                            {
-                                if (KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token))
-                                    return true;
-                            }
-                            break;
-                        default:
-                            return false;
+                        token = new KerberosAuthenticationToken(data, values, KerberosMessageType.UNKNOWN);
                     }
-
-                    token = new KerberosAuthenticationToken(data, values, KerberosMessageType.UNKNOWN);
                     return true;
                 }
             }
