@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using System;
 using System.IO;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
@@ -47,6 +48,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// Transited encoding data.
         /// </summary>
         public byte[] Data { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public KerberosTransitedEncoding() 
+            : this(KerberosTransitedEncodingType.X500Compress, Array.Empty<byte>())
+        {
+        }
 
         /// <summary>
         /// Constructor.
