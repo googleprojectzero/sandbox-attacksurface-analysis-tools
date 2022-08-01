@@ -2902,3 +2902,87 @@ function Get-NtSidName {
         $Sid.GetName($BypassCache)
     }
 }
+
+<#
+.SYNOPSIS
+Test properties of a SID.
+.DESCRIPTION
+This cmdlet tests the SID for various different properties such as whether it's a capability SID.
+.PARAMETER Sid
+The SID to test.
+.PARAMETER Integrity
+Specify to check if the SID is an integrity SID.
+.PARAMETER Capability
+Specify to check if the SID is a capability SID.
+.PARAMETER CapabilityGroup
+Specify to check if the SID is a capability group SID.
+.PARAMETER Service
+Specify to check if the SID is a service SID.
+.PARAMETER LogonSession
+Specify to check if the SID is a logon session SID.
+.PARAMETER ProcessTrust
+Specify to check if the SID is a process trust SID.
+.PARAMETER Domain
+Specify to check if the SID is a domain SID.
+.PARAMETER LocalDomain
+Specify to check if the SID is the local domain SID.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+bool
+.EXAMPLE
+Test-NtSid "S-1-16-12288" -IsIntegrity
+Checks if the SID is an integrity SID.
+#>
+function Test-NtSid {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0, ValueFromPipelineByPropertyName)]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, ParameterSetName="Integrity")]
+        [switch]$Integrity,
+        [parameter(Mandatory, ParameterSetName="Capability")]
+        [switch]$Capability,
+        [parameter(Mandatory, ParameterSetName="CapabilityGroup")]
+        [switch]$CapabilityGroup,
+        [parameter(Mandatory, ParameterSetName="Service")]
+        [switch]$Service,
+        [parameter(Mandatory, ParameterSetName="LogonSession")]
+        [switch]$LogonSession,
+        [parameter(Mandatory, ParameterSetName="ProcessTrust")]
+        [switch]$ProcessTrust,
+        [parameter(Mandatory, ParameterSetName="Domain")]
+        [switch]$Domain,
+        [parameter(Mandatory, ParameterSetName="LocalDomain")]
+        [switch]$LocalDomain
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "Integrity" {
+                [NtApiDotNet.NtSecurity]::IsIntegritySid($Sid)
+            }
+            "Capability" {
+                [NtApiDotNet.NtSecurity]::IsCapabilitySid($Sid)
+            }
+            "CapabilityGroup" {
+                [NtApiDotNet.NtSecurity]::IsCapabilityGroupSid($Sid)
+            }
+            "Service" {
+                [NtApiDotNet.NtSecurity]::IsServiceSid($Sid)
+            }
+            "LogonSession" {
+                [NtApiDotNet.NtSecurity]::IsLogonSessionSid($Sid)
+            }
+            "ProcessTrust" {
+                [NtApiDotNet.NtSecurity]::IsProcessTrustSid($Sid)
+            }
+            "Domain" {
+                [NtApiDotNet.NtSecurity]::IsDomainSid($Sid)
+            }
+            "LocalDomain" {
+                [NtApiDotNet.NtSecurity]::IsLocalDomainSid($Sid)
+            }
+        }
+    }
+}
