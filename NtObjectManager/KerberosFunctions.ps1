@@ -773,7 +773,8 @@ function New-KerberosError {
         [Parameter(ParameterSetName="FromBytes")]
         [byte[]]$ErrorData,
         [Parameter(Mandatory, Position = 3, ParameterSetName="FromErrorData")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorData]$ErrorDataValue
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorData]$ErrorDataValue,
+        [switch]$NoWrapper
     )
 
     if ($ServerTime -eq $null) {
@@ -782,12 +783,12 @@ function New-KerberosError {
 
     if ($PSCmdlet.ParameterSetName -eq "FromErrorData") {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
-            $ErrorCode, $ServerRealm, $ServerName, $ErrorDataValue, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText
-        )
+            $ErrorCode, $ServerRealm, $ServerName, $ErrorDataValue, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText,
+            $NoWrapper)
     } else {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
-            $ErrorCode, $ServerRealm, $ServerName, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText, $ErrorData
-        )
+            $ErrorCode, $ServerRealm, $ServerName, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText, $ErrorData,
+            $NoWrapper)
     }
 }
 
@@ -800,8 +801,6 @@ This cmdlet adds a Kerberos KDC pin to always call a specific KDC for a realm. O
 Specify the realm.
 .PARAMETER Hostname
 Specify the hostname of the KDC.
-.PARAMETER Flags
-Specify the flags.
 .INPUTS
 None
 .OUTPUTS
@@ -813,10 +812,9 @@ function Add-KerberosKdcPin {
         [Parameter(Mandatory, Position = 0)]
         [string]$Realm,
         [Parameter(Mandatory, Position = 1)]
-        [string]$Hostname,
-        [int]$DcFlags = 0
+        [string]$Hostname
     )
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PinKdc($Realm, $Hostname, $Flags)
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PinKdc($Realm, $Hostname, 0)
 }
 
 <#
