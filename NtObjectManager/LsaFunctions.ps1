@@ -422,7 +422,7 @@ function Update-LsaClientContext {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
-        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
@@ -480,7 +480,7 @@ function Update-LsaServerContext {
         [NtApiDotNet.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
-        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken")]
+        [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Mandatory, ParameterSetName="FromNoToken")]
         [switch]$NoToken,
@@ -696,9 +696,9 @@ None
 function Export-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
-        [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken")]
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
-        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext", ValueFromPipeline)]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [Parameter(Position = 1, Mandatory)]
         [string]$Path
@@ -768,19 +768,27 @@ This is primarily for Kerberos.
 Specify a keys for decryption.
 .PARAMETER Token
 The authentication token to decrypt.
+.PARAMETER Context
+The authentication context which has the token.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
 #>
 function Unprotect-LsaAuthToken {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
-        [Parameter(Position = 0, Mandatory)]
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext", ValueFromPipeline)]
+        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [Parameter(Position = 1, Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key
     )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromContext") {
+        $Token = $Context.Token
+    }
     $Token.Decrypt($Key) | Write-Output
 }
 
