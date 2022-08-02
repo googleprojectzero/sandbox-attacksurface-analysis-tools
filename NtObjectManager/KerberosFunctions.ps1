@@ -700,23 +700,17 @@ None
 NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket
 #>
 function Rename-KerberosTicket {
-    [CmdletBinding(DefaultParameterSetName="FromServiceName")]
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
-        [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
+        [Parameter(Mandatory, Position = 1)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
-        [Parameter(Mandatory, Position = 1, ParameterSetName="FromServiceName")]
-        [string]$ServiceName,
         [string]$Realm
     )
 
     if ("" -eq $Realm) {
         $Realm = $Ticket.Realm
-    }
-
-    if($PSCmdlet.ParameterSetName -eq "FromServiceName") {
-        $Name = New-KerberosPrincipalName -Type SRV_INST -Name $ServiceName
     }
 
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $Name, $Ticket.EncryptedData)
@@ -829,4 +823,95 @@ None
 #>
 function Clear-KerberosKdcPin {
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::UnpinAllKdcs()
+}
+
+<#
+.SYNOPSIS
+Create a new TGS-REQ object.
+.DESCRIPTION
+This cmdlet creates a new TGS-REQ object for sending to a KDC.
+.PARAMETER Realm
+Specify the realm.
+.PARAMETER ServerName
+Specify the server name for the ticket.
+.PARAMETER Credential
+Specify the credentials for the TGS request. This could be a TGT or a service ticket for renewal.
+.PARAMETER Renew
+Specify to make the request renew the credential.
+.PARAMETER EncryptionType
+Specify a list of encryption types for the requested ticket.
+.PARAMETER Forwardable
+Specify to request a forwardable ticket.
+.PARAMETER Canonicalize
+Specify to canonicalize names.
+.PARAMETER Renewable
+Specify to request a renewable ticket.
+.PARAMETER S4U2Proxy
+Specify an existing S4U2Self ticket to create an S4U2Proxy ticket
+.PARAMETER S4UUserName
+Specify the user name for an S4U2Self ticket.
+.PARAMETER EncryptTicketInSessionKey
+Specify to encrypt the ticket using the session key from another ticket.
+.PARAMETER AdditionalTicket
+Specify additional tickets. Typically used with EncryptTicketInSessionKey.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest
+#>
+function New-KerberosTgsRequest {
+    [CmdletBinding(DefaultParameterSetName="Create")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="Create")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="Renew")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="S4U2Self")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="Create")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [Parameter(Mandatory, Position = 2, ParameterSetName="Create")]
+        [Parameter(Mandatory, ParameterSetName="S4U2Self")]
+        [string]$Realm,
+        [Parameter(ParameterSetName="Create")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$S4U2Proxy,
+        [Parameter(Mandatory, ParameterSetName="Renew")]
+        [switch]$Renew,
+        [Parameter(Mandatory, ParameterSetName="S4U2Self")]
+        [string]$S4UUserName,
+        [switch]$EncryptTicketInSessionKey,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
+        [switch]$Forwardable,
+        [switch]$Canonicalize,
+        [switch]$Renewable,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket[]]$AdditionalTicket
+    )
+
+    $tgs = switch($PSCmdlet.ParameterSetName) {
+        "Create" {
+            if ($S4U2Proxy -eq $null) {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::Create($Credential, $ServerName, $Realm)
+            } else {
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Proxy($Credential, $ServerName, $Realm, $S4U2Proxy)
+            }
+        }
+        "Renew" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForRenewal($Credential)
+        }
+        "S4U2Self" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Self($Credential, $S4UUserName, $Realm, $EncryptTicketInSessionKey)
+        }
+    }
+
+    if ($null -ne $EncryptionType) {
+        $tgs.EncryptionTypes.AddRange($EncryptionType)
+    }
+    if ($null -ne $AdditionalTicket) {
+        foreach($t in $AdditionalTicket) {
+            $tgs.AddAdditionalTicket($t)
+        }
+    }
+    $tgs.Forwardable = $Forwardable
+    $tgs.Canonicalize = $Canonicalize
+    $tgs.Renewable = $Renewable
+    $tgs.EncryptTicketInSessionKey = $EncryptTicketInSessionKey
+    $tgs
 }

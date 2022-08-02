@@ -171,6 +171,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
         #endregion
 
+        #region Conversion Operators
+        /// <summary>
+        /// Explicit conversion to a KerberosExternalTicket.
+        /// </summary>
+        /// <param name="credential">The credential.</param>
+        public static explicit operator KerberosExternalTicket (KerberosCredential credential) => credential.ToExternalTicket();
+        #endregion
+
         #region Internal Members
         internal static bool TryParse(byte[] data, DERValue[] values, out KerberosCredential token)
         {

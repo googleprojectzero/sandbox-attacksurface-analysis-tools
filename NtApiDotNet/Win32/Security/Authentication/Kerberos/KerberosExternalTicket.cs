@@ -215,5 +215,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// </summary>
         public KerberosCredential Credential { get; private set; }
         #endregion
+
+        #region Conversion Operators
+        /// <summary>
+        /// Explicit conversion to a KerberosCredential.
+        /// </summary>
+        /// <param name="ticket">The external ticket.</param>
+        public static explicit operator KerberosCredential(KerberosExternalTicket ticket) => ticket.Credential;
+        #endregion
     }
 }

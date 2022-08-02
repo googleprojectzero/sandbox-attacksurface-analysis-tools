@@ -189,7 +189,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The new request object.</returns>
         public static KerberosTGSRequest Create(KerberosCredential credential, KerberosPrincipalName server_name, string realm)
         {
-
             if (server_name is null)
             {
                 throw new ArgumentNullException(nameof(server_name));

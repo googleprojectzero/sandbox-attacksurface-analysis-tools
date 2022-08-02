@@ -137,6 +137,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosPrincipalName(KerberosNameType name_type, 
             IEnumerable<string> names)
         {
+            if (names is null)
+            {
+                throw new ArgumentNullException(nameof(names));
+            }
+
             NameType = name_type;
             Names = new List<string>(names).AsReadOnly();
         }
@@ -147,7 +152,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="name_type">The type of the principal name.</param>
         /// <param name="name">The name for the principal. Will be split up on / characters.</param>
         public KerberosPrincipalName(KerberosNameType name_type,
-            string name) : this(name_type, name.Split('/'))
+            string name) : this(name_type, name?.Split('/'))
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="name">The name for the principal. Will be split up on / characters.</param>
+        /// <remarks>The name type will be determined by whether the name has / characters or not.</remarks>
+        public KerberosPrincipalName(string name) 
+            : this(GetNameType(name), name)
         {
         }
 
@@ -187,6 +202,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 seq.WriteContextSpecific(0, (int)NameType);
                 seq.WriteContextSpecific(1, Names);
             }
+        }
+
+        private static KerberosNameType GetNameType(string name)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Contains('/'))
+                return KerberosNameType.SRV_INST;
+            return KerberosNameType.PRINCIPAL;
         }
     }
 }
