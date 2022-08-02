@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace NtObjectManager.Utils
@@ -53,6 +54,23 @@ namespace NtObjectManager.Utils
                 secure_str.AppendChar(ch);
             }
             Password = secure_str;
+        }
+
+        /// <summary>
+        /// Convert the secure string to plain text.
+        /// </summary>
+        /// <returns></returns>
+        public string ToPlainText()
+        {
+            IntPtr ptr = Marshal.SecureStringToBSTR(Password);
+            try
+            {
+                return Marshal.PtrToStringBSTR(ptr);
+            }
+            finally
+            {
+                Marshal.ZeroFreeBSTR(ptr);
+            }
         }
     }
 }

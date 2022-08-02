@@ -103,7 +103,7 @@ function Get-KerberosKey {
     [CmdletBinding(DefaultParameterSetName="FromPassword")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromPassword")]
-        [string]$Password,
+        [NtObjectManager.Utils.PasswordHolder]$Password,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromKey")]
         [byte[]]$Key,
         [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
@@ -135,7 +135,7 @@ function Get-KerberosKey {
     try {
         $k = switch($PSCmdlet.ParameterSetName) {
             "FromPassword" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password, $Interations, $NameType, $Principal, $Salt, $Version)
+                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password.ToPlainText(), $Interations, $NameType, $Principal, $Salt, $Version)
             }
             "FromKey" {
                 [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
@@ -855,10 +855,16 @@ function New-KerberosAsRequest {
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromKeyWithName")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromPassword")]
+        [NtObjectManager.Utils.PasswordHolder]$Password,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromKeyWithName")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromPassword")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
         [string]$Realm,
+        [Parameter(ParameterSetName="FromPassword")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType = "AES256_CTS_HMAC_SHA1_96",
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
         [switch]$Forwardable,
@@ -871,6 +877,10 @@ function New-KerberosAsRequest {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key)
         }
         "FromKeyWithName" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
+        }
+        "FromPassword" {
+            $key = Get-KerberosKey -Password $Password -Principal $ClientName.GetPrincipal($Realm) -KeyType $KeyType
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
         }
     }
