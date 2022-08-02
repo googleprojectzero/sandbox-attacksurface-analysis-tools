@@ -74,6 +74,11 @@ namespace NtObjectManager.Utils
                 var os = script_block.InvokeWithContext(null, vars, args);
                 if (os.Count > 0)
                 {
+                    if (os[0].BaseObject is T ret)
+                    {
+                        return ret;
+                    }
+                    // If we can't directly cast than see if we can change the type.
                     return (T)Convert.ChangeType(os[0].BaseObject, typeof(T));
                 }
             }
