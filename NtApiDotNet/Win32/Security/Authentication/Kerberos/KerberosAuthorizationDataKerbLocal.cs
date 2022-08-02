@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
@@ -56,6 +57,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             entry = new KerberosAuthorizationDataKerbLocal(data);
             return true;
+        }
+
+        /// <summary>
+        /// Convert the authorization data into a builder.
+        /// </summary>
+        /// <returns>The authorization builder.</returns>
+        public override KerberosAuthorizationDataBuilder ToBuilder()
+        {
+            return new KerberosAuthorizationDataKerbLocalBuilder()
+            {
+                SecurityContext = (byte[])SecurityContext.Clone()
+            };
         }
     }
 }
