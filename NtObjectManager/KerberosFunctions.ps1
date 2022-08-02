@@ -827,6 +827,67 @@ function Clear-KerberosKdcPin {
 
 <#
 .SYNOPSIS
+Create a new AS-REQ object.
+.DESCRIPTION
+This cmdlet creates a new AS-REQ object for sending to a KDC.
+.PARAMETER Realm
+Specify the realm.
+.PARAMETER ClientName
+Specify the client name for the ticket.
+.PARAMETER ServerName
+Specify the server name for the ticket.
+.PARAMETER EncryptionType
+Specify a list of encryption types for the requested ticket.
+.PARAMETER Forwardable
+Specify to request a forwardable ticket.
+.PARAMETER Canonicalize
+Specify to canonicalize names.
+.PARAMETER Renewable
+Specify to request a renewable ticket.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest
+#>
+function New-KerberosAsRequest {
+    [CmdletBinding(DefaultParameterSetName="FromKey")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromKeyWithName")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromKeyWithName")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
+        [string]$Realm,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
+        [switch]$Forwardable,
+        [switch]$Canonicalize,
+        [switch]$Renewable
+    )
+
+    $req = switch($PSCmdlet.ParameterSetName) {
+        "FromKey" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key)
+        }
+        "FromKeyWithName" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
+        }
+    }
+
+    if ($null -ne $EncryptionType) {
+        $req.EncryptionTypes.AddRange($EncryptionType)
+    }
+
+    $req.ServerName = $ServerName
+    $req.Forwardable = $Forwardable
+    $req.Canonicalize = $Canonicalize
+    $req.Renewable = $Renewable
+    $req
+}
+
+<#
+.SYNOPSIS
 Create a new TGS-REQ object.
 .DESCRIPTION
 This cmdlet creates a new TGS-REQ object for sending to a KDC.
@@ -914,4 +975,50 @@ function New-KerberosTgsRequest {
     $tgs.Renewable = $Renewable
     $tgs.EncryptTicketInSessionKey = $EncryptTicketInSessionKey
     $tgs
+}
+
+<#
+.SYNOPSIS
+Send a Kerberos KDC request.
+.DESCRIPTION
+This cmdlet sends a request on the KDC for a KDC-REQ object.
+.PARAMETER Hostname
+Specify the hostname of the KDC.
+.PARAMETER Port
+Specify the port of the KDC.
+.PARAMETER Request
+Specify the request to send.
+.PARAMETER AsExternalTicket
+Specify to return as an KerberosExternalTicket
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
+#>
+function Send-KerberosKdcRequest {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCRequest]$Request,
+        [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
+        [int]$Port = 88,
+        [switch]$AsExternalTicket
+    )
+
+    $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+    $reply = if ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]) {
+        $client.RequestServiceTicket($Request)
+    } elseif ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]) {
+        $client.Authenticate($Request)
+    } else {
+        throw "Unknown KDC request type."
+    }
+    if ($null -ne $reply) {
+        if ($AsExternalTicket) {
+            $reply.ToExternalTicket()
+        } else {
+            $reply.ToCredential()
+        }
+    }
 }
