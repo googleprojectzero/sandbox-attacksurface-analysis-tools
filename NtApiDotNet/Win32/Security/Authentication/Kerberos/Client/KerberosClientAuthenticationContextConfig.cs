@@ -63,5 +63,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             AuthorizationData = new List<KerberosAuthorizationData>();
         }
+
+        /// <summary>
+        /// Create a client authentication context using this configuration.
+        /// </summary>
+        /// <param name="ticket">A kerberos ticket.</param>
+        /// <param name="request_attributes">The request attributes.</param>
+        /// <returns>The client authentication context.</returns>
+        public KerberosClientAuthenticationContext Create(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes)
+        {
+            return new KerberosClientAuthenticationContext(ticket, request_attributes, this);
+        }
     }
 }

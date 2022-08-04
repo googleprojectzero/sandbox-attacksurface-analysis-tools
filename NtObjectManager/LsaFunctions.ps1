@@ -323,6 +323,8 @@ function New-LsaClientContext {
         [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicketCache")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicket")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket]$Ticket,
         [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
         [Parameter(ParameterSetName="FromCredHandle")]
         [Parameter(Mandatory, ParameterSetName="FromTicketCache")]
@@ -333,8 +335,10 @@ function New-LsaClientContext {
         [Parameter(ParameterSetName="FromCredHandle")]
         [switch]$NoInit,
         [Parameter(ParameterSetName="FromTicketCache")]
+        [Parameter(ParameterSetName="FromTicket")]
         [System.Nullable[NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]]$SubKeyEncryptionType,
         [Parameter(ParameterSetName="FromTicketCache")]
+        [Parameter(ParameterSetName="FromTicket")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
         [Parameter(ParameterSetName="FromTicketCache")]
         [switch]$CacheOnly,
@@ -357,6 +361,13 @@ function New-LsaClientContext {
             $config.SessionKeyTicket = $SessionKeyTicket
             $config.S4U2Self = $S4U2Self
             $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
+        }
+        "FromTicket" {
+            $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
+            $config.SubKeyEncryptionType = $SubKeyEncryptionType
+            $config.SubKey = $SubKey
+            $config.ChannelBinding = $ChannelBinding
+            $config.Create($Ticket, $RequestAttribute)
         }
     }
 }

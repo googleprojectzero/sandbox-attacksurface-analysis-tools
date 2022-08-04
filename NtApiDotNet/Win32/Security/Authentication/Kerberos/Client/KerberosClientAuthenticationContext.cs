@@ -579,7 +579,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             KerberosAPRequestOptions opts = KerberosAPRequestOptions.None;
             if (mutual_auth_required)
                 opts |= KerberosAPRequestOptions.MutualAuthRequired;
-            if (config?.SessionKeyTicket != null)
+            if (config?.SessionKeyTicket != null || request_attributes.HasFlagSet(InitializeContextReqFlags.UseSessionKey))
                 opts |= KerberosAPRequestOptions.UseSessionKey;
 
             List<KerberosAuthorizationData> auth_data = config?.AuthorizationData ?? new List<KerberosAuthorizationData>();
@@ -600,7 +600,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     SecurityTrailerSize = (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
                     break;
             }
-
         }
         #endregion
 
