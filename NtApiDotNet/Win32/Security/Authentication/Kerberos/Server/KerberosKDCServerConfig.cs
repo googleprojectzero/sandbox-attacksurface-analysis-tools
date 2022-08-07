@@ -47,7 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         /// <summary>
         /// The user database.
         /// </summary>
-        public List<KerberosKDCServerUser> Users { get; set; }
+        public List<KerberosKDCServerUser> Users { get; }
 
         /// <summary>
         /// Specify additional keys. 
@@ -62,7 +62,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         {
             Users = new List<KerberosKDCServerUser>();
             _curr_rid = 1000;
-            Realm = "NTAPIDOTNET.LOCAL";
+            Realm = string.Empty;
             AdditionalKeys = new List<KerberosAuthenticationKey>();
         }
 

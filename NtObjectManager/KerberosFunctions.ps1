@@ -1032,3 +1032,136 @@ function Send-KerberosKdcRequest {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Create a new test Kerberos KDC server.
+.DESCRIPTION
+This cmdlet configures and creates a new KDC test server. You should call Start on the returned server when you want to use it.
+.PARAMETER Realm
+Specify the KDC's default realm.
+.PARAMETER DomainSid
+Specify the KDC's domain SID.
+.PARAMETER Address
+Specify the address to listen on.
+.PARAMETER Port
+Specify the TCP port to listen on.
+.PARAMETER User
+Specify the users hosted by the KDC.
+.PARAMETER AdditionalKey
+Specify additional service keys.
+.PARAMETER KrbTgtKey
+Specify optional krbtgt key.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServer
+#>
+function New-KerberosKdcServer {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Realm,
+        [NtApiDotNet.Sid]$DomainSid,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser[]]$User,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$AdditionalKey,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$KrbTgtKey,
+        [ipaddress]$Address = [ipaddress]::Loopback,
+        [int]$Port = 88
+    )
+
+    $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerConfig]::new()
+    $config.Realm = $Realm
+    $config.DomainSid = $DomainSid
+    $config.Listener = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerListenerTCP]::new($Address, $Port)
+    if ($User -ne $null) {
+        $config.Users.AddRange($User)
+    }
+    if ($AdditionalKey -ne $null) {
+        $config.AdditionalKeys.AddRange($AdditionalKey)
+    }
+    $config.KrbTgtKey = $KrbTgtKey
+    $config.Create()
+}
+
+<#
+.SYNOPSIS
+Create a new test Kerberos KDC user.
+.DESCRIPTION
+This cmdlet configures and creates a new KDC user.
+.PARAMETER Username
+Specify the user's name.
+.PARAMETER UserId
+Specify the user's domain RID.
+.PARAMETER Key
+Specify the user's keys.
+.PARAMETER GroupId
+Specify the user's group IDs.
+.PARAMETER PrimaryGroupId
+Specify the user's primary group ID.
+.PARAMETER ServicePrincipalName
+Specify the user's service principal names.
+.PARAMETER ExtraSid
+Specify the user's extra SIDs.
+.PARAMETER AuthorizationData
+Specify the user's authorization data.
+.PARAMETER ResourceGroupDomainSid
+Specify the user's resource group domain SID.
+.PARAMETER ResourceGroupId
+Specify the user's resource group IDs.
+.PARAMETER UserAccountControlFlag
+Specify the user's account control flags.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser
+#>
+function New-KerberosKdcServerUser {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Username,
+        [Parameter(Mandatory, Position = 1)]
+        [uint32]$UserId,
+        [Parameter(Mandatory, Position = 2)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key,
+        [NtApiDotNet.Sid]$DomainSid,
+        [uint32[]]$GroupId,
+        [uint32]$PrimaryGroupId = 513,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName[]]$ServicePrincipalName,
+        [NtApiDotNet.Sid[]]$ExtraSid,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
+        [NtApiDotNet.Sid]$ResourceGroupDomainSid,
+        [uint32[]]$ResourceGroupId,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.UserAccountControlFlags]$UserAccountControlFlag = "NormalAccount"
+    )
+    $user = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser]::new($username)
+    $user.UserId = $UserId
+    $user.Keys.AddRange($Key)
+    $user.DomainSid = $DomainSid
+    foreach($rid in $GroupId) {
+        $user.AddGroupId($rid)
+    }
+    $user.PrimaryGroupId = $PrimaryGroupId
+    foreach($spn in $ServicePrincipalName) {
+        $user.ServicePrincipalNames.Add($spn) | Out-Null
+    }
+    foreach ($sid in $ExtraSid) {
+        $attr = "Mandatory, Enabled, EnabledByDefault"
+        if (Test-NtSid $sid -Integrity) {
+            $attr = "Integrity, IntegrityEnabled"
+        }
+        $user.AddExtraSid($sid, $attr)
+    }
+    if ($AuthorizationData -ne $null) {
+        $user.AuthorizationData.AddRange($AuthorizationData)
+    }
+    if ($ResourceGroupDomainSid -ne $null -and $ResourceGroupId -ne $null) {
+        $user.ResourceGroupDomainSid = $ResourceGroupDomainSid
+        foreach($rid in $ResourceGroupId) {
+            $user.AddResourceGroupId($rid)
+        }
+    }
+    $user.UserAccountControlFlags = $UserAccountControlFlag
+    $user
+}

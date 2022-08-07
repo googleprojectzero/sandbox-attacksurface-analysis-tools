@@ -29,11 +29,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public string UserName { get; }
 
         /// <summary>
-        /// The user's realm. If not specified then uses the realm assigned to the KDC server.
-        /// </summary>
-        public string Realm { get; }
-
-        /// <summary>
         /// The user's domain SID. If not specified then uses the SID assigned to the KDC server.
         /// </summary>
         public Sid DomainSid { get; set; }
@@ -51,17 +46,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         /// <summary>
         /// The primary group ID.
         /// </summary>
-        public uint PrimaryGroupId { get; }
+        public uint PrimaryGroupId { get; set; }
 
         /// <summary>
         /// The user account control flags.
         /// </summary>
-        public UserAccountControlFlags UserAccountControlFlags { get; }
+        public UserAccountControlFlags UserAccountControlFlags { get; set; }
 
         /// <summary>
         /// Get or set the kerberos keys.
         /// </summary>
-        public KerberosKeySet Keys { get; set; }
+        public KerberosKeySet Keys { get; }
 
         /// <summary>
         /// The set of service principal names for this user.

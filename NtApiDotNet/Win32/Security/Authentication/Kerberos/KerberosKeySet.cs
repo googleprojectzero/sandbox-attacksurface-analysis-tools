@@ -80,6 +80,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Add a key to the key set.
+        /// </summary>
+        /// <param name="keys">The keys to add.</param>
+        public void AddRange(IEnumerable<KerberosAuthenticationKey> keys)
+        {
+            if (keys is null)
+            {
+                throw new ArgumentNullException(nameof(keys));
+            }
+
+            foreach (var key in keys)
+            {
+                _keys.Add(key);
+            }
+        }
+
+        /// <summary>
         /// Remove a key from the key set.
         /// </summary>
         /// <param name="key">The key to remove.</param>
