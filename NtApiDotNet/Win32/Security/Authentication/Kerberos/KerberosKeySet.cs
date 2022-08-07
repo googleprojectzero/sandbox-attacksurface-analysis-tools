@@ -97,6 +97,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Add keys from a key tab file.
+        /// </summary>
+        /// <param name="path">The path to the key tab file.</param>
+        public void AddFromKeyTab(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException($"'{nameof(path)}' cannot be null or empty.", nameof(path));
+            }
+
+            AddRange(KerberosUtils.ReadKeyTabFile(path));
+        }
+
+        /// <summary>
         /// Remove a key from the key set.
         /// </summary>
         /// <param name="key">The key to remove.</param>
