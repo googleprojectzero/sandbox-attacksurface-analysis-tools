@@ -28,6 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         private readonly string _domain;
         private readonly Sid _domain_sid;
         private readonly Dictionary<KerberosPrincipalName, KerberosKDCServerUser> _users;
+        private readonly KerberosKeySet _derived_keys;
         private readonly KerberosKeySet _keys;
         private readonly KerberosAuthenticationKey _krbtgt_key;
         private readonly KerberosPrincipalName _krbtgt_name;
@@ -62,6 +63,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
             {
                 _keys.Add(key);
             }
+            _derived_keys = new KerberosKeySet();
         }
 
         private AuthenticationToken GetGenericError()
@@ -151,7 +153,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
                 return GetError(KerberosErrorType.WRONG_REALM, request);
             if (!_users.TryGetValue(request.ClientName, out KerberosKDCServerUser user))
                 return GetError(KerberosErrorType.S_PRINCIPAL_UNKNOWN, request);
+            if (request.EncryptionTypes.Count == 0)
+                return GetError(KerberosErrorType.ENCTYPE_NOSUPP, request);
             var key = user.Keys.FindKey(request.EncryptionTypes);
+            if (key == null && user.Password != null)
+            {
+                key = _derived_keys.FindKeySetForPrincipal(request.ClientName)?.FindKey(request.EncryptionTypes);
+                if (key == null)
+                {
+                    key = KerberosAuthenticationKey.DeriveKey(request.EncryptionTypes.First(), user.Password, 4096, request.ClientName, _realm, 0);
+                    _derived_keys.Add(key);
+                }
+            }
             if (key == null)
                 return GetError(KerberosErrorType.NOKEY, request);
 

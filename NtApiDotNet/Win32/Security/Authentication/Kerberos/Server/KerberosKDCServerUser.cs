@@ -29,6 +29,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public string UserName { get; }
 
         /// <summary>
+        /// Get or set the user's password. Used to automatically calculate a key if present
+        /// and no corresponding entry exists in the <see cref="Keys"/> property.
+        /// </summary>
+        public string Password { get; set; }
+
+        /// <summary>
         /// The user's domain SID. If not specified then uses the SID assigned to the KDC server.
         /// </summary>
         public Sid DomainSid { get; set; }
@@ -54,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
         public UserAccountControlFlags UserAccountControlFlags { get; set; }
 
         /// <summary>
-        /// Get or set the kerberos keys.
+        /// Get the kerberos key set.
         /// </summary>
         public KerberosKeySet Keys { get; }
 

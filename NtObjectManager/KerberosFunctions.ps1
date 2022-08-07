@@ -1111,19 +1111,23 @@ Specify the user's resource group domain SID.
 Specify the user's resource group IDs.
 .PARAMETER UserAccountControlFlag
 Specify the user's account control flags.
+.PARAMETER
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser
 #>
 function New-KerberosKdcServerUser {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromPassword")]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [string]$Username,
         [Parameter(Mandatory, Position = 1)]
         [uint32]$UserId,
-        [Parameter(Mandatory, Position = 2)]
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
+        [AllowEmptyString()]
+        [string]$Password,
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeys")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key,
         [NtApiDotNet.Sid]$DomainSid,
         [uint32[]]$GroupId,
@@ -1137,7 +1141,14 @@ function New-KerberosKdcServerUser {
     )
     $user = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser]::new($username)
     $user.UserId = $UserId
-    $user.Keys.AddRange($Key)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPassword" {
+            $user.Password = $Password
+        }
+        "FromKeys" {
+            $user.Keys.AddRange($Key)
+        }
+    }
     $user.DomainSid = $DomainSid
     foreach($rid in $GroupId) {
         $user.AddGroupId($rid)
