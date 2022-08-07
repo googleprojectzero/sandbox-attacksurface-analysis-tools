@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Security;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -49,6 +50,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             Array.Resize(ref r, 5);
             r[4] = key_type;
             return NFold.Compute(r, 16);
+        }
+
+        public static string MakeSalt(KerberosPrincipalName name, string realm)
+        {
+            return MakeSalt(name.Names, realm);
+        }
+
+        public static string MakeSalt(IEnumerable<string> names, string realm)
+        {
+            if (names is null)
+            {
+                throw new ArgumentNullException(nameof(names));
+            }
+
+            if (realm is null)
+            {
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            return realm.ToUpper() + string.Join("", names);
         }
     }
 }

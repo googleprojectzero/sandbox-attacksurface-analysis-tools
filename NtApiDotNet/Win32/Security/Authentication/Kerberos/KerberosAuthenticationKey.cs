@@ -188,6 +188,35 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="key_encryption">The key encryption to use.</param>
         /// <param name="password">The password to derice from.</param>
         /// <param name="iterations">Iterations for the password derivation.</param>
+        /// <param name="name">The kerberos principal name.</param>
+        /// <param name="realm">The kerberos realm.</param>
+        /// <param name="version">Key Version Number (KVNO).</param>
+        /// <returns>The derived key.</returns>
+        public static KerberosAuthenticationKey DeriveKey(KerberosEncryptionType key_encryption, string password,
+            int iterations, KerberosPrincipalName name, string realm, uint version)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (realm is null)
+            {
+                throw new ArgumentNullException(nameof(realm));
+            }
+
+            KerberosEncryptionEngine enc_engine = KerberosEncryptionEngine.Get(key_encryption, false);
+            byte[] key = enc_engine.DeriveKey(password, iterations, KerberosEncryptionUtils.MakeSalt(name, realm));
+            return new KerberosAuthenticationKey(key_encryption, key, realm, name, DateTime.Now, version);
+        }
+
+        /// <summary>
+        /// Derive a key from a password.
+        /// </summary>
+        /// <remarks>Not all encryption types are supported.</remarks>
+        /// <param name="key_encryption">The key encryption to use.</param>
+        /// <param name="password">The password to derice from.</param>
+        /// <param name="iterations">Iterations for the password derivation.</param>
         /// <param name="name_type">The key name type.</param>
         /// <param name="principal">Principal for key, in form TYPE/name@realm.</param>
         /// <param name="salt">Salt for the key.</param>
@@ -385,7 +414,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             if (!string.IsNullOrEmpty(salt))
                 return salt;
-            return GetRealm(principal).ToUpper() + string.Join("", GetComponents(principal));
+            return KerberosEncryptionUtils.MakeSalt(GetComponents(principal), GetRealm(principal));
         }
 
         private static string GetRealm(string principal)
