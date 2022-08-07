@@ -1165,3 +1165,50 @@ function New-KerberosKdcServerUser {
     $user.UserAccountControlFlags = $UserAccountControlFlag
     $user
 }
+
+<#
+.SYNOPSIS
+Create a new Kerberos authorization data value.
+.DESCRIPTION
+This cmdlet a new Kerberos authorization data value.
+.PARAMETER SecurityContext
+Specify to create a KERB-LOCAL  authorization data.
+.PARAMETER AuthorizationData
+Specify to create a AD-IF-RELEVANT authorization data.
+.PARAMETER RestrictionFlag
+Specify the flags for a KERB-AD-RESTRICTION-ENTRY authorization data.
+.PARAMETER IntegrityLevel
+Specify the integrity level for a KERB-AD-RESTRICTION-ENTRY authorization data.
+.PARAMETER MachineId
+Specify the machine ID for a KERB-AD-RESTRICTION-ENTRY authorization data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData
+#>
+function New-KerberosAuthorizationData {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="IfRelevant")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
+        [Parameter(Mandatory, ParameterSetName="KerbLocal")]
+        [byte[]]$SecurityContext,
+        [Parameter(Mandatory, ParameterSetName="KerbRest")]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosRestrictionEntryFlags]$RestrictionFlag,
+        [Parameter(Mandatory, ParameterSetName="KerbRest")]
+        [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
+        [Parameter(Mandatory, ParameterSetName="KerbRest")]
+        [byte[]]$MachineId
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "IfRelevant" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataIfRelevant]::new($AuthorizationData)
+        }
+        "KerbLocal" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataKerbLocal]::new($SecurityContext)
+        }
+        "KerbRest" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataRestrictionEntry]::new($RestrictionFlag, $IntegrityLevel, $MachineId)
+        }
+    }
+}
