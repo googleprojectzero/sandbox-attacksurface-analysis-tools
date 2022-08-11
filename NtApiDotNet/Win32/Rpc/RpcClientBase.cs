@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Rpc
     public abstract class RpcClientBase : IDisposable
     {
         #region Private Members
-        private IRpcClientTransport _transport;
+        protected IRpcClientTransport _transport;
 
         private RpcEndpoint LookupEndpoint(string protocol_seq, string network_address)
         {
