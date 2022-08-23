@@ -23,6 +23,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     public interface ILsaLogonCredentials
     {
         /// <summary>
+        /// Specify the expected authentication package name.
+        /// </summary>
+        /// <remarks>This is advisory only, you could pass the same credentials to a different authentication package.</remarks>
+        string AuthenticationPackage { get; }
+
+        /// <summary>
         /// Convert the credentials into a safe buffer.
         /// </summary>
         /// <param name="list">Store for any additional allocations.</param>

@@ -105,6 +105,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, uint auth_package, string origin_name,
             TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
             using (var list = new DisposableList())
             {
                 var groups = local_groups == null ? SafeTokenGroupsBuffer.Null
@@ -144,7 +149,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// Logon a user.
         /// </summary>
         /// <param name="type">The type of logon.</param>
-        /// <param name="auth_package">The authentication package to use.</param>
+        /// <param name="auth_package">The authentication package to use. If an empty string will use the name from the credentials.</param>
         /// <param name="origin_name">The name of the origin.</param>
         /// <param name="source_context">The token source context.</param>
         /// <param name="credentials">The authentication credentials.</param>
@@ -154,6 +159,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         public NtResult<LsaLogonResult> LsaLogonUser(SecurityLogonType type, string auth_package, string origin_name,
             TokenSource source_context, ILsaLogonCredentials credentials, IEnumerable<UserGroup> local_groups, bool throw_on_error)
         {
+            if (string.IsNullOrEmpty(auth_package))
+            {
+                if (credentials is null)
+                    throw new ArgumentNullException(nameof(credentials));
+                auth_package = credentials.AuthenticationPackage;
+            }
             var auth_pkg = _handle.LookupAuthPackage(auth_package, throw_on_error);
             if (!auth_pkg.IsSuccess)
                 return auth_pkg.Cast<LsaLogonResult>();
@@ -186,6 +197,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         public LsaLogonResult LsaLogonUser(SecurityLogonType type, string auth_package, ILsaLogonCredentials credentials)
         {
             return LsaLogonUser(type, auth_package, "TEMP", new TokenSource("NT.NET"), credentials, null);
+        }
+
+        /// <summary>
+        /// Logon a user.
+        /// </summary>
+        /// <param name="type">The type of logon.</param>
+        /// <param name="credentials">The authentication credentials.</param>
+        /// <returns>The LSA logon result.</returns>
+        public LsaLogonResult LsaLogonUser(SecurityLogonType type, ILsaLogonCredentials credentials)
+        {
+            return LsaLogonUser(type, string.Empty, credentials);
         }
 
         /// <summary>

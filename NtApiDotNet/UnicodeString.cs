@@ -121,6 +121,24 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// A structure to represent an ANSI_STRING with a raw buffer pointer.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AnsiStringOut
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
+
+        public override string ToString()
+        {
+            if (Buffer != IntPtr.Zero)
+                return Marshal.PtrToStringAnsi(Buffer, Length / 2);
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
     /// This class is used when the UNICODE_STRING is an output parameter.
     /// The allocatation of the buffer is handled elsewhere.
     /// </summary>

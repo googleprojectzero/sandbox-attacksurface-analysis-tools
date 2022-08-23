@@ -22,20 +22,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     public class LsaLogonCredentialsBuffer : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
     {
         private readonly byte[] _data;
+        private readonly string _auth_package;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="data">The credentials as a byte array.</param>
-        public LsaLogonCredentialsBuffer(byte[] data)
+        /// <param name="auth_package">The default authentication package.</param>
+        public LsaLogonCredentialsBuffer(byte[] data, string auth_package = AuthenticationPackage.NEGOSSP_NAME)
         {
+            if (string.IsNullOrEmpty(auth_package))
+            {
+                throw new System.ArgumentException($"'{nameof(auth_package)}' cannot be null or empty.", nameof(auth_package));
+            }
+
             _data = (byte[])data.Clone();
+            _auth_package = auth_package;
         }
 
         /// <summary>
         /// The credentials data.
         /// </summary>
         public byte[] Data => (byte[])_data.Clone();
+
+        string ILsaLogonCredentials.AuthenticationPackage => _auth_package;
 
         byte[] ILsaLogonCredentialsSerializable.ToArray()
         {

@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="credentials"></param>
+        /// <param name="credentials">The user's credentials.</param>
         public KerberosInteractiveLogonCredentials(UserCredentials credentials)
         {
             if (credentials is null)
@@ -101,5 +101,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         {
             return ToBuffer(false);
         }
+
+        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
     }
 }

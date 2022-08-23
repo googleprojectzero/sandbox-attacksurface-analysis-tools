@@ -54,6 +54,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// </summary>
         public string ClientRealm { get; set; }
 
+        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+
         SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
         {
             if (ClientUpn is null)

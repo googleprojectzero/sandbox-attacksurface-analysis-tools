@@ -518,7 +518,13 @@
     <Compile Include="Win32\Security\Authentication\Logon\ILsaLogonCredentialsSerializable.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\KerberosInteractiveLogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\LsaLogonCredentialsBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\NtlmInteractiveLogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\NtlmLm20LogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\NtlmNetworkLogonCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\NtlmNetworkLogonParameterControlFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\NtlmS4ULogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUnknown.cs" />
@@ -716,8 +722,11 @@
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_NAME.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_SID2.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
+    <Compile Include="Win32\Security\Native\MSV1_0_INTERACTIVE_LOGON.cs" />
+    <Compile Include="Win32\Security\Native\MSV1_0_LM20_LOGON.cs" />
     <Compile Include="Win32\Security\Native\MSV1_0_LOGON_SUBMIT_TYPE.cs" />
     <Compile Include="Win32\Security\Native\MSV1_0_PROTOCOL_MESSAGE_TYPE.cs" />
+    <Compile Include="Win32\Security\Native\MSV1_0_S4U_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />

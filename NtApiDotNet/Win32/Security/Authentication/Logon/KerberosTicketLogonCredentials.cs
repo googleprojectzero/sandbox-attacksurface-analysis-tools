@@ -68,6 +68,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
             }
         }
 
+        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+
         SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
         {
             return ToBuffer(false);

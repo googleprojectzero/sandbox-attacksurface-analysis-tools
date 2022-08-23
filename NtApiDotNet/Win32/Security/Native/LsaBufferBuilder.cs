@@ -80,6 +80,16 @@ namespace NtApiDotNet.Win32.Security.Native
                     };
                     entry.field.SetValue(_object, str);
                 }
+                else if (entry.field.FieldType == typeof(AnsiStringOut))
+                {
+                    AnsiStringOut str = new AnsiStringOut
+                    {
+                        Buffer = entry.GetPointer(buffer),
+                        Length = (ushort)entry.length,
+                        MaximumLength = (ushort)(entry.length + 1)
+                    };
+                    entry.field.SetValue(_object, str);
+                }
                 else if (entry.field.FieldType == typeof(IntPtr))
                 {
                     entry.field.SetValue(_object, entry.GetPointer(buffer));
@@ -125,6 +135,7 @@ namespace NtApiDotNet.Win32.Security.Native
         private FieldInfo GetUnicodeStringField(string name) => GetField<UnicodeStringOut>(name);
         private FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
         private FieldInfo GetInt32Field(string name) => GetField<int>(name);
+        private FieldInfo GetAnsiStringField(string name) => GetField<AnsiStringOut>(name);
 
         public void AddUnicodeString(string name, byte[] ba, bool relative = false)
         {
@@ -169,6 +180,28 @@ namespace NtApiDotNet.Win32.Security.Native
                 field = GetIntPtrField(ptr_name),
                 relative = relative
             });
+        }
+
+        public void AddAnsiString(string name, byte[] ba, bool relative = false)
+        {
+            if (ba == null)
+                return;
+            int pos = GetCurrentPos();
+            _writer.Write(ba);
+            _writer.Write((byte)0);
+
+            _buffers.Add(new BufferEntry()
+            {
+                position = pos,
+                length = ba.Length,
+                field = GetAnsiStringField(name),
+                relative = relative
+            });
+        }
+
+        public void AddAnsiString(string name, string str, bool relative = false)
+        {
+            AddAnsiString(name, str != null ? Encoding.ASCII.GetBytes(str) : null, relative);
         }
 
         public LsaBufferBuilder<U> GetSubBuilder<U>(string name, U obj) where U : new()
