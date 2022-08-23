@@ -77,19 +77,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             token = null;
             NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
-            if (!NtlmUtils.ParseString(NtlmNegotiateFlags.Oem, reader, 
+            if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader, 
                 data, flags.HasFlagSet(NtlmNegotiateFlags.OemDomainSupplied), 
                 out string domain))
             {
                 return false;
             }
-            if (!NtlmUtils.ParseString(NtlmNegotiateFlags.Oem, reader,
+            if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader,
                 data, flags.HasFlagSet(NtlmNegotiateFlags.OemWorkstationSupplied),
                 out string workstation))
             {
                 return false;
             }
-            if (!NtlmUtils.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
                 return false;
 
             token = new NtlmNegotiateAuthenticationToken(data, flags, domain, workstation, version);

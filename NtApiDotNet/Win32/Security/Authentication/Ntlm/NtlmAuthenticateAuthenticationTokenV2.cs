@@ -135,7 +135,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 byte[] client_challenge = reader.ReadBytes(8);
                 uint reserved_3 = reader.ReadUInt32();
 
-                if (!NtlmUtils.TryParseAvPairs(reader, out List<NtlmAvPair> av_pairs))
+                if (!NtlmUtilsInternal.TryParseAvPairs(reader, out List<NtlmAvPair> av_pairs))
                 {
                     return false;
                 }

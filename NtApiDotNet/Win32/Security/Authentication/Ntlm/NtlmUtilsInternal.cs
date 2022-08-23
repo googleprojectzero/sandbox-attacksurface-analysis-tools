@@ -20,7 +20,7 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
 {
-    internal static class NtlmUtils
+    internal static class NtlmUtilsInternal
     {
         internal static bool TryParseStringValues(BinaryReader reader, out int length, out int position)
         {
@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             return true;
         }
 
-        public static bool ParseString(NtlmNegotiateFlags flags, byte[] data, int length, int position, out string result)
+        internal static bool ParseString(NtlmNegotiateFlags flags, byte[] data, int length, int position, out string result)
         {
             result = string.Empty;
             if (data.Length < position + length)
@@ -74,7 +74,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             return true;
         }
 
-        public static bool ParseBytes(byte[] data, int length, int position, out byte[] result)
+        internal static bool ParseBytes(byte[] data, int length, int position, out byte[] result)
         {
             result = new byte[0];
             if (length == 0)
@@ -87,7 +87,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             return true;
         }
 
-        public static bool ParseString(NtlmNegotiateFlags flags, BinaryReader reader, byte[] data, bool valid, out string result)
+        internal static bool ParseString(NtlmNegotiateFlags flags, BinaryReader reader, byte[] data, bool valid, out string result)
         {
             result = string.Empty;
             if (!TryParseStringValues(reader, out int length, out int position))

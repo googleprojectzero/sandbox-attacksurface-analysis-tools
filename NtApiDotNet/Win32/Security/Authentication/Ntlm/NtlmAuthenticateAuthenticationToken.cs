@@ -144,26 +144,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             token = null;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int lm_length, out int lm_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int lm_length, out int lm_position))
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int nt_length, out int nt_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int nt_length, out int nt_position))
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int domain_length, out int domain_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int domain_length, out int domain_position))
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int username_length, out int username_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int username_length, out int username_position))
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int workstation_length, out int workstation_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int workstation_length, out int workstation_position))
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int key_length, out int key_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int key_length, out int key_position))
                 return false;
 
             NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
-            if (!NtlmUtils.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
                 return false;
 
             long min_pos = MinimumPosition(lm_position, nt_position, domain_position, username_position, workstation_position, key_position);
@@ -180,31 +180,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             string domain = string.Empty;
             if (domain_position != 0)
             {
-                if (!NtlmUtils.ParseString(flags, data, domain_length, domain_position, out domain))
+                if (!NtlmUtilsInternal.ParseString(flags, data, domain_length, domain_position, out domain))
                     return false;
             }
 
             string workstation = string.Empty;
             if (workstation_position != 0)
             {
-                if (!NtlmUtils.ParseString(flags, data, workstation_length, workstation_position, out workstation))
+                if (!NtlmUtilsInternal.ParseString(flags, data, workstation_length, workstation_position, out workstation))
                     return false;
             }
 
             string username = string.Empty;
             if (username_position != 0)
             {
-                if (!NtlmUtils.ParseString(flags, data, username_length, username_position, out username))
+                if (!NtlmUtilsInternal.ParseString(flags, data, username_length, username_position, out username))
                     return false;
             }
 
-            if (!NtlmUtils.ParseBytes(data, lm_length, lm_position, out byte[] lm_response))
+            if (!NtlmUtilsInternal.ParseBytes(data, lm_length, lm_position, out byte[] lm_response))
                 return false;
 
-            if (!NtlmUtils.ParseBytes(data, nt_length, nt_position, out byte[] nt_response))
+            if (!NtlmUtilsInternal.ParseBytes(data, nt_length, nt_position, out byte[] nt_response))
                 return false;
 
-            if (!NtlmUtils.ParseBytes(data, key_length, key_position, out byte[] key))
+            if (!NtlmUtilsInternal.ParseBytes(data, key_length, key_position, out byte[] key))
                 return false;
 
             if (!NtlmAuthenticateAuthenticationTokenV2.TryParse(data, flags, domain, username, workstation, lm_response, nt_response,

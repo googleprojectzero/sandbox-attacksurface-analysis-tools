@@ -94,7 +94,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
 
         private static bool TryParseAvPairs(byte[] data, out List<NtlmAvPair> av_pairs)
         {
-            return NtlmUtils.TryParseAvPairs(new BinaryReader(new MemoryStream(data)), out av_pairs);
+            return NtlmUtilsInternal.TryParseAvPairs(new BinaryReader(new MemoryStream(data)), out av_pairs);
         }
 
         #endregion
@@ -104,7 +104,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             token = null;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int target_name_length, out int target_name_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int target_name_length, out int target_name_position))
                 return false;
 
             NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
@@ -116,16 +116,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             if (reserved.Length < 8)
                 return false;
 
-            if (!NtlmUtils.TryParseStringValues(reader, out int target_info_length, out int target_info_position))
+            if (!NtlmUtilsInternal.TryParseStringValues(reader, out int target_info_length, out int target_info_position))
                 return false;
 
-            if (!NtlmUtils.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
                 return false;
 
             string target_name = string.Empty;
             if (flags.HasFlagSet(NtlmNegotiateFlags.RequestTarget))
             {
-                if (!NtlmUtils.ParseString(flags, data, target_name_length,
+                if (!NtlmUtilsInternal.ParseString(flags, data, target_name_length,
                     target_name_position, out target_name))
                 {
                     return false;
@@ -135,7 +135,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             IEnumerable<NtlmAvPair> pairs = new NtlmAvPair[0];
             if (flags.HasFlagSet(NtlmNegotiateFlags.TargetInfo))
             {
-                if (!NtlmUtils.ParseBytes(data, target_info_length, target_info_position, out byte[] target_info))
+                if (!NtlmUtilsInternal.ParseBytes(data, target_info_length, target_info_position, out byte[] target_info))
                 {
                     return false;
                 }

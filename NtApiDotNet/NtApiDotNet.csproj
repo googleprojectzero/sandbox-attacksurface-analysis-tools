@@ -510,6 +510,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosRetrieveTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTypedData.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtilsInternal.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerConfig.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerImpl.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerToken.cs" />
@@ -715,6 +716,8 @@
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_NAME.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRANSLATED_SID2.cs" />
     <Compile Include="Win32\Security\Native\LSA_TRUST_INFORMATION.cs" />
+    <Compile Include="Win32\Security\Native\MSV1_0_LOGON_SUBMIT_TYPE.cs" />
+    <Compile Include="Win32\Security\Native\MSV1_0_PROTOCOL_MESSAGE_TYPE.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
@@ -1027,7 +1030,7 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmAvPair.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmChallengeAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmNegotiateAuthenticationToken.cs" />
-    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtilsInternal.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZAccessCheckResult.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZContext.cs" />
     <Compile Include="Win32\Security\Authorization\AuthZResourceManager.cs" />
