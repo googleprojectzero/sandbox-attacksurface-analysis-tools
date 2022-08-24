@@ -23,6 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
     /// </summary>
     public sealed class NtlmChallengeAuthenticationTokenBuilder : NtlmAuthenticationTokenBuilder
     {
+        #region Public Properties
         /// <summary>
         /// Target name.
         /// </summary>
@@ -43,7 +44,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         /// NTLM Target Information.
         /// </summary>
         public List<NtlmAvPair> TargetInfo { get; }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -51,7 +54,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         {
             TargetInfo = new List<NtlmAvPair>();
         }
+        #endregion
 
+        #region Private Members
         private const int BASE_OFFSET = 56;
 
         private protected override byte[] GetBytes()
@@ -80,5 +85,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
             writer.Write(payload.ToArray());
             return stm.ToArray();
         }
+        #endregion
     }
 }

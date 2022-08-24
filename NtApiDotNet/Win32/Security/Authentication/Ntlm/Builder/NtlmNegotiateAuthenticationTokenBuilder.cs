@@ -37,6 +37,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         public Version Version { get; set; }
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NtlmNegotiateAuthenticationTokenBuilder() : base(NtlmMessageType.Negotiate)
+        {
+        }
+        #endregion
+
+        #region Private Members
         private const int BASE_OFFSET = 40;
 
         private protected override byte[] GetBytes()
@@ -59,12 +69,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
             writer.Write(payload.ToArray());
             return stm.ToArray();
         }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public NtlmNegotiateAuthenticationTokenBuilder() : base(NtlmMessageType.Negotiate)
-        {
-        }
+        #endregion
     }
 }
