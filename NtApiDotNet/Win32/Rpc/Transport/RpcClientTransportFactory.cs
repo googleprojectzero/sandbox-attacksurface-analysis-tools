@@ -105,6 +105,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         }
 
         /// <summary>
+        /// Add or replace a new transport factory.
+        /// </summary>
+        /// <param name="protocol_seq">The protocol sequence to add or replace.</param>
+        /// <param name="factory">The transport factory.</param>
+        public static void AddOrReplaceFactory(string protocol_seq, IRpcClientTransportFactory factory)
+        {
+            _factories[protocol_seq] = factory;
+        }
+
+        /// <summary>
         /// Add a new transport factory.
         /// </summary>
         /// <param name="protocol_seq">The protocol sequence to add.</param>
