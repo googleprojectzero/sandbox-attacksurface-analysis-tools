@@ -69,7 +69,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             NtlmNegotiateFlags flags, string domain, string username,
             string workstation, byte[] lmresponse, byte[] ntresponse,
             byte[] session_key, byte[] mic, int mic_offset, Version version)
-            : base(data, NtlmMessageType.Negotiate, flags)
+            : base(data, NtlmMessageType.Authenticate, flags)
         {
             Domain = domain;
             Workstation = workstation;

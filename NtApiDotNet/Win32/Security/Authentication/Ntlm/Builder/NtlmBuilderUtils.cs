@@ -35,6 +35,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
 
         internal static void WriteBinary(this BinaryWriter writer, byte[] data, int base_offset, MemoryStream payload)
         {
+            data = data ?? Array.Empty<byte>();
             writer.Write((ushort)data.Length);
             writer.Write((ushort)data.Length);
             writer.Write((int)(base_offset + payload.Length));
