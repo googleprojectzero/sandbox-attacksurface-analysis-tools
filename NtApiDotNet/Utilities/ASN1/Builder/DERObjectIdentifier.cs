@@ -49,10 +49,9 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         /// Constructor.
         /// </summary>
         /// <param name="oid">The object identifier as a string.</param>
-        /// <exception cref="ArgumentException">Thrown if less than 2 components.</exception>
-        public DERObjectIdentifier(string oid)
+        /// <exception cref="ArgumentException">Thrown if less than 2 components or invalid.</exception>
+        public DERObjectIdentifier(string oid) : this(Parse(oid).ObjectIdentifier)
         {
-            ObjectIdentifier = oid.Split('.').Select(i => int.Parse(i)).ToList().AsReadOnly();
         }
 
         /// <summary>
@@ -62,6 +61,44 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         public override string ToString()
         {
             return string.Join(".", ObjectIdentifier);
+        }
+
+        /// <summary>
+        /// Try and parse a string to an OID.
+        /// </summary>
+        /// <param name="value">The OID as a string.</param>
+        /// <param name="oid">The parsed OID.</param>
+        /// <returns>Returns true if successful.</returns>
+        public static bool TryParse(string value, out DERObjectIdentifier oid)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException($"'{nameof(value)}' cannot be null or whitespace.", nameof(value));
+            }
+
+            oid = null;
+            List<int> values = new List<int>();
+            foreach (var part in value.Split('.'))
+            {
+                if (!int.TryParse(part, out int v))
+                    return false;
+                values.Add(v);
+            }
+            oid = new DERObjectIdentifier(values);
+            return true;
+        }
+
+        /// <summary>
+        /// Parse a string to an OID.
+        /// </summary>
+        /// <param name="value">The string to parse.</param>
+        /// <returns>The parsed OID.</returns>
+        /// <exception cref="ArgumentException">Thrown if the string is invalid.</exception>
+        public static DERObjectIdentifier Parse(string value)
+        {
+            if (!TryParse(value, out DERObjectIdentifier oid))
+                throw new ArgumentException("Value is not a valid OID.", nameof(value));
+            return oid;
         }
 
         void IDERObject.Write(DERBuilder builder)
