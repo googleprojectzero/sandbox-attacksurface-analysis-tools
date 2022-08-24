@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
     /// </summary>
     public class NtlmAuthenticateAuthenticationTokenV2 : NtlmAuthenticateAuthenticationToken
     {
+        #region Public Properties
         /// <summary>
         /// NT Proof Response.
         /// </summary>
@@ -31,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// <summary>
         /// Challenge version.
         /// </summary>
-        public byte ChallengeVersion { get; private set; }
+        public byte ChallengeVersion { get; }
         /// <summary>
         /// Maximum challenge version.
         /// </summary>
@@ -60,6 +62,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// NTLM Target Information.
         /// </summary>
         public IReadOnlyList<NtlmAvPair> TargetInfo { get; }
+        #endregion
 
         #region Constructors
         private protected NtlmAuthenticateAuthenticationTokenV2(byte[] data,
@@ -84,8 +87,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         }
         #endregion
 
-        #region Private Members
+        #region Public Methods
+        /// <summary>
+        /// Convert the authentication token to a builder.
+        /// </summary>
+        /// <returns>The NTLM authentication token builder.</returns>
+        public override NtlmAuthenticationTokenBuilder ToBuilder()
+        {
+            var builder = new NtlmAuthenticateAuthenticationTokenV2Builder
+            {
+                NTProofResponse = (byte[])NTProofResponse?.Clone(),
+                ChallengeVersion = ChallengeVersion,
+                MaxChallengeVersion = MaxChallengeVersion,
+                Reserved1 = Reserved1,
+                Reserved2 = Reserved2,
+                Timestamp = Timestamp,
+                ClientChallenge = (byte[])ClientChallenge?.Clone(),
+                Reserved3 = Reserved3
+            };
+            builder.TargetInfo.AddRange(TargetInfo);
+            return PopulateBuilder(builder);
+        }
+        #endregion
 
+        #region Private Members
         private protected override void FormatNTResponse(StringBuilder builder)
         {
             builder.AppendLine("<NTLMv2 Challenge Response>");

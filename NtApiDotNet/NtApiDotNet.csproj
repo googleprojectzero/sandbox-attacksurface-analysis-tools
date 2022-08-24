@@ -524,6 +524,13 @@
     <Compile Include="Win32\Security\Authentication\Logon\NtlmNetworkLogonParameterControlFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Logon\NtlmS4ULogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateInit2AuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmAuthenticateAuthenticationTokenBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmAuthenticateAuthenticationTokenBuilderBase.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmAuthenticateAuthenticationTokenV2Builder.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmAuthenticationTokenBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmBuilderUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmChallengeAuthenticationTokenBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmNegotiateAuthenticationTokenBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />

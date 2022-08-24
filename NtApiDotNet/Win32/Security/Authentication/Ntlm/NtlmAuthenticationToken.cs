@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Text;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder;
 using System;
 using System.IO;
 
@@ -78,8 +79,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
     public abstract class NtlmAuthenticationToken : AuthenticationToken
     {
         #region Private Members
-        private const string NTLM_MAGIC = "NTLMSSP\0";
-
         private protected NtlmAuthenticationToken(
             byte[] data, NtlmMessageType message_type, 
             NtlmNegotiateFlags flags) : base(data)
@@ -88,6 +87,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             Flags = flags;
         }
 
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Convert the authentication token to a builder.
+        /// </summary>
+        /// <returns>The NTLM authentication token builder.</returns>
+        public abstract NtlmAuthenticationTokenBuilder ToBuilder();
         #endregion
 
         #region Public Properties
@@ -116,7 +123,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             token = null;
             if (data.Length < 12)
                 return false;
-            if (BinaryEncoding.Instance.GetString(data, 0, 8) != NTLM_MAGIC)
+            if (BinaryEncoding.Instance.GetString(data, 0, 8) != NtlmUtilsInternal.NTLM_MAGIC)
                 return false;
             MemoryStream stm = new MemoryStream(data);
             BinaryReader reader = new BinaryReader(stm);

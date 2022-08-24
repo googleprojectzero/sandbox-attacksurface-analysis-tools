@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder;
 using System;
 using System.IO;
 using System.Linq;
@@ -50,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public byte[] LmChallengeResponse { get; }
         /// <summary>
-        /// LM Challenge Response.
+        /// NT Challenge Response.
         /// </summary>
         public byte[] NtChallengeResponse { get; }
         /// <summary>
@@ -94,9 +95,35 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             return ps.Min();
         }
 
+        private protected NtlmAuthenticateAuthenticationTokenBuilderBase PopulateBuilder(NtlmAuthenticateAuthenticationTokenBuilderBase builder)
+        {
+            builder.Domain = Domain;
+            builder.Workstation = Workstation;
+            builder.UserName = UserName;
+            builder.Version = Version;
+            builder.EncryptedSessionKey = (byte[])EncryptedSessionKey?.Clone();
+            builder.LmChallengeResponse = (byte[])LmChallengeResponse?.Clone();
+            builder.MessageIntegrityCode = (byte[])MessageIntegrityCode?.Clone();
+            builder.Flags = Flags;
+            return builder;
+        }
+
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Convert the authentication token to a builder.
+        /// </summary>
+        /// <returns>The NTLM authentication token builder.</returns>
+        public override NtlmAuthenticationTokenBuilder ToBuilder()
+        {
+            return PopulateBuilder(
+                new NtlmAuthenticateAuthenticationTokenBuilder
+            {
+                NtChallengeResponse = NtChallengeResponse
+            });
+        }
+
         /// <summary>
         /// Format the authentication token.
         /// </summary>

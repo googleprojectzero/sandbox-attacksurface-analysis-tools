@@ -22,6 +22,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
 {
     internal static class NtlmUtilsInternal
     {
+        internal const string NTLM_MAGIC = "NTLMSSP\0";
+
         internal static bool TryParseStringValues(BinaryReader reader, out int length, out int position)
         {
             length = 0;

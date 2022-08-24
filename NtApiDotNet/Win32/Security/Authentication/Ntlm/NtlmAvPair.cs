@@ -61,6 +61,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public MsAvPairType Type { get; }
 
+        private protected abstract byte[] GetBytes();
+
+        internal void Write(BinaryWriter writer)
+        {
+            byte[] ba = GetBytes();
+            writer.Write((short)Type);
+            writer.Write((ushort)ba.Length);
+            writer.Write(ba);
+        }
+
         internal static bool TryParse(BinaryReader reader, out NtlmAvPair av_pair)
         {
             av_pair = null;
@@ -87,12 +97,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 case MsAvPairType.Timestamp:
                     if (length != 8)
                         return false;
-                    av_pair = new NtlmAvPairTimestamp(type, reader.ReadInt64());
+                    av_pair = new NtlmAvPairTimestamp(reader.ReadInt64());
                     break;
                 case MsAvPairType.Flags:
                     if (length != 4)
                         return false;
-                    av_pair = new NtlmAvPairFlags(type, reader.ReadInt32());
+                    av_pair = new NtlmAvPairFlags((MsvAvFlags)reader.ReadInt32());
                     break;
                 case MsAvPairType.SingleHost:
                     if (length != 48)
@@ -101,7 +111,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                     uint z4 = reader.ReadUInt32();
                     byte[] custom_data = reader.ReadBytes(8);
                     byte[] machine_id = reader.ReadBytes(32);
-                    av_pair = new NtlmAvPairSingleHostData(type, z4, custom_data, machine_id);
+                    av_pair = new NtlmAvPairSingleHostData(z4, custom_data, machine_id);
                     break;
                 default:
                     av_pair = new NtlmAvPairBytes(type, reader.ReadBytes(length));
@@ -126,7 +136,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public string Value { get; }
 
-        internal NtlmAvPairString(MsAvPairType type, string value) 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">The type of the string.</param>
+        /// <param name="value">The string value.</param>
+        public NtlmAvPairString(MsAvPairType type, string value) 
             : base(type)
         {
             Value = value;
@@ -139,6 +154,71 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public override string ToString()
         {
             return $"{Type} - {Value}";
+        }
+
+        /// <summary>
+        /// Create a DNS computer name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateDnsComputerName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.DnsComputerName, name);
+        }
+
+        /// <summary>
+        /// Create a DNS domain name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateDnsDomainName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.DnsDomainName, name);
+        }
+
+        /// <summary>
+        /// Create a DNS tree name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateDnsTreeName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.DnsTreeName, name);
+        }
+
+        /// <summary>
+        /// Create a NETBIOS computer name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateNbComputerName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.NbComputerName, name);
+        }
+
+        /// <summary>
+        /// Create a NETBIOS domain name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateNbDomainName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.NbDomainName, name);
+        }
+
+        /// <summary>
+        /// Create a target name AV pair.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The AV pair.</returns>
+        public static NtlmAvPairString CreateTargetName(string name)
+        {
+            return new NtlmAvPairString(MsAvPairType.TargetName, name);
+        }
+
+        private protected override byte[] GetBytes()
+        {
+            return Encoding.Unicode.GetBytes(Value);
         }
     }
 
@@ -152,8 +232,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public DateTime Value { get; }
 
-        internal NtlmAvPairTimestamp(MsAvPairType type, long value)
-            : base(type)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value"></param>
+        public NtlmAvPairTimestamp(long value)
+            : base(MsAvPairType.Timestamp)
         {
             Value = DateTime.FromFileTime(value);
         }
@@ -165,6 +249,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public override string ToString()
         {
             return $"{Type} - {Value}";
+        }
+
+        private protected override byte[] GetBytes()
+        {
+            return BitConverter.GetBytes(Value.ToFileTime());
         }
     }
 
@@ -178,7 +267,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public byte[] Value { get; }
 
-        internal NtlmAvPairBytes(MsAvPairType type, byte[] value)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">The type value.</param>
+        /// <param name="value">The raw bytes value.</param>
+        public NtlmAvPairBytes(MsAvPairType type, byte[] value)
             : base(type)
         {
             Value = value;
@@ -192,6 +286,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             return $"{Type} - {NtObjectUtils.ToHexString(Value)}";
         }
+
+        private protected override byte[] GetBytes()
+        {
+            return Value;
+        }
     }
 
     /// <summary>
@@ -204,10 +303,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public MsvAvFlags Value { get; }
 
-        internal NtlmAvPairFlags(MsAvPairType type, int value)
-            : base(type)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The flags.</param>
+        public NtlmAvPairFlags(MsvAvFlags value)
+            : base(MsAvPairType.Flags)
         {
-            Value = (MsvAvFlags)value;
+            Value = value;
         }
 
         /// <summary>
@@ -217,6 +320,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public override string ToString()
         {
             return $"{Type} - {Value}";
+        }
+
+        private protected override byte[] GetBytes()
+        {
+            return BitConverter.GetBytes((int)Value);
         }
     }
 
@@ -240,12 +348,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public byte[] MachineId { get; }
 
-        internal NtlmAvPairSingleHostData(MsAvPairType type, uint z4, byte[] custom_data, byte[] machine_id)
-            : base(type)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="z4">The Z4 value.</param>
+        /// <param name="custom_data">Custom data value.</param>
+        /// <param name="machine_id">Machine ID</param>
+        public NtlmAvPairSingleHostData(uint z4, byte[] custom_data, byte[] machine_id)
+            : base(MsAvPairType.SingleHost)
         {
             Z4 = z4;
-            CustomData = custom_data;
-            MachineId = machine_id;
+            CustomData = custom_data ?? throw new ArgumentNullException(nameof(custom_data));
+            if (CustomData.Length != 8)
+                throw new ArgumentException("CustomData must be 8 bytes in length.");
+            MachineId = machine_id ?? throw new ArgumentNullException(nameof(machine_id));
+            if (MachineId.Length != 32)
+                throw new ArgumentException("CustomData must be 32 bytes in length.");
         }
 
         /// <summary>
@@ -255,6 +373,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public override string ToString()
         {
             return $"{Type} - Z4 0x{Z4:X} - Custom Data: {NtObjectUtils.ToHexString(CustomData)} Machine ID: {NtObjectUtils.ToHexString(MachineId)}";
+        }
+
+        private protected override byte[] GetBytes()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(Z4);
+            writer.Write(CustomData);
+            writer.Write(MachineId);
+            return stm.ToArray();
         }
     }
 }

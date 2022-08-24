@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder;
 using System;
 using System.IO;
 using System.Text;
@@ -39,6 +40,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Convert the authentication token to a builder.
+        /// </summary>
+        /// <returns>The NTLM authentication token builder.</returns>
+        public override NtlmAuthenticationTokenBuilder ToBuilder()
+        {
+            return new NtlmNegotiateAuthenticationTokenBuilder
+            {
+                Domain = Domain,
+                Flags = Flags,
+                Workstation = Workstation,
+                Version = Version
+            };
+        }
+
         /// <summary>
         /// Format the authentication token.
         /// </summary>
