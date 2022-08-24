@@ -46,41 +46,15 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered)
+        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, CrackedBindingString cracked, string binding, bool registered) 
+            : this(interface_id, interface_version, cracked.Protseq, cracked.NetworkAddr, cracked.Endpoint, cracked.NetworkOptions,
+                  cracked.ObjUuidParsed, binding, annotation, registered)
         {
-            InterfaceId = interface_id;
-            InterfaceVersion = interface_version;
-            CrackedBindingString cracked = new CrackedBindingString(binding);
-            Guid.TryParse(cracked.ObjUuid, out Guid guid);
-            ObjectUuid = guid;
+        }
 
-            Annotation = annotation ?? string.Empty;
-            BindingString = binding.ToString();
-            ProtocolSequence = cracked.Protseq;
-            NetworkAddress = cracked.NetworkAddr;
-            Endpoint = cracked.Endpoint;
-            NetworkOptions = cracked.NetworkOptions;
-            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                if (Endpoint.Contains(@"\"))
-                {
-                    EndpointPath = Endpoint;
-                }
-                else
-                {
-                    EndpointPath = $@"\RPC Control\{Endpoint}";
-                }
-            }
-            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
-            }
-            else
-            {
-                EndpointPath = string.Empty;
-            }
-            Registered = registered;
-            _server_process_info = new Lazy<RpcServerProcessInformation>(GetServerProcessInformation);
+        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered) 
+            : this(interface_id, interface_version, annotation, new CrackedBindingString(binding), binding, registered)
+        {
         }
 
         #endregion
@@ -147,6 +121,63 @@ namespace NtApiDotNet.Win32
         {
         }
         #endregion
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="interface_version">The RPC interface version.</param>
+        /// <param name="protseq">The RPC protocol sequence.</param>
+        /// <param name="network_addr">The RPC network address.</param>
+        /// <param name="endpoint">The RPC endpoint.</param>
+        /// <param name="network_options">The RPC network options.</param>
+        /// <param name="object_uuid">The RPC object UUID.</param>
+        /// <param name="binding">The RPC string binding.</param>
+        /// <param name="annotation">The RPC annotation.</param>
+        /// <param name="registered">Whether the RPC interface is registered.</param>
+        /// <exception cref="ArgumentException">Thrown if invalid paramters passed.</exception>
+        public RpcEndpoint(Guid interface_id, Version interface_version, string protseq, string network_addr = null, 
+            string endpoint = null, string network_options = null, Guid object_uuid = default, string binding = null, 
+            string annotation = null, bool registered = false)
+        {
+            if (string.IsNullOrWhiteSpace(protseq))
+            {
+                throw new ArgumentException($"'{nameof(protseq)}' cannot be null or whitespace.", nameof(protseq));
+            }
+
+            InterfaceId = interface_id;
+            InterfaceVersion = interface_version;
+            ObjectUuid = object_uuid;
+            Annotation = annotation ?? string.Empty;
+            BindingString = binding ?? string.Empty;
+
+            ProtocolSequence = protseq;
+            NetworkAddress = network_addr;
+            Endpoint = endpoint;
+            NetworkOptions = network_options;
+            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                if (Endpoint.Contains(@"\"))
+                {
+                    EndpointPath = Endpoint;
+                }
+                else
+                {
+                    EndpointPath = $@"\RPC Control\{Endpoint}";
+                }
+            }
+            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
+            }
+            else
+            {
+                EndpointPath = string.Empty;
+            }
+            Registered = registered;
+            _server_process_info = new Lazy<RpcServerProcessInformation>(GetServerProcessInformation);
+        }
+        #endregion
 
         #region Public Methods
         /// <summary>
@@ -166,7 +197,6 @@ namespace NtApiDotNet.Win32
         {
             return _server_process_info.Value;
         }
-
         #endregion
     }
 }

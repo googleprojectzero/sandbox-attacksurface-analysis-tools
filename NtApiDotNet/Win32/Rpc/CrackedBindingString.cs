@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using System;
 
 namespace NtApiDotNet.Win32.Rpc
 {
@@ -23,6 +24,7 @@ namespace NtApiDotNet.Win32.Rpc
         public string NetworkAddr { get; }
         public string Endpoint { get; }
         public string NetworkOptions { get; }
+        public Guid ObjUuidParsed { get; }
 
         public CrackedBindingString(string string_binding)
         {
@@ -39,6 +41,10 @@ namespace NtApiDotNet.Win32.Rpc
                 if (status == Win32Error.SUCCESS)
                 {
                     ObjUuid = objuuid.ToString();
+                    if (Guid.TryParse(ObjUuid, out Guid guid))
+                    {
+                        ObjUuidParsed = guid;
+                    }
                     Protseq = protseq.ToString();
                     Endpoint = endpoint.ToString();
                     NetworkAddr = networkaddr.ToString();
