@@ -72,7 +72,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             {
                 builder.AppendLine($"Workstation: {Workstation}");
             }
-            builder.AppendLine($"Version: {Version}");
+            if (Version != null)
+            {
+                builder.AppendLine($"Version: {Version}");
+            }
             return builder.ToString();
         }
         #endregion
@@ -105,7 +108,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             {
                 return false;
             }
-            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, flags, out Version version))
                 return false;
 
             token = new NtlmNegotiateAuthenticationToken(data, flags, domain, workstation, version);

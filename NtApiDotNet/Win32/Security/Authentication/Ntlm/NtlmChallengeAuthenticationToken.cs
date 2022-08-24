@@ -83,8 +83,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             }
             builder.AppendLine($"Challenge : {NtObjectUtils.ToHexString(ServerChallenge)}");
             builder.AppendLine($"Reserved  : {NtObjectUtils.ToHexString(Reserved)}");
-            builder.AppendLine($"Version   : {Version}");
-
+            if (Version != null)
+            {
+                builder.AppendLine($"Version   : {Version}");
+            }
             if (TargetInfo.Count > 0)
             {
                 builder.AppendLine("=> Target Info");
@@ -138,7 +140,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             if (!NtlmUtilsInternal.TryParseStringValues(reader, out int target_info_length, out int target_info_position))
                 return false;
 
-            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, flags, out Version version))
                 return false;
 
             string target_name = string.Empty;

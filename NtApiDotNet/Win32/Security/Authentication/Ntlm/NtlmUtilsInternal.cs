@@ -100,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             return ParseString(flags, data, length, position, out result);
         }
 
-        internal static bool TryParse(BinaryReader reader, out Version version)
+        internal static bool TryParse(BinaryReader reader, NtlmNegotiateFlags flags, out Version version)
         {
             version = default;
             if (reader.RemainingLength() < 8)
@@ -111,7 +111,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             int build = reader.ReadUInt16();
             _ = reader.ReadBytes(3);
             int revision = reader.ReadByte();
-            version = new Version(major, minor, build, revision);
+            if (flags.HasFlagSet(NtlmNegotiateFlags.Version))
+                version = new Version(major, minor, build, revision);
             return true;
         }
     }

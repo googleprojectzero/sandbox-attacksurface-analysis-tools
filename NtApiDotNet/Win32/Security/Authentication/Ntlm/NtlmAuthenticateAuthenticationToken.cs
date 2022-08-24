@@ -190,7 +190,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 return false;
 
             NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
-            if (!NtlmUtilsInternal.TryParse(reader, out Version version))
+            if (!NtlmUtilsInternal.TryParse(reader, flags, out Version version))
                 return false;
 
             long min_pos = MinimumPosition(lm_position, nt_position, domain_position, username_position, workstation_position, key_position);
