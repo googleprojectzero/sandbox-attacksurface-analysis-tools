@@ -961,12 +961,14 @@ Specify the network address.
 Specify the object UUID.
 .PARAMETER Options
 Specify the options.
+.PARAMETER AsObject
+Specify to return the binding as an object.
 .INPUTS
 None
 .OUTPUTS
 string
 .EXAMPLE
-Get-RpcStringBinding --ProtocolSequence "ncalrpc"
+Get-RpcStringBinding -ProtocolSequence "ncalrpc"
 Connect an RPC ALPC string binding from a specific protocol sequence.
 #>
 function Get-RpcStringBinding {
@@ -979,17 +981,18 @@ function Get-RpcStringBinding {
         [parameter(Position = 2)]
         [string]$NetworkAddress,
         [parameter(Position = 3)]
-        [Guid]$ObjectUuid = [guid]::Empty,
+        [System.Nullable[Guid]]$ObjectUuid,
         [parameter(Position = 4)]
-        [string]$Options
+        [string]$Options,
+        [switch]$AsObject
     )
 
-    $objuuid_str = ""
-    if ($ObjectUuid -ne [guid]::Empty) {
-        $objuuid_str = $ObjectUuid.ToString()
+    $binding = [NtApiDotNet.Win32.Rpc.RpcStringBinding]::new($ProtocolSequence, $NetworkAddress, $Endpoint, $Options, $ObjectUuid)
+    if ($AsObject) {
+        $binding
+    } else {
+        $binding.ToString()
     }
-
-    [NtApiDotNet.Win32.Rpc.RpcUtils]::ComposeStringBinding($objuuid_str, $ProtocolSequence, $NetworkAddress, $Endpoint, $Options)
 }
 
 Register-ArgumentCompleter -CommandName Get-RpcStringBinding -ParameterName ProtocolSequence -ScriptBlock $protseq_completer

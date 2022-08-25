@@ -14,7 +14,6 @@
 
 using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Utilities.Text;
-using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 
@@ -521,9 +520,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="endpoint">The endpoint.</param>
         /// <param name="options">The options.</param>
         /// <returns>The composed binding string.</returns>
-        public static string ComposeStringBinding(string objuuid, string protseq, string networkaddr, string endpoint, string options)
+        [Obsolete("Use RpcStringBinding class.")]
+        public static string ComposeStringBinding(string objuuid, string protseq, string networkaddr,
+            string endpoint, string options)
         {
-            return SafeRpcBindingHandle.Compose(objuuid, protseq, networkaddr, endpoint, options);
+            return new RpcStringBinding(protseq, networkaddr, endpoint, options, objuuid).ToString();
         }
     }
 }

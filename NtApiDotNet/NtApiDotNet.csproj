@@ -478,6 +478,7 @@
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameFormat.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameResult.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNativeMethods.cs" />
+    <Compile Include="Win32\Rpc\RpcStringBinding.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentials.cs" />

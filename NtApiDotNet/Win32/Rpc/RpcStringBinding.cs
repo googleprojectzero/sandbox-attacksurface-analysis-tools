@@ -1,0 +1,214 @@
+﻿//  Copyright 2022 Google LLC. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using NtApiDotNet.Win32.SafeHandles;
+using System;
+using System.Text;
+
+namespace NtApiDotNet.Win32.Rpc
+{
+    /// <summary>
+    /// Class to represent an RPC binding string.
+    /// </summary>
+    public sealed class RpcStringBinding
+    {
+        /// <summary>
+        /// The object UUID.
+        /// </summary>
+        public Guid? ObjUuid { get; }
+        /// <summary>
+        /// The RPC protocol sequence.
+        /// </summary>
+        public string ProtocolSequence { get; }
+        /// <summary>
+        /// The RPC network address.
+        /// </summary>
+        public string NetworkAddress { get; }
+        /// <summary>
+        /// The RPC endpoint.
+        /// </summary>
+        public string Endpoint { get; }
+        /// <summary>
+        /// The RPC endpoint network options.
+        /// </summary>
+        public string NetworkOptions { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="obj_uuid">The object UUID.</param>
+        /// <param name="protseq">The protocol sequence.</param>
+        /// <param name="network_addr">The network address.</param>
+        /// <param name="endpoint">The endpoint.</param>
+        /// <param name="network_options">The options.</param>
+        public RpcStringBinding(string protseq, string network_addr = null,
+            string endpoint = null, string network_options = null, Guid? obj_uuid = null)
+        {
+            if (string.IsNullOrWhiteSpace(protseq))
+            {
+                throw new ArgumentException($"'{nameof(protseq)}' cannot be null or whitespace.", nameof(protseq));
+            }
+
+            ProtocolSequence = protseq;
+            NetworkAddress = network_addr ?? string.Empty;
+            Endpoint = endpoint ?? string.Empty;
+            NetworkOptions = network_options ?? string.Empty;
+            ObjUuid = obj_uuid;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="obj_uuid">The object UUID.</param>
+        /// <param name="protseq">The protocol sequence.</param>
+        /// <param name="network_addr">The network address.</param>
+        /// <param name="endpoint">The endpoint.</param>
+        /// <param name="network_options">The options.</param>
+        public RpcStringBinding(string protseq, string network_addr = null,
+            string endpoint = null, string network_options = null, string obj_uuid = null) 
+            : this(protseq, network_addr, endpoint, network_options, ParseGuid(obj_uuid))
+        {
+        }
+
+        /// <summary>
+        /// Converts the binding string to a string.
+        /// </summary>
+        /// <returns>The binding string as a string.</returns>
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (ObjUuid.HasValue)
+            {
+                builder.AppendFormat("{0}@", ObjUuid.Value);
+            }
+            AppendEscapedString(builder, ProtocolSequence);
+            builder.Append(':');
+            if (!string.IsNullOrWhiteSpace(NetworkAddress))
+            {
+                AppendEscapedString(builder, NetworkAddress);
+            }
+            if (!string.IsNullOrWhiteSpace(Endpoint) || !string.IsNullOrWhiteSpace(NetworkOptions))
+            {
+                builder.Append('[');
+                if (!string.IsNullOrWhiteSpace(Endpoint))
+                {
+                    AppendEscapedString(builder, Endpoint);
+                }
+                if (!string.IsNullOrWhiteSpace(NetworkOptions))
+                {
+                    builder.Append(',');
+                    AppendEscapedString(builder, NetworkOptions);
+                }
+                builder.Append(']');
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Check if the RPC runtime supports this binding string.
+        /// </summary>
+        /// <param name="string_binding">The string binding to validate.</param>
+        /// <returns>The error code from the validation.</returns>
+        public static Win32Error Validate(string string_binding)
+        {
+            if (!NtObjectUtils.IsWindows)
+                return Win32Error.SUCCESS;
+
+            using (var binding = SafeRpcBindingHandle.Create(string_binding, false))
+            {
+                return binding.Status.MapNtStatusToDosError();
+            }
+        }
+
+        /// <summary>
+        /// Try and parse an RPC string binding.
+        /// </summary>
+        /// <param name="str">The string binding to parse.</param>
+        /// <param name="binding_string">The parsed binding.</param>
+        /// <returns>True if the parse was successful.</returns>
+        public static bool TryParse(string str, out RpcStringBinding binding_string)
+        {
+            binding_string = null;
+            SafeRpcStringHandle objuuid = null;
+            SafeRpcStringHandle protseq = null;
+            SafeRpcStringHandle endpoint = null;
+            SafeRpcStringHandle networkaddr = null;
+            SafeRpcStringHandle networkoptions = null;
+
+            try
+            {
+                var status = Win32NativeMethods.RpcStringBindingParse(str,
+                    out objuuid, out protseq, out networkaddr, out endpoint, out networkoptions);
+                if (status == Win32Error.SUCCESS)
+                {
+                    binding_string = new RpcStringBinding(protseq.ToString(), networkaddr.ToString(), 
+                        endpoint.ToString(), networkoptions.ToString(), objuuid.ToString());
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                objuuid?.Dispose();
+                protseq?.Dispose();
+                endpoint?.Dispose();
+                networkaddr?.Dispose();
+                networkoptions?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Try and parse an RPC string binding.
+        /// </summary>
+        /// <param name="str">The string binding to parse.</param>
+        /// <returns>True if the parse was successful.</returns>
+        public static RpcStringBinding Parse(string str)
+        {
+            if (!TryParse(str, out RpcStringBinding binding))
+                throw new FormatException("Invalid RPC string binding.");
+            return binding;
+        }
+
+        const string ESCAPED_CHARS = ",:@[\\]";
+
+        private static void AppendEscapedString(StringBuilder builder, string str)
+        {
+            if (str.LastIndexOfAny(ESCAPED_CHARS.ToCharArray()) < 0)
+            {
+                builder.Append(str);
+            }
+            else
+            {
+                foreach (char c in str)
+                {
+                    if (ESCAPED_CHARS.IndexOf(c) >= 0)
+                    {
+                        builder.Append('\\');
+                    }
+                    builder.Append(c);
+                }
+            }
+        }
+
+        private static Guid? ParseGuid(string guid)
+        {
+            if (guid == null)
+                return null;
+            return Guid.Parse(guid);
+        }
+    }
+}

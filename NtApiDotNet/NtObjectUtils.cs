@@ -863,5 +863,7 @@ namespace NtApiDotNet
         {
             return Encoding.Unicode.GetString(data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
         }
+
+        internal static bool IsWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
     }
 }
