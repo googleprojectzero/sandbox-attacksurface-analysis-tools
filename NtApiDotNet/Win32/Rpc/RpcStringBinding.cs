@@ -132,6 +132,21 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
+        /// Compose a string binding.
+        /// </summary>
+        /// <param name="obj_uuid">The object UUID.</param>
+        /// <param name="protseq">The protocol sequence.</param>
+        /// <param name="network_addr">The network address.</param>
+        /// <param name="endpoint">The endpoint.</param>
+        /// <param name="network_options">The options.</param>
+        /// <returns>The string binding.</returns>
+        public static string Compose(string protseq, string network_addr = null,
+            string endpoint = null, string network_options = null, Guid? obj_uuid = null)
+        {
+            return new RpcStringBinding(protseq, network_addr, endpoint, network_options, obj_uuid).ToString();
+        }
+
+        /// <summary>
         /// Try and parse an RPC string binding.
         /// </summary>
         /// <param name="str">The string binding to parse.</param>
@@ -210,19 +225,16 @@ namespace NtApiDotNet.Win32.Rpc
                 }
             }
 
-            if (str.Length > 0)
-            {
-                throw new FormatException("Trailing data on string binding.");
-            }
+            // We can ignore any trailing data as that's what the Windows APIs do.
 
             return new RpcStringBinding(UnescapeString(protseq), UnescapeString(networkaddr),
                 UnescapeString(endpoint), UnescapeString(networkoptions), objuuid);
         }
 
-        const string ESCAPED_CHARS = ",:@[\\]";
-
         private static void AppendEscapedString(StringBuilder builder, string str)
         {
+            const string ESCAPED_CHARS = ",:@[\\]";
+
             if (str.LastIndexOfAny(ESCAPED_CHARS.ToCharArray()) < 0)
             {
                 builder.Append(str);

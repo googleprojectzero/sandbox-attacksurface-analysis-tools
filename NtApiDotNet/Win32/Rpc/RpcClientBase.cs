@@ -15,7 +15,6 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Rpc.Transport;
-using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 
@@ -238,7 +237,7 @@ namespace NtApiDotNet.Win32.Rpc
 
             Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq, network_address) :
                 new RpcEndpoint(InterfaceId, InterfaceVersion,
-                    SafeRpcBindingHandle.Compose(null, protocol_seq,
+                    RpcStringBinding.Compose(null, protocol_seq,
                     string.IsNullOrEmpty(network_address) ? null : network_address, endpoint, null), true),
                     transport_security);
         }

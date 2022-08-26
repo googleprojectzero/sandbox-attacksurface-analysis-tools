@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Win32.Rpc;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -432,7 +433,7 @@ namespace NtApiDotNet.Win32
                     if (success)
                     {
                         yield return new RpcEndpoint(interface_id, interface_version, 
-                            SafeRpcBindingHandle.Compose(null, "ncalrpc", null, port.Name, null), false);
+                            RpcStringBinding.Compose(null, "ncalrpc", null, port.Name, null), false);
                     }
                 }
             }

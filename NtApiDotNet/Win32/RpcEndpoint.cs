@@ -46,14 +46,14 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, CrackedBindingString cracked, string binding, bool registered) 
-            : this(interface_id, interface_version, cracked.Protseq, cracked.NetworkAddr, cracked.Endpoint, cracked.NetworkOptions,
-                  cracked.ObjUuidParsed, binding, annotation, registered)
+        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, RpcStringBinding cracked, string binding, bool registered) 
+            : this(interface_id, interface_version, cracked.ProtocolSequence, cracked.NetworkAddress, cracked.Endpoint, cracked.NetworkOptions,
+                  cracked.ObjUuid.GetValueOrDefault(), binding, annotation, registered)
         {
         }
 
         private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered) 
-            : this(interface_id, interface_version, annotation, new CrackedBindingString(binding), binding, registered)
+            : this(interface_id, interface_version, annotation, RpcStringBinding.Parse(binding), binding, registered)
         {
         }
 
@@ -119,6 +119,8 @@ namespace NtApiDotNet.Win32
         internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding, bool registered)
             : this(if_id.Uuid, new Version(if_id.VersMajor, if_id.VersMinor), annotation?.ToString(), binding.ToString(), registered)
         {
+            if (ObjectUuid == Guid.Empty)
+                ObjectUuid = uuid.Uuid;
         }
         #endregion
         #region Constructors

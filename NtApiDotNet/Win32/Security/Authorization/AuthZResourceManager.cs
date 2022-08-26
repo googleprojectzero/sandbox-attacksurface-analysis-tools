@@ -150,15 +150,15 @@ namespace NtApiDotNet.Win32.Security.Authorization
         /// <returns>The created AuthZ resource manager.</returns>
         public static NtResult<AuthZResourceManager> Create(string string_binding, string server_spn, bool throw_on_error)
         {
-            var binding = new CrackedBindingString(string_binding);
+            var binding = RpcStringBinding.Parse(string_binding);
             AUTHZ_RPC_INIT_INFO_CLIENT client_info = new AUTHZ_RPC_INIT_INFO_CLIENT
             {
                 version = AUTHZ_RPC_INIT_INFO_CLIENT.AUTHZ_RPC_INIT_INFO_CLIENT_VERSION_V1,
-                ProtSeq = binding.Protseq,
+                ProtSeq = binding.ProtocolSequence,
                 Options = binding.NetworkOptions,
-                NetworkAddr = binding.NetworkAddr,
+                NetworkAddr = binding.NetworkAddress,
                 Endpoint = binding.Endpoint,
-                ObjectUuid = binding.ObjUuid,
+                ObjectUuid = binding.ObjUuid?.ToString() ?? string.Empty,
                 ServerSpn = server_spn
             };
             return Create(client_info, throw_on_error);

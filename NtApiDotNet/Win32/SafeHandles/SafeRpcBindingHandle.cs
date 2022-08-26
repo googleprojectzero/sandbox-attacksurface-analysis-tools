@@ -20,21 +20,6 @@ namespace NtApiDotNet.Win32.SafeHandles
 {
     internal sealed class SafeRpcBindingHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private CrackedBindingString _cracked_binding;
-
-        private CrackedBindingString GetCrackedBinding()
-        {
-            if (IsClosed)
-            {
-                throw new ObjectDisposedException("CrackedBindingString");
-            }
-            if (_cracked_binding == null)
-            {
-                _cracked_binding = new CrackedBindingString(ToString());
-            }
-            return _cracked_binding;
-        }
-
         public SafeRpcBindingHandle() : base(true)
         {
         }
@@ -49,12 +34,6 @@ namespace NtApiDotNet.Win32.SafeHandles
             return Win32NativeMethods.RpcBindingFree(ref handle) == 0;
         }
 
-        public string ObjUuid => GetCrackedBinding().ObjUuid;
-        public string Protseq => GetCrackedBinding().Protseq;
-        public string NetworkAddr => GetCrackedBinding().NetworkAddr;
-        public string Endpoint => GetCrackedBinding().Endpoint;
-        public string NetworkOptions => GetCrackedBinding().NetworkOptions;
-
         public static SafeRpcBindingHandle Create(string string_binding)
         {
             return Create(string_binding, false).Result;
@@ -67,7 +46,6 @@ namespace NtApiDotNet.Win32.SafeHandles
             {
                 return status.CreateResultFromDosError<SafeRpcBindingHandle>(throw_on_error);
             }
-            binding._cracked_binding = new CrackedBindingString(string_binding);
             return binding.CreateResult();
         }
 
@@ -87,14 +65,6 @@ namespace NtApiDotNet.Win32.SafeHandles
             using (binding)
             {
                 return Create(binding.ToString(), throw_on_error);
-            }
-        }
-
-        public static string Compose(string objuuid, string protseq, string networkaddr, string endpoint, string options)
-        {
-            using (var binding = Create(objuuid, protseq, networkaddr, endpoint, options))
-            {
-                return binding.ToString();
             }
         }
 

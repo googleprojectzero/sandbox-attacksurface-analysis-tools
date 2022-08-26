@@ -790,7 +790,6 @@
     <Compile Include="Win32\Net\Win32NetworkNativeMethods.cs" />
     <Compile Include="Win32\Net\Win32NetworkUtils.cs" />
     <Compile Include="Win32\Service\RpcInterfaceServiceTriggerInformation.cs" />
-    <Compile Include="Win32\Rpc\CrackedBindingString.cs" />
     <Compile Include="Win32\Debugger\ArrayTypeInformation.cs" />
     <Compile Include="Win32\Debugger\BaseTypeInformation.cs" />
     <Compile Include="Win32\Debugger\DataSymbolInformation.cs" />
