@@ -140,35 +140,15 @@ namespace NtApiDotNet.Win32.Rpc
         public static bool TryParse(string str, out RpcStringBinding binding_string)
         {
             binding_string = null;
-            SafeRpcStringHandle objuuid = null;
-            SafeRpcStringHandle protseq = null;
-            SafeRpcStringHandle endpoint = null;
-            SafeRpcStringHandle networkaddr = null;
-            SafeRpcStringHandle networkoptions = null;
-
             try
             {
-                var status = Win32NativeMethods.RpcStringBindingParse(str,
-                    out objuuid, out protseq, out networkaddr, out endpoint, out networkoptions);
-                if (status == Win32Error.SUCCESS)
-                {
-                    binding_string = new RpcStringBinding(protseq.ToString(), networkaddr.ToString(), 
-                        endpoint.ToString(), networkoptions.ToString(), objuuid.ToString());
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                binding_string = Parse(str);
             }
-            finally
+            catch (FormatException)
             {
-                objuuid?.Dispose();
-                protseq?.Dispose();
-                endpoint?.Dispose();
-                networkaddr?.Dispose();
-                networkoptions?.Dispose();
+                return false;
             }
+            return true;
         }
 
         /// <summary>
@@ -178,9 +158,65 @@ namespace NtApiDotNet.Win32.Rpc
         /// <returns>True if the parse was successful.</returns>
         public static RpcStringBinding Parse(string str)
         {
-            if (!TryParse(str, out RpcStringBinding binding))
-                throw new FormatException("Invalid RPC string binding.");
-            return binding;
+            Guid? objuuid = null;
+
+            if (ParseNext(ref str, out string uuid, '@'))
+            {
+                if (Guid.TryParse(uuid, out Guid g))
+                {
+                    objuuid = g;
+                }
+                else
+                {
+                    throw new FormatException("Invalid object UUID string.");
+                }
+            }
+
+            if (!ParseNext(ref str, out string protseq, ':'))
+            {
+                throw new FormatException("Missing protocol sequence.");
+            }
+
+            if (string.IsNullOrWhiteSpace(protseq))
+            {
+                throw new FormatException("Empty protocol sequence.");
+            }
+
+            string endpoint = null;
+            string networkoptions = null;
+
+            if (ParseNext(ref str, out string networkaddr, '['))
+            {
+                if (!ParseNext(ref str, out string endpoint_and_options, ']'))
+                {
+                    throw new FormatException("Missing closing bracket for endpoint.");
+                }
+
+                if (ParseNext(ref endpoint_and_options, out endpoint, ','))
+                {
+                    networkoptions = endpoint_and_options;
+                }
+                else
+                {
+                    endpoint = endpoint_and_options;
+                }
+            }
+            else
+            {
+                if (str.Length > 0)
+                {
+                    networkaddr = str;
+                    str = string.Empty;
+                }
+            }
+
+            if (str.Length > 0)
+            {
+                throw new FormatException("Trailing data on string binding.");
+            }
+
+            return new RpcStringBinding(UnescapeString(protseq), UnescapeString(networkaddr),
+                UnescapeString(endpoint), UnescapeString(networkoptions), objuuid);
         }
 
         const string ESCAPED_CHARS = ",:@[\\]";
@@ -202,6 +238,47 @@ namespace NtApiDotNet.Win32.Rpc
                     builder.Append(c);
                 }
             }
+        }
+
+        private static string UnescapeString(string str)
+        {
+            if (str == null)
+                return str;
+            if (!str.Contains("\\"))
+                return str;
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < str.Length; ++i)
+            {
+                if (str[i] == '\\')
+                {
+                    if (i == (str.Length - 1))
+                    {
+                        throw new FormatException("Invalid trailing escape character.");
+                    }
+                    i++;
+                }
+                builder.Append(str[i]);
+            }
+            return builder.ToString();
+        }
+
+        private static bool ParseNext(ref string str, out string next, char c)
+        {
+            next = null;
+            for (int i = 0; i < str.Length; ++i)
+            {
+                if (str[i] == '\\')
+                {
+                    i++;
+                }
+                else if (str[i] == c)
+                {
+                    next = str.Substring(0, i);
+                    str = str.Substring(i + 1);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static Guid? ParseGuid(string guid)
