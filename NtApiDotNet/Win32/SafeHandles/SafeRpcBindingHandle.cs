@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.SafeHandles
 
         public static SafeRpcBindingHandle Create(string string_binding)
         {
-            return Create(string_binding, false).Result;
+            return Create(string_binding, true).Result;
         }
 
         public static NtResult<SafeRpcBindingHandle> Create(string string_binding, bool throw_on_error)

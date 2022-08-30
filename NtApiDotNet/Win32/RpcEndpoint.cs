@@ -46,14 +46,8 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, RpcStringBinding cracked, string binding, bool registered) 
-            : this(interface_id, interface_version, cracked.ProtocolSequence, cracked.NetworkAddress, cracked.Endpoint, cracked.NetworkOptions,
-                  cracked.ObjUuid.GetValueOrDefault(), binding, annotation, registered)
-        {
-        }
-
         private RpcEndpoint(Guid interface_id, Version interface_version, string annotation, string binding, bool registered) 
-            : this(interface_id, interface_version, annotation, RpcStringBinding.Parse(binding), binding, registered)
+            : this(interface_id, interface_version, RpcStringBinding.Parse(binding), annotation, registered)
         {
         }
 
@@ -73,29 +67,33 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public Guid ObjectUuid { get; }
         /// <summary>
+        /// The RPC string binding.
+        /// </summary>
+        public RpcStringBinding Binding { get; }
+        /// <summary>
         /// Optional annotation.
         /// </summary>
         public string Annotation { get; }
         /// <summary>
         /// RPC binding string.
         /// </summary>
-        public string BindingString { get; }
+        public string BindingString => Binding.ToString();
         /// <summary>
         /// Endpoint protocol sequence.
         /// </summary>
-        public string ProtocolSequence { get; }
+        public string ProtocolSequence => Binding.ProtocolSequence;
         /// <summary>
         /// Endpoint network address.
         /// </summary>
-        public string NetworkAddress { get; }
+        public string NetworkAddress => Binding.NetworkAddress;
         /// <summary>
         /// Endpoint name.
         /// </summary>
-        public string Endpoint { get; }
+        public string Endpoint => Binding.Endpoint;
         /// <summary>
         /// Endpoint network options.
         /// </summary>
-        public string NetworkOptions { get; }
+        public string NetworkOptions => Binding.NetworkOptions;
         /// <summary>
         /// The endpoint path.
         /// </summary>
@@ -112,7 +110,7 @@ namespace NtApiDotNet.Win32
 
         #region Internal Members
         internal RpcEndpoint(Guid interface_id, Version interface_version, string string_binding, bool registered)
-            : this(interface_id, interface_version, null, string_binding, registered)
+            : this(interface_id, interface_version, RpcStringBinding.Parse(string_binding), null, registered)
         {
         }
 
@@ -123,40 +121,26 @@ namespace NtApiDotNet.Win32
                 ObjectUuid = uuid.Uuid;
         }
         #endregion
+
         #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="interface_id">The RPC interface ID.</param>
         /// <param name="interface_version">The RPC interface version.</param>
-        /// <param name="protseq">The RPC protocol sequence.</param>
-        /// <param name="network_addr">The RPC network address.</param>
-        /// <param name="endpoint">The RPC endpoint.</param>
-        /// <param name="network_options">The RPC network options.</param>
-        /// <param name="object_uuid">The RPC object UUID.</param>
         /// <param name="binding">The RPC string binding.</param>
         /// <param name="annotation">The RPC annotation.</param>
         /// <param name="registered">Whether the RPC interface is registered.</param>
-        /// <exception cref="ArgumentException">Thrown if invalid paramters passed.</exception>
-        public RpcEndpoint(Guid interface_id, Version interface_version, string protseq, string network_addr = null, 
-            string endpoint = null, string network_options = null, Guid object_uuid = default, string binding = null, 
+        /// <exception cref="ArgumentException">Thrown if invalid parameters passed.</exception>
+        public RpcEndpoint(Guid interface_id, Version interface_version, RpcStringBinding binding, 
             string annotation = null, bool registered = false)
         {
-            if (string.IsNullOrWhiteSpace(protseq))
-            {
-                throw new ArgumentException($"'{nameof(protseq)}' cannot be null or whitespace.", nameof(protseq));
-            }
-
             InterfaceId = interface_id;
-            InterfaceVersion = interface_version;
-            ObjectUuid = object_uuid;
+            InterfaceVersion = interface_version ?? throw new ArgumentNullException(nameof(interface_version));
+            Binding = binding ?? throw new ArgumentNullException(nameof(binding));
+            ObjectUuid = binding.ObjUuid.GetValueOrDefault();
             Annotation = annotation ?? string.Empty;
-            BindingString = binding ?? string.Empty;
 
-            ProtocolSequence = protseq;
-            NetworkAddress = network_addr;
-            Endpoint = endpoint;
-            NetworkOptions = network_options;
             if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
                 if (Endpoint.Contains(@"\"))

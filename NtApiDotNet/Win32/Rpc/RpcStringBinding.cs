@@ -118,16 +118,14 @@ namespace NtApiDotNet.Win32.Rpc
         /// <summary>
         /// Check if the RPC runtime supports this binding string.
         /// </summary>
-        /// <param name="string_binding">The string binding to validate.</param>
-        /// <returns>The error code from the validation.</returns>
-        public static Win32Error Validate(string string_binding)
+        /// <exception cref="NtException">Thrown if the binding string isn't valid.</exception>
+        public void Validate()
         {
-            if (!NtObjectUtils.IsWindows)
-                return Win32Error.SUCCESS;
-
-            using (var binding = SafeRpcBindingHandle.Create(string_binding, false))
+            if (NtObjectUtils.IsWindows)
             {
-                return binding.Status.MapNtStatusToDosError();
+                using (SafeRpcBindingHandle.Create(ToString()))
+                {
+                }
             }
         }
 
@@ -147,33 +145,33 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
-        /// Try and parse an RPC string binding.
+        /// Try and parse a RPC string binding.
         /// </summary>
         /// <param name="str">The string binding to parse.</param>
-        /// <param name="binding_string">The parsed binding.</param>
+        /// <param name="binding">The parsed binding.</param>
         /// <returns>True if the parse was successful.</returns>
-        public static bool TryParse(string str, out RpcStringBinding binding_string)
+        public static bool TryParse(string str, out RpcStringBinding binding)
         {
-            binding_string = null;
-            try
-            {
-                binding_string = Parse(str);
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
-            return true;
+            return TryParseInternal(str, out binding) == string.Empty;
         }
 
         /// <summary>
-        /// Try and parse an RPC string binding.
+        /// Parse a RPC string binding.
         /// </summary>
         /// <param name="str">The string binding to parse.</param>
         /// <returns>True if the parse was successful.</returns>
         public static RpcStringBinding Parse(string str)
         {
+            string error = TryParseInternal(str, out RpcStringBinding binding);
+            if (error != string.Empty)
+                throw new FormatException(error);
+            return binding;
+        }
+
+        private static string TryParseInternal(string str, out RpcStringBinding binding)
+        {
             Guid? objuuid = null;
+            binding = null;
 
             if (ParseNext(ref str, out string uuid, '@'))
             {
@@ -183,18 +181,18 @@ namespace NtApiDotNet.Win32.Rpc
                 }
                 else
                 {
-                    throw new FormatException("Invalid object UUID string.");
+                    return "Invalid object UUID string.";
                 }
             }
 
             if (!ParseNext(ref str, out string protseq, ':'))
             {
-                throw new FormatException("Missing protocol sequence.");
+                return "Missing protocol sequence.";
             }
 
             if (string.IsNullOrWhiteSpace(protseq))
             {
-                throw new FormatException("Empty protocol sequence.");
+                return "Empty protocol sequence.";
             }
 
             string endpoint = null;
@@ -204,7 +202,7 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 if (!ParseNext(ref str, out string endpoint_and_options, ']'))
                 {
-                    throw new FormatException("Missing closing bracket for endpoint.");
+                    return "Missing closing bracket for endpoint.";
                 }
 
                 if (ParseNext(ref endpoint_and_options, out endpoint, ','))
@@ -227,8 +225,9 @@ namespace NtApiDotNet.Win32.Rpc
 
             // We can ignore any trailing data as that's what the Windows APIs do.
 
-            return new RpcStringBinding(UnescapeString(protseq), UnescapeString(networkaddr),
+            binding = new RpcStringBinding(UnescapeString(protseq), UnescapeString(networkaddr),
                 UnescapeString(endpoint), UnescapeString(networkoptions), objuuid);
+            return string.Empty;
         }
 
         private static void AppendEscapedString(StringBuilder builder, string str)
