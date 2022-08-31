@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
     public sealed class NegotiateInit2AuthenticationToken : NegotiateInitAuthenticationToken
     {
         internal NegotiateInit2AuthenticationToken(byte[] data, IEnumerable<string> mechlist, 
-            NegotiateContextFlags flags, AuthenticationToken token, byte[] mic, string hint_name, byte[] hint_address) 
+            NegotiateContextFlags? flags, AuthenticationToken token, byte[] mic, string hint_name, byte[] hint_address) 
             : base(data, mechlist, flags, token, mic)
         {
             HintName = hint_name;

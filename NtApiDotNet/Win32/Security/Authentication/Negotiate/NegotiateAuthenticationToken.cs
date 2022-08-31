@@ -156,7 +156,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             }
 
             IEnumerable<string> mech_list = null;
-            NegotiateContextFlags flags = NegotiateContextFlags.None;
+            NegotiateContextFlags? flags = null;
             AuthenticationToken auth_token = null;
             string hint_name = null;
             byte[] hint_address = null;

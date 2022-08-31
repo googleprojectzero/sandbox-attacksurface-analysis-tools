@@ -52,7 +52,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// <summary>
         /// Context flags.
         /// </summary>
-        public NegotiateContextFlags ContextFlags { get; }
+        public NegotiateContextFlags? Flags { get; }
+
+        /// <summary>
+        /// Context flags.
+        /// </summary>
+        [Obsolete("Use Flags instead.")]
+        public NegotiateContextFlags ContextFlags => Flags ?? NegotiateContextFlags.None;
 
         /// <summary>
         /// Get the encoded mechlist. Used for calculating the MIC.
@@ -108,18 +114,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             {
                 builder.AppendLine($"{oid,-30} - {OIDValues.ToString(oid)}");
             }
-            if (ContextFlags != NegotiateContextFlags.None)
+            if (Flags.HasValue)
             {
-                builder.AppendLine($"Context Flags   : {ContextFlags}");
+                builder.AppendLine($"Context Flags   : {Flags.Value}");
             }
         }
 
         internal NegotiateInitAuthenticationToken(byte[] data, IEnumerable<string> mechlist, 
-            NegotiateContextFlags flags, AuthenticationToken token, byte[] mic)
+            NegotiateContextFlags? flags, AuthenticationToken token, byte[] mic)
             : base(data, token, mic)
         {
             MechanismList = mechlist;
-            ContextFlags = flags;
+            Flags = flags;
         }
     }
 }
