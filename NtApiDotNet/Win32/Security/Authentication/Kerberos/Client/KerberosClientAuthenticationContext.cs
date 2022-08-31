@@ -32,8 +32,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     {
         #region Private Members
         private readonly KerberosExternalTicket _ticket;
-        private readonly KerberosAuthenticationKey _subkey;
         private readonly KerberosChecksumGSSApiFlags _gssapi_flags;
+        private readonly KerberosAuthenticationKey _subkey;
+        private KerberosAuthenticationKey _acceptor_subkey;
         private long _send_sequence_number;
         private long _recv_sequence_number;
 
@@ -213,6 +214,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             PopulateBuffers(data_buffers, enc_data, confounder.Length, enc_data.Length - confounder.Length);
         }
 
+        private KerberosAuthenticationKey GetSubKey(bool acceptor)
+        {
+            if (!acceptor)
+                return _subkey;
+            return _acceptor_subkey ?? throw new InvalidOperationException("Not negotiated acceptor key.");
+        }
+
         private void DecryptMessageNoSignatureAES(IEnumerable<SecurityBuffer> messages)
         {
             List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
@@ -233,7 +241,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             Array.Resize(ref signature, SecurityTrailerSize);
 
-            if (BitConverter.ToUInt64(signature, 0) != 0x1C000000FF030405U)
+            ulong header = BitConverter.ToUInt64(signature, 0);
+            bool use_acceptor_key = (header & 0x40000) != 0;
+            header &= ~0x40000UL;
+
+            if (header != 0x1C000000FF030405UL)
             {
                 throw new ArgumentException("Invalid signature buffer header.");
             }
@@ -256,7 +268,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
             stm.Write(signature, 16, signature.Length - 32);
 
-            byte[] plain_text = _subkey.Decrypt(stm.ToArray(), KerberosKeyUsage.AcceptorSeal);
+            byte[] plain_text = GetSubKey(use_acceptor_key).Decrypt(stm.ToArray(), KerberosKeyUsage.AcceptorSeal);
             stm = new MemoryStream(plain_text);
             BinaryReader reader = new BinaryReader(stm);
             foreach (var buffer in data_buffers)
@@ -451,7 +463,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentException("Signature token is too small.");
             }
 
-            if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFFFF010404U)
+            ulong header = BitConverter.ToUInt64(signature, 0);
+            bool use_acceptor_key = (header & 0x40000) != 0;
+            header &= ~0x40000UL;
+
+            if (header != 0xFFFFFFFFFF010404U)
             {
                 return false;
             }
@@ -471,8 +487,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 writer.Write(buffer.ToArray());
             }
             writer.Write(signature, 0, SECURITY_HEADER_SIZE);
-            byte[] hash = _subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
-            byte[] verify_hash = new byte[_subkey.ChecksumSize];
+            var subkey = GetSubKey(use_acceptor_key);
+            byte[] hash = subkey.ComputeHash(stm.ToArray(), KerberosKeyUsage.AcceptorSign);
+            byte[] verify_hash = new byte[subkey.ChecksumSize];
             Buffer.BlockCopy(signature, 16, verify_hash, 0, verify_hash.Length);
             return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
@@ -531,7 +548,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
-
         #endregion
 
         #region Constructors
@@ -601,6 +617,37 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     break;
             }
         }
+
+        private void ContinueInternal(byte[] token)
+        {
+            if (Done)
+                return;
+
+            if (!_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual))
+            {
+                Done = true;
+                Token = null;
+                return;
+            }
+
+            if (token is null)
+                throw new InvalidDataException("Missing AP-REP from server.");
+            var ap_rep = KerberosAuthenticationToken.Parse(token) as KerberosAPReplyAuthenticationToken;
+            if (ap_rep is null)
+                throw new InvalidDataException("Invalid AP-REP from server.");
+            ap_rep = (KerberosAPReplyAuthenticationToken)ap_rep.Decrypt(_ticket.SessionKey);
+            if (!(ap_rep.EncryptedPart is KerberosAPReplyEncryptedPart ap_rep_enc))
+                throw new InvalidDataException("Couldn't decrypt AP-REP from server.");
+
+            if (ap_rep_enc.SequenceNumber.HasValue)
+                _recv_sequence_number = ap_rep_enc.SequenceNumber.Value;
+            if (ap_rep_enc.SubKey != null)
+                _acceptor_subkey = ap_rep_enc.SubKey;
+
+            Done = true;
+            Token = null;
+        }
+
         #endregion
 
         #region IClientAuthenticationContext Implementation.
@@ -613,7 +660,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public long Expiry => long.MaxValue;
 
-        public byte[] SessionKey => (byte[])_subkey.Key.Clone();
+        public byte[] SessionKey => Done ? (byte[])_subkey.Key.Clone() : throw new InvalidOperationException("Security context not completed.");
 
         public string PackageName => AuthenticationPackage.KERBEROS_NAME;
 
@@ -623,28 +670,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public void Continue(AuthenticationToken token)
         {
-            Continue(token, Array.Empty<SecurityBuffer>());
+            ContinueInternal(token?.ToArray());
         }
 
         public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input)
         {
-            Continue(token, additional_input, Array.Empty<SecurityBuffer>());
+            ContinueInternal(token?.ToArray());
         }
 
         public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input, IEnumerable<SecurityBuffer> additional_output)
         {
-            Continue(additional_input, additional_output);
+            ContinueInternal(token?.ToArray());
         }
 
         public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
         {
-            Done = true;
-            Token = null;
+            var token_buffer = input_buffers?.FirstOrDefault(b => b.Type == SecurityBufferType.Token);
+            ContinueInternal(token_buffer?.ToArray());
         }
 
         public void Continue()
         {
-            Continue(Array.Empty<SecurityBuffer>(), Array.Empty<SecurityBuffer>());
+            ContinueInternal(null);
         }
 
         public byte[] DecryptMessage(EncryptedMessage message, int sequence_no)
@@ -678,7 +725,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            switch (_subkey.KeyEncryption)
+            var subkey = _acceptor_subkey ?? _subkey;
+            switch (subkey.KeyEncryption)
             {
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
@@ -688,7 +736,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     DecryptMessageNoSignatureRC4(messages);
                     break;
                 default:
-                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
+                    throw new InvalidDataException($"Unsupported encryption algorithm {subkey.KeyEncryption}");
             }
         }
 
@@ -780,7 +828,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            switch (_subkey.KeyEncryption)
+            var subkey = _acceptor_subkey ?? _subkey;
+            switch (subkey.KeyEncryption)
             {
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
                 case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
@@ -788,7 +837,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
                     return VerifySignatureRC4(messages, signature, sequence_no);
                 default:
-                    throw new InvalidDataException($"Unsupported encryption algorithm {_subkey.KeyEncryption}");
+                    throw new InvalidDataException($"Unsupported encryption algorithm {subkey.KeyEncryption}");
             }
         }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

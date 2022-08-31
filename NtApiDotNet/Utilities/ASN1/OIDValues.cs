@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Security.Cryptography;
+
 namespace NtApiDotNet.Utilities.ASN1
 {
     /// <summary>
@@ -53,7 +55,7 @@ namespace NtApiDotNet.Utilities.ASN1
                 case SPNEGO:
                     return "SPNEGO";
                 default:
-                    return $"UNKNOWN OID {oid}";
+                    return new Oid(oid).FriendlyName ?? $"UNKNOWN OID {oid}";
             }
         }
     }
