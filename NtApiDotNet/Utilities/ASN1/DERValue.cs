@@ -257,7 +257,7 @@ namespace NtApiDotNet.Utilities.ASN1
             if (Type == DERTagType.Universal)
             {
                 UniversalTag tag = (UniversalTag)Tag;
-                switch(tag)
+                switch (tag)
                 {
                     case UniversalTag.GeneralString:
                         return ReadGeneralString();
@@ -277,6 +277,12 @@ namespace NtApiDotNet.Utilities.ASN1
                         return ReadGeneralizedTime();
                 }
             }
+            
+            if (!Constructed)
+            {
+                return BitConverter.ToString(Data);
+            }
+
             return $"Len: {Data.Length:X}";
         }
 

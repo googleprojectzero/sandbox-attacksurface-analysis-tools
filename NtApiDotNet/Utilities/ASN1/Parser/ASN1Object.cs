@@ -73,7 +73,7 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
 
         private protected virtual string FormatValue()
         {
-            return string.Empty;
+            return Constructed ? string.Empty : NtObjectUtils.ToHexString(_data);
         }
 
         private protected virtual void Format(StringBuilder builder, int depth)
@@ -128,6 +128,11 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
         /// Get the child objects for the ASN1 data.
         /// </summary>
         public IReadOnlyCollection<ASN1Object> Children => _children.AsReadOnly();
+
+        /// <summary>
+        /// Get the ASN1 object's data.
+        /// </summary>
+        public byte[] Data => Constructed ? Array.Empty<byte>() : (byte[])_data.Clone();
 
         /// <summary>
         /// The parent object.
