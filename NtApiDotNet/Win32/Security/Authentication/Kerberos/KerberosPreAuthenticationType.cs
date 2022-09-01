@@ -38,6 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         PA_PK_AS_REP_OLD = 15,
         PA_PK_AS_REQ = 16,
         PA_PK_AS_REP = 17,
+        PA_PK_OCSP_RESPONSE = 18,
         PA_ETYPE_INFO2 = 19,
         PA_USE_SPECIFIED_KVNO = 20,
         PA_SAM_REDIRECT = 21,
