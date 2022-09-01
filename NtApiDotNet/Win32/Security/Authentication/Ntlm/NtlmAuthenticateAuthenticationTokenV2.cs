@@ -39,11 +39,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public byte MaxChallengeVersion { get; }
         /// <summary>
-        /// Reserved field.
+        /// Reserved field. Seems to be Flags in MSV1_0_NTLM3_RESPONSE.
         /// </summary>
         public ushort Reserved1 { get; }
         /// <summary>
-        /// Reserved field.
+        /// Reserved field. Seems to be MsgWord in MSV1_0_NTLM3_RESPONSE.
         /// </summary>
         public uint Reserved2 { get; }
         /// <summary>
@@ -55,7 +55,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// </summary>
         public byte[] ClientChallenge { get; }
         /// <summary>
-        /// Reserved field.
+        /// Reserved field. Seems to be AvPairsOff in MSV1_0_NTLM3_RESPONSE.
         /// </summary>
         public uint Reserved3 { get; }
         /// <summary>

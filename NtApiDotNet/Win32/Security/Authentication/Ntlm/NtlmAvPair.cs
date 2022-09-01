@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System;
 using System.IO;
 using System.Text;
@@ -24,16 +25,27 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
     /// </summary>
     public enum MsAvPairType
     {
+        [SDKName("MsvAvEOL")]
         EOL = 0x0000,
+        [SDKName("MsvAvNbComputerName")]
         NbComputerName = 0x0001,
+        [SDKName("MsvAvNbDomainName")]
         NbDomainName = 0x0002,
+        [SDKName("MsvAvDnsComputerName")]
         DnsComputerName = 0x0003,
+        [SDKName("MsvAvDnsDomainName")]
         DnsDomainName = 0x0004,
+        [SDKName("MsvAvDnsTreeName")]
         DnsTreeName = 0x0005,
+        [SDKName("MsvAvFlags")]
         Flags = 0x0006,
+        [SDKName("MsvAvTimestamp")]
         Timestamp = 0x0007,
-        SingleHost = 0x0008,
+        [SDKName("MsvAvRestrictions")]
+        Restrictions = 0x0008,
+        [SDKName("MsvAvTargetName")]
         TargetName = 0x0009,
+        [SDKName("MsvAvChannelBindings")]
         ChannelBindings = 0x000A,
     }
 
@@ -104,7 +116,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                         return false;
                     av_pair = new NtlmAvPairFlags((MsvAvFlags)reader.ReadInt32());
                     break;
-                case MsAvPairType.SingleHost:
+                case MsAvPairType.Restrictions:
                     if (length != 48)
                         return false;
                     reader.ReadInt32();
@@ -355,7 +367,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         /// <param name="custom_data">Custom data value.</param>
         /// <param name="machine_id">Machine ID</param>
         public NtlmAvPairSingleHostData(uint z4, byte[] custom_data, byte[] machine_id)
-            : base(MsAvPairType.SingleHost)
+            : base(MsAvPairType.Restrictions)
         {
             Z4 = z4;
             CustomData = custom_data ?? throw new ArgumentNullException(nameof(custom_data));
