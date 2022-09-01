@@ -14,30 +14,19 @@
 
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using System;
-using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
     /// <summary>
-    /// Class to represent an AS request.
+    /// Class to represent an AS request with a known encryption key.
     /// </summary>
-    public sealed class KerberosASRequest : KerberosKDCRequest
+    public sealed class KerberosASRequest : KerberosASRequestBase
     {
         #region Public Properties
         /// <summary>
         /// The key for the principal.
         /// </summary>
-        public KerberosAuthenticationKey Key { get; set; }
-
-        /// <summary>
-        /// Specify to include the PAC in the ticket.
-        /// </summary>
-        public bool? IncludePac { get; set; }
-
-        /// <summary>
-        /// Specify name of the service to request.
-        /// </summary>
-        public KerberosPrincipalName ServerName { get; set; }
+        public KerberosAuthenticationKey Key { get; }
 
         /// <summary>
         /// Disable sending initial pre-authentication.
@@ -51,7 +40,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="key">The kerberos key for the user.</param>
         public KerberosASRequest(KerberosAuthenticationKey key) 
-            : this(key, key.Name, key.Realm)
+            : this(key, key?.Name, key?.Realm)
         {
         }
 
@@ -66,8 +55,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             Key = key ?? throw new ArgumentNullException(nameof(key));
             ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
             Realm = realm ?? throw new ArgumentNullException(nameof(realm));
-            TillTime = KerberosTime.MaximumTime;
-            EncryptionTypes = new List<KerberosEncryptionType>();
         }
         #endregion
 
@@ -78,65 +65,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The builder.</returns>
         public override KerberosKDCRequestBuilder ToBuilder()
         {
-            Validate();
-
-            List<KerberosEncryptionType> encryption_types;
-            if (EncryptionTypes.Count > 0)
-            {
-                encryption_types = EncryptionTypes;
-            }
-            else
-            {
-                encryption_types = new List<KerberosEncryptionType>()
-                {
-                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
-                };
-            }
-
-            var ret = new KerberosASRequestBuilder
-            {
-                ClientName = ClientName,
-                EncryptionTypes = encryption_types,
-                KDCOptions = KDCOptions,
-                Realm = Realm,
-                ServerName = ServerName ?? new KerberosPrincipalName(KerberosNameType.SRV_INST, $"krbtgt/{Realm.ToUpper()}"),
-                Nonce = KerberosBuilderUtils.GetRandomNonce(),
-                TillTime = TillTime
-            };
-
+            var ret = base.ToBuilder();
             if (!DisablePreAuthentication)
             {
                 ret.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, Key));
             }
-            if (IncludePac.HasValue)
-            {
-                ret.AddPreAuthenticationData(new KerberosPreAuthenticationDataPACRequest(IncludePac.Value));
-            }
             return ret;
-        }
-        #endregion
-
-        #region Private Members
-        private void Validate()
-        {
-            if (Key is null)
-            {
-                throw new ArgumentNullException(nameof(Key));
-            }
-            if (string.IsNullOrEmpty(Realm))
-            {
-                throw new ArgumentException($"{nameof(Realm)} must not be empty.");
-            }
-            if (TillTime is null)
-            {
-                throw new ArgumentNullException(nameof(TillTime));
-            }
-            if (ClientName is null)
-            {
-                throw new ArgumentNullException(nameof(ClientName));
-            }
         }
         #endregion
     }

@@ -34,6 +34,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosPrincipalName ClientName { get; set; }
 
         /// <summary>
+        /// Specify name of the service to request.
+        /// </summary>
+        public KerberosPrincipalName ServerName { get; set; }
+
+        /// <summary>
         /// Specify options for the new ticket.
         /// </summary>
         public KerberosKDCOptions KDCOptions { get; set; }

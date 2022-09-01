@@ -30,14 +30,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         private readonly IKerberosKDCClientTransport _transport;
         private readonly IKerberosKDCClientTransport _password_transport;
 
-        private KerberosKDCReplyAuthenticationToken ExchangeKDCTokens(KerberosKDCRequestAuthenticationToken token)
+        private KerberosAuthenticationToken ExchangeKDCTokensWithError(KerberosKDCRequestAuthenticationToken token)
         {
             var data = _transport.SendReceive(token.ToArray());
             if (KerberosErrorAuthenticationToken.TryParse(data, out KerberosErrorAuthenticationToken error))
-                throw new KerberosKDCClientException(error);
+                return error;
             if (KerberosKDCReplyAuthenticationToken.TryParse(data, out KerberosKDCReplyAuthenticationToken result))
                 return result;
             throw new KerberosKDCClientException("Unknown KDC reply.");
+        }
+
+        private KerberosKDCReplyAuthenticationToken ExchangeKDCTokens(KerberosKDCRequestAuthenticationToken token)
+        {
+            var result = ExchangeKDCTokensWithError(token);
+            if (result is KerberosErrorAuthenticationToken error)
+                throw new KerberosKDCClientException(error);
+            return (KerberosKDCReplyAuthenticationToken)result;
         }
 
         private KerberosChangePasswordStatus ChangePassword(KerberosExternalTicket ticket, ushort protocol_version, byte[] user_data)
@@ -80,6 +88,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             throw new KerberosKDCClientException("Unknown KDC reply.");
         }
 
+        private static KerberosASReply ProcessASReply(KerberosKDCReplyAuthenticationToken reply, KerberosAuthenticationKey key)
+        {
+            // RC4 encryption uses TgsRep for the AsRep.
+            if (!reply.EncryptedData.TryDecrypt(key, KerberosKeyUsage.AsRepEncryptedPart, out KerberosEncryptedData reply_dec))
+                reply_dec = reply.EncryptedData.Decrypt(key, KerberosKeyUsage.TgsRepEncryptedPart);
+            if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
+            {
+                throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
+            }
+
+            return new KerberosASReply(reply, reply_part);
+        }
         #endregion
 
         #region Constructors
@@ -124,7 +144,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Methods
         /// <summary>
-        /// Authenticate a user.
+        /// Authenticate a user with a known key.
         /// </summary>
         /// <param name="request">The details of the AS request.</param>
         /// <returns>The AS reply.</returns>
@@ -136,17 +156,40 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             var as_req = request.ToBuilder();
-            var reply = ExchangeKDCTokens(as_req.Create());
+            return ProcessASReply(ExchangeKDCTokens(as_req.Create()), request.Key);
+        }
 
-            // RC4 encryption uses TgsRep for the AsRep.
-            if (!reply.EncryptedData.TryDecrypt(request.Key, KerberosKeyUsage.AsRepEncryptedPart, out KerberosEncryptedData reply_dec))
-                reply_dec = reply.EncryptedData.Decrypt(request.Key, KerberosKeyUsage.TgsRepEncryptedPart);
-            if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
+        /// <summary>
+        /// Authenticate a user with a known key.
+        /// </summary>
+        /// <param name="request">The details of the AS request.</param>
+        /// <returns>The AS reply.</returns>
+        public KerberosASReply Authenticate(KerberosASRequestPassword request)
+        {
+            if (request is null)
             {
-                throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
+                throw new ArgumentNullException(nameof(request));
             }
 
-            return new KerberosASReply(reply, reply_part);
+            var as_req = request.ToBuilder();
+            var reply = ExchangeKDCTokensWithError(as_req.Create());
+            KerberosKDCReplyAuthenticationToken as_rep;
+            KerberosAuthenticationKey key;
+            if (reply is KerberosErrorAuthenticationToken error)
+            {
+                if (error.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                    throw new KerberosKDCClientException(error);
+                key = request.DeriveKey(KerberosEncryptionType.NULL, error.PreAuthentationData);
+                as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, key));
+                as_rep = ExchangeKDCTokens(as_req.Create());
+            }
+            else
+            {
+                as_rep = (KerberosKDCReplyAuthenticationToken)reply;
+                key = request.DeriveKey(as_rep.EncryptedData.EncryptionType, as_rep.PreAuthenticationData);
+            }
+
+            return ProcessASReply(as_rep, key);
         }
 
         /// <summary>

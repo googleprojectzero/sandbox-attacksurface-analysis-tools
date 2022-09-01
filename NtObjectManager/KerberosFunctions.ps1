@@ -844,6 +844,8 @@ Specify to request a forwardable ticket.
 Specify to canonicalize names.
 .PARAMETER Renewable
 Specify to request a renewable ticket.
+.PARAMETER Password
+Specify the user's password.
 .INPUTS
 None
 .OUTPUTS
@@ -863,8 +865,8 @@ function New-KerberosAsRequest {
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
         [string]$Realm,
-        [Parameter(ParameterSetName="FromPassword")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType = "AES256_CTS_HMAC_SHA1_96",
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromCredential")]
+        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
         [switch]$Forwardable,
@@ -880,8 +882,10 @@ function New-KerberosAsRequest {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
         }
         "FromPassword" {
-            $key = Get-KerberosKey -Password $Password -Principal $ClientName.GetPrincipal($Realm) -KeyType $KeyType
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestPassword]::new($Password.ToPlainText(), $ClientName, $Realm)
+        }
+        "FromCredential" {
+            New-KerberosAsRequest -Password $Credential.Password -ClientName $Credential.UserName -Realm $Credential.Domain
         }
     }
 
@@ -1019,7 +1023,7 @@ function Send-KerberosKdcRequest {
     $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
     $reply = if ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]) {
         $client.RequestServiceTicket($Request)
-    } elseif ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]) {
+    } elseif ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]) {
         $client.Authenticate($Request)
     } else {
         throw "Unknown KDC request type."

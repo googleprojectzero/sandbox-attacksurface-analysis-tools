@@ -37,11 +37,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosAuthenticationKey SessionKey { get; set; }
 
         /// <summary>
-        /// Specify name of the service to request.
-        /// </summary>
-        public KerberosPrincipalName ServerName { get; set; }
-
-        /// <summary>
         /// The client's realm.
         /// </summary>
         public string ClientRealm { get; set; }

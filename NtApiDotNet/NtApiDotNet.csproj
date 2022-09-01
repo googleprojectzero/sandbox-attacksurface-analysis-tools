@@ -492,6 +492,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosCredentialBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSReplyEncryptedPartBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASRequestBase.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASRequestPassword.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngine.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineAESSHA196.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineHMACMD5.cs" />
