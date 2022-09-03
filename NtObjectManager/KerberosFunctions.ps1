@@ -846,6 +846,8 @@ Specify to canonicalize names.
 Specify to request a renewable ticket.
 .PARAMETER Password
 Specify the user's password.
+.PARAMETER Certificate
+Specify the user's certificate.
 .INPUTS
 None
 .OUTPUTS
@@ -859,11 +861,15 @@ function New-KerberosAsRequest {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromPassword")]
         [NtObjectManager.Utils.PasswordHolder]$Password,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromCertificate")]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromPassword")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromCertificate")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromCertificate")]
         [string]$Realm,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCredential")]
         [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
@@ -883,6 +889,9 @@ function New-KerberosAsRequest {
         }
         "FromPassword" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestPassword]::new($Password.ToPlainText(), $ClientName, $Realm)
+        }
+        "FromCertificate" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate, $ClientName, $Realm)
         }
         "FromCredential" {
             New-KerberosAsRequest -Password $Credential.Password -ClientName $Credential.UserName -Realm $Credential.Domain

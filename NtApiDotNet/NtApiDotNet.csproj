@@ -493,6 +493,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosKDCReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosTGSReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASRequestBase.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosAsRequestCertificate.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosASRequestPassword.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngine.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosChecksumEngineAESSHA196.cs" />
@@ -514,6 +515,11 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTypedData.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtilsInternal.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitAuthPack.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPkAuthenticator.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitReplyKeyPack.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPreAuthenticationDataPkAsRep.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPreAuthenticationDataPkAsReq.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerConfig.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerImpl.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerToken.cs" />

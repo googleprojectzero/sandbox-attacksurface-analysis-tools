@@ -299,13 +299,24 @@ namespace NtApiDotNet.Utilities.ASN1.Builder
         }
 
         /// <summary>
+        /// Write a raw context specific tag.
+        /// </summary>
+        /// <param name="context">The ID of the context specific tag.</param>
+        /// <param name="data">The data to write.</param>
+        /// <param name="constructed">Specify if the context specific value is constructed.</param>
+        public void WriteContextSpecific(int context, bool constructed, byte[] data)
+        {
+            _writer.WriteTaggedValue(DERTagType.ContextSpecific, constructed, context, data);
+        }
+
+        /// <summary>
         /// Write an context specific tag with contents from the builder.
         /// </summary>
         /// <param name="context">The ID of the context specific tag.</param>
         /// <param name="builder">The DER builder to write.</param>
         public void WriteContextSpecific(int context, DERBuilder builder)
         {
-            _writer.WriteTaggedValue(DERTagType.ContextSpecific, true, context, builder.ToArray());
+            WriteContextSpecific(context, true, builder.ToArray());
         }
 
         /// <summary>

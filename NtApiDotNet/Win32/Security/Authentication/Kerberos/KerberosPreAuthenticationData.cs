@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit;
 using System.Collections.Generic;
 using System.IO;
 
@@ -98,6 +99,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return KerberosPreAuthenticationDataEncryptionTypeInfo.Parse(data);
                 case KerberosPreAuthenticationType.PA_ETYPE_INFO2:
                     return KerberosPreAuthenticationDataEncryptionTypeInfo2.Parse(data);
+                case KerberosPreAuthenticationType.PA_PK_AS_REP:
+                    return KerberosPreAuthenticationDataPkAsRep.Parse(data);
                 default:
                     return new KerberosPreAuthenticationDataUnknown(type, data);
             }

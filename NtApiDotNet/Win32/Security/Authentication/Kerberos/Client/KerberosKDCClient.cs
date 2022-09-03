@@ -12,11 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit;
 using System;
 using System.DirectoryServices.ActiveDirectory;
+using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
@@ -160,7 +166,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
-        /// Authenticate a user with a known key.
+        /// Authenticate a user with a known password.
         /// </summary>
         /// <param name="request">The details of the AS request.</param>
         /// <returns>The AS reply.</returns>
@@ -190,6 +196,47 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             return ProcessASReply(as_rep, key);
+        }
+
+        /// <summary>
+        /// Authenticate a user with a certificate.
+        /// </summary>
+        /// <param name="request">The details of the AS request.</param>
+        /// <returns>The AS reply.</returns>
+        public KerberosASReply Authenticate(KerberosAsRequestCertificate request)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var as_req = request.ToBuilder();
+            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.DES_EDE3_CBC);
+            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.RC2_CBC);
+            KerberosPkInitPkAuthenticator pk_auth = new KerberosPkInitPkAuthenticator(0, KerberosTime.Now, KerberosBuilderUtils.GetRandomNonce(), 
+                SHA1.Create().ComputeHash(as_req.EncodeBody()));
+            KerberosPkInitAuthPack auth_pack = new KerberosPkInitAuthPack(pk_auth);
+            ContentInfo authpack = new ContentInfo(new Oid(OIDValues.PKINIT_AUTHDATA), auth_pack.ToArray());
+            SignedCms signed_authpack = new SignedCms(authpack);
+            CmsSigner signer = new CmsSigner(request.Certificate);
+            signed_authpack.ComputeSignature(signer);
+            as_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataPkAsReq(signed_authpack));
+            var as_rep = ExchangeKDCTokens(as_req.Create());
+            var pk_as_rep = as_rep.PreAuthenticationData.OfType<KerberosPreAuthenticationDataPkAsRep>().FirstOrDefault();
+            if (pk_as_rep == null)
+                throw new KerberosKDCClientException("PA-PK-AS-REP is missing from reply.");
+            pk_as_rep.EncryptedKeyPack.Decrypt(new X509Certificate2Collection
+            {
+                request.Certificate
+            });
+
+            SignedCms signed_key_pack = new SignedCms();
+            signed_key_pack.Decode(pk_as_rep.EncryptedKeyPack.ContentInfo.Content);
+
+            // TODO: Perhaps should verify the data OID and checksum?
+            var reply_key_pack = KerberosPkInitReplyKeyPack.Parse(signed_key_pack.ContentInfo.Content, request.ClientName, request.Realm);
+
+            return ProcessASReply(as_rep, reply_key_pack.ReplyKey);
         }
 
         /// <summary>

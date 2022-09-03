@@ -66,6 +66,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         PA_FX_FAST = 136,
         PA_FX_ERROR = 137,
         PA_ENCRYPTED_CHALLENGE = 138,
+        PA_AS_FRESHNESS = 150,
         KERB_KEY_LIST_REQ = 161,
         KERB_KEY_LIST_REP = 162,
         PA_SUPPORTED_ENCTYPES = 165,

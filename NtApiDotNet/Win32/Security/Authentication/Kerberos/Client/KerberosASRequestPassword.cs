@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// The user's password.
         /// </summary>
-        public string Password { get; set; }
+        public string Password { get; }
         #endregion
 
         #region Constructors
