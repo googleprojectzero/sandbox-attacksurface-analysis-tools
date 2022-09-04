@@ -862,14 +862,15 @@ function New-KerberosAsRequest {
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromPassword")]
         [NtObjectManager.Utils.PasswordHolder]$Password,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCertificate")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromCertificateWithName")]
         [System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromPassword")]
-        [Parameter(Mandatory, Position = 1, ParameterSetName="FromCertificate")]
+        [Parameter(Mandatory, Position = 1, ParameterSetName="FromCertificateWithName")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
-        [Parameter(Mandatory, Position = 2, ParameterSetName="FromCertificate")]
+        [Parameter(Mandatory, Position = 2, ParameterSetName="FromCertificateWithName")]
         [string]$Realm,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCredential")]
         [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
@@ -890,8 +891,11 @@ function New-KerberosAsRequest {
         "FromPassword" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestPassword]::new($Password.ToPlainText(), $ClientName, $Realm)
         }
-        "FromCertificate" {
+        "FromCertificateWithName" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate, $ClientName, $Realm)
+        }
+        "FromCertificate" {
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate)
         }
         "FromCredential" {
             New-KerberosAsRequest -Password $Credential.Password -ClientName $Credential.UserName -Realm $Credential.Domain

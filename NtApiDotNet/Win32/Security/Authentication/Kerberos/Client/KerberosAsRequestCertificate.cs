@@ -22,6 +22,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// </summary>
     public sealed class KerberosAsRequestCertificate : KerberosASRequestBase
     {
+        private static string GetRealm(string upn)
+        {
+            if (string.IsNullOrEmpty(upn))
+            {
+                throw new ArgumentException($"'{nameof(upn)}' cannot be null or empty.", nameof(upn));
+            }
+
+            int index = upn.IndexOf('@');
+            if (index < 0)
+                throw new ArgumentException("UPN doesn't contain an '@' character.");
+            return upn.Substring(index + 1).ToUpper();
+        }
+
         /// <summary>
         /// The certificate for the PKINIT request.
         /// </summary>
@@ -40,6 +53,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentException("Certificate must have a corresponding private key.");
             ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
             Realm = realm ?? throw new ArgumentNullException(nameof(realm));
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="certificate">The certificate for the PKINIT request.</param>
+        /// <param name="upn">The UPN for the client.</param>
+        public KerberosAsRequestCertificate(X509Certificate2 certificate, string upn)
+            : this(certificate, new KerberosPrincipalName(KerberosNameType.ENTERPRISE_PRINCIPAL, upn), GetRealm(upn))
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="certificate">The certificate for the PKINIT request.</param>
+        public KerberosAsRequestCertificate(X509Certificate2 certificate) 
+            : this(certificate, certificate.GetNameInfo(X509NameType.UpnName, false))
+        {
         }
     }
 }

@@ -213,7 +213,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             if (name.Contains('/'))
                 return KerberosNameType.SRV_INST;
-            return KerberosNameType.PRINCIPAL;
+            return name.Contains('@') ? KerberosNameType.ENTERPRISE_PRINCIPAL : KerberosNameType.PRINCIPAL;
         }
     }
 }
