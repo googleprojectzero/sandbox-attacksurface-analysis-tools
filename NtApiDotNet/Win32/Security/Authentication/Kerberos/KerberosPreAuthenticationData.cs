@@ -101,6 +101,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return KerberosPreAuthenticationDataEncryptionTypeInfo2.Parse(data);
                 case KerberosPreAuthenticationType.PA_PK_AS_REP:
                     return KerberosPreAuthenticationDataPkAsRep.Parse(data);
+                case KerberosPreAuthenticationType.PA_AS_FRESHNESS:
+                    return new KerberosPreAuthenticationDataAsFreshness(data);
                 default:
                     return new KerberosPreAuthenticationDataUnknown(type, data);
             }

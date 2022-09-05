@@ -37,6 +37,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
         /// SHA1 checksum of KDC-REQ-BODY.
         /// </summary>
         public byte[] PaChecksum { get; }
+        /// <summary>
+        /// The optional freshness token for RFC8070.
+        /// </summary>
+        public byte[] FreshnessToken { get; }
 
         /// <summary>
         /// Constructor.
@@ -45,12 +49,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
         /// <param name="client_time">Client time.</param>
         /// <param name="nonce">Request nonce.</param>
         /// <param name="pa_checksum">SHA1 checksum of KDC-REQ-BODY.</param>
-        public KerberosPkInitPkAuthenticator(int client_usec, KerberosTime client_time, int nonce, byte[] pa_checksum)
+        /// <param name="freshness_token">Freshness token.</param>
+        public KerberosPkInitPkAuthenticator(int client_usec, 
+            KerberosTime client_time, int nonce, byte[] pa_checksum, 
+            byte[] freshness_token)
         {
             ClientUSec = client_usec;
-            ClientTime = client_time;
+            ClientTime = client_time ?? throw new System.ArgumentNullException(nameof(client_time));
             Nonce = nonce;
             PaChecksum = pa_checksum;
+            FreshnessToken = freshness_token;
         }
 
         /*
@@ -66,7 +74,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
                    -- MUST be present.
                    -- Contains the SHA1 checksum, performed over
                    -- KDC-REQ-BODY.
-          ...
+          ...,
+          freshnessToken     [4] OCTET STRING OPTIONAL,
+            -- PA_AS_FRESHNESS padata value as received from the
+            -- KDC. MUST be present if sent by KDC
+      ...
        }
        */
         void IDERObject.Write(DERBuilder builder)
@@ -77,6 +89,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
                 seq.WriteContextSpecific(1, ClientTime);
                 seq.WriteContextSpecific(2, Nonce);
                 seq.WriteContextSpecific(3, PaChecksum);
+                seq.WriteContextSpecific(4, FreshnessToken);
             }
         }
     }

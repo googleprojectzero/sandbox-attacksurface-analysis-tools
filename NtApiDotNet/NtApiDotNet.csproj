@@ -518,6 +518,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitAuthPack.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPkAuthenticator.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitReplyKeyPack.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPreAuthenticationDataAsFreshness.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPreAuthenticationDataPkAsRep.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPreAuthenticationDataPkAsReq.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Server\KerberosKDCServerConfig.cs" />

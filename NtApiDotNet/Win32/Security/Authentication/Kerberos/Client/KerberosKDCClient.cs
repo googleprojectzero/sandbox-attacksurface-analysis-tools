@@ -106,6 +106,42 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             return new KerberosASReply(reply, reply_part);
         }
+
+        private KerberosASReply Authenticate(KerberosAsRequestCertificate request, byte[] freshness_token)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var as_req = request.ToBuilder();
+            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.DES_EDE3_CBC);
+            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.RC2_CBC);
+            KerberosPkInitPkAuthenticator pk_auth = new KerberosPkInitPkAuthenticator(0, KerberosTime.Now, KerberosBuilderUtils.GetRandomNonce(),
+                SHA1.Create().ComputeHash(as_req.EncodeBody()), freshness_token);
+            KerberosPkInitAuthPack auth_pack = new KerberosPkInitAuthPack(pk_auth);
+            ContentInfo authpack = new ContentInfo(new Oid(OIDValues.PKINIT_AUTHDATA), auth_pack.ToArray());
+            SignedCms signed_authpack = new SignedCms(authpack);
+            CmsSigner signer = new CmsSigner(request.Certificate);
+            signed_authpack.ComputeSignature(signer);
+            as_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataPkAsReq(signed_authpack));
+            var as_rep = ExchangeKDCTokens(as_req.Create());
+            var pk_as_rep = as_rep.PreAuthenticationData.OfType<KerberosPreAuthenticationDataPkAsRep>().FirstOrDefault();
+            if (pk_as_rep == null)
+                throw new KerberosKDCClientException("PA-PK-AS-REP is missing from reply.");
+            pk_as_rep.EncryptedKeyPack.Decrypt(new X509Certificate2Collection
+            {
+                request.Certificate
+            });
+
+            SignedCms signed_key_pack = new SignedCms();
+            signed_key_pack.Decode(pk_as_rep.EncryptedKeyPack.ContentInfo.Content);
+
+            // TODO: Perhaps should verify the data OID and checksum?
+            var reply_key_pack = KerberosPkInitReplyKeyPack.Parse(signed_key_pack.ContentInfo.Content, request.ClientName, request.Realm);
+
+            return ProcessASReply(as_rep, reply_key_pack.ReplyKey);
+        }
         #endregion
 
         #region Constructors
@@ -210,33 +246,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var as_req = request.ToBuilder();
-            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.DES_EDE3_CBC);
-            as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.RC2_CBC);
-            KerberosPkInitPkAuthenticator pk_auth = new KerberosPkInitPkAuthenticator(0, KerberosTime.Now, KerberosBuilderUtils.GetRandomNonce(), 
-                SHA1.Create().ComputeHash(as_req.EncodeBody()));
-            KerberosPkInitAuthPack auth_pack = new KerberosPkInitAuthPack(pk_auth);
-            ContentInfo authpack = new ContentInfo(new Oid(OIDValues.PKINIT_AUTHDATA), auth_pack.ToArray());
-            SignedCms signed_authpack = new SignedCms(authpack);
-            CmsSigner signer = new CmsSigner(request.Certificate);
-            signed_authpack.ComputeSignature(signer);
-            as_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataPkAsReq(signed_authpack));
-            var as_rep = ExchangeKDCTokens(as_req.Create());
-            var pk_as_rep = as_rep.PreAuthenticationData.OfType<KerberosPreAuthenticationDataPkAsRep>().FirstOrDefault();
-            if (pk_as_rep == null)
-                throw new KerberosKDCClientException("PA-PK-AS-REP is missing from reply.");
-            pk_as_rep.EncryptedKeyPack.Decrypt(new X509Certificate2Collection
+            try
             {
-                request.Certificate
-            });
-
-            SignedCms signed_key_pack = new SignedCms();
-            signed_key_pack.Decode(pk_as_rep.EncryptedKeyPack.ContentInfo.Content);
-
-            // TODO: Perhaps should verify the data OID and checksum?
-            var reply_key_pack = KerberosPkInitReplyKeyPack.Parse(signed_key_pack.ContentInfo.Content, request.ClientName, request.Realm);
-
-            return ProcessASReply(as_rep, reply_key_pack.ReplyKey);
+                return Authenticate(request, null);
+            }
+            catch (KerberosKDCClientException ex)
+            {
+                if (ex.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                    throw;
+                var freshness_token = ex.Error?.PreAuthentationData?.OfType<KerberosPreAuthenticationDataAsFreshness>().FirstOrDefault();
+                if (freshness_token == null)
+                    throw;
+                return Authenticate(request, freshness_token.FreshnessToken);
+            }
         }
 
         /// <summary>
