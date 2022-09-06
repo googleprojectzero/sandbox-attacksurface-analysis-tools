@@ -28,6 +28,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Specify to include the PAC in the ticket.
         /// </summary>
         public bool? IncludePac { get; set; }
+
+        /// <summary>
+        /// Specify additional pre-authentication data to send in the request.
+        /// </summary>
+        public List<KerberosPreAuthenticationData> AdditionalPreAuthenticationData { get; }
         #endregion
 
         #region Public Methods
@@ -69,6 +74,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             {
                 ret.AddPreAuthenticationData(new KerberosPreAuthenticationDataPACRequest(IncludePac.Value));
             }
+
+            foreach (var pa_data in AdditionalPreAuthenticationData)
+            {
+                ret.AddPreAuthenticationData(pa_data);
+            }
             return ret;
         }
         #endregion
@@ -99,6 +109,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             TillTime = KerberosTime.MaximumTime;
             EncryptionTypes = new List<KerberosEncryptionType>();
+            AdditionalPreAuthenticationData = new List<KerberosPreAuthenticationData>();
         }
         #endregion
     }
