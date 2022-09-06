@@ -104,16 +104,40 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
             }
 
-            return new KerberosASReply(reply, reply_part);
+            return new KerberosASReply(reply, reply_part, key);
+        }
+
+        private KerberosASReply Authenticate(KerberosASRequest request)
+        {
+            var as_req = request.ToBuilder();
+            return ProcessASReply(ExchangeKDCTokens(as_req.Create()), request.Key);
+        }
+
+        private KerberosASReply Authenticate(KerberosASRequestPassword request)
+        {
+            var as_req = request.ToBuilder();
+            var reply = ExchangeKDCTokensWithError(as_req.Create());
+            KerberosKDCReplyAuthenticationToken as_rep;
+            KerberosAuthenticationKey key;
+            if (reply is KerberosErrorAuthenticationToken error)
+            {
+                if (error.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                    throw new KerberosKDCClientException(error);
+                key = request.DeriveKey(KerberosEncryptionType.NULL, error.PreAuthentationData);
+                as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, key));
+                as_rep = ExchangeKDCTokens(as_req.Create());
+            }
+            else
+            {
+                as_rep = (KerberosKDCReplyAuthenticationToken)reply;
+                key = request.DeriveKey(as_rep.EncryptedData.EncryptionType, as_rep.PreAuthenticationData);
+            }
+
+            return ProcessASReply(as_rep, key);
         }
 
         private KerberosASReply Authenticate(KerberosAsRequestCertificate request, byte[] freshness_token)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
             var as_req = request.ToBuilder();
             as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.DES_EDE3_CBC);
             as_req.EncryptionTypes.Insert(0, KerberosEncryptionType.RC2_CBC);
@@ -142,6 +166,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             return ProcessASReply(as_rep, reply_key_pack.ReplyKey);
         }
+
+        private KerberosASReply Authenticate(KerberosAsRequestCertificate request)
+        {
+            try
+            {
+                return Authenticate(request, null);
+            }
+            catch (KerberosKDCClientException ex)
+            {
+                if (ex.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
+                    throw;
+                var freshness_token = ex.Error?.PreAuthentationData?.OfType<KerberosPreAuthenticationDataAsFreshness>().FirstOrDefault();
+                if (freshness_token == null)
+                    throw;
+                return Authenticate(request, freshness_token.FreshnessToken);
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -186,79 +228,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Methods
         /// <summary>
-        /// Authenticate a user with a known key.
+        /// Authenticate a user using Kerberos.
         /// </summary>
         /// <param name="request">The details of the AS request.</param>
         /// <returns>The AS reply.</returns>
-        public KerberosASReply Authenticate(KerberosASRequest request)
+        public KerberosASReply Authenticate(KerberosASRequestBase request)
         {
             if (request is null)
             {
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var as_req = request.ToBuilder();
-            return ProcessASReply(ExchangeKDCTokens(as_req.Create()), request.Key);
-        }
+            if (request is KerberosASRequest key_req)
+                return Authenticate(key_req);
+            if (request is KerberosASRequestPassword pwd_req)
+                return Authenticate(pwd_req);
+            if (request is KerberosAsRequestCertificate cert_req)
+                return Authenticate(cert_req);
 
-        /// <summary>
-        /// Authenticate a user with a known password.
-        /// </summary>
-        /// <param name="request">The details of the AS request.</param>
-        /// <returns>The AS reply.</returns>
-        public KerberosASReply Authenticate(KerberosASRequestPassword request)
-        {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            var as_req = request.ToBuilder();
-            var reply = ExchangeKDCTokensWithError(as_req.Create());
-            KerberosKDCReplyAuthenticationToken as_rep;
-            KerberosAuthenticationKey key;
-            if (reply is KerberosErrorAuthenticationToken error)
-            {
-                if (error.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
-                    throw new KerberosKDCClientException(error);
-                key = request.DeriveKey(KerberosEncryptionType.NULL, error.PreAuthentationData);
-                as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, key));
-                as_rep = ExchangeKDCTokens(as_req.Create());
-            }
-            else
-            {
-                as_rep = (KerberosKDCReplyAuthenticationToken)reply;
-                key = request.DeriveKey(as_rep.EncryptedData.EncryptionType, as_rep.PreAuthenticationData);
-            }
-
-            return ProcessASReply(as_rep, key);
-        }
-
-        /// <summary>
-        /// Authenticate a user with a certificate.
-        /// </summary>
-        /// <param name="request">The details of the AS request.</param>
-        /// <returns>The AS reply.</returns>
-        public KerberosASReply Authenticate(KerberosAsRequestCertificate request)
-        {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            try
-            {
-                return Authenticate(request, null);
-            }
-            catch (KerberosKDCClientException ex)
-            {
-                if (ex.ErrorCode != KerberosErrorType.PREAUTH_REQUIRED)
-                    throw;
-                var freshness_token = ex.Error?.PreAuthentationData?.OfType<KerberosPreAuthenticationDataAsFreshness>().FirstOrDefault();
-                if (freshness_token == null)
-                    throw;
-                return Authenticate(request, freshness_token.FreshnessToken);
-            }
+            throw new ArgumentException("Unknown AS-REQ type.");
         }
 
         /// <summary>

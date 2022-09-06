@@ -20,13 +20,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     public sealed class KerberosASReply : KerberosKDCReply
     {
         /// <summary>
+        /// The key used to decrypt the AS-REP.
+        /// </summary>
+        public KerberosAuthenticationKey ReplyKey { get; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="token">The base authentication token.</param>
         /// <param name="enc_part">The decrypted KDC reply part.</param>
-        public KerberosASReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
+        /// <param name="reply_key">The key used to decrypt the AS-REP.</param>
+        public KerberosASReply(KerberosKDCReplyAuthenticationToken token, 
+            KerberosKDCReplyEncryptedPart enc_part, KerberosAuthenticationKey reply_key = null)
                 : base(token, enc_part)
         {
+            ReplyKey = reply_key;
         }
     }
 }

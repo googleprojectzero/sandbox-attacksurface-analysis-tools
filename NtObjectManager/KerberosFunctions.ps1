@@ -633,6 +633,8 @@ Specify the realm to use for the cache.
 Specify additional tickets to add to the new cache.
 .PARAMETER Key
 Specify the user key to authenticate the new ticket cache.
+.PARAMETER Request
+Specify an AS-REQ to authentication the user for the new ticket cache.
 .INPUTS
 None
 .OUTPUTS
@@ -650,6 +652,8 @@ function New-KerberosTicketCache {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(ParameterSetName="FromKey", Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [Parameter(ParameterSetName="FromRequest", Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]$Request,
         [Parameter(ParameterSetName="FromTgt")]
         [Parameter(ParameterSetName="FromKey")]
         [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
@@ -674,6 +678,10 @@ function New-KerberosTicketCache {
         "FromKey" {
             $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Key)
+        }
+        "FromRequest" {
+            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Request)
         }
         "FromTickets" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromTickets($AdditionalTicket, $CreateClient)
@@ -1017,11 +1025,14 @@ Specify the port of the KDC.
 Specify the request to send.
 .PARAMETER AsExternalTicket
 Specify to return as an KerberosExternalTicket
+.PARAMETER AsKdcReply
+Specify to return the raw reply.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential
 NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKdcReply
 #>
 function Send-KerberosKdcRequest {
     [CmdletBinding()]
@@ -1030,7 +1041,8 @@ function Send-KerberosKdcRequest {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCRequest]$Request,
         [string]$Hostname = $env:LOGONSERVER.TrimStart('\'),
         [int]$Port = 88,
-        [switch]$AsExternalTicket
+        [switch]$AsExternalTicket,
+        [switch]$AsKdcReply
     )
 
     $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
@@ -1042,7 +1054,9 @@ function Send-KerberosKdcRequest {
         throw "Unknown KDC request type."
     }
     if ($null -ne $reply) {
-        if ($AsExternalTicket) {
+        if($AsKdcReply) {
+            $reply
+        } elseif ($AsExternalTicket) {
             $reply.ToExternalTicket()
         } else {
             $reply.ToCredential()

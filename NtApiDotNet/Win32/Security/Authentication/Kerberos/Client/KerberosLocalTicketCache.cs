@@ -136,6 +136,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Public Static Methods
+
+        /// <summary>
+        /// Populate a local cache for a client with authentication.
+        /// </summary>
+        /// <param name="client">A KDC client for the domain.</param>
+        /// <param name="request">The AS-REQ for the authentication.</param>
+        /// <returns>The local ticket cache.</returns>
+        public static KerberosLocalTicketCache FromClient(KerberosKDCClient client, KerberosASRequestBase request)
+        {
+            return new KerberosLocalTicketCache(client.Authenticate(request).ToCredential(), client);
+        }
+
         /// <summary>
         /// Populate a local cache for a client with authentication.
         /// </summary>
@@ -144,9 +156,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The local ticket cache.</returns>
         public static KerberosLocalTicketCache FromClient(KerberosKDCClient client, KerberosAuthenticationKey key)
         {
-            KerberosASRequest request = new KerberosASRequest(key, key.Name, key.Realm);
-            var reply = client.Authenticate(request);
-            return new KerberosLocalTicketCache(reply.ToCredential(), client);
+            return FromClient(client, new KerberosASRequest(key, key.Name, key.Realm));
         }
 
         /// <summary>
