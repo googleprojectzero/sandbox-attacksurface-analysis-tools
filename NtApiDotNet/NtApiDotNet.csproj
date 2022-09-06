@@ -506,6 +506,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineNative.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Cryptography\KerberosEncryptionEngineUnsupported.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosAuthorizationDataPACCredential.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptionTypeInfo2Entry.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosEncryptionTypeInfoEntry.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosErrorData.cs" />
@@ -515,6 +516,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTicketFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosTypedData.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosUtilsInternal.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Ndr\PacCredentialDataParser.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitAuthPack.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPkAuthenticator.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitReplyKeyPack.cs" />
@@ -542,6 +544,7 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmChallengeAuthenticationTokenBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmNegotiateAuthenticationTokenBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\SecPkgSupplementalCredential.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUnknown.cs" />

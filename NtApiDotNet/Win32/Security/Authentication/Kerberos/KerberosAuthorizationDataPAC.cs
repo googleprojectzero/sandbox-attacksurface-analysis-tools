@@ -155,6 +155,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                         if (!KerberosAuthorizationDataPACRequestor.Parse(entry_data, out pac_entry))
                             pac_entry = null;
                         break;
+                    case KerberosAuthorizationDataPACEntryType.Credentials:
+                        if (!KerberosAuthorizationDataPACCredential.Parse(entry_data, out pac_entry))
+                            pac_entry = null;
+                        break;
                 }
 
                 if (pac_entry == null)
