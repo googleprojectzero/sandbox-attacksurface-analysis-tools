@@ -184,6 +184,7 @@
     <Compile Include="Net\Firewall\SafeFwpmEngineHandle.cs" />
     <Compile Include="Net\Firewall\SafeFwpmMemoryBuffer.cs" />
     <Compile Include="Net\Firewall\NetworkTunnelType.cs" />
+    <Compile Include="Net\NetUtils.cs" />
     <Compile Include="Net\Sockets\HyperVEndpoint.cs" />
     <Compile Include="Net\Sockets\HyperVSocketGuids.cs" />
     <Compile Include="Net\Sockets\SocketSecurityIpsecFlags.cs" />

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Net;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -55,10 +56,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 using (var stm = socket.GetStream())
                 {
                     BinaryWriter writer = new BinaryWriter(stm, Encoding.ASCII, true);
-                    writer.Write(IPAddress.HostToNetworkOrder(request.Length));
+                    writer.WriteInt32BE(request.Length);
                     writer.Write(request);
                     BinaryReader reader = new BinaryReader(stm, Encoding.ASCII, true);
-                    int return_length = IPAddress.NetworkToHostOrder(reader.ReadInt32());
+                    int return_length = reader.ReadInt32BE();
                     return reader.ReadAllBytes(return_length);
                 }
             }

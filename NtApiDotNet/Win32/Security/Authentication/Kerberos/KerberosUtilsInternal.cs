@@ -35,56 +35,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             return ret;
         }
 
-        internal static ushort SwapEndian(this ushort value)
-        {
-            return BitConverter.ToUInt16(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
-        }
-
-        internal static int SwapEndian(this int value)
-        {
-            return BitConverter.ToInt32(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
-        }
-
-        internal static uint SwapEndian(this uint value)
-        {
-            return BitConverter.ToUInt32(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
-        }
-
-        internal static long SwapEndian(this long value)
-        {
-            return BitConverter.ToInt64(BitConverter.GetBytes(value).Reverse().ToArray(), 0);
-        }
-
-        internal static ushort ReadUInt16BE(this BinaryReader reader)
-        {
-            return reader.ReadUInt16().SwapEndian();
-        }
-
-        internal static void WriteInt32BE(this BinaryWriter writer, int value)
-        {
-            writer.Write(value.SwapEndian());
-        }
-
-        internal static void WriteUInt32BE(this BinaryWriter writer, uint value)
-        {
-            writer.Write(value.SwapEndian());
-        }
-
-        internal static void WriteUInt16BE(this BinaryWriter writer, int value)
-        {
-            writer.Write(((ushort)value).SwapEndian());
-        }
-
-        internal static int ReadInt32BE(this BinaryReader reader)
-        {
-            return reader.ReadInt32().SwapEndian();
-        }
-
-        internal static uint ReadUInt32BE(this BinaryReader reader)
-        {
-            return reader.ReadUInt32().SwapEndian();
-        }
-
         internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
         {
             return value.CheckApplication((int)msg);

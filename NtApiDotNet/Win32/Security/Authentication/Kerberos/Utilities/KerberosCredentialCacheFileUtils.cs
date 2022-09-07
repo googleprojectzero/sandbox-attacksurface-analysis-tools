@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -142,7 +143,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 
         public static void WritePrincipal(this BinaryWriter writer, KerberosCredentialCacheFilePrincipal principal)
         {
-
             writer.WriteInt32BE((int)principal.Name.NameType);
             writer.WriteInt32BE(principal.Name.Names.Count);
             writer.WriteDataString(principal.Realm);
