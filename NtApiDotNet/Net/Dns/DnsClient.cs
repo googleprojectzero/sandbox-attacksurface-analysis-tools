@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,9 +30,10 @@ namespace NtApiDotNet.Net.Dns
         private ushort _id;
 
         /// <summary>
-        /// Set to use TCP for the transport rather than UDP.
+        /// Set to force TCP for the transport. If false then the class will try UDP first, and fallback
+        /// to TCP if the reply is truncated.
         /// </summary>
-        public bool UseTcp { get; set; }
+        public bool ForceTcp { get; set; }
 
         /// <summary>
         /// The DNS server address.
@@ -53,16 +55,16 @@ namespace NtApiDotNet.Net.Dns
             Timeout = 5000;
         }
 
-        private IDnsTransport GetTransport()
+        private IDnsTransport GetTransport(bool tcp)
         {
-            if (UseTcp)
+            if (tcp)
                 return new DnsTransportTcp(ServerAddress, Timeout);
             return new DnsTransportUdp(ServerAddress, Timeout);
         }
 
-        private DnsPacket Query(string qname, DnsQueryType qtype, DnsQueryClass qclass = DnsQueryClass.IN)
+        private DnsPacket Query(bool tcp, string qname, DnsQueryType qtype, DnsQueryClass qclass)
         {
-            using (var socket = GetTransport())
+            using (var transport = GetTransport(tcp))
             {
                 DnsPacket query = new DnsPacket
                 {
@@ -73,8 +75,8 @@ namespace NtApiDotNet.Net.Dns
                 };
 
                 byte[] data = query.ToArray();
-                socket.Send(data);
-                data = socket.Receive();
+                transport.Send(data);
+                data = transport.Receive();
                 var result = DnsPacket.FromArray(data);
                 if (result.Id != query.Id)
                     throw new ProtocolViolationException("Mismatched IDs for DNS query.");
@@ -82,6 +84,18 @@ namespace NtApiDotNet.Net.Dns
                     throw new ProtocolViolationException($"Error in query response {result.ResponseCode}.");
                 return result;
             }
+        }
+
+        private DnsPacket Query(string qname, DnsQueryType qtype, DnsQueryClass qclass = DnsQueryClass.IN)
+        {
+            if (!ForceTcp)
+            {
+                var result = Query(false, qname, qtype, qclass);
+                if (!result.Truncation)
+                    return result;
+            }
+
+            return Query(true, qname, qtype, qclass);
         }
 
         /// <summary>

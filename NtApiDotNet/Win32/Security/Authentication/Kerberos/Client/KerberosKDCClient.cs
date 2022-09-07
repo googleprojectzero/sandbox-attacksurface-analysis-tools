@@ -12,14 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Net.Dns;
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit;
 using System;
+using System.Collections.Generic;
 using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -184,6 +187,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
         }
 
+        private static IPAddress FindDnsAddress(string realm)
+        {
+            HashSet<IPAddress> addrs = new HashSet<IPAddress>();
+
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up)
+                    continue;
+                var ip = nic.GetIPProperties();
+                if (ip.DnsAddresses.Count == 0)
+                    continue;
+                if (ip.DnsSuffix.Length > 0 && realm.EndsWith(ip.DnsSuffix.ToLower()))
+                {
+                    return ip.DnsAddresses.First();
+                }
+
+                foreach (var next_addr in ip.DnsAddresses)
+                {
+                    addrs.Add(next_addr);
+                }
+            }
+
+            return addrs.FirstOrDefault();
+        }
+
         #endregion
 
         #region Constructors
@@ -224,6 +252,50 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             var dc = Domain.GetCurrentDomain().FindDomainController();
             return CreateTCPClient(dc.Name, port, password_port);
         }
+
+        /// <summary>
+        /// Create a TCP KDC client.
+        /// </summary>
+        /// <param name="kdc">The KDC SRV record.</param>
+        /// <param name="password_port">The port number of the KDC password server.</param>
+        /// <returns>The created client.</returns>
+        public static KerberosKDCClient CreateTCPClient(DnsServiceRecord kdc, int password_port = 464)
+        {
+            if (kdc is null)
+            {
+                throw new ArgumentNullException(nameof(kdc));
+            }
+
+            return CreateTCPClient(kdc.Target, kdc.Port, password_port);
+        }
+
+        /// <summary>
+        /// Query DNS for KDC SRV records for a realm.
+        /// </summary>
+        /// <param name="realm">The realm to query.</param>
+        /// <param name="dns_server">Optional DNS server IP address. Will try and find a suitable DNS server for the query.</param>
+        /// <returns>The list of DNS SRV records for the </returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static IReadOnlyCollection<DnsServiceRecord> QueryKdcForRealm(string realm, IPAddress dns_server = null)
+        {
+            if (string.IsNullOrWhiteSpace(realm))
+            {
+                throw new ArgumentException($"'{nameof(realm)}' cannot be null or whitespace.", nameof(realm));
+            }
+
+            realm = realm.ToLower();
+
+            dns_server = dns_server ?? FindDnsAddress(realm);
+            if (dns_server == null)
+                throw new ArgumentNullException(nameof(dns_server), "No suitable DNS server available.");
+
+            return new DnsClient(dns_server)
+            {
+                ForceTcp = true
+            }.QueryServices($"_kerberos._tcp.dc._msdcs.{realm}")
+                .OrderBy(p => Tuple.Create(p.Priority, p.Weight)).ToList().AsReadOnly();
+        }
+
         #endregion
 
         #region Public Methods

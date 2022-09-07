@@ -1258,3 +1258,28 @@ function New-KerberosAuthorizationData {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Tries to resolve a list of KDC services for a realm.
+.DESCRIPTION
+This cmdlet uses DNS to query the list of KDC services for a realm.
+.PARAMETER Realm
+Specify the realm to query for.
+.PARAMETER DnsServerAddress
+Specify the address of the DNS server.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Net.Dns.DnsServiceRecord[]
+#>
+function Resolve-KerberosKdcAddress {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position=0)]
+        [string]$Realm,
+        [System.Net.IPAddress]$DnsServerAddress
+    )
+
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::QueryKdcForRealm($Realm, $DnsServerAddress) | Write-Output
+}
