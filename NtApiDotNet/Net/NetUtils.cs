@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Text;
 using System;
 using System.IO;
 
@@ -82,6 +83,21 @@ namespace NtApiDotNet.Net
         internal static uint ReadUInt32BE(this BinaryReader reader)
         {
             return reader.ReadUInt32().SwapEndian();
+        }
+
+        internal static void WriteBinaryString(this BinaryWriter writer, string str)
+        {
+            writer.Write(BinaryEncoding.Instance.GetBytes(str));
+        }
+
+        internal static string ReadBinaryString(this BinaryReader reader, int length)
+        {
+            return BinaryEncoding.Instance.GetString(reader.ReadAllBytes(length));
+        }
+
+        internal static void WriteByte(this BinaryWriter writer, int value)
+        {
+            writer.Write((byte)value);
         }
     }
 }
