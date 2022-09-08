@@ -32,6 +32,16 @@ namespace NtApiDotNet.Ndr.Marshal
         public Guid Uuid { get; }
 
         /// <summary>
+        /// Return and empty handle.
+        /// </summary>
+        public static NdrContextHandle Empty => default;
+
+        /// <summary>
+        /// Returns true if the context handle is invalid.
+        /// </summary>
+        public bool IsInvalid => Uuid == Guid.Empty && Attributes == 0;
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="attributes">Context handle attributes.</param>

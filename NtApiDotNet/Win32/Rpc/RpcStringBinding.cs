@@ -75,8 +75,8 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="network_addr">The network address.</param>
         /// <param name="endpoint">The endpoint.</param>
         /// <param name="network_options">The options.</param>
-        public RpcStringBinding(string protseq, string network_addr = null,
-            string endpoint = null, string network_options = null, string obj_uuid = null) 
+        public RpcStringBinding(string protseq, string network_addr,
+            string endpoint, string network_options, string obj_uuid) 
             : this(protseq, network_addr, endpoint, network_options, ParseGuid(obj_uuid))
         {
         }

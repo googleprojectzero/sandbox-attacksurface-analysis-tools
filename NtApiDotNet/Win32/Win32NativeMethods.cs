@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.Rpc.EndpointMapper;
 using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Native;
@@ -583,6 +584,27 @@ namespace NtApiDotNet.Win32
         public WinCertType wCertificateType;   // WIN_CERT_TYPE_xxx
         public byte bCertificate;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal class UUID
+    {
+        public Guid Uuid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal class RPC_IF_ID
+    {
+        public Guid Uuid;
+        public ushort VersMajor;
+        public ushort VersMinor;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("IfId")]
+    internal class RPC_IF_ID_VECTOR
+    {
+        public int Count;
+        public IntPtr IfId; // RPC_IF_ID*
+    };
 
     internal static class Win32NativeMethods
     {
