@@ -44,6 +44,9 @@ namespace NtApiDotNet
         /// <returns>The name.</returns>
         public static NtResult<SidName> LookupAccountSidName(string system_name, Sid sid, bool throw_on_error)
         {
+            if (!NtObjectUtils.IsWindows)
+                return NtStatus.STATUS_NO_SUCH_USER.CreateResultFromError<SidName>(throw_on_error);
+
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
                 StringBuilder name = new StringBuilder(1024);
@@ -207,6 +210,9 @@ namespace NtApiDotNet
             {
                 throw new ArgumentException("Sid not a package sid", nameof(sid));
             }
+
+            if (!NtObjectUtils.IsWindows)
+                return null;
 
             return _package_names.GetOrAdd(sid, _ =>
             {
@@ -388,6 +394,9 @@ namespace NtApiDotNet
             var result = ParseSidString(sddl);
             if (result.IsSuccess)
                 return result;
+
+            if (!NtObjectUtils.IsWindows)
+                return NtStatus.STATUS_INVALID_SID.CreateResultFromError<Sid>(throw_on_error);
 
             // If our managed parser fails try the Win32 API.
             if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocBuffer buffer))

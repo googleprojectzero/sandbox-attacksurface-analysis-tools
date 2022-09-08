@@ -200,6 +200,8 @@ namespace NtApiDotNet.Security.Policy
         /// <returns>The list of Central Access Policies.</returns>
         public static NtResult<CentralAccessPolicy[]> ParseFromRegistry(bool throw_on_error)
         {
+            if (!NtObjectUtils.IsWindows)
+                return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<CentralAccessPolicy[]>(throw_on_error);
             using (var key = NtKey.Open(POLICY_KEY,
                 null, KeyAccessRights.EnumerateSubKeys, KeyCreateOptions.NonVolatile, throw_on_error))
             {

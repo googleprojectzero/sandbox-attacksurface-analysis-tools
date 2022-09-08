@@ -49,6 +49,38 @@ namespace NtApiDotNet
             return NtStatus.STATUS_SUCCESS;
         }
 
+        private NtStatus InitializeFromBinaryReader(BinaryReader reader)
+        {
+            try
+            {
+                byte revision = reader.ReadByte();
+                if (revision != 1)
+                    return NtStatus.STATUS_INVALID_SID;
+                byte sub_authority_count = reader.ReadByte();
+                Authority = new SidIdentifierAuthority(reader.ReadAllBytes(6));
+                List<uint> sub_auth = new List<uint>();
+                for (int i = 0; i < sub_authority_count; ++i)
+                {
+                    sub_auth.Add(reader.ReadUInt32());
+                }
+                SubAuthorities = sub_auth.AsReadOnly();
+                return NtStatus.STATUS_SUCCESS;
+            }
+            catch (EndOfStreamException)
+            {
+                return NtStatus.STATUS_INVALID_SID;
+            }
+        }
+
+        private NtStatus InitializeFromBytes(byte[] sid)
+        {
+            if (sid.Length < 8)
+                return NtStatus.STATUS_INVALID_SID;
+
+            MemoryStream stm = new MemoryStream(sid);
+            return InitializeFromBinaryReader(new BinaryReader(stm));
+        }
+
         #endregion
 
         #region Public Properties
@@ -137,10 +169,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if the buffer is not valid.</exception>
         public Sid(byte[] sid)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid))
-            {
-                InitializeFromPointer(buffer.DangerousGetHandle()).ToNtException();
-            }
+            InitializeFromBytes(sid).ToNtException();
         }
 
         /// <summary>
@@ -179,21 +208,7 @@ namespace NtApiDotNet
         /// <param name="reader">The binary reader.</param>
         internal Sid(BinaryReader reader)
         {
-            int revision = reader.ReadByte();
-            if (revision != 1)
-            {
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
-            }
-            int subauth_count = reader.ReadByte();
-            byte[] authority = reader.ReadAllBytes(6);
-            List<uint> subauth = new List<uint>();
-            for (int i = 0; i < subauth_count; ++i)
-            {
-                subauth.Add(reader.ReadUInt32());
-            }
-
-            SubAuthorities = subauth;
-            Authority = new SidIdentifierAuthority(authority);
+            InitializeFromBinaryReader(reader).ToNtException();
         }
         #endregion
 
@@ -233,10 +248,17 @@ namespace NtApiDotNet
         /// <returns>The managed byte array.</returns>
         public byte[] ToArray()
         {
-            using (SafeSidBufferHandle handle = ToSafeBuffer())
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            writer.Write((byte)1);
+            writer.Write((byte)SubAuthorities.Count);
+            writer.Write(Authority.Value);
+            foreach (uint sub in SubAuthorities)
             {
-                return NtObjectUtils.SafeHandleToArray(handle, handle.Length);
+                writer.Write(sub);
             }
+            return stm.ToArray();
         }
 
         /// <summary>
@@ -511,11 +533,8 @@ namespace NtApiDotNet
         /// <returns>The parsed SID.</returns>
         public static NtResult<Sid> Parse(byte[] sid, bool throw_on_error)
         {
-            using (var buffer = sid.ToBuffer())
-            {
-                Sid ret = new Sid();
-                return ret.InitializeFromPointer(buffer.DangerousGetHandle()).CreateResult(throw_on_error, () => ret);
-            }
+            Sid ret = new Sid();
+            return ret.InitializeFromBytes(sid).CreateResult(throw_on_error, () => ret);
         }
 
         /// <summary>
