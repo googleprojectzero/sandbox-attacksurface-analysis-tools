@@ -116,23 +116,49 @@ function ConvertFrom-HexDump {
 .SYNOPSIS
 Gets a certificate object.
 .DESCRIPTION
-This cmdlet gets a certificate object from a file.
+This cmdlet gets a certificate object from a path.
 .PARAMETER Path
-Specify the path to the certificate or file.
+Specify the path to the certificate or file. Can only be a cert:\ drive path.
+.PARAMETER Pin
+Specify the PIN for the certificate's private key if needed.
+.PARAMETER Byte
+Specify the certificate as bytes.
 .INPUTS
 None
 .OUTPUTS
 System.Security.Cryptography.X509Certificates.X509Certificate2
 #>
 function Get-X509Certificate {
+    [CmdletBinding(DefaultParameterSetName="FromPath")]
     param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromPath")]
-        [string]$Path
+        [string]$Path,
+        [Parameter(Position = 0, Mandatory, ParameterSetName="FromByte")]
+        [byte[]]$Byte,
+        [NtObjectManager.Utils.PasswordHolder]$Pin
     )
 
-    $Path = Resolve-Path -Path $Path
-    if ($null -ne $Path) {
-        [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPath" {
+            $Path = Resolve-Path -Path $Path
+            if ($null -ne $Path) {
+                $cert = Get-Item $Path
+                if ($cert -is [Security.Cryptography.X509Certificates.X509Certificate]) {
+                    [Security.Cryptography.X509Certificates.X509Certificate2]::new($cert)
+                } elseif ($Pin -eq $null) {
+                    [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+                } else {
+                    [Security.Cryptography.X509Certificates.X509Certificate2]::new($Path, $Pin.Password)
+                }
+            }
+        }
+        "FromByte" {
+            if ($Pin -eq $null) {
+                [Security.Cryptography.X509Certificates.X509Certificate2]::new($Byte)
+            } else {
+                [Security.Cryptography.X509Certificates.X509Certificate2]::new($Byte, $Pin.Password)
+            }
+        }
     }
 }
 
