@@ -37,13 +37,20 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// </summary>
     public static class RpcClientTransportFactory
     {
-        private static readonly Dictionary<string, IRpcClientTransportFactory> _factories = 
-            new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase) { 
-                { "ncalrpc", new AlpcRpcClientTransportFactory() },
-                { "ncacn_np", new NamedPipeRpcClientTransportFactory() },
-                { "ncacn_ip_tcp", new TcpRpcClientTransportFactory() },
-                { "ncacn_hvsocket", new HyperVRpcClientTransportFactory() },
-            };
+        private static Dictionary<string, IRpcClientTransportFactory> CreateFactories()
+        {
+            var ret = new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase);
+            if (NtObjectUtils.IsWindows)
+            {
+                ret.Add("ncalrpc", new AlpcRpcClientTransportFactory());
+                ret.Add("ncacn_np", new NamedPipeRpcClientTransportFactory());
+                ret.Add("ncacn_hvsocket", new HyperVRpcClientTransportFactory());
+            }
+            ret.Add("ncacn_ip_tcp", new TcpRpcClientTransportFactory());
+            return ret;
+        }
+
+        private static readonly Dictionary<string, IRpcClientTransportFactory> _factories = CreateFactories();
 
         private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
         {
