@@ -65,6 +65,8 @@ namespace NtObjectManager.Provider
         protected override Collection<PSDriveInfo> InitializeDefaultDrives()
         {
             Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>();
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+                return drives;
 
             drives.Add(new PSDriveInfo("NtObject", ProviderInfo, GLOBAL_ROOT, "NT Object Manager Root Directory", null));
             int session_id = Process.GetCurrentProcess().SessionId;

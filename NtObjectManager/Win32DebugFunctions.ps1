@@ -12,22 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-$native_dir = switch([NtApiDotNet.NtSystemInfo]::ProcessorInformation.ProcessorArchitecture) {
-    "AMD64" { 
-        "$PSScriptRoot\x64"
+$native_dir = if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
+    switch([NtApiDotNet.NtSystemInfo]::ProcessorInformation.ProcessorArchitecture) {
+        "AMD64" { 
+            "$PSScriptRoot\x64"
+        }
+        "Intel" {
+            "$PSScriptRoot\x86"
+        }
+        "ARM64" {
+            "$PSScriptRoot\ARM64"
+        }
+        "ARM" {
+            "$PSScriptRoot\ARM"
+        }
+        default {
+            ""
+        }
     }
-    "Intel" {
-        "$PSScriptRoot\x86"
-    }
-    "ARM64" {
-        "$PSScriptRoot\ARM64"
-    }
-    "ARM" {
-        "$PSScriptRoot\ARM"
-    }
-    default {
-        ""
-    }
+} else {
+    ""
 }
 
 if ("" -ne $native_dir -and (Test-Path "$native_dir\dbghelp.dll")) {
