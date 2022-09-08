@@ -204,34 +204,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
-        //private static T FindAuthorizationData<T>(
-        //    IEnumerable<KerberosAuthorizationData> auth_data,
-        //    KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
-        //{
-        //    List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
-        //    FindAuthorizationData(list, auth_data, type);
-        //    return list.OfType<T>().FirstOrDefault();
-        //}
-
-        //private static void FindAuthorizationData(
-        //    List<KerberosAuthorizationData> list,
-        //    IEnumerable<KerberosAuthorizationData> auth_data,
-        //    KerberosAuthorizationDataType type)
-        //{
-        //    if (auth_data == null)
-        //        return;
-        //    foreach (var next in auth_data)
-        //    {
-        //        if (next.DataType == type)
-        //            list.Add(next);
-        //        if (next is KerberosAuthorizationDataIfRelevant if_rel)
-        //        {
-        //            FindAuthorizationData(list, if_rel.Entries, type);
-        //        }
-        //    }
-        //    return;
-        //}
-
         private KerberosTicketDecrypted(KerberosTicket ticket, byte[] decrypted) 
             : base(ticket.TicketVersion, ticket.Realm, ticket.ServerName, 
                   KerberosEncryptedData.Create(KerberosEncryptionType.NULL, decrypted))

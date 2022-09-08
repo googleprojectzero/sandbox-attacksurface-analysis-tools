@@ -45,7 +45,7 @@ namespace NtApiDotNet
         public static NtResult<SidName> LookupAccountSidName(string system_name, Sid sid, bool throw_on_error)
         {
             if (!NtObjectUtils.IsWindows)
-                return NtStatus.STATUS_NO_SUCH_USER.CreateResultFromError<SidName>(throw_on_error);
+                return Win32Error.ERROR_NO_SUCH_USER.CreateResultFromDosError<SidName>(throw_on_error);
 
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {

@@ -98,6 +98,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             RtlCompressionFormat format = (RtlCompressionFormat)set.usCompressionFormat.Value;
             if (format == RtlCompressionFormat.None)
                 return set.ClaimsSet.GetValue().CreateResult();
+            if (!NtObjectUtils.IsWindows)
+                return NtStatus.STATUS_INVALID_DEVICE_STATE.CreateResultFromError<byte[]>(false);
             return NtCompression.DecompressBuffer(format, set.ClaimsSet, set.ulUncompressedClaimsSetSize, false);
         }
 
