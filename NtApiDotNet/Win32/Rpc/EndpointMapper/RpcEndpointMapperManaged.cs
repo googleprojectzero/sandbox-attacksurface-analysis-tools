@@ -46,6 +46,10 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                         return new RpcStringBinding("ncacn_np", string_binding.NetworkAddress, @"\pipe\epmapper");
                     case "ncacn_ip_tcp":
                         return new RpcStringBinding("ncacn_ip_tcp", string_binding.NetworkAddress, "135");
+                    case "ncacn_hvsocket":
+                        return new RpcStringBinding("ncacn_hvsocket", string_binding.NetworkAddress, "DA32E281-383E-49A1-900A-AF3B74B90B0E");
+                    case "ncacn_http":
+                        return new RpcStringBinding("ncacn_http", string_binding.NetworkAddress, "593");
                     default:
                         return null;
                 }

@@ -78,7 +78,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Set whether to use the managed client or native client.
         /// </summary>
-        /// <remarks>On non-Windows systems this is always true.</remarks>
+        /// <remarks>On non-Windows systems this value is ignored and the managed client always used.</remarks>
         public static bool UseManagedClient { get; set; }
         #endregion
 
