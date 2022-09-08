@@ -37,7 +37,7 @@ namespace NtApiDotNet.Ndr
         {
             if (case_value < 0)
             {
-                return $"minus_{case_value}";
+                return $"minus_{Math.Abs(case_value)}";
             }
             return case_value.ToString();
         }
