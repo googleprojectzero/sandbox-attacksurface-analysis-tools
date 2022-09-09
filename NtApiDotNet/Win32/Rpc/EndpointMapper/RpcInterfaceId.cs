@@ -12,26 +12,51 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc.EndpointMapper
 {
-    internal sealed class RpcInterfaceId
+    /// <summary>
+    /// Class to present an RPC interface ID.
+    /// </summary>
+    public sealed class RpcInterfaceId
     {
+        /// <summary>
+        /// The interface UUID.
+        /// </summary>
         public Guid Uuid { get; }
+
+        /// <summary>
+        /// The interface version.
+        /// </summary>
         public Version Version { get; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="uuid">The interface UUID.</param>
         public RpcInterfaceId(Guid uuid) : this(uuid, new Version())
         {
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="uuid">The interface UUID.</param>
+        /// <param name="version">The interface version.</param>
         public RpcInterfaceId(Guid uuid, Version version)
         {
             Uuid = uuid;
             Version = version ?? throw new ArgumentNullException(nameof(version));
         }
 
-        public RPC_IF_ID_EPT ToRpcIfId()
+        /// <summary>
+        /// The interface ID for the DCE NDR transfer syntax.
+        /// </summary>
+        public RpcInterfaceId DCETransferSyntax => new RpcInterfaceId(NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+
+        internal RPC_IF_ID_EPT ToRpcIfId()
         {
             return new RPC_IF_ID_EPT()
             {

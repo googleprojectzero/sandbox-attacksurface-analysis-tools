@@ -167,7 +167,7 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(Guid interface_id, Version interface_version)
         {
             return GetMapper().LookupEndpoint(null, RpcEndpointInquiryFlag.Interface, new RpcInterfaceId(interface_id, interface_version), 
-                RpcEndPointVersionOption.Exact, null).Where(e => e.ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
+                RpcEndPointVersionOption.Exact, null).Where(e => e.ProtocolSequence.Equals(RpcProtocolSequence.LRPC, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace NtApiDotNet.Win32
             {
                 alpc_port = alpc_port.Substring(0, index) + RPC_CONTROL_PATH + alpc_port.Substring(index + RPC_CONTROL_PATH.Length);
             }
-            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(null, "ncalrpc", 
+            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(null, RpcProtocolSequence.LRPC, 
                 null, alpc_port, null), throw_on_error).Cast<IEnumerable<RpcEndpoint>>();
         }
 
@@ -289,7 +289,7 @@ namespace NtApiDotNet.Win32
         /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
         public static RpcEndpoint MapServerToAlpcEndpoint(Guid interface_id, Version interface_version)
         {
-            return MapServerToEndpoint("ncalrpc", interface_id, interface_version);
+            return MapServerToEndpoint(RpcProtocolSequence.LRPC, interface_id, interface_version);
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace NtApiDotNet.Win32
                     if (success)
                     {
                         yield return new RpcEndpoint(interface_id, interface_version, 
-                            RpcStringBinding.Compose(null, "ncalrpc", null, port.Name, null), false);
+                            RpcStringBinding.Compose(null, RpcProtocolSequence.LRPC, null, port.Name, null), false);
                     }
                 }
             }

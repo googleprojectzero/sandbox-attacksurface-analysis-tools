@@ -350,7 +350,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Get the transport protocol sequence.
         /// </summary>
-        public string ProtocolSequence => "ncalrpc";
+        public string ProtocolSequence => RpcProtocolSequence.LRPC;
 
         /// <summary>
         /// Get information about the local server process, if known.

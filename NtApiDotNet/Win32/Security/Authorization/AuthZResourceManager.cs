@@ -188,7 +188,7 @@ namespace NtApiDotNet.Win32.Security.Authorization
             AUTHZ_RPC_INIT_INFO_CLIENT client_info = new AUTHZ_RPC_INIT_INFO_CLIENT
             {
                 version = AUTHZ_RPC_INIT_INFO_CLIENT.AUTHZ_RPC_INIT_INFO_CLIENT_VERSION_V1,
-                ProtSeq = "ncacn_ip_tcp",
+                ProtSeq = RpcProtocolSequence.Tcp,
                 Options = null,
                 NetworkAddr = server,
                 Endpoint = null,

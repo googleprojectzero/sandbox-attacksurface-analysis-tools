@@ -277,7 +277,7 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new InvalidOperationException("RPC client is already connected.");
             }
 
-            Connect("ncalrpc", alpc_path, new RpcTransportSecurity(security_quality_of_service));
+            Connect(RpcProtocolSequence.LRPC, alpc_path, new RpcTransportSecurity(security_quality_of_service));
         }
 
         /// <summary>

@@ -14,6 +14,7 @@
 
 using Microsoft.Win32;
 using NtApiDotNet.Win32.Rpc;
+using NtApiDotNet.Win32.Rpc.EndpointMapper;
 using NtApiDotNet.Win32.Rpc.Transport;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
@@ -106,6 +107,10 @@ namespace NtApiDotNet.Win32
         /// Indicates this endpoint is a COM interface.
         /// </summary>
         public bool IsComInterface => _com_interface_check.GetOrAdd(InterfaceId, GetIsComInterface);
+        /// <summary>
+        /// The RPC protocol tower for information purposes if known.
+        /// </summary>
+        public RpcProtocolTower ProtocolTower { get; }
         #endregion
 
         #region Internal Members
@@ -131,17 +136,19 @@ namespace NtApiDotNet.Win32
         /// <param name="binding">The RPC string binding.</param>
         /// <param name="annotation">The RPC annotation.</param>
         /// <param name="registered">Whether the RPC interface is registered.</param>
+        /// <param name="protocol_tower">Optional RPC protocol tower.</param>
         /// <exception cref="ArgumentException">Thrown if invalid parameters passed.</exception>
         public RpcEndpoint(Guid interface_id, Version interface_version, RpcStringBinding binding, 
-            string annotation = null, bool registered = false)
+            string annotation = null, bool registered = false, RpcProtocolTower protocol_tower = null)
         {
             InterfaceId = interface_id;
             InterfaceVersion = interface_version ?? throw new ArgumentNullException(nameof(interface_version));
             Binding = binding ?? throw new ArgumentNullException(nameof(binding));
             ObjectUuid = binding.ObjUuid.GetValueOrDefault();
             Annotation = annotation ?? string.Empty;
+            ProtocolTower = protocol_tower;
 
-            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            if (ProtocolSequence.Equals(RpcProtocolSequence.LRPC, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
                 if (Endpoint.Contains(@"\"))
                 {
@@ -152,7 +159,7 @@ namespace NtApiDotNet.Win32
                     EndpointPath = $@"\RPC Control\{Endpoint}";
                 }
             }
-            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            else if (ProtocolSequence.Equals(RpcProtocolSequence.NamedPipe, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
                 EndpointPath = string.IsNullOrEmpty(NetworkAddress) ? $@"\??{Endpoint}" : $@"\??\UNC\{NetworkAddress}{Endpoint}";
             }

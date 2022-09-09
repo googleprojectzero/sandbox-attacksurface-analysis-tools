@@ -42,11 +42,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             var ret = new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase);
             if (NtObjectUtils.IsWindows)
             {
-                ret.Add("ncalrpc", new AlpcRpcClientTransportFactory());
-                ret.Add("ncacn_np", new NamedPipeRpcClientTransportFactory());
-                ret.Add("ncacn_hvsocket", new HyperVRpcClientTransportFactory());
+                ret.Add(RpcProtocolSequence.LRPC, new AlpcRpcClientTransportFactory());
+                ret.Add(RpcProtocolSequence.NamedPipe, new NamedPipeRpcClientTransportFactory());
+                ret.Add(RpcProtocolSequence.Container, new HyperVRpcClientTransportFactory());
             }
-            ret.Add("ncacn_ip_tcp", new TcpRpcClientTransportFactory());
+            ret.Add(RpcProtocolSequence.Tcp, new TcpRpcClientTransportFactory());
             return ret;
         }
 

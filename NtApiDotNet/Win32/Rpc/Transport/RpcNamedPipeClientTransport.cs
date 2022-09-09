@@ -120,7 +120,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Get the transport protocol sequence.
         /// </summary>
-        public override string ProtocolSequence => "ncacn_np";
+        public override string ProtocolSequence => RpcProtocolSequence.NamedPipe;
 
         /// <summary>
         /// Get information about the local server process, if known.

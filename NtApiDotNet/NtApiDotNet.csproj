@@ -501,9 +501,12 @@
     <Compile Include="Win32\Rpc\EndpointMapper\RpcEndpointMapperNative.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcEndPointVersionOption.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcInterfaceId.cs" />
+    <Compile Include="Win32\Rpc\EndpointMapper\RpcProtocolIdentifier.cs" />
+    <Compile Include="Win32\Rpc\EndpointMapper\RpcProtocolTower.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcProtocolTowerFloor.cs" />
-    <Compile Include="Win32\Rpc\EndpointMapper\RpcTowerId.cs" />
+    <Compile Include="Win32\Rpc\RpcProtocolSequenceIdentifier.cs" />
     <Compile Include="Win32\Rpc\RpcStringBinding.cs" />
+    <Compile Include="Win32\Rpc\RpcProtocolSequence.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentials.cs" />

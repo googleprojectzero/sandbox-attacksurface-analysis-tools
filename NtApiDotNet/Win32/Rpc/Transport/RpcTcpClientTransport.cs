@@ -85,7 +85,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Get the transport protocol sequence.
         /// </summary>
-        public override string ProtocolSequence => "ncacn_ip_tcp";
+        public override string ProtocolSequence => RpcProtocolSequence.Tcp;
 
         /// <summary>
         /// Get information about the local server process, if known.

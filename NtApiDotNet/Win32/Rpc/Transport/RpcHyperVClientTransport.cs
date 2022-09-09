@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Get the transport protocol sequence.
         /// </summary>
-        public override string ProtocolSequence => "ncacn_hvsocket";
+        public override string ProtocolSequence => RpcProtocolSequence.Container;
         #endregion
     }
 }
