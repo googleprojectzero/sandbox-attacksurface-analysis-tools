@@ -429,6 +429,14 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        public T?[] ReadConformantStructPointerArray<T>(bool full_pointer) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadConformantArrayCallback(() => ReadReferentValue(ReadStructInternal<T>, full_pointer));
+            }
+        }
+
         public string[] ReadConformantStringArray(Func<string> reader)
         {
             using (var queue = _deferred_reads.Push())
@@ -520,6 +528,14 @@ namespace NtApiDotNet.Ndr.Marshal
             using (var queue = _deferred_reads.Push())
             {
                 return ReadVaryingArrayCallback(ReadStruct<T>);
+            }
+        }
+
+        public T?[] ReadVaryingStructPointerArray<T>(bool full_pointer) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadVaryingArrayCallback(() => ReadReferentValue(ReadStruct<T>, full_pointer));
             }
         }
 
@@ -626,6 +642,14 @@ namespace NtApiDotNet.Ndr.Marshal
             using (var queue = _deferred_reads.Push())
             {
                 return ReadConformantVaryingArrayCallback(ReadStructInternal<T>);
+            }
+        }
+
+        public T?[] ReadConformantVaryingStructPointerArray<T>(bool full_pointer) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadConformantVaryingArrayCallback(() => ReadReferentValue(ReadStructInternal<T>, full_pointer));
             }
         }
 

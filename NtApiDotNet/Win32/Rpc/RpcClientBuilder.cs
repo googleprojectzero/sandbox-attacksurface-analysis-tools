@@ -99,6 +99,7 @@ namespace NtApiDotNet.Win32.Rpc
                 || element_type.BuiltinType == typeof(Guid)
                 || element_type.BuiltinType == typeof(NdrInterfacePointer)
                 || element_type.NdrType.Format == NdrFormatCharacter.FC_SYSTEM_HANDLE;
+            bool is_pointer = element_type.PointerType == RpcPointerType.Unique || element_type.PointerType == RpcPointerType.Full;
             if (!element_type.Constructed && !is_string && !is_basic)
             {
                 return null;
@@ -136,6 +137,11 @@ namespace NtApiDotNet.Win32.Rpc
                     marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
                     unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingArrayCallback);
                 }
+                else if (is_pointer)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStructPointerArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructPointerArray);
+                }
                 else
                 {
                     marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
@@ -162,6 +168,11 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     marshal_name = nameof(NdrMarshalBuffer.WriteConformantArrayCallback);
                     unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantArrayCallback);
+                }
+                else if (is_pointer)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantStructPointerArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantStructPointerArray);
                 }
                 else
                 {
@@ -190,13 +201,18 @@ namespace NtApiDotNet.Win32.Rpc
                     marshal_name = nameof(NdrMarshalBuffer.WriteVaryingArrayCallback);
                     unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingArrayCallback);
                 }
+                else if (is_pointer)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStructPointerArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructPointerArray);
+                }
                 else
                 {
                     marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStructArray);
                     unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
                 }
             }
-            else if (bogus_array_type.ElementCount > 0 && element_type.Constructed)
+            else if (bogus_array_type.ElementCount > 0 && element_type.Constructed && !is_pointer)
             {
                 // For now we don't support fixed basic/string bogus arrays.
                 marshal_expr.Add(CodeGenUtils.GetPrimitive(bogus_array_type.ElementCount));
@@ -209,11 +225,21 @@ namespace NtApiDotNet.Win32.Rpc
                 return null;
             }
 
-            return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
+            CodeTypeReference real_element_type = element_type.CodeType;
+            CodeTypeReference generic_type = null;
+
+            if (is_pointer)
+            {
+                unmarshal_expr.Add(CodeGenUtils.GetPrimitive(element_type.PointerType == RpcPointerType.Full));
+                generic_type = real_element_type;
+                real_element_type = element_type.GetReferenceType();
+            }
+
+            return new RpcTypeDescriptor(new CodeTypeReference(real_element_type, 1), false,
                 unmarshal_name, marshal_helper, marshal_name,
                 bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor,
-                new AdditionalArguments(marshal_expr.ToArray(), marshal_params.ToArray(), !is_string),
-                new AdditionalArguments(!is_string, unmarshal_expr.ToArray()))
+                new AdditionalArguments(marshal_expr.ToArray(), marshal_params.ToArray(), !is_string, generic_type),
+                new AdditionalArguments(!is_string, generic_type, unmarshal_expr.ToArray()))
             {
                 FixedCount = bogus_array_type.ElementCount
             };

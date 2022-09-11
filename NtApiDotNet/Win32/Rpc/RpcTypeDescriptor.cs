@@ -53,11 +53,22 @@ namespace NtApiDotNet.Win32.Rpc
         public bool Generic { get; }
         public CodeTypeReference GenericType { get; }
 
-        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic)
+        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic, CodeTypeReference generic_type)
         {
             FixedArgs = args ?? new CodeExpression[0];
             Params = ps ?? new CodeTypeReference[0];
             Generic = generic;
+            GenericType = generic_type;
+        }
+
+        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic) 
+            : this(args, ps, generic, null)
+        {
+        }
+
+        public AdditionalArguments(bool generic, CodeTypeReference generic_type, params CodeExpression[] args) 
+            : this(args, null, generic, generic_type)
+        {
         }
 
         public AdditionalArguments(bool generic, params CodeExpression[] args) : this(args, null, generic)
@@ -210,6 +221,17 @@ namespace NtApiDotNet.Win32.Rpc
         public CodeTypeReference GetParameterType()
         {
             if (Pointer && ValueType && PointerType != RpcPointerType.Reference)
+            {
+                CodeTypeReference ret = new CodeTypeReference(typeof(Nullable<>));
+                ret.TypeArguments.Add(CodeType);
+                return ret;
+            }
+            return CodeType;
+        }
+
+        public CodeTypeReference GetReferenceType()
+        {
+            if (ValueType)
             {
                 CodeTypeReference ret = new CodeTypeReference(typeof(Nullable<>));
                 ret.TypeArguments.Add(CodeType);

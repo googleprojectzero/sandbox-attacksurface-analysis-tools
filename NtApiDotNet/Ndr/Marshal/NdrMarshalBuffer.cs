@@ -855,6 +855,14 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        public void WriteVaryingStructPointerArray<T>(T?[] array, long variance) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteVaryingArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), variance);
+            }
+        }
+
         public void WriteVaryingArray<T>(T[] array, long variance) where T : struct
         {
             if (typeof(T) == typeof(byte))
@@ -977,6 +985,14 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        public void WriteConformantStructPointerArray<T>(T?[] array, long conformance) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteConformantArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), conformance);
+            }
+        }
+
         public void WriteConformantStringArray(string[] array, Action<string> writer, long conformance)
         {
             int var_int = (int)conformance;
@@ -1091,6 +1107,14 @@ namespace NtApiDotNet.Ndr.Marshal
             using (var queue = _deferred_writes.Push())
             {
                 WriteVaryingArrayCallback(array, t => WriteStructInternal(t), variance);
+            }
+        }
+
+        public void WriteConformantVaryingStructPointerArray<T>(T?[] array, long conformance, long variance) where T : struct, INdrStructure
+        {
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteVaryingArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), variance);
             }
         }
 
