@@ -24,10 +24,6 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         {
             WriteStruct(p0);
         }
-        public void Write_1(ept_entry_t p0)
-        {
-            WriteStruct(p0);
-        }
         public void Write_2(twr_p_t p0)
         {
             WriteStruct(p0);
@@ -52,18 +48,6 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         {
             WriteFixedByteArray(p0, 6);
         }
-        public void Write_8(ept_entry_t[] p0, long p1, long p2)
-        {
-            WriteConformantVaryingStructArray(p0, p1, p2);
-        }
-        public void Write_9(twr_p_t[] p0, long p1, long p2)
-        {
-            WriteConformantVaryingStructArray(p0, p1, p2);
-        }
-        public void Write_10(twr_p_t[] p0, long p1, long p2)
-        {
-            WriteConformantVaryingStructArray(p0, p1, p2);
-        }
     }
     internal class _Unmarshal_Helper : NdrUnmarshalBuffer
     {
@@ -71,25 +55,9 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                 base(r.NdrBuffer, r.Handles, r.DataRepresentation)
         {
         }
-        public _Unmarshal_Helper(byte[] ba) : 
-                base(ba)
-        {
-        }
-        public RPC_IF_ID_EPT Read_0()
-        {
-            return ReadStruct<RPC_IF_ID_EPT>();
-        }
-        public ept_entry_t Read_1()
-        {
-            return ReadStruct<ept_entry_t>();
-        }
         public twr_p_t Read_2()
         {
             return ReadStruct<twr_p_t>();
-        }
-        public RPC_SID_EPT Read_3()
-        {
-            return ReadStruct<RPC_SID_EPT>();
         }
         public RPC_SID_IDENTIFIER_AUTHORITY_EPT Read_4()
         {
@@ -111,13 +79,13 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         {
             return ReadConformantVaryingStructArray<ept_entry_t>();
         }
-        public twr_p_t[] Read_9()
+        public twr_p_t?[] Read_9()
         {
-            return ReadConformantVaryingStructArray<twr_p_t>();
+            return ReadConformantVaryingStructPointerArray<twr_p_t>(true);
         }
-        public twr_p_t[] Read_10()
+        public twr_p_t?[] Read_10()
         {
-            return ReadConformantVaryingStructArray<twr_p_t>();
+            return ReadConformantVaryingStructPointerArray<twr_p_t>(true);
         }
     }
     #endregion
@@ -358,7 +326,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             status = u.ReadInt32();
         }
         // async
-        public void ept_map(Guid? obj, twr_p_t? map_tower, ref NdrContextHandle entry_handle, int max_towers, out int num_towers, out twr_p_t[] ITowers, out int status)
+        public void ept_map(Guid? obj, twr_p_t? map_tower, ref NdrContextHandle entry_handle, int max_towers, out int num_towers, out twr_p_t?[] ITowers, out int status)
         {
             _Marshal_Helper m = new _Marshal_Helper();
             m.WriteReferent(obj, new Action<Guid>(m.WriteGuid));
@@ -380,34 +348,34 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             status = u.ReadInt32();
         }
         // async
-        public void ept_map_auth(Guid p0, twr_p_t p1, RPC_SID_EPT? p2, ref NdrContextHandle p3, int p4, out int p5, out twr_p_t[] p6, out int p7)
+        public void ept_map_auth(Guid obj, twr_p_t map_tower, RPC_SID_EPT? sid, ref NdrContextHandle entry_handle, int max_towers, out int num_towers, out twr_p_t?[] ITowers, out int status)
         {
             _Marshal_Helper m = new _Marshal_Helper();
-            m.WriteGuid(p0);
-            m.Write_2(p1);
-            m.WriteReferent(p2, new Action<RPC_SID_EPT>(m.Write_3));
-            m.WriteContextHandle(p3);
-            m.WriteInt32(p4);
+            m.WriteGuid(obj);
+            m.Write_2(map_tower);
+            m.WriteReferent(sid, new Action<RPC_SID_EPT>(m.Write_3));
+            m.WriteContextHandle(entry_handle);
+            m.WriteInt32(max_towers);
             _Unmarshal_Helper u = SendReceive(7, m);
-            p3 = u.ReadContextHandle();
-            p5 = u.ReadInt32();
-            p6 = u.Read_10();
-            p7 = u.ReadInt32();
+            entry_handle = u.ReadContextHandle();
+            num_towers = u.ReadInt32();
+            ITowers = u.Read_10();
+            status = u.ReadInt32();
         }
         // async
-        public void ept_map_auth_async(Guid p0, twr_p_t p1, RPC_SID_EPT? p2, ref NdrContextHandle p3, int p4, out int p5, out twr_p_t[] p6, out int p7)
+        public void ept_map_auth_async(Guid obj, twr_p_t map_tower, RPC_SID_EPT? sid, ref NdrContextHandle entry_handle, int max_towers, out int num_towers, out twr_p_t?[] ITowers, out int status)
         {
             _Marshal_Helper m = new _Marshal_Helper();
-            m.WriteGuid(p0);
-            m.Write_2(p1);
-            m.WriteReferent(p2, new Action<RPC_SID_EPT>(m.Write_3));
-            m.WriteContextHandle(p3);
-            m.WriteInt32(p4);
+            m.WriteGuid(obj);
+            m.Write_2(map_tower);
+            m.WriteReferent(sid, new Action<RPC_SID_EPT>(m.Write_3));
+            m.WriteContextHandle(entry_handle);
+            m.WriteInt32(max_towers);
             _Unmarshal_Helper u = SendReceive(8, m);
-            p3 = u.ReadContextHandle();
-            p5 = u.ReadInt32();
-            p6 = u.Read_10();
-            p7 = u.ReadInt32();
+            entry_handle = u.ReadContextHandle();
+            num_towers = u.ReadInt32();
+            ITowers = u.Read_10();
+            status = u.ReadInt32();
         }
     }
     #endregion

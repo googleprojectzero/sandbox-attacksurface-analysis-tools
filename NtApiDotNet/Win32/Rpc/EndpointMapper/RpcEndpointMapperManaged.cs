@@ -152,14 +152,16 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                     twr_p_t tower_p = new twr_p_t(tower.Length, tower);
 
                     NdrContextHandle entry_handle = NdrContextHandle.Empty;
-                    client.ept_map(tower_binding.ObjUuid, tower_p, ref entry_handle, MAX_ENTRIES, out int num_towers, out twr_p_t[] towers, out int status);
+                    client.ept_map(tower_binding.ObjUuid, tower_p, ref entry_handle, MAX_ENTRIES, out int num_towers, out twr_p_t?[] towers, out int status);
                     try
                     {
-                        while (num_towers > 0)
+                        while (status == 0)
                         {
                             foreach (var entry in towers)
                             {
-                                if (!RpcProtocolTower.TryParse(entry.tower_octet_string, out RpcProtocolTower mapped_tower))
+                                if (!entry.HasValue)
+                                    continue;
+                                if (!RpcProtocolTower.TryParse(entry.Value.tower_octet_string, out RpcProtocolTower mapped_tower))
                                     continue;
                                 RpcStringBinding binding = mapped_tower.GetStringBinding(tower_binding.ObjUuid);
                                 if (binding == null)
