@@ -80,29 +80,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         private class HyperVRpcClientTransportFactory : IRpcClientTransportFactory
         {
-            private static Guid ResolveVmId(string guid)
-            {
-                if (string.IsNullOrEmpty(guid))
-                    return HyperVSocketGuids.HV_GUID_LOOPBACK;
-
-                switch (guid.ToLower())
-                {
-                    case "parent":
-                        return HyperVSocketGuids.HV_GUID_PARENT;
-                    case "children":
-                        return HyperVSocketGuids.HV_GUID_CHILDREN;
-                    case "silohost":
-                        return HyperVSocketGuids.HV_GUID_SILOHOST;
-                    case "loopback":
-                        return HyperVSocketGuids.HV_GUID_LOOPBACK;
-                    default:
-                        return Guid.Parse(guid);
-                }
-            }
-
             private static HyperVEndPoint GetEndpoint(RpcEndpoint endpoint)
             {
-                return new HyperVEndPoint(Guid.Parse(endpoint.Endpoint), ResolveVmId(endpoint.NetworkAddress));
+                return new HyperVEndPoint(Guid.Parse(endpoint.Endpoint), RpcUtils.ResolveVmId(endpoint.NetworkAddress));
             }
 
             public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)

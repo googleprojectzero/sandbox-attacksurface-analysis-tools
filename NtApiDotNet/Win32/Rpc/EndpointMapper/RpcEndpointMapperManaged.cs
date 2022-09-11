@@ -23,12 +23,6 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
     {
         private const int STATUS_NO_INTERFACES = 0x16c9a0d6;
 
-        private static twr_p_t BuildProtocolTower(string string_binding, RpcInterfaceId interface_id)
-        {
-            RpcStringBinding binding = RpcStringBinding.Parse(string_binding);
-            return default;
-        }
-
         private static RpcStringBinding GetStringBinding(string search_binding)
         {
             if (string.IsNullOrEmpty(search_binding))
@@ -63,7 +57,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         }
 
         public IEnumerable<RpcEndpoint> LookupEndpoint(string search_binding, RpcEndpointInquiryFlag inquiry_flag, 
-            RpcInterfaceId if_id_search, RpcEndPointVersionOption version, System.Guid? uuid_search, bool throw_on_error = true)
+            RpcInterfaceId if_id_search, RpcEndPointVersionOption version, Guid? uuid_search, bool throw_on_error = true)
         {
             const int MAX_ENTRIES = 100;
             List<RpcEndpoint> eps = new List<RpcEndpoint>();
@@ -132,7 +126,64 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
 
         public string MapEndpoint(string search_binding, RpcInterfaceId if_id_search)
         {
-            throw new NotImplementedException();
+            const int MAX_ENTRIES = 100;
+            try
+            {
+                if (search_binding == null || if_id_search == null)
+                    return string.Empty;
+
+                if (!RpcStringBinding.TryParse(search_binding, out RpcStringBinding tower_binding))
+                {
+                    return string.Empty;
+                }
+
+                RpcStringBinding string_binding = GetStringBinding(search_binding);
+                if (string_binding == null)
+                {
+                    return string.Empty;
+                }
+
+                byte[] tower = RpcProtocolTower.CreateTower(if_id_search, RpcInterfaceId.DCETransferSyntax, tower_binding).ToArray();
+
+                using (var client = new EpMapperClient())
+                {
+                    client.Connect(string_binding.ToString(), new RpcTransportSecurity() { AuthenticationLevel = RpcAuthenticationLevel.None });
+
+                    twr_p_t tower_p = new twr_p_t(tower.Length, tower);
+
+                    NdrContextHandle entry_handle = NdrContextHandle.Empty;
+                    client.ept_map(tower_binding.ObjUuid, tower_p, ref entry_handle, MAX_ENTRIES, out int num_towers, out twr_p_t[] towers, out int status);
+                    try
+                    {
+                        while (num_towers > 0)
+                        {
+                            foreach (var entry in towers)
+                            {
+                                if (!RpcProtocolTower.TryParse(entry.tower_octet_string, out RpcProtocolTower mapped_tower))
+                                    continue;
+                                RpcStringBinding binding = mapped_tower.GetStringBinding(tower_binding.ObjUuid);
+                                if (binding == null)
+                                    continue;
+                                return binding.ToString();
+                            }
+                            if (num_towers < MAX_ENTRIES)
+                                break;
+
+                            client.ept_map(tower_binding.ObjUuid, tower_p, ref entry_handle, MAX_ENTRIES,
+                                out num_towers, out towers, out status);
+                        }
+                    }
+                    finally
+                    {
+                        if (!entry_handle.IsInvalid)
+                            client.ept_lookup_handle_free(ref entry_handle, out status);
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return string.Empty;
         }
     }
 }

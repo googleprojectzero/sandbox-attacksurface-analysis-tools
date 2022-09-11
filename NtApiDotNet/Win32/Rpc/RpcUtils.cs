@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Net.Sockets;
 using NtApiDotNet.Utilities.Text;
 using System;
 using System.Diagnostics;
@@ -525,6 +526,26 @@ namespace NtApiDotNet.Win32.Rpc
             string endpoint, string options)
         {
             return new RpcStringBinding(protseq, networkaddr, endpoint, options, objuuid).ToString();
+        }
+
+        internal static Guid ResolveVmId(string guid)
+        {
+            if (string.IsNullOrEmpty(guid))
+                return HyperVSocketGuids.HV_GUID_LOOPBACK;
+
+            switch (guid.ToLower())
+            {
+                case "parent":
+                    return HyperVSocketGuids.HV_GUID_PARENT;
+                case "children":
+                    return HyperVSocketGuids.HV_GUID_CHILDREN;
+                case "silohost":
+                    return HyperVSocketGuids.HV_GUID_SILOHOST;
+                case "loopback":
+                    return HyperVSocketGuids.HV_GUID_LOOPBACK;
+                default:
+                    return Guid.Parse(guid);
+            }
         }
     }
 }

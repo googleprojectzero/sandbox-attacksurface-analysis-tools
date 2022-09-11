@@ -20,6 +20,7 @@ namespace NtApiDotNet.Win32.Rpc
     public enum RpcProtocolSequenceIdentifier
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        None = 0,
         DNetNSP = 0x04,
         Tcp = 0x07,
         Udp = 0x08,

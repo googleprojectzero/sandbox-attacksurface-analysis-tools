@@ -52,21 +52,21 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             RelatedOrAddressData = related;
         }
 
-        internal RpcProtocolTowerFloor(string protseq, byte[] data)
+        internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, byte[] data)
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((byte)RpcProtocolSequence.StringToId(protseq));
+            writer.Write((byte)protseq);
             ProtocolIdentifierData = stm.ToArray();
             RelatedOrAddressData = data;
         }
 
-        internal RpcProtocolTowerFloor(string protseq, string data) 
+        internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, string data) 
             : this(protseq, BinaryEncoding.Instance.GetBytes(data + "\0"))
         {
         }
 
-        internal RpcProtocolTowerFloor(int type, ushort minor_version)
+        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, ushort minor_version)
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
@@ -75,6 +75,22 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             stm.SetLength(0);
             writer.Write(minor_version);
             RelatedOrAddressData = stm.ToArray();
+        }
+
+        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, byte[] data)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((byte)type);
+            ProtocolIdentifierData = stm.ToArray();
+            stm.SetLength(0);
+            writer.Write(data);
+            RelatedOrAddressData = stm.ToArray();
+        }
+
+        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, string data) 
+            : this(type, BinaryEncoding.Instance.GetBytes(data + '\0'))
+        {
         }
 
         internal RpcInterfaceId GetIdentifier()

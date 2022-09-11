@@ -13,9 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Win32.Rpc.EndpointMapper;
 using System;
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtApiDotNet.Win32.Rpc
 {
     /// <summary>
     /// Class to present an RPC interface ID.
@@ -54,7 +55,16 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         /// <summary>
         /// The interface ID for the DCE NDR transfer syntax.
         /// </summary>
-        public RpcInterfaceId DCETransferSyntax => new RpcInterfaceId(NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+        public static RpcInterfaceId DCETransferSyntax => new RpcInterfaceId(NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The interface ID as a string.</returns>
+        public override string ToString()
+        {
+            return $"{Uuid} {Version}";
+        }
 
         internal RPC_IF_ID_EPT ToRpcIfId()
         {

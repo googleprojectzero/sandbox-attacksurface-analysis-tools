@@ -24,9 +24,11 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         Udp = 8,
         Ip = 9,
         ConnectionlessProtocol = 0xA,
-        ConnectedOrientatedProtocol = 0xB,
+        ConnectionOrientatedProtocol = 0xB,
         Lrpc = 0xC,
         Uuid = 0xD,
+        NetBIOS = 0x11,
+        ContainerAddress = 0x22,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

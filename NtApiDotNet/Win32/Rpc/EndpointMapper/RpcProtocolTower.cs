@@ -17,9 +17,7 @@ using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 
 namespace NtApiDotNet.Win32.Rpc.EndpointMapper
 {
@@ -28,6 +26,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
     /// </summary>
     public sealed class RpcProtocolTower
     {
+        #region Public Properties
         /// <summary>
         /// The RPC interface ID.
         /// </summary>
@@ -47,7 +46,9 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         /// The list of raw protocol tower floors.
         /// </summary>
         public IReadOnlyList<RpcProtocolTowerFloor> Floors { get; }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Get a string binding from the protocol tower.
         /// </summary>
@@ -84,8 +85,113 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             }
             return stm.ToArray();
         }
+        #endregion
 
-        internal RpcProtocolTower(List<RpcProtocolTowerFloor> floors)
+        #region Public Static Methods
+        /// <summary>
+        /// Create a protocol tower from a string binding.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="transfer_syntax">The RPC transfer syntax.</param>
+        /// <param name="string_binding">The string binding.</param>
+        /// <returns>The RPC protocol tower.</returns>
+        public static RpcProtocolTower CreateTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax, RpcStringBinding string_binding)
+        {
+            if (string_binding is null)
+            {
+                throw new ArgumentNullException(nameof(string_binding));
+            }
+
+            switch (RpcProtocolSequence.StringToId(string_binding.ProtocolSequence))
+            {
+                case RpcProtocolSequenceIdentifier.Tcp:
+                    {
+                        ushort port = (ushort)(string_binding.Endpoint != null ? ushort.Parse(string_binding.Endpoint) : 0);
+                        return CreateTcpTower(interface_id, transfer_syntax, port, IPAddress.Any);
+                    }
+                case RpcProtocolSequenceIdentifier.LRPC:
+                    return CreateLrpcTower(interface_id, transfer_syntax, string_binding.Endpoint);
+                case RpcProtocolSequenceIdentifier.NamedPipe:
+                    return CreateNamedPipeTower(interface_id, transfer_syntax, string_binding.Endpoint, string_binding.NetworkAddress);
+                case RpcProtocolSequenceIdentifier.Container:
+                    return CreateHVSocketTower(interface_id, transfer_syntax, Guid.Parse(string_binding.Endpoint), 
+                        RpcUtils.ResolveVmId(string_binding.NetworkAddress));
+                default:
+                    throw new ArgumentException("Unknown protocol sequence for tower.");
+            }
+        }
+
+        /// <summary>
+        /// Create a protocol tower for LRPC.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="transfer_syntax">The RPC transfer syntax.</param>
+        /// <param name="port_name">The name of the LRPC port.</param>
+        /// <returns>The created tower.</returns>
+        public static RpcProtocolTower CreateLrpcTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax, string port_name)
+        {
+            return CreateTower(interface_id, transfer_syntax, RpcProtocolIdentifier.Lrpc, 
+                new RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier.LRPC, port_name ?? string.Empty));
+        }
+
+        /// <summary>
+        /// Create a protocol tower for TCP.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="transfer_syntax">The RPC transfer syntax.</param>
+        /// <param name="port">The TCP port.</param>
+        /// <param name="address">The TCP IP address.</param>
+        /// <returns>The created tower.</returns>
+        public static RpcProtocolTower CreateTcpTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax, ushort port, IPAddress address)
+        {
+            return CreateTower(interface_id, transfer_syntax, RpcProtocolIdentifier.ConnectionOrientatedProtocol,
+                new RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier.Tcp, BitConverter.GetBytes(port.SwapEndian())),
+                new RpcProtocolTowerFloor(RpcProtocolIdentifier.Ip, (address ?? IPAddress.Any).GetAddressBytes()));
+        }
+
+        /// <summary>
+        /// Create a protocol tower for named pipe.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="transfer_syntax">The RPC transfer syntax.</param>
+        /// <param name="pipe_name">The named pipe name.</param>
+        /// <param name="hostname">The network hostname.</param>
+        /// <returns>The created tower.</returns>
+        public static RpcProtocolTower CreateNamedPipeTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax, string pipe_name, string hostname)
+        {
+            return CreateTower(interface_id, transfer_syntax, RpcProtocolIdentifier.ConnectionOrientatedProtocol,
+                new RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier.NamedPipe, pipe_name ?? string.Empty),
+                new RpcProtocolTowerFloor(RpcProtocolIdentifier.NetBIOS, hostname ?? string.Empty));
+        }
+
+        /// <summary>
+        /// Create a protocol tower for a HV socket.
+        /// </summary>
+        /// <param name="interface_id">The RPC interface ID.</param>
+        /// <param name="transfer_syntax">The RPC transfer syntax.</param>
+        /// <param name="service_id">The service ID.</param>
+        /// <param name="vm_id">The VM ID.</param>
+        /// <returns>The created tower.</returns>
+        public static RpcProtocolTower CreateHVSocketTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax, Guid? service_id, Guid? vm_id)
+        {
+            return CreateTower(interface_id, transfer_syntax, RpcProtocolIdentifier.ConnectionOrientatedProtocol,
+                new RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier.Container, service_id?.ToString() ?? string.Empty),
+                new RpcProtocolTowerFloor(RpcProtocolIdentifier.ContainerAddress, vm_id?.ToString() ?? string.Empty));
+        }
+        #endregion
+
+        private static RpcProtocolTower CreateTower(RpcInterfaceId interface_id, RpcInterfaceId transfer_syntax,
+                RpcProtocolIdentifier id, params RpcProtocolTowerFloor[] additional_floors)
+        {
+            List<RpcProtocolTowerFloor> floors = new List<RpcProtocolTowerFloor>();
+            floors.Add(new RpcProtocolTowerFloor(interface_id));
+            floors.Add(new RpcProtocolTowerFloor(transfer_syntax));
+            floors.Add(new RpcProtocolTowerFloor(id, 0));
+            floors.AddRange(additional_floors);
+            return new RpcProtocolTower(floors);
+        }
+
+        private RpcProtocolTower(List<RpcProtocolTowerFloor> floors)
         {
             Floors = floors.AsReadOnly();
         }
@@ -108,7 +214,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         }
 
         /// <summary>
-        /// Try and parse an RPC protocol twoer.
+        /// Try and parse an RPC protocol tower.
         /// </summary>
         /// <param name="data">The protocol tower data.</param>
         /// <param name="tower">The parsed tower.</param>
@@ -141,7 +247,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         }
 
         /// <summary>
-        /// Try and parse an RPC protocol twoer.
+        /// Try and parse an RPC protocol tower.
         /// </summary>
         /// <param name="data">The protocol tower data.</param>
         /// <returns>The parsed tower.</returns>
