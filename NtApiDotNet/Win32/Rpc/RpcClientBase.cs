@@ -237,8 +237,8 @@ namespace NtApiDotNet.Win32.Rpc
 
             Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq, network_address) :
                 new RpcEndpoint(InterfaceId, InterfaceVersion,
-                    RpcStringBinding.Compose(null, protocol_seq,
-                    string.IsNullOrEmpty(network_address) ? null : network_address, endpoint, null), true),
+                    RpcStringBinding.Compose(protocol_seq,
+                    string.IsNullOrEmpty(network_address) ? null : network_address, endpoint), true),
                     transport_security);
         }
 
