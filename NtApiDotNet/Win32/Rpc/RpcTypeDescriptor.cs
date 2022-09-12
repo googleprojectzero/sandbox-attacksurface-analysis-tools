@@ -51,24 +51,13 @@ namespace NtApiDotNet.Win32.Rpc
         public CodeExpression[] FixedArgs { get; }
         public CodeTypeReference[] Params { get; }
         public bool Generic { get; }
-        public CodeTypeReference GenericType { get; }
+        public CodeTypeReference GenericType { get; set; }
 
-        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic, CodeTypeReference generic_type)
+        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic)
         {
             FixedArgs = args ?? new CodeExpression[0];
             Params = ps ?? new CodeTypeReference[0];
             Generic = generic;
-            GenericType = generic_type;
-        }
-
-        public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic) 
-            : this(args, ps, generic, null)
-        {
-        }
-
-        public AdditionalArguments(bool generic, CodeTypeReference generic_type, params CodeExpression[] args) 
-            : this(args, null, generic, generic_type)
-        {
         }
 
         public AdditionalArguments(bool generic, params CodeExpression[] args) : this(args, null, generic)
@@ -229,6 +218,11 @@ namespace NtApiDotNet.Win32.Rpc
             return CodeType;
         }
 
+        public CodeTypeReference GetArrayType()
+        {
+            return new CodeTypeReference(CodeType, CodeType.ArrayRank + 1);
+        }
+
         public CodeTypeReference GetReferenceType()
         {
             if (ValueType)
@@ -238,11 +232,6 @@ namespace NtApiDotNet.Win32.Rpc
                 return ret;
             }
             return CodeType;
-        }
-
-        public CodeTypeReference GetArrayType()
-        {
-            return new CodeTypeReference(CodeType, CodeType.ArrayRank + 1);
         }
     }
 }

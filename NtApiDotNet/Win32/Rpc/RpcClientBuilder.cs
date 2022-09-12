@@ -238,8 +238,8 @@ namespace NtApiDotNet.Win32.Rpc
             return new RpcTypeDescriptor(new CodeTypeReference(real_element_type, 1), false,
                 unmarshal_name, marshal_helper, marshal_name,
                 bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor,
-                new AdditionalArguments(marshal_expr.ToArray(), marshal_params.ToArray(), !is_string, generic_type),
-                new AdditionalArguments(!is_string, generic_type, unmarshal_expr.ToArray()))
+                new AdditionalArguments(marshal_expr.ToArray(), marshal_params.ToArray(), !is_string) { GenericType = generic_type },
+                new AdditionalArguments(!is_string, unmarshal_expr.ToArray()) { GenericType = generic_type })
             {
                 FixedCount = bogus_array_type.ElementCount
             };
