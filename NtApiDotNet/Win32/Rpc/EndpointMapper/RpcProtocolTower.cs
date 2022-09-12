@@ -52,9 +52,8 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
         /// <summary>
         /// Get a string binding from the protocol tower.
         /// </summary>
-        /// <param name="obj_uuid">Optional object UUID.</param>
         /// <returns>The RPC string binding. Returns null if invalid or unknown.</returns>
-        public RpcStringBinding GetStringBinding(Guid? obj_uuid = null)
+        public RpcStringBinding GetStringBinding()
         {
             if (Floors.Count < 4 || Floors[3].ProtocolIdentifierData.Length < 1)
                 return null;
@@ -63,11 +62,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             string protseq = RpcProtocolSequence.IdToString(id);
             if (protseq == null)
                 return null;
-            if (obj_uuid == Guid.Empty)
-                obj_uuid = null;
-            return new RpcStringBinding(protseq, 
-                endpoint: GetEndpoint(id, Floors[3].RelatedOrAddressData), 
-                obj_uuid: obj_uuid);
+            return new RpcStringBinding(protseq, endpoint: GetEndpoint(id, Floors[3].RelatedOrAddressData));
         }
 
         /// <summary>
@@ -106,7 +101,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             {
                 case RpcProtocolSequenceIdentifier.Tcp:
                     {
-                        ushort port = (ushort)(string_binding.Endpoint != null ? ushort.Parse(string_binding.Endpoint) : 0);
+                        ushort port = (ushort)(!string.IsNullOrWhiteSpace(string_binding.Endpoint) ? ushort.Parse(string_binding.Endpoint) : 0);
                         return CreateTcpTower(interface_id, transfer_syntax, port, IPAddress.Any);
                     }
                 case RpcProtocolSequenceIdentifier.LRPC:

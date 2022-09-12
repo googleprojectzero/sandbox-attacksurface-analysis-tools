@@ -28,9 +28,9 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             if (string.IsNullOrEmpty(search_binding))
             {
                 if (NtObjectUtils.IsWindows)
-                   return new RpcStringBinding(RpcProtocolSequence.LRPC, endpoint: "epmapper");
+                    return new RpcStringBinding(RpcProtocolSequence.LRPC, endpoint: "epmapper");
                 else
-                   return new RpcStringBinding(RpcProtocolSequence.Tcp, endpoint: "135");
+                    return new RpcStringBinding(RpcProtocolSequence.Tcp, endpoint: "135");
             }
             else if (!RpcStringBinding.TryParse(search_binding, out RpcStringBinding string_binding))
             {
@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             }
         }
 
-        public IEnumerable<RpcEndpoint> LookupEndpoint(string search_binding, RpcEndpointInquiryFlag inquiry_flag, 
+        public IEnumerable<RpcEndpoint> LookupEndpoint(string search_binding, RpcEndpointInquiryFlag inquiry_flag,
             RpcInterfaceId if_id_search, RpcEndPointVersionOption version, Guid? uuid_search, bool throw_on_error = true)
         {
             const int MAX_ENTRIES = 100;
@@ -96,9 +96,10 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                                 if (if_id_floor == null)
                                     continue;
 
-                                RpcStringBinding binding = tower.GetStringBinding(entry.obj);
+                                RpcStringBinding binding = tower.GetStringBinding();
                                 if (binding == null)
                                     continue;
+                                UpdateBinding(binding, string_binding, entry.obj);
 
                                 eps.Add(new RpcEndpoint(if_id_floor.Uuid, if_id_floor.Version, binding, entry.annotation, true, tower));
                             }
@@ -163,9 +164,10 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                                     continue;
                                 if (!RpcProtocolTower.TryParse(entry.Value.tower_octet_string, out RpcProtocolTower mapped_tower))
                                     continue;
-                                RpcStringBinding binding = mapped_tower.GetStringBinding(tower_binding.ObjUuid);
+                                RpcStringBinding binding = mapped_tower.GetStringBinding();
                                 if (binding == null)
                                     continue;
+                                UpdateBinding(binding, tower_binding, tower_binding.ObjUuid ?? Guid.Empty);
                                 return binding.ToString();
                             }
                             if (num_towers < MAX_ENTRIES)
@@ -186,6 +188,23 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             {
             }
             return string.Empty;
+        }
+
+        private void UpdateBinding(RpcStringBinding binding_to_update, RpcStringBinding search_binding, Guid objuuid)
+        {
+            if (objuuid != Guid.Empty)
+            {
+                binding_to_update.ObjUuid = objuuid;
+            }
+            switch (binding_to_update.ProtocolSequence)
+            {
+                case RpcProtocolSequence.Tcp:
+                case RpcProtocolSequence.Udp:
+                case RpcProtocolSequence.Http:
+                case RpcProtocolSequence.NamedPipe:
+                    binding_to_update.NetworkAddress = search_binding.NetworkAddress;
+                    break;
+            }
         }
     }
 }
