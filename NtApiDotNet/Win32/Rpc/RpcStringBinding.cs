@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Rpc
         /// <summary>
         /// The object UUID.
         /// </summary>
-        public Guid? ObjUuid { get; }
+        public Guid? ObjUuid { get; set; }
         /// <summary>
         /// The RPC protocol sequence.
         /// </summary>
@@ -34,15 +34,15 @@ namespace NtApiDotNet.Win32.Rpc
         /// <summary>
         /// The RPC network address.
         /// </summary>
-        public string NetworkAddress { get; }
+        public string NetworkAddress { get; set; }
         /// <summary>
         /// The RPC endpoint.
         /// </summary>
-        public string Endpoint { get; }
+        public string Endpoint { get; set; }
         /// <summary>
         /// The RPC endpoint network options.
         /// </summary>
-        public string NetworkOptions { get; }
+        public string NetworkOptions { get; set; }
 
         /// <summary>
         /// Constructor.
