@@ -207,6 +207,7 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             {
                 case RpcProtocolSequenceIdentifier.Tcp:
                 case RpcProtocolSequenceIdentifier.Udp:
+                case RpcProtocolSequenceIdentifier.Http:
                     return BitConverter.ToUInt16(endpoint, 0).SwapEndian().ToString();
                 default:
                     return BinaryEncoding.Instance.GetString(endpoint).TrimEnd('\0');
