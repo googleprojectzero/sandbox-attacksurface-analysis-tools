@@ -549,6 +549,8 @@ Specify a Code DOM provider. Defaults to C#.
 Specify optional flags for the built client class.
 .PARAMETER EnableDebugging
 Specify to enable debugging on the compiled code.
+.PARAMETER UseAddType
+Specify to try and use the Add-Type command instead of the C# compiler to build the client.
 .INPUTS
 None
 .OUTPUTS
@@ -576,7 +578,8 @@ function Get-RpcClient {
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [parameter(ParameterSetName = "FromServer")]
         [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = "GenerateConstructorProperties, StructureReturn, HideWrappedMethods, UnsignedChar, NoNamespace, MarshalPipesAsArrays",
-        [switch]$EnableDebugging
+        [switch]$EnableDebugging,
+        [switch]$UseAddType
     )
 
     BEGIN {
@@ -584,19 +587,38 @@ function Get-RpcClient {
             if ($null -ne $Provider) {
                 Write-Warning "PowerShell Core doesn't support arbitrary providers. Using in-built C#."
             }
-            $Provider = New-Object NtObjectManager.Utils.CoreCSharpCodeProvider
+            if ([NtObjectManager.Utils.CoreCSharpCodeProvider]::IsSupported) {
+                $Provider = New-Object NtObjectManager.Utils.CoreCSharpCodeProvider
+            } else {
+                $UseAddType = $true
+            }
+        }
+        if ($UseAddType) {
+            $Flags = $Flags -band (-bnot [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]::NoNamespace)
+            $flags = $Flags -bor [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]::ExcludeVariableSourceText
         }
     }
 
     PROCESS {
         if ($PSCmdlet.ParameterSetName -eq "FromServer") {
-            $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
-            $args.NamespaceName = $NamespaceName
-            $args.ClientName = $ClientName
-            $args.Flags = $Flags
-            $args.EnableDebugging = $EnableDebugging
+            if ($UseAddType) {
+                $src = Format-RpcClient -Server $Server -ClientName $ClientName -Flags $Flags
+                $ts = Add-Type -TypeDefinition $src -ReferencedAssemblies "NtApiDotNet.dll",'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089','System.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' -PassThru
+                foreach($t in $ts) {
+                    if ($t.BaseType -eq [NtApiDotNet.Win32.Rpc.RpcClientBase]) {
+                        New-Object $t.AssemblyQualifiedName
+                        break
+                    }
+                }
+            } else {
+                $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
+                $args.NamespaceName = $NamespaceName
+                $args.ClientName = $ClientName
+                $args.Flags = $Flags
+                $args.EnableDebugging = $EnableDebugging
 
-            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
+                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
+            }
         }
         else {
             [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)

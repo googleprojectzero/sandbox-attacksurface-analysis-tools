@@ -66,6 +66,25 @@ namespace NtObjectManager.Utils
         }
 
         /// <summary>
+        /// Get whether there's a supported compiler.
+        /// </summary>
+        public static bool IsSupported
+        {
+            get
+            {
+                try
+                {
+                    GetCompilerPath();
+                    return true;
+                }
+                catch (NotSupportedException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
         /// Compile an assembly from DOM.
         /// </summary>
         /// <param name="options">Compiler options.</param>
@@ -107,7 +126,7 @@ namespace NtObjectManager.Utils
             }
             catch(Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                Debug.WriteLine(ex.ToString());
                 results.Errors.Add(new CompilerError());
             }
             return results;
