@@ -490,7 +490,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken
 #>
-function New-KerberosAPRequest {
+function New-KerberosApRequest {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]

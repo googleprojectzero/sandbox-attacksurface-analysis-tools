@@ -375,7 +375,7 @@ function Get-MD4Hash {
 Formats ASN.1 DER data to a string.
 .DESCRIPTION
 This cmdlet formats ASN.1 DER data to a string either from a byte array or a file.
-.PARAMETER Bytes
+.PARAMETER Byte
 Specify a byte array containing the DER data.
 .PARAMETER Path
 Specify file containing the DER data.
@@ -386,10 +386,10 @@ None
 .OUTPUTS
 string
 .EXAMPLE
-Format-ASN1DER -Bytes $ba
+Format-ASN1DER -Byte $ba
 Format the byte array with ASN.1 DER data.
 .EXAMPLE
-Format-ASN1DER -Bytes $ba -Depth 2
+Format-ASN1DER -Byte $ba -Depth 2
 Format the byte array with ASN.1 DER data with indentation depth of 2.
 .EXAMPLE
 Format-ASN1DER -Path file.bin
@@ -401,7 +401,7 @@ function Format-ASN1DER {
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
         [string]$Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
-        [byte[]]$Bytes,
+        [byte[]]$Byte,
         [int]$Depth = 0
     )
     switch($PSCmdlet.ParameterSetName) {
@@ -409,9 +409,62 @@ function Format-ASN1DER {
             [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Path, $Depth)
         }
         "FromBytes" {
-            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Bytes, $Depth)
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Byte, $Depth)
         }
     }
+}
+
+<#
+.SYNOPSIS
+Parses ASN.1 DER data to objects.
+.DESCRIPTION
+This cmdlet parses ASN.1 DER data into an object model.
+.PARAMETER Byte
+Specify a byte array containing the DER data.
+.PARAMETER Path
+Specify file containing the DER data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.ASN1.Parser.ASN1Object
+.EXAMPLE
+Get-ASN1DER -Bytes $ba
+Parse the byte array into ASN.1 DER data objects.
+#>
+function Get-ASN1DER {
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromBytes")]
+        [byte[]]$Byte,
+        [int]$Depth = 0
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromPath" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::ParseDER($Path)
+        }
+        "FromBytes" {
+            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::ParseDER($Byte)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Creates a new ASN.1 DER builder.
+.DESCRIPTION
+This cmdlet creates a new ASN.1 DER builder object which can be used to create DER encoded data.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.ASN1.Builder.DERBuilder
+.EXAMPLE
+New-ASN1DER
+Creates a new ASN.1 DER builder.
+#>
+function New-ASN1DER {
+    [NtApiDotNet.Utilities.ASN1.Builder.DERBuilder]::new()
 }
 
 <#

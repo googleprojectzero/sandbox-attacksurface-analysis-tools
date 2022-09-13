@@ -138,13 +138,14 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-FwCallout', 'Add-RpcClientSecurityContext', 'Set-RpcClientSecurityContext', 
           'Get-RpcClientSecurityContext', 'Get-RpcSecurityPrincipalName', 'Get-FwProvider',
           'Update-Win32Environment', 'New-KerberosChecksum', 'New-KerberosPrincipalName',
-          'New-KerberosAuthenticator', 'New-KerberosAPRequest', 'New-KerberosTicket',
+          'New-KerberosAuthenticator', 'New-KerberosApRequest', 'New-KerberosTicket',
           'Add-KerberosTicket', 'Remove-KerberosTicket', 'New-KerberosTicketCache',
           'New-KerberosKey', 'Remove-Win32Credential', 'Set-Win32Credential', 'Protect-Win32Credential',
           'Unprotect-Win32Credential', 'Rename-KerberosTicket', 'New-KerberosError', 'Add-KerberosKdcPin',
           'Clear-KerberosKdcPin', 'Test-NtSid', 'New-KerberosTgsRequest', 'Send-KerberosKdcRequest',
           'New-KerberosAsRequest', 'New-KerberosKdcServer', 'New-KerberosKdcServerUser',
-          'New-KerberosAuthorizationData', 'Resolve-KerberosKdcAddress'
+          'New-KerberosAuthorizationData', 'Resolve-KerberosKdcAddress', 'Get-ASN1DER',
+          'New-ASN1DER'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
