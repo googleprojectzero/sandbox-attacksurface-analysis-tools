@@ -740,6 +740,60 @@ function New-KerberosTicketCache {
 
 <#
 .SYNOPSIS
+Import a Kerberos ticket cache from a file.
+.DESCRIPTION
+This cmdlet imports a Kerberos ticket cache from an MIT style ccache file.
+.PARAMETER Path
+Specify the path to import.
+.PARAMETER CreateClient
+Specify to create a KDC client.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+#>
+function Import-KerberosTicketCache {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Path,
+        [switch]$CreateClient
+    )
+
+    $Path = Resolve-Path $Path
+    if ($null -ne $Path) {
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromFile($Path, $CreateClient)
+    }
+}
+
+<#
+.SYNOPSIS
+Export a Kerberos ticket cache to a file.
+.DESCRIPTION
+This cmdlet exports a Kerberos ticket cache to an MIT style ccache file.
+.PARAMETER Cache
+Specify the cache to export.
+.PARAMETER Path
+Specify the path to export to.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+#>
+function Export-KerberosTicketCache {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [Parameter(Mandatory, Position = 1)]
+        [string]$Path
+    )
+
+    $cache.ToCredentialFile().Export($Path) | Set-Content -Path $Path -Encoding Byte
+}
+
+<#
+.SYNOPSIS
 Rename the kerberos ticket's server name.
 .DESCRIPTION
 This cmdlet renames the server name of a Kerberos ticket.

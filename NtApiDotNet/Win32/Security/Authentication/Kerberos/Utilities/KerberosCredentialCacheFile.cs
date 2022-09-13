@@ -59,6 +59,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
 
         #region Public Methods
         /// <summary>
+        /// Export the cache file to a byte array.
+        /// </summary>
+        /// <returns>The cache file as a byte array.</returns>
+        public byte[] Export()
+        {
+            MemoryStream stm = new MemoryStream();
+            Export(stm);
+            return stm.ToArray();
+        }
+
+        /// <summary>
         /// Export the cache file to a stream.
         /// </summary>
         /// <param name="stm">The stream to write to.</param>

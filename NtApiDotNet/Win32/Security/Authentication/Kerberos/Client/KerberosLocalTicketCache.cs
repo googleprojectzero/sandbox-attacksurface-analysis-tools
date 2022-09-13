@@ -17,6 +17,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.DirectoryServices.ActiveDirectory;
+using System.IO;
 using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
@@ -444,6 +445,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         }
 
         /// <summary>
+        /// Convert cache to a credential file.
+        /// </summary>
+        /// <returns>The credential file.</returns>
+        public KerberosCredentialCacheFile ToCredentialFile()
+        {
+            KerberosCredentialCacheFile file = new KerberosCredentialCacheFile();
+            if (_cache.Count == 0)
+                return file;
+
+            KerberosExternalTicket default_ticket = _tgt_ticket ?? _cache.Values.First();
+            KerberosCredentialCacheFilePrincipal default_principal =
+                new KerberosCredentialCacheFilePrincipal(default_ticket.ClientName, default_ticket.TargetDomainName);
+            file.DefaultPrincipal = default_principal;
+            file.Credentials.AddRange(_cache.Values.Select(t => new KerberosCredentialCacheFileCredential(t)));
+            return file;
+        }
+
+        /// <summary>
         /// Export the cache to an MIT style cache file.
         /// </summary>
         /// <param name="path">The path to the file to create.</param>
@@ -453,13 +472,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             if (_cache.Count == 0)
                 return;
 
-            KerberosExternalTicket default_ticket = _tgt_ticket ?? _cache.Values.First();
-            KerberosCredentialCacheFilePrincipal default_principal = 
-                new KerberosCredentialCacheFilePrincipal(default_ticket.ClientName, default_ticket.TargetDomainName);
-            KerberosCredentialCacheFile file = new KerberosCredentialCacheFile();
-            file.DefaultPrincipal = default_principal;
-            file.Credentials.AddRange(_cache.Values.Select(t => new KerberosCredentialCacheFileCredential(t)));
-            file.Export(path);
+            ToCredentialFile().Export(path);
         }
 
         #endregion
