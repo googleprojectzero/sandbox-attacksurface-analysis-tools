@@ -210,6 +210,9 @@ namespace NtApiDotNet
         /// <returns>The message description, or an empty string if not found.</returns>
         public static string GetNtStatusMessage(NtStatus status)
         {
+            if (!IsWindows)
+                return string.Empty;
+
             SafeLoadLibraryHandle module;
             uint message_id = (uint)status;
             NtStatusFacility facility = status.GetFacility();
