@@ -652,6 +652,8 @@ The authentication token to format.
 Always format as a hex dump.
 .PARAMETER AsDER
 Always format as a ASN.1 DER structure.
+.PARAMETER Key
+Specify keys to unprotect the token before formatting.
 .INPUTS
 None
 .OUTPUTS
@@ -665,12 +667,16 @@ function Format-LsaAuthToken {
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
         [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [switch]$AsBytes,
-        [switch]$AsDER
+        [switch]$AsDER,
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key = @()
     )
 
     PROCESS {
         if ($PSCmdlet.ParameterSetName -eq "FromContext") {
             $Token = $Context.Token
+        }
+        if ($Key.Count -gt 0) {
+            $Token = Unprotect-LsaAuthToken -Token $Token -Key $Key
         }
         if ($AsBytes) {
             $ba = $Token.ToArray()

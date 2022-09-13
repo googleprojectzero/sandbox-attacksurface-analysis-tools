@@ -119,9 +119,9 @@ function Get-KerberosKey {
         [int]$Interations = 4096,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosNameType]$NameType = "PRINCIPAL",
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromPassword")]
-        [Parameter(Position = 2, Mandatory, ParameterSetName="FromKey")]
-        [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
-        [Parameter(Mandatory, ParameterSetName="FromHexKey")]
+        [Parameter(Position = 2, ParameterSetName="FromKey")]
+        [Parameter(ParameterSetName="FromBase64Key")]
+        [Parameter(ParameterSetName="FromHexKey")]
         [string]$Principal,
         [Parameter(ParameterSetName="FromPassword")]
         [string]$Salt,
