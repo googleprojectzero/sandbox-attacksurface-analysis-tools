@@ -62,7 +62,7 @@ The path to the file to import.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
 #>
 function Import-KerberosKeyTab {
     [CmdletBinding()]
@@ -73,6 +73,55 @@ function Import-KerberosKeyTab {
 
     $Path = Resolve-Path -Path $Path -ErrorAction Stop
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::ReadKeyTabFile($Path) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Create a new Kerberos keytab file from a user's credentials.
+.DESCRIPTION
+This cmdlet creates a new Kerberos keytab file from a user's credentials.
+.PARAMETER Credential
+Credentials for the authentication.
+.PARAMETER ReadCredential
+Specify to read the credentials from the console if not specified explicitly.
+.PARAMETER UserName
+The username to use.
+.PARAMETER Domain
+The domain to use.
+.PARAMETER Password
+The password to use.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
+#>
+function New-KerberosKeyTab {
+    [CmdletBinding(DefaultParameterSetName="FromCreds")]
+    Param(
+        [Parameter(Mandatory, ParameterSetName="FromCreds")]
+        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
+        [Parameter(ParameterSetName="FromParts")]
+        [switch]$ReadCredential,
+        [Parameter(ParameterSetName="FromParts")]
+        [string]$UserName,
+        [Parameter(ParameterSetName="FromParts")]
+        [string]$Domain,
+        [Parameter(ParameterSetName="FromParts")]
+        [alias("SecurePassword")]
+        [NtObjectManager.Utils.PasswordHolder]$Password
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromParts") {
+        if ($ReadCredential) {
+            $Credential = Read-LsaCredential -UserName $UserName -Domain $Domain `
+                    -Password $Password
+        } else {
+            $Credential = Get-LsaCredential -UserName $UserName -Domain $Domain `
+                    -Password $Password
+        }
+    }
+
+    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeySet]::GetKeyTab($Credential) | Write-Output
 }
 
 <#
