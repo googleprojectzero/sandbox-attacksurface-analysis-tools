@@ -62,7 +62,8 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
             string protseq = RpcProtocolSequence.IdToString(id);
             if (protseq == null)
                 return null;
-            return new RpcStringBinding(protseq, endpoint: GetEndpoint(id, Floors[3].RelatedOrAddressData));
+
+            return new RpcStringBinding(protseq, endpoint: GetEndpoint(id, Floors[3].RelatedOrAddressData), network_addr: GetNetworkAddress());
         }
 
         /// <summary>
@@ -206,6 +207,23 @@ namespace NtApiDotNet.Win32.Rpc.EndpointMapper
                     return BitConverter.ToUInt16(endpoint, 0).SwapEndian().ToString();
                 default:
                     return BinaryEncoding.Instance.GetString(endpoint).TrimEnd('\0');
+            }
+        }
+
+        private string GetNetworkAddress()
+        {
+            if (Floors.Count < 5 || Floors[4].ProtocolIdentifierData.Length < 1)
+                return string.Empty;
+            RpcProtocolIdentifier id = (RpcProtocolIdentifier)Floors[4].ProtocolIdentifierData[0];
+            byte[] address = Floors[4].RelatedOrAddressData;
+            switch (id)
+            {
+                case RpcProtocolIdentifier.Ip:
+                    if (address.Length != 4 && address.Length != 16)
+                        return string.Empty;
+                    return new IPAddress(address).ToString();
+                default:
+                    return BinaryEncoding.Instance.GetString(address).TrimEnd('\0');
             }
         }
 
