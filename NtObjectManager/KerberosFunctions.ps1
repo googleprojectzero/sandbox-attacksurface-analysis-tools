@@ -1386,3 +1386,104 @@ function Resolve-KerberosKdcAddress {
 
     [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::QueryKdcForRealm($Realm, $DnsServerAddress) | Write-Output
 }
+
+<#
+.SYNOPSIS
+Export a Kerberos ticket/credential.
+.DESCRIPTION
+This cmdlet exports a kerberos ticket/credential to a file or bytes.
+.PARAMETER Credential
+Specify the Kerberos credential.
+.PARAMETER Path
+Specify the path.
+.PARAMETER Base64
+Specify to export as base64.
+.PARAMETER InsertLineBreaks
+Specify to insert line breaks in the base64.
+.PARAMETER Key
+Specify a key to encrypt the credential.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Export-KerberosTicket {
+    [CmdletBinding(DefaultParameterSetName="ToFile")]
+    Param(
+        [Parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [Parameter(Mandatory, Position = 1, ParameterSetName="ToFile")]
+        [string]$Path,
+        [Parameter(Mandatory, ParameterSetName="ToBase64")]
+        [switch]$Base64,
+        [Parameter(ParameterSetName="ToBase64")]
+        [switch]$InsertLineBreaks,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+    )
+
+    if ($null -ne $Key) {
+        $Credential = $Credential.Encrypt($Key)
+    }
+    $ba = $Credential.ToArray()
+
+    if ($PSCmdlet.ParameterSetName -eq "ToFile") {
+        $ba | Set-Content -Path $Path -Encoding Byte
+    } else {
+        $flags = if ($InsertLineBreaks) {
+            [System.Base64FormattingOptions]::InsertLineBreaks
+        } else {
+            [System.Base64FormattingOptions]::None
+        }
+        [Convert]::ToBase64String($ba, $flags)
+    }
+}
+
+<#
+.SYNOPSIS
+Import a Kerberos ticket/credential.
+.DESCRIPTION
+This cmdlet imports a kerberos ticket/credential from a file or bytes.
+.PARAMETER Credential
+Specify the Kerberos credential.
+.PARAMETER Path
+Specify the path.
+.PARAMETER Base64
+Specify to export as base64.
+.PARAMETER Key
+Specify a key to decrypt the credential.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential
+#>
+function Import-KerberosTicket {
+    [CmdletBinding(DefaultParameterSetName="FromFile")]
+    Param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromFile")]
+        [string]$Path,
+        [Parameter(Mandatory, ParameterSetName="FromBase64")]
+        [string]$Base64,
+        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+    )
+
+    $ba = if ($PSCmdlet.ParameterSetName -eq "FromFile") {
+        Get-Content -Path $Path -Encoding Byte
+    } else {
+        [Convert]::FromBase64String($Base64)
+    }
+
+    if ($null -eq $ba) {
+        return
+    }
+
+    $cred = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]::Parse($ba)
+    if ($null -eq $cred) {
+        return
+    }
+    
+    if ($Key -ne $null) {
+        $cred.Decrypt($Key)
+    } else {
+        $cred
+    }
+}
