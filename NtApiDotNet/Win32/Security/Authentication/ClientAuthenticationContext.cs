@@ -25,7 +25,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a client authentication context.
     /// </summary>
-    public sealed class ClientAuthenticationContext : IDisposable, IAuthenticationContext, IClientAuthenticationContext
+    public sealed class ClientAuthenticationContext : IDisposable, IClientAuthenticationContext
     {
         #region Private Members
         private readonly CredentialHandle _creds;
@@ -177,7 +177,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Get the name of the authentication package.
         /// </summary>
-        public string PackageName => SecurityContextUtils.GetPackageName(Context) ?? _creds.PackageName;
+        public string PackageName => SecurityContextUtils.GetPackageName(_context) ?? _creds.PackageName;
 
         /// <summary>
         /// Get connection information for the schannel connection.

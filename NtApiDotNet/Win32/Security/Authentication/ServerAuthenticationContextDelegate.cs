@@ -24,6 +24,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
             : base(context)
         {
         }
+
+        public virtual AcceptContextReqFlags RequestAttributes { get => _context.RequestAttributes; set => _context.RequestAttributes = value; }
+
+        public virtual AcceptContextRetFlags ReturnAttributes => _context.ReturnAttributes;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

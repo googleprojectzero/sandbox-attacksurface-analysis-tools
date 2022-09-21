@@ -19,5 +19,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// </summary>
     public interface IServerAuthenticationContext : IAuthenticationContext
     {
+        /// <summary>
+        /// Current request attributes.
+        /// </summary>
+        AcceptContextReqFlags RequestAttributes { get; set; }
+
+        /// <summary>
+        /// Current return attributes.
+        /// </summary>
+        AcceptContextRetFlags ReturnAttributes { get; }
     }
 }

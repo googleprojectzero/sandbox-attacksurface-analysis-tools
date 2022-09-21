@@ -38,6 +38,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="port">The port of the KDC.</param>
         public KerberosKDCClientTransportTCP(string hostname, int port)
         {
+            // Trim any UNC prefix.
+            hostname = hostname?.TrimStart('\\');
+
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                throw new System.ArgumentException($"'{nameof(hostname)}' cannot be null or whitespace.", nameof(hostname));
+            }
+
             _hostname = hostname;
             _port = port;
         }

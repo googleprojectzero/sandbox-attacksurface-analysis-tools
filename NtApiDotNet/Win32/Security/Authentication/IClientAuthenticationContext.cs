@@ -25,5 +25,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the last token status for the client context.
         /// </summary>
         SecPkgLastClientTokenStatus LastTokenStatus { get; }
+
+        /// <summary>
+        /// Current request attribute flags.
+        /// </summary>
+        InitializeContextReqFlags RequestAttributes { get; set; }
+
+        /// <summary>
+        /// Current return attribute flags.
+        /// </summary>
+        InitializeContextRetFlags ReturnAttributes { get; }
     }
 }

@@ -35,6 +35,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         private readonly KerberosExternalTicket _ticket;
         private readonly KerberosChecksumGSSApiFlags _gssapi_flags;
         private readonly KerberosAuthenticationKey _subkey;
+        private readonly InitializeContextReqFlags _request_attributes;
         private KerberosAuthenticationKey _acceptor_subkey;
         private long _send_sequence_number;
         private long _recv_sequence_number;
@@ -43,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             KerberosChecksumGSSApiFlags ret = KerberosChecksumGSSApiFlags.None;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.Confidentiality))
-                ret |= KerberosChecksumGSSApiFlags.Confidentiality | KerberosChecksumGSSApiFlags.Integrity 
+                ret |= KerberosChecksumGSSApiFlags.Confidentiality | KerberosChecksumGSSApiFlags.Integrity
                     | KerberosChecksumGSSApiFlags.Replay | KerberosChecksumGSSApiFlags.Sequence;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.ExtendedError))
                 ret |= KerberosChecksumGSSApiFlags.ExtendedError;
@@ -57,6 +58,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 ret |= KerberosChecksumGSSApiFlags.Integrity;
             if (request_attributes.HasFlagSet(InitializeContextReqFlags.Delegate))
                 ret |= KerberosChecksumGSSApiFlags.Delegate;
+
+            return ret;
+        }
+
+        private static InitializeContextRetFlags ConvertRequestToReturn(InitializeContextReqFlags request_attributes)
+        {
+            InitializeContextRetFlags ret = InitializeContextRetFlags.None;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.Confidentiality))
+                ret |= InitializeContextRetFlags.Confidentiality | InitializeContextRetFlags.Integrity
+                    | InitializeContextRetFlags.ReplayDetect | InitializeContextRetFlags.SequenceDetect;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.MutualAuth))
+                ret |= InitializeContextRetFlags.MutualAuth;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.ReplayDetect))
+                ret |= InitializeContextRetFlags.Integrity | InitializeContextRetFlags.ReplayDetect;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.SequenceDetect))
+                ret |= InitializeContextRetFlags.Integrity | InitializeContextRetFlags.SequenceDetect;
+            if (request_attributes.HasFlagSet(InitializeContextReqFlags.Delegate))
+                ret |= InitializeContextRetFlags.Delegate;
 
             return ret;
         }
@@ -392,7 +411,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 return new byte[] {
                     0x02, 0x01, // TOK_ID
                     0x11, 0x00,
-                    0x10, 0x00, 
+                    0x10, 0x00,
                     0xFF, 0xFF
                 };
             }
@@ -401,7 +420,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 return new byte[] {
                     0x01, 0x01, // TOK_ID
                     0x11, 0x00,
-                    0xFF, 0xFF, 
+                    0xFF, 0xFF,
                     0xFF, 0xFF
                 };
             }
@@ -514,7 +533,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             if (oid != OIDValues.KERBEROS)
             {
-               return false;
+                return false;
             }
 
             if (BitConverter.ToUInt64(signature, 0) != 0xFFFFFFFF00110101U)
@@ -569,7 +588,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="ticket">The kerberos ticket for the target.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
         /// <param name="config">Additional configuration for the context..</param>
-        public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes, 
+        public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes,
             KerberosClientAuthenticationContextConfig config = null)
         {
             if (ticket is null)
@@ -580,6 +599,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             _ticket = ticket;
             _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
             _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
+            _request_attributes = request_attributes;
+            ReturnAttributes = ConvertRequestToReturn(request_attributes);
             KerberosCredential delegate_cred = null;
             if (_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
             {
@@ -668,6 +689,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public int MaxSignatureSize { get; }
 
         public int SecurityTrailerSize { get; }
+
+        public InitializeContextReqFlags RequestAttributes { get => _request_attributes; set => throw new NotImplementedException(); }
+
+        public InitializeContextRetFlags ReturnAttributes { get; private set; }
 
         public void Continue(AuthenticationToken token)
         {

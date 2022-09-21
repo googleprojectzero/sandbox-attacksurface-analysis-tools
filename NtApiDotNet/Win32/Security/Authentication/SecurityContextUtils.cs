@@ -61,14 +61,18 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static string GetPackageName(SecHandle context)
         {
-            try
+            if (context != null)
             {
-                return GetAuthenticationPackage(context).Name;
+                try
+                {
+                    return GetAuthenticationPackage(context).Name;
+                }
+                catch (NtException)
+                {
+                }
             }
-            catch (NtException)
-            {
-                return null;
-            }
+
+            return null;
         }
 
         internal static List<SecBuffer> ToBufferList(this IEnumerable<SecurityBuffer> buffers, DisposableList list)
