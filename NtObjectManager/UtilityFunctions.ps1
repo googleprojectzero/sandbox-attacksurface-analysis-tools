@@ -622,3 +622,30 @@ function Update-Win32Environment {
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($str)
     }
 }
+
+function Read-BinaryFile {
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Path
+    )
+    $ba = if (Get-IsPSCore) {
+        Get-Content -Path $Path -AsByteStream
+    } else {
+        Get-Content -Path $Path -Encoding Byte
+    }
+    [byte[]]$ba
+}
+
+function Write-BinaryFile {
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Path,
+        [Parameter(Mandatory, Position = 1)]
+        [byte[]]$Byte
+    )
+    if (Get-IsPSCore) {
+        $Byte | Set-Content -Path $Path -AsByteStream
+    } else {
+        $Byte | Set-Content -Path $Path -Encoding Byte
+    }
+}

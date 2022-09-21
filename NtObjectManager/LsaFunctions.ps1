@@ -725,7 +725,8 @@ function Export-LsaAuthToken {
         $Token = $Context.Token
     }
 
-    $Token.ToArray() | Set-Content -Path $Path -Encoding Byte
+    $ba = $token.ToArray()
+    Write-BinaryFile -Path $Path -Byte $ba
 }
 
 <#
@@ -759,7 +760,7 @@ function Import-LsaAuthToken {
         [switch]$Client
     )
 
-    $ba = [byte[]](Get-Content -Path $Path -Encoding Byte)
+    $ba = Read-BinaryFile -Path $Path
     switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
             [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)

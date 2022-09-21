@@ -47,8 +47,8 @@ function Export-KerberosKeyTab {
 
     END {
         $key_arr = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$keys
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr) `
-                | Set-Content -Path $Path -Encoding Byte
+        $keytab = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr)
+        Write-BinaryFile -Path $Path -Byte $keytab
     }
 }
 
@@ -789,7 +789,8 @@ function Export-KerberosTicketCache {
         [string]$Path
     )
 
-    $cache.ToCredentialFile().Export($Path) | Set-Content -Path $Path -Encoding Byte
+    $cache_bytes = $cache.ToCredentialFile().Export($Path)
+    Write-BinaryFile -Path $Path -Byte $cache_bytes
 }
 
 <#
@@ -1426,7 +1427,7 @@ function Export-KerberosTicket {
     $ba = $Credential.ToArray()
 
     if ($PSCmdlet.ParameterSetName -eq "ToFile") {
-        $ba | Set-Content -Path $Path -Encoding Byte
+        Write-BinaryFile -Path $Path -Byte $ba
     } else {
         $flags = if ($InsertLineBreaks) {
             [System.Base64FormattingOptions]::InsertLineBreaks
@@ -1466,7 +1467,7 @@ function Import-KerberosTicket {
     )
 
     $ba = if ($PSCmdlet.ParameterSetName -eq "FromFile") {
-        Get-Content -Path $Path -Encoding Byte
+        Read-BinaryFile -Path $Path
     } else {
         [Convert]::FromBase64String($Base64)
     }
