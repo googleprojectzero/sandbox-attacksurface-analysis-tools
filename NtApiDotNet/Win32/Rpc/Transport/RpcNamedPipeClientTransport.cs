@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Net.Smb2;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
@@ -23,35 +24,151 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public sealed class RpcNamedPipeClientTransport : RpcConnectedClientTransport
     {
         #region Private Members
-        private readonly NtNamedPipeFileClient _pipe;
-        private const ushort MaxXmitFrag = 4280;
-        private const ushort MaxRecvFrag = 4280;
-
-        private static NtNamedPipeFileClient ConnectPipe(string path, SecurityQualityOfService security_quality_of_service)
+        private interface INamedPipeWrapper : IDisposable
         {
-            using (var obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, (NtObject)null, security_quality_of_service, null))
-            {
-                using (var file = NtFile.Open(obj_attr, FileAccessRights.Synchronize | FileAccessRights.GenericRead | FileAccessRights.GenericWrite, 
-                    FileShareMode.None, FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert))
-                {
-                    if (!(file is NtNamedPipeFileClient pipe))
-                    {
-                        throw new ArgumentException("Path was not a named pipe endpoint.");
-                    }
+            bool Connected { get; }
+            byte[] Read(int length);
+            int Write(byte[] data);
+            int ServerProcessId { get; }
+            int ServerSessionId { get; }
+            string FullPath { get; }
+        }
 
-                    pipe.ReadMode = NamedPipeReadMode.Message;
-                    return (NtNamedPipeFileClient)pipe.Duplicate();
+        private class NativeNamedPipeWrapper : INamedPipeWrapper
+        {
+            private readonly NtNamedPipeFileClient _pipe;
+
+            public NativeNamedPipeWrapper(string path, SecurityQualityOfService security_quality_of_service)
+            {
+                using (var obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, (NtObject)null, security_quality_of_service, null))
+                {
+                    using (var file = NtFile.Open(obj_attr, FileAccessRights.Synchronize | FileAccessRights.GenericRead | FileAccessRights.GenericWrite,
+                        FileShareMode.None, FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert))
+                    {
+                        if (!(file is NtNamedPipeFileClient pipe))
+                        {
+                            throw new ArgumentException("Path was not a named pipe endpoint.");
+                        }
+
+                        pipe.ReadMode = NamedPipeReadMode.Message;
+                        _pipe = (NtNamedPipeFileClient)pipe.Duplicate();
+                    }
                 }
             }
+
+            bool INamedPipeWrapper.Connected => !_pipe.Handle.IsInvalid;
+
+            int INamedPipeWrapper.ServerProcessId => _pipe.ServerProcessId;
+
+            int INamedPipeWrapper.ServerSessionId => _pipe.ServerSessionId;
+
+            string INamedPipeWrapper.FullPath => _pipe.FullPath;
+
+            void IDisposable.Dispose()
+            {
+                _pipe.Dispose();
+            }
+
+            byte[] INamedPipeWrapper.Read(int length)
+            {
+                return _pipe.Read(length);
+            }
+
+            int INamedPipeWrapper.Write(byte[] data)
+            {
+                return _pipe.Write(data);
+            }
         }
+
+        private class ManagedNamedPipeWrapper : INamedPipeWrapper
+        {
+            private readonly Smb2NamedPipeFile _pipe;
+
+            public ManagedNamedPipeWrapper(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+            {
+                string hostname = endpoint.NetworkAddress;
+                if (!string.IsNullOrEmpty(hostname))
+                    hostname = "localhost";
+
+                string name = endpoint.Endpoint;
+                if (name.StartsWith(@"\pipe\", StringComparison.OrdinalIgnoreCase))
+                    name = name.Substring(6);
+
+                _pipe = Smb2NamedPipeFile.Open(hostname, name, FileAccessRights.Synchronize | FileAccessRights.GenericRead | FileAccessRights.GenericWrite,
+                    impersonation_level: security_quality_of_service?.ImpersonationLevel ?? SecurityImpersonationLevel.Impersonation);
+            }
+
+
+            bool INamedPipeWrapper.Connected => !_pipe.Connected;
+
+            int INamedPipeWrapper.ServerProcessId => 0;
+
+            int INamedPipeWrapper.ServerSessionId => 0;
+
+            string INamedPipeWrapper.FullPath => _pipe.FullPath;
+
+            void IDisposable.Dispose()
+            {
+                ((IDisposable)_pipe).Dispose();
+            }
+
+            byte[] INamedPipeWrapper.Read(int length)
+            {
+                return _pipe.Read(length);
+            }
+
+            int INamedPipeWrapper.Write(byte[] data)
+            {
+                return _pipe.Write(data);
+            }
+        }
+
+        private readonly INamedPipeWrapper _pipe;
+        private const ushort MaxXmitFrag = 4280;
+        private const ushort MaxRecvFrag = 4280;
         #endregion
 
         #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="endpoint">The RPC endpoint.</param>
+        /// <param name="transport_security">The transport security for the connection.</param>
+        public RpcNamedPipeClientTransport(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
+            : base(MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
+        {
+            if (endpoint is null)
+            {
+                throw new ArgumentNullException(nameof(endpoint));
+            }
+
+            if (!endpoint.ProtocolSequence.Equals(RpcProtocolSequence.NamedPipe, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("RPC endpoint should have the named pipe protocol sequence.", nameof(endpoint));
+            }
+
+            if (string.IsNullOrEmpty(endpoint.Endpoint))
+            {
+                throw new ArgumentException("RPC endpoint must specify a endpoint to connect to.", nameof(endpoint));
+            }
+
+            if (NtObjectUtils.IsWindows)
+            {
+                _pipe = new NativeNamedPipeWrapper(endpoint.EndpointPath, transport_security.SecurityQualityOfService);
+            }
+            else
+            {
+                _pipe = new ManagedNamedPipeWrapper(endpoint, transport_security.SecurityQualityOfService);
+            }
+            Endpoint = _pipe.FullPath;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         /// <param name="path">The NT pipe path to connect. e.g. \??\pipe\ABC.</param>
         /// <param name="transport_security">The transport security for the connection.</param>
+        [Obsolete("Use constructor with RpcEndpoint parameter.")]
         public RpcNamedPipeClientTransport(string path, RpcTransportSecurity transport_security) 
             : base(MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
         {
@@ -60,7 +177,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 throw new ArgumentException("Must specify a path to connect to", nameof(path));
             }
 
-            _pipe = ConnectPipe(path, transport_security.SecurityQualityOfService);
+            _pipe = new NativeNamedPipeWrapper(path, transport_security.SecurityQualityOfService);
             Endpoint = path;
         }
         #endregion
@@ -110,7 +227,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Get whether the client is connected or not.
         /// </summary>
-        public override bool Connected => _pipe != null && !_pipe.Handle.IsInvalid;
+        public override bool Connected => _pipe?.Connected ?? false;
 
         /// <summary>
         /// Get the named pipe port path that we connected to.

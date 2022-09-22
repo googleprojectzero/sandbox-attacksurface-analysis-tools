@@ -120,7 +120,6 @@ namespace NtApiDotNet.Win32.Rpc
         #endregion
 
         #region Public Properties
-
         /// <summary>
         /// Get whether the client is connected or not.
         /// </summary>
@@ -159,7 +158,6 @@ namespace NtApiDotNet.Win32.Rpc
         #endregion
 
         #region Public Methods
-
         /// <summary>
         /// Connect the client to a RPC endpoint.
         /// </summary>

@@ -43,9 +43,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             if (NtObjectUtils.IsWindows)
             {
                 ret.Add(RpcProtocolSequence.LRPC, new AlpcRpcClientTransportFactory());
-                ret.Add(RpcProtocolSequence.NamedPipe, new NamedPipeRpcClientTransportFactory());
                 ret.Add(RpcProtocolSequence.Container, new HyperVRpcClientTransportFactory());
             }
+            ret.Add(RpcProtocolSequence.NamedPipe, new NamedPipeRpcClientTransportFactory());
             ret.Add(RpcProtocolSequence.Tcp, new TcpRpcClientTransportFactory());
             return ret;
         }
@@ -64,7 +64,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
             {
-                return new RpcNamedPipeClientTransport(endpoint.EndpointPath, transport_security);
+                return new RpcNamedPipeClientTransport(endpoint, transport_security);
             }
         }
 
