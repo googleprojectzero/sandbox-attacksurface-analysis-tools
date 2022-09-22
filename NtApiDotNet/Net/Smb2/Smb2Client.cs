@@ -257,7 +257,7 @@ namespace NtApiDotNet.Net.Smb2
         /// </summary>
         /// <param name="credentials">The user's credentials. If null then will use the callers' default credentials.</param>
         /// <returns>The authenticated session.</returns>
-        public Smb2Session CreateSession(UserCredentials credentials = null)
+        public Smb2Session CreateSession(AuthenticationCredentials credentials = null)
         {
             using (var creds = CredentialHandle.Create(AuthenticationPackage.NEGOSSP_NAME, SecPkgCredFlags.Outbound, credentials))
             {

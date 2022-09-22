@@ -84,22 +84,27 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             private readonly Smb2NamedPipeFile _pipe;
 
-            public ManagedNamedPipeWrapper(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
+            public ManagedNamedPipeWrapper(RpcEndpoint endpoint, 
+                SecurityQualityOfService security_quality_of_service, 
+                RpcNamedPipeClientTransportConfiguration config)
             {
                 string hostname = endpoint.NetworkAddress;
-                if (!string.IsNullOrEmpty(hostname))
+                if (string.IsNullOrEmpty(hostname))
                     hostname = "localhost";
 
                 string name = endpoint.Endpoint;
                 if (name.StartsWith(@"\pipe\", StringComparison.OrdinalIgnoreCase))
                     name = name.Substring(6);
 
-                _pipe = Smb2NamedPipeFile.Open(hostname, name, FileAccessRights.Synchronize | FileAccessRights.GenericRead | FileAccessRights.GenericWrite,
-                    impersonation_level: security_quality_of_service?.ImpersonationLevel ?? SecurityImpersonationLevel.Impersonation);
+                using (var context = config.CreateAuthenticationContext(hostname))
+                {
+                    _pipe = Smb2NamedPipeFile.Open(hostname, name, context,
+                        FileAccessRights.Synchronize | FileAccessRights.GenericRead | FileAccessRights.GenericWrite,
+                        impersonation_level: security_quality_of_service?.ImpersonationLevel ?? SecurityImpersonationLevel.Impersonation);
+                }
             }
 
-
-            bool INamedPipeWrapper.Connected => !_pipe.Connected;
+            bool INamedPipeWrapper.Connected => _pipe.Connected;
 
             int INamedPipeWrapper.ServerProcessId => 0;
 
@@ -152,13 +157,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 throw new ArgumentException("RPC endpoint must specify a endpoint to connect to.", nameof(endpoint));
             }
 
-            if (NtObjectUtils.IsWindows)
+            var config = transport_security.Configuration as RpcNamedPipeClientTransportConfiguration;
+            if (NtObjectUtils.IsWindows && config == null)
             {
                 _pipe = new NativeNamedPipeWrapper(endpoint.EndpointPath, transport_security.SecurityQualityOfService);
             }
             else
             {
-                _pipe = new ManagedNamedPipeWrapper(endpoint, transport_security.SecurityQualityOfService);
+                _pipe = new ManagedNamedPipeWrapper(endpoint, 
+                    transport_security.SecurityQualityOfService, 
+                    config ?? new RpcNamedPipeClientTransportConfiguration());
             }
             Endpoint = _pipe.FullPath;
         }

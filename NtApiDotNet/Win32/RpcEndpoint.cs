@@ -190,6 +190,15 @@ namespace NtApiDotNet.Win32
         {
             return _server_process_info.Value;
         }
+
+        /// <summary>
+        /// Create a configuration object for this endpoint based on its protocol sequence.
+        /// </summary>
+        /// <returns>The transport configuration. Returns a default object if no specific configuration supported.</returns>
+        public RpcClientTransportConfiguration CreateConfiguration()
+        {
+            return RpcClientTransportConfiguration.Create(ProtocolSequence);
+        }
         #endregion
     }
 }

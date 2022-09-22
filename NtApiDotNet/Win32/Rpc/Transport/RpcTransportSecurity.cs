@@ -128,6 +128,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// Specify a kerberos ticket cache.
         /// </summary>
         public KerberosLocalTicketCache TicketCache { get; set; }
+
+        /// <summary>
+        /// Specify optional transport configuration.
+        /// </summary>
+        /// <remarks>Not all transports support this. You also need to set the correct type for the RPC protocol sequence.</remarks>
+        public RpcClientTransportConfiguration Configuration { get; set;}
         #endregion
 
         #region Constructors

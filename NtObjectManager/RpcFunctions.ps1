@@ -659,6 +659,8 @@ Specify to search for an ALPC port for the RPC client.
 Specify to for the client to connect even if the client is already connected to another transport.
 .PARAMETER Cache
 Specify a local kerberos ticket cache for use with Kerberos authentication.
+.PARAMETER Configuration
+Specify low-level transport configuration.
 .INPUTS
 NtApiDotNet.Win32.Rpc.RpcClientBase[]
 .OUTPUTS
@@ -706,6 +708,7 @@ function Connect-RpcClient {
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
         [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [NtApiDotNet.Win32.Rpc.Transport.RpcClientTransportConfiguration]$Configuration,
         [switch]$PassThru,
         [switch]$Force
     )
@@ -719,6 +722,7 @@ function Connect-RpcClient {
         $security.AuthenticationType = $AuthenticationType
         $security.AuthenticationCapabilities = $AuthenticationCapabilities
         $security.TicketCache = $Cache
+        $security.Configuration = $Configuration
     }
 
     PROCESS {

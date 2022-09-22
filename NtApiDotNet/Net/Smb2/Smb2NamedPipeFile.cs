@@ -35,6 +35,37 @@ namespace NtApiDotNet.Net.Smb2
             _pipe_information = new Lazy<FilePipeInformation>(GetPipeInformation);
         }
 
+        private static Smb2NamedPipeFile Create(string hostname, string name,
+            FileAccessRights desired_access,
+            Func<Smb2Client, Smb2Session> create_session,
+            SecurityImpersonationLevel impersonation_level)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                throw new ArgumentException($"'{nameof(hostname)}' cannot be null or whitespace.", nameof(hostname));
+            }
+
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            Smb2NamedPipeFile ret = new Smb2NamedPipeFile();
+            try
+            {
+                ret._client = new Smb2Client(hostname);
+                ret._session = create_session(ret._client);
+                ret._share = ret._session.ConnectIpcShare();
+                ret._file = ret._share.Open(name, desired_access, impersonation_level: impersonation_level);
+                return ret;
+            }
+            catch
+            {
+                ret.Close();
+                throw;
+            }
+        }
+
         private FilePipeInformation GetPipeInformation()
         {
             MemoryStream stm = new MemoryStream(_file.QueryInformation(FileInformationClass.FilePipeInformation, 8));
@@ -119,7 +150,7 @@ namespace NtApiDotNet.Net.Smb2
             _share = null;
             _session?.Logoff();
             _session = null;
-            _client.Close();
+            _client?.Close();
             _client = null;
         }
         #endregion
@@ -136,33 +167,26 @@ namespace NtApiDotNet.Net.Smb2
         /// <returns>The opened named pipe file.</returns>
         public static Smb2NamedPipeFile Open(string hostname, string name, 
             FileAccessRights desired_access = FileAccessRights.MaximumAllowed, 
-            UserCredentials credentials = null, 
+            AuthenticationCredentials credentials = null, 
             SecurityImpersonationLevel impersonation_level = SecurityImpersonationLevel.Impersonation)
         {
-            if (string.IsNullOrWhiteSpace(hostname))
-            {
-                throw new ArgumentException($"'{nameof(hostname)}' cannot be null or whitespace.", nameof(hostname));
-            }
+            return Create(hostname, name, desired_access, c => c.CreateSession(credentials), impersonation_level);
+        }
 
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            Smb2NamedPipeFile ret = new Smb2NamedPipeFile();
-            try
-            {
-                ret._client = new Smb2Client(hostname);
-                ret._session = ret._client.CreateSession(credentials);
-                ret._share = ret._session.ConnectIpcShare();
-                ret._file = ret._share.Open(name, desired_access, impersonation_level: impersonation_level);
-                return ret;
-            }
-            catch
-            {
-                ret.Close();
-                throw;
-            }
+        /// <summary>
+        /// Open a named pipe on a SMB2 server using an authentication context.
+        /// </summary>
+        /// <param name="hostname">The hostname of the SMB2 server.</param>
+        /// <param name="name">The name of the pipe to open.</param>
+        /// <param name="desired_access">The desired access for the open.</param>
+        /// <param name="context">Authentication context for the open.</param>
+        /// <param name="impersonation_level">Specify impersonation level for named pipe.</param>
+        /// <returns>The opened named pipe file.</returns>
+        public static Smb2NamedPipeFile Open(string hostname, string name,
+            IClientAuthenticationContext context, FileAccessRights desired_access = FileAccessRights.MaximumAllowed,
+            SecurityImpersonationLevel impersonation_level = SecurityImpersonationLevel.Impersonation)
+        {
+            return Create(hostname, name, desired_access, c => c.CreateSession(context), impersonation_level);
         }
         #endregion
 
