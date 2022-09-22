@@ -17,7 +17,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.DirectoryServices.ActiveDirectory;
-using System.IO;
 using System.Linq;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client

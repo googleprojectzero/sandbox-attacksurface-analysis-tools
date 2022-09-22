@@ -36,6 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     public sealed class KerberosKDCClient
     {
         #region Private Members
+        private static Lazy<string> _default_kdc_name = new Lazy<string>(GetDefaultKDCHostNameNative);
         private readonly IKerberosKDCClientTransport _transport;
         private readonly IKerberosKDCClientTransport _password_transport;
 
@@ -212,6 +213,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return addrs.FirstOrDefault();
         }
 
+        private static string GetDefaultKDCHostNameNative()
+        {
+            try
+            {
+                return Domain.GetCurrentDomain().FindDomainController().Name;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -229,6 +242,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         #region Public Static Members
         /// <summary>
+        /// Specified a default KDC hostname.
+        /// </summary>
+        public static string DefaultKDCHostName {
+            get => _default_kdc_name.Value;
+            set
+            {
+                _default_kdc_name = new Lazy<string>(() => value);
+            }
+        }
+
+        /// <summary>
         /// Create a TCP KDC client.
         /// </summary>
         /// <param name="hostname">The hostname of the KDC server.</param>
@@ -237,6 +261,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <returns>The created client.</returns>
         public static KerberosKDCClient CreateTCPClient(string hostname, int port = 88, int password_port = 464)
         {
+            hostname = string.IsNullOrWhiteSpace(hostname) ? DefaultKDCHostName : hostname;
             return new KerberosKDCClient(new KerberosKDCClientTransportTCP(hostname, port), 
                 new KerberosKDCClientTransportTCP(hostname, password_port));
         }
@@ -247,10 +272,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="port">The port number of the KDC server.</param>
         /// <param name="password_port">The port number of the KDC password server.</param>
         /// <returns>The created client.</returns>
+        /// <remarks>Also uses the DefaultKDCHostName value if no value specified.</remarks>
         public static KerberosKDCClient CreateTCPClient(int port = 88, int password_port = 464)
         {
-            var dc = Domain.GetCurrentDomain().FindDomainController();
-            return CreateTCPClient(dc.Name, port, password_port);
+            return CreateTCPClient(null, port, password_port);
         }
 
         /// <summary>

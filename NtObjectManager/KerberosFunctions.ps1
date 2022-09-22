@@ -705,7 +705,7 @@ function New-KerberosTicketCache {
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]$Request,
         [Parameter(ParameterSetName="FromTgt")]
         [Parameter(ParameterSetName="FromKey")]
-        [string]$Hostname = $env:LOGONSERVER,
+        [string]$Hostname,
         [Parameter(ParameterSetName="FromTgt")]
         [Parameter(ParameterSetName="FromKey")]
         [int]$Port = 88,
@@ -1147,7 +1147,7 @@ function Send-KerberosKdcRequest {
     Param(
         [Parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCRequest]$Request,
-        [string]$Hostname = $env:LOGONSERVER,
+        [string]$Hostname,
         [int]$Port = 88,
         [switch]$AsExternalTicket,
         [switch]$AsKdcReply

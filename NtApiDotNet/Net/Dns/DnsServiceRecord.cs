@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Net.Dns
 {
     /// <summary>
@@ -39,12 +41,18 @@ namespace NtApiDotNet.Net.Dns
         /// </summary>
         public string Target { get; }
 
+        /// <summary>
+        /// Specify the expiry time of this record.
+        /// </summary>
+        public DateTime ExpiryTime { get; }
+
         internal DnsServiceRecord(DnsResourceRecordSRV srv)
         {
             Priority = srv.Priority;
             Weight = srv.Weight;
             Port = srv.Port;
             Target = srv.Target;
+            ExpiryTime = DateTime.Now.AddSeconds(srv.TimeToLive);
         }
     }
 }
