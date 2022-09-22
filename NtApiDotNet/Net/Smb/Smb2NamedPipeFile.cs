@@ -88,9 +88,12 @@ namespace NtApiDotNet.Net.Smb
         /// <param name="name">The name of the pipe to open.</param>
         /// <param name="desired_access">The desired access for the open.</param>
         /// <param name="credentials">Credentials for the open.</param>
+        /// <param name="impersonation_level">Specify impersonation level for named pipe.</param>
         /// <returns>The opened named pipe file.</returns>
         public static Smb2NamedPipeFile Open(string hostname, string name, 
-            FileAccessRights desired_access = FileAccessRights.MaximumAllowed, UserCredentials credentials = null)
+            FileAccessRights desired_access = FileAccessRights.MaximumAllowed, 
+            UserCredentials credentials = null, 
+            SecurityImpersonationLevel impersonation_level = SecurityImpersonationLevel.Impersonation)
         {
             if (string.IsNullOrWhiteSpace(hostname))
             {
@@ -108,7 +111,7 @@ namespace NtApiDotNet.Net.Smb
                 ret._client = new Smb2Client(hostname);
                 ret._session = ret._client.CreateSession(credentials);
                 ret._share = ret._session.ConnectIpcShare();
-                ret._file = ret._share.Open(name, desired_access);
+                ret._file = ret._share.Open(name, desired_access, impersonation_level: impersonation_level);
                 return ret;
             }
             catch

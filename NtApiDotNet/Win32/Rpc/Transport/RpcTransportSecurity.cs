@@ -125,7 +125,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
 
         /// <summary>
-        /// Specify a 
+        /// Specify a kerberos ticket cache.
         /// </summary>
         public KerberosLocalTicketCache TicketCache { get; set; }
         #endregion
