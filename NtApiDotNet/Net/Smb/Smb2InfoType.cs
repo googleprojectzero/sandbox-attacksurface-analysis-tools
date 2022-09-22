@@ -12,28 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System.IO;
+using NtApiDotNet.Utilities.Reflection;
 
 namespace NtApiDotNet.Net.Smb
 {
-    internal sealed class Smb2CloseRequestPacket : Smb2RequestPacket
+    internal enum Smb2InfoType : byte
     {
-        private const ushort STRUCT_SIZE = 24;
-        private readonly Smb2FileId _file_id;
-
-        public Smb2CloseRequestPacket(Smb2FileId file_id) : base(Smb2Command.CLOSE)
-        {
-            _file_id = file_id;
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            // Flags.
-            writer.WriteUInt16(0);
-            // Reserved.
-            writer.Write(0);
-            _file_id.Write(writer);
-        }
+        [SDKName("SMB2_0_INFO_FILE")]
+        File = 1,
+        [SDKName("SMB2_0_INFO_FILESYSTEM")]
+        FileSystem = 2,
+        [SDKName("SMB2_0_INFO_SECURITY")]
+        Security = 3,
+        [SDKName("SMB2_0_INFO_QUOTA")]
+        Quota = 4,
     }
 }

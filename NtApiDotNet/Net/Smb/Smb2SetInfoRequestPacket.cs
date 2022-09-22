@@ -16,41 +16,35 @@ using System.IO;
 
 namespace NtApiDotNet.Net.Smb
 {
-    internal sealed class Smb2ReadRequestPacket : Smb2RequestPacket
+    internal sealed class Smb2SetInfoRequestPacket : Smb2RequestPacket
     {
-        private const ushort STRUCT_SIZE = 49;
-
-        private readonly int _length;
-        private readonly long _offset;
+        private const ushort STRUCT_SIZE = 33;
+        private readonly Smb2InfoType _info_type;
         private readonly Smb2FileId _file_id;
+        private readonly byte[] _input_buffer;
 
-        public Smb2ReadRequestPacket(int length, long offset, Smb2FileId file_id) 
-            : base(Smb2Command.READ)
+        public int FileInfoClass { get; set; }
+        public uint AdditionalInformation { get; set; }
+
+        public Smb2SetInfoRequestPacket(Smb2InfoType info_type, byte[] input_buffer, Smb2FileId file_id) : base(Smb2Command.SET_INFO)
         {
-            _length = length;
-            _offset = offset;
+            _info_type = info_type;
             _file_id = file_id;
+            _input_buffer = input_buffer;
         }
 
         public override void Write(BinaryWriter writer)
         {
             writer.Write(STRUCT_SIZE);
-            // Padding (64 byte header + 16 bytes for response)
-            writer.WriteByte(0x50);
-            // Flags.
-            writer.WriteByte(0);
-            writer.Write(_length);
-            writer.Write(_offset);
+            writer.Write((byte)_info_type);
+            writer.WriteByte(FileInfoClass);
+            writer.Write(_input_buffer.Length);
+            writer.WriteUInt16(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
+            // Reserved
+            writer.WriteUInt16(0);
+            writer.Write(AdditionalInformation);
             _file_id.Write(writer);
-            // MinimumCount
-            writer.Write(0);
-            // Channel
-            writer.Write(0);
-            // RemainingBytes
-            writer.Write(0);
-            // ReadChannelInfoOffset/ReadChannelInfoCount
-            writer.Write(0);
-            writer.WriteByte(0);
+            writer.Write(_input_buffer);
         }
     }
 }

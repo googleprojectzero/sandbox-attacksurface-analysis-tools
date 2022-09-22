@@ -102,6 +102,11 @@ namespace NtApiDotNet.Net
             writer.Write((byte)value);
         }
 
+        internal static void WriteUInt16(this BinaryWriter writer, int value)
+        {
+            writer.Write((ushort)value);
+        }
+
         internal static async Task<byte[]> ReadBytesAsync(this Stream stm, int length)
         {
             byte[] ret = new byte[length];

@@ -23,13 +23,47 @@ namespace NtApiDotNet.Net.Smb
     public sealed class Smb2File : IDisposable
     {
         private readonly Smb2Share _share;
-        private readonly Guid _file_id;
+        private readonly Smb2FileId _file_id;
         private bool _closed;
 
         private void CheckClosed()
         {
             if (_closed)
                 throw new ObjectDisposedException(nameof(_file_id), "File object is closed.");
+        }
+
+        private byte[] QueryInformation(Smb2InfoType info_type, int output_buffer_length, int info_class = 0, 
+            uint additional_information = 0, int flags = 0, byte[] input_buffer = null)
+        {
+            CheckClosed();
+            output_buffer_length = Math.Min(output_buffer_length, _share.Client.MaxTransactionSize);
+            return _share.ExchangeCommand<Smb2QueryInfoResponsePacket>(
+                new Smb2QueryInfoRequestPacket(info_type, output_buffer_length, _file_id)
+                {
+                    FileInfoClass = info_class,
+                    AdditionalInformation = additional_information,
+                    Flags = flags,
+                    InputBuffer = input_buffer
+                }).Response.Data;
+        }
+
+        private void SetInformation(Smb2InfoType info_type, byte[] input_buffer, int info_class = 0,
+            uint additional_information = 0)
+        {
+            CheckClosed();
+            if (input_buffer is null)
+            {
+                throw new ArgumentNullException(nameof(input_buffer));
+            }
+
+            if (input_buffer.Length > _share.Client.MaxTransactionSize)
+                throw new ArgumentOutOfRangeException("SET_INFO buffer is larger than maximum allowed size.");
+            _share.ExchangeCommand<Smb2IgnoredResponsePacket>(
+                new Smb2SetInfoRequestPacket(info_type, input_buffer, _file_id)
+                {
+                    FileInfoClass = info_class,
+                    AdditionalInformation = additional_information
+                });
         }
 
         internal Smb2File(Smb2Share share, string name, Smb2CreateResponsePacket response)
@@ -101,6 +135,48 @@ namespace NtApiDotNet.Net.Smb
             length = Math.Min(length, _share.Client.MaxReadSize);
             return _share.ExchangeCommand<Smb2ReadResponsePacket>(
                 new Smb2ReadRequestPacket(length, offset, _file_id)).Response.Data;
+        }
+
+        /// <summary>
+        /// Method to query information for this file.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="output_buffer_length">The maximum output buffer size.</param>
+        /// <returns>The queried data. Can be smaller than maximum.</returns>
+        public byte[] QueryInformation(FileInformationClass info_class, int output_buffer_length)
+        {
+            return QueryInformation(Smb2InfoType.File, output_buffer_length, (int)info_class);
+        }
+
+        /// <summary>
+        /// Method to set information for this file.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        public void SetInformation(FileInformationClass info_class, byte[] buffer)
+        {
+            SetInformation(Smb2InfoType.File, buffer, (int)info_class);
+        }
+
+        /// <summary>
+        /// Get the security descriptor specifying which parts to retrieve
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
+        public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
+        {
+            return SecurityDescriptor.Parse(QueryInformation(Smb2InfoType.Security, _share.Client.MaxTransactionSize, 
+                additional_information: (uint)security_information), NtType.GetTypeByType<NtFile>(), true).Result;
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_descriptor">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, SecurityInformation security_information)
+        {
+            SetInformation(Smb2InfoType.Security, security_descriptor.ToByteArray(), additional_information: (uint)security_information);
         }
 
         /// <summary>

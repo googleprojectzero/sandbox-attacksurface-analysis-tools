@@ -39,7 +39,7 @@ namespace NtApiDotNet.Net.Smb
             // Channel.
             writer.Write(0);
             writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            writer.Write((ushort)SecurityBuffer.Length);
+            writer.WriteUInt16(SecurityBuffer.Length);
             writer.Write(PreviousSessionId);
             writer.Write(SecurityBuffer);
         }

@@ -27,7 +27,7 @@ namespace NtApiDotNet.Net.Smb
         public override void Write(BinaryWriter writer)
         {
             writer.Write(STRUCT_SIZE);
-            writer.Write((ushort)0);
+            writer.WriteUInt16(0);
         }
     }
 }

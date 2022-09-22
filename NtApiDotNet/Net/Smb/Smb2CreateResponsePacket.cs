@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.IO;
 
 namespace NtApiDotNet.Net.Smb
@@ -28,7 +27,7 @@ namespace NtApiDotNet.Net.Smb
         public long AllocationSize { get; set; }
         public long EndOfFile { get; set; }
         public FileAttributes FileAttributes { get; set; }
-        public Guid FileId { get; set; }
+        public Smb2FileId FileId { get; set; }
 
         public override void Read(BinaryReader reader)
         {
@@ -47,7 +46,7 @@ namespace NtApiDotNet.Net.Smb
             FileAttributes = (FileAttributes)reader.ReadUInt32();
             // Reserved2 
             reader.ReadInt32();
-            FileId = new Guid(reader.ReadAllBytes(16));
+            FileId = Smb2FileId.Read(reader);
             // Ignore contexts for now.
         }
     }

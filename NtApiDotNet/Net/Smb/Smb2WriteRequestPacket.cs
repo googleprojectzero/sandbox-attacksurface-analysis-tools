@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.IO;
 
 namespace NtApiDotNet.Net.Smb
@@ -25,9 +24,9 @@ namespace NtApiDotNet.Net.Smb
         private readonly int _data_ofs;
         private readonly int _data_length;
         private readonly long _offset;
-        private readonly Guid _file_id;
+        private readonly Smb2FileId _file_id;
 
-        public Smb2WriteRequestPacket(byte[] data, int data_ofs, int data_length, long offset, Guid file_id) 
+        public Smb2WriteRequestPacket(byte[] data, int data_ofs, int data_length, long offset, Smb2FileId file_id) 
             : base(Smb2Command.WRITE)
         {
             _data = data;
@@ -43,7 +42,7 @@ namespace NtApiDotNet.Net.Smb
             writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
             writer.Write(_data_length);
             writer.Write(_offset);
-            writer.Write(_file_id.ToByteArray());
+            _file_id.Write(writer);
             // Channel
             writer.Write(0);
             // RemainingBytes

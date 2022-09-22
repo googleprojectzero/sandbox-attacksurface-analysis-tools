@@ -13,28 +13,21 @@
 //  limitations under the License.
 
 using System.IO;
-using System.Text;
 
 namespace NtApiDotNet.Net.Smb
 {
-    internal sealed class Smb2TreeConnectRequestPacket : Smb2RequestPacket
+    internal sealed class Smb2QueryInfoResponsePacket : Smb2ResponsePacket
     {
-        private const ushort STRUCT_SIZE = 9;
-        private readonly byte[] _path;
+        public byte[] Data { get; private set; }
 
-        public Smb2TreeConnectRequestPacket(string path) 
-            : base(Smb2Command.TREE_CONNECT)
+        public override void Read(BinaryReader reader)
         {
-            _path = Encoding.Unicode.GetBytes(path);
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.WriteUInt16(0);
-            writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            writer.WriteUInt16(_path.Length);
-            writer.Write(_path);
+            if (reader.ReadUInt16() != 9)
+                throw new InvalidDataException("Invalid response size for QUERY_INFO packet.");
+            int ofs = reader.ReadUInt16();
+            int length = reader.ReadInt32();
+            reader.BaseStream.Position = ofs;
+            Data = reader.ReadAllBytes(length);
         }
     }
 }

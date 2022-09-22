@@ -36,10 +36,10 @@ namespace NtApiDotNet.Net.Smb
         {
             Smb2Dialect[] dialects = Dialects.Count > 0 ? Dialects.ToArray() : new[] { Smb2Dialect.Smb202 };
             writer.Write(STRUCT_SIZE);
-            writer.Write((ushort)Dialects.Count);
+            writer.WriteUInt16(Dialects.Count);
             writer.Write((ushort)SecurityMode);
             // Reserved.
-            writer.Write((ushort)0);
+            writer.WriteUInt16(0);
             // Capabilities
             writer.Write(0);
             writer.Write(ClientGuid.ToByteArray());

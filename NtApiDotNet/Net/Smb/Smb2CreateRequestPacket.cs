@@ -38,7 +38,7 @@ namespace NtApiDotNet.Net.Smb
         {
             writer.Write(STRUCT_SIZE);
             // SecurityFlags.
-            writer.Write((byte)0);
+            writer.WriteByte(0);
             writer.Write((byte)RequestedOplockLevel);
             writer.Write((int)ImpersonationLevel);
             // SmbCreateFlags
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Net.Smb
             byte[] name = Encoding.Unicode.GetBytes(Name);
             ushort name_offset = Smb2PacketHeader.CalculateOffset(STRUCT_SIZE);
             writer.Write(name_offset);
-            writer.Write((ushort)name.Length);
+            writer.WriteUInt16(name.Length);
             writer.Write(0);
             writer.Write(0);
             // Buffer.

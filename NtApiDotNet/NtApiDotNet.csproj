@@ -208,14 +208,19 @@
     <Compile Include="Net\Smb\Smb2CreateResponsePacket.cs" />
     <Compile Include="Net\Smb\Smb2Dialect.cs" />
     <Compile Include="Net\Smb\Smb2File.cs" />
+    <Compile Include="Net\Smb\Smb2FileId.cs" />
     <Compile Include="Net\Smb\Smb2Flags.cs" />
     <Compile Include="Net\Smb\Smb2GlobalCapabilities.cs" />
     <Compile Include="Net\Smb\Smb2IgnoredResponsePacket.cs" />
+    <Compile Include="Net\Smb\Smb2InfoType.cs" />
     <Compile Include="Net\Smb\Smb2LogoffRequestPackaget.cs" />
+    <Compile Include="Net\Smb\Smb2NamedPipeFile.cs" />
     <Compile Include="Net\Smb\Smb2NegotiateRequestPacket.cs" />
     <Compile Include="Net\Smb\Smb2NegotiateResponsePacket.cs" />
     <Compile Include="Net\Smb\Smb2OplockLevel.cs" />
     <Compile Include="Net\Smb\Smb2PacketHeader.cs" />
+    <Compile Include="Net\Smb\Smb2QueryInfoRequestPacket.cs" />
+    <Compile Include="Net\Smb\Smb2QueryInfoResponsePacket.cs" />
     <Compile Include="Net\Smb\Smb2ReadRequestPacket.cs" />
     <Compile Include="Net\Smb\Smb2ReadResponsePacket.cs" />
     <Compile Include="Net\Smb\Smb2RequestPacket.cs" />
@@ -226,6 +231,7 @@
     <Compile Include="Net\Smb\Smb2SessionResponseFlags.cs" />
     <Compile Include="Net\Smb\Smb2SessionSetupRequestPacket.cs" />
     <Compile Include="Net\Smb\Smb2SessionSetupResponsePacket.cs" />
+    <Compile Include="Net\Smb\Smb2SetInfoRequestPacket.cs" />
     <Compile Include="Net\Smb\Smb2Share.cs" />
     <Compile Include="Net\Smb\Smb2ShareCapabilities.cs" />
     <Compile Include="Net\Smb\Smb2ShareFlags.cs" />
