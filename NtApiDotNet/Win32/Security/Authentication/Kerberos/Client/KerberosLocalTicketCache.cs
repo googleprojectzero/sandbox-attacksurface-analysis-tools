@@ -136,7 +136,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         #endregion
 
         #region Public Static Methods
-
         /// <summary>
         /// Populate a local cache for a client with authentication.
         /// </summary>

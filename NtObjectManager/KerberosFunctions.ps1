@@ -985,6 +985,8 @@ function New-KerberosAsRequest {
         [string]$Realm,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCredential")]
         [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
+        [Parameter(Mandatory, Position = 0, ParameterSetName="FromReadCredential")]
+        [switch]$ReadCredential,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
         [switch]$Forwardable,
@@ -1010,6 +1012,10 @@ function New-KerberosAsRequest {
             }
         }
         "FromCredential" {
+            New-KerberosAsRequest -Password $Credential.Password -ClientName $Credential.UserName -Realm $Credential.Domain
+        }
+        "FromReadCredential" {
+            $Credential = Read-LsaCredential
             New-KerberosAsRequest -Password $Credential.Password -ClientName $Credential.UserName -Realm $Credential.Domain
         }
     }
