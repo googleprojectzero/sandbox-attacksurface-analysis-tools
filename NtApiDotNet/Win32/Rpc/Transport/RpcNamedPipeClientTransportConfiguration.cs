@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
+using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -57,6 +59,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public string ServicePrincipalName { get; set; }
 
+        /// <summary>
+        /// Specify a kerberos ticket cache.
+        /// </summary>
+        public KerberosLocalTicketCache TicketCache { get; set; }
+
         private InitializeContextReqFlags GetContextRequestFlags()
         {
             InitializeContextReqFlags ret = DisableSigning ? InitializeContextReqFlags.NoIntegrity : InitializeContextReqFlags.Integrity;
@@ -71,13 +78,24 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         internal IClientAuthenticationContext CreateAuthenticationContext(string hostname)
         {
-            string package = PackageName?.ToLower() ?? AuthenticationPackage.NEGOSSP_NAME;
+            string package = PackageName ?? AuthenticationPackage.NEGOSSP_NAME;
             string spn = ServicePrincipalName ?? $"cifs/{hostname}";
-            bool initialize = !package.Equals(AuthenticationPackage.NEGOSSP_NAME);
 
+            if (package.Equals(AuthenticationPackage.KERBEROS_NAME, StringComparison.OrdinalIgnoreCase) && TicketCache != null)
+            {
+                return TicketCache.CreateClientContext(spn, GetContextRequestFlags());
+            }
+
+            if (!NtObjectUtils.IsWindows)
+            {
+                throw new NotImplementedException($"Authentication package {package} not supported.");
+            }
+
+            bool initialize = !package.Equals(AuthenticationPackage.NEGOSSP_NAME, StringComparison.OrdinalIgnoreCase);
             return new ClientAuthenticationContext(CredentialHandle.Create(package,
                 SecPkgCredFlags.Outbound, Credentials), GetContextRequestFlags(),
-                    spn, null, SecDataRep.Network, initialize) { OwnsCredentials = true };
+                    spn, null, SecDataRep.Network, initialize)
+            { OwnsCredentials = true };
         }
     }
 }
