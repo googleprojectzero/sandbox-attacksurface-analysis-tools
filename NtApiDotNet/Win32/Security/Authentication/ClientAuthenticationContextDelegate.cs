@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         public virtual SecPkgLastClientTokenStatus LastTokenStatus => _context.LastTokenStatus;
 
-        public InitializeContextReqFlags RequestAttributes { get => _context.RequestAttributes; set => _context.RequestAttributes = value; }
+        public InitializeContextReqFlags RequestAttributes => _context.RequestAttributes;
 
         public InitializeContextRetFlags ReturnAttributes => _context.ReturnAttributes;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

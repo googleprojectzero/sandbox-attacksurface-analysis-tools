@@ -181,6 +181,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
             return (KerberosAPRequestAuthenticationToken)Parse(raw_token ? builder.ToArray() : builder.CreateGssApiWrapper(OIDValues.KERBEROS, 0x100));
         }
+
+        /// <summary>
+        /// Create a new anonymous Kerberos AP-REQ token.
+        /// </summary>
+        /// <returns>The new AP-REQ token.</returns>
+        public static KerberosAPRequestAuthenticationToken Create()
+        {
+            var ticket = KerberosTicket.Create(string.Empty, 
+                new KerberosPrincipalName(KerberosNameType.UNKNOWN, string.Empty), 
+                KerberosEncryptedData.Create(KerberosEncryptionType.NULL, new byte[1]));
+            var authenticator = KerberosEncryptedData.Create(KerberosEncryptionType.NULL, new byte[1]);
+            return Create(ticket, authenticator);
+        }
         #endregion
 
         #region Internal Static Methods

@@ -23,7 +23,7 @@ namespace NtApiDotNet.Net.Smb2
     /// Simple SMBv2 client based on MS-SMB2 protocol documentation.
     /// </summary>
     /// <remarks>This is not designed to be a comprehensive implementation, it's primary purpose is supporting
-    /// remote named pipes.</remarks>
+    /// remote named pipes. For example it doesn't current support multiple concurrent requests.</remarks>
     public sealed class Smb2Client : IDisposable
     {
         #region Private Members

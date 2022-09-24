@@ -578,7 +578,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="request_attributes">Request attributes for the context.</param>
         /// <param name="config">Additional configuration for the context..</param>
         public KerberosClientAuthenticationContext(KerberosCredential credential, InitializeContextReqFlags request_attributes,
-            KerberosClientAuthenticationContextConfig config = null) : this(credential.ToExternalTicket(), request_attributes, config)
+            KerberosClientAuthenticationContextConfig config = null) : this(credential?.ToExternalTicket(), request_attributes, config)
         {
         }
 
@@ -587,13 +587,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="ticket">The kerberos ticket for the target.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
-        /// <param name="config">Additional configuration for the context..</param>
+        /// <param name="config">Additional configuration for the context.</param>
         public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes,
             KerberosClientAuthenticationContextConfig config = null)
         {
             if (ticket is null)
             {
-                throw new ArgumentNullException(nameof(ticket));
+                if (!request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
+                    throw new ArgumentNullException(nameof(ticket));
+                Token = KerberosAPRequestAuthenticationToken.Create();
+                ReturnAttributes = InitializeContextRetFlags.NullSession;
+                Done = true;
+                return;
             }
 
             _ticket = ticket;
@@ -690,7 +695,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public int SecurityTrailerSize { get; }
 
-        public InitializeContextReqFlags RequestAttributes { get => _request_attributes; set => throw new NotImplementedException(); }
+        public InitializeContextReqFlags RequestAttributes => _request_attributes;
 
         public InitializeContextRetFlags ReturnAttributes { get; private set; }
 

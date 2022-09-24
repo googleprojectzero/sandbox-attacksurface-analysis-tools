@@ -29,7 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Current request attribute flags.
         /// </summary>
-        InitializeContextReqFlags RequestAttributes { get; set; }
+        InitializeContextReqFlags RequestAttributes { get; }
 
         /// <summary>
         /// Current return attribute flags.

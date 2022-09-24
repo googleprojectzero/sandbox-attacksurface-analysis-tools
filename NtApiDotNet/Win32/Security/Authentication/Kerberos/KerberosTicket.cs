@@ -131,9 +131,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             KerberosPrincipalName server_name,
             KerberosEncryptedData encrypted_data)
         {
-            if (string.IsNullOrEmpty(realm))
+            if (realm is null)
             {
-                throw new ArgumentException($"'{nameof(realm)}' cannot be null or empty.", nameof(realm));
+                throw new ArgumentNullException(nameof(realm));
             }
 
             if (server_name is null)

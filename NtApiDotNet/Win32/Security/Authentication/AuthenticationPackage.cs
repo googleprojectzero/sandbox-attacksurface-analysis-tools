@@ -95,14 +95,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public string Comment { get; }
 
-        internal AuthenticationPackage(SecPkgInfo pkg)
+        internal AuthenticationPackage(string name,
+            SecPkgCapabilityFlag capabilities, int version, 
+            int rpc_id, int max_token_size, string comment)
         {
-            Capabilities = pkg.fCapabilities;
-            Version = pkg.wVersion;
-            RpcId = pkg.wRPCID;
-            MaxTokenSize = pkg.cbMaxToken;
-            Name = pkg.Name;
-            Comment = pkg.Comment;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Capabilities = capabilities;
+            Version = version;
+            RpcId = rpc_id;
+            MaxTokenSize = max_token_size;
+            Comment = comment ?? string.Empty;
+        }
+
+        internal AuthenticationPackage(SecPkgInfo pkg) 
+            : this(pkg.Name, pkg.fCapabilities, pkg.wVersion, pkg.wRPCID, pkg.cbMaxToken, pkg.Comment)
+        {
         }
 
         /// <summary>
@@ -143,14 +150,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The authentication package.</returns>
         public static AuthenticationPackage FromName(string package)
         {
-            SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
-            try
+            if (NtObjectUtils.IsWindows)
             {
-                return new AuthenticationPackage(package_info.ReadStruct<SecPkgInfo>());
+                SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
+                try
+                {
+                    return new AuthenticationPackage(package_info.ReadStruct<SecPkgInfo>());
+                }
+                finally
+                {
+                    SecurityNativeMethods.FreeContextBuffer(package_info);
+                }
             }
-            finally
+            else
             {
-                SecurityNativeMethods.FreeContextBuffer(package_info);
+                return new AuthenticationPackage(package, 0, 0, 0, 0, string.Empty);
             }
         }
 
