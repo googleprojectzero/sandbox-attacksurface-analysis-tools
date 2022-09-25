@@ -74,16 +74,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         }
         #endregion
 
-        #region Private Members
-        private protected override byte[] GetNtChallenge()
+        #region Internal Members
+        internal byte[] GetNTLMv2Challenge()
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
+            SerializeNTLMv2Challenge(writer);
+            return stm.ToArray();
+        }
+        #endregion
 
-            if (NTProofResponse == null && NTProofResponse.Length != 16)
-                throw new ArgumentException("NT proof response must be 16 bytes long.", nameof(NTProofResponse));
-
-            writer.Write(NTProofResponse);
+        #region Private Members
+        private void SerializeNTLMv2Challenge(BinaryWriter writer)
+        {
             writer.Write(ChallengeVersion);
             writer.Write(MaxChallengeVersion);
             writer.Write(Reserved1);
@@ -94,6 +97,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
             writer.Write(ClientChallenge);
             writer.Write(Reserved3);
             TargetInfo.SerializeAvPairs(writer);
+            writer.Write(0);
+        }
+
+        private protected override byte[] GetNtChallenge()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            if (NTProofResponse == null && NTProofResponse.Length != 16)
+                throw new ArgumentException("NT proof response must be 16 bytes long.", nameof(NTProofResponse));
+
+            writer.Write(NTProofResponse);
+            SerializeNTLMv2Challenge(writer);
             return stm.ToArray();
         }
         #endregion
