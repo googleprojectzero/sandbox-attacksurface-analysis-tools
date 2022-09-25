@@ -251,7 +251,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         public NtlmAvPairTimestamp(long value)
             : base(MsAvPairType.Timestamp)
         {
-            Value = DateTime.FromFileTime(value);
+            try
+            {
+                Value = DateTime.FromFileTime(value);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                Value = DateTime.MinValue;
+            }
         }
 
         /// <summary>
@@ -391,6 +398,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
         {
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
+            // Length.
+            writer.Write(0x30);
             writer.Write(Z4);
             writer.Write(CustomData);
             writer.Write(MachineId);
