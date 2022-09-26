@@ -64,10 +64,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             if (etype_info2 == null || etype_info2.Entries.Count == 0)
                 throw new ArgumentException("No PA-ETYPE-INFO2 available.", nameof(pre_auth_data));
             var etype_entry = etype_info2.Entries.FirstOrDefault(e => enc_type == KerberosEncryptionType.NULL || e.EncryptionType == enc_type);
-            if (etype_entry == null || etype_entry.Salt == null)
+            if (etype_entry == null)
                 throw new ArgumentException("No salt available for key.", nameof(pre_auth_data));
             return KerberosAuthenticationKey.DeriveKey(etype_entry.EncryptionType, Password, 4096, 
-                KerberosNameType.PRINCIPAL, "UNKNOWN", etype_entry.Salt, 0);
+                KerberosNameType.PRINCIPAL, "UNKNOWN", etype_entry.Salt ?? string.Empty, 0);
         }
         #endregion
     }
