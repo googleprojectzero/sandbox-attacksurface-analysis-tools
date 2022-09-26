@@ -154,7 +154,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         /// <param name="name">The name of the encryption type.</param>
         protected KerberosEncryptionEngine(KerberosEncryptionType encryption_type,
             KerberosChecksumType checksum_type, int checksum_size, int additional_encryption_size,
-            int block_size, int key_size, string name = null)
+            int block_size, int key_size, string name)
         {
             EncryptionType = encryption_type;
             ChecksumType = checksum_type;

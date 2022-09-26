@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
     internal class KerberosEncryptionEngineUnsupported : KerberosEncryptionEngine
     {
         public KerberosEncryptionEngineUnsupported(KerberosEncryptionType encryption_type) 
-            : base(encryption_type, 0, 0, 0, 0, 0)
+            : base(encryption_type, 0, 0, 0, 0, 0, null)
         {
         }
 

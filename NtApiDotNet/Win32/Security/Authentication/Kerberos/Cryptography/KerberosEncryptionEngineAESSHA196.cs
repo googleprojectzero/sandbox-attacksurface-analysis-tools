@@ -31,9 +31,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
         private const byte EncryptionKey = 0xAA;
         private const byte VerificationKey = 0x55;
 
+        private static string GetName(KerberosEncryptionType encryption_type)
+        {
+            switch (encryption_type)
+            {
+                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+                    return "Kerberos AES128-CTS-HMAC-SHA1-96";
+                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+                    return "Kerberos AES256-CTS-HMAC-SHA1-96";
+            }
+            return null;
+        }
+
         private KerberosEncryptionEngineAESSHA196(KerberosEncryptionType encryption_type, KerberosChecksumType checksum_type)
             : base(encryption_type, checksum_type, AES_CHECKSUM_SIZE, AES_CHECKSUM_SIZE + AES_CONFOUNDER_SIZE, AES_BLOCK_SIZE,
-                  encryption_type == KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96 ? 16 : 32)
+                  encryption_type == KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96 ? 16 : 32, GetName(encryption_type))
         {
         }
 

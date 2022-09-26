@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
 
         #region Internal Members
         internal KerberosEncryptionEngineARC4MD5() : base(KerberosEncryptionType.ARCFOUR_HMAC_MD5, KerberosChecksumType.HMAC_MD5,
-            MD5_CHECKSUM_SIZE, MD5_CHECKSUM_SIZE + RC4_NONCE_LENGTH, 1, MD5_CHECKSUM_SIZE)
+            MD5_CHECKSUM_SIZE, MD5_CHECKSUM_SIZE + RC4_NONCE_LENGTH, 1, MD5_CHECKSUM_SIZE, "RSADSI RC4-HMAC")
         {
         }
         #endregion
