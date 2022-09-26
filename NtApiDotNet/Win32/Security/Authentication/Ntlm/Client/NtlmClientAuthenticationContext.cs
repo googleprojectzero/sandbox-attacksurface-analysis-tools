@@ -275,16 +275,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         public NtlmClientAuthenticationContext(AuthenticationCredentials credentials, InitializeContextReqFlags request_attributes, 
             string target_name = null, NtlmClientAuthenticationContextConfig config = null)
         {
-            if (credentials is UserCredentials user_creds)
+            if (!request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
             {
-                _credentials = new NtHashAuthenticationCredentials(user_creds);
-            }
-            else
-            {
-                _credentials = credentials as NtHashAuthenticationCredentials;
-                if (_credentials == null && !request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
+                if (credentials is UserCredentials user_creds)
                 {
-                    throw new ArgumentException("Must specify credentals for NTLM authentication.", nameof(credentials));
+                    _credentials = new NtHashAuthenticationCredentials(user_creds);
+                }
+                else
+                {
+                    _credentials = credentials as NtHashAuthenticationCredentials ??
+                        throw new ArgumentException("Must specify credentals for NTLM authentication.", nameof(credentials));
                 }
             }
 
@@ -391,23 +391,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             }
 
             Array.Resize(ref signature, SecurityTrailerSize);
-            MemoryStream stm = new MemoryStream();
-            // Confounder.
-            foreach (var buffer in data_buffers)
-            {
-                byte[] ba = buffer.ToArray();
-                stm.Write(ba, 0, ba.Length);
-            }
-
-            byte[] plain_text = _server_rc4.Transform(stm.ToArray());
-            stm = new MemoryStream(plain_text);
-            BinaryReader reader = new BinaryReader(stm);
-            foreach (var buffer in data_buffers)
-            {
-                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
-            }
-
-            if (!VerifySignature(plain_text, signature, sequence_no))
+            byte[] plain_text = _server_rc4.Transform(data_buffers.ToByteArray());
+            data_buffers.UpdateDataBuffers(plain_text);
+            byte[] to_verify = messages.ToByteArray();
+            if (!VerifySignature(to_verify, signature, sequence_no))
                 throw new InvalidDataException("Signature is invalid.");
         }
 
@@ -455,24 +442,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             if (token_buffer == null)
                 throw new ArgumentException("Must specify a buffer for the token signature.");
 
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            foreach (var buffer in data_buffers)
-            {
-                writer.Write(buffer.ToArray());
-            }
-
-            byte[] plain_text = stm.ToArray();
-            byte[] cipher_text = _client_rc4.Transform(plain_text);
-            stm = new MemoryStream(cipher_text);
-            BinaryReader reader = new BinaryReader(stm);
-            foreach (var buffer in data_buffers)
-            {
-                byte[] data = reader.ReadAllBytes(buffer.Size);
-                buffer.Update(SecurityBufferType.Data, data);
-            }
-
-            token_buffer.Update(SecurityBufferType.Token, MakeSignature(plain_text, sequence_no));
+            byte[] cipher_text = _client_rc4.Transform(data_buffers.ToByteArray());
+            byte[] to_sign = messages.ToByteArray();
+            data_buffers.UpdateDataBuffers(cipher_text);
+            token_buffer.Update(SecurityBufferType.Token, MakeSignature(to_sign, sequence_no));
         }
 
         public ExportedSecurityContext Export()
@@ -504,15 +477,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
             if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing))
                 throw new InvalidOperationException("Signing not supported.");
-            MemoryStream stm = new MemoryStream();
-            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data))
-            {
-                byte[] ba = buffer.ToArray();
-                stm.Write(ba, 0, ba.Length);
-            }
 
+            byte[] to_sign = messages.Where(b => b.Type == SecurityBufferType.Data).ToByteArray();
             byte[] seq_no = BitConverter.GetBytes(_client_seq_no++);
-            byte[] signature = CalculateHMACMD5(_client_signing_key, ConcatBytes(seq_no, stm.ToArray()));
+            byte[] signature = CalculateHMACMD5(_client_signing_key, ConcatBytes(seq_no, to_sign));
             if (_nego_flags.HasFlagSet(NtlmNegotiateFlags.ExtendedSessionSecurity))
             {
                 signature = _client_rc4.Transform(signature, 0, 8);
@@ -558,14 +526,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             if (BitConverter.ToInt32(signature, 12) != _server_seq_no)
                 return false;
 
-            MemoryStream stm = new MemoryStream();
-            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data))
-            {
-                byte[] ba = buffer.ToArray();
-                stm.Write(ba, 0, ba.Length);
-            }
-
-            byte[] data = stm.ToArray();
+            byte[] data = messages.Where(b => b.Type == SecurityBufferType.Data).ToByteArray();
             byte[] seq_no = BitConverter.GetBytes(_server_seq_no++);
             byte[] calc_sig = CalculateHMACMD5(_server_signing_key, ConcatBytes(seq_no, data));
             byte[] cmp_sig = new byte[8];

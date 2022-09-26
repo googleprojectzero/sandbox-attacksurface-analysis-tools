@@ -619,6 +619,7 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\Client\NtlmClientAuthenticationContextConfig.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
     <Compile Include="Win32\Security\Authentication\SecPkgSupplementalCredential.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferUtils.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUnknown.cs" />
