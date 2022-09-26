@@ -14,14 +14,20 @@
 
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace NtApiDotNet.Utilities.Security
 {
     /// <summary>
     /// Basic implementation of ARC4.
     /// </summary>
-    public static class ARC4
+    public sealed class ARC4 : ICryptoTransform
     {
+        #region Private Members
+        private readonly byte[] _key_schedule;
+        private int _index;
+        private int _swap_index;
+
         private static void Swap(byte[] s, int i, int j)
         {
             byte x = s[i];
@@ -40,7 +46,76 @@ namespace NtApiDotNet.Utilities.Security
             }
             return s;
         }
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="key">The key for the encryption.</param>
+        public ARC4(byte[] key)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            _key_schedule = CreateKeySchedule(key);
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>Transforms the specified region of the specified byte array.</summary>
+        /// <param name="input_buffer">The input for which to compute the transform.</param>
+        /// <param name="input_offset">The offset into the byte array from which to begin using data.</param>
+        /// <param name="input_count">The number of bytes in the byte array to use as data.</param>
+        /// <returns>The computed transform.</returns>
+        public byte[] Transform(byte[] input_buffer, int input_offset, int input_count)
+        {
+            byte[] ret = new byte[input_count];
+            Transform(input_buffer, input_offset, input_count, ret, 0);
+            return ret;
+        }
+
+        /// <summary>Transforms the specified region of the input byte array and copies the resulting transform to the specified region of the output byte array.</summary>
+        /// <param name="input_buffer">The input for which to compute the transform.</param>
+        /// <param name="input_offset">The offset into the input byte array from which to begin using data.</param>
+        /// <param name="input_count">The number of bytes in the input byte array to use as data.</param>
+        /// <param name="output_buffer">The output to which to write the transform.</param>
+        /// <param name="output_offset">The offset into the output byte array from which to begin writing data.</param>
+        public void Transform(byte[] input_buffer, int input_offset, int input_count, byte[] output_buffer, int output_offset)
+        {
+            if (input_buffer is null)
+            {
+                throw new ArgumentNullException(nameof(input_buffer));
+            }
+
+            if (output_buffer is null)
+            {
+                throw new ArgumentNullException(nameof(output_buffer));
+            }
+
+            for (int p = 0; p < input_count; ++p)
+            {
+                _index = (_index + 1) & 0xFF;
+                _swap_index = (_swap_index + _key_schedule[_index]) & 0xFF;
+                Swap(_key_schedule, _index, _swap_index);
+                byte k = _key_schedule[(_key_schedule[_index] + _key_schedule[_swap_index]) & 0xFF];
+                output_buffer[p + output_offset] = (byte)(k ^ input_buffer[p + input_offset]);
+            }
+        }
+
+        /// <summary>
+        /// Encrypt, or decrypt an ARC4 stream.
+        /// </summary>
+        /// <param name="input_buffer">The data to encrypt/decrypt.</param>
+        /// <returns>The resulting bytes.</returns>
+        public byte[] Transform(byte[] input_buffer)
+        {
+            return Transform(input_buffer, 0, input_buffer.Length);
+        }
+        #endregion
+
+        #region Static Methods
         /// <summary>
         /// Encrypt, or decrypt an ARC4 stream.
         /// </summary>
@@ -51,23 +126,7 @@ namespace NtApiDotNet.Utilities.Security
         /// <returns>The resulting bytes.</returns>
         public static byte[] Transform(byte[] data, int offset, int length, byte[] key)
         {
-            byte[] s = CreateKeySchedule(key);
-            byte[] ret = new byte[length];
-            Buffer.BlockCopy(data, offset, ret, 0, length);
-
-            int i = 0;
-            int j = 0;
-            int p = 0;
-            while (p < length)
-            {
-                i = (i + 1) & 0xFF;
-                j = (j + s[i]) & 0xFF;
-                Swap(s, i, j);
-                byte k = s[(s[i] + s[j]) & 0xFF];
-                ret[p] ^= k;
-                p++;
-            }
-            return ret;
+            return new ARC4(key).Transform(data, offset, length);
         }
 
         /// <summary>
@@ -80,5 +139,33 @@ namespace NtApiDotNet.Utilities.Security
         {
             return Transform(data, 0, data.Length, key);
         }
+        #endregion
+
+        #region IDisposable Implementation
+        void IDisposable.Dispose()
+        {
+        }
+        #endregion
+
+        #region ICryptoTransform Implementation
+        int ICryptoTransform.InputBlockSize => 1;
+
+        int ICryptoTransform.OutputBlockSize => 1;
+
+        bool ICryptoTransform.CanTransformMultipleBlocks => true;
+
+        bool ICryptoTransform.CanReuseTransform => true;
+
+        int ICryptoTransform.TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        {
+            Transform(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
+            return inputCount;
+        }
+
+        byte[] ICryptoTransform.TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        {
+            return Transform(inputBuffer, inputOffset, inputCount);
+        }
+        #endregion
     }
 }
