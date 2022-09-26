@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The NTLM OWF hash. Returns null if not present.</returns>
         public byte[] GetNtlmOwfHash()
         {
-            if (!PackageName.Equals(AuthenticationPackage.NTLM_NAME, StringComparison.OrdinalIgnoreCase))
+            if (!AuthenticationPackage.CheckNtlm(PackageName))
                 return null;
             if (_credentials.Length != 40)
                 return null;

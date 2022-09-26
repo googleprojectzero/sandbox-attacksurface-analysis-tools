@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
@@ -81,19 +82,25 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             string package = PackageName ?? AuthenticationPackage.NEGOSSP_NAME;
             string spn = ServicePrincipalName ?? $"cifs/{hostname}";
 
-            if (package.Equals(AuthenticationPackage.KERBEROS_NAME, StringComparison.OrdinalIgnoreCase) && TicketCache != null)
+            var request_flags = GetContextRequestFlags();
+
+            if (AuthenticationPackage.CheckKerberos(package) && TicketCache != null)
             {
-                return TicketCache.CreateClientContext(spn, GetContextRequestFlags());
+                return TicketCache.CreateClientContext(spn, request_flags);
             }
 
-            if (!NtObjectUtils.IsWindows)
+            if (!NtObjectUtils.IsWindows || Credentials is NtHashAuthenticationCredentials)
             {
-                throw new NotImplementedException($"Authentication package {package} not supported.");
+                if (!AuthenticationPackage.CheckNtlm(package))
+                {
+                    throw new NotImplementedException($"Authentication package {package} not supported.");
+                }
+                return new NtlmClientAuthenticationContext(Credentials, request_flags, spn);
             }
 
             bool initialize = !package.Equals(AuthenticationPackage.NEGOSSP_NAME, StringComparison.OrdinalIgnoreCase);
             return new ClientAuthenticationContext(CredentialHandle.Create(package,
-                SecPkgCredFlags.Outbound, Credentials), GetContextRequestFlags(),
+                SecPkgCredFlags.Outbound, Credentials), request_flags,
                     spn, null, SecDataRep.Network, initialize)
             { OwnsCredentials = true };
         }
