@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
@@ -228,6 +229,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             if (_auth_type == RpcAuthenticationType.Kerberos && TicketCache != null)
             {
                 return TicketCache.CreateClientContext(ServicePrincipalName, GetContextRequestFlags());
+            }
+
+            if (!NtObjectUtils.IsWindows || Credentials is NtHashAuthenticationCredentials)
+            {
+                if (_auth_type != RpcAuthenticationType.WinNT)
+                {
+                    throw new ArgumentException($"Authentication package {_auth_type} not supported.");
+                }
+                return new NtlmClientAuthenticationContext(Credentials, GetContextRequestFlags(), ServicePrincipalName);
             }
 
             return new ClientAuthenticationContext(CredentialHandle.Create(GetAuthPackageName(),
