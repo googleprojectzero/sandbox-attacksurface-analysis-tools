@@ -65,9 +65,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
 
         private protected override byte[] GetBytes()
         {
-            var flags = Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version);
+            var flags = Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version | 
+                NtlmNegotiateFlags.TargetTypeDomain | NtlmNegotiateFlags.TargetTypeServer | NtlmNegotiateFlags.TargetTypeShare);
             bool unicode = flags.HasFlagSet(NtlmNegotiateFlags.Unicode);
-            if (EncryptedSessionKey != null)
+            if (EncryptedSessionKey != null && EncryptedSessionKey.Length > 0)
                 flags |= NtlmNegotiateFlags.KeyExchange;
             if (Version != null)
                 flags |= NtlmNegotiateFlags.Version;

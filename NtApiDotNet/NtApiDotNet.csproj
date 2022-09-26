@@ -614,6 +614,10 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmBuilderUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmChallengeAuthenticationTokenBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\Builder\NtlmNegotiateAuthenticationTokenBuilder.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Client\NtHashAuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Client\NtlmClientAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Client\NtlmClientAuthenticationContextConfig.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\Client\NtlmClientUtils.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmUtils.cs" />
     <Compile Include="Win32\Security\Authentication\SecPkgSupplementalCredential.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalBinaryBlob.cs" />

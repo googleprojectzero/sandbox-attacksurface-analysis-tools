@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
 {
@@ -62,6 +64,51 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         public List<NtlmAvPair> TargetInfo { get; }
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Calculate the NtProofResponse.
+        /// </summary>
+        /// <param name="nt_owf_v2">The NTOWFv2 hash for the user.</param>
+        /// <param name="server_challenge">The 8 byte server challenge from the CHALLENGE token.</param>
+        public void CalculateNtProofResponse(byte[] nt_owf_v2, byte[] server_challenge)
+        {
+            if (server_challenge is null)
+                throw new ArgumentNullException(nameof(server_challenge));
+            if (server_challenge.Length != 8)
+                throw new ArgumentOutOfRangeException(nameof(server_challenge), "Server challenge should be 8 bytes in size.");
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(server_challenge);
+            SerializeNTLMv2Challenge(writer);
+            NTProofResponse = new HMACMD5(nt_owf_v2).ComputeHash(stm.ToArray());
+        }
+
+        /// <summary>
+        /// Calculate the NtProofResponse.
+        /// </summary>
+        /// <param name="credentials">The NTLMv2 credentials.</param>
+        /// <param name="server_challenge">The 8 byte server challenge from the CHALLENGE token.</param>
+        public void CalculateNtProofResponse(NtHashAuthenticationCredentials credentials, byte[] server_challenge)
+        {
+            if (credentials is null)
+            {
+                throw new ArgumentNullException(nameof(credentials));
+            }
+
+            CalculateNtProofResponse(credentials.NtOWFv2(), server_challenge);
+        }
+
+        /// <summary>
+        /// Calculate the NtProofResponse.
+        /// </summary>
+        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="server_challenge">The 8 byte server challenge from the CHALLENGE token.</param>
+        public void CalculateNtProofResponse(UserCredentials credentials, byte[] server_challenge)
+        {
+            CalculateNtProofResponse(new NtHashAuthenticationCredentials(credentials), server_challenge);
+        }
+        #endregion
+
         #region Constructors
         /// <summary>
         /// Constructor.
@@ -71,16 +118,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
             ChallengeVersion = 1;
             MaxChallengeVersion = 1;
             TargetInfo = new List<NtlmAvPair>();
-        }
-        #endregion
-
-        #region Internal Members
-        internal byte[] GetNTLMv2Challenge()
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            SerializeNTLMv2Challenge(writer);
-            return stm.ToArray();
         }
         #endregion
 

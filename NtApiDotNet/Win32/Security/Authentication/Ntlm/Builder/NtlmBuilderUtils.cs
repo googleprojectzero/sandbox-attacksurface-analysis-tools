@@ -45,6 +45,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
         internal static void WriteString(this BinaryWriter writer, string value, bool unicode, int base_offset, MemoryStream payload)
         {
             Encoding encoding = unicode ? Encoding.Unicode : BinaryEncoding.Instance;
+            if (unicode && ((payload.Length % 2) != 0))
+            {
+                // Pad the payload for a unicode string.
+                payload.WriteByte(0);
+            }
 
             WriteBinary(writer, value != null ? encoding.GetBytes(value) : Array.Empty<byte>(), base_offset, payload);
         }
