@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 {
@@ -34,6 +35,88 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         private readonly NtHashAuthenticationCredentials _credentials;
         private readonly string _target_name;
         private readonly NtlmClientAuthenticationContextConfig _config;
+        private NtlmNegotiateFlags _nego_flags;
+        private byte[] _session_key;
+        private byte[] _client_signing_key;
+        private byte[] _server_signing_key;
+        private int _client_seq_no;
+        private int _server_seq_no;
+        private ARC4 _client_rc4;
+        private ARC4 _server_rc4;
+
+        private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
+
+        private static byte[] GenerateRandomValue(int length)
+        {
+            byte[] ret = new byte[length];
+            _rng.GetBytes(ret);
+            return ret;
+        }
+
+        private static byte[] GetKey(byte[] session_key, int key_length, string mode)
+        {
+            MemoryStream stm = new MemoryStream();
+            stm.Write(session_key, 0, key_length);
+            byte[] mode_bytes = Encoding.ASCII.GetBytes($"session key to {mode} key magic constant\0");
+            stm.Write(mode_bytes, 0, mode_bytes.Length);
+            return MD5.Create().ComputeHash(stm.ToArray());
+        }
+
+        private static byte[] CalculateHMACMD5(byte[] key, byte[] data)
+        {
+            return new HMACMD5(key).ComputeHash(data);
+        }
+
+        private static byte[] GetSignKey(NtlmNegotiateFlags negflags, byte[] session_key, bool client)
+        {
+            if (!negflags.HasFlagSet(NtlmNegotiateFlags.ExtendedSessionSecurity))
+                return new byte[0];
+
+            if (client)
+            {
+                return GetKey(session_key, session_key.Length, "client-to-server signing");
+            }
+            return GetKey(session_key, session_key.Length, "server-to-client signing");
+        }
+
+        private static byte[] GetSealKey(NtlmNegotiateFlags negflags, byte[] session_key, bool client)
+        {
+            if (negflags.HasFlagSet(NtlmNegotiateFlags.ExtendedSessionSecurity))
+            {
+                int length = 5;
+                if (negflags.HasFlagSet(NtlmNegotiateFlags.Key128Bit))
+                {
+                    length = session_key.Length;
+                }
+                else if (negflags.HasFlagSet(NtlmNegotiateFlags.Key56Bit))
+                {
+                    length = 7;
+                }
+                if (client)
+                {
+                    return GetKey(session_key, length, "client-to-server sealing");
+                }
+                return GetKey(session_key, length, "server-to-client sealing");
+            }
+            return session_key;
+        }
+
+        private static byte[] ConcatBytes(byte[] a, params byte[][] b)
+        {
+            MemoryStream stm = new MemoryStream();
+            stm.Write(a, 0, a.Length);
+            foreach (var x in b)
+            {
+                stm.Write(x, 0, x.Length);
+            }
+            return stm.ToArray();
+        }
+
+        private static Version GetVersion()
+        {
+            var ret = Environment.OSVersion.Version;
+            return new Version(ret.Major, ret.Minor, ret.Build, 0xF);
+        }
 
         private static NtlmNegotiateFlags MapToNegotiateFlags(InitializeContextReqFlags request_attributes)
         {
@@ -76,7 +159,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             Token = new NtlmNegotiateAuthenticationTokenBuilder
             {
                 Flags = flags,
-                Version = NtlmClientUtils.GetVersion()
+                Version = GetVersion()
             }.Create();
         }
 
@@ -85,7 +168,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             if (challenge_token == null)
                 throw new InvalidDataException("Expected NTLM CHALLENGE token from server.");
             NtlmAuthenticateAuthenticationTokenBuilderBase builder;
-            NtlmNegotiateFlags negflags = challenge_token.Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version |
+            NtlmNegotiateFlags nego_flags = challenge_token.Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version |
                 NtlmNegotiateFlags.TargetTypeDomain | NtlmNegotiateFlags.TargetTypeServer | NtlmNegotiateFlags.TargetTypeShare);
             AuthenticationToken nego_token = Token;
             byte[] session_base_key;
@@ -95,7 +178,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 {
                     LmChallengeResponse = new byte[1],
                     NtChallengeResponse = Array.Empty<byte>(),
-                    Flags = negflags | NtlmNegotiateFlags.Anonymous
+                    Flags = nego_flags | NtlmNegotiateFlags.Anonymous
                 };
                 session_base_key = new byte[16];
             }
@@ -106,7 +189,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 NtlmAuthenticateAuthenticationTokenV2Builder builderv2 = new NtlmAuthenticateAuthenticationTokenV2Builder();
                 builderv2.LmChallengeResponse = new byte[24];
                 builderv2.Timestamp = time.ToFileTime();
-                builderv2.ClientChallenge = NtlmClientUtils.GenerateRandomValue(8);
+                builderv2.ClientChallenge = GenerateRandomValue(8);
                 builderv2.Flags = challenge_token.Flags | NtlmNegotiateFlags.TargetInfo;
                 builderv2.TargetInfo.AddRange(challenge_token.TargetInfo);
                 if (timestamp == null)
@@ -130,22 +213,28 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 builderv2.TargetInfo.Add(new NtlmAvPairBytes(MsAvPairType.ChannelBindings, channel_binding));
                 byte[] nt_owf = _credentials.NtOWFv2();
                 builderv2.CalculateNtProofResponse(nt_owf, challenge_token.ServerChallenge);
-                session_base_key = NtlmClientUtils.CalculateHMACMD5(nt_owf, builderv2.NTProofResponse);
+                session_base_key = CalculateHMACMD5(nt_owf, builderv2.NTProofResponse);
                 builder = builderv2;
             }
 
-            builder.Flags = negflags;
+            builder.Flags = nego_flags;
             builder.UserName = _credentials?.UserName ?? string.Empty;
             builder.Domain = _credentials?.Domain ?? string.Empty;
             builder.Workstation = Environment.MachineName;
-            builder.Version = NtlmClientUtils.GetVersion();
+            builder.Version = GetVersion();
 
             byte[] key_exchange_key = session_base_key;
             byte[] exported_session_key;
-            if (negflags.HasFlagSet(NtlmNegotiateFlags.Signing) || negflags.HasFlagSet(NtlmNegotiateFlags.Seal))
+            bool has_signing = nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing);
+            bool has_sealing = nego_flags.HasFlagSet(NtlmNegotiateFlags.Seal);
+            if (has_signing || has_sealing)
             {
-                exported_session_key = NtlmClientUtils.GenerateRandomValue(16);
+                exported_session_key = GenerateRandomValue(16);
                 builder.EncryptedSessionKey = ARC4.Transform(exported_session_key, key_exchange_key);
+                _client_signing_key = GetSignKey(nego_flags, exported_session_key, true);
+                _server_signing_key = GetSignKey(nego_flags, exported_session_key, false);
+                _client_rc4 = new ARC4(GetSealKey(nego_flags, exported_session_key, true));
+                _server_rc4 = new ARC4(GetSealKey(nego_flags, exported_session_key, false));
             }
             else
             {
@@ -154,11 +243,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
             builder.MessageIntegrityCode = new byte[16];
             var auth_token = builder.Create();
-            byte[] to_sign = NtlmClientUtils.ConcatBytes(nego_token.ToArray(), challenge_token.ToArray(), auth_token.ToArray());
-            builder.MessageIntegrityCode = NtlmClientUtils.CalculateHMACMD5(exported_session_key, to_sign);
+            byte[] to_sign = ConcatBytes(nego_token.ToArray(), challenge_token.ToArray(), auth_token.ToArray());
+            builder.MessageIntegrityCode = CalculateHMACMD5(exported_session_key, to_sign);
             Token = builder.Create();
-            SessionKey = exported_session_key;
+            _session_key = exported_session_key;
             ReturnAttributes = MapFromNegotiateflags(auth_token.Flags);
+            _nego_flags = nego_flags;
         }
 
         private void ContinueInternal(byte[] token)
@@ -219,7 +309,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public long Expiry => long.MaxValue;
 
-        public byte[] SessionKey { get; private set; }
+        public byte[] SessionKey => _session_key ?? Array.Empty<byte>();
 
         public string PackageName => AuthenticationPackage.NTLM_NAME;
 
@@ -255,17 +345,70 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public byte[] DecryptMessage(EncryptedMessage message, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message.Message);
+            DecryptMessage(new[] { buffer }, message.Signature, sequence_no);
+            return buffer.ToArray();
         }
 
         public void DecryptMessage(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
+            DecryptMessageNoSignature(sig_buffers, sequence_no);
         }
 
         public void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            throw new NotImplementedException();
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                                    .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferIn token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token)
+                                            .OfType<ISecurityBufferIn>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            byte[] signature = token_buffer.ToArray();
+
+            if (signature.Length < SecurityTrailerSize)
+            {
+                throw new ArgumentException("Encryption token is too small.");
+            }
+
+            Array.Resize(ref signature, SecurityTrailerSize);
+            MemoryStream stm = new MemoryStream();
+            // Confounder.
+            foreach (var buffer in data_buffers)
+            {
+                byte[] ba = buffer.ToArray();
+                stm.Write(ba, 0, ba.Length);
+            }
+
+            byte[] plain_text = _server_rc4.Transform(stm.ToArray());
+            stm = new MemoryStream(plain_text);
+            BinaryReader reader = new BinaryReader(stm);
+            foreach (var buffer in data_buffers)
+            {
+                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
+            }
+
+            if (!VerifySignature(plain_text, signature, sequence_no))
+                throw new InvalidDataException("Signature is invalid.");
         }
 
         public void Dispose()
@@ -274,17 +417,62 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public EncryptedMessage EncryptMessage(byte[] message, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            SecurityBuffer buffer = new SecurityBufferInOut(SecurityBufferType.Data, message);
+            var signature = EncryptMessage(new[] { buffer }, quality_of_protection, sequence_no);
+            return new EncryptedMessage(buffer.ToArray(), signature);
         }
 
         public byte[] EncryptMessage(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
+            var out_sig_buffer = new SecurityBufferOut(SecurityBufferType.Token, SecurityTrailerSize);
+            sig_buffers.Add(out_sig_buffer);
+            EncryptMessageNoSignature(sig_buffers, quality_of_protection, sequence_no);
+            return out_sig_buffer.ToArray();
         }
 
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Seal))
+                throw new InvalidOperationException("Sealing not supported.");
+
+            List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
+                                                        .OfType<ISecurityBufferInOut>().ToList();
+            if (data_buffers.Count == 0)
+                throw new ArgumentException("Must specify a buffer to encrypt.");
+            ISecurityBufferOut token_buffer = messages.Where(b => b.Type == SecurityBufferType.Token && !b.ReadOnly)
+                                            .OfType<ISecurityBufferOut>().FirstOrDefault();
+            if (token_buffer == null)
+                throw new ArgumentException("Must specify a buffer for the token signature.");
+
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            foreach (var buffer in data_buffers)
+            {
+                writer.Write(buffer.ToArray());
+            }
+
+            byte[] plain_text = stm.ToArray();
+            byte[] cipher_text = _client_rc4.Transform(plain_text);
+            stm = new MemoryStream(cipher_text);
+            BinaryReader reader = new BinaryReader(stm);
+            foreach (var buffer in data_buffers)
+            {
+                byte[] data = reader.ReadAllBytes(buffer.Size);
+                buffer.Update(SecurityBufferType.Data, data);
+            }
+
+            token_buffer.Update(SecurityBufferType.Token, MakeSignature(plain_text, sequence_no));
         }
 
         public ExportedSecurityContext Export()
@@ -299,22 +487,95 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public byte[] MakeSignature(byte[] message, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            return MakeSignature(new[] { new SecurityBufferInOut(SecurityBufferType.Data, message) }, sequence_no);
         }
 
         public byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing))
+                throw new InvalidOperationException("Signing not supported.");
+            MemoryStream stm = new MemoryStream();
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data))
+            {
+                byte[] ba = buffer.ToArray();
+                stm.Write(ba, 0, ba.Length);
+            }
+
+            byte[] seq_no = BitConverter.GetBytes(_client_seq_no++);
+            byte[] signature = CalculateHMACMD5(_client_signing_key, ConcatBytes(seq_no, stm.ToArray()));
+            if (_nego_flags.HasFlagSet(NtlmNegotiateFlags.ExtendedSessionSecurity))
+            {
+                signature = _client_rc4.Transform(signature, 0, 8);
+            }
+            byte[] ret = new byte[16];
+            ret[0] = 1;
+            Buffer.BlockCopy(signature, 0, ret, 4, 8);
+            Buffer.BlockCopy(seq_no, 0, ret, 12, 4);
+            return ret;
         }
 
         public bool VerifySignature(byte[] message, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            return VerifySignature(new[] { new SecurityBufferInOut(SecurityBufferType.Data, message) }, signature, sequence_no);
         }
 
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
-            throw new NotImplementedException();
+            if (messages is null)
+            {
+                throw new ArgumentNullException(nameof(messages));
+            }
+
+            if (signature is null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
+
+            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing))
+                throw new InvalidOperationException("Signing not supported.");
+
+            if (signature.Length < 16)
+                return false;
+
+            if (BitConverter.ToInt32(signature, 0) != 1)
+                return false;
+
+            if (BitConverter.ToInt32(signature, 12) != _server_seq_no)
+                return false;
+
+            MemoryStream stm = new MemoryStream();
+            foreach (var buffer in messages.Where(b => b.Type == SecurityBufferType.Data))
+            {
+                byte[] ba = buffer.ToArray();
+                stm.Write(ba, 0, ba.Length);
+            }
+
+            byte[] data = stm.ToArray();
+            byte[] seq_no = BitConverter.GetBytes(_server_seq_no++);
+            byte[] calc_sig = CalculateHMACMD5(_server_signing_key, ConcatBytes(seq_no, data));
+            byte[] cmp_sig = new byte[8];
+            Buffer.BlockCopy(signature, 4, cmp_sig, 0, 8);
+            if (_nego_flags.HasFlagSet(NtlmNegotiateFlags.ExtendedSessionSecurity))
+            {
+                cmp_sig = _server_rc4.Transform(cmp_sig);
+            }
+
+            return NtObjectUtils.EqualByteArray(calc_sig, cmp_sig, 8);
         }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         #endregion
