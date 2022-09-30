@@ -141,7 +141,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         {
             InitializeContextRetFlags ret = InitializeContextRetFlags.None;
             if (flags.HasFlagSet(NtlmNegotiateFlags.Signing))
-                ret |= InitializeContextRetFlags.Integrity;
+                ret |= InitializeContextRetFlags.Integrity | InitializeContextRetFlags.ReplayDetect | InitializeContextRetFlags.SequenceDetect;
             if (flags.HasFlagSet(NtlmNegotiateFlags.Seal))
                 ret |= InitializeContextRetFlags.Confidentiality;
             if (flags.HasFlagSet(NtlmNegotiateFlags.Anonymous))
@@ -374,6 +374,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
+            if (!Done || !ReturnAttributes.HasFlagSet(InitializeContextRetFlags.Confidentiality))
+                throw new InvalidOperationException("Sealing not supported.");
+
             List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
                                                                     .OfType<ISecurityBufferInOut>().ToList();
             if (data_buffers.Count == 0)
@@ -430,7 +433,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
-            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Seal))
+            if (!Done || !ReturnAttributes.HasFlagSet(InitializeContextRetFlags.Confidentiality))
                 throw new InvalidOperationException("Sealing not supported.");
 
             List<ISecurityBufferInOut> data_buffers = messages.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly)
@@ -475,7 +478,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 throw new ArgumentNullException(nameof(messages));
             }
 
-            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing))
+            if (!Done || !ReturnAttributes.HasFlagSet(InitializeContextRetFlags.Integrity))
                 throw new InvalidOperationException("Signing not supported.");
 
             byte[] to_sign = messages.Where(b => b.Type == SecurityBufferType.Data).ToByteArray();
@@ -514,7 +517,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 throw new ArgumentNullException(nameof(signature));
             }
 
-            if (!Done || !_nego_flags.HasFlagSet(NtlmNegotiateFlags.Signing))
+            if (!Done || !ReturnAttributes.HasFlagSet(InitializeContextRetFlags.Integrity))
                 throw new InvalidOperationException("Signing not supported.");
 
             if (signature.Length < 16)
