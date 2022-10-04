@@ -348,6 +348,10 @@ function New-LsaClientContext {
         [switch]$S4U2Self
     )
 
+    $channel_binding = if ($ChannelBinding -ne $null) {
+        [NtApiDotNet.Win32.Security.Authentication.GssChannelBindings]::new($ChannelBinding)
+    }
+
     switch($PSCmdlet.ParameterSetName) {
         "FromCredHandle" {
             [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
@@ -357,7 +361,7 @@ function New-LsaClientContext {
             $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
-            $config.ChannelBinding = $ChannelBinding
+            $config.ChannelBinding = $channel_binding
             $config.SessionKeyTicket = $SessionKeyTicket
             $config.S4U2Self = $S4U2Self
             $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
@@ -366,7 +370,7 @@ function New-LsaClientContext {
             $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
-            $config.ChannelBinding = $ChannelBinding
+            $config.ChannelBinding = $channel_binding
             $config.Create($Ticket, $RequestAttribute)
         }
     }

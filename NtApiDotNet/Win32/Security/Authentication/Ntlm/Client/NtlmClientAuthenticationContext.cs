@@ -205,11 +205,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
                 {
                     builderv2.TargetInfo.Add(new NtlmAvPairString(MsAvPairType.TargetName, _target_name));
                 }
-                byte[] channel_binding = new byte[16];
-                if (_config?.ChannelBinding != null)
-                {
-                    channel_binding = MD5.Create().ComputeHash(_config.ChannelBinding);
-                }
+                byte[] channel_binding = _config?.ChannelBinding?.ComputeHash() ?? new byte[16];
                 builderv2.TargetInfo.Add(new NtlmAvPairBytes(MsAvPairType.ChannelBindings, channel_binding));
                 byte[] nt_owf = _credentials.NtOWFv2();
                 builderv2.CalculateNtProofResponse(nt_owf, challenge_token.ServerChallenge);

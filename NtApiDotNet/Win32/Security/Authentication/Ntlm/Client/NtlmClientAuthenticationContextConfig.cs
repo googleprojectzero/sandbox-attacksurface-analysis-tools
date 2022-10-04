@@ -20,8 +20,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
     public sealed class NtlmClientAuthenticationContextConfig
     {
         /// <summary>
-        /// Channel binding hash.
+        /// Channel binding.
         /// </summary>
-        public byte[] ChannelBinding { get; set; }
+        public GssChannelBindings ChannelBinding { get; set; }
     }
 }

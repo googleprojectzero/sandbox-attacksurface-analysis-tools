@@ -615,7 +615,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             }
 
             bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);
-            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, config?.ChannelBinding ?? new byte[16], 1, delegate_cred);
+            byte[] channel_binding = config?.ChannelBinding?.ComputeHash() ?? new byte[16];
+            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, channel_binding, 1, delegate_cred);
             int sequence_number = KerberosBuilderUtils.GetRandomNonce();
             _send_sequence_number = _recv_sequence_number = sequence_number;
 
