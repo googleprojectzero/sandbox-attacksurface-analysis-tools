@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
 using System.IO;
 using System.Net.Sockets;
@@ -23,7 +24,7 @@ namespace NtApiDotNet.Net.Smb2
     /// Simple SMBv2 client based on MS-SMB2 protocol documentation.
     /// </summary>
     /// <remarks>This is not designed to be a comprehensive implementation, it's primary purpose is supporting
-    /// remote named pipes. For example it doesn't current support multiple concurrent requests.</remarks>
+    /// remote named pipes. For example it doesn't currently support multiple concurrent requests.</remarks>
     public sealed class Smb2Client : IDisposable
     {
         #region Private Members
@@ -274,6 +275,13 @@ namespace NtApiDotNet.Net.Smb2
         /// </summary>
         public Smb2Session CreateNullSession()
         {
+            if (!NtObjectUtils.IsWindows)
+            {
+                return CreateSession(new NtlmClientAuthenticationContext(null, 
+                    InitializeContextReqFlags.Integrity | InitializeContextReqFlags.NullSession,
+                    null, null));
+            }
+
             using (var creds = CredentialHandle.Create(AuthenticationPackage.NTLM_NAME, SecPkgCredFlags.Outbound))
             {
                 using (var client = new ClientAuthenticationContext(creds, 
