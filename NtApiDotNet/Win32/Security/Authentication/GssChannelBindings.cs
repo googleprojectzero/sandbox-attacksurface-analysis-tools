@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
-        /// Computer the MD5 hash of the channel binding structure.
+        /// Compute the MD5 hash of the channel binding structure.
         /// </summary>
         /// <returns>The MD5 hash of the channel bindings.</returns>
         public byte[] ComputeHash()
