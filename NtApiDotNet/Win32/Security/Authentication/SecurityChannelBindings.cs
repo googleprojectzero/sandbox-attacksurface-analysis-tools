@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -21,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a GSS-API channel binding structure.
     /// </summary>
-    public sealed class GssChannelBindings
+    public sealed class SecurityChannelBindings
     {
         /// <summary>
         /// Initiator address type.
@@ -51,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GssChannelBindings()
+        public SecurityChannelBindings()
         {
         }
 
@@ -59,7 +60,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Constructor.
         /// </summary>
         /// <param name="application_data">Application data.</param>
-        public GssChannelBindings(byte[] application_data)
+        public SecurityChannelBindings(byte[] application_data)
         {
             ApplicationData = application_data;
         }
@@ -81,6 +82,25 @@ namespace NtApiDotNet.Win32.Security.Authentication
             writer.Write(ApplicationData?.Length ?? 0);
             writer.Write(ApplicationData ?? Array.Empty<byte>());
             return MD5.Create().ComputeHash(stm.ToArray());
+        }
+
+        internal SecurityChannelBindings(SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS> buffer)
+        {
+            SEC_CHANNEL_BINDINGS bindings = buffer.Result;
+            InitiatorAddrType = bindings.dwInitiatorAddrType;
+            if (bindings.cbInitiatorLength > 0)
+            {
+                Initiator = buffer.ReadBytes((ulong)bindings.dwInitiatorOffset, bindings.cbInitiatorLength);
+            }
+            AcceptorAddrType = bindings.dwAcceptorAddrType;
+            if (bindings.cbAcceptorLength > 0)
+            {
+                Acceptor = buffer.ReadBytes((ulong)bindings.dwAcceptorOffset, bindings.cbAcceptorLength);
+            }
+            if (bindings.cbApplicationDataLength > 0)
+            {
+                ApplicationData = buffer.ReadBytes((ulong)bindings.dwApplicationDataOffset, bindings.cbApplicationDataLength);
+            }
         }
     }
 }

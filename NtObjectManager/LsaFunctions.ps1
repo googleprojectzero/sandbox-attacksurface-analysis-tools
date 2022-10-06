@@ -349,7 +349,7 @@ function New-LsaClientContext {
     )
 
     $channel_binding = if ($ChannelBinding -ne $null) {
-        [NtApiDotNet.Win32.Security.Authentication.GssChannelBindings]::new($ChannelBinding)
+        [NtApiDotNet.Win32.Security.Authentication.SecurityChannelBindings]::new($ChannelBinding)
     }
 
     switch($PSCmdlet.ParameterSetName) {

@@ -201,6 +201,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool IsLoopback => SecurityContextUtils.GetIsLoopback(Context);
 
         /// <summary>
+        /// Get the unique channel bindings for this context.
+        /// </summary>
+        public SecurityChannelBindings UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
+
+        /// <summary>
+        /// Get the endpoint channel bindings for this context.
+        /// </summary>
+        public SecurityChannelBindings EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
+
+        /// <summary>
         /// Get or set whether the context owns the credentials object or not. If true
         /// then the credentials are disposed with the context.
         /// </summary>

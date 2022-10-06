@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// Channel binding.
         /// </summary>
-        public GssChannelBindings ChannelBinding { get; set; }
+        public SecurityChannelBindings ChannelBinding { get; set; }
 
         /// <summary>
         /// Specify a ticket to generate a U2U ticket.

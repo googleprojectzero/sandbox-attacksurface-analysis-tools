@@ -557,7 +557,7 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
-    <Compile Include="Win32\Security\Authentication\GssChannelBindings.cs" />
+    <Compile Include="Win32\Security\Authentication\SecurityChannelBindings.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACUpnDnsInfoBuilder.cs" />
@@ -823,6 +823,7 @@
     <Compile Include="Win32\Security\Native\MSV1_0_PROTOCOL_MESSAGE_TYPE.cs" />
     <Compile Include="Win32\Security\Native\MSV1_0_S4U_LOGON.cs" />
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_Bindings.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_CRED_ATTR.cs" />

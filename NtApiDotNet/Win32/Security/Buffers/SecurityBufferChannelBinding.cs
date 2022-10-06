@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Buffers
@@ -23,16 +25,25 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     public sealed class SecurityBufferChannelBinding : SecurityBuffer
     {
-        private readonly byte[] _channel_binding_token;
+        private readonly SecurityChannelBindings _channel_binding;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="channel_binding">The channel bindings.</param>
+        public SecurityBufferChannelBinding(SecurityChannelBindings channel_binding)
+            : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
+        {
+            _channel_binding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
+        }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="channel_binding_token">The channel bindings token.</param>
         public SecurityBufferChannelBinding(byte[] channel_binding_token) 
-            : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
+            : this(new SecurityChannelBindings(channel_binding_token))
         {
-            _channel_binding_token = channel_binding_token;
         }
 
         /// <summary>
@@ -41,7 +52,44 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// <returns>The buffer as an array.</returns>
         public override byte[] ToArray()
         {
-            throw new NotImplementedException();
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            // Manual marshaling of SEC_CHANNEL_BINDINGS
+            int current_ofs = Marshal.SizeOf<SEC_CHANNEL_BINDINGS>();
+            writer.Write(_channel_binding.InitiatorAddrType);
+            current_ofs = AddBuffer(writer, current_ofs, _channel_binding.Initiator?.Length);
+            writer.Write(_channel_binding.AcceptorAddrType);
+            current_ofs = AddBuffer(writer, current_ofs, _channel_binding.Acceptor?.Length);
+            _ = AddBuffer(writer, current_ofs, _channel_binding.ApplicationData?.Length);
+
+            WriteBuffer(writer, _channel_binding.Initiator);
+            WriteBuffer(writer, _channel_binding.Acceptor);
+            WriteBuffer(writer, _channel_binding.ApplicationData);
+
+            return stm.ToArray();
+        }
+
+        private int AddBuffer(BinaryWriter writer, int current_ofs, int? length)
+        {
+            int next_length = length ?? 0;
+            if (next_length == 0)
+            {
+                writer.Write(0);
+                writer.Write(0);
+            }
+            else
+            {
+                writer.Write(current_ofs);
+                current_ofs += next_length;
+                writer.Write(next_length);
+            }
+            return current_ofs;
+        }
+
+        private void WriteBuffer(BinaryWriter writer, byte[] buffer)
+        {
+            writer.Write(buffer ?? Array.Empty<byte>());
         }
 
         internal override void FromBuffer(SecBuffer buffer)
@@ -51,14 +99,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
 
         internal override SecBuffer ToBuffer(DisposableList list)
         {
-            SEC_CHANNEL_BINDINGS sec_channel_bind = new SEC_CHANNEL_BINDINGS();
-            sec_channel_bind.cbApplicationDataLength = _channel_binding_token.Length;
-            sec_channel_bind.dwApplicationDataOffset = Marshal.SizeOf(typeof(SEC_CHANNEL_BINDINGS));
-            using (var binding = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(sec_channel_bind, _channel_binding_token.Length, true))
-            {
-                binding.Data.WriteBytes(_channel_binding_token);
-                return SecBuffer.Create(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, binding.ToArray(), list);
-            }
+            return SecBuffer.Create(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, ToArray(), list);
         }
     }
 }

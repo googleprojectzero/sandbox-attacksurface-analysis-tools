@@ -313,6 +313,28 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return res.Item1 != 0;
         }
 
+        internal static SecurityChannelBindings GetChannelBinding(SecHandle context, SECPKG_ATTR attr)
+        {
+            var target = QueryContextAttributeNoThrow<SecPkgContext_Bindings>(context, attr);
+            if (target.Item2 == SecStatusCode.SUCCESS)
+            {
+                try
+                {
+                    var binding = target.Item1;
+                    if (binding.BindingsLength == 0 || binding.Bindings == IntPtr.Zero)
+                        return null;
+
+                    var buffer = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(binding.Bindings, binding.BindingsLength, false);
+                    return new SecurityChannelBindings(buffer);
+                }
+                finally
+                {
+                    SecurityNativeMethods.FreeContextBuffer(target.Item1.Bindings);
+                }
+            }
+            return null;
+        }
+
         internal static ExportedSecurityContext ExportContext(SecHandle context, SecPkgContextExportFlags export_flags, string package, bool client)
         {
             if (context is null)

@@ -29,6 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         #region Private Members
         private readonly CredentialHandle _creds;
+        private byte[] _channel_binding;
         private int _token_count;
         private SecHandle _context;
 
@@ -36,9 +37,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
-            if (ChannelBinding != null)
+            if (_channel_binding != null)
             {
-                input_buffers.Add(new SecurityBufferChannelBinding(ChannelBinding));
+                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
             }
 
             string target_name = string.IsNullOrEmpty(Target) ? null : Target;
@@ -108,7 +109,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Current channel binding.
         /// </summary>
-        public byte[] ChannelBinding { get; set; }
+        [Obsolete]
+        public byte[] ChannelBinding
+        {
+            get => _channel_binding;
+            set => _channel_binding = value;
+        }
 
         /// <summary>
         /// Current status flags.
@@ -190,6 +196,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool IsLoopback => SecurityContextUtils.GetIsLoopback(Context);
 
         /// <summary>
+        /// Get the unique channel bindings for this context.
+        /// </summary>
+        public SecurityChannelBindings UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
+
+        /// <summary>
+        /// Get the endpoint channel bindings for this context.
+        /// </summary>
+        public SecurityChannelBindings EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
+
+        /// <summary>
         /// Get or set whether the context owns the credentials object or not. If true
         /// then the credentials are disposed with the context.
         /// </summary>
@@ -199,7 +215,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the current credentials handle.
         /// </summary>
         public CredentialHandle CredentialHandle => _creds;
-
         #endregion
 
         #region Constructors
@@ -221,7 +236,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             RequestAttributes = req_attributes;
             Target = target;
             DataRepresentation = data_rep;
-            ChannelBinding = channel_binding;
+            _channel_binding = channel_binding;
             if (initialize)
             {
                 Continue();

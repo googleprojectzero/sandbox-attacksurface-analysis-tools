@@ -40,7 +40,6 @@ namespace NtApiDotNet.Net.Tls
         #endregion
 
         #region Constructors
-
         internal TlsRecord(byte[] data, TlsRecordType record_type,
             int major_version, int minor_version, byte[] record_data)
         {
@@ -48,7 +47,24 @@ namespace NtApiDotNet.Net.Tls
             Version = new Version(major_version, minor_version);
             Data = record_data;
         }
+        #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Convert TLS record to an array.
+        /// </summary>
+        /// <returns>The TLS record as an array.</returns>
+        public byte[] ToArray()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((byte)Type);
+            writer.WriteByte(Version.Major);
+            writer.WriteByte(Version.Minor);
+            writer.WriteUInt16BE(Data.Length);
+            writer.Write(Data);
+            return stm.ToArray();
+        }
         #endregion
 
         #region Static Methods
@@ -86,7 +102,7 @@ namespace NtApiDotNet.Net.Tls
                 TlsRecordType type = (TlsRecordType)reader.ReadByte();
                 int major_version = reader.ReadByte();
                 int minor_version = reader.ReadByte();
-                int length = reader.ReadByte() << 8 | reader.ReadByte();
+                int length = reader.ReadUInt16BE();
                 byte[] data = reader.ReadAllBytes(length);
                 record = new TlsRecord(data, type, major_version, minor_version, data);
                 return true;

@@ -1,4 +1,4 @@
-﻿//  Copyright 2022 Google LLC. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
+using System;
+using System.Runtime.InteropServices;
+
+namespace NtApiDotNet.Win32.Security.Native
 {
-    /// <summary>
-    /// Configuration class for the client authentication context.
-    /// </summary>
-    public sealed class NtlmClientAuthenticationContextConfig
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SecPkgContext_Bindings
     {
-        /// <summary>
-        /// Channel binding.
-        /// </summary>
-        public SecurityChannelBindings ChannelBinding { get; set; }
+        public int BindingsLength;
+        public IntPtr Bindings; // SEC_CHANNEL_BINDINGS* 
     }
 }
