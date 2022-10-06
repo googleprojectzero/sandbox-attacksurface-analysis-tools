@@ -21,9 +21,9 @@ using System.Text;
 namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
-    /// Class to represent a credential handle.
+    /// Class to represent a credential handle using Win32 SSPI.
     /// </summary>
-    public sealed class CredentialHandle : IDisposable
+    public sealed class CredentialHandle : ICredentialHandle
     {
         /// <summary>
         /// Name of the authentication package used.
@@ -201,6 +201,32 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             SecurityNativeMethods.SetCredentialsAttributes(CredHandle, 
                 attr, buffer, buffer.Length).CheckResult();
+        }
+
+        /// <summary>
+        /// Create a client authentication context.
+        /// </summary>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        /// <returns>The client authentication context.</returns>
+        public IClientAuthenticationContext CreateClient(InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None, string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true)
+        {
+            return ClientAuthenticationContext.Create(this, req_attributes, target, channel_binding, data_rep, initialize);
+        }
+
+        /// <summary>
+        /// Create a server authentication context.
+        /// </summary>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <returns>The server authentication context.</returns>
+        public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+        {
+            return ServerAuthenticationContext.Create(this, req_attributes, channel_binding, data_rep);
         }
 
         /// <summary>

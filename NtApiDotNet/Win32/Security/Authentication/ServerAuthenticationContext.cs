@@ -35,6 +35,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private SecHandle _context;
         private int _token_count;
 
+        private ServerAuthenticationContext(CredentialHandle creds, AcceptContextReqFlags req_attributes,
+            SecurityChannelBinding channel_binding, SecDataRep data_rep)
+        {
+            _creds = creds ?? throw new ArgumentNullException(nameof(creds));
+            RequestAttributes = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
+            DataRepresentation = data_rep;
+            _token_count = 0;
+            _channel_binding = channel_binding;
+        }
+
         private SecStatusCode CallAccept(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers, bool throw_on_error)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
@@ -226,7 +236,22 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the current credentials handle.
         /// </summary>
         public CredentialHandle CredentialHandle => _creds;
+        #endregion
 
+        #region Static Methods
+        /// <summary>
+        /// Create a server authentication context.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <returns>The server authentication context.</returns>
+        public static ServerAuthenticationContext Create(CredentialHandle creds, AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None,
+            SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+        {
+            return new ServerAuthenticationContext(creds, req_attributes, channel_binding, data_rep);
+        }
         #endregion
 
         #region Public Methods
@@ -501,13 +526,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="channel_binding">Optional channel binding token.</param>
         /// <param name="data_rep">Data representation.</param>
         public ServerAuthenticationContext(CredentialHandle creds, AcceptContextReqFlags req_attributes,
-            byte[] channel_binding, SecDataRep data_rep)
+            byte[] channel_binding, SecDataRep data_rep) 
+            : this(creds, req_attributes, SecurityChannelBinding.Create(channel_binding), data_rep)
         {
-            _creds = creds;
-            RequestAttributes = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
-            DataRepresentation = data_rep;
-            _token_count = 0;
-            _channel_binding = SecurityChannelBinding.Create(channel_binding);
         }
 
         /// <summary>
@@ -518,7 +539,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="data_rep">Data representation.</param>
         public ServerAuthenticationContext(CredentialHandle creds, 
             AcceptContextReqFlags req_attributes, SecDataRep data_rep)
-            : this(creds, req_attributes, null, data_rep)
+            : this(creds, req_attributes, (byte[])null, data_rep)
         {
         }
 

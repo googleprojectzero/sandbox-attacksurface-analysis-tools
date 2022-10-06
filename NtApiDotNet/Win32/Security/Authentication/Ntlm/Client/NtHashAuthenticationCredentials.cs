@@ -69,7 +69,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         /// <param name="username">The username.</param>
         /// <param name="domain">The user's domain name.</param>
         /// <param name="nthash">The user's NT hash.</param>
-        public NtHashAuthenticationCredentials(byte[] nthash, string username = null, string domain = null)
+        public NtHashAuthenticationCredentials(byte[] nthash, string username = null, string domain = null) : base(true)
         {
             UserName = username;
             Domain = domain;
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         /// </summary>
         /// <param name="credentials">The user's credentials.</param>
         /// <remarks>Converts the user's password to the NT hash.</remarks>
-        public NtHashAuthenticationCredentials(UserCredentials credentials)
+        public NtHashAuthenticationCredentials(UserCredentials credentials) : base(true)
         {
             if (credentials is null)
             {

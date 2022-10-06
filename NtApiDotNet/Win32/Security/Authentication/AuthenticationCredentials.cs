@@ -21,6 +21,20 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// </summary>
     public abstract class AuthenticationCredentials
     {
+        internal bool Mananged { get; }
+
+        internal AuthenticationCredentials(bool managed)
+        {
+            Mananged = managed;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        protected AuthenticationCredentials() : this(false)
+        {
+        }
+
         internal abstract SafeBuffer ToBuffer(DisposableList list, string package);
     }
 }

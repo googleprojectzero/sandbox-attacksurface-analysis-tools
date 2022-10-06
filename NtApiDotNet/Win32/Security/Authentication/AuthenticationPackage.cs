@@ -25,6 +25,60 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// </summary>
     public sealed class AuthenticationPackage
     {
+        #region Private Members
+        private delegate ICredentialHandle CreateHandleDelegate(SecPkgCredFlags cred_use_flag, AuthenticationCredentials creds);
+
+        private static Lazy<IReadOnlyList<AuthenticationPackage>> _native_packages = new Lazy<IReadOnlyList<AuthenticationPackage>>(GetNativePackages);
+        private static Lazy<Dictionary<string, CreateHandleDelegate>> _managed_packages = new Lazy<Dictionary<string, CreateHandleDelegate>>(GetManagedPackages);
+        private readonly bool _managed;
+
+        private static IReadOnlyList<AuthenticationPackage> GetNativePackages()
+        {
+            List<AuthenticationPackage> packages = new List<AuthenticationPackage>();
+            if (SecurityNativeMethods.EnumerateSecurityPackages(out int count,
+            out IntPtr ppPackageInfo) == SecStatusCode.SUCCESS)
+            {
+                try
+                {
+                    packages.AddRange(ppPackageInfo.ReadArray<SecPkgInfo>(count).Select(p => new AuthenticationPackage(p)));
+                }
+                finally
+                {
+                    SecurityNativeMethods.FreeContextBuffer(ppPackageInfo);
+                }
+            }
+            return packages.AsReadOnly();
+        }
+
+        private static Dictionary<string, CreateHandleDelegate> GetManagedPackages()
+        {
+            var packages = new Dictionary<string, CreateHandleDelegate>(StringComparer.OrdinalIgnoreCase);
+            packages.Add(NTLM_NAME, (u, c) => throw new NotImplementedException());
+            packages.Add(KERBEROS_NAME, (u, c) => throw new NotImplementedException());
+            return packages;
+        }
+
+        private AuthenticationPackage(string name,
+            SecPkgCapabilityFlag capabilities, int version,
+            int rpc_id, int max_token_size, string comment,
+            bool managed)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Capabilities = capabilities;
+            Version = version;
+            RpcId = rpc_id;
+            MaxTokenSize = max_token_size;
+            Comment = comment ?? string.Empty;
+            _managed = managed;
+        }
+
+        private AuthenticationPackage(string name) 
+            : this(name, 0, 0, 0, 0, null, true)
+        {
+        }
+        #endregion
+
+        #region Public Constants
         /// <summary>
         /// Authentication package name for MSV1.0
         /// </summary>
@@ -69,7 +123,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// All package ID.
         /// </summary>
         public const uint SECPKG_ALL_PACKAGES = unchecked((uint)-2);
+        #endregion
 
+        #region Public Properties
         /// <summary>
         /// Capabilities of the package.
         /// </summary>
@@ -94,78 +150,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Comment for the package.
         /// </summary>
         public string Comment { get; }
+        #endregion
 
-        internal AuthenticationPackage(string name,
-            SecPkgCapabilityFlag capabilities, int version, 
-            int rpc_id, int max_token_size, string comment)
-        {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Capabilities = capabilities;
-            Version = version;
-            RpcId = rpc_id;
-            MaxTokenSize = max_token_size;
-            Comment = comment ?? string.Empty;
-        }
-
+        #region Internal Members
         internal AuthenticationPackage(SecPkgInfo pkg) 
-            : this(pkg.Name, pkg.fCapabilities, pkg.wVersion, pkg.wRPCID, pkg.cbMaxToken, pkg.Comment)
+            : this(pkg.Name, pkg.fCapabilities, pkg.wVersion, 
+                  pkg.wRPCID, pkg.cbMaxToken, pkg.Comment, false)
         {
-        }
-
-        /// <summary>
-        /// Get authentication packages.
-        /// </summary>
-        /// <returns>The list of authentication packages.</returns>
-        public static IEnumerable<AuthenticationPackage> Get()
-        {
-            List<AuthenticationPackage> packages = new List<AuthenticationPackage>();
-            if (SecurityNativeMethods.EnumerateSecurityPackages(out int count,
-                out IntPtr ppPackageInfo) == SecStatusCode.SUCCESS)
-            {
-                try
-                {
-                    packages.AddRange(ppPackageInfo.ReadArray<SecPkgInfo>(count).Select(p => new AuthenticationPackage(p)));
-                }
-                finally
-                {
-                    SecurityNativeMethods.FreeContextBuffer(ppPackageInfo);
-                }
-            }
-            return packages.AsReadOnly();
-        }
-
-        /// <summary>
-        /// Get authentication package names.
-        /// </summary>
-        /// <returns>The list of authentication package names.</returns>
-        public static IEnumerable<string> GetNames()
-        {
-            return Get().Select(p => p.Name);
-        }
-
-        /// <summary>
-        /// Get an authentication package by name.
-        /// </summary>
-        /// <param name="package">The name of the package.</param>
-        /// <returns>The authentication package.</returns>
-        public static AuthenticationPackage FromName(string package)
-        {
-            if (NtObjectUtils.IsWindows)
-            {
-                SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
-                try
-                {
-                    return new AuthenticationPackage(package_info.ReadStruct<SecPkgInfo>());
-                }
-                finally
-                {
-                    SecurityNativeMethods.FreeContextBuffer(package_info);
-                }
-            }
-            else
-            {
-                return new AuthenticationPackage(package, 0, 0, 0, 0, string.Empty);
-            }
         }
 
         internal static bool CheckNtlm(string package_name)
@@ -202,5 +193,88 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return package_name.Equals(TSSSP_NAME, StringComparison.OrdinalIgnoreCase);
         }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Create a new credential handle.
+        /// </summary>
+        /// <param name="cred_use_flag">Credential user flags.</param>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="principal">User principal.</param>
+        /// <param name="auth_id">Optional authentication ID for the user.</param>
+        /// <returns>The credential handle.</returns>
+        public ICredentialHandle CreateHandle(SecPkgCredFlags cred_use_flag, 
+            AuthenticationCredentials credentials = null, string principal = null, Luid? auth_id = null)
+        {
+            // Check for the use of a managed credential handle.
+            if (credentials?.Mananged ?? _managed)
+            {
+                if (!_managed_packages.Value.TryGetValue(Name, out CreateHandleDelegate del))
+                    throw new ArgumentException($"Unsupported authentication package {Name}");
+                return del(cred_use_flag, credentials);
+            }
+
+            return CredentialHandle.Create(principal, Name, auth_id, cred_use_flag, credentials);
+        }
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Get authentication packages.
+        /// </summary>
+        /// <returns>The list of authentication packages.</returns>
+        public static IEnumerable<AuthenticationPackage> Get()
+        {
+            return NtObjectUtils.IsWindows ? _native_packages.Value : _managed_packages.Value.Keys.Select(k => new AuthenticationPackage(k));
+        }
+
+        /// <summary>
+        /// Get authentication package names.
+        /// </summary>
+        /// <returns>The list of authentication package names.</returns>
+        public static IEnumerable<string> GetNames()
+        {
+            return Get().Select(p => p.Name);
+        }
+
+        /// <summary>
+        /// Get an authentication package by name.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <param name="managed">Request a managed package.</param>
+        /// <returns>The authentication package.</returns>
+        public static AuthenticationPackage FromName(string package, bool managed)
+        {
+            if (NtObjectUtils.IsWindows && !managed)
+            {
+                SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
+                try
+                {
+                    return new AuthenticationPackage(package_info.ReadStruct<SecPkgInfo>());
+                }
+                finally
+                {
+                    SecurityNativeMethods.FreeContextBuffer(package_info);
+                }
+            }
+            else
+            {
+                if (_managed_packages.Value.ContainsKey(package))
+                    return new AuthenticationPackage(package);
+                throw new ArgumentException($"Unsupported authentication package {package}");
+            }
+        }
+
+        /// <summary>
+        /// Get an authentication package by name.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <returns>The authentication package.</returns>
+        public static AuthenticationPackage FromName(string package)
+        {
+            return FromName(package, false);
+        }
+        #endregion
     }
 }

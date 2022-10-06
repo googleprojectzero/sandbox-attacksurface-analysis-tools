@@ -33,8 +33,10 @@ Get the NTLM authentication package.
 function Get-LsaPackage {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [Parameter(Position = 0, ParameterSetName = "FromName")]
-        [string]$Name
+        [Parameter(Position = 0, Mandatory, ParameterSetName = "FromName")]
+        [string]$Name,
+        [Parameter(ParameterSetName = "FromName")]
+        [switch]$Managed
     )
 
     switch ($PSCmdlet.ParameterSetName) {
@@ -42,7 +44,7 @@ function Get-LsaPackage {
             [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::Get() | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::FromName($Name) | Write-Output
+            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::FromName($Name, $Managed) | Write-Output
         }
     }
 }
@@ -233,7 +235,7 @@ The password to use.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.CredentialHandle
+NtApiDotNet.Win32.Security.Authentication.ICredentialHandle
 .EXAMPLE
 $h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both
 Get a credential handle for the NTLM package for both directions.
@@ -276,7 +278,10 @@ function New-LsaCredentialHandle {
         }
     }
 
-    [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]::Create($Principal, $Package, $AuthId, $UseFlag, $Credential) | Write-Output
+    $pkg = Get-LsaPackage -Name $Package
+    if ($null -ne $pkg) {
+        $pkg.CreateHandle($UseFlag, $Credential, $Principal, $AuthId)
+    }
 }
 
 $package_completer = {
@@ -320,7 +325,7 @@ function New-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromCredHandle")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromCredHandle")]
-        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [NtApiDotNet.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicketCache")]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicket")]
@@ -352,8 +357,7 @@ function New-LsaClientContext {
 
     switch($PSCmdlet.ParameterSetName) {
         "FromCredHandle" {
-            [NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext]::new($CredHandle, `
-                $RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
+            $CredHandle.CreateClient($RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
         }
         "FromTicketCache" {
             $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
@@ -396,14 +400,13 @@ function New-LsaServerContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [NtApiDotNet.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
         [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttribute = 0,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
         [byte[]]$ChannelBinding
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]::new($CredHandle, `
-            $RequestAttribute, $ChannelBinding, $DataRepresentation)
+    $CredHandle.CreateServer($RequestAttribute, $ChannelBinding, $DataRepresentation)
 }
 
 <#

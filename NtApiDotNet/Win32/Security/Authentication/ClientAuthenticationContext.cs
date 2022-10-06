@@ -33,6 +33,23 @@ namespace NtApiDotNet.Win32.Security.Authentication
         private int _token_count;
         private SecHandle _context;
 
+        private ClientAuthenticationContext(CredentialHandle creds,
+            InitializeContextReqFlags req_attributes,
+            string target, SecurityChannelBinding channel_binding,
+            SecDataRep data_rep, bool initialize)
+        {
+            _creds = creds ?? throw new ArgumentNullException(nameof(creds));
+            _token_count = 0;
+            RequestAttributes = req_attributes;
+            Target = target;
+            DataRepresentation = data_rep;
+            _channel_binding = channel_binding;
+            if (initialize)
+            {
+                Continue();
+            }
+        }
+
         private SecStatusCode CallInitialize(List<SecurityBuffer> input_buffers, List<SecurityBuffer> output_buffers, bool throw_on_error)
         {
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
@@ -229,18 +246,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
         public ClientAuthenticationContext(CredentialHandle creds,
             InitializeContextReqFlags req_attributes,
-            string target, byte[] channel_binding, SecDataRep data_rep, bool initialize)
+            string target, byte[] channel_binding, SecDataRep data_rep, bool initialize) 
+            : this(creds, req_attributes, target, SecurityChannelBinding.Create(channel_binding), data_rep, initialize)
         {
-            _creds = creds;
-            _token_count = 0;
-            RequestAttributes = req_attributes;
-            Target = target;
-            DataRepresentation = data_rep;
-            _channel_binding = SecurityChannelBinding.Create(channel_binding);
-            if (initialize)
-            {
-                Continue();
-            }
         }
 
         /// <summary>
@@ -291,6 +299,23 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public ClientAuthenticationContext(CredentialHandle creds)
             : this(creds, InitializeContextReqFlags.None, SecDataRep.Native)
         {
+        }
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        public static ClientAuthenticationContext Create(CredentialHandle creds, InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None,
+            string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true)
+        {
+            return new ClientAuthenticationContext(creds, req_attributes, target, channel_binding, data_rep, initialize);
         }
         #endregion
 
