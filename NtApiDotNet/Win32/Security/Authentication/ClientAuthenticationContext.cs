@@ -29,7 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         #region Private Members
         private readonly CredentialHandle _creds;
-        private byte[] _channel_binding;
+        private SecurityChannelBinding _channel_binding;
         private int _token_count;
         private SecHandle _context;
 
@@ -112,8 +112,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         [Obsolete]
         public byte[] ChannelBinding
         {
-            get => _channel_binding;
-            set => _channel_binding = value;
+            get => _channel_binding?.ApplicationData;
+            set => _channel_binding = SecurityChannelBinding.Create(value);
         }
 
         /// <summary>
@@ -198,12 +198,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Get the unique channel bindings for this context.
         /// </summary>
-        public SecurityChannelBindings UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
+        public SecurityChannelBinding UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
 
         /// <summary>
         /// Get the endpoint channel bindings for this context.
         /// </summary>
-        public SecurityChannelBindings EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
+        public SecurityChannelBinding EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
 
         /// <summary>
         /// Get or set whether the context owns the credentials object or not. If true
@@ -236,7 +236,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             RequestAttributes = req_attributes;
             Target = target;
             DataRepresentation = data_rep;
-            _channel_binding = channel_binding;
+            _channel_binding = SecurityChannelBinding.Create(channel_binding);
             if (initialize)
             {
                 Continue();

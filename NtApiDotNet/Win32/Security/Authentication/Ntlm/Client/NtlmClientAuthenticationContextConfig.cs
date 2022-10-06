@@ -22,6 +22,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         /// <summary>
         /// Channel binding.
         /// </summary>
-        public SecurityChannelBindings ChannelBinding { get; set; }
+        public SecurityChannelBinding ChannelBinding { get; set; }
     }
 }

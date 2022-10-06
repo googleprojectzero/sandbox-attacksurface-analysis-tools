@@ -31,6 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     {
         #region Private Members
         private readonly CredentialHandle _creds;
+        private SecurityChannelBinding _channel_binding;
         private SecHandle _context;
         private int _token_count;
 
@@ -39,9 +40,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             var token_buffer = new SecurityBufferAllocMem(SecurityBufferType.Token);
             output_buffers.Insert(0, token_buffer);
 
-            if (ChannelBinding != null)
+            if (_channel_binding != null)
             {
-                input_buffers.Add(new SecurityBufferChannelBinding(ChannelBinding));
+                input_buffers.Add(new SecurityBufferChannelBinding(_channel_binding));
             }
 
             LargeInteger expiry = new LargeInteger();
@@ -115,9 +116,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public SecDataRep DataRepresentation { get; set; }
 
         /// <summary>
-        /// Current channel bindings.
+        /// Current channel binding.
         /// </summary>
-        public byte[] ChannelBinding { get; set; }
+        [Obsolete]
+        public byte[] ChannelBinding
+        {
+            get => _channel_binding?.ApplicationData;
+            set => _channel_binding = SecurityChannelBinding.Create(value);
+        }
 
         /// <summary>
         /// Current return attributes.
@@ -203,12 +209,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Get the unique channel bindings for this context.
         /// </summary>
-        public SecurityChannelBindings UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
+        public SecurityChannelBinding UniqueBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.UNIQUE_BINDINGS);
 
         /// <summary>
         /// Get the endpoint channel bindings for this context.
         /// </summary>
-        public SecurityChannelBindings EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
+        public SecurityChannelBinding EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
 
         /// <summary>
         /// Get or set whether the context owns the credentials object or not. If true
@@ -501,7 +507,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             RequestAttributes = req_attributes & ~AcceptContextReqFlags.AllocateMemory;
             DataRepresentation = data_rep;
             _token_count = 0;
-            ChannelBinding = channel_binding;
+            _channel_binding = SecurityChannelBinding.Create(channel_binding);
         }
 
         /// <summary>

@@ -25,13 +25,13 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     public sealed class SecurityBufferChannelBinding : SecurityBuffer
     {
-        private readonly SecurityChannelBindings _channel_binding;
+        private readonly SecurityChannelBinding _channel_binding;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="channel_binding">The channel bindings.</param>
-        public SecurityBufferChannelBinding(SecurityChannelBindings channel_binding)
+        public SecurityBufferChannelBinding(SecurityChannelBinding channel_binding)
             : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
         {
             _channel_binding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
         /// </summary>
         /// <param name="channel_binding_token">The channel bindings token.</param>
         public SecurityBufferChannelBinding(byte[] channel_binding_token) 
-            : this(new SecurityChannelBindings(channel_binding_token))
+            : this(new SecurityChannelBinding(channel_binding_token))
         {
         }
 
@@ -58,10 +58,10 @@ namespace NtApiDotNet.Win32.Security.Buffers
             // Manual marshaling of SEC_CHANNEL_BINDINGS
             int current_ofs = Marshal.SizeOf<SEC_CHANNEL_BINDINGS>();
             writer.Write(_channel_binding.InitiatorAddrType);
-            current_ofs = AddBuffer(writer, current_ofs, _channel_binding.Initiator?.Length);
+            AddBuffer(writer, ref current_ofs, _channel_binding.Initiator?.Length);
             writer.Write(_channel_binding.AcceptorAddrType);
-            current_ofs = AddBuffer(writer, current_ofs, _channel_binding.Acceptor?.Length);
-            _ = AddBuffer(writer, current_ofs, _channel_binding.ApplicationData?.Length);
+            AddBuffer(writer, ref current_ofs, _channel_binding.Acceptor?.Length);
+            AddBuffer(writer, ref current_ofs, _channel_binding.ApplicationData?.Length);
 
             WriteBuffer(writer, _channel_binding.Initiator);
             WriteBuffer(writer, _channel_binding.Acceptor);
@@ -70,7 +70,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
             return stm.ToArray();
         }
 
-        private int AddBuffer(BinaryWriter writer, int current_ofs, int? length)
+        private void AddBuffer(BinaryWriter writer, ref int current_ofs, int? length)
         {
             int next_length = length ?? 0;
             if (next_length == 0)
@@ -80,11 +80,10 @@ namespace NtApiDotNet.Win32.Security.Buffers
             }
             else
             {
+                writer.Write(next_length);
                 writer.Write(current_ofs);
                 current_ofs += next_length;
-                writer.Write(next_length);
             }
-            return current_ofs;
         }
 
         private void WriteBuffer(BinaryWriter writer, byte[] buffer)

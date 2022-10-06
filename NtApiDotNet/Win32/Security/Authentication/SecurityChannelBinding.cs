@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// Class to represent a GSS-API channel binding structure.
     /// </summary>
-    public sealed class SecurityChannelBindings
+    public sealed class SecurityChannelBinding
     {
         /// <summary>
         /// Initiator address type.
@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SecurityChannelBindings()
+        public SecurityChannelBinding()
         {
         }
 
@@ -60,9 +60,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Constructor.
         /// </summary>
         /// <param name="application_data">Application data.</param>
-        public SecurityChannelBindings(byte[] application_data)
+        public SecurityChannelBinding(byte[] application_data)
         {
-            ApplicationData = application_data;
+            ApplicationData = application_data ?? throw new ArgumentNullException(nameof(application_data));
         }
 
         /// <summary>
@@ -84,7 +84,17 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return MD5.Create().ComputeHash(stm.ToArray());
         }
 
-        internal SecurityChannelBindings(SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS> buffer)
+        /// <summary>
+        /// Create from application data.
+        /// </summary>
+        /// <param name="application_data">The application data to create from.</param>
+        /// <returns>The security channel binding, or null if application data is null.</returns>
+        public static SecurityChannelBinding Create(byte[] application_data)
+        {
+            return application_data != null ? new SecurityChannelBinding(application_data) : null;
+        }
+
+        internal SecurityChannelBinding(SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS> buffer)
         {
             SEC_CHANNEL_BINDINGS bindings = buffer.Result;
             InitiatorAddrType = bindings.dwInitiatorAddrType;

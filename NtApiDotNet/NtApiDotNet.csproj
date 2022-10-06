@@ -557,7 +557,7 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
-    <Compile Include="Win32\Security\Authentication\SecurityChannelBindings.cs" />
+    <Compile Include="Win32\Security\Authentication\SecurityChannelBinding.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACUpnDnsInfoBuilder.cs" />

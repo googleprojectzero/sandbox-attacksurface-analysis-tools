@@ -348,9 +348,7 @@ function New-LsaClientContext {
         [switch]$S4U2Self
     )
 
-    $channel_binding = if ($ChannelBinding -ne $null) {
-        [NtApiDotNet.Win32.Security.Authentication.SecurityChannelBindings]::new($ChannelBinding)
-    }
+    $channel_binding = [NtApiDotNet.Win32.Security.Authentication.SecurityChannelBinding]::Create($ChannelBinding)
 
     switch($PSCmdlet.ParameterSetName) {
         "FromCredHandle" {

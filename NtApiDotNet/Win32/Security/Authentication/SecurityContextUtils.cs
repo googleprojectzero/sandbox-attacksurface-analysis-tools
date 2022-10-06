@@ -313,7 +313,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return res.Item1 != 0;
         }
 
-        internal static SecurityChannelBindings GetChannelBinding(SecHandle context, SECPKG_ATTR attr)
+        internal static SecurityChannelBinding GetChannelBinding(SecHandle context, SECPKG_ATTR attr)
         {
             var target = QueryContextAttributeNoThrow<SecPkgContext_Bindings>(context, attr);
             if (target.Item2 == SecStatusCode.SUCCESS)
@@ -325,7 +325,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                         return null;
 
                     var buffer = new SafeStructureInOutBuffer<SEC_CHANNEL_BINDINGS>(binding.Bindings, binding.BindingsLength, false);
-                    return new SecurityChannelBindings(buffer);
+                    return new SecurityChannelBinding(buffer);
                 }
                 finally
                 {
