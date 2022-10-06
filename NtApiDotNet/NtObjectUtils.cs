@@ -504,6 +504,10 @@ namespace NtApiDotNet
             {
                 return (Win32Error)status.GetStatusCode();
             }
+
+            if (!IsWindows)
+                return (Win32Error)(-1);
+
             return (Win32Error)NtRtl.RtlNtStatusToDosErrorNoTeb(status);
         }
 
