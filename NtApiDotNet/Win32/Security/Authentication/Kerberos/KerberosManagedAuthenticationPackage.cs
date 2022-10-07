@@ -56,7 +56,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         internal KerberosManagedAuthenticationPackage()
-            : base(KERBEROS_NAME, SecPkgCapabilityFlag.Integrity | SecPkgCapabilityFlag.Privacy | SecPkgCapabilityFlag.Connection,
+            : base(KERBEROS_NAME, SecPkgCapabilityFlag.Integrity | SecPkgCapabilityFlag.Privacy | SecPkgCapabilityFlag.Connection | 
+                  SecPkgCapabilityFlag.Negotiable | SecPkgCapabilityFlag.MutualAuth | SecPkgCapabilityFlag.Delegation,
                   0, 16, 48000, "Kerberos Security Package (NtApiDotNet)", true)
         {
         }

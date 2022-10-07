@@ -268,7 +268,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         {
             if (!TryParse(data, 0, false, out NegotiateAuthenticationToken token))
             {
-                throw new ArgumentException(nameof(data));
+                throw new ArgumentException("Invalid authentication token.", nameof(data));
             }
             return token;
         }

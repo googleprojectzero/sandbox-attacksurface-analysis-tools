@@ -23,7 +23,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
     /// <summary>
     /// Authentication credentials representing an NT hash.
     /// </summary>
-    public sealed class NtHashAuthenticationCredentials : AuthenticationCredentials
+    public sealed class NtHashAuthenticationCredentials : AuthenticationCredentials, INtlmAuthenticationCredentials
     {
         #region Private Members
         private byte[] _nthash;

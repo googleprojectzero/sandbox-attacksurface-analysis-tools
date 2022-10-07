@@ -12,26 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
+using NtApiDotNet.Win32.Security.Authentication.Negotiate.Client;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
+namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
 {
-    internal sealed class NtlmManagedAuthenticationPackage : AuthenticationPackage
+    internal sealed class NegotiateManagedAuthenticationPackage : AuthenticationPackage
     {
-        private class NtlmManagedCredentialHandle : ICredentialHandle
+        private class NegotiateManagedCredentialHandle : ICredentialHandle
         {
             private readonly SecPkgCredFlags _cred_use_flag;
             private readonly AuthenticationCredentials _credentials;
 
-            public NtlmManagedCredentialHandle(SecPkgCredFlags cred_use_flag,
+            public NegotiateManagedCredentialHandle(SecPkgCredFlags cred_use_flag,
                 AuthenticationCredentials credentials)
             {
                 _cred_use_flag = cred_use_flag;
                 _credentials = credentials;
             }
 
-            public string PackageName => NTLM_NAME;
+            public string PackageName => NEGOSSP_NAME;
 
             public IClientAuthenticationContext CreateClient(InitializeContextReqFlags req_attributes,
                 string target, SecurityChannelBinding channel_binding, SecDataRep data_rep, bool initialize)
@@ -39,12 +39,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
                 if (!_cred_use_flag.HasFlagSet(SecPkgCredFlags.Outbound))
                     throw new ArgumentException("Credential handle not configured for outbound authentication.");
 
-                NtlmClientAuthenticationContextConfig config = new NtlmClientAuthenticationContextConfig
+                NegotiateClientAuthenticationContextConfig config = new NegotiateClientAuthenticationContextConfig()
                 {
                     ChannelBinding = channel_binding
                 };
 
-                return new NtlmClientAuthenticationContext(_credentials, req_attributes, target, config, initialize);
+                return new NegotiateClientAuthenticationContext(_credentials, req_attributes, target, config, initialize);
             }
 
             public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
@@ -57,16 +57,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             }
         }
 
-        internal NtlmManagedAuthenticationPackage() 
-            : base(NTLM_NAME, SecPkgCapabilityFlag.Integrity | SecPkgCapabilityFlag.Privacy | SecPkgCapabilityFlag.Connection | SecPkgCapabilityFlag.Negotiable, 
-                  0, 10, 2888, "NTLM Security Package (NtApiDotNet)", true)
+        internal NegotiateManagedAuthenticationPackage()
+            : base(NEGOSSP_NAME, SecPkgCapabilityFlag.Integrity | SecPkgCapabilityFlag.Privacy | SecPkgCapabilityFlag.Connection | SecPkgCapabilityFlag.Negotiable,
+                  0, 9, 48256, "Negotiate Security Package (NtApiDotNet)", true)
         {
         }
 
-        private protected override ICredentialHandle CreateManagedHandle(SecPkgCredFlags cred_use_flag, 
+        private protected override ICredentialHandle CreateManagedHandle(SecPkgCredFlags cred_use_flag,
             AuthenticationCredentials credentials)
         {
-            return new NtlmManagedCredentialHandle(cred_use_flag, credentials);
+            return new NegotiateManagedCredentialHandle(cred_use_flag, credentials);
         }
     }
 }

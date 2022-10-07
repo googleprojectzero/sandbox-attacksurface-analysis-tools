@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// <summary>
     /// Kerberos authentication credentials to use a ticket.
     /// </summary>
-    public sealed class KerberosTicketAuthenticationCredentials : AuthenticationCredentials
+    public sealed class KerberosTicketAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
     {
         /// <summary>
         /// The kerberos ticket to use.

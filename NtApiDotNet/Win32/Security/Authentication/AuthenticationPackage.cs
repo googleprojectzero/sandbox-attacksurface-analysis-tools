@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
 using NtApiDotNet.Win32.Security.Native;
 using System;
@@ -56,6 +57,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 { NTLM_NAME, new NtlmManagedAuthenticationPackage() },
                 { KERBEROS_NAME, new KerberosManagedAuthenticationPackage() },
+                { NEGOSSP_NAME, new NegotiateManagedAuthenticationPackage() },
             };
         }
 
@@ -209,7 +211,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
             AuthenticationCredentials credentials = null, string principal = null, Luid? auth_id = null)
         {
             // Check for the use of a managed credential handle.
-            if (credentials?.Mananged ?? _managed)
+            bool creds_managed = credentials?.Mananged ?? false;
+
+            if (creds_managed || _managed)
             {
                 if (!_managed_packages.Value.TryGetValue(Name, out AuthenticationPackage package))
                     throw new ArgumentException($"Unsupported authentication package {Name}");

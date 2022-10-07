@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
     /// <summary>
     /// Kerberos authentication credentials to use a ticket cache.
     /// </summary>
-    public sealed class KerberosTicketCacheAuthenticationCredentials : AuthenticationCredentials
+    public sealed class KerberosTicketCacheAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
     {
         /// <summary>
         /// The local ticket cache.
