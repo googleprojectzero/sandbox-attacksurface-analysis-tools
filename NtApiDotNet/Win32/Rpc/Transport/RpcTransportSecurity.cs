@@ -51,8 +51,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             return package;
         }
+        #endregion
 
-        private InitializeContextReqFlags GetContextRequestFlags()
+        #region Public Methods
+        /// <summary>
+        /// Get the context request flags for this RPC transport security.
+        /// </summary>
+        /// <returns>The context request flags.</returns>
+        public InitializeContextReqFlags GetContextRequestFlags()
         {
             InitializeContextReqFlags flags = InitializeContextReqFlags.Connection | InitializeContextReqFlags.UseDCEStyle;
             if (SecurityQualityOfService != null)
@@ -93,7 +99,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             return flags;
         }
-
         #endregion
 
         #region Public Properties
