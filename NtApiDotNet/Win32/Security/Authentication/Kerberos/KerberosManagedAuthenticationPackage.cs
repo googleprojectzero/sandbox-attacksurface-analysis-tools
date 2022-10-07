@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 KerberosClientAuthenticationContextConfig config = new KerberosClientAuthenticationContextConfig();
                 config.ChannelBinding = channel_binding;
 
-                return new KerberosClientAuthenticationContext(_credentials, target, req_attributes, config);
+                return new KerberosClientAuthenticationContext(_credentials, target, req_attributes, config, initialize);
             }
 
             public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)

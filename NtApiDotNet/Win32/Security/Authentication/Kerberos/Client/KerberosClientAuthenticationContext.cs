@@ -36,6 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         private readonly KerberosChecksumGSSApiFlags _gssapi_flags;
         private readonly KerberosAuthenticationKey _subkey;
         private readonly InitializeContextReqFlags _request_attributes;
+        private readonly KerberosClientAuthenticationContextConfig _config;
         private KerberosAuthenticationKey _acceptor_subkey;
         private long _send_sequence_number;
         private long _recv_sequence_number;
@@ -589,6 +590,46 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return null;
         }
 
+        private void CreateApRequest()
+        {
+            if (_request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
+            {
+                Token = KerberosAPRequestAuthenticationToken.Create();
+                ReturnAttributes = InitializeContextRetFlags.NullSession;
+                Done = true;
+            }
+            else
+            {
+                ReturnAttributes = ConvertRequestToReturn(_request_attributes);
+                KerberosCredential delegate_cred = null;
+                if (_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
+                {
+                    if (_config?.DelegationTicket == null)
+                        throw new ArgumentException($"Must specify {nameof(_config.DelegationTicket)} credentials to enable delegation.", nameof(_config));
+                    delegate_cred = _config.DelegationTicket.Encrypt(_subkey);
+                }
+
+                bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);
+                byte[] channel_binding = _config?.ChannelBinding?.ComputeHash() ?? new byte[16];
+                var cksum = new KerberosChecksumGSSApi(_gssapi_flags, channel_binding, 1, delegate_cred);
+                int sequence_number = KerberosBuilderUtils.GetRandomNonce();
+                _send_sequence_number = _recv_sequence_number = sequence_number;
+
+                KerberosAPRequestOptions opts = KerberosAPRequestOptions.None;
+                if (mutual_auth_required)
+                    opts |= KerberosAPRequestOptions.MutualAuthRequired;
+                if (_config?.SessionKeyTicket != null || _request_attributes.HasFlagSet(InitializeContextReqFlags.UseSessionKey))
+                    opts |= KerberosAPRequestOptions.UseSessionKey;
+
+                List<KerberosAuthorizationData> auth_data = _config?.AuthorizationData ?? new List<KerberosAuthorizationData>();
+                var authenticator = KerberosAuthenticator.Create(_ticket.TargetDomainName, _ticket.ClientName,
+                    KerberosTime.Now, 0, cksum, _subkey, sequence_number, auth_data.Count > 0 ? auth_data : null);
+                Token = KerberosAPRequestAuthenticationToken.Create(_ticket.Ticket,
+                    authenticator, opts, authenticator_key: _ticket.SessionKey);
+                Done = !mutual_auth_required;
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -598,9 +639,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="credential">The credentials the context.</param>
         /// <param name="target">The target SPN to</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
-        /// <param name="config">Additional configuration for the context..</param>
+        /// <param name="config">Additional configuration for the context.</param>
+        /// <param name="initialize">Specify to initialize the context.</param>
         public KerberosClientAuthenticationContext(AuthenticationCredentials credential, string target, InitializeContextReqFlags request_attributes,
-            KerberosClientAuthenticationContextConfig config = null) : this(GetExternalTicketFromCredentials(credential, target), request_attributes, config)
+            KerberosClientAuthenticationContextConfig config = null, bool initialize = true) 
+            : this(GetExternalTicketFromCredentials(credential, target), request_attributes, config, initialize)
         {
         }
 
@@ -609,9 +652,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         /// <param name="credential">The kerberos ticket for the target.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
-        /// <param name="config">Additional configuration for the context..</param>
+        /// <param name="config">Additional configuration for the context.</param>
+        /// <param name="initialize">Specify to initialize the context.</param>
         public KerberosClientAuthenticationContext(KerberosCredential credential, InitializeContextReqFlags request_attributes,
-            KerberosClientAuthenticationContextConfig config = null) : this(credential?.ToExternalTicket(), request_attributes, config)
+            KerberosClientAuthenticationContextConfig config = null, bool initialize = true) 
+            : this(credential?.ToExternalTicket(), request_attributes, config, initialize)
         {
         }
 
@@ -621,61 +666,39 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="ticket">The kerberos ticket for the target.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
         /// <param name="config">Additional configuration for the context.</param>
+        /// <param name="initialize">Specify to initialize the context.</param>
         public KerberosClientAuthenticationContext(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes,
-            KerberosClientAuthenticationContextConfig config = null)
+            KerberosClientAuthenticationContextConfig config = null, bool initialize = true)
         {
+            _request_attributes = request_attributes;
+            _config = config;
+            _ticket = ticket;
             if (ticket is null)
             {
                 if (!request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
                     throw new ArgumentNullException(nameof(ticket));
-                Token = KerberosAPRequestAuthenticationToken.Create();
-                ReturnAttributes = InitializeContextRetFlags.NullSession;
-                Done = true;
-                return;
             }
-
-            _ticket = ticket;
-            _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
-            _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
-            _request_attributes = request_attributes;
-            ReturnAttributes = ConvertRequestToReturn(request_attributes);
-            KerberosCredential delegate_cred = null;
-            if (_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Delegate))
+            else
             {
-                if (config?.DelegationTicket == null)
-                    throw new ArgumentException($"Must specify {nameof(config.DelegationTicket)} credentials to enable delegation.", nameof(config));
-                delegate_cred = config.DelegationTicket.Encrypt(_subkey);
+                _ticket = ticket;
+                _subkey = config?.SubKey ?? KerberosAuthenticationKey.GenerateKey(config?.SubKeyEncryptionType ?? _ticket.SessionKey.KeyEncryption);
+                _gssapi_flags = ConvertRequestToGSSAPI(request_attributes);
+
+                switch (_subkey.KeyEncryption)
+                {
+                    case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                        MaxSignatureSize = GSSAPI_HEADER_SIZE + 24;
+                        SecurityTrailerSize = GSSAPI_HEADER_SIZE + 32;
+                        break;
+                    default:
+                        MaxSignatureSize = SECURITY_HEADER_SIZE + _subkey.ChecksumSize;
+                        SecurityTrailerSize = (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
+                        break;
+                }
             }
-
-            bool mutual_auth_required = _gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual);
-            byte[] channel_binding = config?.ChannelBinding?.ComputeHash() ?? new byte[16];
-            var cksum = new KerberosChecksumGSSApi(_gssapi_flags, channel_binding, 1, delegate_cred);
-            int sequence_number = KerberosBuilderUtils.GetRandomNonce();
-            _send_sequence_number = _recv_sequence_number = sequence_number;
-
-            KerberosAPRequestOptions opts = KerberosAPRequestOptions.None;
-            if (mutual_auth_required)
-                opts |= KerberosAPRequestOptions.MutualAuthRequired;
-            if (config?.SessionKeyTicket != null || request_attributes.HasFlagSet(InitializeContextReqFlags.UseSessionKey))
-                opts |= KerberosAPRequestOptions.UseSessionKey;
-
-            List<KerberosAuthorizationData> auth_data = config?.AuthorizationData ?? new List<KerberosAuthorizationData>();
-            var authenticator = KerberosAuthenticator.Create(_ticket.TargetDomainName, _ticket.ClientName,
-                KerberosTime.Now, 0, cksum, _subkey, sequence_number, auth_data.Count > 0 ? auth_data : null);
-            Token = KerberosAPRequestAuthenticationToken.Create(_ticket.Ticket,
-                authenticator, opts, authenticator_key: _ticket.SessionKey);
-            Done = !mutual_auth_required;
-
-            switch (_subkey.KeyEncryption)
+            if (initialize)
             {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    MaxSignatureSize = GSSAPI_HEADER_SIZE + 24;
-                    SecurityTrailerSize = GSSAPI_HEADER_SIZE + 32;
-                    break;
-                default:
-                    MaxSignatureSize = SECURITY_HEADER_SIZE + _subkey.ChecksumSize;
-                    SecurityTrailerSize = (SECURITY_HEADER_SIZE * 2) + _subkey.AdditionalEncryptionSize;
-                    break;
+                ContinueInternal(null);
             }
         }
 
@@ -683,6 +706,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         {
             if (Done)
                 return;
+
+            if (Token == null)
+            {
+                CreateApRequest();
+                return;
+            }
 
             if (!_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual))
             {
@@ -790,6 +819,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public void DecryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
+            if (!Done)
+                throw new InvalidOperationException("Security context not completed.");
             var subkey = _acceptor_subkey ?? _subkey;
             switch (subkey.KeyEncryption)
             {
@@ -837,6 +868,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public void EncryptMessageNoSignature(IEnumerable<SecurityBuffer> messages, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)
         {
+            if (!Done)
+                throw new InvalidOperationException("Security context not completed.");
             if (quality_of_protection != SecurityQualityOfProtectionFlags.None)
                 throw new ArgumentException("Quality of protection flags unsupported.", nameof(quality_of_protection));
             switch (_subkey.KeyEncryption)
@@ -872,6 +905,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public byte[] MakeSignature(IEnumerable<SecurityBuffer> messages, int sequence_no)
         {
+            if (!Done)
+                throw new InvalidOperationException("Security context not completed.");
+
             switch (_subkey.KeyEncryption)
             {
                 case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
@@ -893,6 +929,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public bool VerifySignature(IEnumerable<SecurityBuffer> messages, byte[] signature, int sequence_no)
         {
+            if (!Done)
+                throw new InvalidOperationException("Security context not completed.");
+
             var subkey = _acceptor_subkey ?? _subkey;
             switch (subkey.KeyEncryption)
             {

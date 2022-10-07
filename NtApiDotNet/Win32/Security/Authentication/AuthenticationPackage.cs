@@ -77,11 +77,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             throw new NotImplementedException();
         }
-
-        private AuthenticationPackage(string name) 
-            : this(name, 0, 0, 0, 0, null, true)
-        {
-        }
         #endregion
 
         #region Public Constants
