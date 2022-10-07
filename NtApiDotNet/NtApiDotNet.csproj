@@ -558,6 +558,10 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\ICredentialHandle.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketAuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketCacheAuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\KerberosManagedAuthenticationPackage.cs" />
+    <Compile Include="Win32\Security\Authentication\Ntlm\NtlmManagedAuthenticationPackage.cs" />
     <Compile Include="Win32\Security\Authentication\SecurityChannelBinding.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />

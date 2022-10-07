@@ -358,15 +358,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Get a U2U ticket for a server name.
         /// </summary>
         /// <param name="server_name">The user principal name.</param>
-        /// <param name="tgt_ticket">The TGT ticket for the target user.</param>
+        /// <param name="session_key_ticket">The ticket for the session key.</param>
         /// <param name="cache_only">True to only query the cache.</param>
         /// <param name="encryption_type">The encryption type for the ticket.</param>
         /// <param name="authorization_data">Authorization data for the ticket.</param>
         /// <returns>The ticket.</returns>
-        public KerberosExternalTicket GetTicket(string server_name, KerberosTicket tgt_ticket, bool cache_only = false, 
+        public KerberosExternalTicket GetTicket(string server_name, KerberosTicket session_key_ticket, bool cache_only = false, 
             KerberosEncryptionType? encryption_type = null, IEnumerable<KerberosAuthorizationData> authorization_data = null)
         {
-            return GetTicket(ConvertSPN(server_name), tgt_ticket, cache_only, encryption_type, authorization_data);
+            return GetTicket(ConvertSPN(server_name), session_key_ticket, cache_only, encryption_type, authorization_data);
         }
 
         /// <summary>

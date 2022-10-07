@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Memory;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.Ntlm;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
@@ -23,13 +25,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
     /// <summary>
     /// An authentication package entry.
     /// </summary>
-    public sealed class AuthenticationPackage
+    public class AuthenticationPackage
     {
         #region Private Members
-        private delegate ICredentialHandle CreateHandleDelegate(SecPkgCredFlags cred_use_flag, AuthenticationCredentials creds);
-
-        private static Lazy<IReadOnlyList<AuthenticationPackage>> _native_packages = new Lazy<IReadOnlyList<AuthenticationPackage>>(GetNativePackages);
-        private static Lazy<Dictionary<string, CreateHandleDelegate>> _managed_packages = new Lazy<Dictionary<string, CreateHandleDelegate>>(GetManagedPackages);
+        private static readonly Lazy<IReadOnlyList<AuthenticationPackage>> _native_packages = new Lazy<IReadOnlyList<AuthenticationPackage>>(GetNativePackages);
+        private static readonly Lazy<Dictionary<string, AuthenticationPackage>> _managed_packages = new Lazy<Dictionary<string, AuthenticationPackage>>(GetManagedPackages);
         private readonly bool _managed;
 
         private static IReadOnlyList<AuthenticationPackage> GetNativePackages()
@@ -50,15 +50,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return packages.AsReadOnly();
         }
 
-        private static Dictionary<string, CreateHandleDelegate> GetManagedPackages()
+        private static Dictionary<string, AuthenticationPackage> GetManagedPackages()
         {
-            var packages = new Dictionary<string, CreateHandleDelegate>(StringComparer.OrdinalIgnoreCase);
-            packages.Add(NTLM_NAME, (u, c) => throw new NotImplementedException());
-            packages.Add(KERBEROS_NAME, (u, c) => throw new NotImplementedException());
-            return packages;
+            return new Dictionary<string, AuthenticationPackage>(StringComparer.OrdinalIgnoreCase)
+            {
+                { NTLM_NAME, new NtlmManagedAuthenticationPackage() },
+                { KERBEROS_NAME, new KerberosManagedAuthenticationPackage() },
+            };
         }
 
-        private AuthenticationPackage(string name,
+        private protected AuthenticationPackage(string name,
             SecPkgCapabilityFlag capabilities, int version,
             int rpc_id, int max_token_size, string comment,
             bool managed)
@@ -70,6 +71,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             MaxTokenSize = max_token_size;
             Comment = comment ?? string.Empty;
             _managed = managed;
+        }
+
+        private protected virtual ICredentialHandle CreateManagedHandle(SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
+        {
+            throw new NotImplementedException();
         }
 
         private AuthenticationPackage(string name) 
@@ -210,11 +216,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             // Check for the use of a managed credential handle.
             if (credentials?.Mananged ?? _managed)
             {
-                if (!_managed_packages.Value.TryGetValue(Name, out CreateHandleDelegate del))
+                if (!_managed_packages.Value.TryGetValue(Name, out AuthenticationPackage package))
                     throw new ArgumentException($"Unsupported authentication package {Name}");
-                return del(cred_use_flag, credentials);
+                return package.CreateManagedHandle(cred_use_flag, credentials);
             }
-
+            
             return CredentialHandle.Create(principal, Name, auth_id, cred_use_flag, credentials);
         }
         #endregion
@@ -226,7 +232,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The list of authentication packages.</returns>
         public static IEnumerable<AuthenticationPackage> Get()
         {
-            return NtObjectUtils.IsWindows ? _native_packages.Value : _managed_packages.Value.Keys.Select(k => new AuthenticationPackage(k));
+            return NtObjectUtils.IsWindows ? _native_packages.Value : _managed_packages.Value.Values.AsEnumerable();
         }
 
         /// <summary>
@@ -260,8 +266,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
             else
             {
-                if (_managed_packages.Value.ContainsKey(package))
-                    return new AuthenticationPackage(package);
+                if (_managed_packages.Value.TryGetValue(package, out AuthenticationPackage ret))
+                    return ret;
                 throw new ArgumentException($"Unsupported authentication package {package}");
             }
         }

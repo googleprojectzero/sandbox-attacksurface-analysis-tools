@@ -19,6 +19,8 @@ Get current authentication packages.
 This cmdlet gets the list of current authentication packages.
 .PARAMETER Name
 The name of the authentication package.
+.PARAMETER Managed
+Specify to get a managed authentication package.
 .INPUTS
 None
 .OUTPUTS
@@ -232,6 +234,8 @@ The username to use.
 The domain to use.
 .PARAMETER Password
 The password to use.
+.PARAMETER Managed
+Specify to create a managed credential handle.
 .INPUTS
 None
 .OUTPUTS
@@ -265,7 +269,8 @@ function New-LsaCredentialHandle {
         [string]$Domain,
         [Parameter(ParameterSetName="FromParts")]
         [alias("SecurePassword")]
-        [NtObjectManager.Utils.PasswordHolder]$Password
+        [NtObjectManager.Utils.PasswordHolder]$Password,
+        [switch]$Managed
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromParts") {
@@ -278,7 +283,7 @@ function New-LsaCredentialHandle {
         }
     }
 
-    $pkg = Get-LsaPackage -Name $Package
+    $pkg = Get-LsaPackage -Name $Package -Managed:$Managed
     if ($null -ne $pkg) {
         $pkg.CreateHandle($UseFlag, $Credential, $Principal, $AuthId)
     }

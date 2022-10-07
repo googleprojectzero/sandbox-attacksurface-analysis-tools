@@ -251,11 +251,18 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         {
             if (Done)
                 return;
-            if (token is null)
-                throw new InvalidDataException("Missing NTLM token from server.");
-            if (!NtlmAuthenticationToken.TryParse(token, 0, true, out NtlmAuthenticationToken challenge_token))
-                throw new InvalidDataException("Invalid NTLM token from server.");
-            CreateAuthenticateToken(challenge_token as NtlmChallengeAuthenticationToken);
+            if (Token == null)
+            {
+                CreateNegotiateToken();
+            }
+            else
+            {
+                if (token is null)
+                    throw new InvalidDataException("Missing NTLM token from server.");
+                if (!NtlmAuthenticationToken.TryParse(token, 0, true, out NtlmAuthenticationToken challenge_token))
+                    throw new InvalidDataException("Invalid NTLM token from server.");
+                CreateAuthenticateToken(challenge_token as NtlmChallengeAuthenticationToken);
+            }
         }
 
         #endregion
@@ -268,8 +275,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         /// <param name="target_name">The target name for the authentication.</param>
         /// <param name="config">Additional configuration for the authentication context.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
+        /// <param name="initialize">True to initialize the security context.</param>
         public NtlmClientAuthenticationContext(AuthenticationCredentials credentials, InitializeContextReqFlags request_attributes, 
-            string target_name = null, NtlmClientAuthenticationContextConfig config = null)
+            string target_name = null, NtlmClientAuthenticationContextConfig config = null, bool initialize = true)
         {
             if (!request_attributes.HasFlagSet(InitializeContextReqFlags.NullSession))
             {
@@ -287,7 +295,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
             RequestAttributes = request_attributes;
             _target_name = target_name;
             _config = config;
-            CreateNegotiateToken();
+            if (initialize)
+            {
+                Continue();
+            }
         }
         #endregion
 
@@ -454,7 +465,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
 
         public AuthenticationPackage GetAuthenticationPackage()
         {
-            return AuthenticationPackage.FromName(AuthenticationPackage.NTLM_NAME);
+            return new NtlmManagedAuthenticationPackage();
         }
 
         public byte[] MakeSignature(byte[] message, int sequence_no)

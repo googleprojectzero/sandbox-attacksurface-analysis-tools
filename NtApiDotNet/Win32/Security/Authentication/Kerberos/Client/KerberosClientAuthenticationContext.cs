@@ -568,9 +568,42 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
             return NtObjectUtils.EqualByteArray(hash, verify_hash);
         }
+
+        private static KerberosExternalTicket GetExternalTicketFromCredentials(AuthenticationCredentials credential, string target)
+        {
+            if (credential is null)
+            {
+                return null;
+            }
+
+            if (credential is KerberosTicketCacheAuthenticationCredentials cache_creds)
+            {
+                return cache_creds.GetTicket(target);
+            }
+
+            if (credential is KerberosTicketAuthenticationCredentials ticket_creds)
+            {
+                return ticket_creds.Ticket;
+            } 
+
+            return null;
+        }
+
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="credential">The credentials the context.</param>
+        /// <param name="target">The target SPN to</param>
+        /// <param name="request_attributes">Request attributes for the context.</param>
+        /// <param name="config">Additional configuration for the context..</param>
+        public KerberosClientAuthenticationContext(AuthenticationCredentials credential, string target, InitializeContextReqFlags request_attributes,
+            KerberosClientAuthenticationContextConfig config = null) : this(GetExternalTicketFromCredentials(credential, target), request_attributes, config)
+        {
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -827,7 +860,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public AuthenticationPackage GetAuthenticationPackage()
         {
-            return AuthenticationPackage.FromName(AuthenticationPackage.KERBEROS_NAME);
+            return new KerberosManagedAuthenticationPackage();
         }
 
         public byte[] MakeSignature(byte[] message, int sequence_no)
