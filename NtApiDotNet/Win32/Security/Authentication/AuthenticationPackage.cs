@@ -281,6 +281,21 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return FromName(package, false);
         }
+
+        /// <summary>
+        /// Create a new credential handle.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <param name="cred_use_flag">Credential user flags.</param>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="principal">User principal.</param>
+        /// <param name="auth_id">Optional authentication ID for the user.</param>
+        /// <returns>The credential handle.</returns>
+        public static ICredentialHandle CreateHandle(string package, SecPkgCredFlags cred_use_flag,
+            AuthenticationCredentials credentials = null, string principal = null, Luid? auth_id = null)
+        {
+            return FromName(package).CreateHandle(cred_use_flag, credentials, principal, auth_id);
+        }
         #endregion
     }
 }

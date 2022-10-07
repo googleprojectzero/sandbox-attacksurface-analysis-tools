@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
 using System.IO;
 using System.Net.Sockets;
@@ -260,9 +259,9 @@ namespace NtApiDotNet.Net.Smb2
         /// <returns>The authenticated session.</returns>
         public Smb2Session CreateSession(AuthenticationCredentials credentials = null)
         {
-            using (var creds = CredentialHandle.Create(AuthenticationPackage.NEGOSSP_NAME, SecPkgCredFlags.Outbound, credentials))
+            using (var creds = AuthenticationPackage.CreateHandle(AuthenticationPackage.NEGOSSP_NAME, SecPkgCredFlags.Outbound, credentials))
             {
-                using (var client = new ClientAuthenticationContext(creds, InitializeContextReqFlags.Integrity,
+                using (var client = creds.CreateClient(InitializeContextReqFlags.Integrity,
                     $"CIFS/{Hostname}", null, SecDataRep.Network, false))
                 {
                     return CreateSession(client);
@@ -275,16 +274,9 @@ namespace NtApiDotNet.Net.Smb2
         /// </summary>
         public Smb2Session CreateNullSession()
         {
-            if (!NtObjectUtils.IsWindows)
+            using (var creds = AuthenticationPackage.CreateHandle(AuthenticationPackage.NTLM_NAME, SecPkgCredFlags.Outbound))
             {
-                return CreateSession(new NtlmClientAuthenticationContext(null, 
-                    InitializeContextReqFlags.Integrity | InitializeContextReqFlags.NullSession,
-                    null, null));
-            }
-
-            using (var creds = CredentialHandle.Create(AuthenticationPackage.NTLM_NAME, SecPkgCredFlags.Outbound))
-            {
-                using (var client = new ClientAuthenticationContext(creds, 
+                using (var client = creds.CreateClient(
                     InitializeContextReqFlags.Integrity | InitializeContextReqFlags.NullSession,
                     $"CIFS/{Hostname}", null, SecDataRep.Network))
                 {

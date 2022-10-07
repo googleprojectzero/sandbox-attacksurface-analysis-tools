@@ -13,9 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
-using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
-using System;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -26,7 +23,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public sealed class RpcNamedPipeClientTransportConfiguration : RpcClientTransportConfiguration
     {
         /// <summary>
-        /// The authentication package name for the SMB authentication. Defaults to Negotiate.
+        /// Specify to use a specific authentication package for SMB.
         /// </summary>
         public string PackageName { get; set; }
 
@@ -60,11 +57,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public string ServicePrincipalName { get; set; }
 
-        /// <summary>
-        /// Specify a kerberos ticket cache.
-        /// </summary>
-        public KerberosLocalTicketCache TicketCache { get; set; }
-
         private InitializeContextReqFlags GetContextRequestFlags()
         {
             InitializeContextReqFlags ret = DisableSigning ? InitializeContextReqFlags.NoIntegrity : InitializeContextReqFlags.Integrity;
@@ -79,30 +71,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         internal IClientAuthenticationContext CreateAuthenticationContext(string hostname)
         {
-            string package = PackageName ?? AuthenticationPackage.NEGOSSP_NAME;
+            string package = PackageName ?? (NullSession ? AuthenticationPackage.NTLM_NAME : AuthenticationPackage.NEGOSSP_NAME);
             string spn = ServicePrincipalName ?? $"cifs/{hostname}";
-
-            var request_flags = GetContextRequestFlags();
-
-            if (AuthenticationPackage.CheckKerberos(package) && TicketCache != null)
+            bool initialize = !AuthenticationPackage.CheckNegotiate(AuthenticationPackage.NEGOSSP_NAME);
+            var cred_handle = AuthenticationPackage.CreateHandle(package, SecPkgCredFlags.Outbound, Credentials);
+            var context = cred_handle.CreateClient(GetContextRequestFlags(), spn, initialize: initialize);
+            if (context is ClientAuthenticationContext native_context)
             {
-                return TicketCache.CreateClientContext(spn, request_flags);
+                native_context.OwnsCredentials = true;
             }
-
-            if (!NtObjectUtils.IsWindows || Credentials is NtHashAuthenticationCredentials)
-            {
-                if (!AuthenticationPackage.CheckNtlm(package))
-                {
-                    throw new NotImplementedException($"Authentication package {package} not supported.");
-                }
-                return new NtlmClientAuthenticationContext(Credentials, request_flags, spn);
-            }
-
-            bool initialize = !package.Equals(AuthenticationPackage.NEGOSSP_NAME, StringComparison.OrdinalIgnoreCase);
-            return new ClientAuthenticationContext(CredentialHandle.Create(package,
-                SecPkgCredFlags.Outbound, Credentials), request_flags,
-                    spn, null, SecDataRep.Network, initialize)
-            { OwnsCredentials = true };
+            return context;
         }
     }
 }
