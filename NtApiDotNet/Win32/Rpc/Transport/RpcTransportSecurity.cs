@@ -15,8 +15,8 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
-using NtApiDotNet.Win32.Security.Authentication.Ntlm.Client;
 using System;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -29,21 +29,27 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private readonly Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
         private RpcAuthenticationType _auth_type;
 
-        private string GetAuthPackageName()
+        private AuthenticationPackage GetAuthPackage()
         {
+            if (_auth_type == RpcAuthenticationType.None)
+                throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
+
             switch (_auth_type)
             {
-                case RpcAuthenticationType.Negotiate:
-                    return AuthenticationPackage.NEGOSSP_NAME;
-                case RpcAuthenticationType.Kerberos:
-                    return AuthenticationPackage.KERBEROS_NAME;
                 case RpcAuthenticationType.WinNT:
-                    return AuthenticationPackage.NTLM_NAME;
-                case RpcAuthenticationType.None:
-                    throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
+                case RpcAuthenticationType.Kerberos:
+                case RpcAuthenticationType.Negotiate:
+                    break;
                 default:
                     throw new ArgumentException($"Unknown authentication type: {_auth_type}");
             }
+
+            var rpc_id = (int)_auth_type;
+            var package = AuthenticationPackage.Get().FirstOrDefault(p => p.RpcId == rpc_id);
+            if (package == null)
+                throw new ArgumentException($"Unsupported authentication type: {_auth_type}");
+
+            return package;
         }
 
         private InitializeContextReqFlags GetContextRequestFlags()
@@ -128,6 +134,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Specify a kerberos ticket cache.
         /// </summary>
+        /// <remarks>Use <see cref="KerberosTicketCacheAuthenticationCredentials"/> for Credentials instead of this property.</remarks>
+        [Obsolete("Use KerberosTicketCacheAuthenticationCredentials as the RPC credentials to use a ticket cache.")]
         public KerberosLocalTicketCache TicketCache { get; set; }
 
         /// <summary>
@@ -226,23 +234,21 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                     throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (_auth_type == RpcAuthenticationType.Kerberos && TicketCache != null)
             {
                 return TicketCache.CreateClientContext(ServicePrincipalName, GetContextRequestFlags());
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
-            if (!NtObjectUtils.IsWindows || Credentials is NtHashAuthenticationCredentials)
+            var package = GetAuthPackage();
+            var cred_handle = package.CreateHandle(SecPkgCredFlags.Outbound, Credentials);
+            var context = cred_handle.CreateClient(GetContextRequestFlags(), ServicePrincipalName);
+            if (context is ClientAuthenticationContext native_context)
             {
-                if (_auth_type != RpcAuthenticationType.WinNT)
-                {
-                    throw new ArgumentException($"Authentication package {_auth_type} not supported.");
-                }
-                return new NtlmClientAuthenticationContext(Credentials, GetContextRequestFlags(), ServicePrincipalName);
+                native_context.OwnsCredentials = true;
             }
-
-            return new ClientAuthenticationContext(CredentialHandle.Create(GetAuthPackageName(),
-                SecPkgCredFlags.Outbound, Credentials), GetContextRequestFlags(),
-                    ServicePrincipalName, SecDataRep.Native) { OwnsCredentials = true };
+            return context;
         }
         #endregion
     }
