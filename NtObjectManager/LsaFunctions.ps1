@@ -119,13 +119,13 @@ $user_creds = Get-LsaCredential -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
 Get user credentials from components.
 #>
 function Get-LsaCredential {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromCreds")]
     Param(
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName="FromCreds")]
         [string]$UserName,
-        [Parameter(Position = 1)]
+        [Parameter(Position = 1, ParameterSetName="FromCreds")]
         [string]$Domain,
-        [Parameter(Position = 2)]
+        [Parameter(Position = 2, ParameterSetName="FromCreds")]
         [alias("SecurePassword")]
         [NtObjectManager.Utils.PasswordHolder]$Password
     )
@@ -339,7 +339,7 @@ function New-LsaClientContext {
         [Parameter(ParameterSetName="FromCredHandle")]
         [Parameter(Mandatory, ParameterSetName="FromTicketCache")]
         [string]$Target,
-        [byte[]]$ChannelBinding,
+        [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding,
         [Parameter(ParameterSetName="FromCredHandle")]
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
         [Parameter(ParameterSetName="FromCredHandle")]
@@ -358,8 +358,6 @@ function New-LsaClientContext {
         [switch]$S4U2Self
     )
 
-    $channel_binding = [NtApiDotNet.Win32.Security.Authentication.SecurityChannelBinding]::Create($ChannelBinding)
-
     switch($PSCmdlet.ParameterSetName) {
         "FromCredHandle" {
             $CredHandle.CreateClient($RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
@@ -368,7 +366,7 @@ function New-LsaClientContext {
             $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
-            $config.ChannelBinding = $channel_binding
+            $config.ChannelBinding = $ChannelBinding
             $config.SessionKeyTicket = $SessionKeyTicket
             $config.S4U2Self = $S4U2Self
             $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
@@ -377,7 +375,7 @@ function New-LsaClientContext {
             $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
-            $config.ChannelBinding = $channel_binding
+            $config.ChannelBinding = $ChannelBinding
             $config.Create($Ticket, $RequestAttribute)
         }
     }
@@ -408,7 +406,7 @@ function New-LsaServerContext {
         [NtApiDotNet.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
         [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttribute = 0,
         [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
-        [byte[]]$ChannelBinding
+        [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding
     )
 
     $CredHandle.CreateServer($RequestAttribute, $ChannelBinding, $DataRepresentation)
@@ -1075,7 +1073,7 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, ParameterSetName="FromEmpty")]
         [switch]$Empty,
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
-        [byte[]]$ChannelBinding,
+        [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding,
         [Parameter(Mandatory, ParameterSetName="FromToken")]
         [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
         [parameter(Mandatory, ParameterSetName="FromString")]
