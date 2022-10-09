@@ -43,10 +43,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Constructor.
         /// </summary>
         /// <param name="ticket_cache">The kerberos ticket cache.</param>
-        public KerberosTicketCacheAuthenticationCredentials(KerberosLocalTicketCache ticket_cache) 
+        /// <param name="session_key_ticket">The session key ticket.</param>
+        public KerberosTicketCacheAuthenticationCredentials(KerberosLocalTicketCache ticket_cache, KerberosTicket session_key_ticket = null) 
             : this()
         {
             TicketCache = ticket_cache;
+            SessionKeyTicket = session_key_ticket;
         }
 
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
