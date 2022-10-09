@@ -54,7 +54,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// <summary>
         /// Current state of the negotiation.
         /// </summary>
-        public NegotiateAuthenticationState State { get; }
+        public NegotiateAuthenticationState? State { get; }
 
         /// <summary>
         /// Create a NegTokenInit token.
@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
         /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
         /// <returns>The response token.</returns>
-        public static NegotiateResponseAuthenticationToken Create(NegotiateAuthenticationState state,
+        public static NegotiateResponseAuthenticationToken Create(NegotiateAuthenticationState? state,
             string mech_type = null, AuthenticationToken response_token = null, byte[] mech_list_mic = null,
             bool wrap_gssapi = false)
         {
@@ -93,11 +93,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             {
                 builder.AppendLine($"Supported Mech  : {SupportedMechanism} - {OIDValues.ToString(SupportedMechanism)}");
             }
-            builder.AppendLine($"State           : {State}");
+            if (State.HasValue)
+            {
+                builder.AppendLine($"State           : {State.Value}");
+            }
         }
 
         internal NegotiateResponseAuthenticationToken(byte[] data, 
-            string supported_mech, NegotiateAuthenticationState state, AuthenticationToken token, byte[] mic)
+            string supported_mech, NegotiateAuthenticationState? state, AuthenticationToken token, byte[] mic)
             : base(data, token, mic)
         {
             SupportedMechanism = supported_mech;

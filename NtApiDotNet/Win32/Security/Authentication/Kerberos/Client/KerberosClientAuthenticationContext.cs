@@ -716,7 +716,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             if (!_gssapi_flags.HasFlagSet(KerberosChecksumGSSApiFlags.Mutual))
             {
                 Done = true;
-                Token = null;
+                Token = new AuthenticationToken();
                 return;
             }
 
@@ -735,7 +735,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 _acceptor_subkey = ap_rep_enc.SubKey;
 
             Done = true;
-            Token = null;
+            Token = new AuthenticationToken();
         }
 
         #endregion

@@ -94,6 +94,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AuthenticationToken()
+        {
+            _data = Array.Empty<byte>();
+        }
+
+        /// <summary>
         /// Parse a structured authentication token.
         /// </summary>
         /// <param name="context">The authentication context.</param>
