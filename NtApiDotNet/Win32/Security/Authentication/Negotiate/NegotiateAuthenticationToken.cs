@@ -220,7 +220,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             }
 
             string mech = null;
-            NegotiateAuthenticationState state = NegotiateAuthenticationState.Reject;
+            NegotiateAuthenticationState? state = null;
             AuthenticationToken auth_token = null;
             byte[] mic = null;
 
@@ -275,17 +275,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
         #endregion
 
         #region Internal Static Methods
-        /// <summary>
-        /// Try and parse data into an Negotiate authentication token.
-        /// </summary>
-        /// <param name="data">The data to parse.</param>
-        /// <param name="token">The Negotiate authentication token.</param>
-        /// <param name="client">True if this is a token from a client.</param>
-        /// <param name="token_count">The token count number.</param>
-        /// <returns>True if parsed successfully.</returns>
         internal static bool TryParse(byte[] data, int token_count, bool client, out NegotiateAuthenticationToken token)
         {
             token = null;
+            if (data == null)
+                return false;
             try
             {
                 byte[] token_data;
