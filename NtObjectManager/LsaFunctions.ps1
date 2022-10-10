@@ -62,6 +62,8 @@ The username to use.
 The domain to use.
 .PARAMETER Password
 The password to use.
+.PARAMETER AsNtHashCred
+Specify to convert the user credential to an NT hash credential.
 .INPUTS
 None
 .OUTPUTS
@@ -78,7 +80,8 @@ function Read-LsaCredential {
         [Parameter(Position = 1)]
         [string]$Domain,
         [Parameter(Position = 2)]
-        [NtObjectManager.Utils.PasswordHolder]$Password
+        [NtObjectManager.Utils.PasswordHolder]$Password,
+        [switch]$AsNtHashCred
     )
 
     $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
@@ -96,14 +99,18 @@ function Read-LsaCredential {
     else {
         $creds.Password = Read-Host -AsSecureString -Prompt "Password"
     }
-    $creds | Write-Output
+    if ($AsNtHashCred) {
+        [NtApiDotNet.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
+    } else {
+        $creds
+    }
 }
 
 <#
 .SYNOPSIS
 Get user credentials.
 .DESCRIPTION
-This cmdlet gets user credentials and encodes the password.
+This cmdlet gets user credentials.
 .PARAMETER UserName
 The username to use.
 .PARAMETER Domain
@@ -116,6 +123,8 @@ A local Kerberos cache to use for Kerberos authentication.
 A ticket to use for the session key in Kerberos authentication.
 .PARAMETER Ticket
 A Kerberos ticket to use.
+.PARAMETER AsNtHashCred
+Specify to convert the user credential to an NT hash credential.
 .INPUTS
 None
 .OUTPUTS
@@ -134,6 +143,8 @@ function Get-LsaCredential {
         [Parameter(Position = 2, ParameterSetName="FromCreds")]
         [alias("SecurePassword")]
         [NtObjectManager.Utils.PasswordHolder]$Password,
+        [Parameter(ParameterSetName="FromCreds")]
+        [switch]$AsNtHashCred,
         [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
         [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(ParameterSetName="FromLocalCache")]
@@ -156,7 +167,11 @@ function Get-LsaCredential {
             if ($null -ne $Password) {
                 $creds.Password = $Password.Password
             }
-            $creds
+            if ($AsNtHashCred) {
+                [NtApiDotNet.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
+            } else {
+                $creds
+            }
         }
         "FromLocalCache" {
             [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTicketCacheAuthenticationCredentials]::new($Cache, $SessionKeyTicket)
