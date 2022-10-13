@@ -26,33 +26,8 @@ namespace NtApiDotNet.Net.Dns
     /// to this one.</remarks>
     public sealed class DnsClient
     {
+        #region Private Members
         private ushort _id;
-
-        /// <summary>
-        /// Set to force TCP for the transport. If false then the class will try UDP first, and fallback
-        /// to TCP if the reply is truncated.
-        /// </summary>
-        public bool ForceTcp { get; set; }
-
-        /// <summary>
-        /// The DNS server address.
-        /// </summary>
-        public IPAddress ServerAddress { get; }
-
-        /// <summary>
-        /// The timeout in milli-seconds to wait for a query. Values &lt;= 0 result in an infinite timeout.
-        /// </summary>
-        public int Timeout { get; set; }
-
-        /// <summary>
-        /// Specify the DNS servers
-        /// </summary>
-        /// <param name="server_address">The address of the DNS server.</param>
-        public DnsClient(IPAddress server_address)
-        {
-            ServerAddress = server_address ?? throw new ArgumentNullException(nameof(server_address));
-            Timeout = 5000;
-        }
 
         private IDnsTransport GetTransport(bool tcp)
         {
@@ -96,7 +71,39 @@ namespace NtApiDotNet.Net.Dns
 
             return Query(true, qname, qtype, qclass);
         }
+        #endregion
 
+        #region Public Properties
+        /// <summary>
+        /// Set to force TCP for the transport. If false then the class will try UDP first, and fallback
+        /// to TCP if the reply is truncated.
+        /// </summary>
+        public bool ForceTcp { get; set; }
+
+        /// <summary>
+        /// The DNS server address.
+        /// </summary>
+        public IPAddress ServerAddress { get; }
+
+        /// <summary>
+        /// The timeout in milli-seconds to wait for a query. Values &lt;= 0 result in an infinite timeout.
+        /// </summary>
+        public int Timeout { get; set; }
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Specify the DNS servers
+        /// </summary>
+        /// <param name="server_address">The address of the DNS server.</param>
+        public DnsClient(IPAddress server_address)
+        {
+            ServerAddress = server_address ?? throw new ArgumentNullException(nameof(server_address));
+            Timeout = 5000;
+        }
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Query the IP addresses for a host.
         /// </summary>
@@ -147,5 +154,6 @@ namespace NtApiDotNet.Net.Dns
             return result.Answers.OfType<DnsResourceRecordSRV>().Select(
                 a => new DnsServiceRecord(a)).ToList().AsReadOnly();
         }
+        #endregion
     }
 }

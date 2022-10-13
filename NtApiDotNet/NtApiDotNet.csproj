@@ -556,9 +556,11 @@
     <Compile Include="Win32\Security\Authentication\CredSSP\TSAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentialsType.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSLoopbackCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSPasswordCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSRemoteGuardPackageCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\TSSmartCardCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\ICredentialHandle.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\IKerberosAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketAuthenticationCredentials.cs" />
