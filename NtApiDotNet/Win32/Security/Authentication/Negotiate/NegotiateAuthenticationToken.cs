@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.NegoEx;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
 using System;
 using System.Collections;
@@ -87,6 +88,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             if (KerberosAuthenticationToken.TryParse(data, token_count, client, out KerberosAuthenticationToken kerb_token))
             {
                 return kerb_token;
+            }
+
+            if (NegoExAuthenticationToken.TryParse(data, token_count, client, out NegoExAuthenticationToken negoex_token))
+            {
+                return negoex_token;
             }
 
             return new AuthenticationToken(data);
