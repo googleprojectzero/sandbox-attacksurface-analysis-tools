@@ -34,5 +34,8 @@ namespace NtApiDotNet.Utilities.ASN1
         UTCTime = 23,
         GeneralizedTime = 24,
         GeneralString = 27,
+        UniversalString = 28,
+        CharacterString = 29,
+        BMPString = 30
     }
 }

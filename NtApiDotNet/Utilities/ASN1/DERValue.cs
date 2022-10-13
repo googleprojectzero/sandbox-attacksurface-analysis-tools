@@ -275,6 +275,8 @@ namespace NtApiDotNet.Utilities.ASN1
                         return ReadString(tag);
                     case UniversalTag.GeneralizedTime:
                         return ReadGeneralizedTime();
+                    case UniversalTag.BMPString:
+                        return Encoding.BigEndianUnicode.GetString(Data);
                 }
             }
             
