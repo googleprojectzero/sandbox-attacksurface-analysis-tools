@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Data;
+using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using System;
 using System.Text;
 
@@ -45,14 +46,25 @@ namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
             reader.Position = NegoExMessageHeader.HEADER_SIZE;
             Guid auth_scheme = reader.ReadGuid();
             byte[] exchange = ReadByteVector(reader, data);
-            return new NegoExMessageExchange(header, auth_scheme, new AuthenticationToken(exchange));
+            AuthenticationToken token = null;
+            if (auth_scheme == NegoExAuthSchemes.PKU2U
+                && KerberosAuthenticationToken.TryParse(exchange, 0, false, out KerberosAuthenticationToken kerb_token))
+            {
+                token = kerb_token;
+            }
+            else
+            {
+                token = new AuthenticationToken(exchange);
+            }
+
+            return new NegoExMessageExchange(header, auth_scheme, token);
         }
 
         private protected override void InnerFormat(StringBuilder builder)
         {
             builder.AppendLine($"Auth Scheme      : {FormatAuthScheme(AuthScheme)}");
             builder.AppendLine("Exchange         :");
-            builder.AppendLine(Exchange.Format());
+            builder.AppendLine(Exchange.Format().TrimEnd());
         }
     }
 }

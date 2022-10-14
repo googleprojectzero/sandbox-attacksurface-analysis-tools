@@ -85,14 +85,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                 return ntlm_token;
             }
 
-            if (KerberosAuthenticationToken.TryParse(data, token_count, client, out KerberosAuthenticationToken kerb_token))
-            {
-                return kerb_token;
-            }
-
             if (NegoExAuthenticationToken.TryParse(data, token_count, client, out NegoExAuthenticationToken negoex_token))
             {
                 return negoex_token;
+            }
+
+            if (KerberosAuthenticationToken.TryParse(data, token_count, client, out KerberosAuthenticationToken kerb_token))
+            {
+                return kerb_token;
             }
 
             return new AuthenticationToken(data);

@@ -637,7 +637,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// Constructor.
         /// </summary>
         /// <param name="credential">The credentials the context.</param>
-        /// <param name="target">The target SPN to</param>
+        /// <param name="target">The target SPN to use.</param>
         /// <param name="request_attributes">Request attributes for the context.</param>
         /// <param name="config">Additional configuration for the context.</param>
         /// <param name="initialize">Specify to initialize the context.</param>

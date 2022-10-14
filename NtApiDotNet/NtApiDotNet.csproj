@@ -566,6 +566,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketCacheAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosManagedAuthenticationPackage.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkAsRepDHRepInfo.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAlert.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthSchemes.cs" />

@@ -31,6 +31,7 @@ namespace NtApiDotNet.Utilities.ASN1
         public const string MS_NEGOX = "1.3.6.1.4.1.311.2.2.30";
         public const string SPNEGO = "1.3.6.1.5.5.2";
         public const string PKINIT_AUTHDATA = "1.3.6.1.5.2.3.1";
+        public const string PKU2U = "1.3.6.1.5.2.7";
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
@@ -57,6 +58,8 @@ namespace NtApiDotNet.Utilities.ASN1
                     return "SPNEGO";
                 case PKINIT_AUTHDATA:
                     return "PKINIT AuthData";
+                case PKU2U:
+                    return "PKU2U";
                 default:
                     return new Oid(oid).FriendlyName ?? $"UNKNOWN OID {oid}";
             }

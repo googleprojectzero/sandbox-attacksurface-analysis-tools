@@ -42,6 +42,30 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             MessageType = message_type;
         }
 
+        private static bool GetInnerToken(byte[] tok_id, byte[] data, DERValue[] values, out KerberosAuthenticationToken token)
+        {
+            int id = tok_id[0] | (tok_id[1] << 8);
+            switch (id)
+            {
+                case 1:
+                    return KerberosAPRequestAuthenticationToken.TryParse(data, values, out token);
+                case 2:
+                    return KerberosAPReplyAuthenticationToken.TryParse(data, values, out token);
+                case 3:
+                    return KerberosErrorAuthenticationToken.TryParse(data, values, out token);
+                case 4:
+                    return KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token);
+                case 0x104:
+                    return KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token);
+                case 5:
+                    return KerberosKDCRequestAuthenticationToken.TryParse(data, values, out token);
+                case 6:
+                    return KerberosKDCReplyAuthenticationToken.TryParse(data, values, out token);
+            }
+            token = null;
+            return false;
+        }
+
         internal static bool TryParseWrapped(byte[] data, byte[] tok_id, string oid, DERValue[] values, out KerberosAuthenticationToken token)
         {
             // RFC1964
@@ -49,39 +73,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 case OIDValues.KERBEROS:
                 case OIDValues.KERBEROS_USER_TO_USER:
-                    if (tok_id[0] == 1)
-                    {
-                        if (KerberosAPRequestAuthenticationToken.TryParse(data, values, out token))
-                            return true;
-                        break;
-                    }
-                    if (tok_id[0] == 2)
-                    {
-                        if (KerberosAPReplyAuthenticationToken.TryParse(data, values, out token))
-                            return true;
-                        break;
-                    }
-                    if (tok_id[0] == 3)
-                    {
-                        if (KerberosErrorAuthenticationToken.TryParse(data, values, out token))
-                            return true;
-                        break;
-                    }
-                    if (tok_id[0] != 4)
-                    {
-                        break;
-                    }
-                    if (tok_id[1] == 0)
-                    {
-                        if (KerberosTGTRequestAuthenticationToken.TryParse(data, values, out token))
-                            return true;
-                    }
-                    if (tok_id[1] == 1)
-                    {
-                        if (KerberosTGTReplyAuthenticationToken.TryParse(data, values, out token))
-                            return true;
-                    }
-                    break;
+                case OIDValues.PKU2U:
+                    return GetInnerToken(tok_id, data, values, out token);
             }
             token = null;
             return false;
@@ -226,7 +219,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return true;
                 }
             }
-            catch (EndOfStreamException)
+            catch
             {
                 return false;
             }
