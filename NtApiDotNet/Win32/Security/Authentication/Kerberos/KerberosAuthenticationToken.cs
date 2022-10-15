@@ -132,6 +132,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 tok_id[0] = 3;
             }
+            else if (this is KerberosKDCRequestAuthenticationToken)
+            {
+                tok_id[0] = 5;
+            }
+            else if (this is KerberosKDCReplyAuthenticationToken)
+            {
+                tok_id[0] = 6;
+            }
             else
             {
                 oid = OIDValues.KERBEROS_USER_TO_USER;

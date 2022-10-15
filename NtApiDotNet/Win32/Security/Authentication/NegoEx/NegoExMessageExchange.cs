@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.Data;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtApiDotNet.Win32.Security.Authentication.PKU2U;
 using System;
 using System.Text;
 
@@ -47,17 +48,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
             Guid auth_scheme = reader.ReadGuid();
             byte[] exchange = ReadByteVector(reader, data);
             AuthenticationToken token = null;
-            if (auth_scheme == NegoExAuthSchemes.PKU2U
-                && KerberosAuthenticationToken.TryParse(exchange, 0, false, out KerberosAuthenticationToken kerb_token))
+            if (auth_scheme == NegoExAuthSchemes.PKU2U)
             {
-                token = kerb_token;
-            }
-            else
-            {
-                token = new AuthenticationToken(exchange);
+                if (header.MessageType == NegoExMessageType.AcceptorMetaData || header.MessageType == NegoExMessageType.InitiatorMetaData)
+                {
+                    if (PKU2UMetaDataAuthenticationToken.TryParse(exchange, 0, false, out PKU2UMetaDataAuthenticationToken pku2u_token))
+                    {
+                        token = pku2u_token;
+                    }
+                }
+                else if (KerberosAuthenticationToken.TryParse(exchange, 0, false, out KerberosAuthenticationToken kerb_token))
+                {
+                    token = kerb_token;
+                }
             }
 
-            return new NegoExMessageExchange(header, auth_scheme, token);
+            return new NegoExMessageExchange(header, auth_scheme, token ?? new AuthenticationToken(exchange));
         }
 
         private protected override void InnerFormat(StringBuilder builder)

@@ -567,6 +567,8 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\Client\KerberosTicketCacheAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\KerberosManagedAuthenticationPackage.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkAsRepDHRepInfo.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitExternalPrincipalIdentifier.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPrincipalName.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAlert.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthSchemes.cs" />
@@ -585,6 +587,7 @@
     <Compile Include="Win32\Security\Authentication\Negotiate\NegotiateManagedAuthenticationPackage.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\Client\INtlmAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmManagedAuthenticationPackage.cs" />
+    <Compile Include="Win32\Security\Authentication\PKU2U\PKU2UMetaDataAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\SecurityChannelBinding.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />
