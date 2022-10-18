@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -83,6 +84,64 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Format the Authentication Token.
+        /// </summary>
+        /// <returns>The Formatted Token.</returns>
+        public override string Format()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"<KerberosV{ProtocolVersion} {MessageType}>");
+            if (!PreAuthenticationData.IsEmpty())
+            {
+                builder.AppendLine("<Pre Authentication Data>");
+                foreach (var pa_data in PreAuthenticationData)
+                {
+                    builder.AppendLine(pa_data.Format());
+                }
+                builder.AppendLine("</Pre Authentication Data>");
+            }
+            builder.AppendLine($"KDC Options     : {KDCOptions}");
+            if (ClientName != null)
+            {
+                builder.AppendLine($"Client Name     : {ClientName}");
+            }
+            builder.AppendLine($"Realm           : {Realm}");
+            if (ServerName != null)
+            {
+                builder.AppendLine($"Server Name     : {ServerName}");
+            }
+            if (FromTime != null)
+            {
+                builder.AppendLine($"From Time       : {FromTime}");
+            }
+            builder.AppendLine($"Till Time       : {TillTime}");
+            if (RenewTill != null)
+            {
+                builder.AppendLine($"Renew Time      : {RenewTill}");
+            }
+            builder.AppendLine($"Nonce           : 0x{Nonce:X08}");
+            builder.AppendLine($"Encryption Types: {string.Join(", ", EncryptionTypes)}");
+            if (!Addresses.IsEmpty())
+            {
+                builder.AppendLine($"Addresses       : {string.Join(", ", Addresses)}");
+            }
+
+            if (AuthorizationData != null)
+            {
+                builder.AppendLine("Auth Data       :");
+                builder.AppendLine(AuthorizationData.Format());
+            }
+            if (!AdditionalTickets.IsEmpty())
+            {
+                foreach (var ticket in AdditionalTickets)
+                {
+                    builder.Append(ticket.Format());
+                }
+            }
+            return builder.ToString();
+        }
+
         /// <summary>
         /// Create a builder for this token.
         /// </summary>

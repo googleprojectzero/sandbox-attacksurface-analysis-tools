@@ -37,6 +37,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private protected abstract byte[] GetData();
 
+        /// <summary>
+        /// Format the PA-DATA to a string.
+        /// </summary>
+        /// <returns>The PA-DATA as a string.</returns>
+        public virtual string Format()
+        {
+            return Type.ToString();
+        }
+
         internal static List<KerberosPreAuthenticationData> ParseErrorData(byte[] error_data)
         {
             List<KerberosPreAuthenticationData> ret = new List<KerberosPreAuthenticationData>();
@@ -103,6 +112,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return KerberosPreAuthenticationDataPkAsRep.Parse(data);
                 case KerberosPreAuthenticationType.PA_AS_FRESHNESS:
                     return new KerberosPreAuthenticationDataAsFreshness(data);
+                case KerberosPreAuthenticationType.PA_PK_AS_REQ:
+                    return KerberosPreAuthenticationDataPkAsReq.Parse(data);
                 default:
                     return new KerberosPreAuthenticationDataUnknown(type, data);
             }

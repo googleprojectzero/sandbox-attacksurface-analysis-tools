@@ -872,5 +872,12 @@ namespace NtApiDotNet
         }
 
         internal static bool IsWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;
+
+        internal static bool IsEmpty<T>(this IEnumerable<T> e)
+        {
+            if (e == null)
+                return true;
+            return !e.Any();
+        }
     }
 }

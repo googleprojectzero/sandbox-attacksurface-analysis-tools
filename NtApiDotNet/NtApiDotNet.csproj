@@ -569,6 +569,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkAsRepDHRepInfo.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitExternalPrincipalIdentifier.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPrincipalName.cs" />
+    <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitUtils.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAlert.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthSchemes.cs" />
