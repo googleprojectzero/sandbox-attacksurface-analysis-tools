@@ -16,7 +16,6 @@ using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
@@ -47,34 +46,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
             ServerDHNonce = server_dh_nonce;
         }
 
-        private static SignedCms ParseSignedData(byte[] data, bool try_fallback)
-        {
-            try
-            {
-                SignedCms ret = new SignedCms();
-                ret.Decode(data);
-                return ret;
-            }
-            catch (CryptographicException)
-            {
-                if (!try_fallback)
-                    throw;
-            }
-
-            // At least for PKU2U it seems the CMS is missing a header that breaks the .NET parser.
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteObjectId("1.2.840.113549.1.7.2");
-                using (var ctx = seq.CreateContextSpecific(0))
-                {
-                    ctx.WriteRawBytes(data);
-                }
-            }
-
-            return ParseSignedData(builder.ToArray(), false);
-        }
-
         internal static KerberosPkAsRepDHRepInfo Parse(DERValue[] values)
         {
             if (values.Length != 1 || !values[0].CheckSequence())
@@ -90,7 +61,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
                 switch (next.Tag)
                 {
                     case 0:
-                        signed = ParseSignedData(next.Data, true);
+                        signed = KerberosPkInitUtils.ParseSignedData(next.Data);
                         break;
                     case 1:
                         server_nonce = next.ReadChildOctetString();

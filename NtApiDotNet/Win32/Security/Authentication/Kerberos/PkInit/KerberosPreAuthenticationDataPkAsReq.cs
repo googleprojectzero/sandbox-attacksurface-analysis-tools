@@ -12,8 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
+using System.IO;
+using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
@@ -48,6 +51,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
                 seq.WriteContextSpecific(0, false, SignedAuthPack.Encode());
             }
             return builder.ToArray();
+        }
+
+        internal static KerberosPreAuthenticationDataPkAsReq Parse(byte[] data)
+        {
+            try
+            {
+                DERValue[] values = DERParser.ParseData(data, 0);
+                if (values.Length != 1 || !values[0].CheckSequence())
+                    throw new InvalidDataException();
+
+                SignedCms signed_auth_pack = null;
+                foreach (var next in values[0].Children)
+                {
+                    if (next.Type != DERTagType.ContextSpecific)
+                        throw new InvalidDataException();
+                    switch (next.Tag)
+                    {
+                        case 0:
+                            signed_auth_pack = KerberosPkInitUtils.ParseSignedData(next.Data);
+                            break;
+                        default:
+                            throw new InvalidDataException();
+                    }
+                }
+                return new KerberosPreAuthenticationDataPkAsReq(signed_auth_pack);
+            }
+            catch (CryptographicException ex)
+            {
+                throw new InvalidDataException("Invalid PK-AS-REQ.", ex);
+            }
         }
     }
 }
