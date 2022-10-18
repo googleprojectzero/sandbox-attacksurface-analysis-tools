@@ -32,6 +32,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public KerberosAuthenticationKey SessionKey => ReplyData.Key;
 
         /// <summary>
+        /// The request token used for the reply.
+        /// </summary>
+        public KerberosKDCRequestAuthenticationToken RequestToken { get; }
+
+        /// <summary>
         /// The reply token.
         /// </summary>
         public KerberosKDCReplyAuthenticationToken ReplyToken { get; }
@@ -64,9 +69,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             return new KerberosExternalTicket(ToCredential());
         }
 
-        private protected KerberosKDCReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part)
+        private protected KerberosKDCReply(KerberosKDCRequestAuthenticationToken req_token, KerberosKDCReplyAuthenticationToken rep_token, KerberosKDCReplyEncryptedPart enc_part)
         {
-            ReplyToken = token;
+            RequestToken = req_token;
+            ReplyToken = rep_token;
             ReplyData = enc_part;
         }
     }

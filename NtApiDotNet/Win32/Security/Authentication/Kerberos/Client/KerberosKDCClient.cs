@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Net.Dns;
-using NtApiDotNet.Utilities.ASN1;
 using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit;
@@ -98,7 +97,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             throw new KerberosKDCClientException("Unknown KDC reply.");
         }
 
-        private static KerberosASReply ProcessASReply(KerberosKDCReplyAuthenticationToken reply, KerberosAuthenticationKey key)
+        private static KerberosASReply ProcessASReply(KerberosKDCRequestAuthenticationToken request, KerberosKDCReplyAuthenticationToken reply, KerberosAuthenticationKey key)
         {
             // RC4 encryption uses TgsRep for the AsRep.
             if (!reply.EncryptedData.TryDecrypt(key, KerberosKeyUsage.AsRepEncryptedPart, out KerberosEncryptedData reply_dec))
@@ -108,19 +107,21 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
             }
 
-            return new KerberosASReply(reply, reply_part, key);
+            return new KerberosASReply(request, reply, reply_part, key);
         }
 
         private KerberosASReply Authenticate(KerberosASRequest request)
         {
             var as_req = request.ToBuilder();
-            return ProcessASReply(ExchangeKDCTokens(as_req.Create()), request.Key);
+            var req_token = as_req.Create();
+            return ProcessASReply(req_token, ExchangeKDCTokens(req_token), request.Key);
         }
 
         private KerberosASReply Authenticate(KerberosASRequestPassword request)
         {
             var as_req = request.ToBuilder();
-            var reply = ExchangeKDCTokensWithError(as_req.Create());
+            var req_token = as_req.Create();
+            var reply = ExchangeKDCTokensWithError(req_token);
             KerberosKDCReplyAuthenticationToken as_rep;
             KerberosAuthenticationKey key;
             if (reply is KerberosErrorAuthenticationToken error)
@@ -129,7 +130,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                     throw new KerberosKDCClientException(error);
                 key = request.DeriveKey(KerberosEncryptionType.NULL, error.PreAuthentationData);
                 as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, key));
-                as_rep = ExchangeKDCTokens(as_req.Create());
+                req_token = as_req.Create();
+                as_rep = ExchangeKDCTokens(req_token);
             }
             else
             {
@@ -137,7 +139,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 key = request.DeriveKey(as_rep.EncryptedData.EncryptionType, as_rep.PreAuthenticationData);
             }
 
-            return ProcessASReply(as_rep, key);
+            return ProcessASReply(req_token, as_rep, key);
         }
 
         private KerberosASReply Authenticate(KerberosAsRequestCertificate request, byte[] freshness_token)
@@ -149,7 +151,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 SHA1.Create().ComputeHash(as_req.EncodeBody()), freshness_token);
             KerberosPkInitAuthPack auth_pack = new KerberosPkInitAuthPack(pk_auth);
             as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataPkAsReq.Create(auth_pack, request.Certificate));
-            var as_rep = ExchangeKDCTokens(as_req.Create());
+            var req_token = as_req.Create();
+            var as_rep = ExchangeKDCTokens(req_token);
             var pk_as_rep = as_rep.PreAuthenticationData.OfType<KerberosPreAuthenticationDataPkAsRep>().FirstOrDefault();
             if (pk_as_rep == null)
                 throw new KerberosKDCClientException("PA-PK-AS-REP is missing from reply.");
@@ -164,7 +167,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             // TODO: Perhaps should verify the data OID and checksum?
             var reply_key_pack = KerberosPkInitReplyKeyPack.Parse(signed_key_pack.ContentInfo.Content, request.ClientName, request.Realm);
 
-            return ProcessASReply(as_rep, reply_key_pack.ReplyKey);
+            return ProcessASReply(req_token, as_rep, reply_key_pack.ReplyKey);
         }
 
         private KerberosASReply Authenticate(KerberosAsRequestCertificate request)
@@ -242,10 +245,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// </summary>
         public static string DefaultKDCHostName {
             get => _default_kdc_name.Value;
-            set
-            {
-                _default_kdc_name = new Lazy<string>(() => value);
-            }
+            set => _default_kdc_name = new Lazy<string>(() => value);
         }
 
         /// <summary>
@@ -375,14 +375,15 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
                 tgs_req.AddPreAuthenticationData(new KerberosPreAuthenticationPACOptions(request.PACOptionsFlags));
             }
 
-            var reply = ExchangeKDCTokens(tgs_req.Create());
+            var req_token = tgs_req.Create();
+            var reply = ExchangeKDCTokens(req_token);
             var reply_dec = reply.EncryptedData.Decrypt(subkey, KerberosKeyUsage.TgsRepEncryptedPartAuthSubkey);
             if (!KerberosKDCReplyEncryptedPart.TryParse(reply_dec.CipherText, out KerberosKDCReplyEncryptedPart reply_part))
             {
                 throw new KerberosKDCClientException("Invalid KDC reply encrypted part.");
             }
 
-            return new KerberosTGSReply(reply, reply_part);
+            return new KerberosTGSReply(req_token, reply, reply_part);
         }
 
         /// <summary>

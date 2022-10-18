@@ -22,10 +22,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="token">The base authentication token.</param>
+        /// <param name="req_token">The request authentication token.</param>
+        /// <param name="rep_token">The base authentication token.</param>
         /// <param name="enc_part">The decrypted KDC reply part.</param>
-        public KerberosTGSReply(KerberosKDCReplyAuthenticationToken token, KerberosKDCReplyEncryptedPart enc_part) 
-            : base(token, enc_part)
+        public KerberosTGSReply(
+            KerberosKDCRequestAuthenticationToken req_token,
+            KerberosKDCReplyAuthenticationToken rep_token, 
+            KerberosKDCReplyEncryptedPart enc_part) 
+            : base(req_token, rep_token, enc_part)
         {
         }
     }
