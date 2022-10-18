@@ -17,6 +17,7 @@ using NtApiDotNet.Utilities.ASN1.Builder;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -37,13 +38,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         private protected abstract byte[] GetData();
 
+        private protected virtual void Format(StringBuilder builder)
+        {
+        }
+
         /// <summary>
         /// Format the PA-DATA to a string.
         /// </summary>
         /// <returns>The PA-DATA as a string.</returns>
-        public virtual string Format()
+        public string Format()
         {
-            return Type.ToString();
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"<Kerberos PA-DATA {Type}>");
+            Format(builder);
+            return builder.ToString();
         }
 
         internal static List<KerberosPreAuthenticationData> ParseErrorData(byte[] error_data)

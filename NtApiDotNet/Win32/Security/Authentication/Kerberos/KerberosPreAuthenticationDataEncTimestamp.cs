@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Utilities.ASN1.Builder;
 using System;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 {
@@ -78,6 +79,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             DERBuilder builder = new DERBuilder();
             builder.WriteObject(EncryptedData);
             return builder.ToArray();
+        }
+
+        private protected override void Format(StringBuilder builder)
+        {
+            builder.AppendLine(EncryptedData.Format());
         }
     }
 }
