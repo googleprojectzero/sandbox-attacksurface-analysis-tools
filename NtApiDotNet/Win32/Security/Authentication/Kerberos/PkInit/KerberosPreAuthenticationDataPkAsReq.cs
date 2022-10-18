@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
 {
@@ -27,7 +28,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
     public sealed class KerberosPreAuthenticationDataPkAsReq : KerberosPreAuthenticationData
     {
         /// <summary>
-        /// The signed AuthPack data data.
+        /// The signed AuthPack data.
         /// </summary>
         public SignedCms SignedAuthPack { get; }
 
@@ -41,6 +42,26 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
             : base(KerberosPreAuthenticationType.PA_PK_AS_REQ)
         {
             SignedAuthPack = signed_auth_pack ?? throw new ArgumentNullException(nameof(signed_auth_pack));
+        }
+
+        /// <summary>
+        /// Create a PA-PK-AS-REQ pre-authentication data from an auth pack.
+        /// </summary>
+        /// <param name="auth_pack">The auth pack for the PA-DATA.</param>
+        /// <param name="certificate">The certificate used to signed the auth pack.</param>
+        /// <returns>The created PA-PK-AS-REQ pre-authentication data.</returns>
+        public static KerberosPreAuthenticationDataPkAsReq Create(KerberosPkInitAuthPack auth_pack, X509Certificate2 certificate)
+        {
+            if (auth_pack is null)
+            {
+                throw new ArgumentNullException(nameof(auth_pack));
+            }
+
+            ContentInfo contents = new ContentInfo(new Oid(OIDValues.PKINIT_AUTHDATA), auth_pack.ToArray());
+            SignedCms signed_authpack = new SignedCms(contents);
+            CmsSigner signer = new CmsSigner(certificate);
+            signed_authpack.ComputeSignature(signer);
+            return new KerberosPreAuthenticationDataPkAsReq(signed_authpack);
         }
 
         private protected override byte[] GetData()

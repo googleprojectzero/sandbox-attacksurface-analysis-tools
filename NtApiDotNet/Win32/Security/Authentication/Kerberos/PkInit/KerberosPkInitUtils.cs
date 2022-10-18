@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
 
             // At least for PKU2U it seems the CMS is missing a header that breaks the .NET parser.
             // The Windows code passes the undocumented CMSG_LENGTH_ONLY_FLAG flag when parsing the
-            // CMS which without the header.
+            // CMS which works without the header. Add the header ourselves.
             DERBuilder builder = new DERBuilder();
             using (var seq = builder.CreateSequence())
             {

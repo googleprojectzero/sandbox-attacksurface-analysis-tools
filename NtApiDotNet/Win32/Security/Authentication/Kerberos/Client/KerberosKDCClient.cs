@@ -148,11 +148,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
             KerberosPkInitPkAuthenticator pk_auth = new KerberosPkInitPkAuthenticator(0, KerberosTime.Now, KerberosBuilderUtils.GetRandomNonce(),
                 SHA1.Create().ComputeHash(as_req.EncodeBody()), freshness_token);
             KerberosPkInitAuthPack auth_pack = new KerberosPkInitAuthPack(pk_auth);
-            ContentInfo authpack = new ContentInfo(new Oid(OIDValues.PKINIT_AUTHDATA), auth_pack.ToArray());
-            SignedCms signed_authpack = new SignedCms(authpack);
-            CmsSigner signer = new CmsSigner(request.Certificate);
-            signed_authpack.ComputeSignature(signer);
-            as_req.AddPreAuthenticationData(new KerberosPreAuthenticationDataPkAsReq(signed_authpack));
+            as_req.AddPreAuthenticationData(KerberosPreAuthenticationDataPkAsReq.Create(auth_pack, request.Certificate));
             var as_rep = ExchangeKDCTokens(as_req.Create());
             var pk_as_rep = as_rep.PreAuthenticationData.OfType<KerberosPreAuthenticationDataPkAsRep>().FirstOrDefault();
             if (pk_as_rep == null)
