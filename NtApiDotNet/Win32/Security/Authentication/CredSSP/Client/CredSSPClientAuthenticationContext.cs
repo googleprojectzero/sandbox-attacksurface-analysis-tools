@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
 {
@@ -26,11 +27,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
     public sealed class CredSSPClientAuthenticationContext : IClientAuthenticationContext
     {
         #region Private Members
-        private readonly CredentialHandle _schannel_creds;
-        private readonly ClientAuthenticationContext _schannel_ctx;
-        private readonly TSCredentials _delegate_creds;
-        private readonly IClientAuthenticationContext _nego_ctx;
-        private TSSSPClientAuthenticationContext _tsssp_context;
+        private readonly IClientAuthenticationContext _schannel_ctx;
+        private readonly IClientAuthenticationContext _tsssp_ctx;
 
         private AuthenticationToken EncryptBuffer(byte[] token)
         {
@@ -72,24 +70,23 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
                 _schannel_ctx.Continue(new AuthenticationToken(token));
                 if (_schannel_ctx.Done)
                 {
-                    _tsssp_context = new TSSSPClientAuthenticationContext(_nego_ctx, 
-                        _schannel_ctx.RemoteCertificate, _delegate_creds);
-                    Token = EncryptBuffer(_tsssp_context.Token.ToArray());
+                    Token = EncryptBuffer(_tsssp_ctx.Token.ToArray());
                 }
                 else
                 {
                     Token = _schannel_ctx.Token;
                 }
             }
-            else if (!_tsssp_context.Done)
+            else if (!_tsssp_ctx.Done)
             {
-                _tsssp_context.Continue(DecryptBuffer(token));
-                Token = EncryptBuffer(_tsssp_context.Token.ToArray());
+                var additional_input = new[] { new SecurityBufferTSSSPCertificate(_schannel_ctx.RemoteCertificate) };
+                _tsssp_ctx.Continue(DecryptBuffer(token), additional_input);
+                Token = EncryptBuffer(_tsssp_ctx.Token.ToArray());
             }
             else if (!Done)
             {
                 _ = DecryptBuffer(token);
-                Token = EncryptBuffer(_tsssp_context.Token.ToArray());
+                Token = EncryptBuffer(_tsssp_ctx.Token.ToArray());
                 Done = true;
             }
             else
@@ -104,17 +101,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
         /// Constructor.
         /// </summary>
         /// <param name="hostname">Hostname for the SChannel connection.</param>
+        /// <param name="tsssp_ctx">Inner TSSSP context.</param>
+        public CredSSPClientAuthenticationContext(string hostname, IClientAuthenticationContext tsssp_ctx)
+        {
+            _schannel_ctx = AuthenticationPackage.CreateClient(AuthenticationPackage.SCHANNEL_NAME, null,
+                InitializeContextReqFlags.Stream | InitializeContextReqFlags.Confidentiality | InitializeContextReqFlags.ManualCredValidation, hostname);
+            _tsssp_ctx = tsssp_ctx;
+            ContinueInternal(null);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="hostname">Hostname for the SChannel connection.</param>
         /// <param name="nego_ctx">Inner authentication context.</param>
         /// <param name="delegate_creds">Credentials to delegate.</param>
-        public CredSSPClientAuthenticationContext(string hostname, IClientAuthenticationContext nego_ctx, TSCredentials delegate_creds)
+        public CredSSPClientAuthenticationContext(string hostname, IClientAuthenticationContext nego_ctx, TSCredentials delegate_creds) :
+            this(hostname, new TSSSPClientAuthenticationContext(nego_ctx, delegate_creds))
         {
-            _nego_ctx = nego_ctx ?? throw new ArgumentNullException(nameof(nego_ctx));
-            _delegate_creds = delegate_creds ?? throw new ArgumentNullException(nameof(delegate_creds));
-            _schannel_creds = new CredentialHandle(null, AuthenticationPackage.SCHANNEL_NAME, null, SecPkgCredFlags.Outbound, null);
-            _schannel_ctx = new ClientAuthenticationContext(_schannel_creds,
-                        InitializeContextReqFlags.Stream | InitializeContextReqFlags.Confidentiality | InitializeContextReqFlags.ManualCredValidation,
-                        hostname, SecDataRep.Native);
-            ContinueInternal(null);
         }
         #endregion
 
@@ -139,6 +143,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
         public int MaxSignatureSize => 0;
 
         public int SecurityTrailerSize => 0;
+
+        public X509Certificate2 LocalCertificate => null;
+
+        public X509Certificate2 RemoteCertificate => null;
+
+        public int StreamHeaderSize => 0;
+
+        public int StreamTrailerSize => 0;
+
+        public int StreamBufferCount => 0;
+
+        public int StreamMaxMessageSize => 0;
+
+        public int StreamBlockSize => 0;
 
         public void Continue(AuthenticationToken token)
         {
@@ -183,9 +201,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
 
         public void Dispose()
         {
-            _schannel_creds?.Dispose();
             _schannel_ctx?.Dispose();
-            _tsssp_context?.Dispose();
+            _tsssp_ctx?.Dispose();
         }
 
         public EncryptedMessage EncryptMessage(byte[] message, SecurityQualityOfProtectionFlags quality_of_protection, int sequence_no)

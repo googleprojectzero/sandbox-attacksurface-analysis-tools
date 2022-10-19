@@ -34,7 +34,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
             public string PackageName => NEGOSSP_NAME;
 
             public IClientAuthenticationContext CreateClient(InitializeContextReqFlags req_attributes,
-                string target, SecurityChannelBinding channel_binding, SecDataRep data_rep, bool initialize)
+                string target, SecurityChannelBinding channel_binding, SecDataRep data_rep, bool initialize, bool owns_credentials)
             {
                 if (!_cred_use_flag.HasFlagSet(SecPkgCredFlags.Outbound))
                     throw new ArgumentException("Credential handle not configured for outbound authentication.");
@@ -47,7 +47,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
                 return new NegotiateClientAuthenticationContext(_credentials, req_attributes, target, config, initialize);
             }
 
-            public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+            public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, 
+                SecDataRep data_rep = SecDataRep.Native, bool owns_credentials = false)
             {
                 throw new NotImplementedException();
             }

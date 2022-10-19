@@ -311,11 +311,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="target">Target SPN (optional).</param>
         /// <param name="data_rep">Data representation.</param>
         /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="owns_credentials">Specify to make the new context own the credential handle so that it doesn't need to be disposed of.</param>
         /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
         public static ClientAuthenticationContext Create(CredentialHandle creds, InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None,
-            string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true)
+            string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true, bool owns_credentials = false)
         {
-            return new ClientAuthenticationContext(creds, req_attributes, target, channel_binding, data_rep, initialize);
+            return new ClientAuthenticationContext(creds, req_attributes, target, channel_binding, data_rep, initialize) { OwnsCredentials = owns_credentials };
         }
         #endregion
 

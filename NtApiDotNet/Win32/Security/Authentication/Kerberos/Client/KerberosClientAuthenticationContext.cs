@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 {
@@ -757,6 +758,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         public int MaxSignatureSize { get; }
 
         public int SecurityTrailerSize { get; }
+
+        public X509Certificate2 LocalCertificate => null;
+
+        public X509Certificate2 RemoteCertificate => null;
+
+        public int StreamHeaderSize => 0;
+
+        public int StreamTrailerSize => 0;
+
+        public int StreamBufferCount => 0;
+
+        public int StreamMaxMessageSize => 0;
+
+        public int StreamBlockSize => 0;
 
         public InitializeContextReqFlags RequestAttributes => _request_attributes;
 

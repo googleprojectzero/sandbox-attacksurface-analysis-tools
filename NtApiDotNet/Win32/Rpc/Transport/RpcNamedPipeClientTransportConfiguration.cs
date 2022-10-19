@@ -74,13 +74,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             string package = PackageName ?? (NullSession ? AuthenticationPackage.NTLM_NAME : AuthenticationPackage.NEGOSSP_NAME);
             string spn = ServicePrincipalName ?? $"cifs/{hostname}";
             bool initialize = !AuthenticationPackage.CheckNegotiate(AuthenticationPackage.NEGOSSP_NAME);
-            var cred_handle = AuthenticationPackage.CreateHandle(package, SecPkgCredFlags.Outbound, Credentials);
-            var context = cred_handle.CreateClient(GetContextRequestFlags(), spn, initialize: initialize);
-            if (context is ClientAuthenticationContext native_context)
-            {
-                native_context.OwnsCredentials = true;
-            }
-            return context;
+            return AuthenticationPackage.CreateClient(package, Credentials, GetContextRequestFlags(), spn, initialize: initialize);
         }
     }
 }

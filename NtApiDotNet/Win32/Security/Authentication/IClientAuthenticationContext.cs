@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Native;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -35,5 +36,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Current return attribute flags.
         /// </summary>
         InitializeContextRetFlags ReturnAttributes { get; }
+
+        /// <summary>
+        /// Get the local certificate. Only used for Schannel related authentication.
+        /// </summary>
+        X509Certificate2 LocalCertificate { get; }
+
+        /// <summary>
+        /// Get the remote certificate. Only used for Schannel related authentication.
+        /// </summary>
+        X509Certificate2 RemoteCertificate { get; }
     }
 }

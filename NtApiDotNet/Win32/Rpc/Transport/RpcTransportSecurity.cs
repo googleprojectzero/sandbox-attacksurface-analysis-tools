@@ -245,15 +245,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 return TicketCache.CreateClientContext(ServicePrincipalName, GetContextRequestFlags());
             }
 #pragma warning restore CS0618 // Type or member is obsolete
-
-            var package = GetAuthPackage();
-            var cred_handle = package.CreateHandle(SecPkgCredFlags.Outbound, Credentials);
-            var context = cred_handle.CreateClient(GetContextRequestFlags(), ServicePrincipalName);
-            if (context is ClientAuthenticationContext native_context)
-            {
-                native_context.OwnsCredentials = true;
-            }
-            return context;
+            return GetAuthPackage().CreateClient(Credentials, GetContextRequestFlags(), ServicePrincipalName);
         }
         #endregion
     }

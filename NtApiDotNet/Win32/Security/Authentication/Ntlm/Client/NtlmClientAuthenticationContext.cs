@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
@@ -323,6 +324,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         public int MaxSignatureSize => 16;
 
         public int SecurityTrailerSize => 16;
+
+        public X509Certificate2 LocalCertificate => null;
+
+        public X509Certificate2 RemoteCertificate => null;
+
+        public int StreamHeaderSize => 0;
+
+        public int StreamTrailerSize => 0;
+
+        public int StreamBufferCount => 0;
+
+        public int StreamMaxMessageSize => 0;
+
+        public int StreamBlockSize => 0;
 
         public void Continue(AuthenticationToken token)
         {

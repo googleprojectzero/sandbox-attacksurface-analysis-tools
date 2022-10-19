@@ -31,7 +31,12 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
         private readonly TSCredentials _delegate_creds;
         private readonly X509Certificate _certificate;
 
-        private void ContinueInternal(byte[] token)
+        private static X509Certificate GetCertificate(IEnumerable<SecurityBuffer> additional_input)
+        {
+            return additional_input?.OfType<SecurityBufferTSSSPCertificate>().Select(c => c.Certificate).FirstOrDefault();
+        }
+
+        private void ContinueInternal(byte[] token, X509Certificate certificate)
         {
             if (Token == null)
             {
@@ -47,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
 
                 _client_ctx.Continue(ts_token.NegoTokens[0]);
 
-                Token = TSAuthenticationToken.Create(6, _client_ctx, _certificate);
+                Token = TSAuthenticationToken.Create(6, _client_ctx, certificate ?? _certificate);
             }
             else if (!Done)
             {
@@ -67,17 +72,17 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
         /// Constructor.
         /// </summary>
         /// <param name="context">The client authentication context for the inner authentication.</param>
-        /// <param name="certificate">Certificate for the out TLS wrapper.</param>
+        /// <param name="certificate">Certificate for the outer TLS wrapper. Can be null but then must pass in the certificating using the SecurityBufferTSSSPCertificate buffer.</param>
         /// <param name="delegate_creds">The credentials to delegate.</param>
         /// <param name="initialize">Specify to initialize the context.</param>
-        public TSSSPClientAuthenticationContext(IClientAuthenticationContext context, X509Certificate certificate, TSCredentials delegate_creds, bool initialize = true)
+        public TSSSPClientAuthenticationContext(IClientAuthenticationContext context, TSCredentials delegate_creds, X509Certificate certificate = null, bool initialize = true)
         {
             _client_ctx = context ?? throw new ArgumentNullException(nameof(context));
             _delegate_creds = delegate_creds ?? throw new ArgumentNullException(nameof(delegate_creds));
-            _certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
+            _certificate = certificate;
             if (initialize)
             {
-                ContinueInternal(null);
+                ContinueInternal(null, null);
             }
         }
         #endregion
@@ -104,30 +109,44 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
 
         public int SecurityTrailerSize => 0;
 
+        public X509Certificate2 LocalCertificate => null;
+
+        public X509Certificate2 RemoteCertificate => null;
+
+        public int StreamHeaderSize => 0;
+
+        public int StreamTrailerSize => 0;
+
+        public int StreamBufferCount => 0;
+
+        public int StreamMaxMessageSize => 0;
+
+        public int StreamBlockSize => 0;
+
         public void Continue(AuthenticationToken token)
         {
-            ContinueInternal(token?.ToArray());
+            ContinueInternal(token?.ToArray(), null);
         }
 
         public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input)
         {
-            ContinueInternal(token?.ToArray());
+            ContinueInternal(token?.ToArray(), GetCertificate(additional_input));
         }
 
         public void Continue(AuthenticationToken token, IEnumerable<SecurityBuffer> additional_input, IEnumerable<SecurityBuffer> additional_output)
         {
-            ContinueInternal(token?.ToArray());
+            ContinueInternal(token?.ToArray(), GetCertificate(additional_input));
         }
 
         public void Continue(IEnumerable<SecurityBuffer> input_buffers, IEnumerable<SecurityBuffer> additional_output)
         {
             var token_buffer = input_buffers?.FirstOrDefault(b => b.Type == SecurityBufferType.Token);
-            ContinueInternal(token_buffer?.ToArray());
+            ContinueInternal(token_buffer?.ToArray(), GetCertificate(input_buffers));
         }
 
         public void Continue()
         {
-            ContinueInternal(null);
+            ContinueInternal(null, null);
         }
 
         public byte[] DecryptMessage(EncryptedMessage message, int sequence_no)

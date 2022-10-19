@@ -246,11 +246,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="channel_binding">Optional channel binding token.</param>
         /// <param name="data_rep">Data representation.</param>
+        /// <param name="owns_credentials">Specify to make the new context own the credential handle so that it doesn't need to be disposed of.</param>
         /// <returns>The server authentication context.</returns>
         public static ServerAuthenticationContext Create(CredentialHandle creds, AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None,
-            SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+            SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool owns_credentials = false)
         {
-            return new ServerAuthenticationContext(creds, req_attributes, channel_binding, data_rep);
+            return new ServerAuthenticationContext(creds, req_attributes, channel_binding, data_rep) { OwnsCredentials = owns_credentials };
         }
         #endregion
 

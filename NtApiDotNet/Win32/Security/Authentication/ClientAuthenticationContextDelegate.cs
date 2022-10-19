@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Native;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -31,6 +32,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public InitializeContextReqFlags RequestAttributes => _context.RequestAttributes;
 
         public InitializeContextRetFlags ReturnAttributes => _context.ReturnAttributes;
+
+        public X509Certificate2 LocalCertificate => _context.LocalCertificate;
+
+        public X509Certificate2 RemoteCertificate => _context.RemoteCertificate;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

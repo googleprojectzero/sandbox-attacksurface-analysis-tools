@@ -222,6 +222,58 @@ namespace NtApiDotNet.Win32.Security.Authentication
             
             return CredentialHandle.Create(principal, Name, auth_id, cred_use_flag, credentials);
         }
+
+        /// <summary>
+        /// Create a client authentication context.
+        /// </summary>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        /// <returns>The client authentication context.</returns>
+        public IClientAuthenticationContext CreateClient(AuthenticationCredentials credentials = null,
+            InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None,
+            string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native,
+            bool initialize = true)
+        {
+            var handle = CreateHandle(SecPkgCredFlags.Outbound, credentials);
+            try
+            {
+                return handle.CreateClient(req_attributes,
+                    target, channel_binding, data_rep, initialize, true);
+            }
+            catch
+            {
+                handle?.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Create a server authentication context.
+        /// </summary>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <returns>The server authentication context.</returns>
+        public IServerAuthenticationContext CreateServer(AuthenticationCredentials credentials = null,
+            AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None,
+            SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+        {
+            var handle = CreateHandle(SecPkgCredFlags.Inbound, credentials);
+            try
+            {
+                return handle.CreateServer(req_attributes, channel_binding, data_rep, true);
+            }
+            catch
+            {
+                handle?.Dispose();
+                throw;
+            }
+        }
         #endregion
 
         #region Static Methods
@@ -295,6 +347,42 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return FromName(package).CreateHandle(cred_use_flag, credentials, principal, auth_id);
         }
+
+        /// <summary>
+        /// Create a client authentication context.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="target">Target SPN (optional).</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        /// <returns>The client authentication context.</returns>
+        public static IClientAuthenticationContext CreateClient(string package, AuthenticationCredentials credentials = null, 
+            InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None,
+            string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native,
+            bool initialize = true)
+        {
+            return FromName(package).CreateClient(credentials, req_attributes, target, channel_binding, data_rep, initialize);
+        }
+
+        /// <summary>
+        /// Create a server authentication context.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <param name="credentials">Optional credentials.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="channel_binding">Optional channel binding token.</param>
+        /// <param name="data_rep">Data representation.</param>
+        /// <returns>The server authentication context.</returns>
+        public static IServerAuthenticationContext CreateServer(string package, AuthenticationCredentials credentials = null,
+            AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None,
+            SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+        {
+            return FromName(package).CreateServer(credentials, req_attributes, channel_binding, data_rep);
+        }
+
         #endregion
     }
 }

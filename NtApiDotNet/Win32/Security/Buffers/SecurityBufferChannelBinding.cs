@@ -25,7 +25,10 @@ namespace NtApiDotNet.Win32.Security.Buffers
     /// </summary>
     public sealed class SecurityBufferChannelBinding : SecurityBuffer
     {
-        private readonly SecurityChannelBinding _channel_binding;
+        /// <summary>
+        /// The channel bindings.
+        /// </summary>
+        public SecurityChannelBinding ChannelBinding { get; }
 
         /// <summary>
         /// Constructor.
@@ -34,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
         public SecurityBufferChannelBinding(SecurityChannelBinding channel_binding)
             : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
         {
-            _channel_binding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
+            ChannelBinding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
         }
 
         /// <summary>
@@ -57,15 +60,15 @@ namespace NtApiDotNet.Win32.Security.Buffers
 
             // Manual marshaling of SEC_CHANNEL_BINDINGS
             int current_ofs = Marshal.SizeOf<SEC_CHANNEL_BINDINGS>();
-            writer.Write(_channel_binding.InitiatorAddrType);
-            AddBuffer(writer, ref current_ofs, _channel_binding.Initiator?.Length);
-            writer.Write(_channel_binding.AcceptorAddrType);
-            AddBuffer(writer, ref current_ofs, _channel_binding.Acceptor?.Length);
-            AddBuffer(writer, ref current_ofs, _channel_binding.ApplicationData?.Length);
+            writer.Write(ChannelBinding.InitiatorAddrType);
+            AddBuffer(writer, ref current_ofs, ChannelBinding.Initiator?.Length);
+            writer.Write(ChannelBinding.AcceptorAddrType);
+            AddBuffer(writer, ref current_ofs, ChannelBinding.Acceptor?.Length);
+            AddBuffer(writer, ref current_ofs, ChannelBinding.ApplicationData?.Length);
 
-            WriteBuffer(writer, _channel_binding.Initiator);
-            WriteBuffer(writer, _channel_binding.Acceptor);
-            WriteBuffer(writer, _channel_binding.ApplicationData);
+            WriteBuffer(writer, ChannelBinding.Initiator);
+            WriteBuffer(writer, ChannelBinding.Acceptor);
+            WriteBuffer(writer, ChannelBinding.ApplicationData);
 
             return stm.ToArray();
         }

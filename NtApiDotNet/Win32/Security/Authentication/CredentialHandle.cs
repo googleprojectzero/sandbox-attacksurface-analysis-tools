@@ -211,10 +211,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="data_rep">Data representation.</param>
         /// <param name="channel_binding">Optional channel binding token.</param>
         /// <param name="initialize">Specify to default initialize the context. Must call Continue with an auth token to initialize.</param>
+        /// <param name="owns_credentials">Specify to make the new context own the credential handle so that it doesn't need to be disposed of.</param>
         /// <returns>The client authentication context.</returns>
-        public IClientAuthenticationContext CreateClient(InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None, string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true)
+        public IClientAuthenticationContext CreateClient(InitializeContextReqFlags req_attributes = InitializeContextReqFlags.None, string target = null, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool initialize = true, bool owns_credentials = false)
         {
-            return ClientAuthenticationContext.Create(this, req_attributes, target, channel_binding, data_rep, initialize);
+            return ClientAuthenticationContext.Create(this, req_attributes, target, channel_binding, data_rep, initialize, owns_credentials);
         }
 
         /// <summary>
@@ -223,10 +224,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="req_attributes">Request attribute flags.</param>
         /// <param name="channel_binding">Optional channel binding token.</param>
         /// <param name="data_rep">Data representation.</param>
+        /// <param name="owns_credentials">Specify to make the new context own the credential handle so that it doesn't need to be disposed of.</param>
         /// <returns>The server authentication context.</returns>
-        public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native)
+        public IServerAuthenticationContext CreateServer(AcceptContextReqFlags req_attributes = AcceptContextReqFlags.None, SecurityChannelBinding channel_binding = null, SecDataRep data_rep = SecDataRep.Native, bool owns_credentials = false)
         {
-            return ServerAuthenticationContext.Create(this, req_attributes, channel_binding, data_rep);
+            return ServerAuthenticationContext.Create(this, req_attributes, channel_binding, data_rep, owns_credentials);
         }
 
         /// <summary>

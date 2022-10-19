@@ -193,5 +193,30 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Get the size of the security trailer for this context.
         /// </summary>
         int SecurityTrailerSize { get; }
+
+        /// <summary>
+        /// Size of any header when using a stream protocol such as Schannel.
+        /// </summary>
+        int StreamHeaderSize { get; }
+
+        /// <summary>
+        /// Size of any trailer when using a stream protocol such as Schannel.
+        /// </summary>
+        int StreamTrailerSize { get; }
+
+        /// <summary>
+        /// Number of buffers needed when using a stream protocol such as Schannel.
+        /// </summary>
+        int StreamBufferCount { get; }
+
+        /// <summary>
+        /// Maximum message size when using a stream protocol such as Schannel.
+        /// </summary>
+        int StreamMaxMessageSize { get; }
+
+        /// <summary>
+        /// Preferred block size when using a stream protocol such as Schannel.
+        /// </summary>
+        int StreamBlockSize { get; }
     }
 }

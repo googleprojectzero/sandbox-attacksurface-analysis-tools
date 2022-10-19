@@ -18,6 +18,7 @@ using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NtApiDotNet.Win32.Security.Authentication.Negotiate.Client
 {
@@ -86,6 +87,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Negotiate.Client
         public int MaxSignatureSize => _client_context.MaxSignatureSize;
 
         public int SecurityTrailerSize => _client_context.SecurityTrailerSize;
+
+        public X509Certificate2 LocalCertificate => null;
+
+        public X509Certificate2 RemoteCertificate => null;
+
+        public int StreamHeaderSize => 0;
+
+        public int StreamTrailerSize => 0;
+
+        public int StreamBufferCount => 0;
+
+        public int StreamMaxMessageSize => 0;
+
+        public int StreamBlockSize => 0;
 
         public void Continue(AuthenticationToken token)
         {

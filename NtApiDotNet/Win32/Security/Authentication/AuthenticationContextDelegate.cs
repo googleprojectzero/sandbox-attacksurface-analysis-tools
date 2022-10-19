@@ -44,6 +44,16 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         public virtual int SecurityTrailerSize => _context.SecurityTrailerSize;
 
+        public int StreamHeaderSize => _context.StreamHeaderSize;
+
+        public int StreamTrailerSize => _context.StreamTrailerSize;
+
+        public int StreamBufferCount => _context.StreamBufferCount;
+
+        public int StreamMaxMessageSize => _context.StreamMaxMessageSize;
+
+        public int StreamBlockSize => _context.StreamBlockSize;
+
         public virtual void Continue(AuthenticationToken token)
         {
             _context.Continue(token);
