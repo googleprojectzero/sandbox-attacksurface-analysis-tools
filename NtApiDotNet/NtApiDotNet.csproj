@@ -553,6 +553,8 @@
     <Compile Include="Win32\Rpc\Transport\RpcClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\Client\CredSSPClientAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\Authentication\CredSSP\Client\TSSSPClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\TSCredentialsType.cs" />

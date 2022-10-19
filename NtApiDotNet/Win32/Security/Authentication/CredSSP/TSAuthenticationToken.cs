@@ -117,6 +117,11 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
         /// <returns>The TSSSP token.</returns>
         public static TSAuthenticationToken Parse(byte[] data)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
             if (!TryParse(data, 0, false, out TSAuthenticationToken token))
             {
                 throw new ArgumentException(nameof(data));
@@ -183,14 +188,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
         }
 
         /// <summary>
-        /// Create a TSSSP authentication token with from a certificate.
+        /// Create a TSSSP authentication token from a certificate.
         /// </summary>
         /// <param name="version">The version number.</param>
         /// <param name="context">The authentication context for the encryption.</param>
         /// <param name="certificate">The certificate for generating public key values.</param>
         /// <param name="nonce">The client nonce.</param>
         /// <returns>The TSSSP authentication token.</returns>
-        public static TSAuthenticationToken Create(int version, IAuthenticationContext context, X509Certificate2 certificate, byte[] nonce = null)
+        public static TSAuthenticationToken Create(int version, IAuthenticationContext context, X509Certificate certificate, byte[] nonce = null)
         {
             if (version < 5)
                 throw new ArgumentException("Only support version 5 and above.", nameof(version));
@@ -242,13 +247,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
         }
 
         /// <summary>
-        /// Create a TSSSP authentication token with from a certificate.
+        /// Create a TSSSP authentication token with credentials.
         /// </summary>
         /// <param name="version">The version number.</param>
         /// <param name="context">The authentication context for the encryption.</param>
         /// <param name="credentials">The credentials for the user.</param>
         /// <returns>The TSSSP authentication token.</returns>
-        public static TSAuthenticationToken Create(int version, ClientAuthenticationContext context, TSCredentials credentials)
+        public static TSAuthenticationToken Create(int version, IClientAuthenticationContext context, TSCredentials credentials)
         {
             if (context is null)
             {
