@@ -49,6 +49,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public RpcAuthenticationLevel AuthenticationLevel => TransportSecurity.AuthenticationLevel;
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The object as a string.</returns>
+        public override string ToString()
+        {
+            return $"Context ID: {ContextId} - Type: {NegotiatedAuthType} - Level: {AuthenticationLevel}";
+        }
+
         internal bool Authenticated => AuthContext?.Done ?? false;
 
         internal int AuthDataLength
