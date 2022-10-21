@@ -123,6 +123,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public const string TSSSP_NAME = "TSSSP";
 
         /// <summary>
+        /// Authentication package name for pku2u.
+        /// </summary>
+        public const string PKU2U_NAME = "pku2u";
+
+        /// <summary>
         /// All package ID.
         /// </summary>
         public const uint SECPKG_ALL_PACKAGES = unchecked((uint)-2);
@@ -195,6 +200,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         internal static bool CheckTSSSP(string package_name)
         {
             return package_name.Equals(TSSSP_NAME, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool CheckPKU2U(string package_name)
+        {
+            return package_name.Equals(PKU2U_NAME, StringComparison.OrdinalIgnoreCase);
         }
         #endregion
 

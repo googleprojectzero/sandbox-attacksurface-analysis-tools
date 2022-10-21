@@ -592,6 +592,7 @@
     <Compile Include="Win32\Security\Authentication\Ntlm\Client\INtlmAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\Ntlm\NtlmManagedAuthenticationPackage.cs" />
     <Compile Include="Win32\Security\Authentication\PKU2U\PKU2UMetaDataAuthenticationToken.cs" />
+    <Compile Include="Win32\Security\Authentication\PKU2U\PKU2UTicketCache.cs" />
     <Compile Include="Win32\Security\Authentication\SecurityChannelBinding.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosASReplyEncryptedPartBuilder.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\Builder\KerberosAuthorizationDataPACClientInfoBuilder.cs" />

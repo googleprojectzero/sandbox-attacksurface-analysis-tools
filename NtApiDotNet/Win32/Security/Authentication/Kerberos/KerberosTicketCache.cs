@@ -26,21 +26,22 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// </summary>
     public static class KerberosTicketCache 
     {
-        private static NtResult<LsaCallPackageResponse> CallPackage(this SafeLsaLogonHandle handle, SafeBuffer buffer, bool throw_on_error)
+        #region Private Members
+        private static NtResult<LsaCallPackageResponse> CallPackage(this SafeLsaLogonHandle handle, string package_name, SafeBuffer buffer, bool throw_on_error)
         {
-            var package = handle.LookupAuthPackage(AuthenticationPackage.KERBEROS_NAME, throw_on_error);
+            var package = handle.LookupAuthPackage(package_name ?? AuthenticationPackage.KERBEROS_NAME, throw_on_error);
             if (!package.IsSuccess)
                 return package.Cast<LsaCallPackageResponse>();
             return handle.CallPackage(package.Result, buffer, throw_on_error);
         }
 
-        private static NtResult<LsaCallPackageResponse> CallPackage(this NtResult<SafeLsaLogonHandle> handle, SafeBuffer buffer, bool throw_on_error)
+        private static NtResult<LsaCallPackageResponse> CallPackage(this NtResult<SafeLsaLogonHandle> handle, string package_name, SafeBuffer buffer, bool throw_on_error)
         {
-            return CallPackage(handle.GetResultOrThrow(), buffer, throw_on_error);
+            return CallPackage(handle.GetResultOrThrow(), package_name, buffer, throw_on_error);
         }
 
-        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList<T>(KERB_PROTOCOL_MESSAGE_TYPE query_type, 
-            SafeLsaLogonHandle handle, Luid logon_id, Func<T, KerberosTicketCacheInfo> map_fn, bool throw_on_error) where T : struct
+        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList<T>(string package_name,
+            KERB_PROTOCOL_MESSAGE_TYPE query_type, SafeLsaLogonHandle handle, Luid logon_id, Func<T, KerberosTicketCacheInfo> map_fn, bool throw_on_error) where T : struct
         {
             var request_struct = new KERB_QUERY_TKT_CACHE_REQUEST()
             {
@@ -49,7 +50,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             };
             using (var request = request_struct.ToBuffer())
             {
-                using (var result = handle.CallPackage(request, throw_on_error))
+                using (var result = handle.CallPackage(package_name, request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<KerberosTicketCacheInfo[]>();
@@ -64,16 +65,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return infos.Select(map_fn).ToArray().CreateResult();
                 }
             }
-        }
-
-        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList(SafeLsaLogonHandle handle, Luid logon_id, bool throw_on_error)
-        {
-            var ret = QueryTicketCacheList<KERB_TICKET_CACHE_INFO_EX3>(KERB_PROTOCOL_MESSAGE_TYPE.KerbQueryTicketCacheEx3Message,
-                handle, logon_id, t => new KerberosTicketCacheInfo(t), false);
-            if (ret.IsSuccess)
-                return ret;
-            return QueryTicketCacheList<KERB_TICKET_CACHE_INFO_EX2>(KERB_PROTOCOL_MESSAGE_TYPE.KerbQueryTicketCacheEx2Message,
-                handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         }
 
         private static NtResult<SafeLsaReturnBufferHandle> QueryCachedTicketBuffer(SafeLsaLogonHandle handle, string target_name, KerberosRetrieveTicketFlags flags,
@@ -100,7 +91,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     }
                 };
                 request.Result = request_str;
-                using (var result = handle.CallPackage(request, throw_on_error))
+                using (var result = handle.CallPackage(null, request, throw_on_error))
                 {
                     if (!result.IsSuccess)
                         return result.Cast<SafeLsaReturnBufferHandle>();
@@ -126,6 +117,68 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             }
         }
 
+        private static NtResult<KerberosTicketCacheInfo[]> QueryTicketCacheList(SafeLsaLogonHandle handle, string package_name, Luid logon_id, bool throw_on_error)
+        {
+            var ret = QueryTicketCacheList<KERB_TICKET_CACHE_INFO_EX3>(package_name, KERB_PROTOCOL_MESSAGE_TYPE.KerbQueryTicketCacheEx3Message,
+handle, logon_id, t => new KerberosTicketCacheInfo(t), false);
+            if (ret.IsSuccess)
+                return ret;
+            return QueryTicketCacheList<KERB_TICKET_CACHE_INFO_EX2>(package_name, KERB_PROTOCOL_MESSAGE_TYPE.KerbQueryTicketCacheEx2Message,
+handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
+        }
+        #endregion
+
+        #region Internal Members
+        internal static NtResult<IEnumerable<KerberosTicketCacheInfo>> QueryTicketCacheInfo(string package_name, Luid logon_id, bool throw_on_error)
+        {
+            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+            {
+                if (!handle.IsSuccess)
+                    return handle.Cast<IEnumerable<KerberosTicketCacheInfo>>();
+                return QueryTicketCacheList(handle.Result, package_name, logon_id, throw_on_error).Cast<IEnumerable<KerberosTicketCacheInfo>>();
+            }
+        }
+
+        internal static NtStatus PurgeTicketCacheEx(string package_name, bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template, bool throw_on_error)
+        {
+            var builder = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
+            {
+                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheExMessage,
+                LogonId = logon_id,
+                Flags = purge_all_tickets ? KerberosPurgeTicketCacheExFlags.PurgeAllTickets : 0
+            }.ToBuilder();
+
+            if (ticket_template != null)
+            {
+                KERB_TICKET_CACHE_INFO_EX ticket_info = new KERB_TICKET_CACHE_INFO_EX();
+                ticket_info.EncryptionType = ticket_template.EncryptionType;
+                ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
+                ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
+                ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
+                ticket_info.TicketFlags = ((uint)ticket_template.TicketFlags).RotateBits();
+                var sub_builder = builder.GetSubBuilder(nameof(KERB_PURGE_TKT_CACHE_EX_REQUEST.TicketTemplate), ticket_info);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientName), ticket_template.ClientName);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientRealm), ticket_template.ClientRealm);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerName), ticket_template.ServerName);
+                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerRealm), ticket_template.ServerRealm);
+            }
+
+            using (var buffer = builder.ToBuffer())
+            {
+                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
+                {
+                    if (!handle.IsSuccess)
+                        return handle.Status;
+                    using (var result = handle.CallPackage(package_name, buffer, throw_on_error))
+                    {
+                        return result.Result.Status.ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Public Static Methods
         /// <summary>
         /// Retrieve a Kerberos Ticket.
         /// </summary>
@@ -292,7 +345,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 if (!handle.IsSuccess)
                     return handle.Cast<KerberosExternalTicket[]>();
-                var list = QueryTicketCacheList(handle.Result, logon_id, throw_on_error);
+                var list = QueryTicketCacheList(handle.Result, null, logon_id, throw_on_error);
                 if (!list.IsSuccess)
                     return list.Cast<KerberosExternalTicket[]>();
 
@@ -339,12 +392,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <remarks>This doesn't query the tickets themselves.</remarks>
         public static NtResult<IEnumerable<KerberosTicketCacheInfo>> QueryTicketCacheInfo(Luid logon_id, bool throw_on_error)
         {
-            using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-            {
-                if (!handle.IsSuccess)
-                    return handle.Cast<IEnumerable<KerberosTicketCacheInfo>>();
-                return QueryTicketCacheList(handle.Result, logon_id, throw_on_error).Cast<IEnumerable<KerberosTicketCacheInfo>>();
-            }
+            return QueryTicketCacheInfo(null, logon_id, throw_on_error);
         }
 
         /// <summary>
@@ -387,7 +435,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Cast<KerberosExternalTicket>();
-                    using (var result = handle.CallPackage(request, throw_on_error))
+                    using (var result = handle.CallPackage(null, request, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Cast<KerberosExternalTicket>();
@@ -447,7 +495,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = handle.CallPackage(buffer, throw_on_error))
+                    using (var result = handle.CallPackage(null, buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -476,40 +524,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The NT status code.</returns>
         public static NtStatus PurgeTicketCacheEx(bool purge_all_tickets, Luid logon_id, KerberosTicketCacheInfo ticket_template, bool throw_on_error)
         {
-            var builder = new KERB_PURGE_TKT_CACHE_EX_REQUEST()
-            {
-                MessageType = KERB_PROTOCOL_MESSAGE_TYPE.KerbPurgeTicketCacheExMessage,
-                LogonId = logon_id,
-                Flags = purge_all_tickets ? KerberosPurgeTicketCacheExFlags.PurgeAllTickets : 0
-            }.ToBuilder();
-
-            if (ticket_template != null)
-            {
-                KERB_TICKET_CACHE_INFO_EX ticket_info = new KERB_TICKET_CACHE_INFO_EX();
-                ticket_info.EncryptionType = ticket_template.EncryptionType;
-                ticket_info.EndTime = ticket_template.EndTime.ToLargeIntegerStruct();
-                ticket_info.StartTime = ticket_template.StartTime.ToLargeIntegerStruct();
-                ticket_info.RenewTime = ticket_template.RenewTime.ToLargeIntegerStruct();
-                ticket_info.TicketFlags = ((uint)ticket_template.TicketFlags).RotateBits();
-                var sub_builder = builder.GetSubBuilder(nameof(KERB_PURGE_TKT_CACHE_EX_REQUEST.TicketTemplate), ticket_info);
-                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientName), ticket_template.ClientName);
-                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ClientRealm), ticket_template.ClientRealm);
-                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerName), ticket_template.ServerName);
-                sub_builder.AddUnicodeString(nameof(KERB_TICKET_CACHE_INFO_EX.ServerRealm), ticket_template.ServerRealm);
-            }
-
-            using (var buffer = builder.ToBuffer())
-            {
-                using (var handle = SafeLsaLogonHandle.Connect(throw_on_error))
-                {
-                    if (!handle.IsSuccess)
-                        return handle.Status;
-                    using (var result = handle.CallPackage(buffer, throw_on_error))
-                    {
-                        return result.Result.Status.ToNtException(throw_on_error);
-                    }
-                }
-            }
+            return PurgeTicketCacheEx(null, purge_all_tickets, logon_id, ticket_template, throw_on_error);
         }
 
         /// <summary>
@@ -567,7 +582,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 {
                     if (!handle.IsSuccess)
                         return handle.Status;
-                    using (var result = handle.CallPackage(buffer, throw_on_error))
+                    using (var result = handle.CallPackage(null, buffer, throw_on_error))
                     {
                         if (!result.IsSuccess)
                             return result.Status;
@@ -613,7 +628,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                     return handle.Status;
                 using (var buffer = builder.ToBuffer())
                 {
-                    using (var result = handle.CallPackage(buffer, throw_on_error))
+                    using (var result = handle.CallPackage(null, buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -649,7 +664,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 };
                 using (var buffer = req.ToBuffer())
                 {
-                    using (var result = handle.CallPackage(buffer, throw_on_error))
+                    using (var result = handle.CallPackage(null, buffer, throw_on_error))
                     {
                         return result.Result.Status.ToNtException(throw_on_error);
                     }
@@ -664,5 +679,6 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             UnpinAllKdcs(true);
         }
+        #endregion
     }
 }
