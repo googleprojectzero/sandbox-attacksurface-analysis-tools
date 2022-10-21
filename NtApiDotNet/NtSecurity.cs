@@ -2431,6 +2431,8 @@ namespace NtApiDotNet
             { new Sid(SecurityAuthority.Nt, 32, 577), Tuple.Create("BUILTIN", "RDS Management Servers") },
             // S-1-5-32-582
             { new Sid(SecurityAuthority.Nt, 32, 582), Tuple.Create("BUILTIN", "Storage Replica Administrators") },
+            // S-1-5-64-30
+            { new Sid(SecurityAuthority.Nt, 64, 30), Tuple.Create("NT AUTHORITY", "PKU2U Authentication") },
         };
 
         private static readonly Dictionary<Sid, Tuple<string, string>> _known_user_sids = new Dictionary<Sid, Tuple<string, string>>() {
