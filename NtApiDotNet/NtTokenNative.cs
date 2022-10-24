@@ -427,6 +427,8 @@ namespace NtApiDotNet
             return new Luid(uint.Parse(parts[1], NumberStyles.HexNumber), 
                 int.Parse(parts[0], NumberStyles.HexNumber));
         }
+
+        public static readonly Luid Empty = new Luid();
     }
 
     [StructLayout(LayoutKind.Sequential)]

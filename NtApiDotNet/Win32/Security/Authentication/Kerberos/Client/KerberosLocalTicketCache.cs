@@ -200,7 +200,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
         /// <param name="logon_id">The logon ID for the cache to query.</param>
         /// <param name="create_client">True to create a KDC client based on the system's domain.</param>
         /// <returns>The local ticket cache.</returns>
-        public static KerberosLocalTicketCache FromSystemCache(bool create_client = false, Luid logon_id = new Luid())
+        public static KerberosLocalTicketCache FromSystemCache(bool create_client = false, Luid logon_id = default)
         {
             return FromTickets(KerberosTicketCache.QueryTicketCache(logon_id), create_client);
         }

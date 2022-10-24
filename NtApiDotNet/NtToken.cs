@@ -2475,14 +2475,14 @@ namespace NtApiDotNet
                     return NtSystemCalls.NtCreateTokenEx(out SafeKernelObjectHandle handle, desired_access, object_attributes,
                         type, ref authentication_id, ref expire_time_struct,
                         ref user_struct, groups_buffer, privileges_buffer, user_attributes_buffer, device_attributes_buffer, device_groups_buffer, mandatory_policy_opt, 
-                        owner_opt, ref primary_group_struct, dacl_opt, new TokenSource(source, new Luid())).CreateResult(throw_on_error, () => new NtToken(handle));
+                        owner_opt, ref primary_group_struct, dacl_opt, new TokenSource(source, Luid.Empty)).CreateResult(throw_on_error, () => new NtToken(handle));
                 }
                 else
                 {
                     return NtSystemCalls.NtCreateToken(out SafeKernelObjectHandle handle, desired_access, object_attributes,
                         type, ref authentication_id, ref expire_time_struct,
                         ref user_struct, groups_buffer, privileges_buffer, owner_opt, ref primary_group_struct, dacl_opt,
-                        new TokenSource(source, new Luid())).CreateResult(throw_on_error, () => new NtToken(handle));
+                        new TokenSource(source, Luid.Empty)).CreateResult(throw_on_error, () => new NtToken(handle));
                 }
             }
         }

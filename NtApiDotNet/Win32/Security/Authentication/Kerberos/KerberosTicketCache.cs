@@ -380,7 +380,7 @@ handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         /// <returns>The list of cached tickets.</returns>
         public static KerberosExternalTicket[] QueryTicketCache()
         {
-            return QueryTicketCache(new Luid());
+            return QueryTicketCache(Luid.Empty);
         }
 
         /// <summary>
@@ -413,7 +413,7 @@ handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         /// <remarks>This doesn't query the tickets themselves.</remarks>
         public static IEnumerable<KerberosTicketCacheInfo> QueryTicketCacheInfo()
         {
-            return QueryTicketCacheInfo(new Luid());
+            return QueryTicketCacheInfo(Luid.Empty);
         }
 
         /// <summary>
@@ -468,7 +468,7 @@ handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         /// <remarks>Note that the session key will only be available if running with TCB privileges or the AllowTgtSessionKey option is enabled.</remarks>
         public static KerberosExternalTicket QueryTgt()
         {
-            return QueryTgt(new Luid());
+            return QueryTgt(Luid.Empty);
         }
 
         /// <summary>
@@ -598,7 +598,7 @@ handle, logon_id, t => new KerberosTicketCacheInfo(t), throw_on_error);
         /// <param name="ticket">The ticket to add in Kerberos Credential format.</param>
         /// <param name="logon_id">The Logon Session ID to submit the ticket to. 0 uses callers logon session.</param>
         /// <param name="key">Optional key to use if the credentials are encrypted.</param>
-        public static void SubmitTicket(KerberosCredential ticket, Luid logon_id = new Luid(), KerberosAuthenticationKey key = null)
+        public static void SubmitTicket(KerberosCredential ticket, Luid logon_id = default, KerberosAuthenticationKey key = null)
         {
             SubmitTicket(ticket, logon_id, key, true);
         }

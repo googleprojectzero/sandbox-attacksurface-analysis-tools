@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.PKU2U
         /// <remarks>This doesn't query the tickets themselves.</remarks>
         public static IEnumerable<KerberosTicketCacheInfo> QueryTicketCacheInfo()
         {
-            return QueryTicketCacheInfo(new Luid());
+            return QueryTicketCacheInfo(Luid.Empty);
         }
 
         /// <summary>
