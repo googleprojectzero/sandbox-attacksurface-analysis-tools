@@ -17,8 +17,6 @@ using System.Security;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
-#pragma warning disable 1591
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class SEC_WINNT_AUTH_IDENTITY_EX
     {

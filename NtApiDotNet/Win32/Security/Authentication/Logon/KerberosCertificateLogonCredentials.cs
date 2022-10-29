@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
     /// <summary>
     /// Class to represent a KERB_CERTIFICATE_LOGON structure.
     /// </summary>
-    public class KerberosCertificateLogonCredentials : ILsaLogonCredentials
+    public class KerberosCertificateLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
     {
         /// <summary>
         /// The domain name.
@@ -59,10 +59,36 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
         /// The CSP data.
         /// </summary>
         public KerberosCertificateLogonData CspData { get; set; }
+        /// <summary>
+        /// If specified will create a KERB_CERTIFICATE_UNLOCK_LOGON credential buffer.
+        /// </summary>
+        public Luid? LogonId { get; set; }
 
         string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
 
+        private void PopulateLogon(LsaBufferBuilder<KERB_CERTIFICATE_LOGON> builder, bool relative)
+        {
+            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.UserName), UserName, relative);
+            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.DomainName), DomainName, relative);
+            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.Pin), Pin, relative);
+            builder.AddPointerBuffer(nameof(KERB_CERTIFICATE_LOGON.CspData),
+                nameof(KERB_CERTIFICATE_LOGON.CspDataLength), CspData.ToArray(), relative);
+        }
+
+        byte[] ILsaLogonCredentialsSerializable.ToArray()
+        {
+            using (var buffer = ToBuffer(true))
+            {
+                return buffer.ToArray();
+            }
+        }
+
         SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        {
+            return ToBuffer(false);
+        }
+
+        private SafeBufferGeneric ToBuffer(bool relative)
         {
             if (CspData is null)
             {
@@ -76,18 +102,31 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
                 flags |= KerberosCertificateLogonFlags.UseCertificateInfo;
             }
 
-            var builder = new KERB_CERTIFICATE_LOGON()
+            if (LogonId.HasValue)
             {
-                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateLogon,
-                Flags = (int)flags
-            }.ToBuilder();
+                var builder = new KERB_CERTIFICATE_UNLOCK_LOGON()
+                {
+                    LogonId = LogonId.Value
+                }.ToBuilder();
+                PopulateLogon(builder.GetSubBuilder(nameof(KERB_CERTIFICATE_UNLOCK_LOGON.Logon),
+                    new KERB_CERTIFICATE_LOGON()
+                    {
+                        MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateUnlockLogon,
+                        Flags = (int)Flags
+                    }), relative);
+                return builder.ToBuffer();
+            }
+            else
+            {
+                var builder = new KERB_CERTIFICATE_LOGON()
+                {
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateLogon,
+                    Flags = (int)flags
+                }.ToBuilder();
 
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.UserName), UserName);
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.DomainName), DomainName);
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.Pin), Pin);
-            builder.AddPointerBuffer(nameof(KERB_CERTIFICATE_LOGON.CspData), 
-                nameof(KERB_CERTIFICATE_LOGON.CspDataLength), CspData.ToArray());
-            return builder.ToBuffer();
+                PopulateLogon(builder, relative);
+                return builder.ToBuffer();
+            }
         }
     }
 }

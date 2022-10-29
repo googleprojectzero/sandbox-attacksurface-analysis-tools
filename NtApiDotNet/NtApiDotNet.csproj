@@ -573,6 +573,7 @@
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitExternalPrincipalIdentifier.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitPrincipalName.cs" />
     <Compile Include="Win32\Security\Authentication\Kerberos\PkInit\KerberosPkInitUtils.cs" />
+    <Compile Include="Win32\Security\Authentication\Logon\KerberosCertificateS4ULogonCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAlert.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthenticationToken.cs" />
     <Compile Include="Win32\Security\Authentication\NegoEx\NegoExAuthSchemes.cs" />
@@ -664,6 +665,8 @@
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_EX.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_FLAGS.cs" />
+    <Compile Include="Win32\Security\Native\KERB_CERTIFICATE_S4U_LOGON.cs" />
+    <Compile Include="Win32\Security\Native\KERB_CERTIFICATE_UNLOCK_LOGON.cs" />
     <Compile Include="Win32\Security\Native\KERB_CHECKSUM.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY.cs" />
     <Compile Include="Win32\Security\Native\KERB_CRYPTO_KEY32.cs" />

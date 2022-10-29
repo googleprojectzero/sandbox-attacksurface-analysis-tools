@@ -283,6 +283,7 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "S4U")]
         [Parameter(ParameterSetName = "Session")]
         [Parameter(ParameterSetName = "ServiceName")]
+        [Parameter(ParameterSetName = "Ticket")]
         public SwitchParameter WithTcb { get; set; }
 
         /// <summary>
