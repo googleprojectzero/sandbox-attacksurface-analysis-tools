@@ -98,34 +98,55 @@ namespace NtApiDotNet
 
     public enum RegistryValueType
     {
+        [SDKName("REG_NONE")]
         None = 0,
+        [SDKName("REG_SZ")]
         String = 1,
+        [SDKName("REG_EXPAND_SZ")]
         ExpandString = 2,
+        [SDKName("REG_BINARY")]
         Binary = 3,
+        [SDKName("REG_DWORD")]
         Dword = 4,
+        [SDKName("REG_DWORD_BIG_ENDIAN")]
         DwordBigEndian = 5,
+        [SDKName("REG_LINK")]
         Link = 6,
+        [SDKName("REG_MULTI_SZ")]
         MultiString = 7,
+        [SDKName("REG_RESOURCE_LIST")]
         ResourceList = 8,
+        [SDKName("REG_FULL_RESOURCE_DESCRIPTOR")]
         FullResourceDescriptor = 9,
+        [SDKName("REG_RESOURCE_REQUIREMENTS_LIST")]
         ResourceRequirementsList = 10,
+        [SDKName("REG_QWORD")]
         Qword = 11
     }
 
     public enum KeyDisposition
     {
+        [SDKName("REG_CREATED_NEW_KEY")]
         CreatedNewKey = 1,
+        [SDKName("REG_OPENED_EXISTING_KEY")]
         OpenedExistingKey = 2,
     }
 
     [Flags]
     public enum KeyCreateOptions
     {
+        [SDKName("REG_OPTION_NON_VOLATILE")]
         NonVolatile = 0,
+        [SDKName("REG_OPTION_VOLATILE")]
         Volatile = 1,
+        [SDKName("REG_OPTION_CREATE_LINK")]
         CreateLink = 2,
+        [SDKName("REG_OPTION_BACKUP_RESTORE")]
         BackupRestore = 4,
+        [SDKName("REG_OPTION_OPEN_LINK")]
         OpenLink = 8,
+        [SDKName("REG_OPTION_DONT_VIRTUALIZE")]
+        DontVirtualize = 0x10,
     }
 
     public enum KeyValueInformationClass
@@ -238,8 +259,11 @@ namespace NtApiDotNet
     public enum SaveKeyFlags
     {
         None = 0,
+        [SDKName("REG_STANDARD_FORMAT")]
         StandardFormat = 1,
+        [SDKName("REG_LATEST_FORMAT")]
         LatestFormat = 2,
+        [SDKName("REG_NO_COMPRESSION")]
         NoCompression = 4,
     }
 
@@ -288,8 +312,11 @@ namespace NtApiDotNet
     public enum KeyControlFlags
     {
         None = 0,
+        [SDKName("REG_KEY_DONT_VIRTUALIZE")]
         DontVirtualize = 2,
+        [SDKName("REG_KEY_DONT_SILENT_FAIL")]
         DontSilentFail = 4,
+        [SDKName("REG_KEY_RECURSE_FLAG")]
         RecurseFlag = 8
     }
 
@@ -297,6 +324,7 @@ namespace NtApiDotNet
     public enum UnloadKeyFlags
     {
         None = 0,
+        [SDKName("REG_FORCE_UNLOAD")]
         ForceUnload = 1
     }
 
@@ -304,7 +332,9 @@ namespace NtApiDotNet
     public enum KeyFlags
     {
         None = 0,
+        [SDKName("REG_FLAG_VOLATILE")]
         Volatile = 1,
+        [SDKName("REG_FLAG_LINK")]
         Link = 2,
     }
 
