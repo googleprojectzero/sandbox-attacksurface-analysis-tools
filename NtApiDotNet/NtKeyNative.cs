@@ -23,11 +23,37 @@ namespace NtApiDotNet
     public enum LoadKeyFlags
     {
         None = 0,
+        [SDKName("REG_WHOLE_HIVE_VOLATILE")]
+        WholeHiveVolatile = 0x1,
+        [SDKName("REG_REFRESH_HIVE")]
+        RefreshHive = 0x2,
+        [SDKName("REG_NO_LAZY_FLUSH")]
+        NoLazyFlush = 0x4,
+        [SDKName("REG_FORCE_RESTORE")]
+        ForceRestore = 0x8,
+        [SDKName("REG_APP_HIVE")]
         AppKey = 0x10,
+        [SDKName("REG_PROCESS_PRIVATE")]
         Exclusive = 0x20,
+        [SDKName("REG_START_JOURNAL")]
+        StartJournal = 0x40,
+        [SDKName("REG_HIVE_EXACT_FILE_GROWTH")]
+        ExactFileGrowth = 0x80,
+        [SDKName("REG_HIVE_NO_RM")]
         DisableResourceManager = 0x100,
-        Unknown800 = 0x800,
+        [SDKName("REG_HIVE_SINGLE_LOG")]
+        SingleLog = 0x200,
+        [SDKName("REG_BOOT_HIVE")]
+        BootHive = 0x400,
+        [SDKName("REG_LOAD_HIVE_OPEN_HANDLE")]
+        LoadHiveOpenHandle = 0x800,
+        [SDKName("REG_FLUSH_HIVE_FILE_GROWTH")]
+        FlushHiveFileGrowth = 0x1000,
+        [SDKName("REG_APP_HIVE_OPEN_READ_ONLY")]
         ReadOnly = 0x2000,
+        [SDKName("REG_IMMUTABLE")]
+        Immutable = 0x4000,
+        [SDKName("REG_NO_IMPERSONATION_FALLBACK")]
         DontCheckAccess = 0x8000,
     }
 
