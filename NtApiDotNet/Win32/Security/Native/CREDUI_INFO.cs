@@ -1,4 +1,4 @@
-﻿//  Copyright 2019 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -13,25 +13,19 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtApiDotNet.Win32.Security.Native
 {
-    internal sealed class SafeLocalAllocBuffer : SafeBufferGeneric
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct CREDUI_INFO
     {
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.LocalFree(handle) == IntPtr.Zero;
-        }
-
-        public SafeLocalAllocBuffer(IntPtr handle, bool owns_handle)
-            : base(handle, 0, owns_handle)
-        {
-        }
-
-        public SafeLocalAllocBuffer() : base(true)
-        {
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        public int cbSize;
+        public IntPtr hwndParent;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pszMessageText;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string pszCaptionText;
+        public IntPtr hbmBanner;
     }
 }

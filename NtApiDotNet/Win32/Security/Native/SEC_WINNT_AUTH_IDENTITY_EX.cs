@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -20,7 +21,7 @@ namespace NtApiDotNet.Win32.Security.Native
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class SEC_WINNT_AUTH_IDENTITY_EX
     {
-        const int SEC_WINNT_AUTH_IDENTITY_VERSION = 0x200;
+        public const int SEC_WINNT_AUTH_IDENTITY_VERSION = 0x200;
 
         public int Version;
         public int Length;

@@ -192,6 +192,96 @@ namespace NtApiDotNet.Win32.Security.Native
           out SafeLocalAllocBuffer AuthIdentityByteArray
         );
 
+        [DllImport("credui.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error SspiPromptForCredentials(
+          string pszTargetName,
+          in CREDUI_INFO pUiInfo,
+          Win32Error dwAuthError,
+          string pszPackage,
+          SafeBuffer pInputAuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE
+          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE*
+          ref int pfSave,
+          int dwFlags
+        );
+
+        [DllImport("credui.dll", CharSet = CharSet.Unicode)]
+        internal static extern bool CredPackAuthenticationBufferW(
+            CredPackAuthenticationBufferFlags dwFlags,
+            string pszUserName,
+            string pszPassword,
+            [Out] byte[] pPackedCredentials,
+            ref int pcbPackedCredentials
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern void SspiFreeAuthIdentity(
+            IntPtr AuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiCopyAuthIdentity(
+          SafeBuffer AuthData,
+          out SafeSecWinntAuthIdentityBuffer AuthDataCopy
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiUnmarshalAuthIdentity(
+          int AuthIdentityLength,
+          byte[] AuthIdentityByteArray,
+          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool SspiIsAuthIdentityEncrypted(
+            SafeSecWinntAuthIdentityBuffer EncryptedAuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiDecryptAuthIdentity(
+            SafeBuffer EncryptedAuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiDecryptAuthIdentityEx(
+            AuthIdentityEncryptionOptions Options,
+            SafeBuffer EncryptedAuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiEncryptAuthIdentity(
+            SafeBuffer AuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiEncryptAuthIdentityEx(
+            AuthIdentityEncryptionOptions Options,
+            SafeBuffer AuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiExcludePackage(
+            SafeBuffer AuthIdentity,
+            string pszPackageName,
+            out SafeSecWinntAuthIdentityBuffer ppNewAuthIdentity
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiEncodeAuthIdentityAsStrings(
+           SafeBuffer pAuthIdentity,
+           out SafeLocalAllocBuffer ppszUserName,
+           out SafeLocalAllocBuffer ppszDomainName,
+           out SafeLocalAllocBuffer ppszPackedCredentialsString
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiEncodeStringsAsAuthIdentity(
+          string pszUserName,
+          string pszDomainName,
+          string pszPackedCredentialsString,
+          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity
+        );
+
         [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error DsMakeSpn(
             string ServiceClass,

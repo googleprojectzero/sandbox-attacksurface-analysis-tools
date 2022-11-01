@@ -12,14 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
+
 namespace NtApiDotNet.Win32.Security.Native
 {
-#pragma warning disable 1591
     internal enum SecWinNtAuthIdentityFlags
     {
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_ANSI")]
         Ansi = 0x1,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_UNICODE")]
         Unicode = 0x2,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_MARSHALLED")]
         IdentityMarshalled = 0x4,
-        IdentityOnly = 0x8
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_ONLY")]
+        IdentityOnly = 0x8,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_PROCESS_ENCRYPTED")]
+        ProcessEncrypted = 0x10,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_SYSTEM_PROTECTED")]
+        SystemProtected = 0x20,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_USER_PROTECTED")]
+        UserProtected = 0x40,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_SYSTEM_ENCRYPTED")]
+        SystemEncrypted = 0x80,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_RESERVED")]
+        Reserved = 0x10000,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_NULL_USER")]
+        NullUser = 0x20000,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_NULL_DOMAIN")]
+        NullDomain = 0x40000,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_FLAGS_ID_PROVIDER")]
+        IdProvider = 0x80000
     }
 }

@@ -553,6 +553,8 @@
     <Compile Include="Win32\Rpc\Transport\RpcClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
+    <Compile Include="Win32\SafeHandles\SafeSecWinntAuthIdentityBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthIdentityAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\Client\CredSSPClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\Client\TSSSPClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\SecurityBufferTSSSPCertificate.cs" />
@@ -662,6 +664,12 @@
     <Compile Include="Win32\Security\Credential\CredentialMarshalCertificate.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUnknown.cs" />
     <Compile Include="Win32\Security\Credential\CredentialMarshalUsernameTarget.cs" />
+    <Compile Include="Win32\Security\CredUI\CredentialPromptDialog.cs" />
+    <Compile Include="Win32\Security\CredUI\SspiCredentialPromptDialog.cs" />
+    <Compile Include="Win32\Security\CredUI\SspiCredentialPromptDialogFlags.cs" />
+    <Compile Include="Win32\Security\CredUI\SspiCredentialPromptResult.cs" />
+    <Compile Include="Win32\Security\Native\CredPackAuthenticationBufferFlags.cs" />
+    <Compile Include="Win32\Security\Native\CREDUI_INFO.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_EX.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_FLAGS.cs" />
@@ -866,6 +874,7 @@
     <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_CRED_ATTR.cs" />
+    <Compile Include="Win32\Security\Native\SEC_WINNT_AUTH_IDENTITY_EX2.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_DOMAIN_INFORMATION_EX.cs" />
     <Compile Include="Win32\Security\Native\TRUSTED_INFORMATION_CLASS.cs" />
     <Compile Include="Win32\Security\Native\USERNAME_TARGET_CREDENTIAL_INFO.cs" />
