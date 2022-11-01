@@ -14,6 +14,8 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication
@@ -57,6 +59,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             ServiceClass = service_class;
             InstanceName = instance_name;
+            ServiceName = instance_name;
         }
 
         /// <summary>
@@ -127,17 +130,48 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The SPN string.</returns>
         public override string ToString()
         {
-            int length = 0;
-            Win32Error err = SecurityNativeMethods.DsMakeSpn(ServiceClass, ServiceName, InstanceName,
-                (ushort)InstancePort, Referrer, ref length, null);
-            if (err == Win32Error.SUCCESS)
-                return string.Empty;
-            if (err != Win32Error.ERROR_BUFFER_OVERFLOW)
-                throw new NtException(err.MapDosErrorToStatus());
-            StringBuilder builder = new StringBuilder(length);
-            SecurityNativeMethods.DsMakeSpn(ServiceClass, ServiceName, InstanceName,
-                (ushort)InstancePort, Referrer, ref length, builder).ToNtException();
-            return builder.ToString();
+            if (string.IsNullOrEmpty(ServiceClass) || ServiceName.Contains("/"))
+            {
+                throw new ArgumentException("Service class can't be null or empty or contain a forward slash.", nameof(ServiceClass));
+            }
+
+            if (string.IsNullOrEmpty(ServiceName) || ServiceName.Contains("/"))
+            {
+                throw new ArgumentException("Service name can't be null or empty or contain a forward slash.", nameof(ServiceClass));
+            }
+
+            List<string> parts = new List<string>();
+            parts.Add(ServiceClass);
+
+            string instance_name = InstanceName ?? ServiceName;
+            if (string.IsNullOrEmpty(instance_name) || instance_name.Contains("/"))
+            {
+                throw new ArgumentException("Instance name can't be empty or contain a forward slash.", nameof(InstanceName));
+            }
+
+            if (InstancePort != 0)
+            {
+                parts.Add($"{instance_name}:{InstancePort}");
+            }
+            else
+            {
+                parts.Add(instance_name);
+            }
+
+            string service_name = ServiceName;
+            if (Referrer != null && IPAddress.TryParse(service_name, out IPAddress _))
+            {
+                if (Referrer.Length == 0)
+                    throw new ArgumentException("Referrer can't be empty.", nameof(Referrer));
+                service_name = Referrer;
+            }
+
+            if (!instance_name.Equals(service_name, StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add(service_name);
+            }
+
+            return string.Join("/", parts);
         }
     }
 }
