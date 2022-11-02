@@ -204,7 +204,7 @@ namespace NtApiDotNet.Win32.Security.Native
           int dwFlags
         );
 
-        [DllImport("credui.dll", CharSet = CharSet.Unicode)]
+        [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CredPackAuthenticationBufferW(
             CredPackAuthenticationBufferFlags dwFlags,
             string pszUserName,

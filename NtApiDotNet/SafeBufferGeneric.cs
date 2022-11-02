@@ -181,6 +181,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read an ANSI string string with length.
+        /// </summary>
+        /// <param name="count">The number of characters to read.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer.</returns>
+        public string ReadAnsiString(ulong byte_offset, int count)
+        {
+            return BufferUtils.ReadAnsiString(this, byte_offset, count);
+        }
+
+        /// <summary>
+        /// Read an ANSI string string with length.
+        /// </summary>
+        /// <param name="count">The number of characters to read.</param>
+        /// <returns>The string read from the buffer.</returns>
+        public string ReadAnsiString(int count)
+        {
+            return ReadAnsiString(0, count);
+        }
+
+        /// <summary>
         /// Write a unicode string to the buffer.
         /// </summary>
         /// <param name="byte_offset">The offset into the buffer to write.</param>

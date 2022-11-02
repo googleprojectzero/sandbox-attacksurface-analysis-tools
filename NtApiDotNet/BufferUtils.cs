@@ -234,6 +234,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read an ANSI string string with length.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="count">The number of characters to read.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer.</returns>
+        public static string ReadAnsiString(SafeBuffer buffer, ulong byte_offset, int count)
+        {
+            return BinaryEncoding.Instance.GetString(ReadBytes(buffer, byte_offset, count));
+        }
+
+        /// <summary>
         /// Write char array.
         /// </summary>
         /// <param name="buffer">The buffer to write to.</param>

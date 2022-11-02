@@ -555,6 +555,11 @@
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\SafeHandles\SafeSecWinntAuthIdentityBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\AuthIdentityAuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthIdentityEncryptionOptions.cs" />
+    <Compile Include="Win32\Security\Credential\PackedCredential.cs" />
+    <Compile Include="Win32\Security\Credential\PackedCredentialPassword.cs" />
+    <Compile Include="Win32\Security\Credential\PackedCredentialTypes.cs" />
+    <Compile Include="Win32\Security\Credential\PackedCredentialUnknown.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\Client\CredSSPClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\Client\TSSSPClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\Authentication\CredSSP\SecurityBufferTSSSPCertificate.cs" />

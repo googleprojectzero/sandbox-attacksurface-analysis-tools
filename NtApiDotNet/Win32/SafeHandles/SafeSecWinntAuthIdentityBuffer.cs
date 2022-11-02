@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
@@ -22,29 +23,90 @@ namespace NtApiDotNet.Win32.SafeHandles
     {
         #region Private Members
         private Type _auth_type;
+        private string _user;
+        private string _domain;
+        private string _password;
+        private string _package_list;
+        private PackedCredential _packed_credentials;
 
-        private Type GetAuthIdType()
+        private static string ReadString(IntPtr ptr, int length, SecWinNtAuthIdentityFlags flags)
         {
-            if (Length < 4)
-                InitializeLength(4);
-            int version = Read<int>(0);
-            switch (version)
+            if (ptr == IntPtr.Zero)
+                return null;
+            if (flags.HasFlagSet(SecWinNtAuthIdentityFlags.Ansi))
+                return Marshal.PtrToStringAnsi(ptr, length);
+            return Marshal.PtrToStringUni(ptr, length);
+        }
+
+        private string ReadString(uint offset, int length, SecWinNtAuthIdentityFlags flags)
+        {
+            if (offset == 0)
+                return null;
+
+            if (flags.HasFlagSet(SecWinNtAuthIdentityFlags.Ansi))
+                return ReadAnsiString(offset, length);
+            return ReadUnicodeString(offset, length / 2);
+        }
+
+        private void InitializeAuthId()
+        {
+            _auth_type = typeof(SEC_WINNT_AUTH_IDENTITY);
+            InitializeLength(Marshal.SizeOf(_auth_type));
+            var value = Read<SEC_WINNT_AUTH_IDENTITY_Struct>(0);
+            _user = ReadString(value.User, value.UserLength, value.Flags);
+            _domain = ReadString(value.Domain, value.DomainLength, value.Flags);
+            _password = ReadString(value.Password, value.PasswordLength, value.Flags);
+            _package_list = string.Empty;
+        }
+
+        private void InitializeAuthIdEx()
+        {
+            _auth_type = typeof(SEC_WINNT_AUTH_IDENTITY_EX);
+            InitializeLength(Marshal.SizeOf(_auth_type));
+            var value = Read<SEC_WINNT_AUTH_IDENTITY_EX_Struct>(0);
+            _user = ReadString(value.User, value.UserLength, value.Flags);
+            _domain = ReadString(value.Domain, value.DomainLength, value.Flags);
+            _password = ReadString(value.Password, value.PasswordLength, value.Flags);
+            _package_list = ReadString(value.PackageList, value.PackageListLength, value.Flags);
+        }
+
+        private void InitializeAuthIdEx2()
+        {
+            _auth_type = typeof(SEC_WINNT_AUTH_IDENTITY_EX2);
+            InitializeLength(Marshal.SizeOf(_auth_type));
+            var value = Read<SEC_WINNT_AUTH_IDENTITY_EX2>(0);
+            InitializeLength(Math.Max(Length, value.cbStructureLength));
+            _user = ReadString(value.UserOffset, value.UserLength, value.Flags);
+            _domain = ReadString(value.DomainOffset, value.DomainLength, value.Flags);
+            if (value.PackedCredentialsOffset != 0)
             {
-                case SEC_WINNT_AUTH_IDENTITY_EX2.SEC_WINNT_AUTH_IDENTITY_VERSION_2:
-                    return typeof(SEC_WINNT_AUTH_IDENTITY_EX2);
-                case SEC_WINNT_AUTH_IDENTITY_EX.SEC_WINNT_AUTH_IDENTITY_VERSION:
-                    return typeof(SEC_WINNT_AUTH_IDENTITY_EX);
-                default:
-                    return typeof(SEC_WINNT_AUTH_IDENTITY);
+                byte[] creds = ReadBytes(value.PackedCredentialsOffset, value.PackedCredentialsLength);
+                PackedCredential.TryParse(creds, out _packed_credentials);
             }
+            _package_list = ReadString(value.PackageListOffset, value.PackageListLength, value.Flags);
         }
 
         private void Initialize()
         {
             if (IsInvalid || _auth_type != null)
                 return;
-            _auth_type = GetAuthIdType();
-            InitializeLength(Marshal.SizeOf(_auth_type));
+
+
+            if (Length < 4)
+                InitializeLength(4);
+            int version = Read<int>(0);
+            switch (version)
+            {
+                case SEC_WINNT_AUTH_IDENTITY_EX2.SEC_WINNT_AUTH_IDENTITY_VERSION_2:
+                    InitializeAuthIdEx2();
+                    break;
+                case SEC_WINNT_AUTH_IDENTITY_EX.SEC_WINNT_AUTH_IDENTITY_VERSION:
+                    InitializeAuthIdEx();
+                    break;
+                default:
+                    InitializeAuthId();
+                    break;
+            }
         }
 
         private uint GetFlagsOffset()
@@ -73,6 +135,51 @@ namespace NtApiDotNet.Win32.SafeHandles
             set => Write(GetFlagsOffset(), (int)value);
         }
 
+        public string User
+        {
+            get
+            {
+                Initialize();
+                return _user;
+            }
+        }
+
+        public string Domain
+        {
+            get
+            {
+                Initialize();
+                return _domain;
+            }
+        }
+
+        public string Password
+        {
+            get
+            {
+                Initialize();
+                return _password;
+            }
+        }
+
+        public string PackageList
+        {
+            get
+            {
+                Initialize();
+                return _package_list;
+            }
+        }
+
+        public PackedCredential PackedCredentials
+        {
+            get
+            {
+                Initialize();
+                return _packed_credentials;
+            }
+        }
+
         public Type AuthType
         {
             get
@@ -81,7 +188,6 @@ namespace NtApiDotNet.Win32.SafeHandles
                 return _auth_type;
             }
         }
-
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 

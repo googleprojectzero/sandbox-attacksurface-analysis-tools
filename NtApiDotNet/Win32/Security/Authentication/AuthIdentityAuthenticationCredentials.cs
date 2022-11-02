@@ -12,31 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
-    /// <summary>
-    /// Option flags for auth identity encryption/decryption.
-    /// </summary>
-    [Flags]
-    public enum AuthIdentityEncryptionOptions
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_LOGON")]
-        SameLogon = 0x1,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_PROCESS")]
-        SameProcess = 0x2,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_FOR_SYSTEM")]
-        ForSystem = 0x4
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
-
     /// <summary>
     /// Auth identity credentials, wraps a marshalled SEC_WINNT_AUTH_IDENTITY_OPAQUE.
     /// </summary>
@@ -88,6 +71,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             else
                 _auth_id.Flags &= ~flags;
         }
+
+        private PackedCredential GetPackedCredential()
+        {
+            if (!HasPackedCredential)
+                throw new NotSupportedException("Auth identity doesn't support packed credentials.");
+
+            return _auth_id.PackedCredentials;
+        }
         #endregion
 
         #region Public Static Methods
@@ -122,12 +113,43 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="username">The username.</param>
         /// <param name="domain">The domain name.</param>
         /// <param name="packed_credentials">The packed credentials. Can be a password or a packed credentials.</param>
+        /// <param name="encrypt">Specify to encrypt the credentials.</param>
         /// <returns>The authentication credentials.</returns>
-        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, string packed_credentials)
+        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, string packed_credentials, bool encrypt = false)
         {
-            SecurityNativeMethods.SspiEncodeStringsAsAuthIdentity(username, domain, 
-                packed_credentials, out SafeSecWinntAuthIdentityBuffer auth_id).CheckResult();
-            return new AuthIdentityAuthenticationCredentials(auth_id);
+            if (encrypt)
+            {
+                if (string.IsNullOrEmpty(username))
+                {
+                    throw new ArgumentException($"'{nameof(username)}' cannot be null or empty.", nameof(username));
+                }
+
+                if (!string.IsNullOrEmpty(domain))
+                {
+                    username = $@"{domain}\{username}";
+                }
+
+                int length = 0;
+                CredPackAuthenticationBufferFlags flags =
+                    CredPackAuthenticationBufferFlags.CRED_PACK_ID_PROVIDER_CREDENTIALS 
+                    | CredPackAuthenticationBufferFlags.CRED_PACK_PROTECTED_CREDENTIALS;
+
+                var error = SecurityNativeMethods.CredPackAuthenticationBufferW(
+                    flags, username, packed_credentials, null, ref length).GetLastWin32Error();
+                if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                    error.ToNtException();
+                byte[] credentials = new byte[length];
+                error = SecurityNativeMethods.CredPackAuthenticationBufferW(
+                    flags, username, packed_credentials, credentials, ref length).GetLastWin32Error();
+                error.ToNtException();
+                return Create(credentials);
+            }
+            else
+            {
+                SecurityNativeMethods.SspiEncodeStringsAsAuthIdentity(username, domain,
+                    packed_credentials, out SafeSecWinntAuthIdentityBuffer auth_id).CheckResult();
+                return new AuthIdentityAuthenticationCredentials(auth_id);
+            }
         }
         #endregion
 
@@ -189,7 +211,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         #region Public Properties
         /// <summary>
-        /// Get whether the authidentity is encrypted.
+        /// Get whether the auth identity is encrypted.
         /// </summary>
         public bool IsEncrypted => SecurityNativeMethods.SspiIsAuthIdentityEncrypted(_auth_id);
 
@@ -201,10 +223,52 @@ namespace NtApiDotNet.Win32.Security.Authentication
             get => _auth_id.Flags.HasFlagSet(SecWinNtAuthIdentityFlags.IdentityOnly);
             set => SetFlags(SecWinNtAuthIdentityFlags.IdentityOnly, value);
         }
+
+        /// <summary>
+        /// Get whether the auth identity has a packed credential.
+        /// </summary>
+        public bool HasPackedCredential => _auth_id.AuthType == typeof(SEC_WINNT_AUTH_IDENTITY_EX2);
+
+        /// <summary>
+        /// The user in the credentials.
+        /// </summary>
+        public string User => _auth_id.User;
+
+        /// <summary>
+        /// The domain in the credentials.
+        /// </summary>
+        public string Domain => _auth_id.Domain;
+
+        /// <summary>
+        /// The password in the credentials.
+        /// </summary>
+        /// <remarks>If the auth identity supports packed credentials this might not return a valid value.</remarks>
+        public string Password
+        {
+            get
+            {
+                if (!HasPackedCredential)
+                    return _auth_id.Password;
+                if (PackedCredential is PackedCredentialPassword cred)
+                    return cred.Password;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The package list in the credentials.
+        /// </summary>
+        public string PackageList => _auth_id.PackageList;
+
+        /// <summary>
+        /// Get the packed credentials for the auth identity.
+        /// </summary>
+        /// <exception cref="NotSupportedException">Thrown if the auth identity doesn't support packed credentials.</exception>
+        public PackedCredential PackedCredential => GetPackedCredential();
         #endregion
 
         #region Internal Members
-        internal AuthIdentityAuthenticationCredentials(SafeSecWinntAuthIdentityBuffer auth_id) 
+        internal AuthIdentityAuthenticationCredentials(SafeSecWinntAuthIdentityBuffer auth_id)
             : base(false)
         {
             SecurityNativeMethods.SspiValidateAuthIdentity(auth_id).CheckResult();
