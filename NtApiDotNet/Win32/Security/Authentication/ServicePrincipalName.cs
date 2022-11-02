@@ -12,11 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Authentication
 {
@@ -46,20 +44,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// </summary>
         public string Referrer { get; set; }
 
-        private ServicePrincipalName()
-        {
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="service_class">The service class name.</param>
         /// <param name="instance_name">The name of the instance.</param>
-        public ServicePrincipalName(string service_class, string instance_name)
+        /// <param name="instance_port">The optional instance port. Set to 0 to exclude.</param>
+        /// <param name="service_name">The optional service name.</param>
+        public ServicePrincipalName(string service_class, string instance_name, int instance_port = 0, string service_name = null)
         {
             ServiceClass = service_class;
             InstanceName = instance_name;
-            ServiceName = instance_name;
+            InstancePort = instance_port;
+            ServiceName = service_name ?? instance_name;
         }
 
         /// <summary>
@@ -70,11 +67,39 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <exception cref="FormatException">Thrown in invalid SPN.</exception>
         public static ServicePrincipalName Parse(string spn)
         {
-            if (!TryParse(spn, out ServicePrincipalName result))
+            if (string.IsNullOrWhiteSpace(spn))
             {
-                throw new FormatException("SPN string was invalid");
+                throw new FormatException($"SPN cannot be null or whitespace.");
             }
-            return result;
+
+            string[] parts = spn.Split('/');
+            if (parts.Length < 2)
+                throw new FormatException("SPN must contain at least components.");
+            if (parts.Length > 3)
+                throw new FormatException("SPN must contain at most three components.");
+
+            string service_class = parts[0];
+            string instance_name = parts[1];
+            
+            if (string.IsNullOrEmpty(service_class))
+                throw new FormatException("Service class can't be empty.");
+
+            ushort instance_port = 0;
+            string[] instance_parts = instance_name.Split(':');
+            if (instance_parts.Length > 1)
+            {
+                if (instance_parts[1].Length > 0 && !ushort.TryParse(instance_parts[1], out instance_port))
+                    throw new FormatException("Invalid instance port number.");
+                instance_name = instance_parts[0];
+            }
+            if (string.IsNullOrEmpty(instance_name))
+                throw new FormatException("Instance name can't be empty.");
+
+            string service_name = parts.Length > 2 ? parts[2] : instance_name;
+            if (string.IsNullOrEmpty(service_name))
+                throw new FormatException("Service name can't be empty.");
+
+            return new ServicePrincipalName(service_class, instance_name, instance_port, service_name);
         }
 
         /// <summary>
@@ -87,41 +112,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public static bool TryParse(string spn, out ServicePrincipalName result)
         {
             result = null;
-
-            OptionalInt32 cServiceClass = 1;
-            StringBuilder ServiceClass = new StringBuilder(1);
-            OptionalInt32 cServiceName = 1;
-            StringBuilder ServiceName = new StringBuilder(1);
-            OptionalInt32 cInstanceName = 1;
-            StringBuilder InstanceName = new StringBuilder(1);
-            OptionalUInt16 InstancePort = 0;
-
-            var err = SecurityNativeMethods.DsCrackSpn(spn, cServiceClass, ServiceClass,
-                cServiceName, ServiceName, cInstanceName, InstanceName, InstancePort);
-            if (err != Win32Error.ERROR_BUFFER_OVERFLOW)
+            try
+            {
+                result = Parse(spn);
+                return true;
+            }
+            catch(FormatException)
             {
                 return false;
             }
-
-            ServiceClass = new StringBuilder(cServiceClass.Value);
-            ServiceName = new StringBuilder(cServiceName.Value);
-            InstanceName = new StringBuilder(cInstanceName.Value);
-
-            if (SecurityNativeMethods.DsCrackSpn(spn, cServiceClass, ServiceClass,
-                cServiceName, ServiceName, cInstanceName, InstanceName, InstancePort) != Win32Error.SUCCESS)
-            {
-                return false;
-            }
-
-            result = new ServicePrincipalName()
-            {
-                ServiceClass = ServiceClass.ToString(),
-                ServiceName = ServiceName.ToString(),
-                InstanceName = InstanceName.ToString(),
-                InstancePort = InstancePort.Value
-            };
-
-            return true;
         }
 
         /// <summary>
@@ -147,6 +146,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             if (string.IsNullOrEmpty(instance_name) || instance_name.Contains("/"))
             {
                 throw new ArgumentException("Instance name can't be empty or contain a forward slash.", nameof(InstanceName));
+            }
+
+            if (InstancePort < 0 || InstancePort > ushort.MaxValue)
+            {
+                throw new ArgumentException($"Instance port must be between 0 and {ushort.MaxValue} inclusive.", nameof(InstancePort));
             }
 
             if (InstancePort != 0)
