@@ -207,8 +207,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         internal AuthIdentityAuthenticationCredentials(SafeSecWinntAuthIdentityBuffer auth_id) 
             : base(false)
         {
+            SecurityNativeMethods.SspiValidateAuthIdentity(auth_id).CheckResult();
             _auth_id = auth_id;
-
         }
 
         internal override SafeBuffer ToBuffer(DisposableList list, string package)

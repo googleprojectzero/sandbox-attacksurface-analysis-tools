@@ -282,6 +282,16 @@ namespace NtApiDotNet.Win32.Security.Native
           out SafeSecWinntAuthIdentityBuffer ppAuthIdentity
         );
 
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode SspiValidateAuthIdentity(
+            SafeBuffer AuthData
+        );
+
+        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
+        internal static extern void SspiZeroAuthIdentity(
+            IntPtr AuthData
+        );
+
         [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error DsMakeSpn(
             string ServiceClass,
