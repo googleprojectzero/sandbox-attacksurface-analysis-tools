@@ -74,13 +74,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
             string[] parts = spn.Split('/');
             if (parts.Length < 2)
-                throw new FormatException("SPN must contain at least components.");
+                throw new FormatException("SPN must contain at least two components.");
             if (parts.Length > 3)
                 throw new FormatException("SPN must contain at most three components.");
 
             string service_class = parts[0];
             string instance_name = parts[1];
-            
+
             if (string.IsNullOrEmpty(service_class))
                 throw new FormatException("Service class can't be empty.");
 
