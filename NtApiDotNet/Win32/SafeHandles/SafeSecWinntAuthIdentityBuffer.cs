@@ -52,7 +52,7 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
             _auth_type = typeof(SEC_WINNT_AUTH_IDENTITY);
             InitializeLength(Marshal.SizeOf(_auth_type));
-            var value = Read<SEC_WINNT_AUTH_IDENTITY_Struct>(0);
+            var value = Read<SEC_WINNT_AUTH_IDENTITY_OUT>(0);
             _user = ReadString(value.User, value.UserLength, value.Flags);
             _domain = ReadString(value.Domain, value.DomainLength, value.Flags);
             _password = ReadString(value.Password, value.PasswordLength, value.Flags);
@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
             _auth_type = typeof(SEC_WINNT_AUTH_IDENTITY_EX);
             InitializeLength(Marshal.SizeOf(_auth_type));
-            var value = Read<SEC_WINNT_AUTH_IDENTITY_EX_Struct>(0);
+            var value = Read<SEC_WINNT_AUTH_IDENTITY_EX_OUT>(0);
             _user = ReadString(value.User, value.UserLength, value.Flags);
             _domain = ReadString(value.Domain, value.DomainLength, value.Flags);
             _password = ReadString(value.Password, value.PasswordLength, value.Flags);

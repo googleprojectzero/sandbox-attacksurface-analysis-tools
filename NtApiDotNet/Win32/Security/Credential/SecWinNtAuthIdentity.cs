@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
+using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
@@ -22,11 +23,25 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// Auth identity credentials buffer, wraps a marshalled SEC_WINNT_AUTH_IDENTITY_OPAQUE.
     /// </summary>
-    /// <remarks>This maintains a natively allocations buffer which should be freeds after user.</remarks>
     public sealed class SecWinNtAuthIdentity : IDisposable
     {
         #region Private Members
         private readonly SafeSecWinNtAuthIdentityBuffer _auth_id;
+
+        private class SecWinNtAuthIdentityAuthenticationCredentials : AuthenticationCredentials
+        {
+            private readonly byte[] _auth_id;
+
+            public SecWinNtAuthIdentityAuthenticationCredentials(byte[] auth_id)
+            {
+                _auth_id = auth_id;
+            }
+
+            internal override SafeBuffer ToBuffer(DisposableList list, string package)
+            {
+                return UnmarshalAuthId(_auth_id);
+            }
+        }
 
         private static SafeSecWinNtAuthIdentityBuffer UnmarshalAuthId(byte[] auth_id)
         {
@@ -183,7 +198,6 @@ namespace NtApiDotNet.Win32.Security.Credential
             byte[] creds = packed_credentials.ToArray(encrypt);
 
             int header_size = Marshal.SizeOf<SEC_WINNT_AUTH_IDENTITY_EX2>();
-
             SEC_WINNT_AUTH_IDENTITY_EX2 auth_id = new SEC_WINNT_AUTH_IDENTITY_EX2
             {
                 Version = SEC_WINNT_AUTH_IDENTITY_EX2.SEC_WINNT_AUTH_IDENTITY_VERSION_2,
@@ -248,6 +262,15 @@ namespace NtApiDotNet.Win32.Security.Credential
         public SecWinNtAuthIdentityStrings ToEncodedStrings()
         {
             return new SecWinNtAuthIdentityStrings(_auth_id);
+        }
+
+        /// <summary>
+        /// Convert to authentication credentials.
+        /// </summary>
+        /// <returns>The authentication credentials.</returns>
+        public AuthenticationCredentials ToAuthenticationCredentials()
+        {
+            return new SecWinNtAuthIdentityAuthenticationCredentials(ToArray());
         }
 
         /// <summary>
@@ -323,11 +346,6 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <exception cref="NotSupportedException">Thrown if the auth identity doesn't support packed credentials.</exception>
         public SecWinNtAuthPackedCredential PackedCredential => GetPackedCredential();
-
-        /// <summary>
-        /// Return the underlying memory buffer for this auth identity.
-        /// </summary>
-        public SafeBufferGeneric DangerousBuffer => _auth_id;
         #endregion
 
         #region Internal Members
@@ -336,6 +354,8 @@ namespace NtApiDotNet.Win32.Security.Credential
             SecurityNativeMethods.SspiValidateAuthIdentity(auth_id).CheckResult();
             _auth_id = auth_id;
         }
+
+        internal SafeBufferGeneric DangerousBuffer => _auth_id;
         #endregion
 
         #region IDisposable Implementation

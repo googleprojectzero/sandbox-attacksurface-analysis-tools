@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SEC_WINNT_AUTH_IDENTITY_Struct
+    internal struct SEC_WINNT_AUTH_IDENTITY_OUT
     {
         public IntPtr User;
         public int UserLength;

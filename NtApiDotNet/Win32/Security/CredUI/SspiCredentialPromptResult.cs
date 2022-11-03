@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         {
             if (Cancelled)
                 throw new InvalidOperationException("The operation was cancelled and there's no credentials.");
-            return CredentialHandle.Create(Package, cred_use_flag, new AuthIdentityAuthenticationCredentials(AuthIdentity, false));
+            return CredentialHandle.Create(Package, cred_use_flag, AuthIdentity.ToAuthenticationCredentials());
         }
 
         /// <summary>

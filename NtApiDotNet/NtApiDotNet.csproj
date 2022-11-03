@@ -554,7 +554,6 @@
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\SafeHandles\SafeSecWinNtAuthIdentityBuffer.cs" />
-    <Compile Include="Win32\Security\Authentication\AuthIdentityAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Credential\SecWinNtAuthIdentity.cs" />
     <Compile Include="Win32\Security\Credential\SecWinNtAuthIdentityCreateOptions.cs" />
     <Compile Include="Win32\Security\Credential\SecWinNtAuthIdentityEncryptionOptions.cs" />

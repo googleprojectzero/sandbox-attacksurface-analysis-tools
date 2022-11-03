@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Credential;
 using NtApiDotNet.Win32.Security.Native;
 
 namespace NtApiDotNet.Win32.Security.CredUI
@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// <summary>
         /// Specify the input authentication identity.
         /// </summary>
-        public AuthIdentityAuthenticationCredentials InputAuthIdentity { get; set; }
+        public SecWinNtAuthIdentity InputAuthIdentity { get; set; }
 
         /// <summary>
         /// Specify flags for the prompt.
@@ -50,7 +50,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
         public NtResult<SspiCredentialPromptResult> Show(bool throw_on_error)
         {
-            using (var input_auth = InputAuthIdentity?.ToBuffer(null, null) ?? SafeSecWinNtAuthIdentityBuffer.Null)
+            using (var input_auth = InputAuthIdentity?.Copy()?.DangerousBuffer ?? SafeSecWinNtAuthIdentityBuffer.Null)
             {
                 int save = Save ? 1 : 0;
                 var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package,
