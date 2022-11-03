@@ -22,7 +22,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// Class to represent a keytab packed credentials structure.
     /// </summary>
-    public sealed class PackedCredentialKeyTab : PackedCredential
+    public sealed class SecWinNtAuthPackedCredentialKeyTab : SecWinNtAuthPackedCredential
     {
         /// <summary>
         /// The list of kerberos keys in the keytab.
@@ -33,13 +33,13 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Constructor
         /// </summary>
         /// <param name="keys">The list of keys for the keytab.</param>
-        public PackedCredentialKeyTab(IEnumerable<KerberosAuthenticationKey> keys)
+        public SecWinNtAuthPackedCredentialKeyTab(IEnumerable<KerberosAuthenticationKey> keys)
             : this(KerberosUtils.GenerateKeyTabFile(keys), keys)
         {
         }
 
-        internal PackedCredentialKeyTab(byte[] keytab, IEnumerable<KerberosAuthenticationKey> keys) 
-            : base(PackedCredentialTypes.KeyTab, keytab)
+        internal SecWinNtAuthPackedCredentialKeyTab(byte[] keytab, IEnumerable<KerberosAuthenticationKey> keys)
+            : base(SecWinNtPackedCredentialTypes.KeyTab, keytab)
         {
             if (keys is null)
             {

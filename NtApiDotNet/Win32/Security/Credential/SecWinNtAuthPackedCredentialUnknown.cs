@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// Class to represent an unknown packed credentials structure.
     /// </summary>
-    public sealed class PackedCredentialUnknown : PackedCredential
+    public sealed class SecWinNtAuthPackedCredentialUnknown : SecWinNtAuthPackedCredential
     {
         /// <summary>
         /// The credentials data.
@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <param name="cred_type">The type of packed credentials.</param>
         /// <param name="credentials">The packed credentials structure.</param>
-        public PackedCredentialUnknown(Guid cred_type, byte[] credentials)
+        public SecWinNtAuthPackedCredentialUnknown(Guid cred_type, byte[] credentials)
             : base(cred_type, credentials)
         {
         }

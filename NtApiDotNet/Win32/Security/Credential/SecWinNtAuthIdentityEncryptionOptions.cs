@@ -1,4 +1,4 @@
-﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+﻿//  Copyright 2022 Google LLC. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
 using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtApiDotNet.Win32.Security.Credential
 {
     /// <summary>
     /// Option flags for auth identity encryption/decryption.
     /// </summary>
     [Flags]
-    public enum AuthIdentityEncryptionOptions
+    public enum SecWinNtAuthIdentityEncryptionOptions
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,

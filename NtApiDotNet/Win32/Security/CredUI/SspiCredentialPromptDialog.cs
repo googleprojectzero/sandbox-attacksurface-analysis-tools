@@ -50,11 +50,11 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
         public NtResult<SspiCredentialPromptResult> Show(bool throw_on_error)
         {
-            using (var input_auth = InputAuthIdentity?.ToBuffer(null, null) ?? SafeSecWinntAuthIdentityBuffer.Null)
+            using (var input_auth = InputAuthIdentity?.ToBuffer(null, null) ?? SafeSecWinNtAuthIdentityBuffer.Null)
             {
                 int save = Save ? 1 : 0;
                 var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package,
-                    input_auth, out SafeSecWinntAuthIdentityBuffer auth_id, ref save, (int)Flags);
+                    input_auth, out SafeSecWinNtAuthIdentityBuffer auth_id, ref save, (int)Flags);
                 if (result == Win32Error.ERROR_CANCELLED)
                     return new SspiCredentialPromptResult(Package).CreateResult();
                 return result.CreateWin32Result(throw_on_error, () => new SspiCredentialPromptResult(auth_id, save, Package));

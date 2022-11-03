@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// A base class to represent a SEC_WINNT_AUTH_PACKED_CREDENTIALS structure.
     /// </summary>
-    public abstract class PackedCredential
+    public abstract class SecWinNtAuthPackedCredential
     {
         /// <summary>
         /// The packed credentials structure.
@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// <param name="data">The data to parse.</param>
         /// <param name="packed_credential">The packed credential.</param>
         /// <returns>True if the packed credential was valid.</returns>
-        public static bool TryParse(byte[] data, out PackedCredential packed_credential)
+        public static bool TryParse(byte[] data, out SecWinNtAuthPackedCredential packed_credential)
         {
             if (data is null)
             {
@@ -66,18 +66,18 @@ namespace NtApiDotNet.Win32.Security.Credential
             {
                 var cred = buffer.Read<SEC_WINNT_AUTH_PACKED_CREDENTIALS>(0);
                 byte[] cred_data = cred.AuthData.CredData.ReadBytes(buffer);
-                if (cred.AuthData.CredType == PackedCredentialTypes.Password)
+                if (cred.AuthData.CredType == SecWinNtPackedCredentialTypes.Password)
                 {
-                    packed_credential = new PackedCredentialPassword(cred_data);
+                    packed_credential = new SecWinNtAuthPackedCredentialPassword(cred_data);
                 }
-                else if (cred.AuthData.CredType == PackedCredentialTypes.KeyTab && 
+                else if (cred.AuthData.CredType == SecWinNtPackedCredentialTypes.KeyTab &&
                     KerberosUtils.TryReadKeyTabFile(cred_data, out IEnumerable<KerberosAuthenticationKey> keys))
                 {
-                    packed_credential = new PackedCredentialKeyTab(cred_data, keys);
+                    packed_credential = new SecWinNtAuthPackedCredentialKeyTab(cred_data, keys);
                 }
                 else
                 {
-                    packed_credential = new PackedCredentialUnknown(cred.AuthData.CredType, cred_data);
+                    packed_credential = new SecWinNtAuthPackedCredentialUnknown(cred.AuthData.CredType, cred_data);
                 }
                 return true;
             }
@@ -88,9 +88,9 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <param name="data">The data to parse.</param>
         /// <returns>The packed credential.</returns>
-        public static PackedCredential Parse(byte[] data)
+        public static SecWinNtAuthPackedCredential Parse(byte[] data)
         {
-            if (!TryParse(data, out PackedCredential packed_credential))
+            if (!TryParse(data, out SecWinNtAuthPackedCredential packed_credential))
                 throw new InvalidDataException("Invalid packed credential data.");
             return packed_credential;
         }
@@ -100,7 +100,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <param name="cred_type">The type of packed credentials.</param>
         /// <param name="credentials">The packed credentials structure.</param>
-        protected PackedCredential(Guid cred_type, byte[] credentials)
+        protected SecWinNtAuthPackedCredential(Guid cred_type, byte[] credentials)
         {
             CredType = cred_type;
             _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));

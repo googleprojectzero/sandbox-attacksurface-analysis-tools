@@ -20,7 +20,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// Guids for credential types.
     /// </summary>
-    public static class PackedCredentialTypes
+    public static class SecWinNtPackedCredentialTypes
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         [SDKName("SEC_WINNT_AUTH_DATA_TYPE_PASSWORD")]

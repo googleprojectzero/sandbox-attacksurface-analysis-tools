@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Credential;
 using System;
 
 namespace NtApiDotNet.Win32.Security.CredUI
@@ -26,7 +27,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// <summary>
         /// Chosen authentication credentials.
         /// </summary>
-        public AuthIdentityAuthenticationCredentials AuthIdentity { get; }
+        public SecWinNtAuthIdentity AuthIdentity { get; }
 
         /// <summary>
         /// Indicates whether the save credentials check box was set.
@@ -43,10 +44,10 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// </summary>
         public bool Cancelled => AuthIdentity == null;
 
-        internal SspiCredentialPromptResult(SafeSecWinntAuthIdentityBuffer auth_id, 
+        internal SspiCredentialPromptResult(SafeSecWinNtAuthIdentityBuffer auth_id, 
             int save, string package) : this(package)
         {
-            AuthIdentity = new AuthIdentityAuthenticationCredentials(auth_id);
+            AuthIdentity = new SecWinNtAuthIdentity(auth_id);
             Save = save != 0;
         }
 
@@ -64,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         {
             if (Cancelled)
                 throw new InvalidOperationException("The operation was cancelled and there's no credentials.");
-            return CredentialHandle.Create(Package, cred_use_flag, AuthIdentity);
+            return CredentialHandle.Create(Package, cred_use_flag, new AuthIdentityAuthenticationCredentials(AuthIdentity, false));
         }
 
         /// <summary>

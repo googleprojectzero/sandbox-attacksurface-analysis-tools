@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal class SafeSecWinntAuthIdentityBuffer : SafeBufferGeneric
+    internal class SafeSecWinNtAuthIdentityBuffer : SafeBufferGeneric
     {
         #region Private Members
         private Type _auth_type;
@@ -27,7 +27,7 @@ namespace NtApiDotNet.Win32.SafeHandles
         private string _domain;
         private string _password;
         private string _package_list;
-        private PackedCredential _packed_credentials;
+        private SecWinNtAuthPackedCredential _packed_credentials;
 
         private static string ReadString(IntPtr ptr, int length, SecWinNtAuthIdentityFlags flags)
         {
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Win32.SafeHandles
             if (value.PackedCredentialsOffset != 0)
             {
                 byte[] creds = ReadBytes(value.PackedCredentialsOffset, value.PackedCredentialsLength);
-                PackedCredential.TryParse(creds, out _packed_credentials);
+                SecWinNtAuthPackedCredential.TryParse(creds, out _packed_credentials);
             }
             _package_list = ReadString(value.PackageListOffset, value.PackageListLength, value.Flags);
         }
@@ -124,7 +124,7 @@ namespace NtApiDotNet.Win32.SafeHandles
             return true;
         }
 
-        public SafeSecWinntAuthIdentityBuffer()
+        public SafeSecWinNtAuthIdentityBuffer()
             : base(IntPtr.Zero, 0, true)
         {
         }
@@ -171,7 +171,7 @@ namespace NtApiDotNet.Win32.SafeHandles
             }
         }
 
-        public PackedCredential PackedCredentials
+        public SecWinNtAuthPackedCredential PackedCredentials
         {
             get
             {
@@ -191,6 +191,6 @@ namespace NtApiDotNet.Win32.SafeHandles
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        public static SafeSecWinntAuthIdentityBuffer Null => new SafeSecWinntAuthIdentityBuffer();
+        public static SafeSecWinNtAuthIdentityBuffer Null => new SafeSecWinNtAuthIdentityBuffer();
     }
 }

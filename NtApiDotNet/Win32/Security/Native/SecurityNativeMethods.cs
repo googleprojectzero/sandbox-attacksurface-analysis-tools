@@ -199,7 +199,7 @@ namespace NtApiDotNet.Win32.Security.Native
           Win32Error dwAuthError,
           string pszPackage,
           SafeBuffer pInputAuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE
-          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE*
+          out SafeSecWinNtAuthIdentityBuffer ppAuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE*
           ref int pfSave,
           int dwFlags
         );
@@ -221,20 +221,20 @@ namespace NtApiDotNet.Win32.Security.Native
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiCopyAuthIdentity(
           SafeBuffer AuthData,
-          out SafeSecWinntAuthIdentityBuffer AuthDataCopy
+          out SafeSecWinNtAuthIdentityBuffer AuthDataCopy
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiUnmarshalAuthIdentity(
           int AuthIdentityLength,
           byte[] AuthIdentityByteArray,
-          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity
+          out SafeSecWinNtAuthIdentityBuffer ppAuthIdentity
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static extern bool SspiIsAuthIdentityEncrypted(
-            SafeSecWinntAuthIdentityBuffer EncryptedAuthData
+            SafeSecWinNtAuthIdentityBuffer EncryptedAuthData
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
@@ -244,7 +244,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiDecryptAuthIdentityEx(
-            AuthIdentityEncryptionOptions Options,
+            SecWinNtAuthIdentityEncryptionOptions Options,
             SafeBuffer EncryptedAuthData
         );
 
@@ -255,7 +255,7 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiEncryptAuthIdentityEx(
-            AuthIdentityEncryptionOptions Options,
+            SecWinNtAuthIdentityEncryptionOptions Options,
             SafeBuffer AuthData
         );
 
@@ -263,7 +263,7 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern SecStatusCode SspiExcludePackage(
             SafeBuffer AuthIdentity,
             string pszPackageName,
-            out SafeSecWinntAuthIdentityBuffer ppNewAuthIdentity
+            out SafeSecWinNtAuthIdentityBuffer ppNewAuthIdentity
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
@@ -279,7 +279,7 @@ namespace NtApiDotNet.Win32.Security.Native
           string pszUserName,
           string pszDomainName,
           string pszPackedCredentialsString,
-          out SafeSecWinntAuthIdentityBuffer ppAuthIdentity
+          out SafeSecWinNtAuthIdentityBuffer ppAuthIdentity
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]

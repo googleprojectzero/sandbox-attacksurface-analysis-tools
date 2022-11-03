@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Security.Credential
     /// <summary>
     /// Class to represent a password packed credentials structure.
     /// </summary>
-    public sealed class PackedCredentialPassword : PackedCredential
+    public sealed class SecWinNtAuthPackedCredentialPassword : SecWinNtAuthPackedCredential
     {
         /// <summary>
         /// The user's password.
@@ -35,8 +35,8 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Constructor
         /// </summary>
         /// <param name="password">The user's password.</param>
-        public PackedCredentialPassword(byte[] password)
-            : base(PackedCredentialTypes.Password,
+        public SecWinNtAuthPackedCredentialPassword(byte[] password)
+            : base(SecWinNtPackedCredentialTypes.Password,
                   password ?? new byte[0])
         {
         }
@@ -45,8 +45,8 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Constructor
         /// </summary>
         /// <param name="password">The user's password.</param>
-        public PackedCredentialPassword(string password)
-            : base(PackedCredentialTypes.Password,
+        public SecWinNtAuthPackedCredentialPassword(string password)
+            : base(SecWinNtPackedCredentialTypes.Password,
                   Encoding.Unicode.GetBytes(password ?? string.Empty))
         {
         }
