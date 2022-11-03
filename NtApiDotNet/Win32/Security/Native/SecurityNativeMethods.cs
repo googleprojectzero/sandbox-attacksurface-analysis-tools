@@ -18,6 +18,7 @@ using NtApiDotNet.Win32.Security.Audit;
 using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Authorization;
 using NtApiDotNet.Win32.Security.Credential;
+using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
 using NtApiDotNet.Win32.Security.Policy;
 using NtApiDotNet.Win32.Security.Sam;
 using System;

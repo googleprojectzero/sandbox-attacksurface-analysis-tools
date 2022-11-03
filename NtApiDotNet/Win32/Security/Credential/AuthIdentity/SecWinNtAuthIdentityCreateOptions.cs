@@ -12,25 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
-    /// Option flags for auth identity encryption/decryption.
+    /// Options when creating an authentication identity credential.
     /// </summary>
     [Flags]
-    public enum SecWinNtAuthIdentityEncryptionOptions
+    public enum SecWinNtAuthIdentityCreateOptions
     {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        /// <summary>
+        /// No options.
+        /// </summary>
         None = 0,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_LOGON")]
-        SameLogon = 0x1,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_PROCESS")]
-        SameProcess = 0x2,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_FOR_SYSTEM")]
-        ForSystem = 0x4
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+        /// <summary>
+        /// Use an identity level impersonation token.
+        /// </summary>
+        IdentityOnly = 1,
+        /// <summary>
+        /// Specify the credentials are for an identity provider.
+        /// </summary>
+        IdProvider = 2,
     }
 }

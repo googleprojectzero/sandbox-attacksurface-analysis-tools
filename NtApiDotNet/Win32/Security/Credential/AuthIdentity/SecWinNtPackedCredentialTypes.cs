@@ -15,7 +15,7 @@
 using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
     /// Guids for credential types.

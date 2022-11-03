@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
     /// Class to represent a keytab packed credentials structure.

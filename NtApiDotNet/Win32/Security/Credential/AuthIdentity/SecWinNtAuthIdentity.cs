@@ -18,7 +18,7 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
     /// Auth identity credentials buffer, wraps a marshalled SEC_WINNT_AUTH_IDENTITY_OPAQUE.

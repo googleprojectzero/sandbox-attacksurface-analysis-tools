@@ -12,27 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
     /// <summary>
-    /// Options when creating an authentication identity credential.
+    /// Flags for the SSPI credential prompt.
     /// </summary>
     [Flags]
-    public enum SecWinNtAuthIdentityCreateOptions
+    public enum SspiCredentialPromptDialogFlags
     {
-        /// <summary>
-        /// No options.
-        /// </summary>
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        /// <summary>
-        /// Use an identity level impersonation token.
-        /// </summary>
-        IdentityOnly = 1,
-        /// <summary>
-        /// Specify the credentials are for an identity provider.
-        /// </summary>
-        IdProvider = 2,
+        [SDKName("SSPIPFC_CREDPROV_DO_NOT_SAVE")]
+        DoNotSave = 1,
+        [SDKName("SSPIPFC_NO_CHECKBOX")]
+        NoCheckbox = 2,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

@@ -15,20 +15,22 @@
 using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.CredUI
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
-    /// Flags for the SSPI credential prompt.
+    /// Option flags for auth identity encryption/decryption.
     /// </summary>
     [Flags]
-    public enum SspiCredentialPromptDialogFlags
+    public enum SecWinNtAuthIdentityEncryptionOptions
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         None = 0,
-        [SDKName("SSPIPFC_CREDPROV_DO_NOT_SAVE")]
-        DoNotSave = 1,
-        [SDKName("SSPIPFC_NO_CHECKBOX")]
-        NoCheckbox = 2,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_LOGON")]
+        SameLogon = 0x1,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_PROCESS")]
+        SameProcess = 0x2,
+        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_FOR_SYSTEM")]
+        ForSystem = 0x4
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

@@ -13,10 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Credential;
+using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
 using NtApiDotNet.Win32.Security.Native;
 
-namespace NtApiDotNet.Win32.Security.CredUI
+namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
     /// <summary>
     /// Class to represent an SSPI credential prompt.

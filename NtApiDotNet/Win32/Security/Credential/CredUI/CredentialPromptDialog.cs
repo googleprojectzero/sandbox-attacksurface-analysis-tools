@@ -16,7 +16,7 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.CredUI
+namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
     /// <summary>
     /// Base class to represent a credential UI prompt.

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 {
     /// <summary>
     /// A base class to represent a SEC_WINNT_AUTH_PACKED_CREDENTIALS structure.

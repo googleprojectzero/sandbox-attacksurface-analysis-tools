@@ -14,10 +14,10 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Credential;
+using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
 using System;
 
-namespace NtApiDotNet.Win32.Security.CredUI
+namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
     /// <summary>
     /// Result from the credential prompt.
@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Security.CredUI
         /// </summary>
         public bool Cancelled => AuthIdentity == null;
 
-        internal SspiCredentialPromptResult(SafeSecWinNtAuthIdentityBuffer auth_id, 
+        internal SspiCredentialPromptResult(SafeSecWinNtAuthIdentityBuffer auth_id,
             int save, string package) : this(package)
         {
             AuthIdentity = new SecWinNtAuthIdentity(auth_id);
