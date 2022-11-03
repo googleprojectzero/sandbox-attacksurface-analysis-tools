@@ -16,22 +16,9 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct SEC_WINNT_AUTH_IDENTITY_EX2
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SEC_WINNT_AUTH_DATA_PASSWORD
     {
-        public const int SEC_WINNT_AUTH_IDENTITY_VERSION_2 = 513;
-
-        public int Version;
-        public ushort cbHeaderLength;
-        public int cbStructureLength;
-        public uint UserOffset;
-        public ushort UserLength;
-        public uint DomainOffset;
-        public ushort DomainLength;
-        public uint PackedCredentialsOffset;
-        public ushort PackedCredentialsLength;
-        public SecWinNtAuthIdentityFlags Flags;
-        public uint PackageListOffset;
-        public ushort PackageListLength;
+        public SEC_WINNT_AUTH_BYTE_VECTOR UnicodePassword;
     }
 }

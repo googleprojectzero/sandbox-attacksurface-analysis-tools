@@ -14,9 +14,7 @@
 
 using NtApiDotNet.Win32.Security.Native;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Credential
@@ -37,17 +35,32 @@ namespace NtApiDotNet.Win32.Security.Credential
         public Guid CredType { get; }
 
         /// <summary>
-        /// The list of supported security packages.
-        /// </summary>
-        public IReadOnlyList<uint> PackageList { get; }
-
-        /// <summary>
         /// Convert the packed credentials to an array.
         /// </summary>
         /// <returns>The packed credentials.</returns>
         public byte[] ToArray()
         {
-            return null;
+            ushort header_size = (ushort)Marshal.SizeOf<SEC_WINNT_AUTH_PACKED_CREDENTIALS>();
+            SEC_WINNT_AUTH_PACKED_CREDENTIALS packed = new SEC_WINNT_AUTH_PACKED_CREDENTIALS
+            {
+                cbHeaderLength = header_size,
+                cbStructureLength = (ushort)(header_size + _credentials.Length),
+                AuthData = new SEC_WINNT_AUTH_DATA
+                {
+                    CredType = CredType,
+                    CredData = new SEC_WINNT_AUTH_BYTE_VECTOR
+                    {
+                        ByteArrayLength = (ushort)_credentials.Length,
+                        ByteArrayOffset = header_size
+                    }
+                }
+            };
+
+            using (var buffer = packed.ToBuffer(_credentials.Length, true))
+            {
+                buffer.Data.WriteBytes(_credentials);
+                return buffer.ToArray();
+            }
         }
 
         /// <summary>
@@ -99,12 +112,10 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <param name="cred_type">The type of packed credentials.</param>
         /// <param name="credentials">The packed credentials structure.</param>
-        /// <param name="package_list">The list of supported security packages.</param>
-        protected PackedCredential(Guid cred_type, byte[] credentials, IEnumerable<uint> package_list)
+        protected PackedCredential(Guid cred_type, byte[] credentials)
         {
             CredType = cred_type;
             _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
-            PackageList = (package_list?.ToList() ?? new List<uint>()).AsReadOnly();
         }
     }
 }

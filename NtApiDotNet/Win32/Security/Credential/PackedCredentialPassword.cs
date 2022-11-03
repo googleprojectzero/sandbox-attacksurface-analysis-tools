@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System.Collections.Generic;
 using System.Text;
 
 namespace NtApiDotNet.Win32.Security.Credential
@@ -36,10 +35,9 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Constructor
         /// </summary>
         /// <param name="password">The user's password.</param>
-        /// <param name="package_list">The list of supported security packages.</param>
-        public PackedCredentialPassword(byte[] password, IEnumerable<uint> package_list = null)
+        public PackedCredentialPassword(byte[] password)
             : base(PackedCredentialTypes.Password,
-                  password ?? new byte[0], package_list)
+                  password ?? new byte[0])
         {
         }
 
@@ -47,10 +45,9 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// Constructor
         /// </summary>
         /// <param name="password">The user's password.</param>
-        /// <param name="package_list">The list of supported security packages.</param>
-        public PackedCredentialPassword(string password, IEnumerable<uint> package_list = null)
+        public PackedCredentialPassword(string password)
             : base(PackedCredentialTypes.Password,
-                  Encoding.Unicode.GetBytes(password ?? string.Empty), package_list)
+                  Encoding.Unicode.GetBytes(password ?? string.Empty))
         {
         }
     }

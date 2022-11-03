@@ -113,43 +113,48 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="username">The username.</param>
         /// <param name="domain">The domain name.</param>
         /// <param name="packed_credentials">The packed credentials. Can be a password or a packed credentials.</param>
+        /// <returns>The authentication credentials.</returns>
+        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, string packed_credentials)
+        {
+            SecurityNativeMethods.SspiEncodeStringsAsAuthIdentity(username, domain,
+                packed_credentials, out SafeSecWinntAuthIdentityBuffer auth_id).CheckResult();
+            return new AuthIdentityAuthenticationCredentials(auth_id);
+        }
+
+        /// <summary>
+        /// Create the credentials from packed credentials.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="domain">The domain name.</param>
+        /// <param name="packed_credentials">The packed credentials. Can be a password or a packed credentials.</param>
         /// <param name="encrypt">Specify to encrypt the credentials.</param>
         /// <returns>The authentication credentials.</returns>
-        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, string packed_credentials, bool encrypt = false)
+        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, string packed_credentials, bool encrypt)
         {
+            if (string.IsNullOrEmpty(username))
+            {
+                throw new ArgumentException($"'{nameof(username)}' cannot be null or empty.", nameof(username));
+            }
+
+            if (!string.IsNullOrEmpty(domain))
+            {
+                username = $@"{domain}\{username}";
+            }
+
+            int length = 0;
+            CredPackAuthenticationBufferFlags flags = CredPackAuthenticationBufferFlags.CRED_PACK_ID_PROVIDER_CREDENTIALS;
             if (encrypt)
-            {
-                if (string.IsNullOrEmpty(username))
-                {
-                    throw new ArgumentException($"'{nameof(username)}' cannot be null or empty.", nameof(username));
-                }
+                flags |= CredPackAuthenticationBufferFlags.CRED_PACK_PROTECTED_CREDENTIALS;
 
-                if (!string.IsNullOrEmpty(domain))
-                {
-                    username = $@"{domain}\{username}";
-                }
-
-                int length = 0;
-                CredPackAuthenticationBufferFlags flags =
-                    CredPackAuthenticationBufferFlags.CRED_PACK_ID_PROVIDER_CREDENTIALS 
-                    | CredPackAuthenticationBufferFlags.CRED_PACK_PROTECTED_CREDENTIALS;
-
-                var error = SecurityNativeMethods.CredPackAuthenticationBufferW(
-                    flags, username, packed_credentials, null, ref length).GetLastWin32Error();
-                if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
-                    error.ToNtException();
-                byte[] credentials = new byte[length];
-                error = SecurityNativeMethods.CredPackAuthenticationBufferW(
-                    flags, username, packed_credentials, credentials, ref length).GetLastWin32Error();
+            var error = SecurityNativeMethods.CredPackAuthenticationBufferW(
+                flags, username, packed_credentials, null, ref length).GetLastWin32Error();
+            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
                 error.ToNtException();
-                return Create(credentials);
-            }
-            else
-            {
-                SecurityNativeMethods.SspiEncodeStringsAsAuthIdentity(username, domain,
-                    packed_credentials, out SafeSecWinntAuthIdentityBuffer auth_id).CheckResult();
-                return new AuthIdentityAuthenticationCredentials(auth_id);
-            }
+            byte[] credentials = new byte[length];
+            error = SecurityNativeMethods.CredPackAuthenticationBufferW(
+                flags, username, packed_credentials, credentials, ref length).GetLastWin32Error();
+            error.ToNtException();
+            return Create(credentials);
         }
         #endregion
 

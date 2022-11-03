@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.Security.Credential
 {
@@ -33,9 +32,8 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// </summary>
         /// <param name="cred_type">The type of packed credentials.</param>
         /// <param name="credentials">The packed credentials structure.</param>
-        /// <param name="package_list">The list of supported security packages.</param>
-        public PackedCredentialUnknown(Guid cred_type, byte[] credentials, IEnumerable<uint> package_list = null)
-            : base(cred_type, credentials, package_list)
+        public PackedCredentialUnknown(Guid cred_type, byte[] credentials)
+            : base(cred_type, credentials)
         {
         }
     }
