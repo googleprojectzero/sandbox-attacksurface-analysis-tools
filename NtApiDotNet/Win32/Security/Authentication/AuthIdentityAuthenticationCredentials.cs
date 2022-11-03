@@ -21,6 +21,26 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet.Win32.Security.Authentication
 {
     /// <summary>
+    /// Options when creating an authentication identity credential.
+    /// </summary>
+    [Flags]
+    public enum AuthIdentityCreateOptions
+    {
+        /// <summary>
+        /// No options.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Use an identity level impersonation token.
+        /// </summary>
+        IdentityOnly = 1,
+        /// <summary>
+        /// Specify the credentials are for an identity provider.
+        /// </summary>
+        IdProvider = 2,
+    }
+
+    /// <summary>
     /// Auth identity credentials, wraps a marshalled SEC_WINNT_AUTH_IDENTITY_OPAQUE.
     /// </summary>
     /// <remarks>This maintains a natively allocations buffer which should be freeds after user.</remarks>
@@ -58,10 +78,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
             }
         }
 
+        private static SafeSecWinntAuthIdentityBuffer CopyAuthId(SafeBuffer auth_id)
+        {
+            SecurityNativeMethods.SspiCopyAuthIdentity(auth_id, out SafeSecWinntAuthIdentityBuffer copy).CheckResult();
+            return copy;
+        }
+
         private SafeSecWinntAuthIdentityBuffer CopyAuthId()
         {
-            SecurityNativeMethods.SspiCopyAuthIdentity(_auth_id, out SafeSecWinntAuthIdentityBuffer copy).CheckResult();
-            return copy;
+            return CopyAuthId(_auth_id);
         }
 
         private void SetFlags(SecWinNtAuthIdentityFlags flags, bool set_flag)
@@ -156,6 +181,70 @@ namespace NtApiDotNet.Win32.Security.Authentication
             error.ToNtException();
             return Create(credentials);
         }
+
+        /// <summary>
+        /// Create the credentials from packed credentials.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="domain">The domain name.</param>
+        /// <param name="packed_credentials">The packed credentials.</param>
+        /// <param name="encrypt_options">Options to encrypt the credentials.</param>
+        /// <param name="package_list">The package list in the credentials.</param>
+        /// <param name="options">Additional options for the created credentials.</param>
+        /// <returns>The authentication credentials.</returns>
+        public static AuthIdentityAuthenticationCredentials Create(string username, string domain, PackedCredential packed_credentials, 
+            AuthIdentityEncryptionOptions encrypt_options = AuthIdentityEncryptionOptions.None, string package_list = null, 
+            AuthIdentityCreateOptions options = AuthIdentityCreateOptions.None)
+        {
+            if (username is null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            if (packed_credentials is null)
+            {
+                throw new ArgumentNullException(nameof(packed_credentials));
+            }
+
+            bool encrypt = encrypt_options != AuthIdentityEncryptionOptions.None;
+
+            SecWinNtAuthIdentityFlags flags = SecWinNtAuthIdentityFlags.Unicode | SecWinNtAuthIdentityFlags.IdentityMarshalled;
+            if (encrypt)
+                flags |= SecWinNtAuthIdentityFlags.Reserved;
+            if (options.HasFlagSet(AuthIdentityCreateOptions.IdentityOnly))
+                flags |= SecWinNtAuthIdentityFlags.IdentityOnly;
+            if (options.HasFlagSet(AuthIdentityCreateOptions.IdProvider))
+                flags |= SecWinNtAuthIdentityFlags.IdProvider;
+
+            byte[] creds = packed_credentials.ToArray(encrypt);
+
+            int header_size = Marshal.SizeOf<SEC_WINNT_AUTH_IDENTITY_EX2>();
+
+            SEC_WINNT_AUTH_IDENTITY_EX2 auth_id = new SEC_WINNT_AUTH_IDENTITY_EX2
+            {
+                Version = SEC_WINNT_AUTH_IDENTITY_EX2.SEC_WINNT_AUTH_IDENTITY_VERSION_2,
+                cbHeaderLength = (ushort)header_size,
+                Flags = flags
+            };
+
+            var builder = auth_id.ToBuilder();
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserLength), username);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainLength), domain);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListLength), package_list);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsLength), creds);
+
+            using (var buffer = builder.ToBuffer())
+            {
+                var result = buffer.Result;
+                result.cbStructureLength = buffer.Length;
+                buffer.Result = result;
+
+                if (encrypt)
+                    SecurityNativeMethods.SspiEncryptAuthIdentityEx(encrypt_options, buffer).CheckResult();
+
+                return new AuthIdentityAuthenticationCredentials(CopyAuthId(buffer));
+            }
+        }
         #endregion
 
         #region Public Methods
@@ -221,6 +310,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public bool IsEncrypted => SecurityNativeMethods.SspiIsAuthIdentityEncrypted(_auth_id);
 
         /// <summary>
+        /// Get whether the credentials are for an ID provider.
+        /// </summary>
+        public bool IsIdProvider => _auth_id.Flags.HasFlagSet(SecWinNtAuthIdentityFlags.IdProvider);
+
+        /// <summary>
         /// Specify to only allow for an identity token.
         /// </summary>
         public bool IdentityOnly
@@ -252,6 +346,8 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             get
             {
+                if (IsEncrypted)
+                    return null;
                 if (!HasPackedCredential)
                     return _auth_id.Password;
                 if (PackedCredential is PackedCredentialPassword cred)

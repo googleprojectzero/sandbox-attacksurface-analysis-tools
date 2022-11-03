@@ -51,6 +51,11 @@ namespace NtApiDotNet.Utilities.Data
             Write((uint)(object)value);
         }
 
+        public void WriteByte(int value)
+        {
+            Write((byte)value);
+        }
+
         public byte[] ToArray()
         {
             if (BaseStream is MemoryStream stm)

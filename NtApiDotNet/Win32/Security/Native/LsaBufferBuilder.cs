@@ -94,6 +94,10 @@ namespace NtApiDotNet.Win32.Security.Native
                 {
                     entry.field.SetValue(_object, entry.GetPointer(buffer));
                 }
+                else if (entry.field.FieldType == typeof(uint))
+                {
+                    entry.field.SetValue(_object, (uint)entry.GetPointer(buffer).ToInt32());
+                }
             }
         }
 
@@ -135,7 +139,9 @@ namespace NtApiDotNet.Win32.Security.Native
         private FieldInfo GetUnicodeStringField(string name) => GetField<UnicodeStringOut>(name);
         private FieldInfo GetIntPtrField(string name) => GetField<IntPtr>(name);
         private FieldInfo GetInt32Field(string name) => GetField<int>(name);
+        private FieldInfo GetUInt32Field(string name) => GetField<uint>(name);
         private FieldInfo GetAnsiStringField(string name) => GetField<AnsiStringOut>(name);
+        private FieldInfo GetUInt16Field(string name) => GetField<ushort>(name);
 
         public void AddUnicodeString(string name, byte[] ba, bool relative = false)
         {
@@ -180,6 +186,30 @@ namespace NtApiDotNet.Win32.Security.Native
                 field = GetIntPtrField(ptr_name),
                 relative = relative
             });
+        }
+
+        public void AddRelativeBuffer(string ofs_name, string length_name, byte[] buffer)
+        {
+            if (buffer == null)
+                return;
+            int pos = GetCurrentPos();
+            _writer.Write(buffer);
+            GetUInt16Field(length_name).SetValue(_object, (ushort)buffer.Length);
+            _buffers.Add(new BufferEntry()
+            {
+                position = pos,
+                length = buffer.Length,
+                relative = true,
+                field = GetUInt32Field(ofs_name)
+            });
+        }
+
+        public void AddRelativeBuffer(string ofs_name, string length_name, string buffer)
+        {
+            if (buffer == null)
+                return;
+
+            AddRelativeBuffer(ofs_name, length_name, Encoding.Unicode.GetBytes(buffer));
         }
 
         public void AddAnsiString(string name, byte[] ba, bool relative = false)

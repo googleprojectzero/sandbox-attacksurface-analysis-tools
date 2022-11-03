@@ -557,6 +557,7 @@
     <Compile Include="Win32\Security\Authentication\AuthIdentityAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Authentication\AuthIdentityEncryptionOptions.cs" />
     <Compile Include="Win32\Security\Credential\PackedCredential.cs" />
+    <Compile Include="Win32\Security\Credential\PackedCredentialKeyTab.cs" />
     <Compile Include="Win32\Security\Credential\PackedCredentialPassword.cs" />
     <Compile Include="Win32\Security\Credential\PackedCredentialTypes.cs" />
     <Compile Include="Win32\Security\Credential\PackedCredentialUnknown.cs" />

@@ -17,7 +17,7 @@ using System.Text;
 namespace NtApiDotNet.Win32.Security.Credential
 {
     /// <summary>
-    /// Class to represent an password packed credentials structure.
+    /// Class to represent a password packed credentials structure.
     /// </summary>
     public sealed class PackedCredentialPassword : PackedCredential
     {

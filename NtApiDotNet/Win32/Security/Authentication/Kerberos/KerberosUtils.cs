@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Data;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -204,16 +205,47 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         }
 
         /// <summary>
+        /// Try and read keys from a MIT KeyTab byte array.
+        /// </summary>
+        /// <param name="keytab">The key tab bytes.</param>
+        /// <param name="keys">The parsed keys.</param>
+        /// <returns>True if the parse was successful.</returns>
+        public static bool TryReadKeyTabFile(byte[] keytab, out IEnumerable<KerberosAuthenticationKey> keys)
+        {
+            keys = null;
+            try
+            {
+                MemoryStream stm = new MemoryStream(keytab);
+                keys = ReadKeyTabFile(stm);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Write keys to a MIT KeyTab file.
         /// </summary>
         /// <param name="stream">The file stream.</param>
         /// <param name="keys">List of key entries.</param>
         public static void WriteKeyTabFile(Stream stream, IEnumerable<KerberosAuthenticationKey> keys)
         {
-            using (var writer = new BinaryWriter(stream))
+            if (stream is null)
             {
-                writer.Write((byte)5);
-                writer.Write((byte)2);
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            if (keys is null)
+            {
+                throw new ArgumentNullException(nameof(keys));
+            }
+
+            using (var writer = new DataWriter(stream))
+            {
+                writer.WriteByte(5);
+                writer.WriteByte(2);
                 foreach (var entry in keys)
                 {
                     byte[] data = SerializeEntry(entry);

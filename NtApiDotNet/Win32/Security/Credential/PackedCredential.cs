@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Native;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -40,27 +42,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// <returns>The packed credentials.</returns>
         public byte[] ToArray()
         {
-            ushort header_size = (ushort)Marshal.SizeOf<SEC_WINNT_AUTH_PACKED_CREDENTIALS>();
-            SEC_WINNT_AUTH_PACKED_CREDENTIALS packed = new SEC_WINNT_AUTH_PACKED_CREDENTIALS
-            {
-                cbHeaderLength = header_size,
-                cbStructureLength = (ushort)(header_size + _credentials.Length),
-                AuthData = new SEC_WINNT_AUTH_DATA
-                {
-                    CredType = CredType,
-                    CredData = new SEC_WINNT_AUTH_BYTE_VECTOR
-                    {
-                        ByteArrayLength = (ushort)_credentials.Length,
-                        ByteArrayOffset = header_size
-                    }
-                }
-            };
-
-            using (var buffer = packed.ToBuffer(_credentials.Length, true))
-            {
-                buffer.Data.WriteBytes(_credentials);
-                return buffer.ToArray();
-            }
+            return ToArray(false);
         }
 
         /// <summary>
@@ -83,13 +65,19 @@ namespace NtApiDotNet.Win32.Security.Credential
             using (var buffer = data.ToBuffer())
             {
                 var cred = buffer.Read<SEC_WINNT_AUTH_PACKED_CREDENTIALS>(0);
+                byte[] cred_data = cred.AuthData.CredData.ReadBytes(buffer);
                 if (cred.AuthData.CredType == PackedCredentialTypes.Password)
                 {
-                    packed_credential = new PackedCredentialPassword(cred.AuthData.CredData.ReadBytes(buffer));
+                    packed_credential = new PackedCredentialPassword(cred_data);
+                }
+                else if (cred.AuthData.CredType == PackedCredentialTypes.KeyTab && 
+                    KerberosUtils.TryReadKeyTabFile(cred_data, out IEnumerable<KerberosAuthenticationKey> keys))
+                {
+                    packed_credential = new PackedCredentialKeyTab(cred_data, keys);
                 }
                 else
                 {
-                    packed_credential = new PackedCredentialUnknown(cred.AuthData.CredType, cred.AuthData.CredData.ReadBytes(buffer));
+                    packed_credential = new PackedCredentialUnknown(cred.AuthData.CredType, cred_data);
                 }
                 return true;
             }
@@ -117,5 +105,40 @@ namespace NtApiDotNet.Win32.Security.Credential
             CredType = cred_type;
             _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
         }
+
+        internal byte[] ToArray(bool pad_for_encryption)
+        {
+            ushort header_size = (ushort)Marshal.SizeOf<SEC_WINNT_AUTH_PACKED_CREDENTIALS>();
+            int total_size = header_size + _credentials.Length;
+            if ((total_size & 0x7) != 0)
+                total_size += 8 - (total_size & 0x7);
+            if (pad_for_encryption)
+                total_size += 8;
+
+            int padding = total_size - header_size - _credentials.Length;
+
+            SEC_WINNT_AUTH_PACKED_CREDENTIALS packed = new SEC_WINNT_AUTH_PACKED_CREDENTIALS
+            {
+                cbHeaderLength = header_size,
+                cbStructureLength = (ushort)(header_size + _credentials.Length),
+                AuthData = new SEC_WINNT_AUTH_DATA
+                {
+                    CredType = CredType,
+                    CredData = new SEC_WINNT_AUTH_BYTE_VECTOR
+                    {
+                        ByteArrayLength = (ushort)_credentials.Length,
+                        ByteArrayOffset = header_size
+                    }
+                }
+            };
+
+            using (var buffer = packed.ToBuffer(_credentials.Length + padding, true))
+            {
+                buffer.Data.ZeroBuffer();
+                buffer.Data.WriteBytes(_credentials);
+                return buffer.ToArray();
+            }
+        }
+
     }
 }

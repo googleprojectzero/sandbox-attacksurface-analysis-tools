@@ -13,9 +13,11 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Reflection;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
+    [Flags]
     internal enum SecWinNtAuthIdentityFlags
     {
         [SDKName("SEC_WINNT_AUTH_IDENTITY_ANSI")]
