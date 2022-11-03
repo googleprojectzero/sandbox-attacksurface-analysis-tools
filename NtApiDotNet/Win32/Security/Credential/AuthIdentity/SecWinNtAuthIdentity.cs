@@ -39,48 +39,8 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 
             internal override SafeBuffer ToBuffer(DisposableList list, string package)
             {
-                return UnmarshalAuthId(_auth_id);
+                return SafeSecWinNtAuthIdentityBuffer.Unmarshal(_auth_id);
             }
-        }
-
-        private static SafeSecWinNtAuthIdentityBuffer UnmarshalAuthId(byte[] auth_id)
-        {
-            if (auth_id is null)
-            {
-                throw new ArgumentNullException(nameof(auth_id));
-            }
-
-            SecurityNativeMethods.SspiUnmarshalAuthIdentity(auth_id.Length,
-                auth_id, out SafeSecWinNtAuthIdentityBuffer ret).CheckResult();
-            return ret;
-        }
-
-        private static byte[] MarshalAuthId(SafeSecWinNtAuthIdentityBuffer auth_id)
-        {
-            if (auth_id is null || auth_id.IsInvalid)
-            {
-                throw new ArgumentNullException(nameof(auth_id));
-            }
-
-            using (var list = new DisposableList())
-            {
-                SecurityNativeMethods.SspiMarshalAuthIdentity(auth_id,
-                    out int length, out SafeLocalAllocBuffer buffer).CheckResult();
-                list.AddResource(buffer);
-                buffer.Initialize((ulong)length);
-                return BufferUtils.ReadBytes(buffer, 0, length);
-            }
-        }
-
-        private static SafeSecWinNtAuthIdentityBuffer CopyAuthId(SafeBuffer auth_id)
-        {
-            SecurityNativeMethods.SspiCopyAuthIdentity(auth_id, out SafeSecWinNtAuthIdentityBuffer copy).CheckResult();
-            return copy;
-        }
-
-        private SafeSecWinNtAuthIdentityBuffer CopyAuthId()
-        {
-            return CopyAuthId(_auth_id);
         }
 
         private void SetFlags(SecWinNtAuthIdentityFlags flags, bool set_flag)
@@ -108,7 +68,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         /// <returns>The authentication credentials.</returns>
         public static SecWinNtAuthIdentity Create(byte[] marshaled_auth_identity)
         {
-            return new SecWinNtAuthIdentity(UnmarshalAuthId(marshaled_auth_identity));
+            return new SecWinNtAuthIdentity(SafeSecWinNtAuthIdentityBuffer.Unmarshal(marshaled_auth_identity));
         }
 
         /// <summary>
@@ -123,42 +83,6 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
             SecurityNativeMethods.SspiEncodeStringsAsAuthIdentity(username, domain,
                 packed_credentials, out SafeSecWinNtAuthIdentityBuffer auth_id).CheckResult();
             return new SecWinNtAuthIdentity(auth_id);
-        }
-
-        /// <summary>
-        /// Create the credentials from packed credentials.
-        /// </summary>
-        /// <param name="username">The username.</param>
-        /// <param name="domain">The domain name.</param>
-        /// <param name="packed_credentials">The packed credentials. Can be a password or a packed credentials.</param>
-        /// <param name="encrypt">Specify to encrypt the credentials.</param>
-        /// <returns>The authentication credentials.</returns>
-        public static SecWinNtAuthIdentity Create(string username, string domain, string packed_credentials, bool encrypt)
-        {
-            if (string.IsNullOrEmpty(username))
-            {
-                throw new ArgumentException($"'{nameof(username)}' cannot be null or empty.", nameof(username));
-            }
-
-            if (!string.IsNullOrEmpty(domain))
-            {
-                username = $@"{domain}\{username}";
-            }
-
-            int length = 0;
-            CredPackAuthenticationBufferFlags flags = CredPackAuthenticationBufferFlags.CRED_PACK_ID_PROVIDER_CREDENTIALS;
-            if (encrypt)
-                flags |= CredPackAuthenticationBufferFlags.CRED_PACK_PROTECTED_CREDENTIALS;
-
-            var error = SecurityNativeMethods.CredPackAuthenticationBufferW(
-                flags, username, packed_credentials, null, ref length).GetLastWin32Error();
-            if (error != Win32Error.ERROR_INSUFFICIENT_BUFFER)
-                error.ToNtException();
-            byte[] credentials = new byte[length];
-            error = SecurityNativeMethods.CredPackAuthenticationBufferW(
-                flags, username, packed_credentials, credentials, ref length).GetLastWin32Error();
-            error.ToNtException();
-            return Create(credentials);
         }
 
         /// <summary>
@@ -206,10 +130,14 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
             };
 
             var builder = auth_id.ToBuilder();
-            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserLength), username);
-            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainLength), domain);
-            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListLength), package_list);
-            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsOffset), nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsLength), creds);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserOffset), 
+                nameof(SEC_WINNT_AUTH_IDENTITY_EX2.UserLength), username);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainOffset), 
+                nameof(SEC_WINNT_AUTH_IDENTITY_EX2.DomainLength), domain);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListOffset), 
+                nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackageListLength), package_list);
+            builder.AddRelativeBuffer(nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsOffset), 
+                nameof(SEC_WINNT_AUTH_IDENTITY_EX2.PackedCredentialsLength), creds);
 
             using (var buffer = builder.ToBuffer())
             {
@@ -220,7 +148,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
                 if (encrypt)
                     SecurityNativeMethods.SspiEncryptAuthIdentityEx(encrypt_options, buffer).CheckResult();
 
-                return new SecWinNtAuthIdentity(CopyAuthId(buffer));
+                return new SecWinNtAuthIdentity(SafeSecWinNtAuthIdentityBuffer.Copy(buffer));
             }
         }
         #endregion
@@ -232,7 +160,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         /// <returns></returns>
         public SecWinNtAuthIdentity Copy()
         {
-            return new SecWinNtAuthIdentity(CopyAuthId());
+            return new SecWinNtAuthIdentity(_auth_id.Copy());
         }
 
         /// <summary>
@@ -252,7 +180,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         /// <returns>The credentials as a byte array.</returns>
         public byte[] ToArray()
         {
-            return MarshalAuthId(_auth_id);
+            return _auth_id.MarshalToArray();
         }
 
         /// <summary>
@@ -340,6 +268,26 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         /// The package list in the credentials.
         /// </summary>
         public string PackageList => _auth_id.PackageList;
+
+        /// <summary>
+        /// Get the type of authentication identity buffer.
+        /// </summary>
+        public SecWinNtAuthIdentityType AuthType
+        {
+            get
+            {
+                bool unicode = _auth_id.Flags.HasFlagSet(SecWinNtAuthIdentityFlags.Unicode);
+                if (_auth_id.AuthType == typeof(SEC_WINNT_AUTH_IDENTITY_EX))
+                {
+                    return unicode ? SecWinNtAuthIdentityType.UnicodeEx : SecWinNtAuthIdentityType.AnsiEx;
+                }
+                if (_auth_id.AuthType == typeof(SEC_WINNT_AUTH_IDENTITY_EX2))
+                {
+                    return unicode ? SecWinNtAuthIdentityType.UnicodeEx2 : SecWinNtAuthIdentityType.AnsiEx2;
+                }
+                return unicode ? SecWinNtAuthIdentityType.Unicode : SecWinNtAuthIdentityType.Ansi;
+            }
+        }
 
         /// <summary>
         /// Get the packed credentials for the auth identity.

@@ -129,6 +129,51 @@ namespace NtApiDotNet.Win32.SafeHandles
         {
         }
 
+        public static SafeSecWinNtAuthIdentityBuffer Unmarshal(byte[] auth_id)
+        {
+            if (auth_id is null)
+            {
+                throw new ArgumentNullException(nameof(auth_id));
+            }
+
+            SecurityNativeMethods.SspiUnmarshalAuthIdentity(auth_id.Length,
+                auth_id, out SafeSecWinNtAuthIdentityBuffer ret).CheckResult();
+            return ret;
+        }
+
+        public static byte[] MarshalToArray(SafeSecWinNtAuthIdentityBuffer auth_id)
+        {
+            if (auth_id is null || auth_id.IsInvalid)
+            {
+                throw new ArgumentNullException(nameof(auth_id));
+            }
+
+            using (var list = new DisposableList())
+            {
+                SecurityNativeMethods.SspiMarshalAuthIdentity(auth_id,
+                    out int length, out SafeLocalAllocBuffer buffer).CheckResult();
+                list.AddResource(buffer);
+                buffer.Initialize((ulong)length);
+                return BufferUtils.ReadBytes(buffer, 0, length);
+            }
+        }
+
+        public byte[] MarshalToArray()
+        {
+            return MarshalToArray(this);
+        }
+
+        public static SafeSecWinNtAuthIdentityBuffer Copy(SafeBuffer auth_id)
+        {
+            SecurityNativeMethods.SspiCopyAuthIdentity(auth_id, out SafeSecWinNtAuthIdentityBuffer copy).CheckResult();
+            return copy;
+        }
+
+        public SafeSecWinNtAuthIdentityBuffer Copy()
+        {
+            return Copy(this);
+        }
+
         public SecWinNtAuthIdentityFlags Flags
         {
             get => (SecWinNtAuthIdentityFlags)Read<int>(GetFlagsOffset());
