@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
@@ -40,6 +41,30 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
             internal override SafeBuffer ToBuffer(DisposableList list, string package)
             {
                 return SafeSecWinNtAuthIdentityBuffer.Unmarshal(_auth_id);
+            }
+        }
+
+        private class SecWinNtAuthIdentityLsaLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
+        {
+            private readonly byte[] _auth_id;
+            private readonly string _package;
+
+            public SecWinNtAuthIdentityLsaLogonCredentials(string package, byte[] auth_id)
+            {
+                _package = package;
+                _auth_id = auth_id;
+            }
+
+            string ILsaLogonCredentials.AuthenticationPackage => _package;
+
+            byte[] ILsaLogonCredentialsSerializable.ToArray()
+            {
+                return (byte[])_auth_id.Clone();
+            }
+
+            SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+            {
+                return _auth_id.ToBuffer();
             }
         }
 
@@ -110,8 +135,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
             }
 
             bool encrypt = encrypt_options != 0;
-
-            SecWinNtAuthIdentityFlags flags = SecWinNtAuthIdentityFlags.Unicode | SecWinNtAuthIdentityFlags.IdentityMarshalled;
+            SecWinNtAuthIdentityFlags flags = SecWinNtAuthIdentityFlags.IdentityMarshalled | SecWinNtAuthIdentityFlags.Unicode;
             if (encrypt)
                 flags |= SecWinNtAuthIdentityFlags.Reserved;
             if (options.HasFlagSet(SecWinNtAuthIdentityCreateOptions.IdentityOnly))
@@ -199,6 +223,20 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         public AuthenticationCredentials ToAuthenticationCredentials()
         {
             return new SecWinNtAuthIdentityAuthenticationCredentials(ToArray());
+        }
+
+        /// <summary>
+        /// Convert to LSA logon credentials.
+        /// </summary>
+        /// <returns>The LSA logon credentials.</returns>
+        public ILsaLogonCredentials ToLsaLogonCredentials(string package = AuthenticationPackage.NEGOSSP_NAME)
+        {
+            if (package is null)
+            {
+                throw new ArgumentNullException(nameof(package));
+            }
+
+            return new SecWinNtAuthIdentityLsaLogonCredentials(package, ToArray());
         }
 
         /// <summary>
