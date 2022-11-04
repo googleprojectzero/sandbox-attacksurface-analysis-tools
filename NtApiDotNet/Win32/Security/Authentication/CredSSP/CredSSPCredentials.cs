@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
     public sealed class CredSSPCredentials : AuthenticationCredentials
     {
         private readonly SchannelCredentials _schannel;
-        private readonly UserCredentials _user;
+        private readonly AuthenticationCredentials _user;
         private readonly bool _redirect;
 
         /// <summary>
@@ -35,10 +35,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
         /// <param name="schannel">The credentials for the Schannel connection.</param>
         /// <param name="user">The credentials for the user.</param>
         /// <param name="redirect">Indicates that the credentials should be redirected.</param>
-        public CredSSPCredentials(SchannelCredentials schannel, UserCredentials user, bool redirect)
+        public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials user, bool redirect)
         {
-            _schannel = schannel;
-            _user = user;
+            _schannel = schannel ?? throw new ArgumentNullException(nameof(schannel));
+            _user = user ?? throw new ArgumentNullException(nameof(user));
             _redirect = redirect;
         }
 
@@ -47,24 +47,16 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
         /// </summary>
         /// <param name="schannel">The credentials for the Schannel connection.</param>
         /// <param name="credentials">The credentials for the user.</param>
-        public CredSSPCredentials(SchannelCredentials schannel, UserCredentials credentials) : this(schannel, credentials, false)
+        public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials credentials) 
+            : this(schannel, credentials, false)
         {
-            if (schannel is null)
-            {
-                throw new ArgumentNullException(nameof(schannel));
-            }
-
-            if (credentials is null)
-            {
-                throw new ArgumentNullException(nameof(credentials));
-            }
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="credentials">The credentials for the user.</param>
-        public CredSSPCredentials(UserCredentials credentials)
+        public CredSSPCredentials(AuthenticationCredentials credentials)
         {
             _user = credentials ?? throw new ArgumentNullException(nameof(credentials));
         }
