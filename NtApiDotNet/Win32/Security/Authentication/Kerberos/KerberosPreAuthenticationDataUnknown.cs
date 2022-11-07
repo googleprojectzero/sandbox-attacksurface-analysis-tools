@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="data">The data for the preauthentication.</param>
         public KerberosPreAuthenticationDataUnknown(KerberosPreAuthenticationType type, byte[] data) : base(type)
         {
-            Data = (byte[])data.Clone();
+            Data = data.CloneBytes();
         }
 
         private protected override byte[] GetData()

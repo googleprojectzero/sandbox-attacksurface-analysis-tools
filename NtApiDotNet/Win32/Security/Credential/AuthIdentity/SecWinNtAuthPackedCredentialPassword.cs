@@ -29,7 +29,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         /// <summary>
         /// The password as raw bytes.
         /// </summary>
-        public byte[] PasswordBytes => (byte[])_credentials.Clone();
+        public byte[] PasswordBytes => _credentials.CloneBytes();
 
         /// <summary>
         /// Constructor

@@ -132,7 +132,7 @@ namespace NtApiDotNet.Utilities.ASN1.Parser
         /// <summary>
         /// Get the ASN1 object's data.
         /// </summary>
-        public byte[] Data => Constructed ? Array.Empty<byte>() : (byte[])_data.Clone();
+        public byte[] Data => Constructed ? Array.Empty<byte>() : _data.CloneBytes();
 
         /// <summary>
         /// The parent object.

@@ -1185,7 +1185,7 @@ namespace NtApiDotNet.Win32
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
         internal static extern NtStatus GetAppContainerFolderPath(
           string pszAppContainerSid,
-          out SafeCoTaskMemHandle ppszPath
+          out SafeCoTaskMemBuffer ppszPath
         );
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]

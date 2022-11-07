@@ -55,7 +55,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (byte[])_value.Clone();
+                return _value.CloneBytes();
             }
         }
 
@@ -80,7 +80,7 @@ namespace NtApiDotNet
                     "Authority must be 6 bytes in size");
             }
 
-            _value = (byte[])authority.Clone();
+            _value = authority.CloneBytes();
         }
 
         /// <summary>

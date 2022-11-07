@@ -40,7 +40,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
                 throw new ArgumentNullException(nameof(security_context));
             }
 
-            SecurityContext = (byte[])security_context.Clone();
+            SecurityContext = security_context.CloneBytes();
         }
 
         private protected override void FormatData(StringBuilder builder)
@@ -67,7 +67,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             return new KerberosAuthorizationDataKerbLocalBuilder()
             {
-                SecurityContext = (byte[])SecurityContext.Clone()
+                SecurityContext = SecurityContext.CloneBytes()
             };
         }
     }

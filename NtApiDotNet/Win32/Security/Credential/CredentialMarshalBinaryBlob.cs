@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         {
             if (blob is null)
                 throw new ArgumentNullException(nameof(blob));
-            Blob = (byte[])blob.Clone();
+            Blob = blob.CloneBytes();
         }
 
         internal override SafeBuffer ToBuffer()

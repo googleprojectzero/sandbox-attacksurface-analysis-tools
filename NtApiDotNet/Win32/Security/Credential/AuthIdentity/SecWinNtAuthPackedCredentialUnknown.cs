@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// The credentials data.
         /// </summary>
         /// <remarks>Changing the data </remarks>
-        public byte[] Credentials => (byte[])_credentials.Clone();
+        public byte[] Credentials => _credentials.CloneBytes();
 
         /// <summary>
         /// Constructor.

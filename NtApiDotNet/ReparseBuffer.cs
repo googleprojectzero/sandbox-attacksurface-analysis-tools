@@ -308,7 +308,12 @@ namespace NtApiDotNet
         /// <param name="data">Additional reparse data.</param>
         public GenericReparseBuffer(uint tag, Guid guid, byte[] data) : base((ReparseTag)tag)
         {
-            Data = (byte[])data.Clone();
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            Data = data.CloneBytes();
             Guid = guid;
         }
 
@@ -320,7 +325,12 @@ namespace NtApiDotNet
         /// <param name="data">Additional reparse data.</param>
         public GenericReparseBuffer(ReparseTag tag, Guid guid, byte[] data) : base(tag)
         {
-            Data = (byte[])data.Clone();
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            Data = data.CloneBytes();
             Guid = guid;
         }
 
@@ -374,7 +384,12 @@ namespace NtApiDotNet
         /// <param name="data">The opaque data blob.</param>
         public OpaqueReparseBuffer(ReparseTag tag, byte[] data) : base(tag)
         {
-            Data = (byte[])data.Clone();
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            Data = data.CloneBytes();
         }
 
         internal OpaqueReparseBuffer(ReparseTag tag) : base(tag)

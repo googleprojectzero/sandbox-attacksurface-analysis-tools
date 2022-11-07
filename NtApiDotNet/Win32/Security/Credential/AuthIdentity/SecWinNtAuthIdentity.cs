@@ -59,7 +59,7 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
 
             byte[] ILsaLogonCredentialsSerializable.ToArray()
             {
-                return (byte[])_auth_id.Clone();
+                return _auth_id.CloneBytes();
             }
 
             SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)

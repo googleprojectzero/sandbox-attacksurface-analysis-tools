@@ -33,7 +33,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The optional salt for the encryption type.
         /// </summary>
-        public byte[] Salt => (byte[])_salt?.Clone();
+        public byte[] Salt => _salt?.CloneBytes();
 
         /// <summary>
         /// Constructor.
@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         public KerberosEncryptionTypeInfoEntry(KerberosEncryptionType encryption_type, byte[] salt = null)
         {
             EncryptionType = encryption_type;
-            _salt = (byte[])salt?.Clone();
+            _salt = salt?.CloneBytes();
         }
 
         internal static KerberosEncryptionTypeInfoEntry Parse(DERValue value)

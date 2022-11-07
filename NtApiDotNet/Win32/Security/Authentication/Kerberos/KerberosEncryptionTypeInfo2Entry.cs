@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The optional string to key parameters.
         /// </summary>
-        public byte[] StringToKeyParameters => (byte[])_s2k_params?.Clone();
+        public byte[] StringToKeyParameters => _s2k_params?.CloneBytes();
 
         /// <summary>
         /// Constructor.
@@ -50,7 +50,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             EncryptionType = encryption_type;
             Salt = salt;
-            _s2k_params = (byte[])string_to_key_params?.Clone();
+            _s2k_params = string_to_key_params?.CloneBytes();
         }
 
         internal static KerberosEncryptionTypeInfo2Entry Parse(DERValue value)

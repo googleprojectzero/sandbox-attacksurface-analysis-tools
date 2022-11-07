@@ -74,7 +74,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
             Flags = flags;
             IntegrityLevel = integrity_level;
-            MachineId = (byte[])machine_id.Clone();
+            MachineId = machine_id.CloneBytes();
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 Flags = Flags,
                 IntegrityLevel = IntegrityLevel,
-                MachineId = (byte[])MachineId.Clone()
+                MachineId = MachineId.CloneBytes()
             };
         }
 

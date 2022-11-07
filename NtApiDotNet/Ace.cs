@@ -455,11 +455,8 @@ namespace NtApiDotNet
         /// <returns>The cloned ACE.</returns>
         public Ace Clone()
         {
-            Ace ace = (Ace)this.MemberwiseClone();
-            if (ace.ApplicationData != null)
-            {
-                ace.ApplicationData = (byte[])ace.ApplicationData.Clone();
-            }
+            Ace ace = (Ace)MemberwiseClone();
+            ace.ApplicationData = ace.ApplicationData?.CloneBytes();
             return ace;
         }
 

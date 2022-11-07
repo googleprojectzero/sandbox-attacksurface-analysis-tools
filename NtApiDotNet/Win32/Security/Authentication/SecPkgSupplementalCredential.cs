@@ -32,7 +32,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <summary>
         /// The list of credentials.
         /// </summary>
-        public byte[] Credentials => (byte[])_credentials.Clone();
+        public byte[] Credentials => _credentials.CloneBytes();
 
         /// <summary>
         /// Parse the credentials for the NTLM OWF hash.

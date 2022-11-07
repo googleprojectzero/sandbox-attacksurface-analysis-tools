@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Image
         /// <returns>The resource as a byte array.</returns>
         public byte[] ToArray()
         {
-            return _data == null ? throw new InvalidOperationException("Resource data wasn't loaded.") : (byte[])_data.Clone();
+            return _data == null ? throw new InvalidOperationException("Resource data wasn't loaded.") : _data.CloneBytes();
         }
 
         internal ImageResource(string name, ImageResourceType type, byte[] data)

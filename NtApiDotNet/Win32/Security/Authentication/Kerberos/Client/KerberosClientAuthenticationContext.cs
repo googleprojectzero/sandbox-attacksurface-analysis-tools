@@ -751,7 +751,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
 
         public long Expiry => long.MaxValue;
 
-        public byte[] SessionKey => Done ? (byte[])_subkey.Key.Clone() : throw new InvalidOperationException("Security context not completed.");
+        public byte[] SessionKey => Done ? _subkey.Key.CloneBytes() : throw new InvalidOperationException("Security context not completed.");
 
         public string PackageName => AuthenticationPackage.KERBEROS_NAME;
 

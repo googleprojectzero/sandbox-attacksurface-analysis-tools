@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// <summary>
         /// Credential blob.
         /// </summary>
-        public byte[] CredentialBlob => (byte[])_credblob.Clone();
+        public byte[] CredentialBlob => _credblob.CloneBytes();
         /// <summary>
         /// Credential as a string, if available.
         /// </summary>

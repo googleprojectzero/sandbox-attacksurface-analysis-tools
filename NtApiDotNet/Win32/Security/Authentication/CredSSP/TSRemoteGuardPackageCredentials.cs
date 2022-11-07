@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
             }
 
             PackageName = package_name;
-            CredBuffer = (byte[])cred_buffer.Clone();
+            CredBuffer = cred_buffer.CloneBytes();
         }
 
         /// <summary>

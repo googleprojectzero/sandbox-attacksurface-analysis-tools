@@ -59,8 +59,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
             NtlmChallengeAuthenticationTokenBuilder builder = new NtlmChallengeAuthenticationTokenBuilder
             {
                 Flags = Flags,
-                ServerChallenge = (byte[])ServerChallenge.Clone(),
-                Reserved = (byte[])Reserved.Clone(),
+                ServerChallenge = ServerChallenge.CloneBytes(),
+                Reserved = Reserved.CloneBytes(),
                 TargetName = TargetName,
                 Version = Version
             };

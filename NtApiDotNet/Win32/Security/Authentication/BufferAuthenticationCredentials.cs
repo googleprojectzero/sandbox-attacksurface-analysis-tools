@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="buffer">The buffer for the credentials.</param>
         public BufferAuthenticationCredentials(byte[] buffer)
         {
-            _buffer = (byte[])buffer?.Clone() ?? throw new ArgumentNullException(nameof(buffer));
+            _buffer = buffer?.CloneBytes() ?? throw new ArgumentNullException(nameof(buffer));
         }
 
         /// <summary>

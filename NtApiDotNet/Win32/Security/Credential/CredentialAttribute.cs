@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         /// <summary>
         /// Attribute value.
         /// </summary>
-        public byte[] Value => (byte[])_value.Clone();
+        public byte[] Value => _value.CloneBytes();
 
         /// <summary>
         /// Overridden ToString method.

@@ -293,8 +293,13 @@ namespace NtApiDotNet
         /// <param name="encoding">Specify a text encoding for the DataString property.</param>
         public AlpcMessageRaw(byte[] data, int allocated_data_length, Encoding encoding)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
             Encoding = encoding;
-            _data = (byte[])data.Clone();
+            _data = data.CloneBytes();
             UpdateHeaderLength(_data.Length, allocated_data_length);
         }
 

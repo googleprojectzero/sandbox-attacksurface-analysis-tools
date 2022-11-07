@@ -36,7 +36,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <summary>
         /// The key.
         /// </summary>
-        public byte[] Key => (byte[])_key.Clone();
+        public byte[] Key => _key.CloneBytes();
 
         /// <summary>
         /// The key name type.
@@ -392,7 +392,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
 
         internal KerberosAuthenticationKey CloneWithName(KerberosPrincipalName name, string realm)
         {
-            return new KerberosAuthenticationKey(KeyEncryption, (byte[])_key.Clone(), realm, name, DateTime.Now, Version); 
+            return new KerberosAuthenticationKey(KeyEncryption, _key.CloneBytes(), realm, name, DateTime.Now, Version); 
         }
 
         void IDERObject.Write(DERBuilder builder)

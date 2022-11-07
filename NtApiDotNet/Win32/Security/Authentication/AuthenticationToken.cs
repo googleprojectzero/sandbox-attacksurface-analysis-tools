@@ -57,7 +57,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <returns>The byte array.</returns>
         public virtual byte[] ToArray()
         {
-            return (byte[])_data.Clone();
+            return _data.CloneBytes();
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// <param name="data">The authentication token data.</param>
         public AuthenticationToken(byte[] data)
         {
-            _data = (byte[])data.Clone();
+            _data = data.CloneBytes();
         }
 
         /// <summary>

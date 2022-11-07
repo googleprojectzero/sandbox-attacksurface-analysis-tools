@@ -38,7 +38,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
                 throw new ArgumentNullException(nameof(freshness_token));
             }
 
-            FreshnessToken = (byte[])freshness_token.Clone();
+            FreshnessToken = freshness_token.CloneBytes();
         }
 
         private protected override byte[] GetData()

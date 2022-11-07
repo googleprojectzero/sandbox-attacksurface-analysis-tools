@@ -753,7 +753,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (array.Length != actual_count)
             {
-                array = (byte[])array.Clone();
+                array = array.CloneBytes();
                 Array.Resize(ref array, actual_count);
             }
             _writer.Write(array);

@@ -69,7 +69,7 @@ namespace NtApiDotNet.Net.Smb2
             if (!SigningEnabled)
                 return true;
 
-            byte[] to_hash = (byte[])data.Clone();
+            byte[] to_hash = data.CloneBytes();
             SetHash(to_hash, new byte[HASH_SIZE]);
             HMACSHA256 alg = new HMACSHA256(_session_key);
             byte[] hash = new byte[HASH_SIZE];

@@ -495,7 +495,7 @@ namespace NtApiDotNet.Win32
 
             if (SafeOpenPromptOriginClaim != null)
             {
-                var bytes = (byte[])SafeOpenPromptOriginClaim.Clone();
+                var bytes = SafeOpenPromptOriginClaim.CloneBytes();
                 Array.Resize(ref bytes, 524);
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeSafeOpenPromptOriginClaim, bytes);
             }

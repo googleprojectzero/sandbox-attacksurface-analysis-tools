@@ -47,7 +47,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
         /// <summary>
         /// The password an NT hash.
         /// </summary>
-        public byte[] NtHash { get => (byte[])_nthash.Clone(); set => SetNtHash(value); }
+        public byte[] NtHash { get => _nthash.CloneBytes(); set => SetNtHash(value); }
         #endregion
 
         #region Public Methods

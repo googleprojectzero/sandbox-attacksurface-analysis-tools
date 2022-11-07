@@ -58,7 +58,7 @@ namespace NtApiDotNet
 
         internal EaBufferEntry Clone()
         {
-            return new EaBufferEntry(Name, (byte[])Data.Clone(), Flags);
+            return new EaBufferEntry(Name, Data.CloneBytes(), Flags);
         }
 
         /// <summary>
@@ -237,7 +237,7 @@ namespace NtApiDotNet
 
         private void AddEntry(string name, byte[] data, EaBufferEntryFlags flags, bool clone)
         {
-            _buffers.Add(new EaBufferEntry(name, clone ? (byte[])data.Clone() : data, flags));
+            _buffers.Add(new EaBufferEntry(name, clone ? data.CloneBytes() : data, flags));
         }
 
         /// <summary>

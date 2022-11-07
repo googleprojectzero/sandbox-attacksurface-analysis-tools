@@ -35,7 +35,7 @@ namespace NtApiDotNet.Win32.Security.Credential
         {
             CERT_CREDENTIAL_INFO cred = new CERT_CREDENTIAL_INFO();
             cred.cbSize = Marshal.SizeOf(cred);
-            cred.rgbHashOfCert = (byte[])HashOfCert.Clone();
+            cred.rgbHashOfCert = HashOfCert.CloneBytes();
             Array.Resize(ref cred.rgbHashOfCert, CERT_HASH_LENGTH);
             return cred.ToBuffer();
         }
@@ -59,7 +59,7 @@ namespace NtApiDotNet.Win32.Security.Credential
                 throw new ArgumentNullException(nameof(hash_of_cert));
             if (hash_of_cert.Length != CERT_HASH_LENGTH)
                 throw new ArgumentException($"Hash length must be {CERT_HASH_LENGTH} bytes.", nameof(hash_of_cert));
-            HashOfCert = (byte[])hash_of_cert.Clone();
+            HashOfCert = hash_of_cert.CloneBytes();
         }
 
         internal CredentialMarshalCertificate(CERT_CREDENTIAL_INFO info) : base(CredMarshalType.CertCredential)

@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
             Aes encrypt = new AesManaged();
             encrypt.Mode = CipherMode.ECB;
 
-            folded_key = (byte[])folded_key.Clone();
+            folded_key = folded_key.CloneBytes();
 
             byte[] ret = new byte[base_key.Length];
             var transform = encrypt.CreateEncryptor(base_key, new byte[16]);

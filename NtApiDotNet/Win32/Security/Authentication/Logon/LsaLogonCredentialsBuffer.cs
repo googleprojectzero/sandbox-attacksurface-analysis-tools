@@ -36,14 +36,14 @@ namespace NtApiDotNet.Win32.Security.Authentication.Logon
                 throw new System.ArgumentException($"'{nameof(auth_package)}' cannot be null or empty.", nameof(auth_package));
             }
 
-            _data = (byte[])data.Clone();
+            _data = data.CloneBytes();
             _auth_package = auth_package;
         }
 
         /// <summary>
         /// The credentials data.
         /// </summary>
-        public byte[] Data => (byte[])_data.Clone();
+        public byte[] Data => _data.CloneBytes();
 
         string ILsaLogonCredentials.AuthenticationPackage => _auth_package;
 

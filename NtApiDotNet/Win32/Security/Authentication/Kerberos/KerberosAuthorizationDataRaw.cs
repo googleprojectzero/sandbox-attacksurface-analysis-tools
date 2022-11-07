@@ -29,7 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <param name="data">The raw data for the entry.</param>
         public KerberosAuthorizationDataRaw(KerberosAuthorizationDataType type, byte[] data) : base(type)
         {
-            Data = (byte[])data.Clone();
+            Data = data.CloneBytes();
         }
 
         /// <summary>

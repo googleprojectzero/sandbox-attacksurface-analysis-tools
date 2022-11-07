@@ -879,5 +879,10 @@ namespace NtApiDotNet
                 return true;
             return !e.Any();
         }
+
+        internal static byte[] CloneBytes(this byte[] ba)
+        {
+            return (byte[])ba?.Clone();
+        }
     }
 }

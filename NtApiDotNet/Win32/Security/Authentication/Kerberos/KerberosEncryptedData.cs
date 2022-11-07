@@ -165,7 +165,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         {
             if (EncryptionType == KerberosEncryptionType.NULL)
             {
-                decrypted = (byte[])CipherText.Clone();
+                decrypted = CipherText.CloneBytes();
                 return true;
             }
 
