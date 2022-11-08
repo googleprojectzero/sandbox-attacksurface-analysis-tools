@@ -37,7 +37,7 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// <summary>
         /// The SSPI package.
         /// </summary>
-        public string Package { get; }
+        public AuthenticationPackage AuthPackage { get; }
 
         /// <summary>
         /// Get whether the request was cancelled.
@@ -45,15 +45,15 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         public bool Cancelled => AuthIdentity == null;
 
         internal SspiCredentialPromptResult(SafeSecWinNtAuthIdentityBuffer auth_id,
-            int save, string package) : this(package)
+            int save, AuthenticationPackage package) : this(package)
         {
             AuthIdentity = new SecWinNtAuthIdentity(auth_id);
             Save = save != 0;
         }
 
-        internal SspiCredentialPromptResult(string package)
+        internal SspiCredentialPromptResult(AuthenticationPackage package)
         {
-            Package = package;
+            AuthPackage = package;
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         {
             if (Cancelled)
                 throw new InvalidOperationException("The operation was cancelled and there's no credentials.");
-            return CredentialHandle.Create(Package, cred_use_flag, AuthIdentity.ToAuthenticationCredentials());
+            return AuthPackage.CreateHandle(cred_use_flag, AuthIdentity.ToAuthenticationCredentials());
         }
 
         /// <summary>

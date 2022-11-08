@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.Security.Authentication;
+using NtApiDotNet.Win32.Security.Authentication.Logon;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
@@ -24,7 +26,7 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// <summary>
         /// Chosen authentication credentials.
         /// </summary>
-        public PackedWindowsCredentials OutputAuthBuffer { get; }
+        public CredentialAuthenticationBuffer OutputAuthBuffer { get; }
 
         /// <summary>
         /// Indicates whether the save credentials check box was set.
@@ -46,7 +48,18 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// </summary>
         public bool Cancelled => OutputAuthBuffer == null;
 
-        internal WindowsCredentialPromptResult(PackedWindowsCredentials creds,
+        /// <summary>
+        /// Convert the result to credentials which can be used to logon.
+        /// </summary>
+        /// <returns>The credentials buffer.</returns>
+        public LsaLogonCredentialsBuffer ToLsaLogonCredentialBuffer()
+        {
+            if (Cancelled)
+                throw new InvalidOperationException("The credentials request was cancelled.");
+            return new LsaLogonCredentialsBuffer(OutputAuthBuffer.ToArray(), Package.Name);
+        }
+
+        internal WindowsCredentialPromptResult(CredentialAuthenticationBuffer creds,
             int save, uint package_id) : this(package_id)
         {
             OutputAuthBuffer = creds;

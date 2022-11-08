@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 
@@ -25,14 +24,9 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
     public sealed class WindowsCredentialPromptDialog : CredentialPromptDialog
     {
         /// <summary>
-        /// Specify the input package for the credentials.
-        /// </summary>
-        public AuthenticationPackage AuthPackage { get; set; }
-
-        /// <summary>
         /// Specify the input authentication buffer.
         /// </summary>
-        public PackedWindowsCredentials InputAuthBuffer { get; set; }
+        public CredentialAuthenticationBuffer InputAuthBuffer { get; set; }
 
         /// <summary>
         /// Specify flags for the prompt.
@@ -49,10 +43,10 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
             byte[] input_auth_buffer = InputAuthBuffer?.ToArray();
             int input_auth_buffer_len = input_auth_buffer?.Length ?? 0;
             int save = Save ? 1 : 0;
-            if (AuthPackage is null)
-                throw new ArgumentNullException("AuthPackage cannot be null.", nameof(AuthPackage));
+            if (Package is null)
+                throw new ArgumentNullException("AuthPackage cannot be null.", nameof(Package));
 
-            uint package_id = AuthPackage.PackageId;
+            uint package_id = Package.PackageId;
             var result = SecurityNativeMethods.CredUIPromptForWindowsCredentials(
                 CreateCredUiInfo(), AuthError, ref package_id,
                 input_auth_buffer, input_auth_buffer_len, out SafeCoTaskMemBuffer buffer, out int buffer_size, ref save, (uint)Flags);
@@ -63,7 +57,7 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
                 using (buffer)
                 {
                     buffer.InitializeLength(buffer_size);
-                    return new WindowsCredentialPromptResult(new PackedWindowsCredentials(buffer.ToArray()),
+                    return new WindowsCredentialPromptResult(new CredentialAuthenticationBuffer(buffer.ToArray()),
                         save, package_id);
                 }
             });

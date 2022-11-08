@@ -337,6 +337,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw;
             }
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the package.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
         #endregion
 
         #region Static Methods
@@ -459,6 +468,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return FromName(package).CreateServer(credentials, req_attributes, channel_binding, data_rep);
         }
 
+        /// <summary>
+        /// Conversion operator from a package name.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        public static explicit operator AuthenticationPackage(string package) => FromName(package);
         #endregion
     }
 }

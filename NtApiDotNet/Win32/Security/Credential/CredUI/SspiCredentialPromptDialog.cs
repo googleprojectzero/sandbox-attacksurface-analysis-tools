@@ -15,6 +15,7 @@
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
 using NtApiDotNet.Win32.Security.Native;
+using System;
 
 namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
@@ -27,11 +28,6 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// Specify the target name.
         /// </summary>
         public string TargetName { get; set; }
-
-        /// <summary>
-        /// Specify the SSPI package.
-        /// </summary>
-        public string Package { get; set; }
 
         /// <summary>
         /// Specify the input authentication identity.
@@ -50,10 +46,12 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
         public NtResult<SspiCredentialPromptResult> Show(bool throw_on_error)
         {
+            if (Package is null)
+                throw new ArgumentNullException("Must specify an authentication package.", nameof(Package));
             using (var input_auth = InputAuthIdentity?.Copy()?.DangerousBuffer ?? SafeSecWinNtAuthIdentityBuffer.Null)
             {
                 int save = Save ? 1 : 0;
-                var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package,
+                var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package.Name,
                     input_auth, out SafeSecWinNtAuthIdentityBuffer auth_id, ref save, (int)Flags);
                 if (result == Win32Error.ERROR_CANCELLED)
                     return new SspiCredentialPromptResult(Package).CreateResult();

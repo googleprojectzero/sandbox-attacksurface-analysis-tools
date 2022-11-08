@@ -675,8 +675,8 @@
     <Compile Include="Win32\Security\Credential\CredentialMarshalUsernameTarget.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthPackedCredentialPassword.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\CredentialPromptDialog.cs" />
-    <Compile Include="Win32\Security\Credential\CredUI\PackedWindowsCredentials.cs" />
-    <Compile Include="Win32\Security\Credential\CredUI\PackedWindowsCredentialsFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialAuthenticationBuffer.cs" />
+    <Compile Include="Win32\Security\Credential\CredentialAuthenticationBufferFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptDialog.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptDialogFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptResult.cs" />

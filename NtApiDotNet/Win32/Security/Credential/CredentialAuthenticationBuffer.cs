@@ -17,12 +17,12 @@ using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Credential.CredUI
+namespace NtApiDotNet.Win32.Security.Credential
 {
     /// <summary>
-    /// Packed Windows credentials.
+    /// Windows credentials packed in an authentication buffer.
     /// </summary>
-    public sealed class PackedWindowsCredentials
+    public sealed class CredentialAuthenticationBuffer
     {
         private readonly byte[] _credentials;
 
@@ -30,34 +30,34 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// Constructor.
         /// </summary>
         /// <param name="credentials">The packed credentials.</param>
-        internal PackedWindowsCredentials(byte[] credentials)
+        internal CredentialAuthenticationBuffer(byte[] credentials)
         {
             _credentials = credentials;
         }
 
         /// <summary>
-        /// Create a packed credential from a byte array.
+        /// Create an authentication buffer from a byte array.
         /// </summary>
         /// <param name="credentials">The packed credentials.</param>
-        /// <returns></returns>
-        public static PackedWindowsCredentials Create(byte[] credentials)
+        /// <returns>The authentication buffer.</returns>
+        public static CredentialAuthenticationBuffer Create(byte[] credentials)
         {
             if (credentials is null)
             {
                 throw new ArgumentNullException(nameof(credentials));
             }
 
-            return new PackedWindowsCredentials(credentials.CloneBytes());
+            return new CredentialAuthenticationBuffer(credentials.CloneBytes());
         }
 
         /// <summary>
-        /// Create a packed credential from user credentials.
+        /// Create an authentication buffer from user credentials.
         /// </summary>
         /// <param name="credentials">The packed credentials.</param>
         /// <param name="flags">Flags for the packing.</param>
-        /// <returns>The packed credentials.</returns>
-        public static PackedWindowsCredentials Create(UserCredentials credentials,
-            PackedWindowsCredentialsFlags flags = PackedWindowsCredentialsFlags.None)
+        /// <returns>The authentication buffer.</returns>
+        public static CredentialAuthenticationBuffer Create(UserCredentials credentials,
+            CredentialAuthenticationBufferFlags flags = CredentialAuthenticationBufferFlags.None)
         {
             if (credentials is null)
             {
@@ -86,24 +86,24 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         }
 
         /// <summary>
-        /// Create a packed credential from user credentials.
+        /// Create an authentication buffer from user credentials.
         /// </summary>
         /// <param name="username">The user's name.</param>
         /// <param name="domain">The user's domain.</param>
         /// <param name="password">The user's password.</param>
         /// <param name="flags">Flags for the packing.</param>
-        /// <returns>The packed credentials.</returns>
-        public static PackedWindowsCredentials Create(string username, string domain, string password, 
-            PackedWindowsCredentialsFlags flags = PackedWindowsCredentialsFlags.None)
+        /// <returns>The authentication buffer.</returns>
+        public static CredentialAuthenticationBuffer Create(string username, string domain, string password,
+            CredentialAuthenticationBufferFlags flags = CredentialAuthenticationBufferFlags.None)
         {
             return Create(new UserCredentials(username, domain, password), flags);
         }
 
         /// <summary>
-        /// Unpack the user credentials.
+        /// Unpack to user credentials.
         /// </summary>
         /// <returns>The unpacked user credentials.</returns>
-        public UserCredentials Unpack(PackedWindowsCredentialsFlags flags = PackedWindowsCredentialsFlags.None)
+        public UserCredentials Unpack(CredentialAuthenticationBufferFlags flags = CredentialAuthenticationBufferFlags.None)
         {
             int user_length = 0;
             int domain_length = 0;
@@ -133,12 +133,12 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
                 }
             }
 
-            return new UserCredentials(user, 
+            return new UserCredentials(user,
                 dom, password.ToString().TrimEnd('\0'));
         }
 
         /// <summary>
-        /// Convert credentials to an array.
+        /// Convert buffer to an array.
         /// </summary>
         /// <returns></returns>
         public byte[] ToArray()

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Security.Authentication;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Runtime.InteropServices;
@@ -47,6 +48,10 @@ namespace NtApiDotNet.Win32.Security.Credential.CredUI
         /// Specify whether to check the save credentials box.
         /// </summary>
         public bool Save { get; set; }
+        /// <summary>
+        /// Specify the input package for the credentials.
+        /// </summary>
+        public AuthenticationPackage Package { get; set; }
 
         private protected CREDUI_INFO CreateCredUiInfo()
         {

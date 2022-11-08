@@ -15,13 +15,13 @@
 using NtApiDotNet.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential.CredUI
+namespace NtApiDotNet.Win32.Security.Credential
 {
     /// <summary>
-    /// Flags for packing and unpacking Windows credentials.
+    /// Flags for packing and unpacking an authentication buffer.
     /// </summary>
     [Flags]
-    public enum PackedWindowsCredentialsFlags
+    public enum CredentialAuthenticationBufferFlags
     {
         /// <summary>
         /// No flags.
