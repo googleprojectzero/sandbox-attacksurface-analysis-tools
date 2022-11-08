@@ -17,7 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal sealed class SafeCoTaskMemHandle : SafeHandle
+    internal sealed class SafeCoTaskMemBuffer : SafeBufferGeneric
     {
         protected override bool ReleaseHandle()
         {
@@ -25,22 +25,17 @@ namespace NtApiDotNet.Win32.SafeHandles
             return true;
         }
 
-        public SafeCoTaskMemHandle(IntPtr handle, bool owns_handle) : base(IntPtr.Zero, owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        public SafeCoTaskMemHandle()
-            : base(IntPtr.Zero, true)
+        public SafeCoTaskMemBuffer(IntPtr handle, bool owns_handle) 
+            : base(handle, 0, owns_handle)
         {
         }
 
-        public override bool IsInvalid
+        public SafeCoTaskMemBuffer()
+            : base(IntPtr.Zero, 0, true)
         {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
         }
+
+        public static SafeCoTaskMemBuffer Null => new SafeCoTaskMemBuffer();
+        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

@@ -20,7 +20,7 @@ using System;
 namespace NtApiDotNet.Win32.Security.Credential.CredUI
 {
     /// <summary>
-    /// Result from the credential prompt.
+    /// Result from the SSPI credential prompt.
     /// </summary>
     public sealed class SspiCredentialPromptResult : IDisposable
     {

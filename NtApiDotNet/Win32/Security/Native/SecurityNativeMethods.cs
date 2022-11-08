@@ -207,11 +207,24 @@ namespace NtApiDotNet.Win32.Security.Native
 
         [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CredPackAuthenticationBuffer(
-            CredPackAuthenticationBufferFlags dwFlags,
+            int dwFlags,
             string pszUserName,
-            string pszPassword,
+            SecureStringMarshalBuffer pszPassword,
             [Out] byte[] pPackedCredentials,
             ref int pcbPackedCredentials
+        );
+
+        [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool CredUnPackAuthenticationBuffer(
+          int dwFlags,
+          byte[] pAuthBuffer,
+          int cbAuthBuffer,
+          StringBuilder pszUserName,
+          ref int pcchMaxUserName,
+          StringBuilder pszDomainName,
+          ref int pcchMaxDomainName,
+          StringBuilder pszPassword,
+          ref int pcchMaxPassword
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
@@ -297,7 +310,7 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern Win32Error CredUIPromptForWindowsCredentials(
           in CREDUI_INFO pUiInfo,
           Win32Error dwAuthError,
-          ref int pulAuthPackage,
+          ref uint pulAuthPackage,
           [In] byte[] pvInAuthBuffer,
           int ulInAuthBufferSize,
           out SafeCoTaskMemBuffer ppvOutAuthBuffer,

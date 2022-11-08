@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Utilities.Memory;
+using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
@@ -31,7 +32,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
         #region Private Members
         private static readonly Lazy<IReadOnlyList<AuthenticationPackage>> _native_packages = new Lazy<IReadOnlyList<AuthenticationPackage>>(GetNativePackages);
         private static readonly Lazy<Dictionary<string, AuthenticationPackage>> _managed_packages = new Lazy<Dictionary<string, AuthenticationPackage>>(GetManagedPackages);
+        private static readonly Lazy<Dictionary<uint, AuthenticationPackage>> _native_packages_by_id = new Lazy<Dictionary<uint, AuthenticationPackage>>(GetNativePackageById);
         private readonly bool _managed;
+        private readonly Lazy<uint> _package_id;
 
         private static IReadOnlyList<AuthenticationPackage> GetNativePackages()
         {
@@ -51,6 +54,28 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return packages.AsReadOnly();
         }
 
+        private static Dictionary<uint, AuthenticationPackage> GetNativePackageById()
+        {
+            var ret = new Dictionary<uint, AuthenticationPackage>();
+            using (var handle = SafeLsaLogonHandle.ConnectUntrusted(false))
+            {
+                if (!handle.IsSuccess)
+                {
+                    return ret;
+                }
+
+                foreach (var package in _native_packages.Value)
+                {
+                    var result = handle.Result.LookupAuthPackage(package.Name, false);
+                    if (result.IsSuccess)
+                    {
+                        ret[result.Result] = package;
+                    }
+                }
+            }
+            return ret;
+        }
+
         private static Dictionary<string, AuthenticationPackage> GetManagedPackages()
         {
             return new Dictionary<string, AuthenticationPackage>(StringComparer.OrdinalIgnoreCase)
@@ -59,6 +84,22 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 { KERBEROS_NAME, new KerberosManagedAuthenticationPackage() },
                 { NEGOSSP_NAME, new NegotiateManagedAuthenticationPackage() },
             };
+        }
+
+        private uint GetPackageId()
+        {
+            using (var handle = SafeLsaLogonHandle.ConnectUntrusted(false))
+            {
+                if (handle.IsSuccess)
+                {
+                    var result = handle.Result.LookupAuthPackage(Name, false);
+                    if (result.IsSuccess)
+                    {
+                        return result.Result;
+                    }
+                }
+            }
+            return uint.MaxValue;
         }
 
         private protected AuthenticationPackage(string name,
@@ -73,6 +114,14 @@ namespace NtApiDotNet.Win32.Security.Authentication
             MaxTokenSize = max_token_size;
             Comment = comment ?? string.Empty;
             _managed = managed;
+            if (managed)
+            {
+                _package_id = new Lazy<uint>(() => uint.MaxValue);
+            }
+            else
+            {
+                _package_id = new Lazy<uint>(GetPackageId);
+            }
         }
 
         private protected virtual ICredentialHandle CreateManagedHandle(SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
@@ -158,6 +207,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         /// Comment for the package.
         /// </summary>
         public string Comment { get; }
+        /// <summary>
+        /// Get the LSA assigned package ID.
+        /// </summary>
+        public uint PackageId => _package_id.Value;
         #endregion
 
         #region Internal Members
@@ -341,6 +394,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public static AuthenticationPackage FromName(string package)
         {
             return FromName(package, false);
+        }
+
+        /// <summary>
+        /// Get the authentication package by it's package ID.
+        /// </summary>
+        /// <param name="package_id">The package ID.</param>
+        /// <returns>The authentication package. Returns null if not found.</returns>
+        /// <remarks>The package ID is epemeral and is subject to change.</remarks>
+        public static AuthenticationPackage FromPackageId(uint package_id)
+        {
+            if (_native_packages_by_id.Value.TryGetValue(package_id, out AuthenticationPackage package))
+                return package;
+            return null;
         }
 
         /// <summary>

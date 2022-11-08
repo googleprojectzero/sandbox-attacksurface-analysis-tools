@@ -336,11 +336,11 @@ namespace NtApiDotNet.Win32
         {
             get
             {
-                if (Win32NativeMethods.GetAppContainerFolderPath(Sid.ToString(), out SafeCoTaskMemHandle path).IsSuccess())
+                if (Win32NativeMethods.GetAppContainerFolderPath(Sid.ToString(), out SafeCoTaskMemBuffer path).IsSuccess())
                 {
                     using (path)
                     {
-                        return Marshal.PtrToStringUni(path.DangerousGetHandle());
+                        return path.ReadNulTerminatedUnicodeStringUnsafe();
                     }
                 }
                 return string.Empty;

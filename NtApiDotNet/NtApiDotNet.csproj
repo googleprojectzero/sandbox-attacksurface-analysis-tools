@@ -675,10 +675,14 @@
     <Compile Include="Win32\Security\Credential\CredentialMarshalUsernameTarget.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthPackedCredentialPassword.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\CredentialPromptDialog.cs" />
+    <Compile Include="Win32\Security\Credential\CredUI\PackedWindowsCredentials.cs" />
+    <Compile Include="Win32\Security\Credential\CredUI\PackedWindowsCredentialsFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptDialog.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptDialogFlags.cs" />
     <Compile Include="Win32\Security\Credential\CredUI\SspiCredentialPromptResult.cs" />
-    <Compile Include="Win32\Security\Native\CredPackAuthenticationBufferFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredUI\WindowsCredentialPromptDialog.cs" />
+    <Compile Include="Win32\Security\Credential\CredUI\WindowsCredentialPromptDialogFlags.cs" />
+    <Compile Include="Win32\Security\Credential\CredUI\WindowsCredentialPromptResult.cs" />
     <Compile Include="Win32\Security\Native\CREDUI_INFO.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST.cs" />
     <Compile Include="Win32\Security\Native\KERB_ADD_CREDENTIALS_REQUEST_EX.cs" />
@@ -1181,7 +1185,7 @@
     <Compile Include="Win32\SafeHandles\SafeAuditBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuthZClientContextHandle.cs" />
     <Compile Include="Win32\SafeHandles\SafeAuthZResourceManagerHandle.cs" />
-    <Compile Include="Win32\SafeHandles\SafeCoTaskMemHandle.cs" />
+    <Compile Include="Win32\SafeHandles\SafeCoTaskMemBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeLocalAllocBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaMemoryBuffer.cs" />
     <Compile Include="Win32\SafeHandles\SafeLsaReturnBufferHandle.cs" />
