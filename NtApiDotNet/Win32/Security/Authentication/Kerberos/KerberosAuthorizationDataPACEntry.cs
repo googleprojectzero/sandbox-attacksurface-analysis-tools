@@ -36,7 +36,8 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         DeviceClaims = 0xF,
         TicketChecksum = 0x10,
         Attributes = 0x11,
-        Requestor = 0x12
+        Requestor = 0x12,
+        FullPacChecksum = 0x13
     }
 #pragma warning restore 1591
 

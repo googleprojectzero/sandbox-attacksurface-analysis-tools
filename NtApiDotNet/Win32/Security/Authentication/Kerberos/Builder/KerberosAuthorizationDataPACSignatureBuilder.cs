@@ -29,6 +29,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 case KerberosAuthorizationDataPACEntryType.TicketChecksum:
                 case KerberosAuthorizationDataPACEntryType.ServerChecksum:
                 case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+                case KerberosAuthorizationDataPACEntryType.FullPacChecksum:
                     break;
                 default:
                     System.Diagnostics.Debug.Assert(false, "The type must be one of the checksum types.");
