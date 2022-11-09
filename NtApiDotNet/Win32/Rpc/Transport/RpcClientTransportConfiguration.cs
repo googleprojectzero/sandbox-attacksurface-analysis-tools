@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <summary>
         /// Constructor.
         /// </summary>
-        public RpcClientTransportConfiguration()
+        protected RpcClientTransportConfiguration()
         {
         }
 
@@ -44,6 +44,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 case RpcProtocolSequence.NamedPipe:
                     return new RpcNamedPipeClientTransportConfiguration();
+                case RpcProtocolSequence.LRPC:
+                    return new RpcAlpcClientTransportConfiguration();
             }
             return new RpcClientTransportConfiguration();
         }

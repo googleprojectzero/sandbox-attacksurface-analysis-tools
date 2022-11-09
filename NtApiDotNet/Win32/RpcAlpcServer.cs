@@ -120,7 +120,7 @@ namespace NtApiDotNet.Win32
         [SupportedVersion(SupportedVersion.Windows10_19H1)]
         public static RpcAlpcServer GetAlpcServer(string path, bool ignore_com_interfaces = false)
         {
-            using (var transport = new RpcAlpcClientTransport(path, null))
+            using (var transport = new RpcAlpcClientTransport(path, new RpcTransportSecurity()))
             {
                 var server = transport.ServerProcess;
                 return new RpcAlpcServer(server.ProcessId, path, null, server.Name,

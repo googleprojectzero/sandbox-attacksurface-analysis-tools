@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     /// <summary>
     /// Class to configure the RPC named pipe transport.
     /// </summary>
-    /// <remarks>If you configure this, even with no options, </remarks>
+    /// <remarks>If you configure this, even with no options, then a managed implementation of a named pipe client will be used.</remarks>
     public sealed class RpcNamedPipeClientTransportConfiguration : RpcClientTransportConfiguration
     {
         /// <summary>

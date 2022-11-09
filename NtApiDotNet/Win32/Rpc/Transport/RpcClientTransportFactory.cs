@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
             {
-                return new RpcAlpcClientTransport(endpoint.EndpointPath, transport_security.SecurityQualityOfService);
+                return new RpcAlpcClientTransport(endpoint.EndpointPath, transport_security);
             }
         }
 

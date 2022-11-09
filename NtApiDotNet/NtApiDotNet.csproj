@@ -550,6 +550,7 @@
     <Compile Include="Win32\Rpc\RpcProtocolSequenceIdentifier.cs" />
     <Compile Include="Win32\Rpc\RpcStringBinding.cs" />
     <Compile Include="Win32\Rpc\RpcProtocolSequence.cs" />
+    <Compile Include="Win32\Rpc\Transport\RpcAlpcClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
