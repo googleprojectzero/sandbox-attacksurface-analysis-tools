@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Net;
+using NtApiDotNet.Utilities.Data;
 using System;
 using System.IO;
 using System.Text;
@@ -72,11 +74,9 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             if (string.IsNullOrEmpty(DnsDomainName))
                 throw new ArgumentNullException(nameof(DnsDomainName));
 
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
+            DataWriter writer = new DataWriter();
 
-            ushort data_offset = 12;
-
+            int data_offset = 12;
             if (Flags.HasFlagSet(KerberosUpnDnsInfoFlags.Extended))
             {
                 data_offset += 8;
@@ -86,16 +86,19 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                     throw new ArgumentNullException(nameof(Sid));
             }
 
-            WriteBuffer(writer, UserPrincipalName, ref data_offset);
-            WriteBuffer(writer, DnsDomainName, ref data_offset);
+            data_offset += KerberosBuilderUtils.GetAlignment(data_offset, 8);
+
+            WriteBuffer(writer, UserPrincipalName, ref data_offset, 8);
+            // The DNS domain name doesn't seem to be aligned in the Windows implementation.
+            WriteBuffer(writer, DnsDomainName, ref data_offset, 1);
             writer.Write((int)Flags);
             if (Flags.HasFlagSet(KerberosUpnDnsInfoFlags.Extended))
             {
-                WriteBuffer(writer, SamName, ref data_offset);
-                WriteBuffer(writer, Sid.ToArray(), ref data_offset);
+                WriteBuffer(writer, SamName, ref data_offset, 8);
+                WriteBuffer(writer, Sid.ToArray(), ref data_offset, 8);
             }
 
-            if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(stm.ToArray(),
+            if (!KerberosAuthorizationDataPACUpnDnsInfo.Parse(writer.ToArray(),
                 out KerberosAuthorizationDataPACEntry entry))
             {
                 throw new InvalidDataException("Invalid PAC entry.");
@@ -103,22 +106,24 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
             return entry;
         }
 
-        private static void WriteBuffer(BinaryWriter writer, byte[] data, ref ushort data_offset)
+        private static void WriteBuffer(DataWriter writer, byte[] data, ref int data_offset, int alignment)
         {
-            ushort len = (ushort)data.Length;
-            writer.Write(len);
-            writer.Write(data_offset);
+            writer.WriteUInt16(data.Length);
+            writer.WriteUInt16(data_offset);
 
             long pos = writer.BaseStream.Position;
             writer.BaseStream.Position = data_offset;
             writer.Write(data);
+            data_offset += data.Length;
+            int padding = KerberosBuilderUtils.GetAlignment(data_offset, alignment);
+            data_offset += padding;
+            writer.Write(new byte[padding]);
             writer.BaseStream.Position = pos;
-            data_offset += len;
         }
 
-        private static void WriteBuffer(BinaryWriter writer, string data, ref ushort data_offset)
+        private static void WriteBuffer(DataWriter writer, string data, ref int data_offset, int alignment)
         {
-            WriteBuffer(writer, Encoding.Unicode.GetBytes(data), ref data_offset);
+            WriteBuffer(writer, Encoding.Unicode.GetBytes(data), ref data_offset, alignment);
         }
     }
 }

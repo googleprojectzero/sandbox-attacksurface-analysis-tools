@@ -89,5 +89,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
                 }
             }
         }
+
+        internal static int GetAlignment(long value, int alignment)
+        {
+            int remainder = (int)(value % alignment);
+            if (remainder == 0)
+                return 0;
+            return alignment - remainder;
+        }
     }
 }
