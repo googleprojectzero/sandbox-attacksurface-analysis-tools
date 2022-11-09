@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
     /// <summary>
     /// Class to represent AD_WIN2K_PAC type.
     /// </summary>
-    public class KerberosAuthorizationDataPAC : KerberosAuthorizationData
+    public sealed class KerberosAuthorizationDataPAC : KerberosAuthorizationData
     {
         /// <summary>
         /// List of PAC entries.
@@ -42,7 +42,20 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>The authorization builder.</returns>
         public override KerberosAuthorizationDataBuilder ToBuilder()
         {
-            return new KerberosAuthorizationDataPACBuilder(Version, Entries);
+            return ToBuilder(false);
+        }
+
+        /// <summary>
+        /// Convert the authorization data into a builder.
+        /// </summary>
+        /// <param name="for_signature">Specify true to create a builder just for updating or validating signatures.</param>
+        /// <returns>The authorization builder.</returns>
+        /// <remarks>When creating for signaturing any entries not signature related are converted to 
+        /// raw buffers to preserve their exact values.</remarks>
+        public KerberosAuthorizationDataPACBuilder ToBuilder(bool for_signature)
+        {
+            return new KerberosAuthorizationDataPACBuilder(Version, 
+                for_signature ? Entries.Select(ConvertPACEntryForSignature) : Entries);
         }
 
         /// <summary>
@@ -53,7 +66,7 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
         /// <returns>True if the signatures are correct. Also assumes true if there are no signatures to check.</returns>
         public bool ValidateSignatures(KerberosAuthenticationKey server_key, KerberosAuthenticationKey kdc_key = null)
         {
-            var builder = (KerberosAuthorizationDataPACBuilder)ToBuilder();
+            var builder = ToBuilder(true);
             builder.ComputeSignatures(server_key, kdc_key);
             var result = (KerberosAuthorizationDataPAC)builder.Create();
             System.Diagnostics.Debug.Assert(result.Entries.Count == Entries.Count);
@@ -86,6 +99,13 @@ namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
             {
                 entry.Format(builder);
             }
+        }
+
+        private static KerberosAuthorizationDataPACEntry ConvertPACEntryForSignature(KerberosAuthorizationDataPACEntry entry)
+        {
+            if (entry is KerberosAuthorizationDataPACSignature)
+                return entry;
+            return new KerberosAuthorizationDataPACEntry(entry.PACType, entry.Data);
         }
 
         internal static bool Parse(byte[] data, out KerberosAuthorizationDataPAC auth_data)
