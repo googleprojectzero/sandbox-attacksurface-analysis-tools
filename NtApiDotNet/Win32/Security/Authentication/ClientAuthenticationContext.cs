@@ -223,6 +223,11 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public SecurityChannelBinding EndpointBindings => SecurityContextUtils.GetChannelBinding(_context, SECPKG_ATTR.ENDPOINT_BINDINGS);
 
         /// <summary>
+        /// Get session key info for this context.
+        /// </summary>
+        public AuthenticationContextKeyInfo KeyInfo => SecurityContextUtils.GetKeyInfo(_context);
+
+        /// <summary>
         /// Get or set whether the context owns the credentials object or not. If true
         /// then the credentials are disposed with the context.
         /// </summary>

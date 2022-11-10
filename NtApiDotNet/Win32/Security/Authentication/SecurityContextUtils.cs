@@ -499,5 +499,13 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             return new SchannelConnectionInfo(QueryContextAttribute<SecPkgContext_ConnectionInfo>(context, SECPKG_ATTR.CONNECTION_INFO));
         }
+
+        internal static AuthenticationContextKeyInfo GetKeyInfo(SecHandle context)
+        {
+            using (var key_info = QueryContextAttribute<SecPkgContext_KeyInfo>(context, SECPKG_ATTR.KEY_INFO))
+            {
+                return new AuthenticationContextKeyInfo(key_info);
+            }
+        }
     }
 }

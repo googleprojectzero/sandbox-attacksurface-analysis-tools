@@ -555,6 +555,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcNamedPipeClientTransportConfiguration.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcTransportSecurityContext.cs" />
     <Compile Include="Win32\SafeHandles\SafeSecWinNtAuthIdentityBuffer.cs" />
+    <Compile Include="Win32\Security\Authentication\AuthenticationContextKeyInfo.cs" />
     <Compile Include="Win32\Security\Authentication\BufferAuthenticationCredentials.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentity.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentityCreateOptions.cs" />
@@ -888,6 +889,7 @@
     <Compile Include="Win32\Security\Native\SAM_RID_ENUMERATION.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_Bindings.cs" />
     <Compile Include="Win32\Security\Native\SecPkgContext_ClientCreds.cs" />
+    <Compile Include="Win32\Security\Native\SecPkgContext_KeyInfo.cs" />
     <Compile Include="Win32\Security\Native\SecPkgCredentials_KdcProxySettings.cs" />
     <Compile Include="Win32\Security\Native\SECPKG_CRED_ATTR.cs" />
     <Compile Include="Win32\Security\Native\SEC_WINNT_AUTH_BYTE_VECTOR.cs" />
