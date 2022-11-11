@@ -252,19 +252,9 @@ namespace NtApiDotNet.Win32.Security.Native
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
-        internal static extern SecStatusCode SspiDecryptAuthIdentity(
-            SafeBuffer EncryptedAuthData
-        );
-
-        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiDecryptAuthIdentityEx(
             SecWinNtAuthIdentityEncryptionOptions Options,
             SafeBuffer EncryptedAuthData
-        );
-
-        [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
-        internal static extern SecStatusCode SspiEncryptAuthIdentity(
-            SafeBuffer AuthData
         );
 
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]

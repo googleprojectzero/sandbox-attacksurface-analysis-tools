@@ -240,6 +240,17 @@ namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
         }
 
         /// <summary>
+        /// Decrypt the credentials if encrypted.
+        /// </summary>
+        /// <param name="encrypt_options">The decryption options.</param>
+        public void Decrypt(SecWinNtAuthIdentityEncryptionOptions encrypt_options = 0)
+        {
+            if (!IsEncrypted)
+                return;
+            SecurityNativeMethods.SspiDecryptAuthIdentityEx(encrypt_options, _auth_id).CheckResult();
+        }
+
+        /// <summary>
         /// Convert the object to a string.
         /// </summary>
         /// <returns>The string.</returns>
