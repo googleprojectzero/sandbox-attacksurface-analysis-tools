@@ -291,7 +291,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
-        /// Continue the authentication..
+        /// Continue the authentication.
         /// </summary>
         /// <param name="token">The client token to continue authentication.</param>
         /// <param name="additional_input">Specify additional input buffers, does not need to include the token.</param>
@@ -521,6 +521,33 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return new LsaLogonCredentialsBuffer(ret);
         }
 
+        /// <summary>
+        /// Apply a control token.
+        /// </summary>
+        /// <param name="input">The input buffers to apply.</param>
+        public void ApplyControlToken(IEnumerable<SecurityBuffer> input)
+        {
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            SecurityContextUtils.ApplyControlToken(_context, input, true);
+        }
+
+        /// <summary>
+        /// Apply a control token.
+        /// </summary>
+        /// <param name="token">The control token to apply.</param>
+        public void ApplyControlToken(ControlToken token)
+        {
+            if (token is null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            ApplyControlToken(new[] { token.ToBuffer() });
+        }
         #endregion
 
         #region Constructors

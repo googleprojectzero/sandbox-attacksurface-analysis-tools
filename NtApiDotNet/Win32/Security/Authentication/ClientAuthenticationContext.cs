@@ -552,6 +552,34 @@ namespace NtApiDotNet.Win32.Security.Authentication
             Dispose();
             return context;
         }
+
+        /// <summary>
+        /// Apply a control token.
+        /// </summary>
+        /// <param name="input">The input buffers to apply.</param>
+        public void ApplyControlToken(IEnumerable<SecurityBuffer> input)
+        {
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            SecurityContextUtils.ApplyControlToken(_context, input, true);
+        }
+
+        /// <summary>
+        /// Apply a control token.
+        /// </summary>
+        /// <param name="token">The control token to apply.</param>
+        public void ApplyControlToken(ControlToken token)
+        {
+            if (token is null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            ApplyControlToken(new[] { token.ToBuffer() });
+        }
         #endregion
 
         #region IDisposable Implementation

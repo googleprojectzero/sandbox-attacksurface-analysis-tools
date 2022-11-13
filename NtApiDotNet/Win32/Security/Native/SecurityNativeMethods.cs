@@ -108,6 +108,12 @@ namespace NtApiDotNet.Win32.Security.Native
             [Out] LargeInteger ptsExpiry
         );
 
+        [DllImport("Secur32.dll")]
+        internal static extern SecStatusCode ApplyControlToken(
+          [In] SecHandle phContext,
+          [In] SecBufferDesc pInput
+        );
+
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode QuerySecurityContextToken(SecHandle phContext, out SafeKernelObjectHandle Token);
 

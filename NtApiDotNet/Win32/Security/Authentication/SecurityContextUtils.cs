@@ -507,5 +507,15 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 return new AuthenticationContextKeyInfo(key_info);
             }
         }
+
+        internal static SecStatusCode ApplyControlToken(SecHandle context, IEnumerable<SecurityBuffer> input, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var buffers = input?.ToBufferList(list);
+                var desc = buffers?.ToDesc(list);
+                return SecurityNativeMethods.ApplyControlToken(context, desc).CheckResult(throw_on_error);
+            }
+        }
     }
 }

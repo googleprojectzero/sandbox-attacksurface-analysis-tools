@@ -557,6 +557,14 @@
     <Compile Include="Win32\SafeHandles\SafeSecWinNtAuthIdentityBuffer.cs" />
     <Compile Include="Win32\Security\Authentication\AuthenticationContextKeyInfo.cs" />
     <Compile Include="Win32\Security\Authentication\BufferAuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Authentication\ControlToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelAlertControlToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelAlertNumber.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelAlertType.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelControlToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelSessionControlToken.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelSessionFlags.cs" />
+    <Compile Include="Win32\Security\Authentication\Schannel\SchannelShutdownControlToken.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentity.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentityCreateOptions.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentityEncryptionOptions.cs" />
