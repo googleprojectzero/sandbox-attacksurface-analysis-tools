@@ -62,6 +62,18 @@ namespace NtApiDotNet.Win32.Security.Native
         internal static extern SecStatusCode FreeCredentialsHandle([In, Out] SecHandle phCredential);
 
         [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode AddCredentials(
+            [In] SecHandle hCredentials,
+            string pszPrincipal,
+            string pszPackage,
+            SecPkgCredFlags fCredentialUse,
+            SafeBuffer pAuthData,
+            IntPtr pGetKeyFn,
+            IntPtr pvGetKeyArgument,
+            [Out] LargeInteger ptsExpiry
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode InitializeSecurityContext(
             [In] SecHandle phCredential,
             [In] SecHandle phContext,

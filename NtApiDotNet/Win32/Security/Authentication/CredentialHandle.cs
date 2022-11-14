@@ -232,6 +232,37 @@ namespace NtApiDotNet.Win32.Security.Authentication
         }
 
         /// <summary>
+        /// Add credentials to the handle.
+        /// </summary>
+        /// <param name="principal">User principal.</param>
+        /// <param name="package">The package name.</param>
+        /// <param name="cred_use_flag">Credential user flags.</param>
+        /// <param name="auth_data">Optional authentication data.</param>
+        public void AddCredentials(string principal, string package, SecPkgCredFlags cred_use_flag, SafeBuffer auth_data)
+        {
+            LargeInteger timestamp = new LargeInteger();
+            SecurityNativeMethods.AddCredentials(CredHandle, principal, package, cred_use_flag, auth_data, IntPtr.Zero, IntPtr.Zero, timestamp).CheckResult();
+        }
+
+        /// <summary>
+        /// Add credentials to the handle.
+        /// </summary>
+        /// <param name="principal">User principal.</param>
+        /// <param name="package">The package name.</param>
+        /// <param name="cred_use_flag">Credential user flags.</param>
+        /// <param name="credentials">Optional credentials.</param>
+        public void AddCredentials(string principal, string package, SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
+        {
+            using (var list = new DisposableList())
+            {
+                using (var buffer = credentials.ToBuffer(list, package))
+                {
+                    AddCredentials(principal, package, cred_use_flag, buffer);
+                }
+            }
+        }
+
+        /// <summary>
         /// Finalizer.
         /// </summary>
         ~CredentialHandle()
