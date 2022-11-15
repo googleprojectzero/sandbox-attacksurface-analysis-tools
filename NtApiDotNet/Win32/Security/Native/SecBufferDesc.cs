@@ -18,7 +18,6 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security.Native
 {
-#pragma warning disable 1591
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class SecBufferDesc : IDisposable
     {

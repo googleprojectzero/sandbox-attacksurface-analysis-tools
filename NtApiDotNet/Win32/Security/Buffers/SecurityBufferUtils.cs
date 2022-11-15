@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Security.Buffers
     public static class SecurityBufferUtils
     {
         /// <summary>
-        /// Convert a list of buffers data buffers to a byte array.
+        /// Convert a list of data buffers to a byte array.
         /// </summary>
         /// <param name="buffers">List of data security buffers. Only buffers used for input are processed.</param>
         /// <returns>The data buffers as one bytes array.</returns>

@@ -350,18 +350,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
         public void ChangeAccountPassword(string domain, string username,
           string old_password, string new_password, bool impersonating = false)
         {
-            var password_info_buffer = new SecurityBufferAllocMem(SecurityBufferType.ChangePassResponse);
-            List<SecurityBuffer> buffers = new List<SecurityBuffer>
+            var change_pass_buffer = new SecurityBufferAllocMem(SecurityBufferType.ChangePassResponse);
+            using (var desc = SecurityBufferDescriptor.Create(change_pass_buffer))
             {
-                password_info_buffer
-            };
-            using (var list = new DisposableList())
-            {
-                var output = buffers.ToBufferList(list);
-                var desc = output.ToDesc(list);
-                SecurityNativeMethods.ChangeAccountPassword(Name, domain, username, 
-                    old_password, new_password, impersonating, 0, desc).CheckResult();
-                buffers.UpdateBuffers(desc);
+                SecurityNativeMethods.ChangeAccountPassword(Name, domain, username,
+                    old_password, new_password, impersonating, 0, desc.Value).CheckResult();
+                desc.UpdateBuffers();
             }
         }
 

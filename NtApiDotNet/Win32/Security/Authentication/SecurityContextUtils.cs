@@ -18,7 +18,6 @@ using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -75,35 +74,6 @@ namespace NtApiDotNet.Win32.Security.Authentication
             return null;
         }
 
-        internal static List<SecBuffer> ToBufferList(this IEnumerable<SecurityBuffer> buffers, DisposableList list)
-        {
-            return buffers.Select(b => b.ToBuffer(list)).ToList();
-        }
-
-        internal static SecBufferDesc ToDesc(this IEnumerable<SecBuffer> buffers, DisposableList list)
-        {
-            var arr = buffers.ToArray();
-            if (arr.Length == 0)
-                return null;
-            return list.AddResource(new SecBufferDesc(arr));
-        }
-
-        internal static void UpdateBuffers(this IList<SecurityBuffer> buffers, SecBufferDesc desc)
-        {
-            if (desc == null)
-                return;
-            var update_buffers = desc.ToArray();
-            for (int i = 0; i < buffers.Count; ++i)
-            {
-                buffers[i].FromBuffer(update_buffers[i]);
-            }
-        }
-
-        internal static void UpdateBuffers(this IEnumerable<SecurityBuffer> buffers, SecBufferDesc desc)
-        {
-            UpdateBuffers(buffers.ToArray(), desc);
-        }
-
         internal static byte[] MakeSignature(
             SecHandle context,
             int flags,
@@ -115,12 +85,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
             SecurityBufferOut signature_buffer = new SecurityBufferOut(SecurityBufferType.Token, max_sig_size);
             sig_buffers.Add(signature_buffer);
 
-            using (var list = new DisposableList())
+            using (var desc = SecurityBufferDescriptor.Create(sig_buffers))
             {
-                List<SecBuffer> buffers = sig_buffers.ToBufferList(list);
-                SecBufferDesc desc = buffers.ToDesc(list);
-                SecurityNativeMethods.MakeSignature(context, flags, desc, sequence_no).CheckResult();
-                sig_buffers.UpdateBuffers(desc);
+                SecurityNativeMethods.MakeSignature(context, flags, desc.Value, sequence_no).CheckResult();
+                desc.UpdateBuffers();
                 return signature_buffer.ToArray();
             }
         }
@@ -144,11 +112,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
         {
             List<SecurityBuffer> sig_buffers = new List<SecurityBuffer>(messages);
             sig_buffers.Add(new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, signature));
-            using (var list = new DisposableList())
+            using (var desc = SecurityBufferDescriptor.Create(sig_buffers))
             {
-                List<SecBuffer> buffers = sig_buffers.ToBufferList(list);
-                SecBufferDesc desc = buffers.ToDesc(list);
-                return SecurityNativeMethods.VerifySignature(context, desc, sequence_no, out int _) == SecStatusCode.SUCCESS;
+                return SecurityNativeMethods.VerifySignature(context, desc.Value, 
+                    sequence_no, out int _) == SecStatusCode.SUCCESS;
             }
         }
 
@@ -218,12 +185,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(messages));
             }
 
-            using (var list = new DisposableList())
+            using (var desc = SecurityBufferDescriptor.Create(messages))
             {
-                var buffers = messages.ToBufferList(list);
-                var desc = buffers.ToDesc(list);
-                SecurityNativeMethods.EncryptMessage(context, flags, desc, sequence_no).CheckResult();
-                messages.UpdateBuffers(desc);
+                SecurityNativeMethods.EncryptMessage(context, flags, desc.Value, sequence_no).CheckResult();
+                desc.UpdateBuffers();
             }
         }
 
@@ -283,12 +248,10 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 throw new ArgumentNullException(nameof(messages));
             }
 
-            using (var list = new DisposableList())
+            using (var desc = SecurityBufferDescriptor.Create(messages))
             {
-                var buffers = messages.ToBufferList(list);
-                var desc = buffers.ToDesc(list);
-                SecurityNativeMethods.DecryptMessage(context, desc, sequence_no, out _).CheckResult();
-                messages.UpdateBuffers(desc);
+                SecurityNativeMethods.DecryptMessage(context, desc.Value, sequence_no, out _).CheckResult();
+                desc.UpdateBuffers();
             }
         }
 
@@ -371,17 +334,12 @@ namespace NtApiDotNet.Win32.Security.Authentication
             LargeInteger expiry,
             bool throw_on_error)
         {
-            using (DisposableList list = new DisposableList())
+            using (SecurityBufferDescriptor in_buffer_desc = SecurityBufferDescriptor.Create(input), 
+                out_buffer_desc = SecurityBufferDescriptor.Create(output))
             {
-                var input_buffers = input?.ToBufferList(list);
-                var output_buffers = output?.ToBufferList(list);
-
-                var in_buffer_desc = input_buffers.ToDesc(list);
-                var out_buffer_desc = output_buffers.ToDesc(list);
-
                 var result = SecurityNativeMethods.InitializeSecurityContext(credential.CredHandle,
-                    context, target_name, req_attributes, 0, data_rep, in_buffer_desc, 0,
-                    new_context, out_buffer_desc, out ret_attributes, expiry).CheckResult(throw_on_error);
+                    context, target_name, req_attributes, 0, data_rep, in_buffer_desc.Value, 0,
+                    new_context, out_buffer_desc.Value, out ret_attributes, expiry).CheckResult(throw_on_error);
                 if (!result.IsSuccess())
                     return result;
 
@@ -389,7 +347,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 {
                     if (result == SecStatusCode.SEC_I_COMPLETE_NEEDED || result == SecStatusCode.SEC_I_COMPLETE_AND_CONTINUE)
                     {
-                        var comp_result = SecurityNativeMethods.CompleteAuthToken(new_context, out_buffer_desc).CheckResult(throw_on_error);
+                        var comp_result = SecurityNativeMethods.CompleteAuthToken(new_context, out_buffer_desc.Value).CheckResult(throw_on_error);
                         if (!comp_result.IsSuccess())
                             return comp_result;
                     }
@@ -398,7 +356,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 {
                     if (result.IsSuccess())
                     {
-                        output?.UpdateBuffers(out_buffer_desc);
+                        out_buffer_desc.UpdateBuffers();
                     }
                 }
 
@@ -418,23 +376,19 @@ namespace NtApiDotNet.Win32.Security.Authentication
             LargeInteger expiry,
             bool throw_on_error)
         {
-            using (DisposableList list = new DisposableList())
+            using (SecurityBufferDescriptor in_buffer_desc = SecurityBufferDescriptor.Create(input),
+                out_buffer_desc = SecurityBufferDescriptor.Create(output))
             {
-                var input_buffers = input?.ToBufferList(list);
-                var output_buffers = output?.ToBufferList(list);
-
-                var in_buffer_desc = input_buffers.ToDesc(list);
-                var out_buffer_desc = output_buffers.ToDesc(list);
-
                 SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(credential.CredHandle, context,
-                    in_buffer_desc, req_attributes, data_rep, new_context, out_buffer_desc, out ret_attributes, expiry).CheckResult(throw_on_error);
+                    in_buffer_desc.Value, req_attributes, data_rep, new_context, 
+                    out_buffer_desc.Value, out ret_attributes, expiry).CheckResult(throw_on_error);
                 if (!result.IsSuccess())
                     return result;
                 try
                 {
                     if (result == SecStatusCode.SEC_I_COMPLETE_NEEDED || result == SecStatusCode.SEC_I_COMPLETE_AND_CONTINUE)
                     {
-                        var comp_result = SecurityNativeMethods.CompleteAuthToken(context, out_buffer_desc).CheckResult(throw_on_error);
+                        var comp_result = SecurityNativeMethods.CompleteAuthToken(context, out_buffer_desc.Value).CheckResult(throw_on_error);
                         if (!comp_result.IsSuccess())
                             return comp_result;
                     }
@@ -443,7 +397,7 @@ namespace NtApiDotNet.Win32.Security.Authentication
                 {
                     if (result.IsSuccess())
                     {
-                        output?.UpdateBuffers(out_buffer_desc);
+                        out_buffer_desc.UpdateBuffers();
                     }
                 }
 
@@ -510,11 +464,9 @@ namespace NtApiDotNet.Win32.Security.Authentication
 
         internal static SecStatusCode ApplyControlToken(SecHandle context, IEnumerable<SecurityBuffer> input, bool throw_on_error)
         {
-            using (var list = new DisposableList())
+            using (var desc = SecurityBufferDescriptor.Create(input))
             {
-                var buffers = input?.ToBufferList(list);
-                var desc = buffers?.ToDesc(list);
-                return SecurityNativeMethods.ApplyControlToken(context, desc).CheckResult(throw_on_error);
+                return SecurityNativeMethods.ApplyControlToken(context, desc.Value).CheckResult(throw_on_error);
             }
         }
     }

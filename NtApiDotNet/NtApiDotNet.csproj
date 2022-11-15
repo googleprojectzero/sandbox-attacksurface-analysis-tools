@@ -565,6 +565,7 @@
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelSessionControlToken.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelSessionFlags.cs" />
     <Compile Include="Win32\Security\Authentication\Schannel\SchannelShutdownControlToken.cs" />
+    <Compile Include="Win32\Security\Buffers\SecurityBufferDescriptor.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentity.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentityCreateOptions.cs" />
     <Compile Include="Win32\Security\Credential\AuthIdentity\SecWinNtAuthIdentityEncryptionOptions.cs" />
