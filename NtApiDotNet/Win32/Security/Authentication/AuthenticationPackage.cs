@@ -17,6 +17,7 @@ using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security.Authentication.Kerberos;
 using NtApiDotNet.Win32.Security.Authentication.Negotiate;
 using NtApiDotNet.Win32.Security.Authentication.Ntlm;
+using NtApiDotNet.Win32.Security.Buffers;
 using NtApiDotNet.Win32.Security.Native;
 using System;
 using System.Collections.Generic;
@@ -335,6 +336,32 @@ namespace NtApiDotNet.Win32.Security.Authentication
             {
                 handle?.Dispose();
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Change an account password using this package.
+        /// </summary>
+        /// <param name="domain">The user's domain name.</param>
+        /// <param name="username">The user's name.</param>
+        /// <param name="old_password">The user's old password.</param>
+        /// <param name="new_password">The user's new password.</param>
+        /// <param name="impersonating">Whether the caller is impersonating.</param>
+        public void ChangeAccountPassword(string domain, string username,
+          string old_password, string new_password, bool impersonating = false)
+        {
+            var password_info_buffer = new SecurityBufferAllocMem(SecurityBufferType.ChangePassResponse);
+            List<SecurityBuffer> buffers = new List<SecurityBuffer>
+            {
+                password_info_buffer
+            };
+            using (var list = new DisposableList())
+            {
+                var output = buffers.ToBufferList(list);
+                var desc = output.ToDesc(list);
+                SecurityNativeMethods.ChangeAccountPassword(Name, domain, username, 
+                    old_password, new_password, impersonating, 0, desc).CheckResult();
+                buffers.UpdateBuffers(desc);
             }
         }
 

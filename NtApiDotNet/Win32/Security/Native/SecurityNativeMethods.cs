@@ -204,6 +204,19 @@ namespace NtApiDotNet.Win32.Security.Native
             [Out] SecHandle phContext
         );
 
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ChangeAccountPassword(
+          string pszPackageName,
+          string pszDomainName,
+          string pszAccountName,
+          string pszOldPassword,
+          string pszNewPassword,
+          [MarshalAs(UnmanagedType.U1)]
+          bool bImpersonating,
+          int dwReserved,
+          SecBufferDesc pOutput
+        );
+
         [DllImport("sspicli.dll", CharSet = CharSet.Unicode)]
         internal static extern SecStatusCode SspiMarshalAuthIdentity(
           SafeBuffer AuthIdentity, // PSEC_WINNT_AUTH_IDENTITY_OPAQUE 
