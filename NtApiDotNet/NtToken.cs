@@ -1387,27 +1387,14 @@ namespace NtApiDotNet
         /// </summary>
         public int SessionId
         {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenSessionId);
-            }
-
-            set
-            {
-                SetSessionId(value);
-            }
+            get => Query<int>(TokenInformationClass.TokenSessionId);
+            set => SetSessionId(value);
         }
 
         /// <summary>
         /// Get whether token has sandbox inert flag set.
         /// </summary>
-        public bool SandboxInert
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenSandBoxInert) != 0;
-            }
-        }
+        public bool SandboxInert => Query<int>(TokenInformationClass.TokenSandBoxInert) != 0;
 
         /// <summary>
         /// Get/set token's origin

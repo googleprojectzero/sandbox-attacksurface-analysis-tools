@@ -841,18 +841,6 @@ namespace NtApiDotNet
         /// <returns>The raw policy value</returns>
         public int GetRawMitigationPolicy(ProcessMitigationPolicy policy)
         {
-            switch (policy)
-            {
-                case ProcessMitigationPolicy.DEP:
-                case ProcessMitigationPolicy.MitigationOptionsMask:
-                    throw new ArgumentException("Invalid mitigation policy");
-            }
-
-            MitigationPolicy p = new MitigationPolicy
-            {
-                Policy = policy
-            };
-
             var result = GetRawMitigationPolicy(policy, false);
             switch (result.Status)
             {
