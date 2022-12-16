@@ -64,7 +64,6 @@
             // 
             // hexBox
             // 
-            this.hexBox.ColumnInfoVisible = true;
             this.hexBox.ContextMenuStrip = this.contextMenuStrip;
             this.hexBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.hexBox.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
