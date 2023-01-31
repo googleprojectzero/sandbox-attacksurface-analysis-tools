@@ -228,7 +228,7 @@ namespace NtApiDotNet.Win32.Rpc
             CodeTypeReference real_element_type = element_type.CodeType;
             CodeTypeReference generic_type = null;
 
-            if (is_pointer)
+            if (is_pointer && !is_string)
             {
                 unmarshal_expr.Add(CodeGenUtils.GetPrimitive(element_type.PointerType == RpcPointerType.Full));
                 generic_type = real_element_type;
