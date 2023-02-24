@@ -54,7 +54,7 @@ namespace NtApiDotNet
         internal static IEnumerable<NtProcessEnvironmentVariable> ParseEnvironmentBlock(byte[] environment)
         {
             string env_str = Encoding.Unicode.GetString(environment);
-            int end_index = env_str.IndexOf("\0\0");
+            int end_index = env_str.IndexOf("\0\0", StringComparison.Ordinal);
             if (end_index >= 0)
             {
                 env_str = env_str.Substring(0, end_index);
