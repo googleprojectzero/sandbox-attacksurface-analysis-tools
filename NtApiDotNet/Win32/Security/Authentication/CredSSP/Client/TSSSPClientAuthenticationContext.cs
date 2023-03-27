@@ -51,8 +51,10 @@ namespace NtApiDotNet.Win32.Security.Authentication.CredSSP.Client
                     throw new ArgumentException("Missing inner authentication token.", nameof(token));
 
                 _client_ctx.Continue(ts_token.NegoTokens[0]);
-
-                Token = TSAuthenticationToken.Create(6, _client_ctx, certificate ?? _certificate);
+                if (_client_ctx.Done)
+                    Token = TSAuthenticationToken.Create(6, _client_ctx, certificate ?? _certificate);
+                else
+                    Token = TSAuthenticationToken.Create(6, _client_ctx);
             }
             else if (!Done)
             {
