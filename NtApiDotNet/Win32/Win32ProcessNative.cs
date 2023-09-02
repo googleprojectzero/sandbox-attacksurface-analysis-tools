@@ -462,6 +462,8 @@ namespace NtApiDotNet.Win32
         public static IntPtr ProcThreadAttributeMitigationAuditPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMitigationAuditPolicy, false, true, false);
 
         public static IntPtr ProcThreadAttributeComponentFilter => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeComponentFilter, false, true, false);
+
+        public static IntPtr ProcThreadAttributeMachineType => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMachineType, false, true, false);
     }
 
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer

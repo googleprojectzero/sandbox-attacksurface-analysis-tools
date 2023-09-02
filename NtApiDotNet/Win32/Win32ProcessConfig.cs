@@ -235,6 +235,10 @@ namespace NtApiDotNet.Win32
         /// Specify component filter flags.
         /// </summary>
         public ProcessComponentFilterFlags ComponentFilter { get; set; }
+        /// <summary>
+        /// Specify the machine type for the new process. 
+        /// </summary>
+        public DllMachineType? MachineType { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -401,6 +405,11 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
+            if (MachineType.HasValue)
+            {
+                count++;
+            }
+
             return count;
         }
 
@@ -514,6 +523,11 @@ namespace NtApiDotNet.Win32
             if (ComponentFilter != ProcessComponentFilterFlags.None)
             {
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeComponentFilter, (int)ComponentFilter);
+            }
+
+            if (MachineType.HasValue)
+            {
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeMachineType, (ushort)MachineType.Value);
             }
 
             return attr_list;
