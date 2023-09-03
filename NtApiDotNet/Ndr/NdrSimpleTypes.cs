@@ -337,10 +337,19 @@ namespace NtApiDotNet.Ndr
                 case 0xE9:
                     ptr = ptr + 5 + System.Runtime.InteropServices.Marshal.ReadInt32(ptr + 1);
                     break;
-                // lea rax, ofs import - Delay load 64bit
+                // REX prefix, could be a lea rax, ofs import - Delay load 64bit or a jmp.
                 case 0x48:
                     {
-                        if (!Environment.Is64BitProcess || System.Runtime.InteropServices.Marshal.ReadByte(ptr + 1) != 0x8D || System.Runtime.InteropServices.Marshal.ReadByte(ptr + 2) != 0x05)
+                        if (!Environment.Is64BitProcess)
+                        {
+                            return ptr;
+                        }
+                        start_byte = System.Runtime.InteropServices.Marshal.ReadByte(ptr + 1);
+                        if (start_byte == 0xFF)
+                        {
+                            return GetTargetAddress(curr_module, ptr + 1);
+                        }
+                        if (start_byte != 0x8D || System.Runtime.InteropServices.Marshal.ReadByte(ptr + 2) != 0x05)
                         {
                             return ptr;
                         }
