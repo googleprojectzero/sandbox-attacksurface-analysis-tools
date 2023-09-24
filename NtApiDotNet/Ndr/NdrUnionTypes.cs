@@ -53,7 +53,7 @@ namespace NtApiDotNet.Ndr
         internal static NdrBaseTypeReference ReadArmType(NdrParseContext context, BinaryReader reader)
         {
             ushort type = reader.ReadUInt16();
-            if ((type & 0x8F00) == 0x8000)
+            if ((type & 0xFF00) == 0x8000)
             {
                 return new NdrSimpleTypeReference((NdrFormatCharacter)(type & 0xFF));
             }
