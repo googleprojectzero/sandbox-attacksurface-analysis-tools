@@ -162,6 +162,51 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Misc Methods
+
+        /// <summary>
+        /// When manually decoding 64bit NDR data, there are situations that 
+        /// result in a single item getting stuck on the stack. This completely depends on what
+        /// is being decoded, so this function returns the _conformance_values array
+        /// to be evaluated. Depending on the evaluation, the _conformance_values array will be cleared.
+        /// </summary>
+        /// <returns></returns>
+        public int[] GetConformanceValuesArray()
+        {
+            return _conformance_values;
+        }
+
+        /// <summary>
+        /// When decoding 64bit NDR data, conformant arrays will leave data on the stack if pre alignment 
+        /// is not possible. This results in other structs not being decoded correctly.
+        /// This method clears the stack manually.
+        /// </summary>
+        public void ClearConformanceValues()
+        {
+            _conformance_values = null;
+        }
+
+        /// <summary>
+        /// Reads given number of positions from the buffer and moves the position back to where it was.
+        /// This allows for reading data from the stream without consuming it
+        /// </summary>
+        /// <param name="length">Number of bytes to peek</param>
+        /// <returns>bytearray from the stream</returns>
+        public byte[] PeekBuffer(int length)
+        {
+            
+            if ((long)length > _stm.RemainingLength())
+                throw new IndexOutOfRangeException("Given length bigger than remaining length");
+
+            long currentPosition = _stm.Position;
+
+            byte[] res = new byte[length];
+            res = ReadFixedByteArray(length);
+
+            _stm.Position = currentPosition;
+
+            return res;
+        }
+
         public T ReadSystemHandle<T>() where T : NtObject
         {
             int index = ReadInt32();
