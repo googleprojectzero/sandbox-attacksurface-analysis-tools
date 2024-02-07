@@ -59,8 +59,8 @@ namespace NtApiDotNet.Ndr
         string FormatComment(string comment, params object[] args);
         string FormatPointer(string base_type);
         string IidToName(Guid iid);
-        string DemangleComName(string name);
         bool ShowProcedureParameterAttributes { get; }
+        string GetProxyName(NdrComProxyDefinition proxy);
     }
 
     /// <summary>
@@ -80,10 +80,12 @@ namespace NtApiDotNet.Ndr
             _demangle_com_name = demangle_com_name ?? (s => s);
             _flags = flags;
         }
+
         string INdrFormatterInternal.IidToName(Guid iid)
         {
             return IidToName(iid);
         }
+
         protected string IidToName(Guid iid)
         {
             if (_iids_to_name.ContainsKey(iid))
@@ -93,9 +95,11 @@ namespace NtApiDotNet.Ndr
             return null;
         }
 
-        string INdrFormatterInternal.DemangleComName(string name)
+        string INdrFormatterInternal.GetProxyName(NdrComProxyDefinition proxy)
         {
-            return _demangle_com_name(name);
+            if (string.IsNullOrWhiteSpace(proxy.Name))
+                return IidToName(proxy.Iid) ?? $"intf_{proxy.Iid.ToString().Replace('-', '_')}";
+            return _demangle_com_name(proxy.Name);
         }
 
         string INdrFormatterInternal.SimpleTypeToName(NdrFormatCharacter format)
@@ -312,7 +316,7 @@ namespace NtApiDotNet.Ndr
             builder.AppendLine(
                 "class __declspec(uuid(\"{0}\")) {1} : public {2} {{\npublic:",
                 com_proxy.Iid,
-                (this as INdrFormatterInternal).DemangleComName(com_proxy.Name),
+                (this as INdrFormatterInternal).GetProxyName(com_proxy),
                 base_name
             );
 

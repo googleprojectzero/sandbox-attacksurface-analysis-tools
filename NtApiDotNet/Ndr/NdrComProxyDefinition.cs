@@ -84,7 +84,7 @@ namespace NtApiDotNet.Ndr
                 base_name = $"{context.FormatComment(unknown_iid)} IUnknown";
             }
 
-            builder.AppendLine("interface {0} : {1} {{", context.DemangleComName(Name), base_name);
+            builder.AppendLine("interface {0} : {1} {{", context.GetProxyName(this), base_name);
             builder.PushIndent(' ', 4);
             foreach (NdrProcedureDefinition proc in Procedures)
             {
