@@ -302,7 +302,8 @@ namespace NtApiDotNet.Ndr
             {
                 if (!descriptor.Expression.IsValid)
                     return;
-                expression = descriptor.Expression.ToString();
+                expression = descriptor.Expression.ToString(this, 
+                    ofs => GetLinkedEntry(entry, entries, descriptor.CorrelationType, ofs)?.Name);
             }
             else
             {

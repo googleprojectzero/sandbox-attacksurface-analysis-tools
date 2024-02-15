@@ -76,34 +76,18 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrExpression
     {
-        #region Private Members
-
-        private static bool IsValidType(NdrExpressionType type)
-        {
-            switch (type)
-            {
-                case NdrExpressionType.FC_EXPR_OPER:
-                case NdrExpressionType.FC_EXPR_CONST32:
-                case NdrExpressionType.FC_EXPR_CONST64:
-                case NdrExpressionType.FC_EXPR_VAR:
-                    return true;
-            }
-            return false;
-        }
-
+        #region Public Members
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The expression as a string.</returns>
-        public override string ToString()
+        public override sealed string ToString()
         {
-            return string.Empty;
+            return ToString(null, null);
         }
-
         #endregion
 
         #region Constructors
-
         internal NdrExpression(NdrExpressionType type)
         {
             Type = type;
@@ -112,7 +96,6 @@ namespace NtApiDotNet.Ndr
         internal NdrExpression() : this(0)
         {
         }
-
         #endregion
 
         #region Public Properties
@@ -164,6 +147,11 @@ namespace NtApiDotNet.Ndr
 
             BinaryReader reader = context.Reader.GetReader(context.ExprDesc.pFormatExpr + expr_ofs);
             return ReadExpression(reader);
+        }
+
+        internal virtual string ToString(INdrFormatterInternal context, Func<int, string> get_variable_name)
+        {
+            return string.Empty;
         }
         #endregion
     }
@@ -254,82 +242,80 @@ namespace NtApiDotNet.Ndr
         #endregion
 
         #region Private Members
-        private string FormatUnaryOperator(string op)
+        private string FormatUnaryOperator(string op, INdrFormatterInternal context, Func<int, string> get_variable_name)
         {
-            return $"{op}{Arguments[0]}";
+            return $"{op}{Arguments[0].ToString(context, get_variable_name)}";
         }
 
-        private string FormatBinaryOperator(string op)
+        private string FormatBinaryOperator(string op, INdrFormatterInternal context, Func<int, string> get_variable_name)
         {
-            return $"({Arguments[0]} {op} {Arguments[1]})";
+            return $"({Arguments[0].ToString(context, get_variable_name)} {op} {Arguments[1].ToString(context, get_variable_name)})";
         }
         #endregion
 
-        #region Public Methods
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The expression as a string.</returns>
-        public override string ToString()
+        #region Internal Members
+        internal override string ToString(INdrFormatterInternal context, Func<int, string> get_variable_name)
         {
             switch (Operator)
             {
                 case NdrExpressionOperator.OP_UNARY_INDIRECTION:
-                    return FormatUnaryOperator("*");
+                    return FormatUnaryOperator("*", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_MINUS:
-                    return FormatUnaryOperator("-");
+                    return FormatUnaryOperator("-", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_PLUS:
-                    return FormatUnaryOperator("+");
+                    return FormatUnaryOperator("+", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_CAST:
-                    return FormatUnaryOperator($"({Format})");
+                    return FormatUnaryOperator($"({context?.SimpleTypeToName(Format) ?? Format.ToString()})", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
-                    return FormatUnaryOperator("~");
+                    return FormatUnaryOperator("~", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_NOT:
-                    return FormatUnaryOperator("!");
+                    return FormatUnaryOperator("!", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_SIZEOF:
-                    return FormatUnaryOperator("sizeof ");
+                    return FormatUnaryOperator("sizeof ", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_ALIGNOF:
-                    return FormatUnaryOperator("alignof ");
+                    return FormatUnaryOperator("alignof ", context, get_variable_name);
                 case NdrExpressionOperator.OP_UNARY_AND:
-                    return FormatUnaryOperator(string.Empty);
+                    return FormatUnaryOperator(string.Empty, context, get_variable_name);
                 case NdrExpressionOperator.OP_MINUS:
-                    return FormatBinaryOperator("-");
+                    return FormatBinaryOperator("-", context, get_variable_name);
                 case NdrExpressionOperator.OP_MOD:
-                    return FormatBinaryOperator("%");
+                    return FormatBinaryOperator("%", context, get_variable_name);
                 case NdrExpressionOperator.OP_OR:
-                    return FormatBinaryOperator("|");
+                    return FormatBinaryOperator("|", context, get_variable_name);
                 case NdrExpressionOperator.OP_PLUS:
-                    return FormatBinaryOperator("+");
+                    return FormatBinaryOperator("+", context, get_variable_name);
                 case NdrExpressionOperator.OP_SLASH:
-                    return FormatBinaryOperator("/");
+                    return FormatBinaryOperator("/", context, get_variable_name);
                 case NdrExpressionOperator.OP_STAR:
-                    return FormatBinaryOperator("*");
+                    return FormatBinaryOperator("*", context, get_variable_name);
                 case NdrExpressionOperator.OP_XOR:
-                    return FormatBinaryOperator("^");
+                    return FormatBinaryOperator("^", context, get_variable_name);
                 case NdrExpressionOperator.OP_AND:
-                    return FormatBinaryOperator("&");
+                    return FormatBinaryOperator("&", context, get_variable_name);
                 case NdrExpressionOperator.OP_LEFT_SHIFT:
-                    return FormatBinaryOperator("<<");
+                    return FormatBinaryOperator("<<", context, get_variable_name);
                 case NdrExpressionOperator.OP_RIGHT_SHIFT:
-                    return FormatBinaryOperator(">>");
+                    return FormatBinaryOperator(">>", context, get_variable_name);
                 case NdrExpressionOperator.OP_EQUAL:
-                    return FormatBinaryOperator("==");
+                    return FormatBinaryOperator("==", context, get_variable_name);
                 case NdrExpressionOperator.OP_GREATER:
-                    return FormatBinaryOperator(">");
+                    return FormatBinaryOperator(">", context, get_variable_name);
                 case NdrExpressionOperator.OP_GREATER_EQUAL:
-                    return FormatBinaryOperator(">=");
+                    return FormatBinaryOperator(">=", context, get_variable_name);
                 case NdrExpressionOperator.OP_LESS:
-                    return FormatBinaryOperator("<");
+                    return FormatBinaryOperator("<", context, get_variable_name);
                 case NdrExpressionOperator.OP_LESS_EQUAL:
-                    return FormatBinaryOperator("<=");
+                    return FormatBinaryOperator("<=", context, get_variable_name);
                 case NdrExpressionOperator.OP_LOGICAL_AND:
-                    return FormatBinaryOperator("&&");
+                    return FormatBinaryOperator("&&", context, get_variable_name);
                 case NdrExpressionOperator.OP_LOGICAL_OR:
-                    return FormatBinaryOperator("||");
+                    return FormatBinaryOperator("||", context, get_variable_name);
                 case NdrExpressionOperator.OP_NOT_EQUAL:
-                    return FormatBinaryOperator("!=");
+                    return FormatBinaryOperator("!=", context, get_variable_name);
                 case NdrExpressionOperator.OP_EXPRESSION:
-                    return $"({Arguments[2]} ? {Arguments[0]} : {Arguments[1]})";
+                    return $"({Arguments[2].ToString(context, get_variable_name)} ? " +
+                        $"{Arguments[0].ToString(context, get_variable_name)} " +
+                        $": {Arguments[1].ToString(context, get_variable_name)})";
                 default:
                     break;
             }
@@ -368,14 +354,13 @@ namespace NtApiDotNet.Ndr
 
         #endregion
 
-        #region Public Methods
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The expression as a string.</returns>
-        public override string ToString()
+        #region Internal Members
+        internal override string ToString(INdrFormatterInternal context, Func<int, string> get_variable_name)
         {
-            return $"VAR{{{Offset}}}";
+            string name = get_variable_name?.Invoke(Offset);
+            if (string.IsNullOrEmpty(name))
+                name = $"VAR{{{Offset}}}";
+            return name;
         }
         #endregion
     }
@@ -404,7 +389,6 @@ namespace NtApiDotNet.Ndr
         #endregion
 
         #region Constructors
-
         internal NdrConstantExpression(NdrExpressionType type, BinaryReader reader)
             : base(type)
         {
@@ -422,12 +406,8 @@ namespace NtApiDotNet.Ndr
         }
         #endregion
 
-        #region Public Methods
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The expression as a string.</returns>
-        public override string ToString()
+        #region Internal Members
+        internal override string ToString(INdrFormatterInternal context, Func<int, string> get_variable_name)
         {
             return Value.ToString();
         }
