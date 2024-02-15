@@ -478,7 +478,6 @@ namespace NtApiDotNet.Ndr
             if ((supp_type != null && supp_type.BaseType == NdrFormatCharacter.FC_BIND_CONTEXT)
                 || base_type.Format == NdrFormatCharacter.FC_BIND_CONTEXT)
             {
-                NdrHandleTypeReference handle_type = base_type as NdrHandleTypeReference;
                 ContextHandleId index = new ContextHandleId() {
                     Id = supp_type?.Argument2,
                     Strict = false
