@@ -65,7 +65,7 @@ namespace NtApiDotNet.Ndr
             if (IsConstant)
             {
                 string name = formatter.IidToName(Iid);
-                if (name != null)
+                if (!string.IsNullOrEmpty(name))
                 {
                     return formatter.FormatPointer(name);
                 }

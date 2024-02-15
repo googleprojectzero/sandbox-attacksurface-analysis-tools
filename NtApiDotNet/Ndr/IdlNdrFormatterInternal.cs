@@ -572,21 +572,6 @@ namespace NtApiDotNet.Ndr
             builder.AppendLine("};");
         }
 
-        private string FormatLineComment(string comment, params object[] args)
-        {
-            if (_remove_comments)
-            {
-                return string.Empty;
-            }
-
-            return $"// {(args.Length > 0 ? string.Format(comment, args) : comment)}";
-        }
-
-        private void FormatProcedure(NdrStringBuilder builder, NdrProcedureDefinition procedure)
-        {
-            FormatProcedure(builder, procedure, false);
-        }
-
         private string FormatType(NdrBaseTypeReference base_type)
         {
             if (_enable_typedefs)
@@ -595,13 +580,6 @@ namespace NtApiDotNet.Ndr
             }
 
             return base_type.FormatType(this);
-        }
-
-        private string FormatArrayType(NdrBaseArrayTypeReference array_type)
-        {
-            int element_count = array_type.ElementCount;
-            _postfix.Push($"[{(element_count == 0 ? string.Empty : element_count.ToString())}]");
-            return $"{FormatType(array_type.ElementType)}";
         }
 
         private string GetPostFix()
@@ -680,7 +658,7 @@ namespace NtApiDotNet.Ndr
             builder.AppendLine("]");
 
             string base_name = IidToName(type.BaseIid);
-            if (base_name == string.Empty)
+            if (string.IsNullOrEmpty(base_name))
             {
                 string unknown_iid = $"Unknown IID {type.BaseIid}";
                 base_name = $"{FormatComment(unknown_iid)}IUnknown";
