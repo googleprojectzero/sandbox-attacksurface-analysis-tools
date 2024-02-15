@@ -104,6 +104,11 @@ namespace NtApiDotNet.Ndr
             return $"{conformance_desc}{base.FormatType(context)}[{GetCharCount()}]";
         }
 
+        internal override NdrCorrelationDescriptor GetConformanceDescriptor()
+        {
+            return ConformanceDescriptor;
+        }
+
         private int GetCharSize()
         {
             if (Format == NdrFormatCharacter.FC_C_WSTRING)

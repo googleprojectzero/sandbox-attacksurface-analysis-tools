@@ -122,6 +122,16 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        internal override NdrCorrelationDescriptor GetConformanceDescriptor()
+        {
+            return Type.GetConformanceDescriptor();
+        }
+
+        internal override NdrCorrelationDescriptor GetVarianceDescriptor()
+        {
+            return Type.GetVarianceDescriptor();
+        }
+
         public override int GetSize()
         {
             return IntPtr.Size;

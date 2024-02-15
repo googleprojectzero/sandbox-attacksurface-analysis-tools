@@ -129,6 +129,16 @@ namespace NtApiDotNet.Ndr
             ReadElementType(context, reader);
         }
 
+        internal override NdrCorrelationDescriptor GetConformanceDescriptor()
+        {
+            return ConformanceDescriptor;
+        }
+
+        internal override NdrCorrelationDescriptor GetVarianceDescriptor()
+        {
+            return VarianceDescriptor;
+        }
+
         protected override int GetElementSize()
         {
             return _element_size;
@@ -183,6 +193,16 @@ namespace NtApiDotNet.Ndr
             ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
             VarianceDescriptor = new NdrCorrelationDescriptor(context, reader);
             ReadElementType(context, reader);
+        }
+
+        internal override NdrCorrelationDescriptor GetConformanceDescriptor()
+        {
+            return ConformanceDescriptor;
+        }
+
+        internal override NdrCorrelationDescriptor GetVarianceDescriptor()
+        {
+            return VarianceDescriptor;
         }
 
         protected override int GetElementCount()

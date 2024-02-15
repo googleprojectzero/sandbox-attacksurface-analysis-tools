@@ -196,6 +196,16 @@ namespace NtApiDotNet.Ndr
             return (NdrFormatCharacter)reader.ReadByte();
         }
 
+        internal virtual NdrCorrelationDescriptor GetConformanceDescriptor()
+        {
+            return null;
+        }
+
+        internal virtual NdrCorrelationDescriptor GetVarianceDescriptor()
+        {
+            return null;
+        }
+
         protected virtual void OnFixupLateBoundTypes()
         {
             // Do nothing in the base.

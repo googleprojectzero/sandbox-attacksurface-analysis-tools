@@ -73,6 +73,7 @@
     <Compile Include="IO\UsnJournal\UsnJournalReasonFlags.cs" />
     <Compile Include="IO\UsnJournal\UsnJournalUtils.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="Ndr\IdlNdrFormatterInternal.cs" />
     <Compile Include="Ndr\Marshal\FLAGGED_WORD_BLOB.cs" />
     <Compile Include="Ndr\Marshal\NdrUserMarshal.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />

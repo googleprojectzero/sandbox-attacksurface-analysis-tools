@@ -345,6 +345,10 @@ namespace NtApiDotNet.Ndr
         /// Don't emit comments.
         /// </summary>
         RemoveComments = 0x1,
+        /// <summary>
+        /// Enable type defs.
+        /// </summary>
+        EnableTypeDefs = 0x2,
     }
 
     /// <summary>
@@ -483,6 +487,25 @@ namespace NtApiDotNet.Ndr
         public static INdrFormatter Create()
         {
             return Create(new Dictionary<Guid, string>());
+        }
+    }
+
+    /// <summary>
+    /// NDR formatter constructor for IDL style output.
+    /// </summary>
+    public static class IdlNdrFormatter
+    {
+        /// <summary>
+        /// Create the CPP formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The CPP formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names = null, 
+            Func<string, string> demangle_com_name = null, DefaultNdrFormatterFlags flags = 0)
+        {
+            return new IdlNdrFormatterInternal(iids_to_names, demangle_com_name, flags);
         }
     }
 }
