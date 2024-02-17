@@ -32,7 +32,7 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// The name of the proxy interface.
         /// </summary>
-        public string Name { get; }
+        public string Name { get; set; }
         /// <summary>
         /// The IID of the proxy interface.
         /// </summary>
