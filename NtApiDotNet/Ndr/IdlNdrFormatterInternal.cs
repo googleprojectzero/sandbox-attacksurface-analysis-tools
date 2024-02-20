@@ -363,6 +363,11 @@ namespace NtApiDotNet.Ndr
             {
                 ApplyCorrelation("switch_is", entry, entries, union_type.Correlation);
             }
+
+            if (type is NdrInterfacePointerTypeReference interface_ptr && !interface_ptr.IsConstant)
+            {
+                ApplyCorrelation("iid_is", entry, entries, interface_ptr.IidIsDescriptor);
+            }
         }
 
         private string FormatParameter(NdrFormatterContextEntry<NdrProcedureParameter> entry)
@@ -385,6 +390,11 @@ namespace NtApiDotNet.Ndr
             if (entry.Entry.MemberType is NdrUnionTypeReference union_type && union_type.NonEncapsulated)
             {
                 ApplyCorrelation("switch_is", entry, entries, union_type.Correlation);
+            }
+
+            if (entry.Entry.MemberType is NdrInterfacePointerTypeReference interface_ptr && !interface_ptr.IsConstant)
+            {
+                ApplyCorrelation("iid_is", entry, entries, interface_ptr.IidIsDescriptor);
             }
         }
 
