@@ -284,6 +284,7 @@ namespace NtApiDotNet.Win32
                 if (offsets.Any())
                 {
                     SymbolResolverFlags symbol_flags = flags.HasFlagSet(RpcServerParserFlags.SymSrvFallback) ? SymbolResolverFlags.SymSrvFallback : SymbolResolverFlags.None;
+                    symbol_flags |= SymbolResolverFlags.DisableExportSymbols;
 
                     using (var sym_resolver = !flags.HasFlagSet(RpcServerParserFlags.IgnoreSymbols) ? SymbolResolver.Create(NtProcess.Current,
                             dbghelp_path, symbol_path, symbol_flags, null) : null)
