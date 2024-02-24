@@ -70,7 +70,7 @@ namespace NtApiDotNet.Ndr
     {
         private readonly IDictionary<Guid, string> _iids_to_name;
         private readonly Func<string, string> _demangle_com_name;
-        private DefaultNdrFormatterFlags _flags;
+        private readonly DefaultNdrFormatterFlags _flags;
 
         bool INdrFormatterInternal.ShowProcedureParameterAttributes { get { return true; } }
 
@@ -90,7 +90,7 @@ namespace NtApiDotNet.Ndr
         {
             if (_iids_to_name.ContainsKey(iid))
             {
-                return _iids_to_name[iid];
+                return _demangle_com_name(_iids_to_name[iid]);
             }
             return null;
         }

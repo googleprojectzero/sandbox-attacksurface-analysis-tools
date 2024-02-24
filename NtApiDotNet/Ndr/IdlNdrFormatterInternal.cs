@@ -722,7 +722,7 @@ namespace NtApiDotNet.Ndr
         {
             if (_iids_to_name.TryGetValue(iid, out string value))
             {
-                return value;
+                return _demangle_com_name(value);
             }
 
             if (iid == NdrNativeUtils.IID_IUnknown)
