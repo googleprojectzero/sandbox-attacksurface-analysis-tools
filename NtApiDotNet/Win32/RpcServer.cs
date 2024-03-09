@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.Rpc;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -29,7 +30,7 @@ namespace NtApiDotNet.Win32
     /// A class to represent an RPC server.
     /// </summary>
     [Serializable]
-    public class RpcServer
+    public sealed class RpcServer : IRpcBuildableClient
     {
         #region Public Methods
 

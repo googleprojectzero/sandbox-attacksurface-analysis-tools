@@ -563,7 +563,7 @@ function Get-RpcClient {
     [CmdletBinding(DefaultParameterSetName = "FromServer")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer", ValueFromPipeline)]
-        [NtApiDotNet.Win32.RpcServer]$Server,
+        [NtApiDotNet.Win32.Rpc.IRpcBuildableClient]$Server,
         [parameter(ParameterSetName = "FromServer")]
         [string]$NamespaceName,
         [parameter(ParameterSetName = "FromServer")]
@@ -834,7 +834,7 @@ function Format-RpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.RpcServer[]]$Server,
+        [NtApiDotNet.Win32.Rpc.IRpcBuildableClient[]]$Server,
         [string]$NamespaceName,
         [string]$ClientName,
         [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
@@ -862,12 +862,7 @@ function Format-RpcClient {
         $args.Flags = $Flags
 
         foreach ($s in $Server) {
-            $src = if ($null -eq $Provider) {
-                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args)
-            }
-            else {
-                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
-            }
+            $src = [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
 
             if ("" -eq $OutputPath) {
                 $src | Write-Output

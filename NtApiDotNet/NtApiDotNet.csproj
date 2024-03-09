@@ -544,6 +544,8 @@
     <Compile Include="Win32\Rpc\EndpointMapper\RpcEndpointMapperManaged.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcEndpointMapperNative.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcEndPointVersionOption.cs" />
+    <Compile Include="Win32\Rpc\IRpcBuildableClient.cs" />
+    <Compile Include="Win32\Rpc\RpcComProxy.cs" />
     <Compile Include="Win32\Rpc\RpcInterfaceId.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcProtocolIdentifier.cs" />
     <Compile Include="Win32\Rpc\EndpointMapper\RpcProtocolTower.cs" />

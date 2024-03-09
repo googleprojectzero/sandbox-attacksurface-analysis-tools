@@ -32,11 +32,14 @@ namespace NtApiDotNet.Win32.Rpc
     public sealed class RpcClientBuilder
     {
         #region Private Members
-        private static readonly Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly> _compiled_clients
-            = new Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly>();
+        private static readonly Dictionary<Tuple<IRpcBuildableClient, RpcClientBuilderArguments>, Assembly> _compiled_clients
+            = new Dictionary<Tuple<IRpcBuildableClient, RpcClientBuilderArguments>, Assembly>();
         private readonly Dictionary<NdrBaseTypeReference, RpcTypeDescriptor> _type_descriptors;
         private readonly IEnumerable<NdrComplexTypeReference> _complex_types;
-        private readonly RpcServer _server;
+        private readonly Guid _interface_id;
+        private readonly Version _interface_ver;
+        private readonly IEnumerable<NdrProcedureDefinition> _procs;
+        private readonly string _source_path;
         private readonly RpcClientBuilderArguments _args;
         private readonly HashSet<string> _proc_names;
 
@@ -875,7 +878,7 @@ namespace NtApiDotNet.Win32.Rpc
 
         private void GenerateClient(string name, CodeNamespace ns, int complex_type_count, MarshalHelperBuilder marshal_helper)
         {
-            if (_server == null)
+            if (!_procs.Any())
             {
                 return;
             }
@@ -887,13 +890,13 @@ namespace NtApiDotNet.Win32.Rpc
             type.BaseTypes.Add(typeof(RpcClientBase));
 
             CodeConstructor constructor = type.AddConstructor(MemberAttributes.Public | MemberAttributes.Final);
-            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceId.ToString()));
-            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Major));
-            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Minor));
+            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_interface_id.ToString()));
+            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_interface_ver.Major));
+            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_interface_ver.Minor));
 
             type.CreateSendReceive(marshal_helper);
 
-            foreach (var proc in _server.Procedures)
+            foreach (var proc in _procs)
             {
                 string proc_name = proc.Name;
                 if (!_proc_names.Add(proc_name))
@@ -1069,15 +1072,15 @@ namespace NtApiDotNet.Win32.Rpc
 
         private void AddServerComment(CodeCompileUnit unit)
         {
-            if (_server == null)
+            if (!_procs.Any())
             {
                 return;
             }
             CodeNamespace ns = unit.AddNamespace(string.Empty);
 
-            ns.AddComment($"Source Executable: {_server.FilePath.ToLower()}");
-            ns.AddComment($"Interface ID: {_server.InterfaceId}");
-            ns.AddComment($"Interface Version: {_server.InterfaceVersion}");
+            ns.AddComment($"Source Executable: {_source_path.ToLower()}");
+            ns.AddComment($"Interface ID: {_interface_id}");
+            ns.AddComment($"Interface Version: {_interface_ver}");
 
             if (!_args.Flags.HasFlag(RpcClientBuilderFlags.ExcludeVariableSourceText))
             {
@@ -1092,9 +1095,9 @@ namespace NtApiDotNet.Win32.Rpc
             string ns_name = _args.NamespaceName;
             if (string.IsNullOrWhiteSpace(ns_name))
             {
-                if (_server != null && !HasFlag(RpcClientBuilderFlags.NoNamespace))
+                if (_procs.Any() && !HasFlag(RpcClientBuilderFlags.NoNamespace))
                 {
-                    ns_name = $"rpc_{_server.InterfaceId.ToString().Replace('-', '_')}_{_server.InterfaceVersion.Major}_{_server.InterfaceVersion.Minor}";
+                    ns_name = $"rpc_{_interface_id.ToString().Replace('-', '_')}_{_interface_ver.Major}_{_interface_ver.Minor}";
                 }
                 else
                 {
@@ -1159,28 +1162,45 @@ namespace NtApiDotNet.Win32.Rpc
             }
         }
 
+        private static CodeGeneratorOptions GetDefaultOptions()
+        {
+            return new CodeGeneratorOptions
+            {
+                IndentString = "    ",
+                BlankLinesBetweenMembers = false,
+                VerbatimOrder = true,
+                BracingStyle = "C"
+            };
+        }
         #endregion
 
         #region Constructors
-
         private RpcClientBuilder(IEnumerable<NdrComplexTypeReference> complex_types, RpcClientBuilderArguments args)
+            : this(Array.Empty<NdrProcedureDefinition>(), Guid.Empty, new Version(), string.Empty, complex_types, args)
         {
+        }
+
+        private RpcClientBuilder(IRpcBuildableClient client, RpcClientBuilderArguments args) 
+            : this(client.Procedures, client.InterfaceId, client.InterfaceVersion, client.FilePath, client.ComplexTypes, args)
+        {
+        }
+
+        private RpcClientBuilder(IEnumerable<NdrProcedureDefinition> procs, Guid interface_id,
+            Version interface_ver, string source_path,
+            IEnumerable<NdrComplexTypeReference> complex_types, RpcClientBuilderArguments args)
+        {
+            _source_path = source_path ?? string.Empty;
+            _procs = procs;
+            _interface_id = interface_id;
+            _interface_ver = interface_ver;
             _complex_types = complex_types;
             _type_descriptors = new Dictionary<NdrBaseTypeReference, RpcTypeDescriptor>();
             _args = args;
             _proc_names = new HashSet<string>();
         }
-
-        private RpcClientBuilder(RpcServer server, RpcClientBuilderArguments args) 
-            : this(server.ComplexTypes, args: args)
-        {
-            _server = server;
-        }
-
         #endregion
 
         #region Static Methods
-
         /// <summary>
         /// Build a source file for the RPC client.
         /// </summary>
@@ -1189,38 +1209,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="options">The code generation options, can be null.</param>
         /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
         /// <returns>The source code file.</returns>
-        public static string BuildSource(RpcServer server, RpcClientBuilderArguments args, CodeDomProvider provider, CodeGeneratorOptions options)
+        public static string BuildSource(IRpcBuildableClient server, RpcClientBuilderArguments args = default, 
+            CodeDomProvider provider = null, CodeGeneratorOptions options = null)
         {
-            return GenerateSourceCode(provider, options, new RpcClientBuilder(server, args).Generate());
-        }
-
-        /// <summary>
-        /// Build a C# source file for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <returns>The C# source code file.</returns>
-        public static string BuildSource(RpcServer server, RpcClientBuilderArguments args)
-        {
-            CodeDomProvider provider = new CSharpCodeProvider();
-            CodeGeneratorOptions options = new CodeGeneratorOptions
-            {
-                IndentString = "    ",
-                BlankLinesBetweenMembers = false,
-                VerbatimOrder = true,
-                BracingStyle = "C"
-            };
-            return BuildSource(server, args, provider, options);
-        }
-
-        /// <summary>
-        /// Build a C# source file for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <returns>The C# source code file.</returns>
-        public static string BuildSource(RpcServer server)
-        {
-            return BuildSource(server, new RpcClientBuilderArguments());
+            return GenerateSourceCode(provider ?? new CSharpCodeProvider(), options ?? GetDefaultOptions(), 
+                new RpcClientBuilder(server, args).Generate());
         }
 
         /// <summary>
@@ -1235,85 +1228,22 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="pointer_complex_types">True to wrap complex decoders in a unique pointer.</param>
         /// <returns>The source code file.</returns>
         public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
-            string encoder_name, string decoder_name, string namespace_name,
-            bool pointer_complex_types, CodeDomProvider provider, CodeGeneratorOptions options)
+            string encoder_name = null, string decoder_name = null, string namespace_name = null,
+            bool pointer_complex_types = false, CodeDomProvider provider = null, CodeGeneratorOptions options = null)
         {
             RpcClientBuilderArguments args = new RpcClientBuilderArguments
             {
-                EncoderName = encoder_name,
-                DecoderName = decoder_name,
-                NamespaceName = namespace_name,
+                EncoderName = encoder_name ?? string.Empty,
+                DecoderName = decoder_name ?? string.Empty,
+                NamespaceName = namespace_name ?? string.Empty,
                 Flags = RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods
             };
             if (pointer_complex_types)
             {
                 args.Flags |= RpcClientBuilderFlags.PointerComplexTypeDecoders;
             }
-            return GenerateSourceCode(provider, options, new RpcClientBuilder(complex_types, args).Generate());
-        }
-
-        /// <summary>
-        /// Build a source file for RPC complex types.
-        /// </summary>
-        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
-        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
-        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
-        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
-        /// <param name="options">The code generation options, can be null.</param>
-        /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
-        /// <returns>The source code file.</returns>
-        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types, 
-            string encoder_name, string decoder_name, string namespace_name, CodeDomProvider provider, CodeGeneratorOptions options)
-        {
-            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, false, provider, options);
-        }
-
-        /// <summary>
-        /// Build a source file for RPC complex types.
-        /// </summary>
-        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
-        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
-        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
-        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
-        /// <param name="pointer_complex_types">True to wrap complex decoders in a unique pointer.</param>
-        /// <returns>The source code file.</returns>
-        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
-            string encoder_name, string decoder_name, string namespace_name,
-            bool pointer_complex_types)
-        {
-            CodeDomProvider provider = new CSharpCodeProvider();
-            CodeGeneratorOptions options = new CodeGeneratorOptions
-            {
-                IndentString = "    ",
-                BlankLinesBetweenMembers = false,
-                VerbatimOrder = true,
-                BracingStyle = "C"
-            };
-            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, pointer_complex_types, provider, options);
-        }
-
-        /// <summary>
-        /// Build a source file for RPC complex types.
-        /// </summary>
-        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
-        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
-        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
-        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
-        /// <returns>The source code file.</returns>
-        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
-            string encoder_name, string decoder_name, string namespace_name)
-        {
-            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, false);
-        }
-
-        /// <summary>
-        /// Build a source file for RPC complex types.
-        /// </summary>
-        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
-        /// <returns>The C# source code file.</returns>
-        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types)
-        {
-            return BuildSource(complex_types, string.Empty, string.Empty, string.Empty);
+            return GenerateSourceCode(provider ?? new CSharpCodeProvider(), 
+                options ?? GetDefaultOptions(), new RpcClientBuilder(complex_types, args).Generate());
         }
 
         /// <summary>
@@ -1325,12 +1255,13 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="provider">Code DOM provider to compile the assembly.</param>
         /// <returns>The compiled assembly.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, CodeDomProvider provider)
+        public static Assembly BuildAssembly(IRpcBuildableClient server, RpcClientBuilderArguments args = default, 
+            bool ignore_cache = false, CodeDomProvider provider = null)
         {
             var builder = new RpcClientBuilder(server, args);
             if (ignore_cache)
             {
-                return builder.Compile(builder.Generate(), provider, args.EnableDebugging);
+                return builder.Compile(builder.Generate(), provider ?? new CSharpCodeProvider(), args.EnableDebugging);
             }
 
             var key = Tuple.Create(server, args);
@@ -1342,54 +1273,6 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
-        /// Compile an in-memory assembly for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
-        /// <returns>The compiled assembly.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
-        {
-            return BuildAssembly(server, args, ignore_cache, new CSharpCodeProvider());
-        }
-
-        /// <summary>
-        /// Compile an in-memory assembly for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <returns>The compiled assembly.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args)
-        {
-            return BuildAssembly(server, args, false);
-        }
-
-        /// <summary>
-        /// Compile an in-memory assembly for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
-        /// <returns>The compiled assembly.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server, bool ignore_cache)
-        {
-            return BuildAssembly(server, new RpcClientBuilderArguments(), ignore_cache);
-        }
-
-        /// <summary>
-        /// Compile an in-memory assembly for the RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <returns>The compiled assembly.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server)
-        {
-            return BuildAssembly(server, false);
-        }
-
-        /// <summary>
         /// Create an instance of an RPC client.
         /// </summary>
         /// <param name="server">The RPC server to base the client on.</param>
@@ -1398,48 +1281,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="provider">Code DOM provider to compile the assembly.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, CodeDomProvider provider)
+        public static RpcClientBase CreateClient(IRpcBuildableClient server, RpcClientBuilderArguments args = default, bool ignore_cache = false, CodeDomProvider provider = null)
         {
             Type type = BuildAssembly(server, args, ignore_cache, provider ?? new CSharpCodeProvider()).GetTypes().Where(t => typeof(RpcClientBase).IsAssignableFrom(t)).First();
             return (RpcClientBase)Activator.CreateInstance(type);
         }
-
-        /// <summary>
-        /// Create an instance of an RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <returns>The created RPC client.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
-        {
-            return CreateClient(server, args, ignore_cache, null);
-        }
-
-        /// <summary>
-        /// Create an instance of an RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <returns>The created RPC client.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args)
-        {
-            return CreateClient(server, args, false);
-        }
-
-        /// <summary>
-        /// Create an instance of an RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <returns>The created RPC client.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcClientBase CreateClient(RpcServer server)
-        {
-            return CreateClient(server, new RpcClientBuilderArguments());
-        }
-
         #endregion
     }
 }
