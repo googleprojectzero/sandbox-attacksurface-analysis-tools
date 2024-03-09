@@ -249,6 +249,11 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        public byte[] ReadRemaining()
+        {
+            return _reader.ReadAll((int)_reader.RemainingLength());
+        }
+
         #endregion
 
         #region Primitive Types
@@ -335,7 +340,6 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Fixed Array Types
-
         public byte[] ReadFixedByteArray(int count)
         {
             byte[] ret = _reader.ReadBytes(count);

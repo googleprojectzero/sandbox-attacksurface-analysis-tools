@@ -36,7 +36,12 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         public NdrDataRepresentation DataRepresentation { get; }
 
-        internal RpcClientResponse(byte[] ndr_buffer, IEnumerable<NtObject> handles)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ndr_buffer">The NDR buffer.</param>
+        /// <param name="handles">List of handles</param>
+        public RpcClientResponse(byte[] ndr_buffer, IEnumerable<NtObject> handles)
         {
             NdrBuffer = ndr_buffer;
             Handles = new List<NtObject>(handles.Select(o => o.DuplicateObject()));
