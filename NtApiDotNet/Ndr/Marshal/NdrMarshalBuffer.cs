@@ -873,7 +873,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 WriteVaryingCharArray(array.Cast<T, char>(), variance);
             }
-            else if (typeof(T) == typeof(INdrStructure))
+            else if (typeof(INdrStructure).IsAssignableFrom(typeof(T)))
             {
                 using (var queue = _deferred_writes.Push())
                 {
@@ -1045,7 +1045,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 WriteConformantCharArray(array.Cast<T, char>(), conformance);
             }
-            else if (typeof(T) == typeof(INdrStructure))
+            else if (typeof(INdrStructure).IsAssignableFrom(typeof(T)))
             {
                 using (var queue = _deferred_writes.Push())
                 {
@@ -1155,7 +1155,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 WriteConformantVaryingCharArray(array.Cast<T, char>(), conformance, variance);
             }
-            else if (typeof(T) == typeof(INdrStructure))
+            else if (typeof(INdrStructure).IsAssignableFrom(typeof(T)))
             {
                 using (var queue = _deferred_writes.Push())
                 {
