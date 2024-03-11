@@ -54,6 +54,25 @@ namespace NtApiDotNet.Ndr.Marshal
             return ret;
         }
 
+        private T?[] ReadStructPointerArray<T>(int[] refs, bool full_pointer) where T : struct, INdrStructure
+        {
+            T?[] ret = new T?[refs.Length];
+            for (int i = 0; i < refs.Length; ++i)
+            {
+                if (refs[i] == 0)
+                {
+                    ret[i] = null;
+                }
+                else
+                {
+                    int pos = i;
+                    Func<T> unmarshal = ReadStruct<T>;
+                    _deferred_reads.Add(() => ret[pos] = full_pointer ? ReadFullPointer(refs[i], unmarshal) : unmarshal());
+                }
+            }
+            return ret;
+        }
+
         private bool SetupConformance(int dimensions)
         {
             if (_conformance_values == null)
@@ -437,7 +456,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             using (var queue = _deferred_reads.Push())
             {
-                return ReadConformantArrayCallback(() => ReadReferentValue(ReadStructInternal<T>, full_pointer));
+                return ReadStructPointerArray<T>(ReadConformantArrayCallback(ReadInt32), full_pointer);
             }
         }
 
@@ -539,7 +558,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             using (var queue = _deferred_reads.Push())
             {
-                return ReadVaryingArrayCallback(() => ReadReferentValue(ReadStruct<T>, full_pointer));
+                return ReadStructPointerArray<T>(ReadVaryingArrayCallback(ReadInt32), full_pointer);
             }
         }
 
@@ -653,7 +672,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             using (var queue = _deferred_reads.Push())
             {
-                return ReadConformantVaryingArrayCallback(() => ReadReferentValue(ReadStructInternal<T>, full_pointer));
+                return ReadStructPointerArray<T>(ReadConformantVaryingArrayCallback(ReadInt32), full_pointer);
             }
         }
 

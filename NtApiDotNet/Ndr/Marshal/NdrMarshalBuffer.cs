@@ -88,6 +88,21 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
+        private void WriteStructPointerArray<T>(T?[] array, int count) where T : struct, INdrStructure
+        {
+            if (array == null)
+            {
+                array = new T?[0];
+            }
+
+            for (int i = 0; i < count; ++i)
+            {
+                INdrStructure value = i < array.Length ? array[i] : null;
+                WriteReferent(value);
+                _deferred_writes.Add(() => WriteStruct(value));
+            }
+        }
+
         private void WriteConformance(params int[] conformance)
         {
             if (_conformance_position.HasValue)
@@ -857,9 +872,18 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteVaryingStructPointerArray<T>(T?[] array, long variance) where T : struct, INdrStructure
         {
+            // Offset.
+            WriteInt32(0);
+            // Actual Count
+            int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
+            WriteInt32(var_int);
             using (var queue = _deferred_writes.Push())
             {
-                WriteVaryingArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), variance);
+                WriteStructPointerArray(array, (int)variance);
             }
         }
 
@@ -987,9 +1011,16 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteConformantStructPointerArray<T>(T?[] array, long conformance) where T : struct, INdrStructure
         {
+            int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array?.Length ?? 0;
+            }
+            // Max Count
+            WriteConformance(var_int);
             using (var queue = _deferred_writes.Push())
             {
-                WriteConformantArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), conformance);
+                WriteStructPointerArray(array, var_int);
             }
         }
 
@@ -1112,9 +1143,26 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteConformantVaryingStructPointerArray<T>(T?[] array, long conformance, long variance) where T : struct, INdrStructure
         {
+            // Max Count
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteConformance(con_int);
+
+            // Offset.
+            WriteInt32(0);
+            // Actual Count
+            int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
+            WriteInt32(var_int);
             using (var queue = _deferred_writes.Push())
             {
-                WriteVaryingArrayCallback(array, t => WriteReferent(t, x => WriteStructInternal(x)), variance);
+                WriteStructPointerArray(array, (int)variance);
             }
         }
 
