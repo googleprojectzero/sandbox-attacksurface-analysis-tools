@@ -500,7 +500,7 @@ namespace NtApiDotNet.Win32.Rpc
             else if (type is NdrInterfacePointerTypeReference)
             {
                 ret_desc = new RpcTypeDescriptor(typeof(NdrInterfacePointer), nameof(NdrUnmarshalBuffer.ReadInterfacePointer),
-                    nameof(NdrMarshalBuffer.WriteInterfacePointer), type);
+                    nameof(NdrMarshalBuffer.WriteInterfacePointer), type, RpcPointerType.Unique);
             }
             else if (type is NdrPipeTypeReference pipe_type)
             {
