@@ -1382,7 +1382,7 @@ function Get-NdrComplexType {
 
     switch($PSCmdlet.ParameterSetName) {
         "FromDecode2" {
-            $type_offset = $TypeFormat | % { $_ + $base_address }
+            $type_offset = $TypeFormat | % { [intptr]($_ + $base_address) }
             [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
                 $StubDesc+$base_address, $type_offset, $Flags) | Write-Output
         }

@@ -646,6 +646,7 @@ namespace NtApiDotNet.Ndr
         None = 0,
         NewCorrDesc = 0x1,
         Oicf = 0x2,
+        HasRangeOnConformance = 0x4
     }
 
     [StructLayout(LayoutKind.Sequential)]

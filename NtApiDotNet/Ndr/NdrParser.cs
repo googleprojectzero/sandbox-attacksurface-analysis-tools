@@ -399,7 +399,11 @@ namespace NtApiDotNet.Ndr
                 throw new ArgumentException($"Unsupported picking type version {pickle_info.Version:X}");
             }
 
-            var flags = pickle_info.Flags.HasFlag(MidlTypePicklingInfoFlags.NewCorrDesc) ? NdrInterpreterOptFlags2.HasNewCorrDesc : 0;
+            NdrInterpreterOptFlags2 flags = 0;
+            if (pickle_info.Flags.HasFlag(MidlTypePicklingInfoFlags.NewCorrDesc))
+                flags |= NdrInterpreterOptFlags2.HasNewCorrDesc;
+            if (pickle_info.Flags.HasFlag(MidlTypePicklingInfoFlags.HasRangeOnConformance))
+                flags |= NdrInterpreterOptFlags2.HasRangeOnConformance;
             MIDL_STUB_DESC stub_desc = _reader.ReadStruct<MIDL_STUB_DESC>(midl_stub_desc_ptr);
             NdrParseContext context = new NdrParseContext(_type_cache, null, stub_desc, stub_desc.pFormatTypes, stub_desc.GetExprDesc(_reader),
                 flags, _reader, NdrParserFlags.IgnoreUserMarshal);
