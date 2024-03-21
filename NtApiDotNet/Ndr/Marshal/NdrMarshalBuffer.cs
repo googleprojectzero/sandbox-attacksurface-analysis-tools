@@ -30,7 +30,7 @@ namespace NtApiDotNet.Ndr.Marshal
         #region Private Members
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
-        private readonly List<NtObject> _handles;
+        private readonly List<NdrSystemHandle> _handles;
         private NdrDeferralStack _deferred_writes;
         private int _referent;
         private long? _conformance_position;
@@ -190,7 +190,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             _stm = new MemoryStream();
             _writer = new BinaryWriter(_stm, Encoding.Unicode);
-            _handles = new List<NtObject>();
+            _handles = new List<NdrSystemHandle>();
             _referent = 0x20000;
             _deferred_writes = new NdrDeferralStack();
             NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
@@ -200,11 +200,11 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Misc Methods
-        public void WriteSystemHandle<T>(T handle) where T : NtObject
+        public void WriteSystemHandle<T>(T handle, uint desired_access = 0) where T : NtObject
         {
             if (handle != null)
             {
-                _handles.Add(handle);
+                _handles.Add(new NdrSystemHandle(handle, desired_access));
                 WriteInt32(_handles.Count);
             }
             else
@@ -1224,7 +1224,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         #region Public Properties
 
-        public List<NtObject> Handles => _handles;
+        public List<NdrSystemHandle> Handles => _handles;
 
         public NdrDataRepresentation DataRepresentation { get; }
 

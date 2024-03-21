@@ -428,7 +428,7 @@ namespace NtApiDotNet.Win32.Rpc
         {
             return new RpcTypeDescriptor(system_handle_type.GetSystemHandleType(),
                 nameof(NdrUnmarshalBuffer.ReadSystemHandle), marshal_helper, nameof(NdrMarshalBuffer.WriteSystemHandle), system_handle_type, null, null,
-                new AdditionalArguments(true), new AdditionalArguments(true));
+                new AdditionalArguments(true, CodeGenUtils.GetPrimitive(system_handle_type.AccessMask)), new AdditionalArguments(true));
         }
 
         private RpcTypeDescriptor GetHandleTypeDescriptor(NdrHandleTypeReference handle_type, MarshalHelperBuilder marshal_helper)

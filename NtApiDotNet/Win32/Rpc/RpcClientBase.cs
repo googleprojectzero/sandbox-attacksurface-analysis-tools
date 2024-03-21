@@ -86,7 +86,7 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Unmarshal NDR buffer for the result.</returns>
         protected RpcClientResponse SendReceive(int proc_num, NdrDataRepresentation data_representation, 
-            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+            byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles)
         {
             if (!Connected)
             {

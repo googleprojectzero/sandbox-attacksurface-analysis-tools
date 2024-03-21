@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Client response from the send.</returns>
         RpcClientResponse SendReceive(int proc_num, Guid objuuid, NdrDataRepresentation data_representation, 
-            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles);
+            byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles);
 
         /// <summary>
         /// Add and authenticate a new security context.

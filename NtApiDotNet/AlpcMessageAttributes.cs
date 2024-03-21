@@ -708,6 +708,22 @@ namespace NtApiDotNet
             Flags = AlpcHandleAttrFlags.SameAccess | AlpcHandleAttrFlags.SameAttributes;
             Handle = obj.Handle.DangerousGetHandle().ToInt32();
         }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="obj">The object to construct the entry from.</param>
+        /// <param name="desired_access">The desired access for the attribute. If 0 then just copies the access.</param>
+        public AlpcHandleMessageAttributeEntry(NtObject obj, AccessMask desired_access)
+        {
+            Flags = AlpcHandleAttrFlags.SameAttributes;
+            DesiredAccess = desired_access;
+            if (DesiredAccess.IsEmpty)
+            {
+                Flags |= AlpcHandleAttrFlags.SameAccess;
+            }
+            Handle = obj.Handle.DangerousGetHandle().ToInt32();
+        }
     }
 
     /// <summary>

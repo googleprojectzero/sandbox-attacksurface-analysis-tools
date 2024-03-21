@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr.Marshal;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -153,7 +154,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             _client.Send(AlpcMessageFlags.None, msg, attributes.ToContinuationAttributes(flags), NtWaitTimeout.Infinite);
         }
 
-        private RpcClientResponse SendAndReceiveLarge(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        private RpcClientResponse SendAndReceiveLarge(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles)
         {
             LRPC_LARGE_REQUEST_MESSAGE req_msg = new LRPC_LARGE_REQUEST_MESSAGE()
             {
@@ -177,7 +178,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (handles.Count > 0)
             {
-                send_attr.AddHandles(handles);
+                send_attr.AddHandles(handles.Select(h => new AlpcHandleMessageAttributeEntry(h.Handle, h.DesiredAccess)));
             }
 
             using (var port_section = _client.CreatePortSection(AlpcCreatePortSectionFlags.Secure, ndr_buffer.Length))
@@ -199,7 +200,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        private RpcClientResponse SendAndReceiveImmediate(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        private RpcClientResponse SendAndReceiveImmediate(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles)
         {
             LRPC_IMMEDIATE_REQUEST_MESSAGE req_msg = new LRPC_IMMEDIATE_REQUEST_MESSAGE()
             {
@@ -221,7 +222,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
             if (handles.Count > 0)
             {
-                send_attr.AddHandles(handles);
+                send_attr.AddHandles(handles.Select(h => new AlpcHandleMessageAttributeEntry(h.Handle, h.DesiredAccess)));
             }
 
             using (AlpcReceiveMessageAttributes recv_attr = new AlpcReceiveMessageAttributes())
@@ -329,7 +330,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Client response from the send.</returns>
         public RpcClientResponse SendReceive(int proc_num, Guid objuuid, NdrDataRepresentation data_representation,
-            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+            byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles)
         {
             if (ndr_buffer.Length > 0xF00)
             {

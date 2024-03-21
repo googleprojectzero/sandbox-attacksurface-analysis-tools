@@ -76,6 +76,7 @@
     <Compile Include="Ndr\IdlNdrFormatterInternal.cs" />
     <Compile Include="Ndr\Marshal\FLAGGED_WORD_BLOB.cs" />
     <Compile Include="Ndr\Marshal\NdrUserMarshal.cs" />
+    <Compile Include="Ndr\Marshal\NdrSystemHandle.cs" />
     <Compile Include="Ndr\NdrUtils.cs" />
     <Compile Include="Net\Dns\DnsClient.cs" />
     <Compile Include="Net\Dns\DnsAddressRecord.cs" />

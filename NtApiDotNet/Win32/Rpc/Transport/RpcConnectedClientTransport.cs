@@ -593,7 +593,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Client response from the send.</returns>
         public RpcClientResponse SendReceive(int proc_num, Guid objuuid, NdrDataRepresentation data_representation, 
-            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+            byte[] ndr_buffer, IReadOnlyCollection<NdrSystemHandle> handles)
         {
             NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
             return new RpcClientResponse(SendReceiveRequestPDU(proc_num, objuuid, 
