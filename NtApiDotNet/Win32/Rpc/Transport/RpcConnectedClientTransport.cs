@@ -29,6 +29,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public abstract class RpcConnectedClientTransport : IRpcClientTransport
     {
         #region Protected Members
+        protected ushort _max_recv_fragment;
+        protected ushort _max_send_fragment;
 
         /// <summary>
         /// Constructor.
@@ -78,8 +80,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private readonly Dictionary<int, RpcTransportSecurityContext> _security_context;
         private RpcTransportSecurityContext _current_security_context;
         private int _current_context_id;
-        private ushort _max_recv_fragment;
-        private ushort _max_send_fragment;
         private int _assoc_group_id;
         private int _recv_sequence_no;
         private int _send_sequence_no;
@@ -519,7 +519,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// <param name="interface_version">The interface version to bind to.</param>
         /// <param name="transfer_syntax_id">The transfer syntax to use.</param>
         /// <param name="transfer_syntax_version">The transfer syntax version to use.</param>
-        public void Bind(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        public virtual void Bind(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
             if (transfer_syntax_id != Ndr.NdrNativeUtils.DCE_TransferSyntax || transfer_syntax_version != new Version(2, 0))
             {
