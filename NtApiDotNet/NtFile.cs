@@ -2379,6 +2379,8 @@ namespace NtApiDotNet
         /// <returns>The length of bytes read into the buffer.</returns>
         public NtResult<int> Read(SafeBuffer buffer, long? position, bool throw_on_error)
         {
+            //null is not the same as zero within RunFileCallSync.  I did not investigate further than this fix.
+            position = position ?? 0;
             return RunFileCallSync(r => NtSystemCalls.NtReadFile(Handle, r.EventHandle, IntPtr.Zero,
                     IntPtr.Zero, r.IoStatusBuffer, buffer, 
                     buffer.GetLength(), position.ToLargeInteger(), IntPtr.Zero), throw_on_error)
