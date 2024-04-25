@@ -55,6 +55,8 @@ namespace NtApiDotNet.Win32.Debugger
                     return SymbolInformationType.Function;
                 case SymTagEnum.SymTagPointerType:
                     return SymbolInformationType.Pointer;
+                case SymTagEnum.SymTagData:
+                    return SymbolInformationType.Data;
                 default:
                     return SymbolInformationType.UndefinedType;
             }

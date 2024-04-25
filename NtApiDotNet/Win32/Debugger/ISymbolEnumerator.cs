@@ -12,28 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Collections.Generic;
+
 namespace NtApiDotNet.Win32.Debugger
 {
     /// <summary>
-    /// Symbol information for a data value.
+    /// Interface to enumerate symbols by name.
     /// </summary>
-    public class DataSymbolInformation : SymbolInformation
+    public interface ISymbolEnumerator
     {
         /// <summary>
-        /// Address of the symbol.
+        /// Enumerate symbols by name.
         /// </summary>
-        public long Address { get; }
-        /// <summary>
-        /// The machine type of the symbol.
-        /// </summary>
-        public DllMachineType MachineType { get; }
-
-        internal DataSymbolInformation(SymTagEnum tag, int size, int type_index, 
-            long address, SymbolLoadedModule module, string name, DllMachineType machine_type) 
-            : base(tag, size, type_index, module, name)
-        {
-            Address = address;
-            MachineType = machine_type;
-        }
+        /// <param name="base_address">Optional base address of the DLL.</param>
+        /// <param name="mask">The symbol name mask.</param>
+        /// <returns>The list of symbols.</returns>
+        IEnumerable<SymbolInformation> EnumerateSymbols(IntPtr base_address, string mask);
     }
 }

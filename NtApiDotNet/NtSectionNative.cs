@@ -181,6 +181,7 @@ namespace NtApiDotNet
         SH5 = 0x1A8,
         THUMB = 0x1C2,
         WCEMIPSV2 = 0x169,
+        ARM64EC = 0xA641,
         ARM64 = 0xAA64,
     }
 

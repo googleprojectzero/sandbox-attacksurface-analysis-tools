@@ -44,6 +44,10 @@ namespace NtApiDotNet.Win32.Debugger
         /// </summary>
         Pointer,
         /// <summary>
+        /// A data value type.
+        /// </summary>
+        Data,
+        /// <summary>
         /// Undefined.
         /// </summary>
         UndefinedType,

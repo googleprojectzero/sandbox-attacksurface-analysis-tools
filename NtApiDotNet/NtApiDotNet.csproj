@@ -530,9 +530,12 @@
     <Compile Include="Win32\ConsoleSession.cs" />
     <Compile Include="Win32\Debugger\DbgHelpCallbackActionCode.cs" />
     <Compile Include="Win32\Debugger\DbgHelpDebugCallbackHandler.cs" />
+    <Compile Include="Win32\Debugger\IDiaSession.cs" />
+    <Compile Include="Win32\Debugger\IDiaSymbol.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_CBA_EVENTW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_DEFERRED_SYMBOL_LOADW.cs" />
     <Compile Include="Win32\Debugger\IMAGEHLP_STACK_FRAME.cs" />
+    <Compile Include="Win32\Debugger\ISymbolEnumerator.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceBinding.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameError.cs" />
     <Compile Include="Win32\DirectoryService\DirectoryServiceNameFlags.cs" />
