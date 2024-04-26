@@ -217,13 +217,6 @@ namespace NtApiDotNet.Win32.Debugger
             IntPtr size
         );
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
-        delegate bool SymGetDiaSession(
-            SafeKernelObjectHandle hProcess,
-            long BaseOfDll,
-            [MarshalAs(UnmanagedType.Interface)] out IDiaSession DiaSession
-        );
-
         private readonly SafeLoadLibraryHandle _dbghelp_lib;
         private readonly SymInitializeW _sym_init;
         private readonly SymCleanup _sym_cleanup;
@@ -246,7 +239,6 @@ namespace NtApiDotNet.Win32.Debugger
         private readonly SymSetContext _sym_set_context;
         private readonly SymEnumSymbolsW _sym_enum_symbols;
         private readonly SymGetHomeDirectoryW _sym_get_home_directory;
-        private readonly SymGetDiaSession _sym_get_dia_session;
         private IEnumerable<SymbolLoadedModule> _loaded_modules;
         private readonly TextWriter _trace_writer;
         private readonly bool _trace_symbol_loading;
@@ -258,11 +250,6 @@ namespace NtApiDotNet.Win32.Debugger
         private void GetFunc<T>(ref T f) where T : Delegate
         {
             f = _dbghelp_lib.GetFunctionPointer<T>();
-        }
-
-        private void GetFuncNoThrow<T>(ref T f) where T : Delegate
-        {
-            f = _dbghelp_lib.GetFunctionPointer<T>(false);
         }
 
         private void GetFunc<T>(ref T f, string name) where T : Delegate
@@ -278,29 +265,6 @@ namespace NtApiDotNet.Win32.Debugger
         private static string GetNameFromSymbolInfo(SafeStructureInOutBuffer<SYMBOL_INFO> buffer)
         {
             return buffer.Data.ReadNulTerminatedUnicodeString();
-        }
-
-        private DllMachineType GetSymbolMachineType(SYMBOL_INFO sym_info)
-        {
-            IDiaSession session = null;
-            IDiaSymbol symbol = null;
-            try
-            {
-                if (_sym_get_dia_session == null || !_sym_get_dia_session(Handle, sym_info.ModBase, out session))
-                    return DllMachineType.UNKNOWN;
-
-                if (session.findSymbolByVA(sym_info.Address, sym_info.Tag, out symbol) != 0)
-                    return DllMachineType.UNKNOWN;
-
-                return (DllMachineType)symbol.machineType;
-            }
-            finally
-            {
-                if (symbol != null)
-                    Marshal.ReleaseComObject(symbol);
-                if (session != null)
-                    Marshal.ReleaseComObject(session);
-            }
         }
 
         private static SafeStructureInOutBuffer<SYMBOL_INFO> MapSymbolInfo(IntPtr symbol_info)
@@ -744,7 +708,7 @@ namespace NtApiDotNet.Win32.Debugger
 
                     return new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex, 
                         result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), 
-                        GetNameFromSymbolInfo(sym_info), GetSymbolMachineType(result));
+                        GetNameFromSymbolInfo(sym_info), (DllMachineType)result.Reserved2);
                 }
 
                 return null;
@@ -762,7 +726,7 @@ namespace NtApiDotNet.Win32.Debugger
                 var result = sym_info.Result;
                 return new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex,
                     result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), 
-                    GetNameFromSymbolInfo(sym_info), GetSymbolMachineType(result));
+                    GetNameFromSymbolInfo(sym_info), (DllMachineType)result.Reserved2);
             }
         }
 
@@ -897,7 +861,7 @@ namespace NtApiDotNet.Win32.Debugger
                 var result = sym_info.Result;
                 var symbol = new DataSymbolInformation(result.Tag, result.Size, result.TypeIndex,
                         result.Address, GetModuleForAddress(new IntPtr(result.ModBase)), 
-                        GetNameFromSymbolInfo(sym_info), GetSymbolMachineType(result));
+                        GetNameFromSymbolInfo(sym_info), (DllMachineType)result.Reserved2);
                 symbols.Add(symbol);
                 return true;
             }
@@ -1158,7 +1122,6 @@ namespace NtApiDotNet.Win32.Debugger
             GetFunc(ref _sym_enum_symbols);
             GetFunc(ref _sym_set_context);
             GetFunc(ref _sym_get_home_directory);
-            GetFuncNoThrow(ref _sym_get_dia_session);
 
             _trace_writer = trace_writer ?? new TraceTextWriter();
             SymOptions options = SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS;
