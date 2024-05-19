@@ -307,7 +307,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get if the state has subscribers.
         /// </summary>
-        public bool SubscribersPresent => Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, true).Result != 0;
+        public bool SubscribersPresent => GetSubscribersPresent(true).Result;
 
         /// <summary>
         /// Get the security descriptor for this object, if known.
@@ -439,6 +439,15 @@ namespace NtApiDotNet
             DeleteStateData(IntPtr.Zero);
         }
 
+        /// <summary>
+        /// Get if the state has subscribers.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status of subscribers.</returns>
+        public NtResult<bool> GetSubscribersPresent(bool throw_on_error)
+        {
+            return Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, throw_on_error).Map(i => i != 0);
+        }
         #endregion
 
         /// <summary>

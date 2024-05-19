@@ -46,7 +46,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             StateName = wnf.StateName;
             Lifetime = wnf.Lifetime;
-            SubscribersPresent = wnf.SubscribersPresent;
+            SubscribersPresent = wnf.GetSubscribersPresent(false).GetResultOrDefault();
         }
     }
 }
