@@ -1386,6 +1386,27 @@ namespace NtApiDotNet.Win32
             SECURITY_ATTRIBUTES lpsa
         );
 
+        [DllImport("user32.dll", EntryPoint = "CreateDesktop", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeKernelObjectHandle CreateDesktop(
+            string desktopName,
+            IntPtr device,     // must be null.
+            IntPtr deviceMode, // must be null,
+            int flags,         // use 0
+            AccessMask dwDesiredAccess,
+            SECURITY_ATTRIBUTES attributes);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeKernelObjectHandle CreateDesktopEx(
+            string desktopName,
+            IntPtr device,     // must be null.
+            IntPtr deviceMode, // must be null,
+            int flags,         // use 0
+            AccessMask dwDesiredAccess,
+            SECURITY_ATTRIBUTES attributes,
+            ulong heapSize,
+            IntPtr pVoid);
+
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern SafeKernelObjectHandle CreateRemoteThreadEx(
             SafeKernelObjectHandle hProcess,
