@@ -81,11 +81,18 @@ namespace NtApiDotNet.Ndr
             int current_offset = 0;
             foreach (var type in _base_members)
             {
-                if (!(type is NdrStructurePaddingTypeReference))
+                if (type is NdrStructureAlignTypeReference align)
                 {
-                    members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
+                    current_offset = align.Align(current_offset);
                 }
-                current_offset += type.GetSize();
+                else
+                {
+                    if (!(type is NdrStructurePaddingTypeReference))
+                    {
+                        members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
+                    }
+                    current_offset += type.GetSize();
+                }
             }
             return members;
         }
@@ -308,6 +315,34 @@ namespace NtApiDotNet.Ndr
                 default:
                     throw new InvalidOperationException("Format must be a padding character");
             }
+        }
+    }
+
+    [Serializable]
+    public sealed class NdrStructureAlignTypeReference : NdrBaseTypeReference
+    {
+        internal NdrStructureAlignTypeReference(NdrFormatCharacter format) : base(format)
+        {
+        }
+
+        internal int Align(int offset)
+        {
+            switch (Format)
+            {
+                case NdrFormatCharacter.FC_ALIGNM2:
+                    return (offset + 1) & ~1;
+                case NdrFormatCharacter.FC_ALIGNM4:
+                    return (offset + 3) & ~3;
+                case NdrFormatCharacter.FC_ALIGNM8:
+                    return (offset + 7) & ~7;
+                default:
+                    throw new InvalidOperationException("Format must be an alignment.");
+            }
+        }
+
+        public override int GetSize()
+        {
+            return 0;
         }
     }
 

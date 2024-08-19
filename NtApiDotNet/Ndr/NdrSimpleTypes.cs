@@ -620,6 +620,10 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_STRUCTPAD6:
                     case NdrFormatCharacter.FC_STRUCTPAD7:
                         return new NdrStructurePaddingTypeReference(format);
+                    case NdrFormatCharacter.FC_ALIGNM2:
+                    case NdrFormatCharacter.FC_ALIGNM4:
+                    case NdrFormatCharacter.FC_ALIGNM8:
+                        return new NdrStructureAlignTypeReference(format);
                     case NdrFormatCharacter.FC_IGNORE:
                         return new NdrIgnoreTypeReference();
                     case NdrFormatCharacter.FC_SYSTEM_HANDLE:
