@@ -787,7 +787,7 @@ namespace NtApiDotNet
 
         internal static Version UnpackVersion(ulong version)
         {
-            short[] parts = new short[4];
+            ushort[] parts = new ushort[4];
             ulong[] original = new ulong[] { version };
 
             Buffer.BlockCopy(original, 0, parts, 0, sizeof(ulong));
@@ -797,7 +797,7 @@ namespace NtApiDotNet
 
         internal static ulong PackVersion(Version version)
         {
-            short[] parts = new short[4] { (short)version.Revision, (short)version.Build, (short)version.Minor, (short)version.Major };
+            ushort[] parts = new ushort[4] { (ushort)version.Revision, (ushort)version.Build, (ushort)version.Minor, (ushort)version.Major };
             ulong[] original = new ulong[1];
 
             Buffer.BlockCopy(parts, 0, original, 0, sizeof(ulong));
