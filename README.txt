@@ -37,6 +37,10 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.34
+--------
+* Last release of v1 branch.
+
 1.1.33
 --------
 * Various bug fixes.
