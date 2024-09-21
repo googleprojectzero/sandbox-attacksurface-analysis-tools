@@ -15,34 +15,33 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal class PDUBind : PDUBase
 {
-    internal class PDUBind : PDUBase
+    public PDUBind(ushort max_xmit_frag, ushort max_recv_frag, int assoc_group_id, bool alter_context) 
+        : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
     {
-        public PDUBind(ushort max_xmit_frag, ushort max_recv_frag, int assoc_group_id, bool alter_context) 
-            : base(alter_context ? PDUType.AlterContext : PDUType.Bind)
-        {
-            _max_xmit_frag = max_xmit_frag;
-            _max_recv_frag = max_recv_frag;
-            _assoc_group_id = assoc_group_id;
-            Elements = new List<ContextElement>();
-        }
+        _max_xmit_frag = max_xmit_frag;
+        _max_recv_frag = max_recv_frag;
+        _assoc_group_id = assoc_group_id;
+        Elements = new List<ContextElement>();
+    }
 
-        private readonly ushort _max_xmit_frag;
-        private readonly ushort _max_recv_frag;
-        private readonly int _assoc_group_id;
+    private readonly ushort _max_xmit_frag;
+    private readonly ushort _max_recv_frag;
+    private readonly int _assoc_group_id;
 
-        public List<ContextElement> Elements { get; }
+    public List<ContextElement> Elements { get; }
 
-        public override byte[] ToArray()
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write(_max_xmit_frag);
-            writer.Write(_max_recv_frag);
-            writer.Write(_assoc_group_id);
-            ContextElement.WriteList(writer, Elements);
-            return stm.ToArray();
-        }
+    public override byte[] ToArray()
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write(_max_xmit_frag);
+        writer.Write(_max_recv_frag);
+        writer.Write(_assoc_group_id);
+        ContextElement.WriteList(writer, Elements);
+        return stm.ToArray();
     }
 }

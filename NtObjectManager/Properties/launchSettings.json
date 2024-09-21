@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "PSDebug": {
+      "commandName": "Executable",
+      "executablePath": "%WINDIR%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "commandLineArgs": "-noexit -command \"Import-Module .\\NtObjectManager.psd1\""
+    }
+  }
+}

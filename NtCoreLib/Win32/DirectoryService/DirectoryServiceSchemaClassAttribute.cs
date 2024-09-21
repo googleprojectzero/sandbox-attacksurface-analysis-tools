@@ -14,61 +14,60 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Structure to represent an attribute for a class.
+/// </summary>
+public struct DirectoryServiceSchemaClassAttribute
 {
     /// <summary>
-    /// Structure to represent an attribute for a class.
+    /// The name of the attribute.
     /// </summary>
-    public struct DirectoryServiceSchemaClassAttribute
+    public string Name { get; }
+
+    /// <summary>
+    /// True if the attribute is required.
+    /// </summary>
+    public bool Required { get; }
+
+    /// <summary>
+    /// True if the attribute can only be modified by system.
+    /// </summary>
+    public bool System { get; }
+
+    internal DirectoryServiceSchemaClassAttribute(string name, bool required, bool system)
     {
-        /// <summary>
-        /// The name of the attribute.
-        /// </summary>
-        public string Name { get; }
+        Name = name;
+        Required = required;
+        System = system;
+    }
 
-        /// <summary>
-        /// True if the attribute is required.
-        /// </summary>
-        public bool Required { get; }
+    /// <summary>
+    /// Get the hash code for the attribute.
+    /// </summary>
+    /// <returns>The hash code.</returns>
+    public override int GetHashCode()
+    {
+        return Tuple.Create(Name, Required, System).GetHashCode();
+    }
 
-        /// <summary>
-        /// True if the attribute can only be modified by system.
-        /// </summary>
-        public bool System { get; }
+    /// <summary>
+    /// Check attributes for equality.
+    /// </summary>
+    /// <param name="obj">The other attribute to check.</param>
+    /// <returns>True if equal.</returns>
+    public override bool Equals(object obj)
+    {
+        return Tuple.Create(Name, Required, System).Equals(obj);
+    }
 
-        internal DirectoryServiceSchemaClassAttribute(string name, bool required, bool system)
-        {
-            Name = name;
-            Required = required;
-            System = system;
-        }
-
-        /// <summary>
-        /// Get the hash code for the attribute.
-        /// </summary>
-        /// <returns>The hash code.</returns>
-        public override int GetHashCode()
-        {
-            return Tuple.Create(Name, Required, System).GetHashCode();
-        }
-
-        /// <summary>
-        /// Check attributes for equality.
-        /// </summary>
-        /// <param name="obj">The other attribute to check.</param>
-        /// <returns>True if equal.</returns>
-        public override bool Equals(object obj)
-        {
-            return Tuple.Create(Name, Required, System).Equals(obj);
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The name of the attribute.</returns>
-        public override string ToString()
-        {
-            return Name;
-        }
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The name of the attribute.</returns>
+    public override string ToString()
+    {
+        return Name;
     }
 }

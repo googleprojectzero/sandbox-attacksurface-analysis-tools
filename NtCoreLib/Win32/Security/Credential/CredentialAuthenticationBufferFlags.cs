@@ -12,40 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Flags for packing and unpacking an authentication buffer.
+/// </summary>
+[Flags]
+public enum CredentialAuthenticationBufferFlags
 {
     /// <summary>
-    /// Flags for packing and unpacking an authentication buffer.
+    /// No flags.
     /// </summary>
-    [Flags]
-    public enum CredentialAuthenticationBufferFlags
-    {
-        /// <summary>
-        /// No flags.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Encrypts the credential so that it can only be decrypted by processes in the caller's logon session.
-        /// </summary>
-        [SDKName("CRED_PACK_PROTECTED_CREDENTIALS")]
-        ProtectedCredentials = 0x1,
-        /// <summary>
-        /// Encrypts the credential in a WOW buffer.
-        /// </summary>
-        [SDKName("CRED_PACK_WOW_BUFFER")]
-        WowBuffer = 0x2,
-        /// <summary>
-        /// Encrypts the credential in a CRED_GENERIC buffer.
-        /// </summary>
-        [SDKName("CRED_PACK_GENERIC_CREDENTIALS")]
-        GenericCredentials = 0x4,
-        /// <summary>
-        /// Encrypts the credential of an online identity into a SEC_WINNT_AUTH_IDENTITY_EX2 structure.
-        /// </summary>
-        [SDKName("CRED_PACK_ID_PROVIDER_CREDENTIALS")]
-        IdProviderCredentials = 0x8
-    }
+    None = 0,
+    /// <summary>
+    /// Encrypts the credential so that it can only be decrypted by processes in the caller's logon session.
+    /// </summary>
+    [SDKName("CRED_PACK_PROTECTED_CREDENTIALS")]
+    ProtectedCredentials = 0x1,
+    /// <summary>
+    /// Encrypts the credential in a WOW buffer.
+    /// </summary>
+    [SDKName("CRED_PACK_WOW_BUFFER")]
+    WowBuffer = 0x2,
+    /// <summary>
+    /// Encrypts the credential in a CRED_GENERIC buffer.
+    /// </summary>
+    [SDKName("CRED_PACK_GENERIC_CREDENTIALS")]
+    GenericCredentials = 0x4,
+    /// <summary>
+    /// Encrypts the credential of an online identity into a SEC_WINNT_AUTH_IDENTITY_EX2 structure.
+    /// </summary>
+    [SDKName("CRED_PACK_ID_PROVIDER_CREDENTIALS")]
+    IdProviderCredentials = 0x8
 }

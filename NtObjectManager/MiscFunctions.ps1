@@ -24,7 +24,7 @@ Specify to not check that the WNF entry exists.
 .PARAMETER Name
 Lookup the state name from a well known text name.
 .OUTPUTS
-NtApiDotNet.NtWnf
+NtCoreLib.NtWnf
 .EXAMPLE
 Get-NtWnf
 Get all registered WNF entries.
@@ -51,13 +51,13 @@ function Get-NtWnf {
     )
     switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.NtWnf]::GetRegisteredNotifications()
+            [NtCoreLib.NtWnf]::GetRegisteredNotifications()
         }
         "StateName" {
-            [NtApiDotNet.NtWnf]::Open($StateName, -not $DontCheckExists)
+            [NtCoreLib.NtWnf]::Open($StateName, -not $DontCheckExists)
         }
         "Name" {
-            [NtApiDotNet.NtWnf]::Open($Name, -not $DontCheckExists)
+            [NtCoreLib.NtWnf]::Open($Name, -not $DontCheckExists)
         }
     }
 }
@@ -86,7 +86,7 @@ Specify a template file to copy certain properties from.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtFile
+NtCoreLib.NtFile
 .EXAMPLE
 Get-Win32File -Path c:\abc\xyz.txt
 Open the existing file c:\abc\xyz.txt
@@ -96,16 +96,16 @@ function Get-Win32File {
     Param(
         [parameter(Mandatory, Position = 0)]
         [string]$Path,
-        [NtApiDotNet.FileAccessRights]$DesiredAccess = "MaximumAllowed",
-        [NtApiDotNet.FileShareMode]$ShareMode = 0,
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.FileAccessRights]$DesiredAccess = "MaximumAllowed",
+        [NtCoreLib.FileShareMode]$ShareMode = 0,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [switch]$InheritHandle,
-        [NtApiDotNet.Win32.CreateFileDisposition]$Disposition = "OpenExisting",
-        [NtApiDotNet.Win32.CreateFileFlagsAndAttributes]$FlagsAndAttributes = 0,
-        [NtApiDotNet.NtFile]$TemplateFile
+        [NtCoreLib.Win32.IO.CreateFileDisposition]$Disposition = "OpenExisting",
+        [NtCoreLib.Win32.IO.CreateFileFlagsAndAttributes]$FlagsAndAttributes = 0,
+        [NtCoreLib.NtFile]$TemplateFile
     )
 
-    [NtApiDotNet.Win32.Win32Utils]::CreateFile($Path, $DesiredAccess, $ShareMode, `
+    [NtCoreLib.Win32.IO.Win32FileUtils]::CreateFile($Path, $DesiredAccess, $ShareMode, `
             $SecurityDescriptor, $InheritHandle, $Disposition, $FlagsAndAttributes, $TemplateFile)
 }
 
@@ -159,7 +159,7 @@ Specify the directory.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.ObjectDirectoryInformation[]
+NtCoreLib.ObjectDirectoryInformation[]
 .EXAMPLE
 Get-NtDirectoryEntry $dir
 Get list of entries from $dir.
@@ -168,7 +168,7 @@ function Get-NtDirectoryEntry {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.NtDirectory]$Directory
+        [NtCoreLib.NtDirectory]$Directory
     )
 
     $Directory.Query() | Write-Output
@@ -197,9 +197,9 @@ Terminate a job with STATUS_ACCESS_DENIED code.
 function Stop-NtJob {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtJob]$Job,
+        [NtCoreLib.NtJob]$Job,
         [parameter(Position = 1)]
-        [NtApiDotNet.NtStatus]$Status = 0
+        [NtCoreLib.NtStatus]$Status = 0
     )
     $Job.Terminate($Status)
 }
@@ -228,5 +228,26 @@ function Invoke-NtEnclave {
         [switch]$WaitForThread
     )
 
-    [NtApiDotNet.NtEnclave]::Call($Routine, $Parameter, $WaitForThread)
+    [NtCoreLib.NtEnclave]::Call($Routine, $Parameter, $WaitForThread)
+}
+
+<#
+.SYNOPSIS
+Create a new memory buffer.
+.DESCRIPTION
+This cmdlet creates a new memory buffer object of a certain size.
+.PARAMETER Length
+Specify the length in bytes of the buffer.
+.INPUTS
+None
+.OUTPUTS
+NtCoreLib.Native.SafeBuffers.SafeHGlobalBuffer
+#>
+function New-Win32MemoryBuffer {
+    param(
+        [Parameter(Position = 0, Mandatory)]
+        [int]$Length
+    )
+
+    [NtCoreLib.Native.SafeBuffers.SafeHGlobalBuffer]::new($Length)
 }

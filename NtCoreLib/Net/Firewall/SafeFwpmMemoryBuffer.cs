@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
+using NtCoreLib.Native.SafeBuffers;
 using System;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+class SafeFwpmMemoryBuffer : SafeBufferGeneric
 {
-    class SafeFwpmMemoryBuffer : SafeBufferGeneric
+    internal SafeFwpmMemoryBuffer()
+        : base(IntPtr.Zero, 0, true)
     {
-        internal SafeFwpmMemoryBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
+    }
 
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern void FwpmFreeMemory0(
-            ref IntPtr p
-        );
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    static extern void FwpmFreeMemory0(
+        ref IntPtr p
+    );
 
-        protected override bool ReleaseHandle()
-        {
-            FwpmFreeMemory0(ref handle);
-            return true;
-        }
+    protected override bool ReleaseHandle()
+    {
+        FwpmFreeMemory0(ref handle);
+        return true;
     }
 }
 

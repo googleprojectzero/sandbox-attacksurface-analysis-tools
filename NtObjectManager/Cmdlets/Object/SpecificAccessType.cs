@@ -12,48 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Cmdlets.Object
-{
+namespace NtObjectManager.Cmdlets.Object;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// <para type="description">Enumeration for specific access type mapping.</para>
-    /// </summary>
-    public enum SpecificAccessType
-    {
-        None,
-        ALPCPort,
-        DebugObject,
-        Desktop,
-        Directory,
-        Event,
-        File,
-        Device,
-        IoCompletion,
-        Job,
-        Key,
-        Mutant,
-        Partition,
-        Process,
-        RegistryTransaction,
-        Section,
-        Semaphore,
-        Session,
-        SymbolicLink,
-        Thread,
-        Token,
-        TmTx,
-        WindowStation,
-        TmRm,
-        TmEn,
-        TmTm,
-        Transaction,
-        ResourceManager,
-        Enlistment,
-        TransactionManager,
-        Service,
-        SCM,
-        DirectoryService,
-        Audit,
-    }
-#pragma warning restore 1591
+/// <summary>
+/// <para type="description">Enumeration for specific access type mapping.</para>
+/// </summary>
+public enum SpecificAccessType
+{
+    None,
+    ALPCPort,
+    DebugObject,
+    Desktop,
+    Directory,
+    Event,
+    File,
+    Device,
+    IoCompletion,
+    Job,
+    Key,
+    Mutant,
+    Partition,
+    Process,
+    RegistryTransaction,
+    Section,
+    Semaphore,
+    Session,
+    SymbolicLink,
+    Thread,
+    Token,
+    TmTx,
+    WindowStation,
+    TmRm,
+    TmEn,
+    TmTm,
+    Transaction,
+    ResourceManager,
+    Enlistment,
+    TransactionManager,
+    Service,
+    SCM,
+    DirectoryService,
+    Audit,
 }
+#pragma warning restore 1591
+

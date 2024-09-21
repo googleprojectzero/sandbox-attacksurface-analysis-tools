@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 using System.Security.Cryptography.X509Certificates;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Interface for a client authentication context.
+/// </summary>
+public interface IClientAuthenticationContext : IAuthenticationContext
 {
     /// <summary>
-    /// Interface for a client authentication context.
+    /// Get the last token status for the client context.
     /// </summary>
-    public interface IClientAuthenticationContext : IAuthenticationContext
-    {
-        /// <summary>
-        /// Get the last token status for the client context.
-        /// </summary>
-        SecPkgLastClientTokenStatus LastTokenStatus { get; }
+    SecPkgLastClientTokenStatus LastTokenStatus { get; }
 
-        /// <summary>
-        /// Current request attribute flags.
-        /// </summary>
-        InitializeContextReqFlags RequestAttributes { get; }
+    /// <summary>
+    /// Current request attribute flags.
+    /// </summary>
+    InitializeContextReqFlags RequestAttributes { get; }
 
-        /// <summary>
-        /// Current return attribute flags.
-        /// </summary>
-        InitializeContextRetFlags ReturnAttributes { get; }
+    /// <summary>
+    /// Current return attribute flags.
+    /// </summary>
+    InitializeContextRetFlags ReturnAttributes { get; }
 
-        /// <summary>
-        /// Get the local certificate. Only used for Schannel related authentication.
-        /// </summary>
-        X509Certificate2 LocalCertificate { get; }
+    /// <summary>
+    /// Get the local certificate. Only used for Schannel related authentication.
+    /// </summary>
+    X509Certificate2 LocalCertificate { get; }
 
-        /// <summary>
-        /// Get the remote certificate. Only used for Schannel related authentication.
-        /// </summary>
-        X509Certificate2 RemoteCertificate { get; }
-    }
+    /// <summary>
+    /// Get the remote certificate. Only used for Schannel related authentication.
+    /// </summary>
+    X509Certificate2 RemoteCertificate { get; }
 }

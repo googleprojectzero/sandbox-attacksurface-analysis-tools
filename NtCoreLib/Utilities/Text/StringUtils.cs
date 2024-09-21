@@ -12,91 +12,76 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.Text
+namespace NtCoreLib.Utilities.Text;
+
+/// <summary>
+/// Class to call NT functions for manipulating strings.
+/// </summary>
+public static class StringUtils
 {
+    #region Static Members
     /// <summary>
-    /// Class to call NT functions for manipulating strings.
+    /// Upper case a character according to the internal NTDLL string routines.
     /// </summary>
-    public static class StringUtils
+    /// <param name="c">The character to upper case.</param>
+    /// <returns>The upper case character.</returns>
+    public static char Upcase(char c)
     {
-        #region Static Members
-        /// <summary>
-        /// Upper case a character according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="c">The character to upper case.</param>
-        /// <returns>The upper case character.</returns>
-        public static char Upcase(char c)
-        {
-            return NtRtl.RtlUpcaseUnicodeChar(c);
-        }
-
-        /// <summary>
-        /// Upper case a string according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="str">The string to upper case.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The upper case string.</returns>
-        public static NtResult<string> Upcase(string str, bool throw_on_error)
-        {
-            UnicodeStringOut out_str = new UnicodeStringOut();
-            try
-            {
-                return NtRtl.RtlUpcaseUnicodeString(ref out_str, new UnicodeString(str), true).CreateResult(throw_on_error, () => out_str.ToString());
-            }
-            finally
-            {
-                NtRtl.RtlFreeUnicodeString(ref out_str);
-            }
-        }
-
-        /// <summary>
-        /// Upper case a string according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="str">The string to upper case.</param>
-        /// <returns>The upper case string.</returns>
-        public static string Upcase(string str)
-        {
-            return Upcase(str, true).Result;
-        }
-
-        /// <summary>
-        /// Lower case a character according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="c">The character to lower case.</param>
-        /// <returns>The lower case character.</returns>
-        public static char Downcase(char c)
-        {
-            return NtRtl.RtlUpcaseUnicodeChar(c);
-        }
-
-        /// <summary>
-        /// Lower case a string according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="str">The string to lower case.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The lower case string.</returns>
-        public static NtResult<string> Downcase(string str, bool throw_on_error)
-        {
-            UnicodeStringOut out_str = new UnicodeStringOut();
-            try
-            {
-                return NtRtl.RtlUpcaseUnicodeString(ref out_str, new UnicodeString(str), true).CreateResult(throw_on_error, () => out_str.ToString());
-            }
-            finally
-            {
-                NtRtl.RtlFreeUnicodeString(ref out_str);
-            }
-        }
-
-        /// <summary>
-        /// Lower case a string according to the internal NTDLL string routines.
-        /// </summary>
-        /// <param name="str">The string to lower case.</param>
-        /// <returns>The lower case string.</returns>
-        public static string Downcase(string str)
-        {
-            return Upcase(str, true).Result;
-        }
-        #endregion
+        return NtRtl.RtlUpcaseUnicodeChar(c);
     }
+
+    /// <summary>
+    /// Upper case a string according to the internal NTDLL string routines.
+    /// </summary>
+    /// <param name="str">The string to upper case.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The upper case string.</returns>
+    public static NtResult<string> Upcase(string str, bool throw_on_error)
+    {
+        using UnicodeStringHeap out_str = new();
+        return NtRtl.RtlUpcaseUnicodeString(out_str, new UnicodeString(str), true).CreateResult(throw_on_error, () => out_str.ToString());
+    }
+
+    /// <summary>
+    /// Upper case a string according to the internal NTDLL string routines.
+    /// </summary>
+    /// <param name="str">The string to upper case.</param>
+    /// <returns>The upper case string.</returns>
+    public static string Upcase(string str)
+    {
+        return Upcase(str, true).Result;
+    }
+
+    /// <summary>
+    /// Lower case a character according to the internal NTDLL string routines.
+    /// </summary>
+    /// <param name="c">The character to lower case.</param>
+    /// <returns>The lower case character.</returns>
+    public static char Downcase(char c)
+    {
+        return NtRtl.RtlUpcaseUnicodeChar(c);
+    }
+
+    /// <summary>
+    /// Lower case a string according to the internal NTDLL string routines.
+    /// </summary>
+    /// <param name="str">The string to lower case.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The lower case string.</returns>
+    public static NtResult<string> Downcase(string str, bool throw_on_error)
+    {
+        using UnicodeStringHeap out_str = new();
+        return NtRtl.RtlUpcaseUnicodeString(out_str, new UnicodeString(str), true).CreateResult(throw_on_error, () => out_str.ToString());
+    }
+
+    /// <summary>
+    /// Lower case a string according to the internal NTDLL string routines.
+    /// </summary>
+    /// <param name="str">The string to lower case.</param>
+    /// <returns>The lower case string.</returns>
+    public static string Downcase(string str)
+    {
+        return Upcase(str, true).Result;
+    }
+    #endregion
 }

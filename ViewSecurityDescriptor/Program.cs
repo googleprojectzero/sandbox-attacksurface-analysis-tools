@@ -12,68 +12,69 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Forms;
+using NtCoreLib;
+using NtCoreLib.Forms;
+using NtCoreLib.Native.SafeHandles;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.Windows.Forms;
 
-namespace ViewSecurityDescriptor
-{
-    static class Program
-    {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main(string[] args)
-        {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+namespace ViewSecurityDescriptor;
 
-            try
+static class Program
+{
+    /// <summary>
+    /// The main entry point for the application.
+    /// </summary>
+    [STAThread]
+    static void Main(string[] args)
+    {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        try
+        {
+            if (args.Length == 0)
             {
-                if (args.Length == 0)
+                MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle [--readonly]|Name (SDDL|-B64) NtType [Container])", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+            else
+            {
+                if (args.Length < 3)
                 {
-                    MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle [--readonly]|Name (SDDL|-B64) NtType [Container])", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
+                    bool read_only = args.Length > 1 && args[1].Equals("--readonly");
+                    using (var obj = NtGeneric.FromHandle(handle))
+                    {
+                        Application.Run(new SecurityDescriptorViewerForm(obj.ToTypedObject(), read_only));
+                    }
                 }
                 else
                 {
-                    if (args.Length < 3)
+                    NtType type = new NtType(args[2]);
+                    SecurityDescriptor sd;
+                    if (args[1].StartsWith("-"))
                     {
-                        var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
-                        bool read_only = args.Length > 1 && args[1].Equals("--readonly");
-                        using (var obj = NtGeneric.FromHandle(handle))
-                        {
-                            Application.Run(new SecurityDescriptorViewerForm(obj.ToTypedObject(), read_only));
-                        }
+                        sd = new SecurityDescriptor(Convert.FromBase64String(args[1].Substring(1)));
                     }
                     else
                     {
-                        NtType type = new NtType(args[2]);
-                        SecurityDescriptor sd;
-                        if (args[1].StartsWith("-"))
-                        {
-                            sd = new SecurityDescriptor(Convert.FromBase64String(args[1].Substring(1)));
-                        }
-                        else
-                        {
-                            sd = new SecurityDescriptor(args[1]);
-                        }
-
-                        bool container = false;
-                        if (args.Length > 3)
-                        {
-                            container = bool.Parse(args[3]);
-                        }
-
-                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd, type, container));
+                        sd = new SecurityDescriptor(args[1]);
                     }
+
+                    bool container = false;
+                    if (args.Length > 3)
+                    {
+                        container = bool.Parse(args[3]);
+                    }
+
+                    Application.Run(new SecurityDescriptorViewerForm(args[0], sd, type, container));
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

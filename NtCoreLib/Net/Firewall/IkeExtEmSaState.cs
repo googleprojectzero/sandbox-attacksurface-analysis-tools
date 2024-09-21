@@ -12,49 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IKE extended mode states
+/// </summary>
+[SDKName("IKEEXT_EM_SA_STATE")]
+public enum IkeExtEmSaState
 {
     /// <summary>
-    /// IKE extended mode states
+    /// Initial state. No EM packets have been sent to the peer yet.
     /// </summary>
-    [SDKName("IKEEXT_EM_SA_STATE")]
-    public enum IkeExtEmSaState
-    {
-        /// <summary>
-        /// Initial state. No EM packets have been sent to the peer yet.
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_NONE")]
-        None,
-        /// <summary>
-        /// State corresponding to the first EM roundtrip
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_SENT_ATTS")]
-        SentAtts,
-        /// <summary>
-        /// State corresponding to the second EM roundtrip
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_SSPI_SENT")]
-        SspiSent,
-        /// <summary>
-        /// State corresponding to the final EM roundtrip
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_AUTH_COMPLETE")]
-        AuthComplete,
-        /// <summary>
-        /// State corresponding to the final EM roundtrip
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_FINAL")]
-        Final,
-        /// <summary>
-        /// EM has been completed
-        /// </summary>
-        [SDKName("IKEEXT_EM_SA_STATE_COMPLETE")]
-        Complete,
-    }
+    [SDKName("IKEEXT_EM_SA_STATE_NONE")]
+    None,
+    /// <summary>
+    /// State corresponding to the first EM roundtrip
+    /// </summary>
+    [SDKName("IKEEXT_EM_SA_STATE_SENT_ATTS")]
+    SentAtts,
+    /// <summary>
+    /// State corresponding to the second EM roundtrip
+    /// </summary>
+    [SDKName("IKEEXT_EM_SA_STATE_SSPI_SENT")]
+    SspiSent,
+    /// <summary>
+    /// State corresponding to the final EM roundtrip
+    /// </summary>
+    [SDKName("IKEEXT_EM_SA_STATE_AUTH_COMPLETE")]
+    AuthComplete,
+    /// <summary>
+    /// State corresponding to the final EM roundtrip
+    /// </summary>
+    [SDKName("IKEEXT_EM_SA_STATE_FINAL")]
+    Final,
+    /// <summary>
+    /// EM has been completed
+    /// </summary>
+    [SDKName("IKEEXT_EM_SA_STATE_COMPLETE")]
+    Complete,
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

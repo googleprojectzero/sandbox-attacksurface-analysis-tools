@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Audit
-{
+namespace NtCoreLib.Win32.Security.Audit;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// Policy audit event type.
-    /// </summary>
-    public enum AuditPolicyEventType
-    {
-        System = 0,
-        Logon,
-        ObjectAccess,
-        PrivilegeUse,
-        DetailedTracking,
-        PolicyChange,
-        AccountManagement,
-        DirectoryServiceAccess,
-        AccountLogon
-    }
+/// <summary>
+/// Policy audit event type.
+/// </summary>
+public enum AuditPolicyEventType
+{
+    System = 0,
+    Logon,
+    ObjectAccess,
+    PrivilegeUse,
+    DetailedTracking,
+    PolicyChange,
+    AccountManagement,
+    DirectoryServiceAccess,
+    AccountLogon
 }

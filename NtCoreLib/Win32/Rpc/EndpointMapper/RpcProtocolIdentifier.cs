@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtCoreLib.Win32.Rpc.EndpointMapper;
+
+/// <summary>
+/// RPC protocol identifiers.
+/// </summary>
+public enum RpcProtocolIdentifier
 {
-    /// <summary>
-    /// RPC protocol identifiers.
-    /// </summary>
-    public enum RpcProtocolIdentifier
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Tcp = 7,
-        Udp = 8,
-        Ip = 9,
-        ConnectionlessProtocol = 0xA,
-        ConnectionOrientatedProtocol = 0xB,
-        Lrpc = 0xC,
-        Uuid = 0xD,
-        NetBIOS = 0x11,
-        ContainerAddress = 0x22,
+    Tcp = 7,
+    Udp = 8,
+    Ip = 9,
+    ConnectionlessProtocol = 0xA,
+    ConnectionOrientatedProtocol = 0xB,
+    Lrpc = 0xC,
+    Uuid = 0xD,
+    NetBIOS = 0x11,
+    ContainerAddress = 0x22,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

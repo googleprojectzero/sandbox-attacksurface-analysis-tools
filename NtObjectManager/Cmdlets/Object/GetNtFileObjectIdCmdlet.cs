@@ -12,63 +12,62 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the object ID for a file.</para>
+/// <para type="description">This cmdlet gets the object ID for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileObjectId -File $f</code>
+///   <para>Get the object ID for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileObjectId -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the object ID for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileObjectId -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the object ID for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileObjectId", DefaultParameterSetName = "Default")]
+[OutputType(typeof(Guid), typeof(FileObjectIdBuffer))]
+public class GetNtFileObjectIdCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the object ID for a file.</para>
-    /// <para type="description">This cmdlet gets the object ID for a file.</para>
+    /// <para type="description">Specify to get extended object ID information.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileObjectId -File $f</code>
-    ///   <para>Get the object ID for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileObjectId -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the object ID for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileObjectId -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the object ID for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileObjectId", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(Guid), typeof(FileObjectIdBuffer))]
-    public class GetNtFileObjectIdCmdlet : BaseNtFilePropertyCmdlet
+    [Parameter]
+    public SwitchParameter ExtendedInformation { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to create the object ID if it doesn't already exist.</para>
+    /// </summary>
+    [Parameter]
+    public SwitchParameter Create { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public GetNtFileObjectIdCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// <para type="description">Specify to get extended object ID information.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter ExtendedInformation { get; set; }
+    }
 
-        /// <summary>
-        /// <para type="description">Specify to create the object ID if it doesn't already exist.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Create { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileObjectIdCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
+    private protected override void HandleFile(NtFile file)
+    {
+        var objid = Create ? file.CreateOrGetObjectId() : file.GetObjectId();
+        if (ExtendedInformation)
         {
+            WriteObject(objid);
         }
-
-        private protected override void HandleFile(NtFile file)
+        else
         {
-            var objid = Create ? file.CreateOrGetObjectId() : file.GetObjectId();
-            if (ExtendedInformation)
-            {
-                WriteObject(objid);
-            }
-            else
-            {
-                WriteObject(objid.ObjectId);
-            }
+            WriteObject(objid.ObjectId);
         }
     }
 }

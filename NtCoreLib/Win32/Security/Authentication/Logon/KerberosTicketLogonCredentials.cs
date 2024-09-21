@@ -12,109 +12,108 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Utilities.Reflection;
+using NtCoreLib.Win32.Security.Authentication.Kerberos;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Flags for ticket logon.
+/// </summary>
+[Flags]
+public enum KerberosTicketLogonFlags
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    None = 0,
+    [SDKName("KERB_LOGON_FLAG_ALLOW_EXPIRED_TICKET")]
+    AllowExpiredTicket = 1,
+    [SDKName("KERB_LOGON_FLAG_REDIRECTED")]
+    Redirected = 2,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// Class to represent a KERB_TICKET_LOGON or a KERB_TICKET_UNLOCK_LOGON structure.
+/// </summary>
+public sealed class KerberosTicketLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
 {
     /// <summary>
-    /// Flags for ticket logon.
+    /// The Kerberos service ticket.
     /// </summary>
-    [Flags]
-    public enum KerberosTicketLogonFlags
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("KERB_LOGON_FLAG_ALLOW_EXPIRED_TICKET")]
-        AllowExpiredTicket = 1,
-        [SDKName("KERB_LOGON_FLAG_REDIRECTED")]
-        Redirected = 2,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
+    public KerberosTicket ServiceTicket { get; set; }
 
     /// <summary>
-    /// Class to represent a KERB_TICKET_LOGON or a KERB_TICKET_UNLOCK_LOGON structure.
+    /// The optional TGT credentials.
     /// </summary>
-    public sealed class KerberosTicketLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
+    public KerberosCredential TicketGrantingTicket { get; set; }
+
+    /// <summary>
+    /// The kerberos logon ticket flags.
+    /// </summary>
+    public KerberosTicketLogonFlags Flags { get; set; }
+
+    /// <summary>
+    /// If specified will create a KERB_TICKET_UNLOCK_LOGON credential buffer.
+    /// </summary>
+    public Luid? LogonId { get; set; }
+
+    byte[] ILsaLogonCredentialsSerializable.ToArray()
     {
-        /// <summary>
-        /// The Kerberos service ticket.
-        /// </summary>
-        public KerberosTicket ServiceTicket { get; set; }
+        using var buffer = ToBuffer(true);
+        return buffer.ToArray();
+    }
 
-        /// <summary>
-        /// The optional TGT credentials.
-        /// </summary>
-        public KerberosCredential TicketGrantingTicket { get; set; }
+    string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
 
-        /// <summary>
-        /// The kerberos logon ticket flags.
-        /// </summary>
-        public KerberosTicketLogonFlags Flags { get; set; }
+    SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+    {
+        return ToBuffer(false);
+    }
 
-        /// <summary>
-        /// If specified will create a KERB_TICKET_UNLOCK_LOGON credential buffer.
-        /// </summary>
-        public Luid? LogonId { get; set; }
+    private void PopulateLogon(LsaBufferBuilder<KERB_TICKET_LOGON> builder, bool relative)
+    {
+        builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket),
+            nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray(), relative);
+        builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket),
+            nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray(), relative);
+    }
 
-        byte[] ILsaLogonCredentialsSerializable.ToArray()
+    private SafeBufferGeneric ToBuffer(bool relative)
+    {
+        if (ServiceTicket is null)
         {
-            using (var buffer = ToBuffer(true))
-            {
-                return buffer.ToArray();
-            }
+            throw new ArgumentNullException(nameof(ServiceTicket));
         }
 
-        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
-
-        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        if (LogonId.HasValue)
         {
-            return ToBuffer(false);
-        }
-
-        private void PopulateLogon(LsaBufferBuilder<KERB_TICKET_LOGON> builder, bool relative)
-        {
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.ServiceTicket),
-                nameof(KERB_TICKET_LOGON.ServiceTicketLength), ServiceTicket.ToArray(), relative);
-            builder.AddPointerBuffer(nameof(KERB_TICKET_LOGON.TicketGrantingTicket),
-                nameof(KERB_TICKET_LOGON.TicketGrantingTicketLength), TicketGrantingTicket?.ToArray(), relative);
-        }
-
-        private SafeBufferGeneric ToBuffer(bool relative)
-        {
-            if (ServiceTicket is null)
+            var builder = new KERB_TICKET_UNLOCK_LOGON()
             {
-                throw new ArgumentNullException(nameof(ServiceTicket));
-            }
-
-            if (LogonId.HasValue)
-            {
-                var builder = new KERB_TICKET_UNLOCK_LOGON()
+                LogonId = LogonId.Value
+            }.ToBuilder();
+            PopulateLogon(builder.GetSubBuilder(nameof(KERB_TICKET_UNLOCK_LOGON.Logon),
+                new KERB_TICKET_LOGON()
                 {
-                    LogonId = LogonId.Value
-                }.ToBuilder();
-                PopulateLogon(builder.GetSubBuilder(nameof(KERB_TICKET_UNLOCK_LOGON.Logon),
-                    new KERB_TICKET_LOGON()
-                    {
-                        MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketUnlockLogon,
-                        Flags = (int)Flags
-                    }), relative);
-                return builder.ToBuffer();
-            }
-            else
-            {
-                var builder = new KERB_TICKET_LOGON()
-                {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketUnlockLogon,
                     Flags = (int)Flags
-                }.ToBuilder();
+                }), relative);
+            return builder.ToBuffer();
+        }
+        else
+        {
+            var builder = new KERB_TICKET_LOGON()
+            {
+                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbTicketLogon,
+                Flags = (int)Flags
+            }.ToBuilder();
 
-                PopulateLogon(builder, relative);
-                return builder.ToBuffer();
-            }
+            PopulateLogon(builder, relative);
+            return builder.ToBuffer();
         }
     }
 }

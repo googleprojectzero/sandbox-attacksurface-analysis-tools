@@ -12,38 +12,37 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="description">The allowed set of continue status</para>
+/// </summary>
+public enum DbgContinueStatus : uint
 {
     /// <summary>
-    /// <para type="description">The allowed set of continue status</para>
+    /// Exception is handled.
     /// </summary>
-    public enum DbgContinueStatus : uint
-    {
-        /// <summary>
-        /// Exception is handled.
-        /// </summary>
-        DBG_EXCEPTION_HANDLED = NtStatus.DBG_EXCEPTION_HANDLED,
-        /// <summary>
-        /// Continue thread.
-        /// </summary>
-        DBG_CONTINUE = NtStatus.DBG_CONTINUE,
-        /// <summary>
-        /// Exception not handled.
-        /// </summary>
-        DBG_EXCEPTION_NOT_HANDLED = NtStatus.DBG_EXCEPTION_NOT_HANDLED,
-        /// <summary>
-        /// Reply later to the debug event.
-        /// </summary>
-        DBG_REPLY_LATER = NtStatus.DBG_REPLY_LATER,
-        /// <summary>
-        /// Terminate the thread being debugged.
-        /// </summary>
-        DBG_TERMINATE_THREAD = NtStatus.DBG_TERMINATE_THREAD,
-        /// <summary>
-        /// Terminate the process being debugged.
-        /// </summary>
-        DBG_TERMINATE_PROCESS = NtStatus.DBG_TERMINATE_PROCESS
-    }
+    DBG_EXCEPTION_HANDLED = NtStatus.DBG_EXCEPTION_HANDLED,
+    /// <summary>
+    /// Continue thread.
+    /// </summary>
+    DBG_CONTINUE = NtStatus.DBG_CONTINUE,
+    /// <summary>
+    /// Exception not handled.
+    /// </summary>
+    DBG_EXCEPTION_NOT_HANDLED = NtStatus.DBG_EXCEPTION_NOT_HANDLED,
+    /// <summary>
+    /// Reply later to the debug event.
+    /// </summary>
+    DBG_REPLY_LATER = NtStatus.DBG_REPLY_LATER,
+    /// <summary>
+    /// Terminate the thread being debugged.
+    /// </summary>
+    DBG_TERMINATE_THREAD = NtStatus.DBG_TERMINATE_THREAD,
+    /// <summary>
+    /// Terminate the process being debugged.
+    /// </summary>
+    DBG_TERMINATE_PROCESS = NtStatus.DBG_TERMINATE_PROCESS
 }

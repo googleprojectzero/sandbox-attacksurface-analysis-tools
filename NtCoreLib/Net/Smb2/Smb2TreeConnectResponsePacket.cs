@@ -14,30 +14,29 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2TreeConnectResponsePacket : Smb2ResponsePacket
 {
-    internal sealed class Smb2TreeConnectResponsePacket : Smb2ResponsePacket
+    public Smb2ShareType ShareType { get; private set; }
+    public Smb2ShareFlags Flags { get; private set; }
+    public Smb2ShareCapabilities Capabilities { get; private set; }
+    public FileAccessRights MaximimalAccess { get; private set; }
+
+    public Smb2Share ToShare(Smb2Session session, string path, uint tree_id)
     {
-        public Smb2ShareType ShareType { get; private set; }
-        public Smb2ShareFlags Flags { get; private set; }
-        public Smb2ShareCapabilities Capabilities { get; private set; }
-        public FileAccessRights MaximimalAccess { get; private set; }
+        return new Smb2Share(session, path, tree_id, ShareType, Flags, Capabilities, MaximimalAccess);
+    }
 
-        public Smb2Share ToShare(Smb2Session session, string path, uint tree_id)
-        {
-            return new Smb2Share(session, path, tree_id, ShareType, Flags, Capabilities, MaximimalAccess);
-        }
-
-        public override void Read(BinaryReader reader)
-        {
-            if(reader.ReadUInt16() != 16)
-                throw new InvalidDataException("Invalid response size for TREE_CONNECT packet.");
-            ShareType = (Smb2ShareType)reader.ReadByte();
-            // Reserved.
-            reader.ReadByte();
-            Flags = (Smb2ShareFlags)reader.ReadUInt32();
-            Capabilities = (Smb2ShareCapabilities)reader.ReadUInt32();
-            MaximimalAccess = (FileAccessRights)reader.ReadUInt32();
-        }
+    public override void Read(BinaryReader reader)
+    {
+        if(reader.ReadUInt16() != 16)
+            throw new InvalidDataException("Invalid response size for TREE_CONNECT packet.");
+        ShareType = (Smb2ShareType)reader.ReadByte();
+        // Reserved.
+        reader.ReadByte();
+        Flags = (Smb2ShareFlags)reader.ReadUInt32();
+        Capabilities = (Smb2ShareCapabilities)reader.ReadUInt32();
+        MaximimalAccess = (FileAccessRights)reader.ReadUInt32();
     }
 }

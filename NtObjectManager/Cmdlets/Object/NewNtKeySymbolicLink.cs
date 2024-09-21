@@ -12,54 +12,51 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Create a new NT key symbolic link.</para>
+/// <para type="description">This cmdlet creates a new NT key symbolic link. The absolute path to the object in the NT object manager name space must be specified. 
+/// It's also possible to create the object relative to an existing object by specified the -Root parameter. Unlike New-NtKey this will only return the created
+/// Key if PassThru is specified.</para>
+/// </summary>
+/// <example>
+///   <code>New-NtKeySymbolicLink \Registry\Machine\Software\ABC -Target \Registry\Machine\Sofware\XYZ</code>
+///   <para>Create a new key symbolic link object with an absolute path.</para>
+/// </example>
+/// <para type="link">about_ManagingNtObjectLifetime</para>
+[Cmdlet(VerbsCommon.New, "NtKeySymbolicLink")]
+[OutputType(typeof(NtKey))]
+public class NewNtKeySymbolicLink : GetNtKeyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Create a new NT key symbolic link.</para>
-    /// <para type="description">This cmdlet creates a new NT key symbolic link. The absolute path to the object in the NT object manager name space must be specified. 
-    /// It's also possible to create the object relative to an existing object by specified the -Root parameter. Unlike New-NtKey this will only return the created
-    /// Key if PassThru is specified.</para>
+    /// <para type="description">Specify a target for the symbolic link.</para>
     /// </summary>
-    /// <example>
-    ///   <code>New-NtKeySymbolicLink \Registry\Machine\Software\ABC -Target \Registry\Machine\Sofware\XYZ</code>
-    ///   <para>Create a new key symbolic link object with an absolute path.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.New, "NtKeySymbolicLink")]
-    [OutputType(typeof(NtKey))]
-    public class NewNtKeySymbolicLink : GetNtKeyCmdlet
+    [Parameter(Mandatory = true, Position = 1)]
+    public string Target { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to pass through the created key.</para>
+    /// </summary>
+    [Parameter]
+    public SwitchParameter PassThru { get; set; }
+
+    /// <summary>
+    /// Method to create an object from a set of object attributes.
+    /// </summary>
+    /// <param name="obj_attributes">The object attributes to create/open from.</param>
+    /// <returns>The newly created object.</returns>
+    protected override object CreateObject(ObjectAttributes obj_attributes)
     {
-        /// <summary>
-        /// <para type="description">Specify a target for the symbolic link.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
-        public string Target { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to pass through the created key.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter PassThru { get; set; }
-
-        /// <summary>
-        /// Method to create an object from a set of object attributes.
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes to create/open from.</param>
-        /// <returns>The newly created object.</returns>
-        protected override object CreateObject(ObjectAttributes obj_attributes)
+        using var key = NtKey.Create(obj_attributes, Access, Options | KeyCreateOptions.CreateLink, Transaction);
+        key.SetSymbolicLinkTarget(Win32Path ? NtKeyUtils.Win32KeyNameToNt(Target) : Target);
+        if (PassThru)
         {
-            using (var key = NtKey.Create(obj_attributes, Access, Options | KeyCreateOptions.CreateLink, Transaction))
-            {
-                key.SetSymbolicLinkTarget(Win32Path ? NtKeyUtils.Win32KeyNameToNt(Target) : Target);
-                if (PassThru)
-                {
-                    return key.Duplicate();
-                }
-                return null;
-            }
+            return key.Duplicate();
         }
+        return null;
     }
 }

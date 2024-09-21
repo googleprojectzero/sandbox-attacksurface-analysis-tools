@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Profile ID for the firewall.
+/// </summary>
+public enum FirewallProfileId : uint
 {
-    /// <summary>
-    /// Profile ID for the firewall.
-    /// </summary>
-    public enum FirewallProfileId : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        Public = 1,
-        Private = 2,
-        Domain = 3
+    None = 0,
+    Public = 1,
+    Private = 2,
+    Domain = 3
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

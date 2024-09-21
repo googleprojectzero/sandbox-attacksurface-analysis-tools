@@ -12,13 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtCoreLib.Win32.Rpc.EndpointMapper;
+
+/// <summary>
+/// Query flags for endpoint mapper.
+/// </summary>
+public enum RpcEndpointInquiryFlag
 {
-    internal enum RpcEndpointInquiryFlag
-    {
-        All = 0,
-        Interface = 1,
-        Object = 2,
-        Both = 3,
-    }
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    All = 0,
+    Interface = 1,
+    Object = 2,
+    Both = 3,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

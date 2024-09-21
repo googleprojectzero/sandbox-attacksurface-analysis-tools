@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Flags to initialize a client context from a SID.
+/// </summary>
+public enum AuthZContextInitializeSidFlags
 {
     /// <summary>
-    /// Flags to initialize a client context from a SID.
+    /// None.
     /// </summary>
-    public enum AuthZContextInitializeSidFlags
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Skip gathering token groups.
-        /// </summary>
-        SkipTokenGroups = 2,
-        /// <summary>
-        /// Require S4U logon.
-        /// </summary>
-        RequireS4ULogon = 4,
-        /// <summary>
-        /// Computer token privileges.
-        /// </summary>
-        ComputePrivileges = 8
-    }
+    None = 0,
+    /// <summary>
+    /// Skip gathering token groups.
+    /// </summary>
+    SkipTokenGroups = 2,
+    /// <summary>
+    /// Require S4U logon.
+    /// </summary>
+    RequireS4ULogon = 4,
+    /// <summary>
+    /// Computer token privileges.
+    /// </summary>
+    ComputePrivileges = 8
 }

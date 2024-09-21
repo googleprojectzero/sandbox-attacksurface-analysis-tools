@@ -15,25 +15,24 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal class DnsResourceRecordPTR : DnsResourceRecordBase
 {
-    internal class DnsResourceRecordPTR : DnsResourceRecordBase
+    public string Ptr { get; set; }
+
+    public DnsResourceRecordPTR(byte[] data, byte[] rdata)
     {
-        public string Ptr { get; set; }
+        Ptr = new BinaryReader(new MemoryStream(rdata)).ReadDnsString(data);
+    }
 
-        public DnsResourceRecordPTR(byte[] data, byte[] rdata)
-        {
-            Ptr = new BinaryReader(new MemoryStream(rdata)).ReadDnsString(data);
-        }
+    public DnsResourceRecordPTR()
+    {
+        Ptr = string.Empty;
+    }
 
-        public DnsResourceRecordPTR()
-        {
-            Ptr = string.Empty;
-        }
-
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            writer.WriteDnsString(Ptr, string_cache);
-        }
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        writer.WriteDnsString(Ptr, string_cache);
     }
 }

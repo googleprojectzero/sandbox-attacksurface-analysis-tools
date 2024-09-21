@@ -12,62 +12,61 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Class to represent a TSPasswordCreds structure.
+/// </summary>
+public sealed class TSPasswordCredentials : TSCredentials
 {
+    private readonly byte[] _password;
+
     /// <summary>
-    /// Class to represent a TSPasswordCreds structure.
+    /// Constructor.
     /// </summary>
-    public sealed class TSPasswordCredentials : TSCredentials
+    public TSPasswordCredentials(string username, string domain, byte[] password) : base(TSCredentialsType.Password)
     {
-        private readonly byte[] _password;
+        UserName = username ?? throw new ArgumentNullException(nameof(username));
+        Domain = domain ?? throw new ArgumentNullException(nameof(domain));
+        _password = password ?? throw new ArgumentNullException(nameof(password));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public TSPasswordCredentials(string username, string domain, byte[] password) : base(TSCredentialsType.Password)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public TSPasswordCredentials(string username, string domain, string password) 
+        : this(username, domain, Encoding.Unicode.GetBytes(password))
+    {
+    }
+
+    /// <summary>
+    /// The domain name.
+    /// </summary>
+    public string Domain { get; }
+
+    /// <summary>
+    /// The user name.
+    /// </summary>
+    public string UserName { get; }
+
+    /// <summary>
+    /// The password.
+    /// </summary>
+    public string Password => Encoding.Unicode.GetString(_password);
+
+    private protected override byte[] GetCredentials()
+    {
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
         {
-            UserName = username ?? throw new ArgumentNullException(nameof(username));
-            Domain = domain ?? throw new ArgumentNullException(nameof(domain));
-            _password = password ?? throw new ArgumentNullException(nameof(password));
+            seq.WriteContextSpecific(0, Encoding.Unicode.GetBytes(Domain));
+            seq.WriteContextSpecific(1, Encoding.Unicode.GetBytes(UserName));
+            seq.WriteContextSpecific(2, _password);
         }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public TSPasswordCredentials(string username, string domain, string password) 
-            : this(username, domain, Encoding.Unicode.GetBytes(password))
-        {
-        }
-
-        /// <summary>
-        /// The domain name.
-        /// </summary>
-        public string Domain { get; }
-
-        /// <summary>
-        /// The user name.
-        /// </summary>
-        public string UserName { get; }
-
-        /// <summary>
-        /// The password.
-        /// </summary>
-        public string Password => Encoding.Unicode.GetString(_password);
-
-        private protected override byte[] GetCredentials()
-        {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, Encoding.Unicode.GetBytes(Domain));
-                seq.WriteContextSpecific(1, Encoding.Unicode.GetBytes(UserName));
-                seq.WriteContextSpecific(2, _password);
-            }
-            return builder.ToArray();
-        }
+        return builder.ToArray();
     }
 }

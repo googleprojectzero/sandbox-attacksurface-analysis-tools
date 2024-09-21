@@ -12,44 +12,43 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Class to represent the key information for an authentication context's session key.
+/// </summary>
+public sealed class AuthenticationContextKeyInfo
 {
     /// <summary>
-    /// Class to represent the key information for an authentication context's session key.
+    /// The name of the signature algorithm.
     /// </summary>
-    public sealed class AuthenticationContextKeyInfo
-    {
-        /// <summary>
-        /// The name of the signature algorithm.
-        /// </summary>
-        public string SignatureAlgorithmName { get; }
-        /// <summary>
-        /// The name of the encryption algorithm.
-        /// </summary>
-        public string EncryptAlgorithmName { get; }
-        /// <summary>
-        /// The size of the session key.
-        /// </summary>
-        public int KeySize { get; }
-        /// <summary>
-        /// The signature algorithm ID.
-        /// </summary>
-        /// <remarks>The value depends on the package, e.g. for Kerberos it's the keytype</remarks>
-        public int SignatureAlgorithm { get; }
-        /// <summary>
-        /// The encryption algorithm ID.
-        /// </summary>
-        public int EncryptAlgorithm { get; }
+    public string SignatureAlgorithmName { get; }
+    /// <summary>
+    /// The name of the encryption algorithm.
+    /// </summary>
+    public string EncryptAlgorithmName { get; }
+    /// <summary>
+    /// The size of the session key.
+    /// </summary>
+    public int KeySize { get; }
+    /// <summary>
+    /// The signature algorithm ID.
+    /// </summary>
+    /// <remarks>The value depends on the package, e.g. for Kerberos it's the keytype</remarks>
+    public int SignatureAlgorithm { get; }
+    /// <summary>
+    /// The encryption algorithm ID.
+    /// </summary>
+    public int EncryptAlgorithm { get; }
 
-        internal AuthenticationContextKeyInfo(SecPkgContext_KeyInfo key_info)
-        {
-            SignatureAlgorithmName = key_info.SignatureAlgorithmName;
-            EncryptAlgorithmName = key_info.EncryptAlgorithmName;
-            KeySize = key_info.KeySize;
-            SignatureAlgorithm = key_info.SignatureAlgorithm;
-            EncryptAlgorithm = key_info.EncryptAlgorithm;
-        }
+    internal AuthenticationContextKeyInfo(SecPkgContext_KeyInfo key_info)
+    {
+        SignatureAlgorithmName = key_info.SignatureAlgorithmName;
+        EncryptAlgorithmName = key_info.EncryptAlgorithmName;
+        KeySize = key_info.KeySize;
+        SignatureAlgorithm = key_info.SignatureAlgorithm;
+        EncryptAlgorithm = key_info.EncryptAlgorithm;
     }
 }

@@ -12,26 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Data;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.IO.MountPointManager
-{
-    [StructLayout(LayoutKind.Sequential)]
-    struct MOUNTMGR_MOUNT_POINT
-    {
-        public int SymbolicLinkNameOffset;
-        public ushort SymbolicLinkNameLength;
-        public int UniqueIdOffset;
-        public ushort UniqueIdLength;
-        public int DeviceNameOffset;
-        public ushort DeviceNameLength;
-    }
+namespace NtCoreLib.IO.MountPointManager;
 
-    [StructLayout(LayoutKind.Sequential), DataStart("MountPoints")]
-    struct MOUNTMGR_MOUNT_POINTS
-    {
-        public int Size;
-        public int NumberOfMountPoints;
-        public MOUNTMGR_MOUNT_POINT MountPoints;
-    }
+[StructLayout(LayoutKind.Sequential)]
+struct MOUNTMGR_MOUNT_POINT
+{
+    public int SymbolicLinkNameOffset;
+    public ushort SymbolicLinkNameLength;
+    public int UniqueIdOffset;
+    public ushort UniqueIdLength;
+    public int DeviceNameOffset;
+    public ushort DeviceNameLength;
+}
+
+[StructLayout(LayoutKind.Sequential), DataStart("MountPoints")]
+struct MOUNTMGR_MOUNT_POINTS
+{
+    public int Size;
+    public int NumberOfMountPoints;
+    public MOUNTMGR_MOUNT_POINT MountPoints;
 }

@@ -14,48 +14,47 @@
 
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent the AD-AUTH-DATA-TARGET-NAME authorization data.
+/// </summary>
+public sealed class KerberosAuthorizationDataTargetName : KerberosAuthorizationData
 {
     /// <summary>
-    /// Class to represent the AD-AUTH-DATA-TARGET-NAME authorization data.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataTargetName : KerberosAuthorizationData
+    /// <param name="target_name">The target name.</param>
+    public KerberosAuthorizationDataTargetName(string target_name)
+        : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="target_name">The target name.</param>
-        public KerberosAuthorizationDataTargetName(string target_name)
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
+        TargetName = target_name ?? throw new System.ArgumentNullException(nameof(target_name));
+    }
+
+    /// <summary>
+    /// The target name.
+    /// </summary>
+    public string TargetName { get; }
+
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"Target Name     : {TargetName}");
+    }
+
+    private protected override byte[] GetData()
+    {
+        return Encoding.Unicode.GetBytes(TargetName);
+    }
+
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataTargetName entry)
+    {
+        if ((data.Length % 2) != 0)
         {
-            TargetName = target_name ?? throw new System.ArgumentNullException(nameof(target_name));
+            entry = null;
+            return false;
         }
 
-        /// <summary>
-        /// The target name.
-        /// </summary>
-        public string TargetName { get; }
-
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"Target Name     : {TargetName}");
-        }
-
-        private protected override byte[] GetData()
-        {
-            return Encoding.Unicode.GetBytes(TargetName);
-        }
-
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataTargetName entry)
-        {
-            if ((data.Length % 2) != 0)
-            {
-                entry = null;
-                return false;
-            }
-
-            entry = new KerberosAuthorizationDataTargetName(Encoding.Unicode.GetString(data));
-            return true;
-        }
+        entry = new KerberosAuthorizationDataTargetName(Encoding.Unicode.GetString(data));
+        return true;
     }
 }

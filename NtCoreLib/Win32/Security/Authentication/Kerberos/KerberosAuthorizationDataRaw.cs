@@ -12,42 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
+using NtCoreLib.Utilities.Text;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent an unparsed authorization data entry.
+/// </summary>
+public sealed class KerberosAuthorizationDataRaw : KerberosAuthorizationData
 {
     /// <summary>
-    /// Class to represent an unparsed authorization data entry.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataRaw : KerberosAuthorizationData
+    /// <param name="type">The type of data.</param>
+    /// <param name="data">The raw data for the entry.</param>
+    public KerberosAuthorizationDataRaw(KerberosAuthorizationDataType type, byte[] data) : base(type)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of data.</param>
-        /// <param name="data">The raw data for the entry.</param>
-        public KerberosAuthorizationDataRaw(KerberosAuthorizationDataType type, byte[] data) : base(type)
-        {
-            Data = data.CloneBytes();
-        }
+        Data = data.CloneBytes();
+    }
 
-        /// <summary>
-        /// Data bytes.
-        /// </summary>
-        public byte[] Data { get; }
+    /// <summary>
+    /// Data bytes.
+    /// </summary>
+    public byte[] Data { get; }
 
-        private protected override byte[] GetData()
-        {
-            return Data;
-        }
+    private protected override byte[] GetData()
+    {
+        return Data;
+    }
 
-        private protected override void FormatData(StringBuilder builder)
-        {
-            HexDumpBuilder hex = new HexDumpBuilder(false, false, true, false, 0);
-            hex.Append(Data);
-            hex.Complete();
-            builder.Append(hex.ToString());
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        HexDumpBuilder hex = new(false, false, true, false, 0);
+        hex.Append(Data);
+        hex.Complete();
+        builder.Append(hex.ToString());
     }
 }

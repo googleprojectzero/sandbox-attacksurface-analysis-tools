@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+/// <summary>
+/// Capability flags for shares.
+/// </summary>
+[Flags]
+public enum Smb2ShareCapabilities : uint
 {
-    /// <summary>
-    /// Capability flags for shares.
-    /// </summary>
-    [Flags]
-    public enum Smb2ShareCapabilities : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Unknown = 0,
-        [SDKName("SMB2_SHARE_CAP_DFS")]
-        Dfs = 0x00000008,
-        [SDKName("SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY")]
-        ContinuousAvailability = 0x00000010,
-        [SDKName("SMB2_SHARE_CAP_SCALEOUT")]
-        ScaleOut = 0x00000020,
-        [SDKName("SMB2_SHARE_CAP_CLUSTER")]
-        Cluster = 0x00000040,
-        [SDKName("SMB2_SHARE_CAP_ASYMMETRIC")]
-        Asymmetric = 0x00000080,
-        [SDKName("SMB2_SHARE_CAP_REDIRECT_TO_OWNER")]
-        RedirectToOwner = 0x00000100
+    Unknown = 0,
+    [SDKName("SMB2_SHARE_CAP_DFS")]
+    Dfs = 0x00000008,
+    [SDKName("SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY")]
+    ContinuousAvailability = 0x00000010,
+    [SDKName("SMB2_SHARE_CAP_SCALEOUT")]
+    ScaleOut = 0x00000020,
+    [SDKName("SMB2_SHARE_CAP_CLUSTER")]
+    Cluster = 0x00000040,
+    [SDKName("SMB2_SHARE_CAP_ASYMMETRIC")]
+    Asymmetric = 0x00000080,
+    [SDKName("SMB2_SHARE_CAP_REDIRECT_TO_OWNER")]
+    RedirectToOwner = 0x00000100
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

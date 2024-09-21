@@ -14,35 +14,34 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
-{
-    internal class PDUFault : PDUBase
-    {
-        public int AllocHint { get; }
-        public ushort ContextId { get; }
-        public byte CancelCount { get; }
-        public int Status { get; }
-        public byte[] ExtendedErrorData { get; }
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
 
-        public PDUFault(byte[] data) : base(PDUType.Fault)
+internal class PDUFault : PDUBase
+{
+    public int AllocHint { get; }
+    public ushort ContextId { get; }
+    public byte CancelCount { get; }
+    public int Status { get; }
+    public byte[] ExtendedErrorData { get; }
+
+    public PDUFault(byte[] data) : base(PDUType.Fault)
+    {
+        MemoryStream stm = new(data);
+        BinaryReader reader = new(stm);
+        AllocHint = reader.ReadInt32();
+        ContextId = reader.ReadUInt16();
+        CancelCount = reader.ReadByte();
+        bool extended_error_present = reader.ReadByte() != 0;
+        Status = reader.ReadInt32();
+        reader.ReadInt32(); // Reserved.
+        if (extended_error_present)
         {
-            MemoryStream stm = new MemoryStream(data);
-            BinaryReader reader = new BinaryReader(stm);
-            AllocHint = reader.ReadInt32();
-            ContextId = reader.ReadUInt16();
-            CancelCount = reader.ReadByte();
-            bool extended_error_present = reader.ReadByte() != 0;
-            Status = reader.ReadInt32();
-            reader.ReadInt32(); // Reserved.
-            if (extended_error_present)
+            try
             {
-                try
-                {
-                    ExtendedErrorData = reader.ReadBytes(AllocHint - 0x20);
-                }
-                catch (EndOfStreamException)
-                {
-                }
+                ExtendedErrorData = reader.ReadBytes(AllocHint - 0x20);
+            }
+            catch (EndOfStreamException)
+            {
             }
         }
     }

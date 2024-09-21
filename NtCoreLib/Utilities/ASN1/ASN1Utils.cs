@@ -12,84 +12,83 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Parser;
+using NtCoreLib.Utilities.ASN1.Parser;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace NtApiDotNet.Utilities.ASN1
+namespace NtCoreLib.Utilities.ASN1;
+
+/// <summary>
+/// Basic utilities for ASN1 support.
+/// </summary>
+public static class ASN1Utils
 {
-    /// <summary>
-    /// Basic utilities for ASN1 support.
-    /// </summary>
-    public static class ASN1Utils
+    private static void DumpValue(StringBuilder builder, DERValue v, int depth)
     {
-        private static void DumpValue(StringBuilder builder, DERValue v, int depth)
-        {
-            builder.AppendFormat("{0} {1:X}/{1} {2} {3} {4} {5:X}", new string(' ', depth * 2), 
-                v.Offset, v.Type, v.Constructed, v.FormatTag(), v.FormatValue());
-            builder.AppendLine();
+        builder.AppendFormat("{0} {1:X}/{1} {2} {3} {4} {5:X}", new string(' ', depth * 2), 
+            v.Offset, v.Type, v.Constructed, v.FormatTag(), v.FormatValue());
+        builder.AppendLine();
 
-            if (v.Children != null)
+        if (v.Children != null)
+        {
+            foreach (var c in v.Children)
             {
-                foreach (var c in v.Children)
-                {
-                    DumpValue(builder, c, depth + 1);
-                }
+                DumpValue(builder, c, depth + 1);
             }
         }
+    }
 
-        internal static string FormatDER(IEnumerable<DERValue> values, int depth)
+    internal static string FormatDER(IEnumerable<DERValue> values, int depth)
+    {
+        StringBuilder builder = new();
+        foreach (var v in values)
         {
-            StringBuilder builder = new StringBuilder();
-            foreach (var v in values)
-            {
-                DumpValue(builder, v, depth);
-            }
-            return builder.ToString();
+            DumpValue(builder, v, depth);
         }
+        return builder.ToString();
+    }
 
-        /// <summary>
-        /// Format an array of ASN.1 DER to a string.
-        /// </summary>
-        /// <param name="asn1_der">The ASN.1 data in DER format.</param>
-        /// <param name="depth">Initial identation depth.</param>
-        /// <returns>The formatted DER data.</returns>
-        public static string FormatDER(byte[] asn1_der, int depth)
-        {
-            return FormatDER(DERParser.ParseData(asn1_der, 0), depth);
-        }
+    /// <summary>
+    /// Format an array of ASN.1 DER to a string.
+    /// </summary>
+    /// <param name="asn1_der">The ASN.1 data in DER format.</param>
+    /// <param name="depth">Initial identation depth.</param>
+    /// <returns>The formatted DER data.</returns>
+    public static string FormatDER(byte[] asn1_der, int depth)
+    {
+        return FormatDER(DERParser.ParseData(asn1_der, 0), depth);
+    }
 
-        /// <summary>
-        /// Format an file containing of ASN.1 DER to a string.
-        /// </summary>
-        /// <param name="path">The path to the file containing ASN.1 data in DER format.</param>
-        /// <param name="depth">Initial identation depth.</param>
-        /// <returns>The formatted DER data.</returns>
-        public static string FormatDER(string path, int depth)
-        {
-            return FormatDER(File.ReadAllBytes(path), depth);
-        }
+    /// <summary>
+    /// Format an file containing of ASN.1 DER to a string.
+    /// </summary>
+    /// <param name="path">The path to the file containing ASN.1 data in DER format.</param>
+    /// <param name="depth">Initial identation depth.</param>
+    /// <returns>The formatted DER data.</returns>
+    public static string FormatDER(string path, int depth)
+    {
+        return FormatDER(File.ReadAllBytes(path), depth);
+    }
 
-        /// <summary>
-        /// Parse DER encoded ASN.1 to an object tree.
-        /// </summary>
-        /// <param name="path">The path to the file containing ASN.1 data in DER format.</param>
-        /// <returns>The ASN1 objects parsed.</returns>
-        public static IEnumerable<ASN1Object> ParseDER(string path)
-        {
-            return ParseDER(File.ReadAllBytes(path));
-        }
+    /// <summary>
+    /// Parse DER encoded ASN.1 to an object tree.
+    /// </summary>
+    /// <param name="path">The path to the file containing ASN.1 data in DER format.</param>
+    /// <returns>The ASN1 objects parsed.</returns>
+    public static IEnumerable<ASN1Object> ParseDER(string path)
+    {
+        return ParseDER(File.ReadAllBytes(path));
+    }
 
-        /// <summary>
-        /// Parse DER encoded ASN.1 to an object tree.
-        /// </summary>
-        /// <param name="asn1_der">The ASN.1 data in DER format.</param>
-        /// <returns>The ASN1 objects parsed.</returns>
-        public static IEnumerable<ASN1Object> ParseDER(byte[] asn1_der)
-        {
-            return DERParser.ParseData(asn1_der, 0).Select(v => ASN1Object.ToObject(v)).ToArray();
-        }
+    /// <summary>
+    /// Parse DER encoded ASN.1 to an object tree.
+    /// </summary>
+    /// <param name="asn1_der">The ASN.1 data in DER format.</param>
+    /// <returns>The ASN1 objects parsed.</returns>
+    public static IEnumerable<ASN1Object> ParseDER(byte[] asn1_der)
+    {
+        return DERParser.ParseData(asn1_der, 0).Select(v => ASN1Object.ToObject(v)).ToArray();
     }
 }

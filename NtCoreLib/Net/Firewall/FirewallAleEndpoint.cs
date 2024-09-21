@@ -17,70 +17,69 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall ALE endpoint.
+/// </summary>
+public sealed class FirewallAleEndpoint
 {
     /// <summary>
-    /// Class to represent a firewall ALE endpoint.
+    /// The ID of the endpoint.
     /// </summary>
-    public sealed class FirewallAleEndpoint
-    {
-        /// <summary>
-        /// The ID of the endpoint.
-        /// </summary>
-        public ulong EndpointId { get; }
-        /// <summary>
-        /// The local endpoint.
-        /// </summary>
-        public IPEndPoint LocalEndpoint { get; }
-        /// <summary>
-        /// The remote endpoint.
-        /// </summary>
-        public IPEndPoint RemoteEndpoint { get; }
-        /// <summary>
-        /// The protocol type.
-        /// </summary>
-        public ProtocolType IpProtocol { get; }
-        /// <summary>
-        /// The LUID for the token associated with the endpoint.
-        /// </summary>
-        public Luid LocalTokenModifiedId { get; }
-        /// <summary>
-        /// The IPsec security association identifier.
-        /// </summary>
-        public ulong MmSaId { get; }
-        /// <summary>
-        /// The IPsec security association identifier to expire.
-        /// </summary>
-        public ulong QmSaId { get; }
-        /// <summary>
-        /// The IPsec status of the endpoint.
-        /// </summary>
-        public uint IPsecStatus { get; }
-        /// <summary>
-        /// Flags.
-        /// </summary>
-        public uint Flags { get; }
-        /// <summary>
-        /// Associated application.
-        /// </summary>
-        public string AppId { get; }
-        /// <summary>
-        /// Filename of AppId.
-        /// </summary>
-        public string FileName => Path.GetFileName(AppId);
+    public ulong EndpointId { get; }
+    /// <summary>
+    /// The local endpoint.
+    /// </summary>
+    public IPEndPoint LocalEndpoint { get; }
+    /// <summary>
+    /// The remote endpoint.
+    /// </summary>
+    public IPEndPoint RemoteEndpoint { get; }
+    /// <summary>
+    /// The protocol type.
+    /// </summary>
+    public ProtocolType IpProtocol { get; }
+    /// <summary>
+    /// The LUID for the token associated with the endpoint.
+    /// </summary>
+    public Luid LocalTokenModifiedId { get; }
+    /// <summary>
+    /// The IPsec security association identifier.
+    /// </summary>
+    public ulong MmSaId { get; }
+    /// <summary>
+    /// The IPsec security association identifier to expire.
+    /// </summary>
+    public ulong QmSaId { get; }
+    /// <summary>
+    /// The IPsec status of the endpoint.
+    /// </summary>
+    public uint IPsecStatus { get; }
+    /// <summary>
+    /// Flags.
+    /// </summary>
+    public uint Flags { get; }
+    /// <summary>
+    /// Associated application.
+    /// </summary>
+    public string AppId { get; }
+    /// <summary>
+    /// Filename of AppId.
+    /// </summary>
+    public string FileName => Path.GetFileName(AppId);
 
-        internal FirewallAleEndpoint(FWPS_ALE_ENDPOINT_PROPERTIES0 ep)
-        {
-            EndpointId = ep.endpointId;
-            LocalEndpoint = FirewallUtils.GetEndpoint(ep.ipVersion, ep.localAddress, ep.localPort);
-            RemoteEndpoint = FirewallUtils.GetEndpoint(ep.ipVersion, ep.remoteAddress, ep.remotePort);
-            IpProtocol = (ProtocolType)ep.ipProtocol;
-            LocalTokenModifiedId = new Luid(ep.localTokenModifiedId);
-            MmSaId = ep.mmSaId;
-            QmSaId = ep.qmSaId;
-            IPsecStatus = ep.ipsecStatus;
-            Flags = ep.flags;
-            AppId = Encoding.Unicode.GetString(ep.appId.ToArray()).TrimEnd('\0');
-        }
+    internal FirewallAleEndpoint(FWPS_ALE_ENDPOINT_PROPERTIES0 ep)
+    {
+        EndpointId = ep.endpointId;
+        LocalEndpoint = FirewallUtils.GetEndpoint(ep.ipVersion, ep.localAddress, ep.localPort);
+        RemoteEndpoint = FirewallUtils.GetEndpoint(ep.ipVersion, ep.remoteAddress, ep.remotePort);
+        IpProtocol = (ProtocolType)ep.ipProtocol;
+        LocalTokenModifiedId = new Luid(ep.localTokenModifiedId);
+        MmSaId = ep.mmSaId;
+        QmSaId = ep.qmSaId;
+        IPsecStatus = ep.ipsecStatus;
+        Flags = ep.flags;
+        AppId = Encoding.Unicode.GetString(ep.appId.ToArray()).TrimEnd('\0');
     }
 }

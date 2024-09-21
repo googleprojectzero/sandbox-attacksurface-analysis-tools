@@ -15,20 +15,19 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Utilities.Memory
-{
-    internal class SafeBufferWrapper : SafeBuffer
-    {
-        public SafeBufferWrapper(IntPtr buffer)
-            : base(false)
-        {
-            Initialize(int.MaxValue);
-            handle = buffer;
-        }
+namespace NtCoreLib.Utilities.Memory;
 
-        protected override bool ReleaseHandle()
-        {
-            return true;
-        }
+internal class SafeBufferWrapper : SafeBuffer
+{
+    public SafeBufferWrapper(IntPtr buffer)
+        : base(false)
+    {
+        Initialize(int.MaxValue);
+        handle = buffer;
+    }
+
+    protected override bool ReleaseHandle()
+    {
+        return true;
     }
 }

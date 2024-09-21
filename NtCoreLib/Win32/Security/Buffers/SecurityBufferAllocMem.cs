@@ -12,55 +12,55 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// Class to represent a security buffer we expect to be allocated by the SSPI.
+/// </summary>
+internal class SecurityBufferAllocMem : SecurityBuffer
 {
+    private byte[] _array;
+
     /// <summary>
-    /// Class to represent a security buffer we expect to be allocated by the SSPI.
+    /// Constructor.
     /// </summary>
-    internal class SecurityBufferAllocMem : SecurityBuffer
+    /// <param name="type">The type of the buffer.</param>
+    public SecurityBufferAllocMem(SecurityBufferType type) : base(type)
     {
-        private byte[] _array;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of the buffer.</param>
-        public SecurityBufferAllocMem(SecurityBufferType type) : base(type)
-        {
-        }
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        if (_array == null)
+            throw new InvalidOperationException("Can't access buffer until it's been allocated.");
+        return _array;
+    }
 
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
+    internal override void FromBuffer(SecBuffer buffer)
+    {
+        if (buffer.pvBuffer == IntPtr.Zero)
         {
-            if (_array == null)
-                throw new InvalidOperationException("Can't access buffer until it's been allocated.");
-            return _array;
+            _array = new byte[0];
+            return;
         }
+        _array = new byte[buffer.cbBuffer];
+        Marshal.Copy(buffer.pvBuffer, _array, 0, _array.Length);
+        SecurityNativeMethods.FreeContextBuffer(buffer.pvBuffer);
+        buffer.pvBuffer = IntPtr.Zero;
+        _type = buffer.BufferType;
+    }
 
-        internal override void FromBuffer(SecBuffer buffer)
-        {
-            if (buffer.pvBuffer == IntPtr.Zero)
-            {
-                _array = new byte[0];
-                return;
-            }
-            _array = new byte[buffer.cbBuffer];
-            Marshal.Copy(buffer.pvBuffer, _array, 0, _array.Length);
-            SecurityNativeMethods.FreeContextBuffer(buffer.pvBuffer);
-            buffer.pvBuffer = IntPtr.Zero;
-            _type = buffer.BufferType;
-        }
-
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return new SecBuffer(_type);
-        }
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return new SecBuffer(_type);
     }
 }

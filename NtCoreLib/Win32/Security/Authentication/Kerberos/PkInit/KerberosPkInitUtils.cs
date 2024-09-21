@@ -12,47 +12,44 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.PkInit;
+
+internal static class KerberosPkInitUtils
 {
-    internal static class KerberosPkInitUtils
+    private static SignedCms ParseSignedData(byte[] data, bool try_fallback)
     {
-        private static SignedCms ParseSignedData(byte[] data, bool try_fallback)
+        try
         {
-            try
-            {
-                SignedCms ret = new SignedCms();
-                ret.Decode(data);
-                return ret;
-            }
-            catch (CryptographicException)
-            {
-                if (!try_fallback)
-                    throw;
-            }
-
-            // At least for PKU2U it seems the CMS is missing a header that breaks the .NET parser.
-            // The Windows code passes the undocumented CMSG_LENGTH_ONLY_FLAG flag when parsing the
-            // CMS which works without the header. Add the header ourselves.
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteObjectId("1.2.840.113549.1.7.2");
-                using (var ctx = seq.CreateContextSpecific(0))
-                {
-                    ctx.WriteRawBytes(data);
-                }
-            }
-
-            return ParseSignedData(builder.ToArray(), false);
+            SignedCms ret = new();
+            ret.Decode(data);
+            return ret;
+        }
+        catch (CryptographicException)
+        {
+            if (!try_fallback)
+                throw;
         }
 
-        public static SignedCms ParseSignedData(byte[] data)
+        // At least for PKU2U it seems the CMS is missing a header that breaks the .NET parser.
+        // The Windows code passes the undocumented CMSG_LENGTH_ONLY_FLAG flag when parsing the
+        // CMS which works without the header. Add the header ourselves.
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
         {
-            return ParseSignedData(data, true);
+            seq.WriteObjectId("1.2.840.113549.1.7.2");
+            using var ctx = seq.CreateContextSpecific(0);
+            ctx.WriteRawBytes(data);
         }
+
+        return ParseSignedData(builder.ToArray(), false);
+    }
+
+    public static SignedCms ParseSignedData(byte[] data)
+    {
+        return ParseSignedData(data, true);
     }
 }

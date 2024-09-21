@@ -12,46 +12,45 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Class to represent a credential attribute.
+/// </summary>
+public class CredentialAttribute
 {
+    private readonly byte[] _value;
+
     /// <summary>
-    /// Class to represent a credential attribute.
+    /// Attribute keyword.
     /// </summary>
-    public class CredentialAttribute
+    public string Keyword { get; }
+    /// <summary>
+    /// Attribute flags.
+    /// </summary>
+    public CredentialAttributeFlags Flags { get; }
+    /// <summary>
+    /// Attribute value.
+    /// </summary>
+    public byte[] Value => _value.CloneBytes();
+
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
     {
-        private readonly byte[] _value;
+        return Keyword;
+    }
 
-        /// <summary>
-        /// Attribute keyword.
-        /// </summary>
-        public string Keyword { get; }
-        /// <summary>
-        /// Attribute flags.
-        /// </summary>
-        public CredentialAttributeFlags Flags { get; }
-        /// <summary>
-        /// Attribute value.
-        /// </summary>
-        public byte[] Value => _value.CloneBytes();
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return Keyword;
-        }
-
-        internal CredentialAttribute(CREDENTIAL_ATTRIBUTE attr)
-        {
-            Keyword = attr.Keyword;
-            Flags = attr.Flags;
-            _value = new byte[attr.ValueSize];
-            Marshal.Copy(attr.Value, _value, 0, _value.Length);
-        }
+    internal CredentialAttribute(CREDENTIAL_ATTRIBUTE attr)
+    {
+        Keyword = attr.Keyword;
+        Flags = attr.Flags;
+        _value = new byte[attr.ValueSize];
+        Marshal.Copy(attr.Value, _value, 0, _value.Length);
     }
 }

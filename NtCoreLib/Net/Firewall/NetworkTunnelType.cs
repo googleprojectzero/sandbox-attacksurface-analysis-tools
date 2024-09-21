@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Type of network tunnel.
+/// </summary>
+[SDKName("TUNNEL_TYPE")]
+public enum NetworkTunnelType : uint
 {
-    /// <summary>
-    /// Type of network tunnel.
-    /// </summary>
-    [SDKName("TUNNEL_TYPE")]
-    public enum NetworkTunnelType : uint
-    {
-        [SDKName("TUNNEL_TYPE_NONE")]
-        None = 0,
-        [SDKName("TUNNEL_TYPE_OTHER")]
-        Other = 1,
-        [SDKName("TUNNEL_TYPE_DIRECT")]
-        Direct = 2,
-        [SDKName("TUNNEL_TYPE_6TO4")]
-        SixToFour = 11,
-        [SDKName("TUNNEL_TYPE_ISATAP")]
-        ISATAP = 13,
-        [SDKName("TUNNEL_TYPE_TEREDO")]
-        TEREDO = 14,
-        [SDKName("TUNNEL_TYPE_IPHTTPS")]
-        IPHTTPS = 15
-    }
+    [SDKName("TUNNEL_TYPE_NONE")]
+    None = 0,
+    [SDKName("TUNNEL_TYPE_OTHER")]
+    Other = 1,
+    [SDKName("TUNNEL_TYPE_DIRECT")]
+    Direct = 2,
+    [SDKName("TUNNEL_TYPE_6TO4")]
+    SixToFour = 11,
+    [SDKName("TUNNEL_TYPE_ISATAP")]
+    ISATAP = 13,
+    [SDKName("TUNNEL_TYPE_TEREDO")]
+    TEREDO = 14,
+    [SDKName("TUNNEL_TYPE_IPHTTPS")]
+    IPHTTPS = 15
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

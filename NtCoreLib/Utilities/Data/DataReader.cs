@@ -16,78 +16,86 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Utilities.Data
+namespace NtCoreLib.Utilities.Data;
+
+internal sealed class DataReader : BinaryReader
 {
-    internal sealed class DataReader : BinaryReader
+    public DataReader(byte[] data) : base(new MemoryStream(data))
     {
-        public DataReader(byte[] data) : base(new MemoryStream(data))
-        {
-        }
-
-        public DataReader(Stream input) : base(input)
-        {
-        }
-
-        public DataReader(Stream input, Encoding encoding) : base(input, encoding)
-        {
-        }
-
-        public DataReader(Stream input, Encoding encoding, bool leaveOpen) : base(input, encoding, leaveOpen)
-        {
-        }
-
-        public T ReadInt32Enum<T>() where T : Enum
-        {
-            return (T)(object)ReadInt32();
-        }
-
-        public T ReadUInt32Enum<T>() where T : Enum
-        {
-            return (T)(object)ReadUInt32();
-        }
-
-        public byte[] ReadAllBytes(int length)
-        {
-            byte[] ret = ReadBytes(length);
-            if (ret.Length != length)
-            {
-                throw new EndOfStreamException();
-            }
-            return ret;
-        }
-
-        public byte[] ReadAllBytes(long position, int length)
-        {
-            long curr_pos = Position;
-            try
-            {
-                Position = position;
-                return ReadAllBytes(length);
-            }
-            finally
-            {
-                Position = curr_pos;
-            }
-        }
-
-        public Guid ReadGuid()
-        {
-            return new Guid(ReadAllBytes(16));
-        }
-
-        public long Seek(long offset, SeekOrigin loc)
-        {
-            return BaseStream.Seek(offset, loc);
-        }
-
-        public long Position
-        {
-            get => BaseStream.Position;
-            set => BaseStream.Position = value;
-        }
-
-        public long Length => BaseStream.Length;
-
-        public long RemainingLength => BaseStream.Length - BaseStream.Position;
     }
+
+    public DataReader(Stream input) : base(input)
+    {
+    }
+
+    public DataReader(Stream input, Encoding encoding) : base(input, encoding)
+    {
+    }
+
+    public DataReader(Stream input, Encoding encoding, bool leaveOpen) : base(input, encoding, leaveOpen)
+    {
+    }
+
+    public T ReadInt32Enum<T>() where T : Enum
+    {
+        return (T)(object)ReadInt32();
+    }
+
+    public T ReadUInt32Enum<T>() where T : Enum
+    {
+        return (T)(object)ReadUInt32();
+    }
+
+    public byte[] ReadAllBytes(int length)
+    {
+        byte[] ret = ReadBytes(length);
+        if (ret.Length != length)
+        {
+            throw new EndOfStreamException();
+        }
+        return ret;
+    }
+
+    public byte[] ReadAllBytes(long position, int length)
+    {
+        long curr_pos = Position;
+        try
+        {
+            Position = position;
+            return ReadAllBytes(length);
+        }
+        finally
+        {
+            Position = curr_pos;
+        }
+    }
+
+    public Guid ReadGuid()
+    {
+        return new Guid(ReadAllBytes(16));
+    }
+
+    public long Seek(long offset, SeekOrigin loc)
+    {
+        return BaseStream.Seek(offset, loc);
+    }
+
+    public void Align(int alignment)
+    {
+        long pos = BaseStream.Position;
+        long rem = pos % alignment;
+        if (rem == 0)
+            return;
+        BaseStream.Position = BaseStream.Position + (alignment - rem);
+    }
+
+    public long Position
+    {
+        get => BaseStream.Position;
+        set => BaseStream.Position = value;
+    }
+
+    public long Length => BaseStream.Length;
+
+    public long RemainingLength => BaseStream.Length - BaseStream.Position;
 }

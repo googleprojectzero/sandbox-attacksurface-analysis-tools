@@ -18,35 +18,34 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal class DnsResourceRecordA : DnsResourceRecordBase
 {
-    internal class DnsResourceRecordA : DnsResourceRecordBase
+    public IPAddress Address { get; set; }
+
+    public DnsResourceRecordA(byte[] rdata)
     {
-        public IPAddress Address { get; set; }
-
-        public DnsResourceRecordA(byte[] rdata)
+        if (rdata.Length != 4)
         {
-            if (rdata.Length != 4)
-            {
-                throw new ArgumentException("Invalid length for IPv4 address");
-            }
-
-            Address = new IPAddress(rdata);
+            throw new ArgumentException("Invalid length for IPv4 address");
         }
 
-        public DnsResourceRecordA()
+        Address = new IPAddress(rdata);
+    }
+
+    public DnsResourceRecordA()
+    {
+        Address = IPAddress.Any;
+    }
+
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        if (Address.AddressFamily != AddressFamily.InterNetwork)
         {
-            Address = IPAddress.Any;
+            throw new ArgumentException("Must provide a IPv4 address for a A record");
         }
 
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            if (Address.AddressFamily != AddressFamily.InterNetwork)
-            {
-                throw new ArgumentException("Must provide a IPv4 address for a A record");
-            }
-
-            writer.Write(Address.GetAddressBytes());
-        }
+        writer.Write(Address.GetAddressBytes());
     }
 }

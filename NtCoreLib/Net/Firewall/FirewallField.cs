@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Represents a firewall field schema.
+/// </summary>
+public struct FirewallField
 {
     /// <summary>
-    /// Represents a firewall field schema.
+    /// The field's key.
     /// </summary>
-    public struct FirewallField
-    {
-        /// <summary>
-        /// The field's key.
-        /// </summary>
-        public Guid Key { get; }
-        /// <summary>
-        /// The name of the key if known.
-        /// </summary>
-        public string KeyName { get; }
-        /// <summary>
-        /// The type of the field.
-        /// </summary>
-        public FirewallFieldType Type { get; }
-        /// <summary>
-        /// The data type of the field.
-        /// </summary>
-        public FirewallDataType DataType { get; }
+    public Guid Key { get; }
+    /// <summary>
+    /// The name of the key if known.
+    /// </summary>
+    public string KeyName { get; }
+    /// <summary>
+    /// The type of the field.
+    /// </summary>
+    public FirewallFieldType Type { get; }
+    /// <summary>
+    /// The data type of the field.
+    /// </summary>
+    public FirewallDataType DataType { get; }
 
-        internal FirewallField(FWPM_FIELD0 field)
-        {
-            Key = field.fieldKey.ReadGuid() ?? Guid.Empty;
-            KeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(Key);
-            Type = field.type;
-            DataType = field.dataType;
-        }
+    internal FirewallField(FWPM_FIELD0 field)
+    {
+        Key = field.fieldKey.ReadGuid() ?? Guid.Empty;
+        KeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(Key);
+        Type = field.type;
+        DataType = field.dataType;
     }
 }

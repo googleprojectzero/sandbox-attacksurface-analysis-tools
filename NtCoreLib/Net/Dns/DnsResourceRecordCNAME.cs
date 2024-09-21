@@ -15,25 +15,24 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal class DnsResourceRecordCNAME : DnsResourceRecordBase
 {
-    internal class DnsResourceRecordCNAME : DnsResourceRecordBase
+    public string CName { get; set; }
+
+    public DnsResourceRecordCNAME(byte[] data, byte[] rdata)
     {
-        public string CName { get; set; }
+        CName = new BinaryReader(new MemoryStream(rdata)).ReadDnsString(data);
+    }
 
-        public DnsResourceRecordCNAME(byte[] data, byte[] rdata)
-        {
-            CName = new BinaryReader(new MemoryStream(rdata)).ReadDnsString(data);
-        }
+    public DnsResourceRecordCNAME()
+    {
+        CName = string.Empty;
+    }
 
-        public DnsResourceRecordCNAME()
-        {
-            CName = string.Empty;
-        }
-
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            writer.WriteDnsString(CName, string_cache);
-        }
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        writer.WriteDnsString(CName, string_cache);
     }
 }

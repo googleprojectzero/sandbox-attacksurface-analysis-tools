@@ -12,120 +12,111 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
+namespace NtCoreLib.Win32.Security.Authentication.Negotiate;
+
+/// <summary>
+/// Flags for negotiation context.
+/// </summary>
+[Flags]
+public enum NegotiateContextFlags : uint
+{
+#pragma warning disable CS1591
+    None = 0,
+    Delegate = 1,
+    Mutual = 2,
+    Replay = 4,
+    Sequence = 8,
+    Anonymous = 0x10,
+    Confidentiality = 0x20,
+    Integrity = 0x40,
+#pragma warning restore CS1591
+}
+
+/// <summary>
+/// Class to represent the negTokenInit message in SPNEGO.
+/// </summary>
+public class NegotiateInitAuthenticationToken : NegotiateAuthenticationToken
 {
     /// <summary>
-    /// Flags for negotiation context.
+    /// List of supported negotiation mechanisms.
     /// </summary>
-    [Flags]
-    public enum NegotiateContextFlags : uint
+    public IEnumerable<string> MechanismList { get; }
+
+    /// <summary>
+    /// Context flags.
+    /// </summary>
+    public NegotiateContextFlags? Flags { get; }
+
+    /// <summary>
+    /// Get the encoded mechlist. Used for calculating the MIC.
+    /// </summary>
+    /// <returns>The encoded mech list.</returns>
+    public byte[] GetEncodedMechList()
     {
-#pragma warning disable CS1591
-        None = 0,
-        Delegate = 1,
-        Mutual = 2,
-        Replay = 4,
-        Sequence = 8,
-        Anonymous = 0x10,
-        Confidentiality = 0x20,
-        Integrity = 0x40,
-#pragma warning restore CS1591
+        DERBuilder builder = new();
+        builder.WriteSequence(MechanismList.Select(t => new DERObjectIdentifier(t)));
+        return builder.ToArray();
     }
 
     /// <summary>
-    /// Class to represent the negTokenInit message in SPNEGO.
+    /// Create a NegTokenInit token.
     /// </summary>
-    public class NegotiateInitAuthenticationToken : NegotiateAuthenticationToken
+    /// <param name="mech_types">The list of authentication mechanisms we support.</param>
+    /// <param name="flags">Optional flags.</param>
+    /// <param name="mech_token">An initial authentication token.</param>
+    /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
+    /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
+    /// <returns>The init token.</returns>
+    public static NegotiateInitAuthenticationToken Create(IEnumerable<string> mech_types,
+        NegotiateContextFlags? flags = null, AuthenticationToken mech_token = null, byte[] mech_list_mic = null,
+        bool wrap_gssapi = true)
     {
-        /// <summary>
-        /// List of supported negotiation mechanisms.
-        /// </summary>
-        public IEnumerable<string> MechanismList { get; }
-
-        /// <summary>
-        /// Context flags.
-        /// </summary>
-        public NegotiateContextFlags? Flags { get; }
-
-        /// <summary>
-        /// Context flags.
-        /// </summary>
-        [Obsolete("Use Flags instead.")]
-        public NegotiateContextFlags ContextFlags => Flags ?? NegotiateContextFlags.None;
-
-        /// <summary>
-        /// Get the encoded mechlist. Used for calculating the MIC.
-        /// </summary>
-        /// <returns>The encoded mech list.</returns>
-        public byte[] GetEncodedMechList()
+        if (mech_types is null)
         {
-            DERBuilder builder = new DERBuilder();
-            builder.WriteSequence(MechanismList.Select(t => new DERObjectIdentifier(t)));
-            return builder.ToArray();
+            throw new ArgumentNullException(nameof(mech_types));
         }
 
-        /// <summary>
-        /// Create a NegTokenInit token.
-        /// </summary>
-        /// <param name="mech_types">The list of authentication mechanisms we support.</param>
-        /// <param name="flags">Optional flags.</param>
-        /// <param name="mech_token">An initial authentication token.</param>
-        /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
-        /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
-        /// <returns>The init token.</returns>
-        public static NegotiateInitAuthenticationToken Create(IEnumerable<string> mech_types,
-            NegotiateContextFlags? flags = null, AuthenticationToken mech_token = null, byte[] mech_list_mic = null,
-            bool wrap_gssapi = true)
+        DERBuilder builder = new();
+        using (var context = builder.CreateContextSpecific(0))
         {
-            if (mech_types is null)
+            using var seq = context.CreateSequence();
+            seq.WriteContextSpecific(0, mech_types.Select(t => new DERObjectIdentifier(t)));
+            if (flags.HasValue)
             {
-                throw new ArgumentNullException(nameof(mech_types));
+                seq.WriteContextSpecific(1, b => b.WriteBitString(flags.Value));
             }
-
-            DERBuilder builder = new DERBuilder();
-            using (var context = builder.CreateContextSpecific(0))
-            {
-                using (var seq = context.CreateSequence())
-                {
-                    seq.WriteContextSpecific(0, mech_types.Select(t => new DERObjectIdentifier(t)));
-                    if (flags.HasValue)
-                    {
-                        seq.WriteContextSpecific(1, b => b.WriteBitString(flags.Value));
-                    }
-                    seq.WriteContextSpecific(2, mech_token?.ToArray());
-                    seq.WriteContextSpecific(3, mech_list_mic);
-                }
-            }
-            byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
-            return (NegotiateInitAuthenticationToken)Parse(token);
+            seq.WriteContextSpecific(2, mech_token?.ToArray());
+            seq.WriteContextSpecific(3, mech_list_mic);
         }
+        byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
+        return (NegotiateInitAuthenticationToken)Parse(token);
+    }
 
-        private protected override void FormatData(StringBuilder builder)
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine("Mechanism List  :");
+        foreach (var oid in MechanismList)
         {
-            builder.AppendLine("Mechanism List  :");
-            foreach (var oid in MechanismList)
-            {
-                builder.AppendLine($"{oid,-30} - {OIDValues.ToString(oid)}");
-            }
-            if (Flags.HasValue)
-            {
-                builder.AppendLine($"Context Flags   : {Flags.Value}");
-            }
+            builder.AppendLine($"{oid,-30} - {OIDValues.ToString(oid)}");
         }
-
-        internal NegotiateInitAuthenticationToken(byte[] data, IEnumerable<string> mechlist, 
-            NegotiateContextFlags? flags, AuthenticationToken token, byte[] mic)
-            : base(data, token, mic)
+        if (Flags.HasValue)
         {
-            MechanismList = mechlist;
-            Flags = flags;
+            builder.AppendLine($"Context Flags   : {Flags.Value}");
         }
+    }
+
+    internal NegotiateInitAuthenticationToken(byte[] data, IEnumerable<string> mechlist, 
+        NegotiateContextFlags? flags, AuthenticationToken token, byte[] mic)
+        : base(data, token, mic)
+    {
+        MechanismList = mechlist;
+        Flags = flags;
     }
 }

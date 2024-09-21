@@ -12,50 +12,49 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication;
+using NtCoreLib.Win32.Security.Authentication;
 using System;
 using System.Linq;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+/// <summary>
+/// Class to hold a channel binding value.
+/// </summary>
+public sealed class ChannelBindingHolder
 {
+    private readonly SecurityChannelBinding _value;
+
     /// <summary>
-    /// Class to hold a channel binding value.
+    /// Cast the holder to a SecurityChannelBinding
     /// </summary>
-    public sealed class ChannelBindingHolder
+    /// <param name="holder">The holder.</param>
+    public static explicit operator SecurityChannelBinding(ChannelBindingHolder holder) => holder?._value;
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The channel binding application data.</param>
+    public ChannelBindingHolder(SecurityChannelBinding value)
     {
-        private readonly SecurityChannelBinding _value;
+        _value = value;
+    }
 
-        /// <summary>
-        /// Cast the holder to a SecurityChannelBinding
-        /// </summary>
-        /// <param name="holder">The holder.</param>
-        public static explicit operator SecurityChannelBinding(ChannelBindingHolder holder) => holder?._value;
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The channel binding application data.</param>
+    public ChannelBindingHolder(byte[] value)
+    {
+        _value = new SecurityChannelBinding(value);
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The channel binding application data.</param>
-        public ChannelBindingHolder(SecurityChannelBinding value)
-        {
-            _value = value;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The channel binding application data.</param>
-        public ChannelBindingHolder(byte[] value)
-        {
-            _value = new SecurityChannelBinding(value);
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The channel binding application data.</param>
-        public ChannelBindingHolder(object[] value) 
-            : this(value.OfType<IConvertible>().Select(i => i.ToByte(null)).ToArray())
-        {
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The channel binding application data.</param>
+    public ChannelBindingHolder(object[] value) 
+        : this(value.OfType<IConvertible>().Select(i => i.ToByte(null)).ToArray())
+    {
     }
 }

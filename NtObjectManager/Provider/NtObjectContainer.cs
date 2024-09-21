@@ -12,56 +12,56 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Security.AccessControl;
 
-namespace NtObjectManager.Provider
+namespace NtObjectManager.Provider;
+
+internal abstract class NtObjectContainer : IDisposable
 {
-    internal abstract class NtObjectContainer : IDisposable
+    private protected readonly NtObject _obj;
+
+    private protected NtObjectContainer(NtObject obj)
     {
-        private protected readonly NtObject _obj;
+        _obj = obj;
+    }
 
-        private protected NtObjectContainer(NtObject obj)
-        {
-            _obj = obj;
-        }
+    public string FullPath => _obj.FullPath;
 
-        public string FullPath => _obj.FullPath;
+    public SecurityDescriptor SecurityDescriptor => _obj.SecurityDescriptor;
 
-        public SecurityDescriptor SecurityDescriptor => _obj.SecurityDescriptor;
+    public abstract bool Exists(string path);
 
-        public abstract bool Exists(string path);
+    public abstract NtResult<NtObjectContainer> Duplicate(bool throw_on_error);
 
-        public abstract NtResult<NtObjectContainer> Duplicate(bool throw_on_error);
+    public abstract NtResult<NtObjectContainer> DuplicateForQuery(bool throw_on_error);
 
-        public abstract NtResult<NtObjectContainer> DuplicateForQuery(bool throw_on_error);
+    public abstract NtResult<NtObjectContainer> Open(string relative_path, bool throw_on_error);
 
-        public abstract NtResult<NtObjectContainer> Open(string relative_path, bool throw_on_error);
+    public abstract NtResult<NtObjectContainer> OpenForQuery(string relative_path, bool throw_on_error);
 
-        public abstract NtResult<NtObjectContainer> OpenForQuery(string relative_path, bool throw_on_error);
+    public abstract bool QueryAccessGranted { get; }
 
-        public abstract bool QueryAccessGranted { get; }
+    public abstract IEnumerable<NtObjectContainerEntry> Query();
 
-        public abstract IEnumerable<NtObjectContainerEntry> Query();
+    public abstract NtObjectContainerEntry GetEntry(string path);
 
-        public abstract NtObjectContainerEntry GetEntry(string path);
+    public virtual NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
+    {
+        return new NtDirectoryEntry(_obj, relative_path, name, typename);
+    }
 
-        public virtual NtDirectoryEntry CreateEntry(string relative_path, string name, string typename)
-        {
-            return new NtDirectoryEntry(_obj, relative_path, name, typename);
-        }
+    public abstract GenericObjectSecurity GetSecurity(string relative_path, AccessControlSections includeSections);
 
-        public abstract GenericObjectSecurity GetSecurity(string relative_path, AccessControlSections includeSections);
+    public abstract void SetSecurity(string relative_path, GenericObjectSecurity obj_security);
 
-        public abstract void SetSecurity(string relative_path, GenericObjectSecurity obj_security);
+    public abstract NtObject NewItem(string relative_path, string item_type_name, object new_item_value);
 
-        public abstract NtObject NewItem(string relative_path, string item_type_name, object new_item_value);
-
-        public virtual void Dispose()
-        {
-            _obj?.Dispose();
-        }
+    public virtual void Dispose()
+    {
+        _obj?.Dispose();
     }
 }

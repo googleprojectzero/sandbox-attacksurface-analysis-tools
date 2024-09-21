@@ -12,144 +12,147 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#nullable enable
+
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.AppModel.Interop;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.AppModel
+namespace NtCoreLib.Win32.AppModel;
+
+/// <summary>
+/// Utilities for AppModel applications.
+/// </summary>
+public static class AppModelUtils
 {
-    /// <summary>
-    /// Utilities for AppModel applications.
-    /// </summary>
-    public static class AppModelUtils
+    private static IEnumerable<Sid> ParseSidsAndAttributes(int count, SafeProcessHeapBuffer sids)
     {
-        private static IEnumerable<Sid> ParseSidsAndAttributes(int count, SafeProcessHeapBuffer sids)
+        using (sids)
         {
-            using (sids)
+            sids.Initialize<SidAndAttributes>((uint)count);
+            SidAndAttributes[] arr = sids.ReadArray<SidAndAttributes>(0, count);
+            try
             {
-                sids.Initialize<SidAndAttributes>((uint)count);
-                SidAndAttributes[] arr = sids.ReadArray<SidAndAttributes>(0, count);
-                try
+                return arr.Select(s => new Sid(s.Sid)).ToArray();
+            }
+            finally
+            {
+                NtHeap heap = NtHeap.Current;
+                foreach (var ent in arr)
                 {
-                    return arr.Select(s => new Sid(s.Sid)).ToArray();
-                }
-                finally
-                {
-                    NtHeap heap = NtHeap.Current;
-                    foreach (var ent in arr)
-                    {
-                        heap.Free(HeapAllocFlags.None, ent.Sid.ToInt64());
-                    }
+                    heap.Free(HeapAllocFlags.None, ent.Sid.ToInt64());
                 }
             }
         }
+    }
 
-        private static NtStatus SetLoopbackException(Sid package_sid, bool remove, bool throw_on_error)
+    private static NtStatus SetLoopbackException(Sid package_sid, bool remove, bool throw_on_error)
+    {
+        var result = GetLoopbackException(throw_on_error);
+        if (!result.IsSuccess)
         {
-            var result = GetLoopbackException(throw_on_error);
-            if (!result.IsSuccess)
-            {
-                return result.Status;
-            }
-
-            List<Sid> sids = result.Result.ToList();
-            if (remove)
-            {
-                sids.RemoveAll(s => s == package_sid);
-            }
-            else
-            {
-                sids.Add(package_sid);
-            }
-
-            using (var list = new DisposableList())
-            {
-                return AppModelNativeMethods.NetworkIsolationSetAppContainerConfig(sids.Count, 
-                    list.CreateSidAndAttributes(sids)).ToNtException(throw_on_error);
-            }
+            return result.Status;
         }
 
-        /// <summary>
-        /// Activate an application from its Application Model ID.
-        /// </summary>
-        /// <param name="app_model_id">The app model ID.</param>
-        /// <param name="arguments">Arguments for the activation.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The PID of the process.</returns>
-        public static NtResult<int> ActivateApplication(string app_model_id, string arguments, bool throw_on_error)
+        List<Sid> sids = result.Result.ToList();
+        if (remove)
         {
-            IApplicationActivationManager mgr = (IApplicationActivationManager)new ApplicationActivationManager();
-            return mgr.ActivateApplication(app_model_id, arguments, ACTIVATEOPTIONS.AO_NONE, out int pid).CreateResult(throw_on_error, () => pid);
+            sids.RemoveAll(s => s == package_sid);
+        }
+        else
+        {
+            sids.Add(package_sid);
         }
 
-        /// <summary>
-        /// Activate an application from its Application Model ID.
-        /// </summary>
-        /// <param name="app_model_id">The app model ID.</param>
-        /// <param name="arguments">Arguments for the activation.</param>
-        /// <returns>The PID of the process.</returns>
-        public static int ActivateApplication(string app_model_id, string arguments)
-        {
-            return ActivateApplication(app_model_id, arguments, true).Result;
-        }
+        using var list = new DisposableList();
+        return NativeMethods.NetworkIsolationSetAppContainerConfig(sids.Count,
+            list.CreateSidAndAttributes(sids)).ToNtException(throw_on_error);
+    }
 
-        /// <summary>
-        /// Get the list of package SIDs with a loopback exception.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The list of package SIDs with a loopback exception.</returns>
-        public static NtResult<IEnumerable<Sid>> GetLoopbackException(bool throw_on_error)
-        {
-            return AppModelNativeMethods.NetworkIsolationGetAppContainerConfig(out int count, out SafeProcessHeapBuffer sids)
-                .CreateWin32Result(throw_on_error, () => ParseSidsAndAttributes(count, sids));
-        }
+    /// <summary>
+    /// Activate an application from its Application Model ID.
+    /// </summary>
+    /// <param name="app_model_id">The app model ID.</param>
+    /// <param name="arguments">Arguments for the activation.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The PID of the process.</returns>
+    public static NtResult<int> ActivateApplication(string app_model_id, string arguments, bool throw_on_error)
+    {
+        IApplicationActivationManager mgr = (IApplicationActivationManager)new ApplicationActivationManager();
+        return mgr.ActivateApplication(app_model_id, arguments, ACTIVATEOPTIONS.AO_NONE, out int pid).CreateResult(throw_on_error, () => pid);
+    }
 
-        /// <summary>
-        /// Get the list of package SIDs with a loopback exception.
-        /// </summary>
-        /// <returns>The list of package SIDs with a loopback exception.</returns>
-        public static IEnumerable<Sid> GetLoopbackException()
-        {
-            return GetLoopbackException(true).Result;
-        }
+    /// <summary>
+    /// Activate an application from its Application Model ID.
+    /// </summary>
+    /// <param name="app_model_id">The app model ID.</param>
+    /// <param name="arguments">Arguments for the activation.</param>
+    /// <returns>The PID of the process.</returns>
+    public static int ActivateApplication(string app_model_id, string arguments)
+    {
+        return ActivateApplication(app_model_id, arguments, true).Result;
+    }
 
-        /// <summary>
-        /// Add a loopback exception to the list.
-        /// </summary>
-        /// <param name="package_sid">The package SID to add.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public static NtStatus AddLoopbackException(Sid package_sid, bool throw_on_error)
-        {
-            return SetLoopbackException(package_sid, false, throw_on_error);
-        }
+    /// <summary>
+    /// Get the list of package SIDs with a loopback exception.
+    /// </summary>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The list of package SIDs with a loopback exception.</returns>
+    public static NtResult<IEnumerable<Sid>> GetLoopbackException(bool throw_on_error)
+    {
+        return NativeMethods.NetworkIsolationGetAppContainerConfig(out int count, out SafeProcessHeapBuffer sids)
+            .CreateWin32Result(throw_on_error, () => ParseSidsAndAttributes(count, sids));
+    }
 
-        /// <summary>
-        /// Add a loopback exception to the list.
-        /// </summary>
-        /// <param name="package_sid">The package SID to add.</param>
-        public static void AddLoopbackException(Sid package_sid)
-        {
-            AddLoopbackException(package_sid, true);
-        }
+    /// <summary>
+    /// Get the list of package SIDs with a loopback exception.
+    /// </summary>
+    /// <returns>The list of package SIDs with a loopback exception.</returns>
+    public static IEnumerable<Sid> GetLoopbackException()
+    {
+        return GetLoopbackException(true).Result;
+    }
 
-        /// <summary>
-        /// Remove a loopback exception from the list.
-        /// </summary>
-        /// <param name="package_sid">The package SID to remove.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public static NtStatus RemoveLoopbackException(Sid package_sid, bool throw_on_error)
-        {
-            return SetLoopbackException(package_sid, true, throw_on_error);
-        }
+    /// <summary>
+    /// Add a loopback exception to the list.
+    /// </summary>
+    /// <param name="package_sid">The package SID to add.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status code.</returns>
+    public static NtStatus AddLoopbackException(Sid package_sid, bool throw_on_error)
+    {
+        return SetLoopbackException(package_sid, false, throw_on_error);
+    }
 
-        /// <summary>
-        /// Remove a loopback exception to the list.
-        /// </summary>
-        /// <param name="package_sid">The package SID to remove.</param>
-        public static void RemoveLoopbackException(Sid package_sid)
-        {
-            RemoveLoopbackException(package_sid, true);
-        }
+    /// <summary>
+    /// Add a loopback exception to the list.
+    /// </summary>
+    /// <param name="package_sid">The package SID to add.</param>
+    public static void AddLoopbackException(Sid package_sid)
+    {
+        AddLoopbackException(package_sid, true);
+    }
+
+    /// <summary>
+    /// Remove a loopback exception from the list.
+    /// </summary>
+    /// <param name="package_sid">The package SID to remove.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status code.</returns>
+    public static NtStatus RemoveLoopbackException(Sid package_sid, bool throw_on_error)
+    {
+        return SetLoopbackException(package_sid, true, throw_on_error);
+    }
+
+    /// <summary>
+    /// Remove a loopback exception to the list.
+    /// </summary>
+    /// <param name="package_sid">The package SID to remove.</param>
+    public static void RemoveLoopbackException(Sid package_sid)
+    {
+        RemoveLoopbackException(package_sid, true);
     }
 }

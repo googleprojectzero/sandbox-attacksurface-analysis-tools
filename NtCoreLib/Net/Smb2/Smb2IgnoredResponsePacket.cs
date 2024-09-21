@@ -14,13 +14,12 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2IgnoredResponsePacket : Smb2ResponsePacket
 {
-    internal sealed class Smb2IgnoredResponsePacket : Smb2ResponsePacket
+    public override void Read(BinaryReader reader)
     {
-        public override void Read(BinaryReader reader)
-        {
-            // Do nothing.
-        }
+        // Do nothing.
     }
 }

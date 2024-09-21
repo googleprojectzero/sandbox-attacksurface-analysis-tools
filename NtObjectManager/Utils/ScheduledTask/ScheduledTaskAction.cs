@@ -14,78 +14,77 @@
 
 using TaskScheduler;
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// Class to represent a scheduled task action.
+/// </summary>
+public class ScheduledTaskAction
 {
     /// <summary>
-    /// Class to represent a scheduled task action.
+    /// The ID of the action.
     /// </summary>
-    public class ScheduledTaskAction
+    public string Id { get; }
+
+    /// <summary>
+    /// Type of action.
+    /// </summary>
+    public TaskActionType ActionType { get; }
+
+    /// <summary>
+    /// Summary of what will be invoked.
+    /// </summary>
+    public string Action { get; }
+
+    /// <summary>
+    /// Indicates if this action takes arguments.
+    /// </summary>
+    public bool HasArguments { get; }
+
+    /// <summary>
+    /// Overridden ToString.
+    /// </summary>
+    /// <returns>The action as a string.</returns>
+    public override string ToString()
     {
-        /// <summary>
-        /// The ID of the action.
-        /// </summary>
-        public string Id { get; }
+        return $"{ActionType}: {Action}";
+    }
 
-        /// <summary>
-        /// Type of action.
-        /// </summary>
-        public TaskActionType ActionType { get; }
-
-        /// <summary>
-        /// Summary of what will be invoked.
-        /// </summary>
-        public string Action { get; }
-
-        /// <summary>
-        /// Indicates if this action takes arguments.
-        /// </summary>
-        public bool HasArguments { get; }
-
-        /// <summary>
-        /// Overridden ToString.
-        /// </summary>
-        /// <returns>The action as a string.</returns>
-        public override string ToString()
+    internal ScheduledTaskAction(IAction action)
+    {
+        Id = action.Id ?? string.Empty;
+        Action = string.Empty;
+        switch (action.Type)
         {
-            return $"{ActionType}: {Action}";
+            case _TASK_ACTION_TYPE.TASK_ACTION_EXEC:
+                ActionType = TaskActionType.Execute;
+                if (action is IExecAction exec_action)
+                {
+                    Action = $"{exec_action.Path} {exec_action.Arguments}";
+                }
+                break;
+            case _TASK_ACTION_TYPE.TASK_ACTION_COM_HANDLER:
+                ActionType = TaskActionType.ComObject;
+                if (action is IComHandlerAction com_action)
+                {
+                    Action = $"{com_action.ClassId:B} {com_action.Data}";
+                }
+                break;
+            case _TASK_ACTION_TYPE.TASK_ACTION_SEND_EMAIL:
+                ActionType = TaskActionType.SendEmail;
+                if (action is IEmailAction email_action)
+                {
+                    Action = $"From: {email_action.From} To: {email_action.To}";
+                }
+                break;
+            case _TASK_ACTION_TYPE.TASK_ACTION_SHOW_MESSAGE:
+                ActionType = TaskActionType.ShowMessage;
+                if (action is IShowMessageAction msg_action)
+                {
+                    Action = $"Title: {msg_action.Title} Body: {msg_action.MessageBody}";
+                }
+                break;
         }
-
-        internal ScheduledTaskAction(IAction action)
-        {
-            Id = action.Id ?? string.Empty;
-            Action = string.Empty;
-            switch (action.Type)
-            {
-                case _TASK_ACTION_TYPE.TASK_ACTION_EXEC:
-                    ActionType = TaskActionType.Execute;
-                    if (action is IExecAction exec_action)
-                    {
-                        Action = $"{exec_action.Path} {exec_action.Arguments}";
-                    }
-                    break;
-                case _TASK_ACTION_TYPE.TASK_ACTION_COM_HANDLER:
-                    ActionType = TaskActionType.ComObject;
-                    if (action is IComHandlerAction com_action)
-                    {
-                        Action = $"{com_action.ClassId:B} {com_action.Data}";
-                    }
-                    break;
-                case _TASK_ACTION_TYPE.TASK_ACTION_SEND_EMAIL:
-                    ActionType = TaskActionType.SendEmail;
-                    if (action is IEmailAction email_action)
-                    {
-                        Action = $"From: {email_action.From} To: {email_action.To}";
-                    }
-                    break;
-                case _TASK_ACTION_TYPE.TASK_ACTION_SHOW_MESSAGE:
-                    ActionType = TaskActionType.ShowMessage;
-                    if (action is IShowMessageAction msg_action)
-                    {
-                        Action = $"Title: {msg_action.Title} Body: {msg_action.MessageBody}";
-                    }
-                    break;
-            }
-            HasArguments = Action?.Contains("$(Arg") ?? false;
-        }
+        HasArguments = Action?.Contains("$(Arg") ?? false;
     }
 }

@@ -12,135 +12,109 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Net.Sockets;
+using NtCoreLib.Net.Sockets.HyperV;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
 using System;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Factory for RPC client transports.
+/// </summary>
+public static class RpcClientTransportFactory
 {
-    /// <summary>
-    /// Interface to implement an RPC client transport factory.
-    /// </summary>
-    public interface IRpcClientTransportFactory
+    private static Dictionary<string, IRpcClientTransportFactory> CreateFactories()
     {
-        /// <summary>
-        /// Connect a new RPC client transport.
-        /// </summary>
-        /// <param name="endpoint">The RPC endpoint.</param>
-        /// <param name="transport_security">The transport security for the connection.</param>
-        /// <returns>The connected transport.</returns>
-        IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security);
+        var ret = new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase);
+        if (NtObjectUtils.IsWindows)
+        {
+            ret.Add(RpcProtocolSequence.LRPC, new AlpcRpcClientTransportFactory());
+            ret.Add(RpcProtocolSequence.Container, new HyperVRpcClientTransportFactory());
+        }
+        ret.Add(RpcProtocolSequence.NamedPipe, new NamedPipeRpcClientTransportFactory());
+        ret.Add(RpcProtocolSequence.Tcp, new TcpRpcClientTransportFactory());
+        return ret;
+    }
+
+    private static readonly Dictionary<string, IRpcClientTransportFactory> _factories = CreateFactories();
+
+    private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
+    {
+        public IRpcClientTransport Connect(RpcStringBinding binding, RpcTransportSecurity transport_security, RpcClientTransportConfiguration config)
+        {
+            return new RpcAlpcClientTransport(binding, 
+                transport_security.SecurityQualityOfService, config as RpcAlpcClientTransportConfiguration);
+        }
+    }
+
+    private class NamedPipeRpcClientTransportFactory : IRpcClientTransportFactory
+    {
+        public IRpcClientTransport Connect(RpcStringBinding endpoint, RpcTransportSecurity transport_security, RpcClientTransportConfiguration config)
+        {
+            return new RpcNamedPipeClientTransport(endpoint, transport_security, config as RpcNamedPipeClientTransportConfiguration);
+        }
+    }
+
+    private class TcpRpcClientTransportFactory : IRpcClientTransportFactory
+    {
+        public IRpcClientTransport Connect(RpcStringBinding endpoint, RpcTransportSecurity transport_security, RpcClientTransportConfiguration config)
+        {
+            string hostname = string.IsNullOrEmpty(endpoint.NetworkAddress) ? "127.0.0.1" : endpoint.NetworkAddress;
+            int port = int.Parse(endpoint.Endpoint);
+            return new RpcTcpClientTransport(hostname, port, transport_security, config as RpcConnectedClientTransportConfiguration);
+        }
+    }
+
+    private class HyperVRpcClientTransportFactory : IRpcClientTransportFactory
+    {
+        private static HyperVEndPoint GetEndpoint(RpcStringBinding binding)
+        {
+            return new HyperVEndPoint(Guid.Parse(binding.Endpoint), RpcHyperVClientTransport.ResolveVmId(binding.NetworkAddress));
+        }
+
+        public IRpcClientTransport Connect(RpcStringBinding binding, RpcTransportSecurity transport_security, RpcClientTransportConfiguration config)
+        {
+            return new RpcHyperVClientTransport(GetEndpoint(binding), transport_security, config as RpcConnectedClientTransportConfiguration);
+        }
     }
 
     /// <summary>
-    /// Factory for RPC client transports.
+    /// Add or replace a new transport factory.
     /// </summary>
-    public static class RpcClientTransportFactory
+    /// <param name="protocol_seq">The protocol sequence to add or replace.</param>
+    /// <param name="factory">The transport factory.</param>
+    public static void AddOrReplaceFactory(string protocol_seq, IRpcClientTransportFactory factory)
     {
-        private static Dictionary<string, IRpcClientTransportFactory> CreateFactories()
+        _factories[protocol_seq] = factory;
+    }
+
+    /// <summary>
+    /// Add a new transport factory.
+    /// </summary>
+    /// <param name="protocol_seq">The protocol sequence to add.</param>
+    /// <param name="factory">The transport factory.</param>
+    public static void AddFactory(string protocol_seq, IRpcClientTransportFactory factory)
+    {
+        _factories.Add(protocol_seq, factory);
+    }
+
+    /// <summary>
+    /// Connect a client transport from an endpoint.
+    /// </summary>
+    /// <param name="binding">The RPC binding to connect to.</param>
+    /// <param name="transport_security">The security for the transport.</param>
+    /// <param name="config">The transport configuration for the connection.</param>
+    /// <returns>The connected client transport.</returns>
+    /// <exception cref="ArgumentException">Thrown if protocol sequence unsupported.</exception>
+    /// <exception cref="Exception">Other exceptions depending on the connection.</exception>
+    public static IRpcClientTransport ConnectEndpoint(RpcStringBinding binding, RpcTransportSecurity transport_security, RpcClientTransportConfiguration config)
+    {
+        if (!_factories.ContainsKey(binding.ProtocolSequence))
         {
-            var ret = new Dictionary<string, IRpcClientTransportFactory>(StringComparer.OrdinalIgnoreCase);
-            if (NtObjectUtils.IsWindows)
-            {
-                ret.Add(RpcProtocolSequence.LRPC, new AlpcRpcClientTransportFactory());
-                ret.Add(RpcProtocolSequence.Container, new HyperVRpcClientTransportFactory());
-            }
-            ret.Add(RpcProtocolSequence.NamedPipe, new NamedPipeRpcClientTransportFactory());
-            ret.Add(RpcProtocolSequence.Tcp, new TcpRpcClientTransportFactory());
-            return ret;
+            throw new ArgumentException($"Unsupported protocol sequence {binding.ProtocolSequence}", nameof(binding));
         }
 
-        private static readonly Dictionary<string, IRpcClientTransportFactory> _factories = CreateFactories();
-
-        private class AlpcRpcClientTransportFactory : IRpcClientTransportFactory
-        {
-            public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
-            {
-                return new RpcAlpcClientTransport(endpoint.EndpointPath, transport_security);
-            }
-        }
-
-        private class NamedPipeRpcClientTransportFactory : IRpcClientTransportFactory
-        {
-            public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
-            {
-                return new RpcNamedPipeClientTransport(endpoint, transport_security);
-            }
-        }
-
-        private class TcpRpcClientTransportFactory : IRpcClientTransportFactory
-        {
-            public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
-            {
-                string hostname = string.IsNullOrEmpty(endpoint.NetworkAddress) ? "127.0.0.1" : endpoint.NetworkAddress;
-                int port = int.Parse(endpoint.Endpoint);
-                return new RpcTcpClientTransport(hostname, port, transport_security);
-            }
-        }
-
-        private class HyperVRpcClientTransportFactory : IRpcClientTransportFactory
-        {
-            private static HyperVEndPoint GetEndpoint(RpcEndpoint endpoint)
-            {
-                return new HyperVEndPoint(Guid.Parse(endpoint.Endpoint), RpcUtils.ResolveVmId(endpoint.NetworkAddress));
-            }
-
-            public IRpcClientTransport Connect(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
-            {
-                return new RpcHyperVClientTransport(GetEndpoint(endpoint), transport_security);
-            }
-        }
-
-        /// <summary>
-        /// Add or replace a new transport factory.
-        /// </summary>
-        /// <param name="protocol_seq">The protocol sequence to add or replace.</param>
-        /// <param name="factory">The transport factory.</param>
-        public static void AddOrReplaceFactory(string protocol_seq, IRpcClientTransportFactory factory)
-        {
-            _factories[protocol_seq] = factory;
-        }
-
-        /// <summary>
-        /// Add a new transport factory.
-        /// </summary>
-        /// <param name="protocol_seq">The protocol sequence to add.</param>
-        /// <param name="factory">The transport factory.</param>
-        public static void AddFactory(string protocol_seq, IRpcClientTransportFactory factory)
-        {
-            _factories.Add(protocol_seq, factory);
-        }
-
-        /// <summary>
-        /// Connect a client transport from an endpoint.
-        /// </summary>
-        /// <param name="endpoint">The RPC endpoint.</param>
-        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
-        /// <returns>The  connected client transport.</returns>
-        /// <exception cref="ArgumentException">Thrown if protocol sequence unsupported.</exception>
-        /// <exception cref="Exception">Other exceptions depending on the connection.</exception>
-        [Obsolete("Use ConnectEndpoint specifying RpcTransportSecurity.")]
-        public static IRpcClientTransport ConnectEndpoint(RpcEndpoint endpoint, SecurityQualityOfService security_quality_of_service)
-        {
-            return ConnectEndpoint(endpoint, new RpcTransportSecurity(security_quality_of_service));
-        }
-
-        /// <summary>
-        /// Connect a client transport from an endpoint.
-        /// </summary>
-        /// <param name="endpoint">The RPC endpoint.</param>
-        /// <param name="transport_security">The transport security for the connection.</param>
-        /// <returns>The  connected client transport.</returns>
-        /// <exception cref="ArgumentException">Thrown if protocol sequence unsupported.</exception>
-        /// <exception cref="Exception">Other exceptions depending on the connection.</exception>
-        public static IRpcClientTransport ConnectEndpoint(RpcEndpoint endpoint, RpcTransportSecurity transport_security)
-        {
-            if (!_factories.ContainsKey(endpoint.ProtocolSequence))
-            {
-                throw new ArgumentException($"Unsupported protocol sequence {endpoint.ProtocolSequence}", nameof(endpoint));
-            }
-
-            return _factories[endpoint.ProtocolSequence].Connect(endpoint, transport_security);
-        }
+        return _factories[binding.ProtocolSequence].Connect(binding, transport_security, config);
     }
 }

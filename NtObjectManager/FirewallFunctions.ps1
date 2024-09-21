@@ -14,24 +14,24 @@
 
 $layer_completer = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
+    [NtCoreLib.Net.Firewall.FirewallUtils]::GetKnownLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
 $sublayer_completer = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
+    [NtCoreLib.Net.Firewall.FirewallUtils]::GetKnownSubLayerNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
 $callout_completer = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownCalloutNames() | Where-Object { $_ -like "$wordToComplete*" }
+    [NtCoreLib.Net.Firewall.FirewallUtils]::GetKnownCalloutNames() | Where-Object { $_ -like "$wordToComplete*" }
 }
 
 $Script:GlobalFwEngine = $null
 
 function Get-FwEngineSingleton {
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine
     )
 
     if ($null -ne $Engine) {
@@ -56,7 +56,7 @@ The user credentials for the RPC connection.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallEngine
+NtCoreLib.Net.Firewall.FirewallEngine
 .EXAMPLE
 Get-FwEngine
 Get local firewall engine.
@@ -68,16 +68,16 @@ function Get-FwEngine {
     [CmdletBinding()]
     Param(
         [string]$ServerName,
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthnService = "WinNT",
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credentials,
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationType]$AuthnService = "WinNT",
+        [NtCoreLib.Win32.Security.Authentication.UserCredentials]$Credentials,
         [switch]$Dynamic
     )
 
     $session = if ($Dynamic) {
-        [NtApiDotNet.Net.Firewall.FirewallSession]::new("Dynamic")
+        [NtCoreLib.Net.Firewall.FirewallSession]::new("Dynamic")
     }
 
-    [NtApiDotNet.Net.Firewall.FirewallEngine]::Open($ServerName, $AuthnService, $Credentials, $session)
+    [NtCoreLib.Net.Firewall.FirewallEngine]::Open($ServerName, $AuthnService, $Credentials, $session)
 }
 
 <#
@@ -98,7 +98,7 @@ Specify the ID of the layer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallLayer[]
+NtCoreLib.Net.Firewall.FirewallLayer[]
 .EXAMPLE
 Get-FwLayer -Engine $engine
 Get all firewall layers.
@@ -115,11 +115,11 @@ Get firewall layer from its ID.
 function Get-FwLayer {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$Key,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
         [parameter(Mandatory, ParameterSetName="FromId")]
         [int]$Id
     )
@@ -160,7 +160,7 @@ Specify the sub-layer key.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallSubLayer[]
+NtCoreLib.Net.Firewall.FirewallSubLayer[]
 .EXAMPLE
 Get-FwSubLayer
 Get all firewall sub-layers.
@@ -174,7 +174,7 @@ Get firewall sub-layer from name.
 function Get-FwSubLayer {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$Key
     )
@@ -219,7 +219,7 @@ Specify the filter template to enumerate.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallLayer[]
+NtCoreLib.Net.Firewall.FirewallLayer[]
 .EXAMPLE
 Get-FwFilter -Engine $engine
 Get all firewall filters.
@@ -242,19 +242,19 @@ function Get-FwFilter {
         [parameter(ParameterSetName="FromKey")]
         [parameter(ParameterSetName="FromAleLayer")]
         [parameter(ParameterSetName="FromTemplate")]
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLayerKey")]
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLayer", ValueFromPipeline)]
-        [NtApiDotNet.Net.Firewall.FirewallLayer[]]$Layer,
+        [NtCoreLib.Net.Firewall.FirewallLayer[]]$Layer,
         [parameter(Mandatory, ParameterSetName="FromId")]
         [uint64]$Id,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [guid]$Key,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromTemplate")]
-        [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]$Template,
+        [NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate]$Template,
         [parameter(ParameterSetName="FromLayerKey")]
         [parameter(ParameterSetName="FromAleLayer")]
         [switch]$Sorted,
@@ -272,10 +272,10 @@ function Get-FwFilter {
                     $Engine.EnumerateFilters() | Write-Output
                 }
                 "FromLayerKey" {
-                    $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
+                    $Template = [NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
                 }
                 "FromAleLayer" {
-                    $Template = [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
+                    $Template = [NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
                 }
                 "FromLayer" {
                     foreach($l in $Layer) {
@@ -332,7 +332,7 @@ Specify to sort the filter output.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate
+NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate
 .EXAMPLE
 New-FwFilterTemplate -LayerKey "c38d57d1-05a7-4c33-904f-7fbceee60e82"
 Create a template for enumerating firewall filters from layer key.
@@ -343,20 +343,20 @@ function New-FwFilterTemplate {
         [parameter(Mandatory, ParameterSetName="FromLayerKey")]
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
-        [NtApiDotNet.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
-        [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "All",
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition,
+        [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtCoreLib.Net.Firewall.FirewallFilterEnumFlags]$Flags = "None",
+        [NtCoreLib.Net.Firewall.FirewallActionType]$ActionType = "All",
+        [NtCoreLib.Net.Firewall.FirewallFilterCondition[]]$Condition,
         [switch]$Sorted
     )
 
     try {
         $template = switch($PSCmdlet.ParameterSetName) {
             "FromLayerKey" {
-                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
+                [NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate]::new($LayerKey.Id)
             }
             "FromAleLayer" {
-                [NtApiDotNet.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
+                [NtCoreLib.Net.Firewall.FirewallFilterEnumTemplate]::new($AleLayer)
             }
         }
         if ($Sorted) {
@@ -407,25 +407,25 @@ function Add-FwFilter {
     [CmdletBinding(DefaultParameterSetName="FromLayerKey")]
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 1)]
         [string]$Name,
         [string]$Description = "",
         [parameter(Mandatory, ParameterSetName="FromLayerKey")]
         [NtObjectManager.Utils.Firewall.FirewallLayerGuid]$LayerKey,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
         [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey = "FWPM_SUBLAYER_UNIVERSAL",
         [guid]$Key = [guid]::Empty,
-        [NtApiDotNet.Net.Firewall.FirewallActionType]$ActionType = "Permit",
-        [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Condition,
-        [NtApiDotNet.Net.Firewall.FirewallValue]$Weight = [NtApiDotNet.Net.Firewall.FirewallValue]::Empty,
-        [NtApiDotNet.Net.Firewall.FirewallFilterFlags]$Flags = 0,
+        [NtCoreLib.Net.Firewall.FirewallActionType]$ActionType = "Permit",
+        [NtCoreLib.Net.Firewall.FirewallConditionBuilder]$Condition,
+        [NtCoreLib.Net.Firewall.FirewallValue]$Weight = [NtCoreLib.Net.Firewall.FirewallValue]::Empty,
+        [NtCoreLib.Net.Firewall.FirewallFilterFlags]$Flags = 0,
         [guid]$ProviderKey = [guid]::Empty
     )
 
     try {
-        $builder = [NtApiDotNet.Net.Firewall.FirewallFilterBuilder]::new()
+        $builder = [NtCoreLib.Net.Firewall.FirewallFilterBuilder]::new()
         $builder.Name = $Name
         $builder.Description = $Description
         switch ($PSCmdlet.ParameterSetName) {
@@ -482,7 +482,7 @@ function Remove-FwFilter {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromId")]
         [uint64]$Id,
         [parameter(Mandatory, ParameterSetName="FromKey")]
@@ -522,7 +522,7 @@ function Format-FwFilter {
     [CmdletBinding(DefaultParameterSetName="NoSd")]
     param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Net.Firewall.FirewallFilter[]]$Filter,
+        [NtCoreLib.Net.Firewall.FirewallFilter[]]$Filter,
         [parameter(Mandatory, ParameterSetName="FormatSd")]
         [switch]$FormatSecurityDescriptor,
         [parameter(ParameterSetName="FormatSd")]
@@ -548,7 +548,7 @@ function Format-FwFilter {
                 Format-ObjectTable -InputObject $f.Conditions
                 if ($FormatSecurityDescriptor) {
                     foreach($cond in $f.Conditions) {
-                        if ($cond.Value.Value -is [NtApiDotNet.SecurityDescriptor]) {
+                        if ($cond.Value.Value -is [NtCoreLib.Security.Authorization.SecurityDescriptor]) {
                             Format-NtSecurityDescriptor -SecurityDescriptor $cond.Value.Value -DisplayPath $cond.FieldKeyName -Summary:$Summary
                         }
                     }
@@ -567,7 +567,7 @@ This cmdlet creates a new firewall condition builder. Use Add-FwCondition to add
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallConditionBuilder
+NtCoreLib.Net.Firewall.FirewallConditionBuilder
 .EXAMPLE
 New-FwConditionBuilder
 Create a condition builder.
@@ -576,7 +576,7 @@ $builder = New-FwConditionBuilder | Add-FwCondition -Filename "c:\windows\notepa
 Create a filter condition builder and add a filter condition for the notepad executable.
 #>
 function New-FwConditionBuilder {
-    [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]::new()
+    [NtCoreLib.Net.Firewall.FirewallConditionBuilder]::new()
 }
 
 <#
@@ -627,9 +627,9 @@ Specify process ID to populate from. Adds token information and app ID.
 .PARAMETER PassThru
 Pass through the condition builder/template.
 .INPUTS
-NtApiDotNet.Net.Firewall.FirewallConditionBuilder
+NtCoreLib.Net.Firewall.FirewallConditionBuilder
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallConditionBuilder
+NtCoreLib.Net.Firewall.FirewallConditionBuilder
 .EXAMPLE
 Add-FwCondition $builder -Filename "c:\windows\notepad.exe"
 Add a filter condition for the notepad executable.
@@ -644,21 +644,21 @@ function Add-FwCondition {
     [CmdletBinding()]
     param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Net.Firewall.FirewallConditionBuilder]$Builder,
-        [NtApiDotNet.Net.Firewall.FirewallMatchType]$MatchType = "Equal",
+        [NtCoreLib.Net.Firewall.FirewallConditionBuilder]$Builder,
+        [NtCoreLib.Net.Firewall.FirewallMatchType]$MatchType = "Equal",
         [switch]$PassThru,
         [parameter(Mandatory, ParameterSetName="FromFilename")]
         [string]$Filename,
         [parameter(Mandatory, ParameterSetName="FromAppId")]
         [string]$AppId,
         [parameter(Mandatory, ParameterSetName="FromUserId")]
-        [NtApiDotNet.SecurityDescriptor]$UserId,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$UserId,
         [parameter(Mandatory, ParameterSetName="FromRemoteUserId")]
-        [NtApiDotNet.SecurityDescriptor]$RemoteUserId,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$RemoteUserId,
         [parameter(Mandatory, ParameterSetName="FromProtocolType")]
         [System.Net.Sockets.ProtocolType]$ProtocolType,
         [parameter(Mandatory, ParameterSetName="FromConditionFlags")]
-        [NtApiDotNet.Net.Firewall.FirewallConditionFlags]$ConditionFlags,
+        [NtCoreLib.Net.Firewall.FirewallConditionFlags]$ConditionFlags,
         [parameter(ParameterSetName="FromRemoteEndpoint")]
         [System.Net.IPAddress]$IPAddress,
         [parameter(ParameterSetName="FromRemoteEndpoint")]
@@ -668,20 +668,20 @@ function Add-FwCondition {
         [parameter(ParameterSetName="FromLocalEndpoint")]
         [int]$LocalPort = -1,
         [parameter(Mandatory, ParameterSetName="FromToken")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(Mandatory, ParameterSetName="FromRemoteToken")]
-        [NtApiDotNet.NtToken]$RemoteToken,
+        [NtCoreLib.NtToken]$RemoteToken,
         [parameter(Mandatory, ParameterSetName="FromMachineToken")]
-        [NtApiDotNet.NtToken]$MachineToken,
+        [NtCoreLib.NtToken]$MachineToken,
         [parameter(Mandatory, ParameterSetName="FromPackageSid")]
         [NtObjectManager.Utils.Firewall.FirewallPackageSid]$PackageSid,
         [parameter(Mandatory, ParameterSetName="FromProcess")]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, ParameterSetName="FromProcessID")]
         [alias("pid")]
         [int]$ProcessId,
         [parameter(Mandatory, ParameterSetName="FromNetEventType")]
-        [NtApiDotNet.Net.Firewall.FirewallNetEventType]$NetEventType
+        [NtCoreLib.Net.Firewall.FirewallNetEventType]$NetEventType
     )
 
     try {
@@ -781,19 +781,19 @@ function Get-FwGuid {
         [parameter(Mandatory, ParameterSetName="FromLayerName")]
         [string]$LayerName,
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
-        [NtApiDotNet.Net.Firewall.FirewallAleLayer]$AleLayer,
+        [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
         [parameter(Mandatory, ParameterSetName="FromSubLayerName")]
         [string]$SubLayerName
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromLayerName" {
-            [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownLayerGuid($LayerName)
+            [NtCoreLib.Net.Firewall.FirewallUtils]::GetKnownLayerGuid($LayerName)
         }
         "FromAleLayer" {
-            [NtApiDotNet.Net.Firewall.FirewallUtils]::GetLayerGuidForAleLayer($AleLayer)
+            [NtCoreLib.Net.Firewall.FirewallUtils]::GetLayerGuidForAleLayer($AleLayer)
         }
         "FromSubLayerName" {
-            [NtApiDotNet.Net.Firewall.FirewallUtils]::GetKnownSubLayerGuid($SubLayerName)
+            [NtCoreLib.Net.Firewall.FirewallUtils]::GetKnownSubLayerGuid($SubLayerName)
         }
     }
 }
@@ -813,7 +813,7 @@ Specify the ALE endpoint ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallAleEndpoint[]
+NtCoreLib.Net.Firewall.FirewallAleEndpoint[]
 .EXAMPLE
 Get-FwAleEndpoint -Engine $engine
 Get all firewall ALE endpoints.
@@ -824,7 +824,7 @@ Get the firewall ALE endpoint with ID 12345.
 function Get-FwAleEndpoint {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [uint64]$Id
     )
@@ -860,7 +860,7 @@ Specify Token access rights.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtToken
+NtCoreLib.NtToken
 .EXAMPLE
 Get-FwToken -Engine $engine -ModifiedId 00000000-00012345
 Get token from its modified ID.
@@ -871,12 +871,12 @@ Get token from an ALE endpoint.
 function Get-FwToken {
     [CmdletBinding(DefaultParameterSetName="FromLuid")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromEndpoint")]
-        [NtApiDotNet.Net.Firewall.FirewallAleEndpoint]$AleEndpoint,
+        [NtCoreLib.Net.Firewall.FirewallAleEndpoint]$AleEndpoint,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromLuid")]
-        [NtApiDotNet.Luid]$ModifiedId,
-        [NtApiDotNet.TokenAccessRights]$Access = "Query"
+        [NtCoreLib.Luid]$ModifiedId,
+        [NtCoreLib.TokenAccessRights]$Access = "Query"
     )
 
     try {
@@ -908,7 +908,7 @@ Specify a secured TCP client to lookup the security association.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.IkeSecurityAssociation[]
+NtCoreLib.Net.Firewall.IkeSecurityAssociation[]
 .EXAMPLE
 Get-IkeSecurityAssociation -Engine $engine
 Get all IKE security associations.
@@ -931,7 +931,7 @@ Get an IKE security associations from a secured TCP client.
 function Get-IkeSecurityAssociation {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromIdAndContext")]
         [uint64]$Id,
@@ -982,7 +982,7 @@ The firewall engine to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallSession[]
+NtCoreLib.Net.Firewall.FirewallSession[]
 .EXAMPLE
 Get-FwSession -Engine $engine
 Get all firewall sessions.
@@ -990,7 +990,7 @@ Get all firewall sessions.
 function Get-FwSession {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine
     )
 
     try {
@@ -1017,7 +1017,7 @@ Filter template for the network events.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallNetEvent[]
+NtCoreLib.Net.Firewall.FirewallNetEvent[]
 .EXAMPLE
 Get-FwNetEvent -Engine $engine
 Get all firewall network events.
@@ -1025,8 +1025,8 @@ Get all firewall network events.
 function Get-FwNetEvent {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallNetEventEnumTemplate]$Template
     )
 
     try {
@@ -1053,7 +1053,7 @@ Filter template for the network events.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallNetEventListener
+NtCoreLib.Net.Firewall.FirewallNetEventListener
 .EXAMPLE
 New-FwNetEventListener
 Create a new firewall network event listener.
@@ -1061,8 +1061,8 @@ Create a new firewall network event listener.
 function New-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
-        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallNetEventEnumTemplate]$Template
     )
     try {
         $Engine = Get-FwEngineSingleton -Engine $Engine
@@ -1090,7 +1090,7 @@ Specify a read timeout in milliseconds. -1 waits indefinitely.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallNetEvent
+NtCoreLib.Net.Firewall.FirewallNetEvent
 .EXAMPLE
 Read-FwNetEvent -Listener $l
 Read a live firewall network event.
@@ -1099,7 +1099,7 @@ function Read-FwNetEvent {
     [CmdletBinding()]
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Net.Firewall.FirewallNetEventListener]$Listener,
+        [NtCoreLib.Net.Firewall.FirewallNetEventListener]$Listener,
         [int]$TimeoutMs = -1
     )
 
@@ -1151,9 +1151,9 @@ Start a new firewall network event listener and store the captured events in a v
 function Start-FwNetEventListener {
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]$Template,
+        [NtCoreLib.Net.Firewall.FirewallNetEventEnumTemplate]$Template,
         [string]$Variable,
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine
     )
 
     try {
@@ -1192,7 +1192,7 @@ This cmdlet creates a new template for enumerating network events, which can be 
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate
+NtCoreLib.Net.Firewall.FirewallNetEventEnumTemplate
 .EXAMPLE
 New-FwNetEventTemplate -StartTime ([datetime]::now.AddHours(-1))
 Create a template for enumerating net events starting one hour ago.
@@ -1202,11 +1202,11 @@ function New-FwNetEventTemplate {
     param(
         [datetime]$StartTime = [datetime]::FromFileTime(0),
         [datetime]$EndTime = [datetime]::MaxValue,
-        [NtApiDotNet.Net.Firewall.FirewallFilterCondition[]]$Condition
+        [NtCoreLib.Net.Firewall.FirewallFilterCondition[]]$Condition
     )
 
     try {
-        $template = [NtApiDotNet.Net.Firewall.FirewallNetEventEnumTemplate]::new()
+        $template = [NtCoreLib.Net.Firewall.FirewallNetEventEnumTemplate]::new()
         $template.StartTime = $StartTime
         $template.EndTime = $EndTime
         if ($null -ne $Condition) {
@@ -1230,7 +1230,7 @@ Specify the IPsec security association context ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.IPsecSecurityAssociationContext[]
+NtCoreLib.Net.Firewall.IPsecSecurityAssociationContext[]
 .EXAMPLE
 Get-IPsecSaContext -Engine $engine
 Get all security association context.
@@ -1241,7 +1241,7 @@ Get the security association context with ID 12345.
 function Get-IPsecSaContext {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromId")]
         [uint64]$Id
     )
@@ -1277,7 +1277,7 @@ Specify to get the NetEventMatchAnyKeywords option.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallValue
+NtCoreLib.Net.Firewall.FirewallValue
 .EXAMPLE
 Get-FwEngineOption -Option MonitorIPsecConnections
 Get MonitorIPsecConnections option.
@@ -1291,9 +1291,9 @@ Get NetEventMatchAnyKeywords option.
 function Get-FwEngineOption {
     [CmdletBinding(DefaultParameterSetName="FromOption")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromOption")]
-        [NtApiDotNet.Net.Firewall.FirewallEngineOption]$Option,
+        [NtCoreLib.Net.Firewall.FirewallEngineOption]$Option,
         [parameter(Mandatory, ParameterSetName="FromCollect")]
         [switch]$CollectNetEvents,
         [parameter(Mandatory, ParameterSetName="FromKeywords")]
@@ -1350,15 +1350,15 @@ Get NetEventMatchAnyKeywords option.
 function Set-FwEngineOption {
     [CmdletBinding(DefaultParameterSetName="FromOption")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromOption")]
-        [NtApiDotNet.Net.Firewall.FirewallEngineOption]$Option,
+        [NtCoreLib.Net.Firewall.FirewallEngineOption]$Option,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromOption")]
-        [NtApiDotNet.Net.Firewall.FirewallValue]$Value,
+        [NtCoreLib.Net.Firewall.FirewallValue]$Value,
         [parameter(Mandatory, ParameterSetName="FromCollect")]
         [bool]$CollectNetEvents,
         [parameter(Mandatory, ParameterSetName="FromKeywords")]
-        [NtApiDotNet.Net.Firewall.FirewallNetEventKeywords]$NetEventMatchAnyKeywords
+        [NtCoreLib.Net.Firewall.FirewallNetEventKeywords]$NetEventMatchAnyKeywords
     )
 
     try {
@@ -1391,7 +1391,7 @@ Specify the callout key.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallCallout[]
+NtCoreLib.Net.Firewall.FirewallCallout[]
 .EXAMPLE
 Get-FwCallout
 Get all firewall callouts.
@@ -1402,7 +1402,7 @@ Get firewall callout from key.
 function Get-FwCallout {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [NtObjectManager.Utils.Firewall.FirewallCalloutGuid]$Key
     )
@@ -1437,7 +1437,7 @@ Specify the provider key.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Firewall.FirewallSubLayer[]
+NtCoreLib.Net.Firewall.FirewallSubLayer[]
 .EXAMPLE
 Get-FwProvider
 Get all firewall providers.
@@ -1445,7 +1445,7 @@ Get all firewall providers.
 function Get-FwProvider {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
-        [NtApiDotNet.Net.Firewall.FirewallEngine]$Engine,
+        [NtCoreLib.Net.Firewall.FirewallEngine]$Engine,
         [parameter(Mandatory, ParameterSetName="FromKey")]
         [Guid]$Key
     )

@@ -14,33 +14,32 @@
 
 using System;
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// Flags for running a task.
+/// </summary>
+[Flags]
+public enum TaskRunFlags
 {
     /// <summary>
-    /// Flags for running a task.
+    /// None
     /// </summary>
-    [Flags]
-    public enum TaskRunFlags
-    {
-        /// <summary>
-        /// None
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Run as user calling Run.
-        /// </summary>
-        AsSelf = 1,
-        /// <summary>
-        /// Ignore task constraints.
-        /// </summary>
-        IgnoreConstrains = 2,
-        /// <summary>
-        /// Use the session ID for the terminal session.
-        /// </summary>
-        UseSessionId = 4,
-        /// <summary>
-        /// Run using a SID.
-        /// </summary>
-        UserSid = 8,
-    }
+    None = 0,
+    /// <summary>
+    /// Run as user calling Run.
+    /// </summary>
+    AsSelf = 1,
+    /// <summary>
+    /// Ignore task constraints.
+    /// </summary>
+    IgnoreConstrains = 2,
+    /// <summary>
+    /// Use the session ID for the terminal session.
+    /// </summary>
+    UseSessionId = 4,
+    /// <summary>
+    /// Run using a SID.
+    /// </summary>
+    UserSid = 8,
 }

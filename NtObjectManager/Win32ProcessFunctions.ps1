@@ -74,18 +74,18 @@ Specify component filter flags.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32ProcessConfig
+NtCoreLib.Win32.Process.Win32ProcessConfig
 #>
 function New-Win32ProcessConfig {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
         [string]$CommandLine,
         [string]$ApplicationName,
-        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
-        [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
-        [NtApiDotNet.NtProcess]$ParentProcess,
-        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
-        [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$ProcessSecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$ThreadSecurityDescriptor,
+        [NtCoreLib.NtProcess]$ParentProcess,
+        [NtCoreLib.Win32.Process.CreateProcessFlags]$CreationFlags = 0,
+        [NtCoreLib.Win32.Process.ProcessMitigationOptions]$MitigationOptions = 0,
         [switch]$TerminateOnDispose,
         [byte[]]$Environment,
         [string]$CurrentDirectory,
@@ -94,21 +94,21 @@ function New-Win32ProcessConfig {
         [switch]$InheritHandles,
         [switch]$InheritProcessHandle,
         [switch]$InheritThreadHandle,
-        [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
+        [NtCoreLib.Win32.Process.Win32kFilterFlags]$Win32kFilterFlags = 0,
         [int]$Win32kFilterLevel = 0,
-        [NtApiDotNet.NtToken]$Token,
-        [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
-        [NtApiDotNet.NtDebug]$DebugObject,
+        [NtCoreLib.NtToken]$Token,
+        [NtCoreLib.Win32.Process.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+        [NtCoreLib.NtDebug]$DebugObject,
         [switch]$NoTokenFallback,
-        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
-        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
-        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
-        [NtApiDotNet.NtJob[]]$JobList,
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
-        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0,
-        [NtApiDotNet.Win32.ProcessComponentFilterFlags]$ComponentFilter = 0
+        [NtCoreLib.Win32.AppModel.AppContainerProfile]$AppContainerProfile,
+        [NtCoreLib.Win32.Process.ProcessExtendedFlags]$ExtendedFlags = 0,
+        [NtCoreLib.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [NtCoreLib.NtJob[]]$JobList,
+        [NtCoreLib.Win32.Security.Authentication.UserCredentials]$Credential,
+        [NtCoreLib.Win32.Process.CreateProcessLogonFlags]$LogonFlags = 0,
+        [NtCoreLib.Win32.Process.ProcessComponentFilterFlags]$ComponentFilter = 0
     )
-    $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
+    $config = New-Object NtCoreLib.Win32.Process.Win32ProcessConfig
     $config.CommandLine = $CommandLine
     if (-not [string]::IsNullOrEmpty($ApplicationName)) {
         $config.ApplicationName = $ApplicationName
@@ -217,7 +217,7 @@ Specify to close the process and thread handles and not return anything.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Process
+NtCoreLib.Win32.Process.Win32Process
 #>
 function New-Win32Process {
     [CmdletBinding(DefaultParameterSetName = "FromArgs")]
@@ -227,15 +227,15 @@ function New-Win32Process {
         [Parameter(ParameterSetName = "FromArgs")]
         [string]$ApplicationName,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$ProcessSecurityDescriptor,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$ThreadSecurityDescriptor,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.NtProcess]$ParentProcess,
+        [NtCoreLib.NtProcess]$ParentProcess,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+        [NtCoreLib.Win32.Process.CreateProcessFlags]$CreationFlags = 0,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+        [NtCoreLib.Win32.Process.ProcessMitigationOptions]$MitigationOptions = 0,
         [Parameter(ParameterSetName = "FromArgs")]
         [switch]$TerminateOnDispose,
         [Parameter(ParameterSetName = "FromArgs")]
@@ -253,31 +253,31 @@ function New-Win32Process {
         [Parameter(ParameterSetName = "FromArgs")]
         [switch]$InheritThreadHandle,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+        [NtCoreLib.Win32.Process.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.NtDebug]$DebugObject,
+        [NtCoreLib.NtDebug]$DebugObject,
         [Parameter(ParameterSetName = "FromArgs")]
         [switch]$NoTokenFallback,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
+        [NtCoreLib.Win32.AppModel.AppContainerProfile]$AppContainerProfile,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
+        [NtCoreLib.Win32.Process.ProcessExtendedFlags]$ExtendedFlags = 0,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [NtCoreLib.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.NtJob[]]$JobList,
+        [NtCoreLib.NtJob[]]$JobList,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.UserCredentials]$Credential,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.CreateProcessLogonFlags]$LogonFlags = 0,
+        [NtCoreLib.Win32.Process.CreateProcessLogonFlags]$LogonFlags = 0,
         [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ProcessComponentFilterFlags]$ComponentFilter = 0,
+        [NtCoreLib.Win32.Process.ProcessComponentFilterFlags]$ComponentFilter = 0,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromConfig")]
-        [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
+        [NtCoreLib.Win32.Process.Win32ProcessConfig]$Config,
         [switch]$Wait,
-        [NtApiDotNet.NtWaitTimeout]$WaitTimeout = [NtApiDotNet.NtWaitTimeout]::Infinite,
+        [NtCoreLib.NtWaitTimeout]$WaitTimeout = [NtCoreLib.NtWaitTimeout]::Infinite,
         [switch]$Close
     )
 
@@ -293,7 +293,7 @@ function New-Win32Process {
             -ComponentFilter $ComponentFilter
     }
 
-    $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
+    $p = $config.Create()
     if ($Wait) {
         $p.Process.Wait($WaitTimeout)
     }
@@ -307,11 +307,11 @@ function New-Win32Process {
 function Test-ProcessToken {
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Sid]$User,
-        [NtApiDotNet.TokenPrivilegeValue[]]$RequiredPrivilege,
-        [NtApiDotNet.Sid[]]$RequiredGroup
+        [NtCoreLib.Security.Authorization.Sid]$User,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$RequiredPrivilege,
+        [NtCoreLib.Security.Authorization.Sid[]]$RequiredGroup
     )
     Use-NtObject($token = Get-NtToken -Primary -Process $Process -Access Query -ErrorAction SilentlyContinue) {
         if ($null -eq $token) {
@@ -358,7 +358,7 @@ Optional list of groups the parent process must have to create the child.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Process
+NtCoreLib.Win32.Process.Win32Process
 .EXAMPLE
 Start-Win32ChildProcess cmd.exe
 Start a new child process as the system user.
@@ -376,11 +376,11 @@ function Start-Win32ChildProcess {
     Param(
         [parameter(Mandatory, Position = 0)]
         [string]$CommandLine,
-        [NtApiDotNet.Sid]$User = "SY",
-        [NtApiDotNet.TokenPrivilegeValue[]]$RequiredPrivilege,
-        [NtApiDotNet.Sid[]]$RequiredGroup,
+        [NtCoreLib.Security.Authorization.Sid]$User = "SY",
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$RequiredPrivilege,
+        [NtCoreLib.Security.Authorization.Sid[]]$RequiredGroup,
         [string]$Desktop = "WinSta0\Default",
-        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = "NewConsole",
+        [NtCoreLib.Win32.Process.CreateProcessFlags]$CreationFlags = "NewConsole",
         [switch]$TerminateOnDispose,
         [switch]$PassThru
     )

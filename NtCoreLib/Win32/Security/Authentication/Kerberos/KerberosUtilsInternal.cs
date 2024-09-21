@@ -12,106 +12,104 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using System;
+using NtCoreLib.Utilities.ASN1;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+internal static class KerberosUtilsInternal
 {
-    internal static class KerberosUtilsInternal
+    internal static uint RotateBits(this uint value)
     {
-        internal static uint RotateBits(this uint value)
+        uint ret = 0;
+        for (int i = 0; i < 32; ++i)
         {
-            uint ret = 0;
-            for (int i = 0; i < 32; ++i)
+            if ((value & (1U << i)) != 0)
             {
-                if ((value & (1U << i)) != 0)
-                {
-                    ret |= (0x80000000U >> i);
-                }
+                ret |= (0x80000000U >> i);
             }
-            return ret;
         }
+        return ret;
+    }
 
-        internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
+    internal static bool CheckMsg(this DERValue value, KerberosMessageType msg)
+    {
+        return value.CheckApplication((int)msg);
+    }
+
+    internal static KerberosTime ReadChildKerberosTime(this DERValue value)
+    {
+        return new KerberosTime(value.ReadChildGeneralizedTime());
+    }
+
+    internal static KerberosPrincipalName ReadChildPrincipalName(this DERValue value)
+    {
+        if (!value.HasChildren() || !value.Children[0].CheckSequence())
         {
-            return value.CheckApplication((int)msg);
+            throw new InvalidDataException();
         }
+        return KerberosPrincipalName.Parse(value.Children[0]);
+    }
 
-        internal static KerberosTime ReadChildKerberosTime(this DERValue value)
+    internal static KerberosAuthenticationKey ReadChildAuthenticationKey(this DERValue value)
+    {
+        if (!value.HasChildren() || !value.Children[0].CheckSequence())
         {
-            return new KerberosTime(value.ReadChildGeneralizedTime());
+            throw new InvalidDataException();
         }
+        return KerberosAuthenticationKey.Parse(value.Children[0], string.Empty, new KerberosPrincipalName());
+    }
 
-        internal static KerberosPrincipalName ReadChildPrincipalName(this DERValue value)
-        {
-            if (!value.HasChildren() || !value.Children[0].CheckSequence())
-            {
-                throw new InvalidDataException();
-            }
-            return KerberosPrincipalName.Parse(value.Children[0]);
-        }
+    internal static KerberosEncryptedData ReadChildEncryptedData(this DERValue value)
+    {
+        if (!value.HasChildren())
+            throw new InvalidDataException();
+        return KerberosEncryptedData.Parse(value.Children[0], value.Data);
+    }
 
-        internal static KerberosAuthenticationKey ReadChildAuthenticationKey(this DERValue value)
-        {
-            if (!value.HasChildren() || !value.Children[0].CheckSequence())
-            {
-                throw new InvalidDataException();
-            }
-            return KerberosAuthenticationKey.Parse(value.Children[0], string.Empty, new KerberosPrincipalName());
-        }
+    internal static KerberosTicket ReadChildTicket(this DERValue value)
+    {
+        if (!value.HasChildren())
+            throw new InvalidDataException();
+        return KerberosTicket.Parse(value.Children[0]);
+    }
 
-        internal static KerberosEncryptedData ReadChildEncryptedData(this DERValue value)
-        {
-            if (!value.HasChildren())
-                throw new InvalidDataException();
-            return KerberosEncryptedData.Parse(value.Children[0], value.Data);
-        }
+    internal static IEnumerable<T> FindAllAuthorizationData<T>(
+        this IEnumerable<KerberosAuthorizationData> auth_data,
+        KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+    {
+        if (auth_data == null)
+            return default;
+        List<KerberosAuthorizationData> list = new();
+        FindAuthorizationData(list, auth_data, type);
+        return list.OfType<T>();
+    }
 
-        internal static KerberosTicket ReadChildTicket(this DERValue value)
-        {
-            if (!value.HasChildren())
-                throw new InvalidDataException();
-            return KerberosTicket.Parse(value.Children[0]);
-        }
+    internal static T FindAuthorizationData<T>(
+        this IEnumerable<KerberosAuthorizationData> auth_data,
+        KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
+    {
+        return auth_data.FindAllAuthorizationData<T>(type).FirstOrDefault();
+    }
 
-        internal static IEnumerable<T> FindAllAuthorizationData<T>(
-            this IEnumerable<KerberosAuthorizationData> auth_data,
-            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
-        {
-            if (auth_data == null)
-                return default;
-            List<KerberosAuthorizationData> list = new List<KerberosAuthorizationData>();
-            FindAuthorizationData(list, auth_data, type);
-            return list.OfType<T>();
-        }
-
-        internal static T FindAuthorizationData<T>(
-            this IEnumerable<KerberosAuthorizationData> auth_data,
-            KerberosAuthorizationDataType type) where T : KerberosAuthorizationData
-        {
-            return auth_data.FindAllAuthorizationData<T>(type).FirstOrDefault();
-        }
-
-        private static void FindAuthorizationData(
-            List<KerberosAuthorizationData> list,
-            IEnumerable<KerberosAuthorizationData> auth_data,
-            KerberosAuthorizationDataType type)
-        {
-            if (auth_data == null)
-                return;
-            foreach (var next in auth_data)
-            {
-                if (next.DataType == type)
-                    list.Add(next);
-                if (next is KerberosAuthorizationDataIfRelevant if_rel)
-                {
-                    FindAuthorizationData(list, if_rel.Entries, type);
-                }
-            }
+    private static void FindAuthorizationData(
+        List<KerberosAuthorizationData> list,
+        IEnumerable<KerberosAuthorizationData> auth_data,
+        KerberosAuthorizationDataType type)
+    {
+        if (auth_data == null)
             return;
+        foreach (var next in auth_data)
+        {
+            if (next.DataType == type)
+                list.Add(next);
+            if (next is KerberosAuthorizationDataIfRelevant if_rel)
+            {
+                FindAuthorizationData(list, if_rel.Entries, type);
+            }
         }
+        return;
     }
 }

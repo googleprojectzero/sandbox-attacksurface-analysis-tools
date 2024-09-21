@@ -12,17 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
-{
-    internal class PDUAuth3 : PDUBase
-    {
-        public PDUAuth3() : base(PDUType.Auth3)
-        {
-        }
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
 
-        public override byte[] ToArray()
-        {
-            return new byte[4];
-        }
+internal class PDUAuth3 : PDUBase
+{
+    public PDUAuth3() : base(PDUType.Auth3)
+    {
+    }
+
+    public override byte[] ToArray()
+    {
+        return new byte[4];
     }
 }

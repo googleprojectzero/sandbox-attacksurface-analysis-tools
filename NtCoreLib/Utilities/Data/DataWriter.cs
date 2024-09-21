@@ -16,53 +16,52 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Utilities.Data
+namespace NtCoreLib.Utilities.Data;
+
+internal sealed class DataWriter : BinaryWriter
 {
-    internal sealed class DataWriter : BinaryWriter
+    public DataWriter() : base(new MemoryStream())
     {
-        public DataWriter() : base(new MemoryStream())
-        {
-        }
+    }
 
-        public DataWriter(Stream output) : base(output)
-        {
-        }
+    public DataWriter(Stream output) : base(output)
+    {
+    }
 
-        public DataWriter(Stream output, Encoding encoding) : base(output, encoding)
-        {
-        }
+    public DataWriter(Stream output, Encoding encoding) : base(output, encoding)
+    {
+    }
 
-        public DataWriter(Stream output, Encoding encoding, bool leaveOpen) : base(output, encoding, leaveOpen)
-        {
-        }
+    public DataWriter(Stream output, Encoding encoding, bool leaveOpen) : base(output, encoding, leaveOpen)
+    {
+    }
 
-        public void WriteGuid(Guid guid)
-        {
-            Write(guid.ToByteArray());
-        }
+    public void WriteGuid(Guid guid)
+    {
+        Write(guid.ToByteArray());
+    }
 
-        public void WriteInt32Enum(Enum value)
-        {
-            Write((int)(object)value);
-        }
+    public void WriteInt32Enum(Enum value)
+    {
+        Write((int)(object)value);
+    }
 
-        public void WriteUInt32Enum(Enum value)
-        {
-            Write((uint)(object)value);
-        }
+    public void WriteUInt32Enum(Enum value)
+    {
+        Write((uint)(object)value);
+    }
 
-        public void WriteByte(int value)
-        {
-            Write((byte)value);
-        }
+    public void WriteByte(int value)
+    {
+        Write((byte)value);
+    }
 
-        public byte[] ToArray()
+    public byte[] ToArray()
+    {
+        if (BaseStream is MemoryStream stm)
         {
-            if (BaseStream is MemoryStream stm)
-            {
-                return stm.ToArray();
-            }
-            throw new InvalidOperationException("Base stream is not a MemoryStream.");
+            return stm.ToArray();
         }
+        throw new InvalidOperationException("Base stream is not a MemoryStream.");
     }
 }

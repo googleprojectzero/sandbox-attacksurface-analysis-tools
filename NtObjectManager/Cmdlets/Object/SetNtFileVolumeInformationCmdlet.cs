@@ -12,83 +12,79 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Native.SafeBuffers;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Call SetVolume on the file.</para>
+/// <para type="description">This cmdlet sets volume information to a file handle.
+/// </para>
+/// </summary>
+/// <example>
+///   <code>Set-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -Bytes @(1, 2, 3, 4)</code>
+///   <para>Set the basic info class for the object.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Set, "NtFileVolumeInformation", DefaultParameterSetName = "SetBytes")]
+public sealed class SetNtFileVolumeInformationCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Call SetVolume on the file.</para>
-    /// <para type="description">This cmdlet sets volume information to a file handle.
-    /// </para>
+    /// <para type="description">Specify the file to set volume information to.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Set-NtFileVolumeInformation -Object $obj -InformationClass FileFsVolumeInformation -Bytes @(1, 2, 3, 4)</code>
-    ///   <para>Set the basic info class for the object.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Set, "NtFileVolumeInformation", DefaultParameterSetName = "SetBytes")]
-    public sealed class SetNtFileVolumeInformationCmdlet : PSCmdlet
+    [Parameter(Mandatory = true, Position = 0)]
+    public NtFile File { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the information class to set.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1)]
+    public FsInformationClass InformationClass { get; set; }
+
+    /// <summary>
+    /// <para type="description">Sets the buffer rather than a byte array.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "SetBytes")]
+    public byte[] Bytes { get; set; }
+
+    /// <summary>
+    /// <para type="description">Sets the buffer rather than a byte array.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "SetBuffer")]
+    public SafeBuffer Buffer { get; set; }
+
+    /// <summary>
+    /// <para type="description">Sets the information as a blittable value type.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "Type")]
+    public object Value { get; set; }
+
+    private SafeBuffer GetInitialBuffer()
     {
-        /// <summary>
-        /// <para type="description">Specify the file to set volume information to.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public NtFile File { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the information class to set.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
-        public FsInformationClass InformationClass { get; set; }
-
-        /// <summary>
-        /// <para type="description">Sets the buffer rather than a byte array.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "SetBytes")]
-        public byte[] Bytes { get; set; }
-
-        /// <summary>
-        /// <para type="description">Sets the buffer rather than a byte array.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "SetBuffer")]
-        public SafeBuffer Buffer { get; set; }
-
-        /// <summary>
-        /// <para type="description">Sets the information as a blittable value type.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "Type")]
-        public object Value { get; set; }
-
-        private SafeBuffer GetInitialBuffer()
+        if (Buffer != null)
         {
-            if (Buffer != null)
-            {
-                return new SafeHGlobalBuffer(Buffer.DangerousGetHandle(), (int)Buffer.ByteLength, false);
-            }
-            else if (Bytes != null)
-            {
-                return new SafeHGlobalBuffer(Bytes);
-            }
-            else
-            {
-                using (var buffer = new SafeHGlobalBuffer(Marshal.SizeOf(Value)))
-                {
-                    Marshal.StructureToPtr(Value, buffer.DangerousGetHandle(), false);
-                    return buffer.Detach();
-                }
-            }
+            return new SafeHGlobalBuffer(Buffer.DangerousGetHandle(), (int)Buffer.ByteLength, false);
         }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
+        else if (Bytes != null)
         {
-            using (var buffer = GetInitialBuffer())
-            {
-                File.SetVolume(InformationClass, buffer);
-            }
+            return new SafeHGlobalBuffer(Bytes);
         }
+        else
+        {
+            using var buffer = new SafeHGlobalBuffer(Marshal.SizeOf(Value));
+            Marshal.StructureToPtr(Value, buffer.DangerousGetHandle(), false);
+            return buffer.Detach();
+        }
+    }
+
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        using var buffer = GetInitialBuffer();
+        File.SetVolume(InformationClass, buffer);
     }
 }

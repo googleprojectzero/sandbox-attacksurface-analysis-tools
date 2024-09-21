@@ -12,85 +12,86 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Security;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="synopsis">Get a list of ETW providers accessible by a specified token.</para>
+/// <para type="description">This cmdlet checks all ETW providers and tries to determine
+/// if one or more specified tokens can access them. If no tokens are specified then the 
+/// current process token is used.</para>
+/// </summary>
+/// <remarks>This will only work if run as an administrator.</remarks>
+/// <example>
+///   <code>Get-AccessibleEventTrace</code>
+///   <para>Check all accessible ETW providers for the current process token.</para>
+/// </example>
+/// <example>
+///   <code>Get-AccessibleEventTrace -ProcessIds 1234,5678</code>
+///   <para>>Check all accessible ETW providers for the process tokens of PIDs 1234 and 5678</para>
+/// </example>
+/// <example>
+///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleEventTrace -Tokens $token</code>
+///   <para>Get all ETW providers which can be accessed by a low integrity copy of current token.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "AccessibleEventTrace", DefaultParameterSetName = "All")]
+[OutputType(typeof(EventTraceAccessCheckResult))]
+public class GetAccessibleEventTraceCmdlet : CommonAccessBaseWithAccessCmdlet<TraceAccessRights>
 {
     /// <summary>
-    /// <para type="synopsis">Get a list of ETW providers accessible by a specified token.</para>
-    /// <para type="description">This cmdlet checks all ETW providers and tries to determine
-    /// if one or more specified tokens can access them. If no tokens are specified then the 
-    /// current process token is used.</para>
+    /// <para type="description">Specify list of ETW provider GUID to check.</para>
     /// </summary>
-    /// <remarks>This will only work if run as an administrator.</remarks>
-    /// <example>
-    ///   <code>Get-AccessibleEventTrace</code>
-    ///   <para>Check all accessible ETW providers for the current process token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-AccessibleEventTrace -ProcessIds 1234,5678</code>
-    ///   <para>>Check all accessible ETW providers for the process tokens of PIDs 1234 and 5678</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleEventTrace -Tokens $token</code>
-    ///   <para>Get all ETW providers which can be accessed by a low integrity copy of current token.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "AccessibleEventTrace", DefaultParameterSetName = "All")]
-    [OutputType(typeof(EventTraceAccessCheckResult))]
-    public class GetAccessibleEventTraceCmdlet : CommonAccessBaseWithAccessCmdlet<TraceAccessRights>
+    [Parameter(ParameterSetName = "FromId")]
+    public Guid[] ProviderId { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify list of ETW provider names to check.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromName")]
+    public string[] Name { get; set; }
+
+    private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
     {
-        /// <summary>
-        /// <para type="description">Specify list of ETW provider GUID to check.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromId")]
-        public Guid[] ProviderId { get; set; }
+        NtType type = NtType.GetTypeByType<NtEtwRegistration>();
+        AccessMask access_rights = type.GenericMapping.MapMask(Access);
+        var providers = EventTraceUtils.GetProviders();
 
-        /// <summary>
-        /// <para type="description">Specify list of ETW provider names to check.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromName")]
-        public string[] Name { get; set; }
-
-        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        if (ProviderId != null && ProviderId.Length > 0)
         {
-            NtType type = NtType.GetTypeByType<NtEtwRegistration>();
-            AccessMask access_rights = type.GenericMapping.MapMask(Access);
-            var providers = EventTracing.GetProviders();
+            HashSet<Guid> guids = new(ProviderId);
+            providers = providers.Where(p => guids.Contains(p.Id));
+        }
+        else if (Name != null && Name.Length > 0)
+        {
+            var names = new HashSet<string>(Name, StringComparer.OrdinalIgnoreCase);
+            providers = providers.Where(p => names.Contains(p.Name));
+        }
 
-            if (ProviderId != null && ProviderId.Length > 0)
+        foreach (var provider in providers)
+        {
+            var sd = provider.SecurityDescriptor;
+            if (sd == null)
             {
-                HashSet<Guid> guids = new HashSet<Guid>(ProviderId);
-                providers = providers.Where(p => guids.Contains(p.Id));
+                WriteWarning($"Couldn't query security for ETW Provider {provider.Name}. Perhaps run as administrator.");
+                continue;
             }
-            else if (Name != null && Name.Length > 0)
-            {
-                var names = new HashSet<string>(Name, StringComparer.OrdinalIgnoreCase);
-                providers = providers.Where(p => names.Contains(p.Name));
-            }
 
-            foreach (var provider in providers)
+            foreach (TokenEntry token in tokens)
             {
-                var sd = provider.SecurityDescriptor;
-                if (sd == null)
+                AccessMask granted_access = NtSecurity.GetMaximumAccess(sd,
+                    token.Token, type.GenericMapping);
+                if (IsAccessGranted(granted_access, access_rights))
                 {
-                    WriteWarning($"Couldn't query security for ETW Provider {provider.Name}. Perhaps run as administrator.");
-                    continue;
-                }
-
-                foreach (TokenEntry token in tokens)
-                {
-                    AccessMask granted_access = NtSecurity.GetMaximumAccess(sd,
-                        token.Token, type.GenericMapping);
-                    if (IsAccessGranted(granted_access, access_rights))
-                    {
-                        WriteObject(new EventTraceAccessCheckResult(provider, type, 
-                            granted_access, sd, token.Information));
-                    }
+                    WriteObject(new EventTraceAccessCheckResult(provider, type, 
+                        granted_access, sd, token.Information));
                 }
             }
         }

@@ -1,10 +1,9 @@
 using System;
-using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace Be.Windows.Forms
 {
-	internal sealed class NativeMethods
+    internal sealed class NativeMethods
 	{
 		static NativeMethods() {}
 

@@ -12,57 +12,57 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Kerberos authentication credentials to use a ticket cache.
+/// </summary>
+public sealed class KerberosTicketCacheAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
 {
     /// <summary>
-    /// Kerberos authentication credentials to use a ticket cache.
+    /// The local ticket cache.
     /// </summary>
-    public sealed class KerberosTicketCacheAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
+    public KerberosLocalTicketCache TicketCache { get; set; }
+
+    /// <summary>
+    /// Specify a ticket to encrypt to.
+    /// </summary>
+    public KerberosTicket SessionKeyTicket { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosTicketCacheAuthenticationCredentials() : base(true)
     {
-        /// <summary>
-        /// The local ticket cache.
-        /// </summary>
-        public KerberosLocalTicketCache TicketCache { get; set; }
+    }
 
-        /// <summary>
-        /// Specify a ticket to encrypt to.
-        /// </summary>
-        public KerberosTicket SessionKeyTicket { get; set; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="ticket_cache">The kerberos ticket cache.</param>
+    /// <param name="session_key_ticket">The session key ticket.</param>
+    public KerberosTicketCacheAuthenticationCredentials(KerberosLocalTicketCache ticket_cache, KerberosTicket session_key_ticket = null) 
+        : this()
+    {
+        TicketCache = ticket_cache;
+        SessionKeyTicket = session_key_ticket;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosTicketCacheAuthenticationCredentials() : base(true)
+    internal override SafeBuffer ToBuffer(DisposableList list, string package)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal KerberosExternalTicket GetTicket(string target)
+    {
+        if (SessionKeyTicket is null)
         {
+            return TicketCache?.GetTicket(target);
         }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="ticket_cache">The kerberos ticket cache.</param>
-        /// <param name="session_key_ticket">The session key ticket.</param>
-        public KerberosTicketCacheAuthenticationCredentials(KerberosLocalTicketCache ticket_cache, KerberosTicket session_key_ticket = null) 
-            : this()
-        {
-            TicketCache = ticket_cache;
-            SessionKeyTicket = session_key_ticket;
-        }
-
-        internal override SafeBuffer ToBuffer(DisposableList list, string package)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal KerberosExternalTicket GetTicket(string target)
-        {
-            if (SessionKeyTicket is null)
-            {
-                return TicketCache?.GetTicket(target);
-            }
-            return TicketCache?.GetTicket(target, SessionKeyTicket);
-        }
+        return TicketCache?.GetTicket(target, SessionKeyTicket);
     }
 }

@@ -36,10 +36,10 @@ function New-NtKernelCrashDump {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
         [string]$Path,
-        [NtApiDotNet.SystemDebugKernelDumpControlFlags]$Flags = 0,
-        [NtApiDotNet.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
+        [NtCoreLib.SystemDebugKernelDumpControlFlags]$Flags = 0,
+        [NtCoreLib.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
     )
-    [NtApiDotNet.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
+    [NtCoreLib.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
 }
 
 <#
@@ -75,13 +75,13 @@ function Get-NtSystemInformation {
         [switch]$ElevationFlags
     )
     if ($IsolatedUserMode) {
-        [NtApiDotNet.NtSystemInfo]::IsolatedUserModeFlags
+        [NtCoreLib.NtSystemInfo]::IsolatedUserModeFlags
     } elseif ($ProcessorInformation) {
-        [NtApiDotNet.NtSystemInfo]::ProcessorInformation
+        [NtCoreLib.NtSystemInfo]::ProcessorInformation
     } elseif ($MultiSession) {
-        [NtApiDotNet.NtSystemInfo]::IsMultiSession
+        [NtCoreLib.NtSystemInfo]::IsMultiSession
     } elseif ($ElevationFlags) {
-        [NtApiDotNet.NtSystemInfo]::ElevationFlags
+        [NtCoreLib.NtSystemInfo]::ElevationFlags
     }
 }
 
@@ -93,10 +93,10 @@ This cmdlet gets the list of loaded kernel modules.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.ProcessModule[]
+NtCoreLib.Kernel.Process.ProcessModuleInformation[]
 #>
 function Get-NtKernelModule {
-    [NtApiDotNet.NtSystemInfo]::GetKernelModules() | Write-Output
+    [NtCoreLib.NtSystemInfo]::GetKernelModules() | Write-Output
 }
 
 <#
@@ -113,8 +113,8 @@ Specify to only get the Logon ID rather than full details.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.LogonSession
-NtApiDotNet.Luid
+NtCoreLib.Win32.Security.Authentication.LogonSession
+NtCoreLib.Luid
 .EXAMPLE
 Get-NtLogonSession
 Get all accessible logon sessions.
@@ -132,25 +132,25 @@ function Get-NtLogonSession {
     [CmdletBinding(DefaultParameterSetName = "All")]
     param (
         [parameter(Mandatory, ParameterSetName = "FromLogonId")]
-        [NtApiDotNet.Luid]$LogonId,
+        [NtCoreLib.Luid]$LogonId,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromToken")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(ParameterSetName = "All")]
         [switch]$IdOnly
     )
     switch($PSCmdlet.ParameterSetName) {
         "All" {
             if ($IdOnly) {
-                [NtApiDotNet.Win32.LogonUtils]::GetLogonSessionIds() | Write-Output
+                [NtCoreLib.Win32.Security.Win32Security]::GetLogonSessionIds() | Write-Output
             } else {
-                [NtApiDotNet.Win32.LogonUtils]::GetLogonSessions() | Write-Output
+                [NtCoreLib.Win32.Security.Win32Security]::GetLogonSessions() | Write-Output
             }
         }
         "FromLogonId" {
-            [NtApiDotNet.Win32.LogonUtils]::GetLogonSession($LogonId) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetLogonSession($LogonId) | Write-Output
         }
         "FromToken" {
-            [NtApiDotNet.Win32.LogonUtils]::GetLogonSession($Token.AuthenticationId) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetLogonSession($Token.AuthenticationId) | Write-Output
         }
     }
 }
@@ -163,13 +163,13 @@ This cmdlet gets current console sessions for the system.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.ConsoleSession
+NtCoreLib.Win32.TerminalServices.ConsoleSession
 .EXAMPLE
 Get-NtConsoleSession
 Get all Console Sesssions.
 #>
 function Get-NtConsoleSession {
-    [NtApiDotNet.Win32.Win32Utils]::GetConsoleSessions() | Write-Output
+    [NtCoreLib.Win32.TerminalServices.TerminalServicesUtils]::GetConsoleSessions() | Write-Output
 }
 
 <#
@@ -180,13 +180,13 @@ This cmdlet requests a new LUID value.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Luid
+NtCoreLib.Luid
 .EXAMPLE
 Get-NtLocallyUniqueId
 Get a new locally unique ID.
 #>
 function Get-NtLocallyUniqueId {
-    [NtApiDotNet.NtSystemInfo]::AllocateLocallyUniqueId() | Write-Output
+    [NtCoreLib.NtSystemInfo]::AllocateLocallyUniqueId() | Write-Output
 }
 
 <#
@@ -215,7 +215,7 @@ function Get-NtTypeAccess {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [Parameter(ParameterSetName = "Read")]
         [switch]$Read,
         [Parameter(ParameterSetName = "Write")]
@@ -262,18 +262,18 @@ The enumerated type.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtType
+NtCoreLib.NtType
 #>
 function New-NtType {
     Param(
         [parameter(Position = 0, Mandatory)]
         [string]$Name,
-        [System.Type]$AccessRightsType = [NtApiDotNet.GenericAccessRights],
-        [NtApiDotNet.AccessMask]$GenericRead = 0,
-        [NtApiDotNet.AccessMask]$GenericWrite = 0,
-        [NtApiDotNet.AccessMask]$GenericExecute = 0,
-        [NtApiDotNet.AccessMask]$GenericAll = 0
+        [System.Type]$AccessRightsType = [NtCoreLib.GenericAccessRights],
+        [NtCoreLib.Security.Authorization.AccessMask]$GenericRead = 0,
+        [NtCoreLib.Security.Authorization.AccessMask]$GenericWrite = 0,
+        [NtCoreLib.Security.Authorization.AccessMask]$GenericExecute = 0,
+        [NtCoreLib.Security.Authorization.AccessMask]$GenericAll = 0
     )
 
-    [NtApiDotNet.NtType]::GetFakeType($Name, $GenericRead, $GenericWrite, $GenericExecute, $GenericAll, $AccessRightsType)
+    [NtCoreLib.NtType]::GetFakeType($Name, $GenericRead, $GenericWrite, $GenericExecute, $GenericAll, $AccessRightsType)
 }

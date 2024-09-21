@@ -12,68 +12,66 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the Default DACL from a Token.</para>
+/// <para type="description">This cmdlet gets the Default DACL from a Token.</para>
+/// </summary>
+/// <example>
+///   <code>$dacl = Get-NtTokenDefaultDacl</code>
+///   <para>Get current effective token's Default DACL.</para>
+/// </example>
+/// <example>
+///   <code>$dacl = Get-NtTokenDefaultDacl -Token $token</code>
+///   <para>Get Default DACL from a Token.</para>
+/// </example>
+/// <example>
+///   <code>$sd = Get-NtTokenDefaultDacl -AsSecurityDescriptor</code>
+///   <para>Get current process' primary token's Default DACL as a Security Descriptor.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtTokenDefaultDacl", DefaultParameterSetName = "FromCurrent")]
+[OutputType(typeof(SecurityDescriptor), typeof(Acl))]
+public class GetNtTokenDefaultDacl : PSCmdlet
 {
-    /// <summary>
-    /// <para type="synopsis">Get the Default DACL from a Token.</para>
-    /// <para type="description">This cmdlet gets the Default DACL from a Token.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$dacl = Get-NtTokenDefaultDacl</code>
-    ///   <para>Get current effective token's Default DACL.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$dacl = Get-NtTokenDefaultDacl -Token $token</code>
-    ///   <para>Get Default DACL from a Token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$sd = Get-NtTokenDefaultDacl -AsSecurityDescriptor</code>
-    ///   <para>Get current process' primary token's Default DACL as a Security Descriptor.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtTokenDefaultDacl", DefaultParameterSetName = "FromCurrent")]
-    [OutputType(typeof(SecurityDescriptor), typeof(Acl))]
-    public class GetNtTokenDefaultDacl : PSCmdlet
+    private NtToken GetToken()
     {
-        private NtToken GetToken()
+        if (Token != null)
+            return Token.Duplicate();
+        return NtToken.OpenEffectiveToken(NtThread.Current, true, false, TokenAccessRights.Query);
+    }
+
+    /// <summary>
+    /// <para type="description">Specify the token to query for the default DACL.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromToken", Position = 0, Mandatory = true)]
+    public NtToken Token { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to return the ACL in a Security Descriptor.</para>
+    /// </summary>
+    [Parameter]
+    [Alias("sd")]
+    public SwitchParameter AsSecurityDescriptor { get; set; }
+
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        using var token = GetToken();
+        Acl default_dacl = token.DefaultDacl;
+        if (AsSecurityDescriptor)
         {
-            if (Token != null)
-                return Token.Duplicate();
-            return NtToken.OpenEffectiveToken(NtThread.Current, true, false, TokenAccessRights.Query);
+            WriteObject(new SecurityDescriptor() { Dacl = default_dacl });
         }
-
-        /// <summary>
-        /// <para type="description">Specify the token to query for the default DACL.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromToken", Position = 0, Mandatory = true)]
-        public NtToken Token { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to return the ACL in a Security Descriptor.</para>
-        /// </summary>
-        [Parameter]
-        [Alias("sd")]
-        public SwitchParameter AsSecurityDescriptor { get; set; }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        else
         {
-            using (var token = GetToken())
-            {
-                Acl default_dacl = token.DefaultDacl;
-                if (AsSecurityDescriptor)
-                {
-                    WriteObject(new SecurityDescriptor() { Dacl = default_dacl });
-                }
-                else
-                {
-                    WriteObject(default_dacl, false);
-                }
-            }
+            WriteObject(default_dacl, false);
         }
     }
 }

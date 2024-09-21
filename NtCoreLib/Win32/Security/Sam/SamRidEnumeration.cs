@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 
-namespace NtApiDotNet.Win32.Security.Sam
+namespace NtCoreLib.Win32.Security.Sam;
+
+/// <summary>
+/// Represents information for a SAM relative value.
+/// </summary>
+public struct SamRidEnumeration
 {
     /// <summary>
-    /// Represents information for a SAM relative value.
+    /// The name of the domain.
     /// </summary>
-    public struct SamRidEnumeration
-    {
-        /// <summary>
-        /// The name of the domain.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The RID of the domain.
-        /// </summary>
-        public uint RelativeId { get; }
+    public string Name { get; }
+    /// <summary>
+    /// The RID of the domain.
+    /// </summary>
+    public uint RelativeId { get; }
 
-        internal SamRidEnumeration(SAM_RID_ENUMERATION enum_info)
-        {
-            Name = enum_info.Name.ToString();
-            RelativeId = enum_info.RelativeId;
-        }
+    internal SamRidEnumeration(SAM_RID_ENUMERATION enum_info)
+    {
+        Name = enum_info.Name.ToString();
+        RelativeId = enum_info.RelativeId;
     }
 }

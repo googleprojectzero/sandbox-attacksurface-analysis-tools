@@ -12,57 +12,54 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Gets the accessible Job objects assigned to a process.</para>
+/// <para type="description">This cmdlet gets the accessible Job objects for a process. This might not include all Jobs and might contain duplicates.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtProcessJob -Process $process</code>
+///   <para>Gets the Job objects assigned to the process.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtProcessJob -Process $process -Silo</code>
+///   <para>Gets the silo Job objects assigned to the process.</para>
+/// </example>
+/// <para type="link">about_ManagingNtObjectLifetime</para>
+[Cmdlet(VerbsCommon.Get, "NtProcessJob")]
+[OutputType(typeof(NtJob))]
+public sealed class GetNtProcessJobCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Gets the accessible Job objects assigned to a process.</para>
-    /// <para type="description">This cmdlet gets the accessible Job objects for a process. This might not include all Jobs and might contain duplicates.</para>
+    /// <para type="description">Specify the process to query.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtProcessJob -Process $process</code>
-    ///   <para>Gets the Job objects assigned to the process.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtProcessJob -Process $process -Silo</code>
-    ///   <para>Gets the silo Job objects assigned to the process.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtProcessJob")]
-    [OutputType(typeof(NtJob))]
-    public sealed class GetNtProcessJobCmdlet : PSCmdlet
+    [Parameter(Mandatory = true, Position = 0)]
+    public NtProcess Process { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to only return Silo objects.</para>
+    /// </summary>
+    [Parameter]
+    public SwitchParameter Silo { get; set; }
+
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the process to query.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public NtProcess Process { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to only return Silo objects.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Silo { get; set; }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        if (!Silo)
         {
-            if (!Silo)
-            {
-                WriteObject(Process.GetAccessibleJobObjects(), true);
-            }
-            else
-            {
-                using (var jobs = Process.GetAccessibleJobObjects().ToDisposableList())
-                {
-                    WriteObject(jobs.Where(j => j.Silo).Select(j => j.Duplicate()), true);
-                }
-            }
+            WriteObject(Process.GetAccessibleJobObjects(), true);
+        }
+        else
+        {
+            using var jobs = Process.GetAccessibleJobObjects().ToDisposableList();
+            WriteObject(jobs.Where(j => j.Silo).Select(j => j.Duplicate()), true);
         }
     }
 }

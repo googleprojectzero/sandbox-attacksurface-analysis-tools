@@ -14,69 +14,68 @@
 
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to build a KDC-REP token.
+/// </summary>
+public abstract class KerberosKDCReplyBuilder
 {
+    #region Public Properties
     /// <summary>
-    /// Class to build a KDC-REP token.
+    /// Message type.
     /// </summary>
-    public abstract class KerberosKDCReplyBuilder
+    public KerberosMessageType MessageType { get; }
+    /// <summary>
+    /// List of pre-authentication data.
+    /// </summary>
+    public List<KerberosPreAuthenticationData> PreAuthenticationData { get; set; }
+    /// <summary>
+    /// The client's realm.
+    /// </summary>
+    public string ClientRealm { get; set; }
+    /// <summary>
+    /// The client name.
+    /// </summary>
+    public KerberosPrincipalName ClientName { get; set; }
+    /// <summary>
+    /// The Keberos ticket.
+    /// </summary>
+    public KerberosTicket Ticket { get; set; }
+    /// <summary>
+    /// Encrypted data.
+    /// </summary>
+    public KerberosEncryptedData EncryptedData { get; set; }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Add some pre-authentication data.
+    /// </summary>
+    /// <param name="data">The data to add.</param>
+    public void AddPreAuthenticationData(KerberosPreAuthenticationData data)
     {
-        #region Public Properties
-        /// <summary>
-        /// Message type.
-        /// </summary>
-        public KerberosMessageType MessageType { get; }
-        /// <summary>
-        /// List of pre-authentication data.
-        /// </summary>
-        public List<KerberosPreAuthenticationData> PreAuthenticationData { get; set; }
-        /// <summary>
-        /// The client's realm.
-        /// </summary>
-        public string ClientRealm { get; set; }
-        /// <summary>
-        /// The client name.
-        /// </summary>
-        public KerberosPrincipalName ClientName { get; set; }
-        /// <summary>
-        /// The Keberos ticket.
-        /// </summary>
-        public KerberosTicket Ticket { get; set; }
-        /// <summary>
-        /// Encrypted data.
-        /// </summary>
-        public KerberosEncryptedData EncryptedData { get; set; }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Add some pre-authentication data.
-        /// </summary>
-        /// <param name="data">The data to add.</param>
-        public void AddPreAuthenticationData(KerberosPreAuthenticationData data)
-        {
-            if (PreAuthenticationData == null)
-                PreAuthenticationData = new List<KerberosPreAuthenticationData>();
-            PreAuthenticationData.Add(data);
-        }
-
-        /// <summary>
-        /// Create the KDC-REQ authentication token.
-        /// </summary>
-        /// <returns>The created token.</returns>
-        public KerberosKDCReplyAuthenticationToken Create()
-        {
-            return KerberosKDCReplyAuthenticationToken.Create(MessageType, PreAuthenticationData, ClientRealm,
-                ClientName, Ticket, EncryptedData);
-        }
-        #endregion
-
-        #region Private Members
-        private protected KerberosKDCReplyBuilder(KerberosMessageType message_type)
-        {
-            System.Diagnostics.Debug.Assert(message_type == KerberosMessageType.KRB_TGS_REP || message_type == KerberosMessageType.KRB_AS_REP);
-            MessageType = message_type;
-        }
-        #endregion
+        if (PreAuthenticationData == null)
+            PreAuthenticationData = new List<KerberosPreAuthenticationData>();
+        PreAuthenticationData.Add(data);
     }
+
+    /// <summary>
+    /// Create the KDC-REQ authentication token.
+    /// </summary>
+    /// <returns>The created token.</returns>
+    public KerberosKDCReplyAuthenticationToken Create()
+    {
+        return KerberosKDCReplyAuthenticationToken.Create(MessageType, PreAuthenticationData, ClientRealm,
+            ClientName, Ticket, EncryptedData);
+    }
+    #endregion
+
+    #region Private Members
+    private protected KerberosKDCReplyBuilder(KerberosMessageType message_type)
+    {
+        System.Diagnostics.Debug.Assert(message_type == KerberosMessageType.KRB_TGS_REP || message_type == KerberosMessageType.KRB_AS_REP);
+        MessageType = message_type;
+    }
+    #endregion
 }

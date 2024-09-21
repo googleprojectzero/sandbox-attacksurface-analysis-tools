@@ -12,69 +12,68 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent PAC Client Info.
+/// </summary>
+public class KerberosAuthorizationDataPACClientInfo : KerberosAuthorizationDataPACEntry
 {
     /// <summary>
-    /// Class to represent PAC Client Info.
+    /// Client ID.
     /// </summary>
-    public class KerberosAuthorizationDataPACClientInfo : KerberosAuthorizationDataPACEntry
+    public long ClientId { get; }
+    /// <summary>
+    /// Name of client.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    /// Convert the entry into a builder.
+    /// </summary>
+    /// <returns>The builder entry.</returns>
+    public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
     {
-        /// <summary>
-        /// Client ID.
-        /// </summary>
-        public long ClientId { get; }
-        /// <summary>
-        /// Name of client.
-        /// </summary>
-        public string Name { get; }
+        return new KerberosAuthorizationDataPACClientInfoBuilder(this);
+    }
 
-        /// <summary>
-        /// Convert the entry into a builder.
-        /// </summary>
-        /// <returns>The builder entry.</returns>
-        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+    private KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType type, byte[] data, long client_id, string name)
+        : base(type, data)
+    {
+        ClientId = client_id;
+        Name = name;
+    }
+
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
+    {
+        entry = null;
+        if (data.Length < 10)
+            return false;
+
+        long client_id = BitConverter.ToInt64(data, 0);
+        int name_length = BitConverter.ToUInt16(data, 8);
+        if (name_length + 10 > data.Length)
+            return false;
+        string name = Encoding.Unicode.GetString(data, 10, name_length);
+        entry = new KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType.ClientInfo, data, client_id, name);
+        return true;
+    }
+
+    private protected override void FormatData(StringBuilder builder)
+    {
+        try
         {
-            return new KerberosAuthorizationDataPACClientInfoBuilder(this);
+            builder.AppendLine($"Client ID        : {DateTime.FromFileTime(ClientId)}");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            builder.AppendLine($"Client ID        : 0x{ClientId:X016}");
         }
 
-        private KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType type, byte[] data, long client_id, string name)
-            : base(type, data)
-        {
-            ClientId = client_id;
-            Name = name;
-        }
-
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
-        {
-            entry = null;
-            if (data.Length < 10)
-                return false;
-
-            long client_id = BitConverter.ToInt64(data, 0);
-            int name_length = BitConverter.ToUInt16(data, 8);
-            if (name_length + 10 > data.Length)
-                return false;
-            string name = Encoding.Unicode.GetString(data, 10, name_length);
-            entry = new KerberosAuthorizationDataPACClientInfo(KerberosAuthorizationDataPACEntryType.ClientInfo, data, client_id, name);
-            return true;
-        }
-
-        private protected override void FormatData(StringBuilder builder)
-        {
-            try
-            {
-                builder.AppendLine($"Client ID        : {DateTime.FromFileTime(ClientId)}");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                builder.AppendLine($"Client ID        : 0x{ClientId:X016}");
-            }
-
-            builder.AppendLine($"Client Name      : {Name}");
-        }
+        builder.AppendLine($"Client Name      : {Name}");
     }
 }

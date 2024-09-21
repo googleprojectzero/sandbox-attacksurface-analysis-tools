@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Sam
+namespace NtCoreLib.Win32.Security.Sam;
+
+/// <summary>
+/// Type of user account to create.
+/// </summary>
+public enum SamUserAccountType
 {
     /// <summary>
-    /// Type of user account to create.
+    /// A user account.
     /// </summary>
-    public enum SamUserAccountType
-    {
-        /// <summary>
-        /// A user account.
-        /// </summary>
-        User,
-        /// <summary>
-        /// A workstation trust account.
-        /// </summary>
-        Workstation,
-        /// <summary>
-        /// A server trust account.
-        /// </summary>
-        Server,
-        /// <summary>
-        /// A temporary duplicate account.
-        /// </summary>
-        TempDuplicate,
-        /// <summary>
-        /// Inter domain trust account.
-        /// </summary>
-        InterDomain
-    }
+    User,
+    /// <summary>
+    /// A workstation trust account.
+    /// </summary>
+    Workstation,
+    /// <summary>
+    /// A server trust account.
+    /// </summary>
+    Server,
+    /// <summary>
+    /// A temporary duplicate account.
+    /// </summary>
+    TempDuplicate,
+    /// <summary>
+    /// Inter domain trust account.
+    /// </summary>
+    InterDomain
 }

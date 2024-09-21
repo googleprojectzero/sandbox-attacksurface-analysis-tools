@@ -14,31 +14,30 @@
 
 using System.Diagnostics;
 
-namespace NtApiDotNet.Ndr
+namespace NtCoreLib.Ndr;
+
+/// <summary>
+/// Utilities for NDR marshaling.
+/// </summary>
+public static class NdrUtils
 {
+    internal static TraceSwitch NdrMarshalTraceSwitch = new("NdrMarshalTrace", "NDR Marshal Tracing");
+
     /// <summary>
-    /// Utilities for NDR marshaling.
+    /// Specify NDR marshaler trace level.
     /// </summary>
-    public static class NdrUtils
+    /// <param name="level">Specify the NDR marshaler trace level.</param>
+    /// <remarks>Verbose marshal stack details.</remarks>
+    public static void SetNdrMarshalTraceLevel(TraceLevel level)
     {
-        internal static TraceSwitch NdrMarshalTraceSwitch = new TraceSwitch("NdrMarshalTrace", "NDR Marshal Tracing");
+        NdrMarshalTraceSwitch.Level = level;
+    }
 
-        /// <summary>
-        /// Specify NDR marshaler trace level.
-        /// </summary>
-        /// <param name="level">Specify the NDR marshaler trace level.</param>
-        /// <remarks>Verbose marshal stack details.</remarks>
-        public static void SetNdrMarshalTraceLevel(TraceLevel level)
+    internal static void WriteLine(string message)
+    {
+        if (NdrMarshalTraceSwitch.TraceVerbose)
         {
-            NdrMarshalTraceSwitch.Level = level;
-        }
-
-        internal static void WriteLine(string message)
-        {
-            if (NdrMarshalTraceSwitch.TraceVerbose)
-            {
-                Trace.WriteLine(message);
-            }
+            Trace.WriteLine(message);
         }
     }
 }

@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+/// <summary>
+/// Specifies the supported SMB2 dialects.
+/// </summary>
+public enum Smb2Dialect
 {
     /// <summary>
-    /// Specifies the supported SMB2 dialects.
+    /// Nothing currently negotiated.
     /// </summary>
-    public enum Smb2Dialect
-    {
-        /// <summary>
-        /// Nothing currently negotiated.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// SMB v2.0.2
-        /// </summary>
-        Smb202 = 0x202,
-    }
+    None = 0,
+    /// <summary>
+    /// SMB v2.0.2
+    /// </summary>
+    Smb202 = 0x202,
 }

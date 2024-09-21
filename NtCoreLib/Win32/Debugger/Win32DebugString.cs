@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Debugger
+namespace NtCoreLib.Win32.Debugger;
+
+/// <summary>
+/// Structure for a debug string event.
+/// </summary>
+public struct Win32DebugString
 {
     /// <summary>
-    /// Structure for a debug string event.
+    /// The process ID.
     /// </summary>
-    public struct Win32DebugString
-    {
-        /// <summary>
-        /// The process ID.
-        /// </summary>
-        public int ProcessId { get; }
-        /// <summary>
-        /// The output string.
-        /// </summary>
-        public string Output { get; }
+    public int ProcessId { get; }
+    /// <summary>
+    /// The output string.
+    /// </summary>
+    public string Output { get; }
 
-        internal Win32DebugString(int pid, string output)
-        {
-            ProcessId = pid;
-            Output = output;
-        }
+    internal Win32DebugString(int pid, string output)
+    {
+        ProcessId = pid;
+        Output = output;
     }
 }

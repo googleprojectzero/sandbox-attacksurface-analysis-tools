@@ -14,41 +14,40 @@
 
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Device
+namespace NtCoreLib.Win32.Device;
+
+/// <summary>
+/// Class to represent a node in a device tree.
+/// </summary>
+public sealed class DeviceTreeNode : DeviceNode
 {
+    private readonly List<DeviceTreeNode> _children;
+    private readonly DeviceNode _parent;
+
     /// <summary>
-    /// Class to represent a node in a device tree.
+    /// List of child nodes.
     /// </summary>
-    public sealed class DeviceTreeNode : DeviceNode
+    public IReadOnlyList<DeviceTreeNode> Children => _children.AsReadOnly();
+
+    /// <summary>
+    /// Indicates if the node has any children.
+    /// </summary>
+    public bool HasChildren => _children.Count > 0;
+
+    /// <summary>
+    /// Get the parent device node.
+    /// </summary>
+    /// <returns>The parent device node. Returns null if reached the root.</returns>
+    public override DeviceNode Parent => _parent ?? base.Parent;
+
+    internal void AddRange(IEnumerable<DeviceTreeNode> node)
     {
-        private readonly List<DeviceTreeNode> _children;
-        private readonly DeviceNode _parent;
+        _children.AddRange(node);
+    }
 
-        /// <summary>
-        /// List of child nodes.
-        /// </summary>
-        public IReadOnlyList<DeviceTreeNode> Children => _children.AsReadOnly();
-
-        /// <summary>
-        /// Indicates if the node has any children.
-        /// </summary>
-        public bool HasChildren => _children.Count > 0;
-
-        /// <summary>
-        /// Get the parent device node.
-        /// </summary>
-        /// <returns>The parent device node. Returns null if reached the root.</returns>
-        public override DeviceNode Parent => _parent ?? base.Parent;
-
-        internal void AddRange(IEnumerable<DeviceTreeNode> node)
-        {
-            _children.AddRange(node);
-        }
-
-        internal DeviceTreeNode(int devinst, DeviceNode parent) : base(devinst)
-        {
-            _children = new List<DeviceTreeNode>();
-            _parent = parent;
-        }
+    internal DeviceTreeNode(int devinst, DeviceNode parent) : base(devinst)
+    {
+        _children = new List<DeviceTreeNode>();
+        _parent = parent;
     }
 }

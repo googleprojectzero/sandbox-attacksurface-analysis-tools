@@ -14,58 +14,57 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent an IKE credential.
+/// </summary>
+public class IkeCredential
 {
     /// <summary>
-    /// Class to represent an IKE credential.
+    /// Authentication method type.
     /// </summary>
-    public class IkeCredential
+    public IkeExtAuthenticationMethodType AuthenticationMethodType { get; }
+
+    /// <summary>
+    /// Impersonation type.
+    /// </summary>
+    public IkeExtAuthenticationImpersonationType ImpersonationType { get; }
+
+    private protected IkeCredential(IKEEXT_CREDENTIAL1 creds)
     {
-        /// <summary>
-        /// Authentication method type.
-        /// </summary>
-        public IkeExtAuthenticationMethodType AuthenticationMethodType { get; }
+        AuthenticationMethodType = creds.authenticationMethodType;
+        ImpersonationType = creds.impersonationType;
+    }
 
-        /// <summary>
-        /// Impersonation type.
-        /// </summary>
-        public IkeExtAuthenticationImpersonationType ImpersonationType { get; }
-
-        private protected IkeCredential(IKEEXT_CREDENTIAL1 creds)
+    internal static IkeCredential Create(IKEEXT_CREDENTIAL1 creds)
+    {
+        if (creds.cred != IntPtr.Zero)
         {
-            AuthenticationMethodType = creds.authenticationMethodType;
-            ImpersonationType = creds.impersonationType;
-        }
-
-        internal static IkeCredential Create(IKEEXT_CREDENTIAL1 creds)
-        {
-            if (creds.cred != IntPtr.Zero)
+            switch (creds.authenticationMethodType)
             {
-                switch (creds.authenticationMethodType)
-                {
-                    case IkeExtAuthenticationMethodType.PreSharedKey:
-                        return new IkePreSharedKeyCredential(creds);
-                    case IkeExtAuthenticationMethodType.Certificate:
-                    case IkeExtAuthenticationMethodType.Ssl:
-                        return new IkeCertificateCredential(creds);
-                    case IkeExtAuthenticationMethodType.NtlmV2:
-                    case IkeExtAuthenticationMethodType.Kerberos:
-                        return new IkeNameCredential(creds);
-                    default:
-                        System.Diagnostics.Trace.WriteLine($"Unknown cred type {creds.authenticationMethodType}");
-                        break;
-                }
+                case IkeExtAuthenticationMethodType.PreSharedKey:
+                    return new IkePreSharedKeyCredential(creds);
+                case IkeExtAuthenticationMethodType.Certificate:
+                case IkeExtAuthenticationMethodType.Ssl:
+                    return new IkeCertificateCredential(creds);
+                case IkeExtAuthenticationMethodType.NtlmV2:
+                case IkeExtAuthenticationMethodType.Kerberos:
+                    return new IkeNameCredential(creds);
+                default:
+                    System.Diagnostics.Trace.WriteLine($"Unknown cred type {creds.authenticationMethodType}");
+                    break;
             }
-            return new IkeCredential(creds);
         }
+        return new IkeCredential(creds);
+    }
 
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The pair as a string.</returns>
-        public override string ToString()
-        {
-            return AuthenticationMethodType.ToString();
-        }
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The pair as a string.</returns>
+    public override string ToString()
+    {
+        return AuthenticationMethodType.ToString();
     }
 }

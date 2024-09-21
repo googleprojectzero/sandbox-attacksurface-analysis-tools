@@ -12,41 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Kerberos authentication credentials to use a ticket.
+/// </summary>
+public sealed class KerberosTicketAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
 {
     /// <summary>
-    /// Kerberos authentication credentials to use a ticket.
+    /// The kerberos ticket to use.
     /// </summary>
-    public sealed class KerberosTicketAuthenticationCredentials : AuthenticationCredentials, IKerberosAuthenticationCredentials
+    public KerberosExternalTicket Ticket { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosTicketAuthenticationCredentials() : base(true)
     {
-        /// <summary>
-        /// The kerberos ticket to use.
-        /// </summary>
-        public KerberosExternalTicket Ticket { get; set; }
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosTicketAuthenticationCredentials() : base(true)
-        {
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="ticket">The kerberos ticket to use.</param>
+    public KerberosTicketAuthenticationCredentials(KerberosExternalTicket ticket)
+        : this()
+    {
+        Ticket = ticket;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="ticket">The kerberos ticket to use.</param>
-        public KerberosTicketAuthenticationCredentials(KerberosExternalTicket ticket)
-            : this()
-        {
-            Ticket = ticket;
-        }
-
-        internal override SafeBuffer ToBuffer(DisposableList list, string package)
-        {
-            throw new NotImplementedException();
-        }
+    internal override SafeBuffer ToBuffer(DisposableList list, string package)
+    {
+        throw new NotImplementedException();
     }
 }

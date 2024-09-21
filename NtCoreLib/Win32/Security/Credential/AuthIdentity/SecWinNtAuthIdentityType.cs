@@ -12,36 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
+namespace NtCoreLib.Win32.Security.Credential.AuthIdentity;
+
+/// <summary>
+/// Get the type of SEC_WINNT_AUTH_IDENTITY along with the character type.
+/// </summary>
+public enum SecWinNtAuthIdentityType
 {
     /// <summary>
-    /// Get the type of SEC_WINNT_AUTH_IDENTITY along with the character type.
+    /// SEC_WINNT_AUTH_IDENTITY structure with ANSI strings.
     /// </summary>
-    public enum SecWinNtAuthIdentityType
-    {
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY structure with ANSI strings.
-        /// </summary>
-        Ansi,
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY structure with Unicode strings.
-        /// </summary>
-        Unicode,
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY_EX structure with ANSI strings.
-        /// </summary>
-        AnsiEx,
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY_EX structure with Unicode strings.
-        /// </summary>
-        UnicodeEx,
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY_EX2 structure with ANSI strings.
-        /// </summary>
-        AnsiEx2,
-        /// <summary>
-        /// SEC_WINNT_AUTH_IDENTITY_EX2 structure with Unicode strings.
-        /// </summary>
-        UnicodeEx2,
-    }
+    Ansi,
+    /// <summary>
+    /// SEC_WINNT_AUTH_IDENTITY structure with Unicode strings.
+    /// </summary>
+    Unicode,
+    /// <summary>
+    /// SEC_WINNT_AUTH_IDENTITY_EX structure with ANSI strings.
+    /// </summary>
+    AnsiEx,
+    /// <summary>
+    /// SEC_WINNT_AUTH_IDENTITY_EX structure with Unicode strings.
+    /// </summary>
+    UnicodeEx,
+    /// <summary>
+    /// SEC_WINNT_AUTH_IDENTITY_EX2 structure with ANSI strings.
+    /// </summary>
+    AnsiEx2,
+    /// <summary>
+    /// SEC_WINNT_AUTH_IDENTITY_EX2 structure with Unicode strings.
+    /// </summary>
+    UnicodeEx2,
 }

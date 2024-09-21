@@ -12,49 +12,50 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Class to represent a raw LSA logon credentials buffer.
+/// </summary>
+public class LsaLogonCredentialsBuffer : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
 {
+    private readonly byte[] _data;
+    private readonly string _auth_package;
+
     /// <summary>
-    /// Class to represent a raw LSA logon credentials buffer.
+    /// Constructor.
     /// </summary>
-    public class LsaLogonCredentialsBuffer : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
+    /// <param name="data">The credentials as a byte array.</param>
+    /// <param name="auth_package">The default authentication package.</param>
+    public LsaLogonCredentialsBuffer(byte[] data, string auth_package = AuthenticationPackage.NEGOSSP_NAME)
     {
-        private readonly byte[] _data;
-        private readonly string _auth_package;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="data">The credentials as a byte array.</param>
-        /// <param name="auth_package">The default authentication package.</param>
-        public LsaLogonCredentialsBuffer(byte[] data, string auth_package = AuthenticationPackage.NEGOSSP_NAME)
+        if (string.IsNullOrEmpty(auth_package))
         {
-            if (string.IsNullOrEmpty(auth_package))
-            {
-                throw new System.ArgumentException($"'{nameof(auth_package)}' cannot be null or empty.", nameof(auth_package));
-            }
-
-            _data = data.CloneBytes();
-            _auth_package = auth_package;
+            throw new System.ArgumentException($"'{nameof(auth_package)}' cannot be null or empty.", nameof(auth_package));
         }
 
-        /// <summary>
-        /// The credentials data.
-        /// </summary>
-        public byte[] Data => _data.CloneBytes();
+        _data = data.CloneBytes();
+        _auth_package = auth_package;
+    }
 
-        string ILsaLogonCredentials.AuthenticationPackage => _auth_package;
+    /// <summary>
+    /// The credentials data.
+    /// </summary>
+    public byte[] Data => _data.CloneBytes();
 
-        byte[] ILsaLogonCredentialsSerializable.ToArray()
-        {
-            return Data;
-        }
+    string ILsaLogonCredentials.AuthenticationPackage => _auth_package;
 
-        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
-        {
-            return _data.ToBuffer();
-        }
+    byte[] ILsaLogonCredentialsSerializable.ToArray()
+    {
+        return Data;
+    }
+
+    SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+    {
+        return _data.ToBuffer();
     }
 }

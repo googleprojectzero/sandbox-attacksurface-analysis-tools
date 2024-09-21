@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent the AD-AUTH-DATA-AP-OPTIONS authorization data builder.
+/// </summary>
+public sealed class KerberosAuthorizationDataApOptionsBuilder : KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Class to represent the AD-AUTH-DATA-AP-OPTIONS authorization data builder.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataApOptionsBuilder : KerberosAuthorizationDataBuilder
+    public KerberosAuthorizationDataApOptionsBuilder() 
+        : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataApOptionsBuilder() 
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
-        {
-        }
+    }
 
-        /// <summary>
-        /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
-        /// </summary>
-        public KerberosApOptionsFlags Flags { get; set; }
+    /// <summary>
+    /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
+    /// </summary>
+    public KerberosApOptionsFlags Flags { get; set; }
 
-        /// <summary>
-        /// Create the Kerberos authorization data.
-        /// </summary>
-        /// <returns>The kerberos authorization data.</returns>
-        public override KerberosAuthorizationData Create()
-        {
-            return new KerberosAuthorizationDataApOptions(Flags);
-        }
+    /// <summary>
+    /// Create the Kerberos authorization data.
+    /// </summary>
+    /// <returns>The kerberos authorization data.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        return new KerberosAuthorizationDataApOptions(Flags);
     }
 }

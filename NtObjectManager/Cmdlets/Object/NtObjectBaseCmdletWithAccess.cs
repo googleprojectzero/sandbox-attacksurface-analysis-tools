@@ -12,30 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// Base object cmdlet which has an access parameter.
+/// </summary>
+/// <typeparam name="T">The access enumeration type.</typeparam>
+public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : Enum
 {
     /// <summary>
-    /// Base object cmdlet which has an access parameter.
+    /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
     /// </summary>
-    /// <typeparam name="T">The access enumeration type.</typeparam>
-    public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : Enum
-    {
-        /// <summary>
-        /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
-        /// </summary>
-        [Parameter]
-        public T Access { get; set; }
+    [Parameter]
+    public T Access { get; set; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        protected NtObjectBaseCmdletWithAccess()
-        {
-            Access = (T)Enum.ToObject(typeof(T), (uint)GenericAccessRights.MaximumAllowed);
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    protected NtObjectBaseCmdletWithAccess()
+    {
+        Access = (T)Enum.ToObject(typeof(T), (uint)GenericAccessRights.MaximumAllowed);
     }
 }

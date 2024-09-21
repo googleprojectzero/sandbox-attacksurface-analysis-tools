@@ -12,49 +12,49 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Utilities.Memory;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall callout object.
+/// </summary>
+public sealed class FirewallCallout : FirewallObject
 {
     /// <summary>
-    /// Class to represent a firewall callout object.
+    /// Flags for the callout.
     /// </summary>
-    public sealed class FirewallCallout : FirewallObject
+    public FirewallCalloutFlags Flags { get; }
+
+    /// <summary>
+    /// Provider key.
+    /// </summary>
+    public Guid ProviderKey { get; }
+
+    /// <summary>
+    /// Provider data.
+    /// </summary>
+    public byte[] ProviderData { get; }
+
+    /// <summary>
+    /// Applicable layer key.
+    /// </summary>
+    public Guid ApplicableLayer { get; }
+
+    /// <summary>
+    /// Callout ID.
+    /// </summary>
+    public int CalloutId { get; }
+
+    internal FirewallCallout(FWPM_CALLOUT0 callout, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+        : base(callout.calloutKey, callout.displayData, NamedGuidDictionary.CalloutGuids.Value, engine, get_sd)
     {
-        /// <summary>
-        /// Flags for the callout.
-        /// </summary>
-        public FirewallCalloutFlags Flags { get; }
-
-        /// <summary>
-        /// Provider key.
-        /// </summary>
-        public Guid ProviderKey { get; }
-
-        /// <summary>
-        /// Provider data.
-        /// </summary>
-        public byte[] ProviderData { get; }
-
-        /// <summary>
-        /// Applicable layer key.
-        /// </summary>
-        public Guid ApplicableLayer { get; }
-
-        /// <summary>
-        /// Callout ID.
-        /// </summary>
-        public int CalloutId { get; }
-
-        internal FirewallCallout(FWPM_CALLOUT0 callout, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(callout.calloutKey, callout.displayData, NamedGuidDictionary.CalloutGuids.Value, engine, get_sd)
-        {
-            Flags = callout.flags;
-            ProviderData = callout.providerData.ToArray();
-            ProviderKey = callout.providerKey.ReadGuid() ?? Guid.Empty;
-            ApplicableLayer = callout.applicableLayer;
-            CalloutId = callout.calloutId;
-        }
+        Flags = callout.flags;
+        ProviderData = callout.providerData.ToArray();
+        ProviderKey = callout.providerKey.ReadGuid() ?? Guid.Empty;
+        ApplicableLayer = callout.applicableLayer;
+        CalloutId = callout.calloutId;
     }
 }

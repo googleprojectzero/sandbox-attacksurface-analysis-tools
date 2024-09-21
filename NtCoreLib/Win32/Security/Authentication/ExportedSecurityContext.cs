@@ -14,42 +14,41 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Class to represent an exported security context.
+/// </summary>
+public sealed class ExportedSecurityContext : IDisposable
 {
+    private readonly bool _client;
+
     /// <summary>
-    /// Class to represent an exported security context.
+    /// The name of the package for this security context.
     /// </summary>
-    public sealed class ExportedSecurityContext : IDisposable
+    public string Package { get; }
+    /// <summary>
+    /// The serialized context.
+    /// </summary>
+    public byte[] SerializedContext { get; }
+    /// <summary>
+    /// The context's token.
+    /// </summary>
+    public NtToken Token { get; }
+
+    internal ExportedSecurityContext(string package, byte[] context, NtToken token, bool client)
     {
-        private readonly bool _client;
+        Package = package;
+        SerializedContext = context;
+        Token = token;
+        _client = client;
+    }
 
-        /// <summary>
-        /// The name of the package for this security context.
-        /// </summary>
-        public string Package { get; }
-        /// <summary>
-        /// The serialized context.
-        /// </summary>
-        public byte[] SerializedContext { get; }
-        /// <summary>
-        /// The context's token.
-        /// </summary>
-        public NtToken Token { get; }
-
-        internal ExportedSecurityContext(string package, byte[] context, NtToken token, bool client)
-        {
-            Package = package;
-            SerializedContext = context;
-            Token = token;
-            _client = client;
-        }
-
-        /// <summary>
-        /// Dispose the exported context.
-        /// </summary>
-        public void Dispose()
-        {
-            ((IDisposable)Token).Dispose();
-        }
+    /// <summary>
+    /// Dispose the exported context.
+    /// </summary>
+    public void Dispose()
+    {
+        ((IDisposable)Token).Dispose();
     }
 }

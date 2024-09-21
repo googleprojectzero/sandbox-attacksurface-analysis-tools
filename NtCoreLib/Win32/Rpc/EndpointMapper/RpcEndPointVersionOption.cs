@@ -12,14 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtCoreLib.Win32.Rpc.EndpointMapper;
+
+/// <summary>
+/// Endpoint version option.
+/// </summary>
+public enum RpcEndPointVersionOption
 {
-    internal enum RpcEndPointVersionOption
-    {
-        All = 1,
-        Compatible = 2,
-        Exact = 3,
-        MajorOnly = 4,
-        Upto = 5
-    }
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    All = 1,
+    Compatible = 2,
+    Exact = 3,
+    MajorOnly = 4,
+    Upto = 5
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

@@ -16,61 +16,60 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+/// <summary>
+/// <para type="description">Class to hold a password from the user.</para>
+/// </summary>
+public sealed class PasswordHolder
 {
     /// <summary>
-    /// <para type="description">Class to hold a password from the user.</para>
+    /// Get the password as a secure string.
     /// </summary>
-    public sealed class PasswordHolder
+    public SecureString Password { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="str">The secure string password.</param>
+    public PasswordHolder(SecureString str)
     {
-        /// <summary>
-        /// Get the password as a secure string.
-        /// </summary>
-        public SecureString Password { get; }
+        Password = str ?? throw new ArgumentNullException(nameof(str));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="str">The secure string password.</param>
-        public PasswordHolder(SecureString str)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="str">The string password.</param>
+    public PasswordHolder(string str)
+    {
+        if (str is null)
         {
-            Password = str ?? throw new ArgumentNullException(nameof(str));
+            throw new ArgumentNullException(nameof(str));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="str">The string password.</param>
-        public PasswordHolder(string str)
+        SecureString secure_str = new();
+        foreach (var ch in str)
         {
-            if (str is null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
-            SecureString secure_str = new SecureString();
-            foreach (var ch in str)
-            {
-                secure_str.AppendChar(ch);
-            }
-            Password = secure_str;
+            secure_str.AppendChar(ch);
         }
+        Password = secure_str;
+    }
 
-        /// <summary>
-        /// Convert the secure string to plain text.
-        /// </summary>
-        /// <returns></returns>
-        public string ToPlainText()
+    /// <summary>
+    /// Convert the secure string to plain text.
+    /// </summary>
+    /// <returns></returns>
+    public string ToPlainText()
+    {
+        IntPtr ptr = Marshal.SecureStringToBSTR(Password);
+        try
         {
-            IntPtr ptr = Marshal.SecureStringToBSTR(Password);
-            try
-            {
-                return Marshal.PtrToStringBSTR(ptr);
-            }
-            finally
-            {
-                Marshal.ZeroFreeBSTR(ptr);
-            }
+            return Marshal.PtrToStringBSTR(ptr);
+        }
+        finally
+        {
+            Marshal.ZeroFreeBSTR(ptr);
         }
     }
 }

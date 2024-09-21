@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Flags for IPsec key manager.
+/// </summary>
+[Flags]
+public enum IPsecKeyManagerFlags
 {
-    /// <summary>
-    /// Flags for IPsec key manager.
-    /// </summary>
-    [Flags]
-    public enum IPsecKeyManagerFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("IPSEC_KEY_MANAGER_FLAG_DICTATE_KEY")]
-        DictateKey = 1,
+    None = 0,
+    [SDKName("IPSEC_KEY_MANAGER_FLAG_DICTATE_KEY")]
+    DictateKey = 1,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

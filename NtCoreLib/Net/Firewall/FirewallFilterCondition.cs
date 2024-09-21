@@ -12,86 +12,86 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Firewall filter condition.
+/// </summary>
+public struct FirewallFilterCondition : ICloneable
 {
+    #region Public Properties
     /// <summary>
-    /// Firewall filter condition.
+    /// The match type.
     /// </summary>
-    public struct FirewallFilterCondition : ICloneable
+    public FirewallMatchType MatchType { get; }
+
+    /// <summary>
+    /// The key of the field.
+    /// </summary>
+    public Guid FieldKey { get; }
+
+    /// <summary>
+    /// The field key name.
+    /// </summary>
+    public string FieldKeyName { get; }
+
+    /// <summary>
+    /// The value for the condition
+    /// </summary>
+    public FirewallValue Value { get; }
+    #endregion
+
+    #region Internal Members
+    internal FirewallFilterCondition(FWPM_FILTER_CONDITION0 condition) 
+        : this(condition.matchType, condition.fieldKey, new FirewallValue(condition.conditionValue, condition.fieldKey))
     {
-        #region Public Properties
-        /// <summary>
-        /// The match type.
-        /// </summary>
-        public FirewallMatchType MatchType { get; }
-
-        /// <summary>
-        /// The key of the field.
-        /// </summary>
-        public Guid FieldKey { get; }
-
-        /// <summary>
-        /// The field key name.
-        /// </summary>
-        public string FieldKeyName { get; }
-
-        /// <summary>
-        /// The value for the condition
-        /// </summary>
-        public FirewallValue Value { get; }
-        #endregion
-
-        #region Internal Members
-        internal FirewallFilterCondition(FWPM_FILTER_CONDITION0 condition) 
-            : this(condition.matchType, condition.fieldKey, new FirewallValue(condition.conditionValue, condition.fieldKey))
-        {
-        }
-
-        internal FWPM_FILTER_CONDITION0 ToStruct(DisposableList list)
-        {
-            return new FWPM_FILTER_CONDITION0
-            {
-                fieldKey = FieldKey,
-                matchType = MatchType,
-                conditionValue = Value.ToStruct(list)
-            };
-        }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="match_type">The condition match type.</param>
-        /// <param name="field_key">The field key.</param>
-        /// <param name="value">The value.</param>
-        public FirewallFilterCondition(FirewallMatchType match_type, Guid field_key, FirewallValue value)
-        {
-            MatchType = match_type;
-            FieldKey = field_key;
-            FieldKeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(FieldKey);
-            Value = value;
-        }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The condition as a string.</returns>
-        public override string ToString()
-        {
-            return FieldKeyName;
-        }
-        #endregion
-
-        #region Interface Implementations
-        object ICloneable.Clone()
-        {
-            return new FirewallFilterCondition(MatchType, FieldKey, Value.CloneValue());
-        }
-        #endregion
     }
+
+    internal FWPM_FILTER_CONDITION0 ToStruct(DisposableList list)
+    {
+        return new FWPM_FILTER_CONDITION0
+        {
+            fieldKey = FieldKey,
+            matchType = MatchType,
+            conditionValue = Value.ToStruct(list)
+        };
+    }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="match_type">The condition match type.</param>
+    /// <param name="field_key">The field key.</param>
+    /// <param name="value">The value.</param>
+    public FirewallFilterCondition(FirewallMatchType match_type, Guid field_key, FirewallValue value)
+    {
+        MatchType = match_type;
+        FieldKey = field_key;
+        FieldKeyName = NamedGuidDictionary.ConditionGuids.Value.GetName(FieldKey);
+        Value = value;
+    }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The condition as a string.</returns>
+    public override string ToString()
+    {
+        return FieldKeyName;
+    }
+    #endregion
+
+    #region Interface Implementations
+    object ICloneable.Clone()
+    {
+        return new FirewallFilterCondition(MatchType, FieldKey, Value.CloneValue());
+    }
+    #endregion
 }

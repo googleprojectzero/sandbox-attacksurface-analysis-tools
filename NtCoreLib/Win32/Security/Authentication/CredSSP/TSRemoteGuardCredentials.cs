@@ -12,60 +12,59 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Class to represent a TSRemoteGuardCreds structure.
+/// </summary>
+public sealed class TSRemoteGuardCredentials : TSCredentials
 {
     /// <summary>
-    /// Class to represent a TSRemoteGuardCreds structure.
+    /// The remote guard logon credentials.
     /// </summary>
-    public sealed class TSRemoteGuardCredentials : TSCredentials
+    public TSRemoteGuardPackageCredentials LogonCred { get; }
+
+    /// <summary>
+    /// The remote guard supplemental credentials.
+    /// </summary>
+    public IEnumerable<TSRemoteGuardPackageCredentials> SupplementalCreds { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="logon_cred">The logon credentials.</param>
+    /// <param name="supplemental_creds">Optional supplemental credentials.</param>
+    public TSRemoteGuardCredentials(TSRemoteGuardPackageCredentials logon_cred,
+        IEnumerable<TSRemoteGuardPackageCredentials> supplemental_creds = null) : base(TSCredentialsType.RemoteGuard)
     {
-        /// <summary>
-        /// The remote guard logon credentials.
-        /// </summary>
-        public TSRemoteGuardPackageCredentials LogonCred { get; }
+        LogonCred = logon_cred;
+        SupplementalCreds = supplemental_creds?.ToList().AsReadOnly();
+    }
 
-        /// <summary>
-        /// The remote guard supplemental credentials.
-        /// </summary>
-        public IEnumerable<TSRemoteGuardPackageCredentials> SupplementalCreds { get; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="cred_buffer">Credentials buffer for the logon creds.</param>
+    /// <param name="package_name">Package name for the logon creds.</param>
+    /// <param name="supplemental_creds">Optional supplemental credentials.</param>
+    public TSRemoteGuardCredentials(string package_name, byte[] cred_buffer, 
+        IEnumerable<TSRemoteGuardPackageCredentials> supplemental_creds = null) 
+        : this(new TSRemoteGuardPackageCredentials(package_name, cred_buffer), supplemental_creds)
+    {
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="logon_cred">The logon credentials.</param>
-        /// <param name="supplemental_creds">Optional supplemental credentials.</param>
-        public TSRemoteGuardCredentials(TSRemoteGuardPackageCredentials logon_cred,
-            IEnumerable<TSRemoteGuardPackageCredentials> supplemental_creds = null) : base(TSCredentialsType.RemoteGuard)
+    private protected override byte[] GetCredentials()
+    {
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
         {
-            LogonCred = logon_cred;
-            SupplementalCreds = supplemental_creds?.ToList().AsReadOnly();
+            seq.WriteContextSpecific(0, LogonCred);
+            seq.WriteContextSpecific(1, SupplementalCreds);
         }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="cred_buffer">Credentials buffer for the logon creds.</param>
-        /// <param name="package_name">Package name for the logon creds.</param>
-        /// <param name="supplemental_creds">Optional supplemental credentials.</param>
-        public TSRemoteGuardCredentials(string package_name, byte[] cred_buffer, 
-            IEnumerable<TSRemoteGuardPackageCredentials> supplemental_creds = null) 
-            : this(new TSRemoteGuardPackageCredentials(package_name, cred_buffer), supplemental_creds)
-        {
-        }
-
-        private protected override byte[] GetCredentials()
-        {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, LogonCred);
-                seq.WriteContextSpecific(1, SupplementalCreds);
-            }
-            return builder.ToArray();
-        }
+        return builder.ToArray();
     }
 }

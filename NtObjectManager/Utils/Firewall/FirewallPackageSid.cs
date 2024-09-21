@@ -12,48 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Security;
 
-namespace NtObjectManager.Utils.Firewall
+namespace NtObjectManager.Utils.Firewall;
+
+/// <summary>
+/// Helper class to get a firewall package SID.
+/// </summary>
+public class FirewallPackageSid
 {
     /// <summary>
-    /// Helper class to get a firewall package SID.
+    /// The package SID.
     /// </summary>
-    public class FirewallPackageSid
+    public Sid Sid { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="sid">The SID in SDDL format or a package name.</param>
+    public FirewallPackageSid(string sid)
     {
-        /// <summary>
-        /// The package SID.
-        /// </summary>
-        public Sid Sid { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="sid">The SID in SDDL format or a package name.</param>
-        public FirewallPackageSid(string sid)
+        Sid = Sid.Parse(sid, false).GetResultOrDefault();
+        if (Sid == null)
         {
-            Sid = Sid.Parse(sid, false).GetResultOrDefault();
-            if (Sid == null)
-            {
-                Sid = TokenUtils.GetPackageSidFromName(sid);
-            }
+            Sid = Win32Security.GetPackageSidFromName(sid);
         }
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="token">The token to extract the package SID from.</param>
-        public FirewallPackageSid(NtToken token)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="token">The token to extract the package SID from.</param>
+    public FirewallPackageSid(NtToken token)
+    {
+        if (token.AppContainer)
         {
-            if (token.AppContainer)
-            {
-                Sid = token.AppContainerSid;
-            }
-            else
-            {
-                Sid = KnownSids.Null;
-            }
+            Sid = token.AppContainerSid;
+        }
+        else
+        {
+            Sid = KnownSids.Null;
         }
     }
 }

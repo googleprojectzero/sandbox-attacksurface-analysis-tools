@@ -14,27 +14,26 @@
 
 using System.Linq;
 using System.Security.Cryptography;
-using static NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography.KerberosEncryptionUtils;
+using static NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography.KerberosEncryptionUtils;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography;
+
+internal class KerberosChecksumEngineAESSHA196 : KerberosChecksumEngine
 {
-    internal class KerberosChecksumEngineAESSHA196 : KerberosChecksumEngine
+    private const byte SignatureKey = 0x99;
+
+    private KerberosChecksumEngineAESSHA196(KerberosChecksumType checksum_type) 
+        : base(checksum_type, AES_CHECKSUM_SIZE)
     {
-        private const byte SignatureKey = 0x99;
-
-        private KerberosChecksumEngineAESSHA196(KerberosChecksumType checksum_type) 
-            : base(checksum_type, AES_CHECKSUM_SIZE)
-        {
-        }
-
-        public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
-        {
-            byte[] derive_mac_key = DeriveTempKey(key_usage, SignatureKey);
-            return new HMACSHA1(DeriveAesKey(key, derive_mac_key)).ComputeHash(data,
-                offset, length).Take(AES_CHECKSUM_SIZE).ToArray();
-        }
-
-        public static KerberosChecksumEngine AES128 = new KerberosChecksumEngineAESSHA196(KerberosChecksumType.HMAC_SHA1_96_AES_128);
-        public static KerberosChecksumEngine AES256 = new KerberosChecksumEngineAESSHA196(KerberosChecksumType.HMAC_SHA1_96_AES_256);
     }
+
+    public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+    {
+        byte[] derive_mac_key = DeriveTempKey(key_usage, SignatureKey);
+        return new HMACSHA1(DeriveAesKey(key, derive_mac_key)).ComputeHash(data,
+            offset, length).Take(AES_CHECKSUM_SIZE).ToArray();
+    }
+
+    public static KerberosChecksumEngine AES128 = new KerberosChecksumEngineAESSHA196(KerberosChecksumType.HMAC_SHA1_96_AES_128);
+    public static KerberosChecksumEngine AES256 = new KerberosChecksumEngineAESSHA196(KerberosChecksumType.HMAC_SHA1_96_AES_256);
 }

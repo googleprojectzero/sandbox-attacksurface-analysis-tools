@@ -12,77 +12,77 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// A security buffer which can be an input and output.
+/// </summary>
+/// <remarks>If you create with the ReadOnly or ReadOnlyWithCheck types then the 
+/// array will not be updated.</remarks>
+public sealed class SecurityBufferInOut : SecurityBuffer, ISecurityBufferInOut
 {
+    private ArraySegment<byte> _array;
+
     /// <summary>
-    /// A security buffer which can be an input and output.
+    /// Constructor.
     /// </summary>
-    /// <remarks>If you create with the ReadOnly or ReadOnlyWithCheck types then the 
-    /// array will not be updated.</remarks>
-    public sealed class SecurityBufferInOut : SecurityBuffer, ISecurityBufferInOut
+    /// <param name="type">The type of buffer.</param>
+    /// <param name="data">The data for the input.</param>
+    public SecurityBufferInOut(SecurityBufferType type, byte[] data) : base(type)
     {
-        private ArraySegment<byte> _array;
+        _array = new ArraySegment<byte>(data);
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of buffer.</param>
-        /// <param name="data">The data for the input.</param>
-        public SecurityBufferInOut(SecurityBufferType type, byte[] data) : base(type)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="type">The type of buffer.</param>
+    /// <param name="data">The data for the input.</param>
+    /// <param name="offset">The offset into the array.</param>
+    /// <param name="count">Number of bytes in the input.</param>
+    public SecurityBufferInOut(SecurityBufferType type, byte[] data, int offset, int count) : base(type)
+    {
+        _array = new ArraySegment<byte>(data, offset, count);
+    }
+
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        return _array.ToArray();
+    }
+
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return SecBuffer.Create(_type, ToArray(), list);
+    }
+
+    internal override void FromBuffer(SecBuffer buffer)
+    {
+        if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
         {
-            _array = new ArraySegment<byte>(data);
+            return;
         }
+        _array = new ArraySegment<byte>(buffer.ToArray());
+        _type = buffer.BufferType;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of buffer.</param>
-        /// <param name="data">The data for the input.</param>
-        /// <param name="offset">The offset into the array.</param>
-        /// <param name="count">Number of bytes in the input.</param>
-        public SecurityBufferInOut(SecurityBufferType type, byte[] data, int offset, int count) : base(type)
+    int ISecurityBufferOut.Size => _array.Count;
+
+    void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
+    {
+        if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
         {
-            _array = new ArraySegment<byte>(data, offset, count);
+            return;
         }
-
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
-        {
-            return _array.ToArray();
-        }
-
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return SecBuffer.Create(_type, ToArray(), list);
-        }
-
-        internal override void FromBuffer(SecBuffer buffer)
-        {
-            if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
-            {
-                return;
-            }
-            _array = new ArraySegment<byte>(buffer.ToArray());
-            _type = buffer.BufferType;
-        }
-
-        int ISecurityBufferOut.Size => _array.Count;
-
-        void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
-        {
-            if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
-            {
-                return;
-            }
-            _array = new ArraySegment<byte>(data);
-            _type = type;
-        }
+        _array = new ArraySegment<byte>(data);
+        _type = type;
     }
 }

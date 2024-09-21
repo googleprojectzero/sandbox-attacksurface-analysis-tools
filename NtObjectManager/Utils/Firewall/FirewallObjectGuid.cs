@@ -14,38 +14,37 @@
 
 using System;
 
-namespace NtObjectManager.Utils.Firewall
+namespace NtObjectManager.Utils.Firewall;
+
+/// <summary>
+/// Utility class to convert a name to a GUID.
+/// </summary>
+public abstract class FirewallObjectGuid
 {
     /// <summary>
-    /// Utility class to convert a name to a GUID.
+    /// Guid for object..
     /// </summary>
-    public abstract class FirewallObjectGuid
+    public Guid Id { get; }
+
+    private static Guid GetGuidForName(string name, Func<string, Guid> func)
     {
-        /// <summary>
-        /// Guid for object..
-        /// </summary>
-        public Guid Id { get; }
-
-        private static Guid GetGuidForName(string name, Func<string, Guid> func)
+        if (Guid.TryParse(name, out Guid guid))
         {
-            if (Guid.TryParse(name, out Guid guid))
-            {
-                return guid;
-            }
-            else
-            {
-                return func(name);
-            }
+            return guid;
         }
-
-        private protected FirewallObjectGuid(Guid id)
+        else
         {
-            Id = id;
+            return func(name);
         }
+    }
 
-        private protected FirewallObjectGuid(string name, Func<string, Guid> func) 
-            : this(GetGuidForName(name, func))
-        {
-        }
+    private protected FirewallObjectGuid(Guid id)
+    {
+        Id = id;
+    }
+
+    private protected FirewallObjectGuid(string name, Func<string, Guid> func) 
+        : this(GetGuidForName(name, func))
+    {
     }
 }

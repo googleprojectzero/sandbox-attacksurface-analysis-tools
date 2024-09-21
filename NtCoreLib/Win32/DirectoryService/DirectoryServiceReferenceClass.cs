@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Class to represent an a class which is referenced from another. For example auxiliary or superior classes.
+/// </summary>
+public struct DirectoryServiceReferenceClass
 {
+    private readonly string _domain;
+
     /// <summary>
-    /// Class to represent an a class which is referenced from another. For example auxiliary or superior classes.
+    /// The name of the class.
     /// </summary>
-    public struct DirectoryServiceReferenceClass
+    public string Name { get; }
+
+    /// <summary>
+    /// Whether the class is a system class.
+    /// </summary>
+    public bool System { get; }
+
+    internal DirectoryServiceReferenceClass(string name, bool system, string domain)
     {
-        private readonly string _domain;
+        Name = name;
+        System = system;
+        _domain = domain;
+    }
 
-        /// <summary>
-        /// The name of the class.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// Whether the class is a system class.
-        /// </summary>
-        public bool System { get; }
-
-        internal DirectoryServiceReferenceClass(string name, bool system, string domain)
-        {
-            Name = name;
-            System = system;
-            _domain = domain;
-        }
-
-        /// <summary>
-        /// Get the full schema class for this reference.
-        /// </summary>
-        /// <returns>The schema class.</returns>
-        public DirectoryServiceSchemaClass ToSchemaClass()
-        {
-            return DirectoryServiceUtils.GetSchemaClass(_domain, Name);
-        }
+    /// <summary>
+    /// Get the full schema class for this reference.
+    /// </summary>
+    /// <returns>The schema class.</returns>
+    public DirectoryServiceSchemaClass ToSchemaClass()
+    {
+        return DirectoryServiceUtils.GetSchemaClass(_domain, Name);
     }
 }

@@ -14,61 +14,60 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Audit
+namespace NtCoreLib.Win32.Security.Audit;
+
+/// <summary>
+/// Audit policy flags.
+/// </summary>
+[Flags]
+public enum AuditPolicyFlags
 {
     /// <summary>
-    /// Audit policy flags.
+    /// Set unchanged.
     /// </summary>
-    [Flags]
-    public enum AuditPolicyFlags
-    {
-        /// <summary>
-        /// Set unchanged.
-        /// </summary>
-        Unchanged = 0,
-        /// <summary>
-        /// Audit on success.
-        /// </summary>
-        Success = 1,
-        /// <summary>
-        /// Audit on failure.
-        /// </summary>
-        Failure = 2,
-        /// <summary>
-        /// Audit nothing.
-        /// </summary>
-        None = 4,
-    }
-
+    Unchanged = 0,
     /// <summary>
-    /// Per user policy flags.
+    /// Audit on success.
     /// </summary>
-    [Flags]
-    public enum AuditPerUserPolicyFlags
-    {
-        /// <summary>
-        /// Set unchanged.
-        /// </summary>
-        Unchanged = 0,
-        /// <summary>
-        /// Audit on success included.
-        /// </summary>
-        SuccessInclude = 1,
-        /// <summary>
-        /// Audit on success excluded.
-        /// </summary>
-        SuccessExclude = 2,
-        /// <summary>
-        /// Audit on failure included.
-        /// </summary>
-        FailureInclude = 4,
-        /// <summary>
-        /// Audit on failure excluded.
-        /// </summary>
-        FailureExclude = 8,
-        /// <summary>
-        /// Audit nothing.
-        /// </summary>
-        None = 0x10
-    }
+    Success = 1,
+    /// <summary>
+    /// Audit on failure.
+    /// </summary>
+    Failure = 2,
+    /// <summary>
+    /// Audit nothing.
+    /// </summary>
+    None = 4,
+}
+
+/// <summary>
+/// Per user policy flags.
+/// </summary>
+[Flags]
+public enum AuditPerUserPolicyFlags
+{
+    /// <summary>
+    /// Set unchanged.
+    /// </summary>
+    Unchanged = 0,
+    /// <summary>
+    /// Audit on success included.
+    /// </summary>
+    SuccessInclude = 1,
+    /// <summary>
+    /// Audit on success excluded.
+    /// </summary>
+    SuccessExclude = 2,
+    /// <summary>
+    /// Audit on failure included.
+    /// </summary>
+    FailureInclude = 4,
+    /// <summary>
+    /// Audit on failure excluded.
+    /// </summary>
+    FailureExclude = 8,
+    /// <summary>
+    /// Audit nothing.
+    /// </summary>
+    None = 0x10
 }

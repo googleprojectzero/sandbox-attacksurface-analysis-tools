@@ -12,41 +12,40 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos;
+using NtCoreLib.Win32.Security.Authentication.Kerberos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
+namespace NtCoreLib.Win32.Security.Credential.AuthIdentity;
+
+/// <summary>
+/// Class to represent a keytab packed credentials structure.
+/// </summary>
+public sealed class SecWinNtAuthPackedCredentialKeyTab : SecWinNtAuthPackedCredential
 {
     /// <summary>
-    /// Class to represent a keytab packed credentials structure.
+    /// The list of kerberos keys in the keytab.
     /// </summary>
-    public sealed class SecWinNtAuthPackedCredentialKeyTab : SecWinNtAuthPackedCredential
+    public IReadOnlyList<KerberosAuthenticationKey> Keys { get; }
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="keys">The list of keys for the keytab.</param>
+    public SecWinNtAuthPackedCredentialKeyTab(IEnumerable<KerberosAuthenticationKey> keys)
+        : this(KerberosUtils.GenerateKeyTabFile(keys), keys)
     {
-        /// <summary>
-        /// The list of kerberos keys in the keytab.
-        /// </summary>
-        public IReadOnlyList<KerberosAuthenticationKey> Keys { get; }
+    }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="keys">The list of keys for the keytab.</param>
-        public SecWinNtAuthPackedCredentialKeyTab(IEnumerable<KerberosAuthenticationKey> keys)
-            : this(KerberosUtils.GenerateKeyTabFile(keys), keys)
+    internal SecWinNtAuthPackedCredentialKeyTab(byte[] keytab, IEnumerable<KerberosAuthenticationKey> keys)
+        : base(SecWinNtPackedCredentialTypes.KeyTab, keytab)
+    {
+        if (keys is null)
         {
+            throw new ArgumentNullException(nameof(keys));
         }
 
-        internal SecWinNtAuthPackedCredentialKeyTab(byte[] keytab, IEnumerable<KerberosAuthenticationKey> keys)
-            : base(SecWinNtPackedCredentialTypes.KeyTab, keytab)
-        {
-            if (keys is null)
-            {
-                throw new ArgumentNullException(nameof(keys));
-            }
-
-            Keys = keys.ToList().AsReadOnly();
-        }
+        Keys = keys.ToList().AsReadOnly();
     }
 }

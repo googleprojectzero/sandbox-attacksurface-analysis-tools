@@ -27,8 +27,13 @@ The process to allocate the memory in, defaults to current process.
 The type of allocation to make. Defaults to Reserve and Commit.
 .PARAMETER Protection
 The protection for the memory region. Defaults to ReadWrite.
+.PARAMETER AsBuffer
+Specify to return as a safe buffer in the current virtual address space.
+.PARAMETER ExtendedParams
+Specify extended parameters for the allocation.
 .OUTPUTS
 int64
+NtCoreLib.Native.SafeBuffers.SafeVirtualMemoryBuffer
 .EXAMPLE
 $addr = Add-NtVirtualMemory 0x10000
 Allocate a block 0x10000 in size.
@@ -43,15 +48,24 @@ $addr = Add-NtVirtualMemory 0x10000 -Protection ExecuteReadWrite
 Allocate a block 0x10000 in size with Read, Write and Execution protection.
 #>
 function Add-NtVirtualMemory {
+    [CmdletBinding(DefaultParameterSetName="FromProcess")]
     param (
         [parameter(Mandatory, Position = 0)]
         [int64]$Size,
         [int64]$BaseAddress,
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
-        [NtApiDotNet.MemoryAllocationType]$AllocationType = "Reserve, Commit",
-        [NtApiDotNet.MemoryAllocationProtect]$Protection = "ReadWrite"
+        [parameter(ParameterSetName="FromProcess")]
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current,
+        [NtCoreLib.MemoryAllocationType]$AllocationType = "Reserve, Commit",
+        [NtCoreLib.MemoryAllocationProtect]$Protection = "ReadWrite",
+        [parameter(Mandatory, ParameterSetName="AsBuffer")]
+        [switch]$AsBuffer,
+        [NtCoreLib.Kernel.Memory.MemoryExtendedParameter[]]$ExtendedParams
     )
-    $Process.AllocateMemory($BaseAddress, $Size, $AllocationType, $Protection)
+    if ($AsBuffer) {
+        [NtCoreLib.Native.SafeBuffers.SafeVirtualMemoryBuffer]::new($BaseAddress, $Size, $AllocationType, $Protection, $ExtendedParams)
+    } else {
+        $Process.AllocateMemory($BaseAddress, $Size, $AllocationType, $Protection, $ExtendedParams)
+    }
 }
 
 <#
@@ -85,8 +99,8 @@ function Remove-NtVirtualMemory {
         [parameter(Mandatory, Position = 0)]
         [int64]$Address,
         [int64]$Size,
-        [NtApiDotNet.MemoryFreeType]$FreeType = "Release",
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
+        [NtCoreLib.MemoryFreeType]$FreeType = "Release",
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current
     )
     $Process.FreeMemory($Address, $Size, $FreeType)
 }
@@ -107,7 +121,7 @@ Show only memory regions for the named mapped file.
 .PARAMETER IncludeFree
 When showing all memory regions specify to include free regions as well.
 .OUTPUTS
-NtApiDotNet.MemoryInformation
+NtCoreLib.MemoryInformation
 .EXAMPLE
 Get-NtVirtualMemory $addr
 Get the memory information for the specified address for the current process.
@@ -135,14 +149,14 @@ function Get-NtVirtualMemory {
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromAddress")]
         [int64]$Address,
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current,
         [parameter(ParameterSetName = "All")]
         [switch]$All,
         [parameter(ParameterSetName = "All")]
         [switch]$IncludeFree,
-        [NtApiDotNet.MemoryType]$Type = "All",
+        [NtCoreLib.MemoryType]$Type = "All",
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.MemoryState]$State = "Commit, Reserve",
+        [NtCoreLib.MemoryState]$State = "Commit, Reserve",
         [parameter(ParameterSetName = "All")]
         [string]$Name
     )
@@ -178,7 +192,7 @@ The process to set the memory in, defaults to current process.
 .PARAMETER Protection
 Specify the new protection for the memory region.
 .OUTPUTS
-NtApiDotNet.MemoryAllocationProtect - The previous memory protection setting.
+NtCoreLib.MemoryAllocationProtect - The previous memory protection setting.
 .EXAMPLE
 Set-NtVirtualMemory $addr 0x1000 ExecuteRead
 Sets the protection of a memory region to ExecuteRead.
@@ -191,8 +205,8 @@ function Set-NtVirtualMemory {
         [parameter(Mandatory, Position = 1)]
         [int64]$Size,
         [parameter(Mandatory, Position = 2)]
-        [NtApiDotNet.MemoryAllocationProtect]$Protection,
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
+        [NtCoreLib.MemoryAllocationProtect]$Protection,
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current
     )
     $Process.ProtectMemory($Address, $Size, $Protection)
 }
@@ -235,13 +249,13 @@ function Read-NtVirtualMemory {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromAddress")]
         [int64]$Address,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromMapping")]
-        [NtApiDotNet.NtMappedSection]$Mapping,
+        [NtCoreLib.NtMappedSection]$Mapping,
         [parameter(ParameterSetName="FromMapping")]
         [int64]$Offset = 0,
         [parameter(Mandatory, Position = 1)]
         [int]$Size,
         [parameter(ParameterSetName="FromAddress")]
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current,
         [switch]$ReadAll
     )
 
@@ -287,13 +301,13 @@ function Write-NtVirtualMemory {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromAddress")]
         [int64]$Address,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromMapping")]
-        [NtApiDotNet.NtMappedSection]$Mapping,
+        [NtCoreLib.NtMappedSection]$Mapping,
         [parameter(ParameterSetName="FromMapping")]
         [int64]$Offset = 0,
         [parameter(Mandatory, Position = 1)]
         [byte[]]$Data,
         [parameter(ParameterSetName="FromAddress")]
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [NtCoreLib.NtProcess]$Process = [NtCoreLib.NtProcess]::Current,
         [switch]$Win32
     )
 
@@ -303,7 +317,7 @@ function Write-NtVirtualMemory {
     }
 
     if ($Win32) {
-        [NtApiDotNet.Win32.Memory.Win32MemoryUtils]::WriteMemory($Process, $Address, $Data)
+        [NtCoreLib.Win32.Memory.Win32MemoryUtils]::WriteMemory($Process, $Address, $Data)
     } else {
         $Process.WriteMemory($Address, $Data)
     }

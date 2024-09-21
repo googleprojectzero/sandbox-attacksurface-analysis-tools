@@ -12,136 +12,135 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib.Security.Authorization;
 using System.Collections;
 using System.Collections.Generic;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Compare two security descriptors against each other.</para>
+/// <para type="description">This cmdlet compares two security descriptors against each other. Returns a boolean result.</para>
+/// </summary>
+/// <example>
+///   <code>Compare-NtSecurityDescriptor $sd1 $sd2</code>
+///   <para>Checks both security descriptors are equal.</para>
+/// </example>
+/// <example>
+///   <code>Compare-NtSecurityDescriptor $sd1 $sd2 -Report</code>
+///   <para>Checks both security descriptors are equal and report the differences.</para>
+/// </example>
+[Cmdlet(VerbsData.Compare, "NtSecurityDescriptor")]
+[OutputType(typeof(bool))]
+public class CompareNtSecurityDescriptorCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Compare two security descriptors against each other.</para>
-    /// <para type="description">This cmdlet compares two security descriptors against each other. Returns a boolean result.</para>
+    /// <para type="description">Specify the left security descriptor to compare.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Compare-NtSecurityDescriptor $sd1 $sd2</code>
-    ///   <para>Checks both security descriptors are equal.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Compare-NtSecurityDescriptor $sd1 $sd2 -Report</code>
-    ///   <para>Checks both security descriptors are equal and report the differences.</para>
-    /// </example>
-    [Cmdlet(VerbsData.Compare, "NtSecurityDescriptor")]
-    [OutputType(typeof(bool))]
-    public class CompareNtSecurityDescriptorCmdlet : PSCmdlet
+    [Parameter(Position = 0, Mandatory = true)]
+    public SecurityDescriptor Left { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the right security descriptor to compare.</para>
+    /// </summary>
+    [Parameter(Position = 1, Mandatory = true)]
+    public SecurityDescriptor Right { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to print what differs between the two security descriptors if they do not match.</para>
+    /// </summary>
+    [Parameter]
+    public SwitchParameter Report { get; set; }
+
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the left security descriptor to compare.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        public SecurityDescriptor Left { get; set; }
+        WriteObject(CheckSd());
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the right security descriptor to compare.</para>
-        /// </summary>
-        [Parameter(Position = 1, Mandatory = true)]
-        public SecurityDescriptor Right { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to print what differs between the two security descriptors if they do not match.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Report { get; set; }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
+    private void CompareSid(string sid_name, Sid left, Sid right)
+    {
+        if (left is null && right is null)
+            return;
+        if (left is null)
         {
-            WriteObject(CheckSd());
+            WriteWarning($"{sid_name} left not present.");
+            return;
         }
 
-        private void CompareSid(string sid_name, Sid left, Sid right)
+        if (right is null)
         {
-            if (left is null && right is null)
-                return;
-            if (left is null)
-            {
-                WriteWarning($"{sid_name} left not present.");
-                return;
-            }
-
-            if (right is null)
-            {
-                WriteWarning($"{sid_name} right not present.");
-                return;
-            }
-
-            if (!left.Equals(right))
-            {
-                WriteWarning($"{sid_name} SIDs mismatch, left {left} right {right}.");
-            }
+            WriteWarning($"{sid_name} right not present.");
+            return;
         }
 
-        private void CompareAcls(string acl_name, Acl left, Acl right)
+        if (!left.Equals(right))
         {
-            if (left is null && right is null)
-                return;
+            WriteWarning($"{sid_name} SIDs mismatch, left {left} right {right}.");
+        }
+    }
 
-            if (left is null)
-            {
-                WriteWarning($"{acl_name} left not present.");
-                return;
-            }
+    private void CompareAcls(string acl_name, Acl left, Acl right)
+    {
+        if (left is null && right is null)
+            return;
 
-            if (right is null)
-            {
-                WriteWarning($"{acl_name} right not present.");
-                return;
-            }
-
-            if (left.Count != right.Count)
-            {
-                WriteWarning($"{acl_name} ACE count mismatch, left {left.Count} right {right.Count}");
-                return;
-            }
-
-            for (int i = 0; i < left.Count; ++i)
-            {
-                if (!left[i].Equals(right[i]))
-                {
-                    WriteWarning($"{acl_name} ACE {i} mismatch.");
-                    WriteWarning($"Left : {left[i]}");
-                    WriteWarning($"Right: {right[i]}");
-                }
-            }
+        if (left is null)
+        {
+            WriteWarning($"{acl_name} left not present.");
+            return;
         }
 
-        private bool CheckSd()
+        if (right is null)
         {
-            IStructuralEquatable left = Left.ToByteArray();
-            if (left.Equals(Right.ToByteArray(), EqualityComparer<byte>.Default))
-                return true;
+            WriteWarning($"{acl_name} right not present.");
+            return;
+        }
 
-            if (!Report)
-                return false;
+        if (left.Count != right.Count)
+        {
+            WriteWarning($"{acl_name} ACE count mismatch, left {left.Count} right {right.Count}");
+            return;
+        }
 
-            if (Left.Control != Right.Control)
+        for (int i = 0; i < left.Count; ++i)
+        {
+            if (!left[i].Equals(right[i]))
             {
-                WriteWarning($"Control mismatch, left {Left.Control} right {Right.Control}");
+                WriteWarning($"{acl_name} ACE {i} mismatch.");
+                WriteWarning($"Left : {left[i]}");
+                WriteWarning($"Right: {right[i]}");
             }
+        }
+    }
 
-            if (Left.RmControl != Right.RmControl)
-            {
-                WriteWarning($"RmControl mismatch, left {Left.RmControl} right {Right.RmControl}");
-            }
+    private bool CheckSd()
+    {
+        IStructuralEquatable left = Left.ToByteArray();
+        if (left.Equals(Right.ToByteArray(), EqualityComparer<byte>.Default))
+            return true;
 
-            CompareSid("Owner", Left.Owner?.Sid, Right.Owner?.Sid);
-            CompareSid("Group", Left.Group?.Sid, Right.Group?.Sid);
-            CompareAcls("DACL", Left.Dacl, Right.Dacl);
-            CompareAcls("SACL", Left.Sacl, Right.Sacl);
-
+        if (!Report)
             return false;
+
+        if (Left.Control != Right.Control)
+        {
+            WriteWarning($"Control mismatch, left {Left.Control} right {Right.Control}");
         }
+
+        if (Left.RmControl != Right.RmControl)
+        {
+            WriteWarning($"RmControl mismatch, left {Left.RmControl} right {Right.RmControl}");
+        }
+
+        CompareSid("Owner", Left.Owner?.Sid, Right.Owner?.Sid);
+        CompareSid("Group", Left.Group?.Sid, Right.Group?.Sid);
+        CompareAcls("DACL", Left.Dacl, Right.Dacl);
+        CompareAcls("SACL", Left.Sacl, Right.Sacl);
+
+        return false;
     }
 }

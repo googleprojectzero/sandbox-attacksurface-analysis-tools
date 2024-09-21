@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
+/// </summary>
+[Flags]
+public enum KerberosApOptionsFlags : uint
 {
-    /// <summary>
-    /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
-    /// </summary>
-    [Flags]
-    public enum KerberosApOptionsFlags : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("KERB_AP_OPTIONS_CBT")]
-        ChannelBindingToken = 0x4000,
-        UnverifiedTargetName = 0x8000,
-        MutualRequired = 0x20000000,
-        UseSessionKey = 0x40000000,
+    None = 0,
+    [SDKName("KERB_AP_OPTIONS_CBT")]
+    ChannelBindingToken = 0x4000,
+    UnverifiedTargetName = 0x8000,
+    MutualRequired = 0x20000000,
+    UseSessionKey = 0x40000000,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

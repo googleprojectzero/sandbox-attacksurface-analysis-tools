@@ -12,12 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Be.Windows.Forms;
+namespace EditSection;
 
-namespace EditSection
+interface ICorruptSection
 {
-    interface ICorruptSection
-    {
-        void Corrupt(NativeMappedFileByteProvider prov, long start, long end);
-    }
+    void Corrupt(NativeMappedFileByteProvider prov, long start, long end);
 }

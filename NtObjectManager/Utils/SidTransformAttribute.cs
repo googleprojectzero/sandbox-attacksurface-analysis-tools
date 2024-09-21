@@ -12,29 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+class SidTransformAttribute : BaseTransformAttribute
 {
-    class SidTransformAttribute : BaseTransformAttribute
+    public SidTransformAttribute() 
+        : base(typeof(Sid))
     {
-        public SidTransformAttribute() 
-            : base(typeof(Sid))
-        {
-        }
+    }
 
-        protected override object DefaultValue(object obj)
+    protected override object DefaultValue(object obj)
+    {
+        if (obj is Sid sid)
         {
-            if (obj is Sid sid)
-            {
-                return sid;
-            }
-            return new Sid(SecurityAuthority.Null, 0);
+            return sid;
         }
+        return new Sid(SecurityAuthority.Null, 0);
+    }
 
-        protected override NtResult<object> Parse(string value, bool throw_on_error)
-        {
-            return Sid.Parse(value, false).Cast<object>();
-        }
+    protected override NtResult<object> Parse(string value, bool throw_on_error)
+    {
+        return Sid.Parse(value, false).Cast<object>();
     }
 }

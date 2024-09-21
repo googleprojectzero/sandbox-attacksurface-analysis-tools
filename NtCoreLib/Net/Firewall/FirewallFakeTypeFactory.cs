@@ -12,22 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Security.Authorization;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+internal class FirewallFakeTypeFactory : NtFakeTypeFactory
 {
-    internal class FirewallFakeTypeFactory : NtFakeTypeFactory
+    public override IEnumerable<NtType> CreateTypes()
     {
-        public override IEnumerable<NtType> CreateTypes()
-        {
-            return new NtType[] {
-                new NtType(FirewallUtils.FIREWALL_NT_TYPE_NAME, FirewallUtils.GetGenericMapping(),
-                        typeof(FirewallAccessRights), typeof(FirewallAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp),
-                new NtType(FirewallUtils.FIREWALL_FILTER_NT_TYPE_NAME, FirewallUtils.GetFilterGenericMapping(),
-                        typeof(FirewallFilterAccessRights), typeof(FirewallFilterAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp)
-            };
-        }
+        return new NtType[] {
+            new NtType(FirewallUtils.FIREWALL_NT_TYPE_NAME, FirewallUtils.GetGenericMapping(),
+                    typeof(FirewallAccessRights), typeof(FirewallAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp),
+            new NtType(FirewallUtils.FIREWALL_FILTER_NT_TYPE_NAME, FirewallUtils.GetFilterGenericMapping(),
+                    typeof(FirewallFilterAccessRights), typeof(FirewallFilterAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp)
+        };
     }
 }

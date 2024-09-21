@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Flags for looking up SIDs by name.
+/// </summary>
+[Flags]
+public enum LsaLookupNameOptionFlags : uint
 {
-    /// <summary>
-    /// Flags for looking up SIDs by name.
-    /// </summary>
-    [Flags]
-    public enum LsaLookupNameOptionFlags : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("LSA_LOOKUP_ISOLATED_AS_LOCAL")]
-        IsolatedAsLocal = 0x80000000
+    None = 0,
+    [SDKName("LSA_LOOKUP_ISOLATED_AS_LOCAL")]
+    IsolatedAsLocal = 0x80000000
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

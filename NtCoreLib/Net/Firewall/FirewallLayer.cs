@@ -12,86 +12,87 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall layer object.
+/// </summary>
+public sealed class FirewallLayer : FirewallObject
 {
     /// <summary>
-    /// Class to represent a firewall layer object.
+    /// Layer flags.
     /// </summary>
-    public sealed class FirewallLayer : FirewallObject
+    public FirewallLayerFlags Flags { get; }
+
+    /// <summary>
+    /// Default sub-layer key.
+    /// </summary>
+    public Guid DefaultSubLayerKey { get; }
+
+    /// <summary>
+    /// The layer ID.
+    /// </summary>
+    public int LayerId { get; }
+
+    /// <summary>
+    /// List of fields.
+    /// </summary>
+    public IReadOnlyList<FirewallField> Fields { get; }
+
+    /// <summary>
+    /// Is builtin layer.
+    /// </summary>
+    public bool IsBuiltin => Flags.HasFlagSet(FirewallLayerFlags.Builtin);
+
+    /// <summary>
+    /// Is a user-mode layer.
+    /// </summary>
+    public bool IsUser => !Flags.HasFlagSet(FirewallLayerFlags.Kernel);
+
+    /// <summary>
+    /// Enumerate filters for this layer.
+    /// </summary>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The list of sorted filters.</returns>
+    public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(bool throw_on_error)
     {
-        /// <summary>
-        /// Layer flags.
-        /// </summary>
-        public FirewallLayerFlags Flags { get; }
-
-        /// <summary>
-        /// Default sub-layer key.
-        /// </summary>
-        public Guid DefaultSubLayerKey { get; }
-
-        /// <summary>
-        /// The layer ID.
-        /// </summary>
-        public int LayerId { get; }
-
-        /// <summary>
-        /// List of fields.
-        /// </summary>
-        public IReadOnlyList<FirewallField> Fields { get; }
-
-        /// <summary>
-        /// Is builtin layer.
-        /// </summary>
-        public bool IsBuiltin => Flags.HasFlagSet(FirewallLayerFlags.Builtin);
-
-        /// <summary>
-        /// Is a user-mode layer.
-        /// </summary>
-        public bool IsUser => !Flags.HasFlagSet(FirewallLayerFlags.Kernel);
-
-        /// <summary>
-        /// Enumerate filters for this layer.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The list of sorted filters.</returns>
-        public NtResult<IEnumerable<FirewallFilter>> EnumerateFilters(bool throw_on_error)
+        FirewallFilterEnumTemplate template = new()
         {
-            FirewallFilterEnumTemplate template = new FirewallFilterEnumTemplate()
-            {
-                LayerKey = Key,
-                Flags = FirewallFilterEnumFlags.Sorted
-            };
+            LayerKey = Key,
+            Flags = FirewallFilterEnumFlags.Sorted
+        };
 
-            return _engine.EnumerateFilters(template, throw_on_error);
-        }
+        return _engine.EnumerateFilters(template, throw_on_error);
+    }
 
-        /// <summary>
-        /// Enumerate filters for this layer.
-        /// </summary>
-        /// <returns>The list of sorted filters.</returns>
-        public IEnumerable<FirewallFilter> EnumerateFilters()
+    /// <summary>
+    /// Enumerate filters for this layer.
+    /// </summary>
+    /// <returns>The list of sorted filters.</returns>
+    public IEnumerable<FirewallFilter> EnumerateFilters()
+    {
+        return EnumerateFilters(true).Result;
+    }
+
+    internal FirewallLayer(FWPM_LAYER0 layer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+        : base(layer.layerKey, layer.displayData, NamedGuidDictionary.LayerGuids.Value, engine, get_sd)
+    {
+        Flags = layer.flags;
+        DefaultSubLayerKey = layer.defaultSubLayerKey;
+        LayerId = layer.layerId;
+        List<FirewallField> fields = new();
+        if (layer.numFields > 0 && layer.field != IntPtr.Zero)
         {
-            return EnumerateFilters(true).Result;
+            var buffer = new SafeHGlobalBuffer(layer.field, 1, false);
+            buffer.Initialize<FWPM_FIELD0>((uint)layer.numFields);
+            fields.AddRange(buffer.ReadArray<FWPM_FIELD0>(0, layer.numFields).Select(f => new FirewallField(f)));
         }
-
-        internal FirewallLayer(FWPM_LAYER0 layer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(layer.layerKey, layer.displayData, NamedGuidDictionary.LayerGuids.Value, engine, get_sd)
-        {
-            Flags = layer.flags;
-            DefaultSubLayerKey = layer.defaultSubLayerKey;
-            LayerId = layer.layerId;
-            List<FirewallField> fields = new List<FirewallField>();
-            if (layer.numFields > 0 && layer.field != IntPtr.Zero)
-            {
-                var buffer = new SafeHGlobalBuffer(layer.field, 1, false);
-                buffer.Initialize<FWPM_FIELD0>((uint)layer.numFields);
-                fields.AddRange(buffer.ReadArray<FWPM_FIELD0>(0, layer.numFields).Select(f => new FirewallField(f)));
-            }
-            Fields = fields.AsReadOnly();
-        }
+        Fields = fields.AsReadOnly();
     }
 }

@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IPsec authentication type.
+/// </summary>
+[SDKName("IPSEC_AUTH_TYPE")]
+public enum IPsecAuthType
 {
-    /// <summary>
-    /// IPsec authentication type.
-    /// </summary>
-    [SDKName("IPSEC_AUTH_TYPE")]
-    public enum IPsecAuthType
-    {
-        [SDKName("IPSEC_AUTH_MD5")]
-        MD5 = 0,
-        [SDKName("IPSEC_AUTH_SHA_1")]
-        SHA1 = (MD5 + 1),
-        [SDKName("IPSEC_AUTH_SHA_256")]
-        SHA256 = (SHA1 + 1),
-        [SDKName("IPSEC_AUTH_AES_128")]
-        AES128 = (SHA256 + 1),
-        [SDKName("IPSEC_AUTH_AES_192")]
-        AES192 = (AES128 + 1),
-        [SDKName("IPSEC_AUTH_AES_256")]
-        AES256 = (AES192 + 1)
-    }
+    [SDKName("IPSEC_AUTH_MD5")]
+    MD5 = 0,
+    [SDKName("IPSEC_AUTH_SHA_1")]
+    SHA1 = (MD5 + 1),
+    [SDKName("IPSEC_AUTH_SHA_256")]
+    SHA256 = (SHA1 + 1),
+    [SDKName("IPSEC_AUTH_AES_128")]
+    AES128 = (SHA256 + 1),
+    [SDKName("IPSEC_AUTH_AES_192")]
+    AES192 = (AES128 + 1),
+    [SDKName("IPSEC_AUTH_AES_256")]
+    AES256 = (AES192 + 1)
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

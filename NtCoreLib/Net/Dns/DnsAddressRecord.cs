@@ -14,33 +14,32 @@
 
 using System.Net;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+/// <summary>
+/// A single DNS address record.
+/// </summary>
+public sealed class DnsAddressRecord
 {
     /// <summary>
-    /// A single DNS address record.
+    /// The name of the host.
     /// </summary>
-    public sealed class DnsAddressRecord
+    public string Name { get; }
+
+    /// <summary>
+    /// The address of the host.
+    /// </summary>
+    public IPAddress Address { get; }
+
+    /// <summary>
+    /// The time to live.
+    /// </summary>
+    public uint TimeToLive { get; }
+
+    internal DnsAddressRecord(string name, IPAddress address, uint ttl)
     {
-        /// <summary>
-        /// The name of the host.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// The address of the host.
-        /// </summary>
-        public IPAddress Address { get; }
-
-        /// <summary>
-        /// The time to live.
-        /// </summary>
-        public uint TimeToLive { get; }
-
-        internal DnsAddressRecord(string name, IPAddress address, uint ttl)
-        {
-            Name = name;
-            Address = address;
-            TimeToLive = ttl;
-        }
+        Name = name;
+        Address = address;
+        TimeToLive = ttl;
     }
 }

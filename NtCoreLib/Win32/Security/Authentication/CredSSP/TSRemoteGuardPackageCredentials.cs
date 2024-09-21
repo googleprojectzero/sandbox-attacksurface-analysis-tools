@@ -12,68 +12,65 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
-using NtApiDotNet.Win32.Security.Authentication.Logon;
+using NtCoreLib.Utilities.ASN1.Builder;
+using NtCoreLib.Win32.Security.Authentication.Logon;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Class to represent a packaged credential for remote guard.
+/// </summary>
+public sealed class TSRemoteGuardPackageCredentials : IDERObject
 {
     /// <summary>
-    /// Class to represent a packaged credential for remote guard.
+    /// The name of the package the credentials are intended.
     /// </summary>
-    public sealed class TSRemoteGuardPackageCredentials : IDERObject
+    public string PackageName { get; }
+
+    /// <summary>
+    /// The credentials buffer.
+    /// </summary>
+    public byte[] CredBuffer { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="package_name">The package name.</param>
+    /// <param name="cred_buffer">The credentials buffer.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
+    public TSRemoteGuardPackageCredentials(string package_name, byte[] cred_buffer)
     {
-        /// <summary>
-        /// The name of the package the credentials are intended.
-        /// </summary>
-        public string PackageName { get; }
-
-        /// <summary>
-        /// The credentials buffer.
-        /// </summary>
-        public byte[] CredBuffer { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="package_name">The package name.</param>
-        /// <param name="cred_buffer">The credentials buffer.</param>
-        /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
-        public TSRemoteGuardPackageCredentials(string package_name, byte[] cred_buffer)
+        if (package_name is null)
         {
-            if (package_name is null)
-            {
-                throw new ArgumentNullException(nameof(package_name));
-            }
-
-            if (cred_buffer is null)
-            {
-                throw new ArgumentNullException(nameof(cred_buffer));
-            }
-
-            PackageName = package_name;
-            CredBuffer = cred_buffer.CloneBytes();
+            throw new ArgumentNullException(nameof(package_name));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="package_name">The package name.</param>
-        /// <param name="credentials">The credentials.</param>
-        /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
-        public TSRemoteGuardPackageCredentials(string package_name, ILsaLogonCredentialsSerializable credentials) 
-            : this(package_name, credentials?.ToArray())
+        if (cred_buffer is null)
         {
+            throw new ArgumentNullException(nameof(cred_buffer));
         }
 
-        void IDERObject.Write(DERBuilder builder)
-        {
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, Encoding.Unicode.GetBytes(PackageName));
-                seq.WriteContextSpecific(1, CredBuffer);
-            }
-        }
+        PackageName = package_name;
+        CredBuffer = cred_buffer.CloneBytes();
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="package_name">The package name.</param>
+    /// <param name="credentials">The credentials.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any argument is null.</exception>
+    public TSRemoteGuardPackageCredentials(string package_name, ILsaLogonCredentialsSerializable credentials) 
+        : this(package_name, credentials?.ToArray())
+    {
+    }
+
+    void IDERObject.Write(DERBuilder builder)
+    {
+        using var seq = builder.CreateSequence();
+        seq.WriteContextSpecific(0, Encoding.Unicode.GetBytes(PackageName));
+        seq.WriteContextSpecific(1, CredBuffer);
     }
 }

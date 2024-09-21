@@ -12,131 +12,128 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace EditSection
+namespace EditSection;
+
+public partial class SelectSectionForm : Form
 {
-    public partial class SelectSectionForm : Form
+    private static string? _last_filter;
+
+    private NtMappedSection? _mapped_file;
+    private NtHandle? _opened_handle;
+
+    private void UpdateProcesses(string nameFilter)
     {
-        static string _last_filter;
+        using var ps = NtProcess.GetProcesses(ProcessAccessRights.DupHandle
+            | ProcessAccessRights.QueryLimitedInformation, true).ToDisposableList();
+        treeViewProcesses.SuspendLayout();
 
-        private void UpdateProcesses(string nameFilter)
+        try
         {
-            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.DupHandle 
-                | ProcessAccessRights.QueryLimitedInformation, true).ToDisposableList())
+            treeViewProcesses.Nodes.Clear();
+            IEnumerable<NtProcess> ps_list = ps.OrderBy(p => p.ProcessId);
+            if (!string.IsNullOrWhiteSpace(nameFilter))
             {
-                treeViewProcesses.SuspendLayout();
-
-                try
-                {
-                    treeViewProcesses.Nodes.Clear();
-                    IEnumerable<NtProcess> ps_list = ps.OrderBy(p => p.ProcessId);
-                    if (!string.IsNullOrWhiteSpace(nameFilter))
-                    {
-                        nameFilter = nameFilter.ToLower();
-                        ps_list = ps_list.Where(p => p.Name.ToLower().Contains(nameFilter));
-                    }
-
-                    foreach (var p in ps_list)
-                    {
-                        TreeNode node = new ProcessTreeNode(p);
-                        treeViewProcesses.Nodes.Add(node);
-                    }
-                }
-                finally
-                {
-                    treeViewProcesses.ResumeLayout();
-                }
-
-                _last_filter = nameFilter;
-            }
-        }
-
-        public SelectSectionForm()
-        {
-            InitializeComponent();
-
-            if (!string.IsNullOrWhiteSpace(_last_filter))
-            {
-                textBoxFilter.Text = _last_filter;
+                nameFilter = nameFilter.ToLower();
+                ps_list = ps_list.Where(p => p.Name.ToLower().Contains(nameFilter));
             }
 
-            UpdateProcesses(textBoxFilter.Text);
+            foreach (var p in ps_list)
+            {
+                TreeNode node = new ProcessTreeNode(p);
+                treeViewProcesses.Nodes.Add(node);
+            }
+        }
+        finally
+        {
+            treeViewProcesses.ResumeLayout();
         }
 
-        private void treeViewProcesses_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        _last_filter = nameFilter;
+    }
+
+    public SelectSectionForm()
+    {
+        InitializeComponent();
+
+        if (!string.IsNullOrWhiteSpace(_last_filter))
+        {
+            textBoxFilter.Text = _last_filter;
+        }
+
+        UpdateProcesses(textBoxFilter.Text ?? string.Empty);
+    }
+
+    private void treeViewProcesses_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+    {
+        try
+        {
+            if (e.Node is ProcessTreeNode node)
+            {
+                node.PopulateChildren();
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void btnOK_Click(object sender, EventArgs e)
+    {
+        if (OpenMappedFile())
+        {
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+    }
+
+    private void btnCancel_Click(object sender, EventArgs e)
+    {
+        DialogResult = DialogResult.Cancel;
+        Close();
+    }
+
+    private void btnApply_Click(object sender, EventArgs e)
+    {
+        UpdateProcesses(textBoxFilter.Text);
+    }
+
+    private bool OpenMappedFile()
+    {
+        if (treeViewProcesses.SelectedNode is not SectionTreeNode node)
+        {
+            MessageBox.Show(this, "Please selection a section to open", "Select Section", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        else
         {
             try
             {
-                ProcessTreeNode node = e.Node as ProcessTreeNode;
-                if (node != null)
-                {
-                    node.PopulateChildren();
-                }
+                _mapped_file = node.OpenMappedFile(!checkBoxOpenReadonly.Checked);
+                _opened_handle = node.SectionHandle;
+                ReadOnly = checkBoxOpenReadonly.Checked;
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void btnOK_Click(object sender, EventArgs e)
-        {
-            if (OpenMappedFile())
-            {
-                DialogResult = DialogResult.OK;
-                Close();
-            }
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;
-            Close();
-        }
-
-        private void btnApply_Click(object sender, EventArgs e)
-        {
-            UpdateProcesses(textBoxFilter.Text);
-        }
-
-        private bool OpenMappedFile()
-        {
-            SectionTreeNode node = treeViewProcesses.SelectedNode as SectionTreeNode;
-
-            if (node == null)
-            {
-                MessageBox.Show(this, "Please selection a section to open", "Select Section", MessageBoxButtons.OK, MessageBoxIcon.Error);                
-            }
-            else
-            {
-                try
-                {
-                    MappedFile = node.OpenMappedFile(!checkBoxOpenReadonly.Checked);
-                    OpenedHandle = node.SectionHandle;
-                    ReadOnly = checkBoxOpenReadonly.Checked;
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
-            return false;
-        }
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NtMappedSection MappedFile { get; private set; }
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NtHandle OpenedHandle { get; private set; }
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public bool ReadOnly { get; private set; }
+        return false;
     }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
+    public NtMappedSection MappedFile => _mapped_file ?? throw new InvalidOperationException();
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
+    public NtHandle OpenedHandle => _opened_handle ?? throw new InvalidOperationException();
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
+    public bool ReadOnly { get; private set; }
 }

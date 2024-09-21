@@ -14,34 +14,33 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2SessionSetupRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2SessionSetupRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 25;
+
+    public Smb2SessionSetupRequestPacket() : base(Smb2Command.SESSION_SETUP)
     {
-        private const ushort STRUCT_SIZE = 25;
+    }
 
-        public Smb2SessionSetupRequestPacket() : base(Smb2Command.SESSION_SETUP)
-        {
-        }
+    public Smb2SessionRequestFlags Flags { get; set; }
+    public Smb2SecurityMode SecurityMode { get; set; }
+    public Smb2GlobalCapabilities Capabilities { get; set; }
+    public byte[] SecurityBuffer { get; set; }
+    public ulong PreviousSessionId { get; set; }
 
-        public Smb2SessionRequestFlags Flags { get; set; }
-        public Smb2SecurityMode SecurityMode { get; set; }
-        public Smb2GlobalCapabilities Capabilities { get; set; }
-        public byte[] SecurityBuffer { get; set; }
-        public ulong PreviousSessionId { get; set; }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.Write((byte)Flags);
-            writer.Write((byte)SecurityMode);
-            writer.Write((int)Capabilities);
-            // Channel.
-            writer.Write(0);
-            writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            writer.WriteUInt16(SecurityBuffer.Length);
-            writer.Write(PreviousSessionId);
-            writer.Write(SecurityBuffer);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.Write((byte)Flags);
+        writer.Write((byte)SecurityMode);
+        writer.Write((int)Capabilities);
+        // Channel.
+        writer.Write(0);
+        writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
+        writer.WriteUInt16(SecurityBuffer.Length);
+        writer.Write(PreviousSessionId);
+        writer.Write(SecurityBuffer);
     }
 }

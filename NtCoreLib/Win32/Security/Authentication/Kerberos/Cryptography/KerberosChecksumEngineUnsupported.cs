@@ -14,17 +14,16 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
-{
-    internal class KerberosChecksumEngineUnsupported : KerberosChecksumEngine
-    {
-        public KerberosChecksumEngineUnsupported(KerberosChecksumType checksum_type) : base(checksum_type, 0)
-        {
-        }
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography;
 
-        public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
-        {
-            throw new NotImplementedException();
-        }
+internal class KerberosChecksumEngineUnsupported : KerberosChecksumEngine
+{
+    public KerberosChecksumEngineUnsupported(KerberosChecksumType checksum_type) : base(checksum_type, 0)
+    {
+    }
+
+    public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+    {
+        throw new NotImplementedException();
     }
 }

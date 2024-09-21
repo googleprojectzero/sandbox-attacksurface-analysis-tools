@@ -12,56 +12,58 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Filter
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Filter.Interop;
+
+namespace NtCoreLib.Win32.Filter;
+
+/// <summary>
+/// Class to represent a filter drive.
+/// </summary>
+public sealed class FilterDriver
 {
     /// <summary>
-    /// Class to represent a filter drive.
+    /// True if a mini-filter, false if a legacy-filter.
     /// </summary>
-    public sealed class FilterDriver
-    {
-        /// <summary>
-        /// True if a mini-filter, false if a legacy-filter.
-        /// </summary>
-        public bool MiniFilter { get; }
-        /// <summary>
-        /// Flags, if any.
-        /// </summary>
-        public int Flags { get; }
-        /// <summary>
-        /// The frame ID.
-        /// </summary>
-        public int FrameID { get; }
-        /// <summary>
-        /// Number of instances if a mini-filter.
-        /// </summary>
-        public int NumberOfInstances { get; }
-        /// <summary>
-        /// Name of the filter driver.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Altitude of the filter driver.
-        /// </summary>
-        public long Altitude { get; }
+    public bool MiniFilter { get; }
+    /// <summary>
+    /// Flags, if any.
+    /// </summary>
+    public int Flags { get; }
+    /// <summary>
+    /// The frame ID.
+    /// </summary>
+    public int FrameID { get; }
+    /// <summary>
+    /// Number of instances if a mini-filter.
+    /// </summary>
+    public int NumberOfInstances { get; }
+    /// <summary>
+    /// Name of the filter driver.
+    /// </summary>
+    public string Name { get; }
+    /// <summary>
+    /// Altitude of the filter driver.
+    /// </summary>
+    public long Altitude { get; }
 
-        internal FilterDriver(SafeStructureInOutBuffer<FILTER_AGGREGATE_STANDARD_INFORMATION> buffer)
+    internal FilterDriver(SafeStructureInOutBuffer<FILTER_AGGREGATE_STANDARD_INFORMATION> buffer)
+    {
+        var result = buffer.Result;
+        if (result.Flags.HasFlagSet(FILTER_AGGREGATE_STANDARD_INFORMATION_FLAGS.FLTFL_ASI_IS_LEGACYFILTER))
         {
-            var result = buffer.Result;
-            if (result.Flags.HasFlagSet(FILTER_AGGREGATE_STANDARD_INFORMATION_FLAGS.FLTFL_ASI_IS_LEGACYFILTER))
-            {
-                Flags = result.LegacyFilter.Flags;
-                Name = buffer.ReadUnicodeString(result.LegacyFilter.FilterNameBufferOffset, result.LegacyFilter.FilterNameLength / 2);
-                Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.LegacyFilter.FilterAltitudeBufferOffset, result.LegacyFilter.FilterAltitudeLength / 2));
-            }
-            else
-            {
-                MiniFilter = true;
-                Flags = result.MiniFilter.Flags;
-                FrameID = result.MiniFilter.FrameID;
-                NumberOfInstances = result.MiniFilter.NumberOfInstances;
-                Name = buffer.ReadUnicodeString(result.MiniFilter.FilterNameBufferOffset, result.MiniFilter.FilterNameLength / 2);
-                Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.MiniFilter.FilterAltitudeBufferOffset, result.MiniFilter.FilterAltitudeLength / 2));
-            }
+            Flags = result.LegacyFilter.Flags;
+            Name = buffer.ReadUnicodeString(result.LegacyFilter.FilterNameBufferOffset, result.LegacyFilter.FilterNameLength / 2);
+            Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.LegacyFilter.FilterAltitudeBufferOffset, result.LegacyFilter.FilterAltitudeLength / 2));
+        }
+        else
+        {
+            MiniFilter = true;
+            Flags = result.MiniFilter.Flags;
+            FrameID = result.MiniFilter.FrameID;
+            NumberOfInstances = result.MiniFilter.NumberOfInstances;
+            Name = buffer.ReadUnicodeString(result.MiniFilter.FilterNameBufferOffset, result.MiniFilter.FilterNameLength / 2);
+            Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.MiniFilter.FilterAltitudeBufferOffset, result.MiniFilter.FilterAltitudeLength / 2));
         }
     }
 }

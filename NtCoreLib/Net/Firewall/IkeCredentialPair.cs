@@ -12,36 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Structure to represent a pair of credentials.
+/// </summary>
+public struct IkeCredentialPair
 {
     /// <summary>
-    /// Structure to represent a pair of credentials.
+    /// Local credentials.
     /// </summary>
-    public struct IkeCredentialPair
+    public IkeCredential Local { get; }
+
+    /// <summary>
+    /// Peer credentials.
+    /// </summary>
+    public IkeCredential Peer { get; }
+
+    internal IkeCredentialPair(IKEEXT_CREDENTIAL_PAIR1 pair)
     {
-        /// <summary>
-        /// Local credentials.
-        /// </summary>
-        public IkeCredential Local { get; }
+        Local = IkeCredential.Create(pair.localCredentials);
+        Peer = IkeCredential.Create(pair.peerCredentials);
+    }
 
-        /// <summary>
-        /// Peer credentials.
-        /// </summary>
-        public IkeCredential Peer { get; }
-
-        internal IkeCredentialPair(IKEEXT_CREDENTIAL_PAIR1 pair)
-        {
-            Local = IkeCredential.Create(pair.localCredentials);
-            Peer = IkeCredential.Create(pair.peerCredentials);
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The pair as a string.</returns>
-        public override string ToString()
-        {
-            return $"Local: {Local} - Peer: {Peer}";
-        }
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The pair as a string.</returns>
+    public override string ToString()
+    {
+        return $"Local: {Local} - Peer: {Peer}";
     }
 }

@@ -14,13 +14,13 @@
 
 using System;
 using System.Collections.Generic;
+using NtCoreLib.Ndr.Rpc;
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtCoreLib.Win32.Rpc.EndpointMapper;
+
+internal interface IRpcEndpointMapper
 {
-    internal interface IRpcEndpointMapper
-    {
-        IEnumerable<RpcEndpoint> LookupEndpoint(string search_binding, RpcEndpointInquiryFlag inquiry_flag, RpcInterfaceId if_id_search, 
-            RpcEndPointVersionOption version, Guid? uuid_search, bool throw_on_error = true);
-        string MapEndpoint(string search_binding, RpcInterfaceId if_id_search);
-    }
+    IEnumerable<RpcEndpoint> LookupEndpoint(RpcStringBinding search_binding, RpcEndpointInquiryFlag inquiry_flag, RpcSyntaxIdentifier? if_id_search, 
+        RpcEndPointVersionOption version, Guid? uuid_search, bool throw_on_error = true);
+    RpcStringBinding MapEndpoint(RpcStringBinding search_binding, RpcSyntaxIdentifier if_id_search);
 }

@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal class Smb2CommandResult<T> where T : Smb2ResponsePacket, new()
-    {
-        public byte[] Data { get; }
-        public Smb2PacketHeader Header { get; }
-        public T Response { get; }
+namespace NtCoreLib.Net.Smb2;
 
-        public Smb2CommandResult(byte[] data, Smb2PacketHeader header, T response)
-        {
-            Data = data;
-            Header = header;
-            Response = response;
-        }
+internal class Smb2CommandResult<T> where T : Smb2ResponsePacket, new()
+{
+    public byte[] Data { get; }
+    public Smb2PacketHeader Header { get; }
+    public T Response { get; }
+
+    public Smb2CommandResult(byte[] data, Smb2PacketHeader header, T response)
+    {
+        Data = data;
+        Header = header;
+        Response = response;
     }
 }

@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Status code for the change password request.
+/// </summary>
+public enum KerberosChangePasswordStatus
 {
-    /// <summary>
-    /// Status code for the change password request.
-    /// </summary>
-    public enum KerberosChangePasswordStatus
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("KRB5_KPASSWD_SUCCESS")]
-        Success = 0,
-        [SDKName("KRB5_KPASSWD_MALFORMED")]
-        Malformed = 1,
-        [SDKName("KRB5_KPASSWD_HARDERROR")]
-        HardError = 2,
-        [SDKName("KRB5_KPASSWD_AUTHERROR")]
-        AuthError = 3,
-        [SDKName("KRB5_KPASSWD_SOFTERROR")]
-        SoftError = 4,
-        [SDKName("KRB5_KPASSWD_ACCESSDENIED")]
-        AccessDenied = 5,
-        [SDKName("KRB5_KPASSWD_BAD_VERSION")]
-        BadVersion = 6,
-        [SDKName("KRB5_KPASSWD_INITIAL_FLAG_NEEDED")]
-        InitialFlagNeeded = 7
+    [SDKName("KRB5_KPASSWD_SUCCESS")]
+    Success = 0,
+    [SDKName("KRB5_KPASSWD_MALFORMED")]
+    Malformed = 1,
+    [SDKName("KRB5_KPASSWD_HARDERROR")]
+    HardError = 2,
+    [SDKName("KRB5_KPASSWD_AUTHERROR")]
+    AuthError = 3,
+    [SDKName("KRB5_KPASSWD_SOFTERROR")]
+    SoftError = 4,
+    [SDKName("KRB5_KPASSWD_ACCESSDENIED")]
+    AccessDenied = 5,
+    [SDKName("KRB5_KPASSWD_BAD_VERSION")]
+    BadVersion = 6,
+    [SDKName("KRB5_KPASSWD_INITIAL_FLAG_NEEDED")]
+    InitialFlagNeeded = 7
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

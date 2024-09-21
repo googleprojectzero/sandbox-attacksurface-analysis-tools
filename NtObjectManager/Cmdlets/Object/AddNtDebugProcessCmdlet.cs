@@ -12,60 +12,59 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Attach a process to a debug object.</para>
+/// <para type="description">This cmdlet attaches a process to a debug object. You can remove it again using
+/// Remove-NtDebugProcess.</para>
+/// </summary>
+/// <example>
+///   <code>Add-NtDebugProcess $dbg -ProcessId 12345</code>
+///   <para>Attach process 12345 to the debug object..</para>
+/// </example>
+/// <example>
+///   <code>Add-NtDebugProcess $dbg -Process $proc</code>
+///   <para>Attach a process object to the debug object..</para>
+/// </example>
+[Cmdlet(VerbsCommon.Add, "NtDebugProcess")]
+public sealed class AddNtDebugProcessCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Attach a process to a debug object.</para>
-    /// <para type="description">This cmdlet attaches a process to a debug object. You can remove it again using
-    /// Remove-NtDebugProcess.</para>
+    /// <para type="description">Specify the debug object to attach the process to.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Add-NtDebugProcess $dbg -ProcessId 12345</code>
-    ///   <para>Attach process 12345 to the debug object..</para>
-    /// </example>
-    /// <example>
-    ///   <code>Add-NtDebugProcess $dbg -Process $proc</code>
-    ///   <para>Attach a process object to the debug object..</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Add, "NtDebugProcess")]
-    public sealed class AddNtDebugProcessCmdlet : PSCmdlet
+    [Parameter(Position = 0, Mandatory = true)]
+    public NtDebug DebugObject { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify a process ID to attach to .</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "AttachPid")]
+    [Alias("pid")]
+    public int ProcessId { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify a process to attach to.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "AttachProcess")]
+    public NtProcess Process { get; set; }
+
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the debug object to attach the process to.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        public NtDebug DebugObject { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify a process ID to attach to .</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "AttachPid")]
-        [Alias("pid")]
-        public int ProcessId { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify a process to attach to.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "AttachProcess")]
-        public NtProcess Process { get; set; }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        switch (ParameterSetName)
         {
-            switch (ParameterSetName)
-            {
-                case "AttachPid":
-                    DebugObject.Attach(ProcessId);
-                    break;
-                case "AttachProcess":
-                    DebugObject.Attach(Process);
-                    break;
-            }
+            case "AttachPid":
+                DebugObject.Attach(ProcessId);
+                break;
+            case "AttachProcess":
+                DebugObject.Attach(Process);
+                break;
         }
     }
 }

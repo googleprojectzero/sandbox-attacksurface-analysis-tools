@@ -32,7 +32,7 @@ Specify the new token's security descriptor.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtToken
+NtCoreLib.NtToken
 .EXAMPLE
 Copy-NtToken -Primary
 Copy the current token as a primary token.
@@ -46,14 +46,14 @@ Copy an existing token as a primary token.
 function Copy-NtToken {
     [CmdletBinding(DefaultParameterSetName = "Impersonation")]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(Mandatory, ParameterSetName = "Impersonation", Position = 0)]
-        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
+        [NtCoreLib.Security.Token.SecurityImpersonationLevel]$ImpersonationLevel,
         [parameter(Mandatory, ParameterSetName = "Primary")]
         [switch]$Primary,
-        [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.TokenAccessRights]$Access = "MaximumAllowed",
         [switch]$Inherit,
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
 
     switch ($PSCmdlet.ParameterSetName) {
@@ -99,7 +99,7 @@ Optional token object to use to get ID. Must be accesible for Query right.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Luid
+NtCoreLib.Luid
 .EXAMPLE
 Get-NtTokenId
 Get the Token ID field.
@@ -116,7 +116,7 @@ Get the token's Origin ID.
 function Get-NtTokenId {
     [CmdletBinding(DefaultParameterSetName="FromId")]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, ParameterSetName="FromOrigin")]
         [switch]$Origin,
         [Parameter(Mandatory, ParameterSetName="FromAuth")]
@@ -171,9 +171,9 @@ function Enable-NtTokenVirtualization {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromToken")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(Position = 0, ParameterSetName="FromProcess")]
-        [NtApiDotNet.NtProcess]$Process
+        [NtCoreLib.NtProcess]$Process
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromProcess" {
@@ -215,9 +215,9 @@ function Disable-NtTokenVirtualization {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromToken")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(Position = 0, ParameterSetName="FromProcess")]
-        [NtApiDotNet.NtProcess]$Process
+        [NtCoreLib.NtProcess]$Process
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromProcess" {
@@ -251,11 +251,11 @@ function Test-NtTokenCapability {
     param (
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.NtToken]$Token
     )
 
     if ($null -eq $Token) {
-        [NtApiDotNet.NtSecurity]::CapabilityCheck($null, $Name)
+        [NtCoreLib.Security.NtSecurity]::CapabilityCheck($null, $Name)
     } else {
         $Token.CapabilityCheck($Name)
     }
@@ -296,12 +296,12 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 function Set-NtTokenPrivilege {
     [CmdletBinding(DefaultParameterSetName = "FromPrivilege")]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPrivilege")]
         [alias("Privileges")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
         [alias("Attributes")]
-        [NtApiDotNet.PrivilegeAttributes]$Attribute = "Enabled",
+        [NtCoreLib.PrivilegeAttributes]$Attribute = "Enabled",
         [switch]$Disable,
         [Parameter(Mandatory, ParameterSetName = "FromAllAttributes")]
         [switch]$All,
@@ -365,10 +365,10 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 function Enable-NtTokenPrivilege {
     [CmdletBinding(DefaultParameterSetName = "FromPrivilege")]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPrivilege")]
         [alias("Privileges")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
         [switch]$PassThru
     )
 
@@ -400,10 +400,10 @@ Disable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 function Disable-NtTokenPrivilege {
     [CmdletBinding(DefaultParameterSetName = "FromPrivilege")]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromPrivilege")]
         [alias("Privileges")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
         [switch]$PassThru
     )
 
@@ -439,9 +439,9 @@ Get SeBackupPrivilege and SeRestorePrivilege status on an explicit token object.
 function Get-NtTokenPrivilege {
     Param(
         [Parameter(Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [alias("Privileges")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access Query
@@ -499,14 +499,14 @@ function Get-NtTokenGroup {
     [CmdletBinding(DefaultParameterSetName = "Normal")]
     Param(
         [Parameter(Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, ParameterSetName = "Restricted")]
         [switch]$Restricted,
         [Parameter(Mandatory, ParameterSetName = "Capabilities")]
         [switch]$Capabilities,
         [Parameter(Mandatory, ParameterSetName = "Device")]
         [switch]$Device,
-        [NtApiDotNet.GroupAttributes]$Attributes = 0
+        [NtCoreLib.GroupAttributes]$Attributes = 0
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access Query
@@ -562,11 +562,11 @@ Set the Everyone SID to enabled.
 function Set-NtTokenGroup {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid[]]$Sid,
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.GroupAttributes]$Attributes
+        [NtCoreLib.GroupAttributes]$Attributes
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access AdjustGroups
@@ -601,7 +601,7 @@ Reset the groups for the a specified token.
 function Reset-NtTokenGroup {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.NtToken]$Token
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access AdjustGroups
@@ -638,9 +638,9 @@ Enable the Everyone SID on a specified token.
 function Enable-NtTokenGroup {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid[]]$Sid
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid
     )
 
     Set-NtTokenGroup -Token $Token -Sid $Sid -Attributes Enabled
@@ -669,9 +669,9 @@ Disable the Everyone SID on a specified token.
 function Disable-NtTokenGroup {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid[]]$Sid
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid
     )
 
     Set-NtTokenGroup -Token $Token -Sid $Sid -Attributes Enabled
@@ -703,7 +703,7 @@ Specify to convert the SID to a name.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid
+NtCoreLib.Security.Authorization.Sid
 .EXAMPLE
 Get-NtTokenSid
 Get user SID on the current effective token
@@ -721,7 +721,7 @@ function Get-NtTokenSid {
     [CmdletBinding(DefaultParameterSetName = "User")]
     Param(
         [Parameter(Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, ParameterSetName = "Owner")]
         [switch]$Owner,
         [Parameter(Mandatory, ParameterSetName = "Group")]
@@ -802,9 +802,9 @@ function Set-NtTokenSid {
     [CmdletBinding(DefaultParameterSetName = "Normal")]
     Param(
         [Parameter(Position = 1)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Mandatory, ParameterSetName = "Owner")]
         [switch]$Owner,
         [Parameter(Mandatory, ParameterSetName = "Group")]
@@ -853,7 +853,7 @@ Get the default group.
 function Get-NtTokenOwner {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [switch]$Group
     )
     if ($null -eq $Token) {
@@ -896,7 +896,7 @@ Get default owner on an explicit token object.
 function Get-NtTokenMandatoryPolicy {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.NtToken]$Token
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective -Access Query
@@ -934,8 +934,8 @@ function Remove-NtTokenPrivilege {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
         [alias("Privileges")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.NtToken]$Token
     )
     if ($null -eq $Token) {
         $Token = Get-NtToken -Effective
@@ -988,8 +988,8 @@ function Set-NtTokenIntegrityLevel {
     [CmdletBinding(DefaultParameterSetName = "FromIL")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromIL")]
-        [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.TokenIntegrityLevel]$IntegrityLevel,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(ParameterSetName = "FromIL")]
         [Int32]$Adjustment = 0,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromRaw")]
@@ -1026,7 +1026,7 @@ Optional token object to use to get integrity level. Must be accesible for Query
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.TokenIntegrityLevel
+NtCoreLib.TokenIntegrityLevel
 .EXAMPLE
 Get-NtTokenIntegrityLevel
 Get the current token's integrity level.
@@ -1038,7 +1038,7 @@ function Get-NtTokenIntegrityLevel {
     [CmdletBinding(DefaultParameterSetName = "FromIL")]
     Param(
         [Parameter(Position = 0)]
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.NtToken]$Token
     )
 
     if ($null -eq $Token) {
@@ -1070,7 +1070,7 @@ Access rights for the opened token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtToken
+NtCoreLib.NtToken
 .EXAMPLE
 Get-NtTokenFromProcess -ProcessId 1234
 Gets token from process ID 1234.
@@ -1090,7 +1090,7 @@ function Get-NtTokenFromProcess {
         [Parameter(ParameterSetName = "FromThread", Mandatory = $true)]
         [ValidateScript( { $_ -ge 0 })]
         [int]$ThreadId,
-        [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
+        [NtCoreLib.TokenAccessRights]$Access = "MaximumAllowed"
     )
 
     Set-NtTokenPrivilege SeDebugPrivilege
@@ -1180,7 +1180,7 @@ function Format-NtToken {
     [CmdletBinding(DefaultParameterSetName = "UserOnly")]
     Param(
         [parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [parameter(ParameterSetName = "Complex")]
         [switch]$All,
         [parameter(ParameterSetName = "Complex")]
@@ -1460,7 +1460,7 @@ function Show-NtTokenEffective {
         [switch]$FullDefaultDacl,
         [parameter(ParameterSetName = "Complex")]
         [switch]$MandatoryPolicy,
-        [NtApiDotNet.NtThread]$Thread
+        [NtCoreLib.NtThread]$Thread
     )
 
     Use-NtObject($token = Get-NtToken -Effective -Thread $Thread) {
@@ -1495,19 +1495,16 @@ function Show-NtTokenEffective {
 function Start-NtTokenViewer {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
-        [NtApiDotNet.NtObject]$Handle,
+        [NtCoreLib.NtObject]$Handle,
         [string]$Text
     )
 
     Use-NtObject($dup_handle = $Handle.Duplicate()) {
-        $dup_handle.Inherit = $true
-        $cmdline = [string]::Format("TokenViewer --handle={0}", $dup_handle.Handle.DangerousGetHandle())
+        $cmdline = "TokenViewer --handle={0}" -f $dup_handle.Handle.DangerousGetHandle()
         if ($Text -ne "") {
             $cmdline += " ""--text=$Text"""
         }
-        $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-        $config.InheritHandleList.Add($dup_handle.Handle.DangerousGetHandle())
-        Use-NtObject(New-Win32Process -Config $config) { }
+        [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\TokenViewer.exe", $cmdline, $false, $dup_handle)
     }
 }
 
@@ -1573,9 +1570,9 @@ function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
     param(
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromToken", ValueFromPipeline)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [Parameter(Position = 0, ParameterSetName = "FromPid")]
         [int]$ProcessId = $pid,
         [Parameter(Mandatory, ParameterSetName = "FromName")]
@@ -1599,11 +1596,6 @@ function Show-NtToken {
         if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
             Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
             return
-        }
-
-        $verb = "open"
-        if ($RunAsAdmin) {
-            $verb = "runas"
         }
 
         switch ($PSCmdlet.ParameterSetName) {
@@ -1630,18 +1622,16 @@ function Show-NtToken {
                 }
             }
             "FromPid" {
-                $cmdline = "--pid={0}" -f $ProcessId
-                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
+                [NtObjectManager.Utils.PSUtils]::StartAdminProcess("$PSScriptRoot\TokenViewer.exe", "--pid=$ProcessId", $false, $RunAsAdmin)
             }
             "FromServiceName" {
-                $cmdline = """--service={0}""" -f $ServiceName
-                Start-Process "$PSScriptRoot\TokenViewer.exe" -ArgumentList $cmdline -Verb $verb
+                [NtObjectManager.Utils.PSUtils]::StartAdminProcess("$PSScriptRoot\TokenViewer.exe", "`"--service=$ServiceName`"", $false, $RunAsAdmin)
             }
             "FromToken" {
                 Start-NtTokenViewer $Token
             }
             "All" {
-                Start-Process "$PSScriptRoot\TokenViewer.exe" -Verb $verb
+                [NtObjectManager.Utils.PSUtils]::StartAdminProcess("$PSScriptRoot\TokenViewer.exe", "", $false, $RunAsAdmin)
             }
         }
     }

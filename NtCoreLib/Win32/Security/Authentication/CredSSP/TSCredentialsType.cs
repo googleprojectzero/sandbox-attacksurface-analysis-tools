@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Enumeration to specify the type of credentials.
+/// </summary>
+public enum TSCredentialsType
 {
-    /// <summary>
-    /// Enumeration to specify the type of credentials.
-    /// </summary>
-    public enum TSCredentialsType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Password = 1,
-        SmartCard = 2,
-        Loopback = 4,
-        RemoteGuard = 6,
+    Password = 1,
+    SmartCard = 2,
+    Loopback = 4,
+    RemoteGuard = 6,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

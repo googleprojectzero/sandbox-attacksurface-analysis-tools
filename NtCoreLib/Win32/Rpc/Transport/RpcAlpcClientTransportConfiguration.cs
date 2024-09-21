@@ -12,27 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+using NtCoreLib.Security.Authorization;
+
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Class to configure the ALPC transport.
+/// </summary>
+public sealed class RpcAlpcClientTransportConfiguration : RpcClientTransportConfiguration
 {
     /// <summary>
-    /// Class to configure the ALPC transport.
+    /// Specify the required server SID when connecting.
     /// </summary>
-    public sealed class RpcAlpcClientTransportConfiguration : RpcClientTransportConfiguration
-    {
-        /// <summary>
-        /// Specify the required server SID when connecting.
-        /// </summary>
-        /// <remarks><see cref="ServerSecurityRequirements"/> will be used in preference to this if specified.</remarks>
-        public Sid RequiredServerSid { get; set; }
+    /// <remarks><see cref="ServerSecurityRequirements"/> will be used in preference to this if specified.</remarks>
+    public Sid RequiredServerSid { get; set; }
 
-        /// <summary>
-        /// Specify the required server security requirements when connecting.
-        /// </summary>
-        public SecurityDescriptor ServerSecurityRequirements { get; set; }
+    /// <summary>
+    /// Specify the required server security requirements when connecting.
+    /// </summary>
+    public SecurityDescriptor ServerSecurityRequirements { get; set; }
 
-        /// <summary>
-        /// Specify the connection timeout.
-        /// </summary>
-        public NtWaitTimeout ConnectTimeout { get; set; }
-    }
+    /// <summary>
+    /// Specify the connection timeout.
+    /// </summary>
+    public NtWaitTimeout ConnectTimeout { get; set; }
 }

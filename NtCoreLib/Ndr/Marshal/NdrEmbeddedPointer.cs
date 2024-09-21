@@ -14,81 +14,80 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// A class which represents an embedded pointer.
+/// </summary>
+/// <typeparam name="T">The underlying type.</typeparam>
+public sealed class NdrEmbeddedPointer<T>
 {
-    /// <summary>
-    /// A class which represents an embedded pointer.
-    /// </summary>
-    /// <typeparam name="T">The underlying type.</typeparam>
-    public sealed class NdrEmbeddedPointer<T>
+    private T _value;
+
+    private NdrEmbeddedPointer(T value)
     {
-        private T _value;
+        _value = value;
+    }
 
-        private NdrEmbeddedPointer(T value)
+    /// <summary>
+    /// Operator to convert from a value to an embedded pointer.
+    /// </summary>
+    /// <param name="value">The value to point to.</param>
+    public static implicit operator NdrEmbeddedPointer<T>(T value)
+    {
+        object obj = value;
+        if (obj is null)
+            return null;
+
+        return new NdrEmbeddedPointer<T>(value);
+    }
+
+    /// <summary>
+    /// Operator to convert from an embedded pointer to a value.
+    /// </summary>
+    /// <param name="pointer">The embedded pointer.</param>
+    public static implicit operator T (NdrEmbeddedPointer<T> pointer)
+    {
+        if (pointer == null)
         {
-            _value = value;
+            return default;
         }
+        return pointer._value;
+    }
 
-        /// <summary>
-        /// Operator to convert from a value to an embedded pointer.
-        /// </summary>
-        /// <param name="value">The value to point to.</param>
-        public static implicit operator NdrEmbeddedPointer<T>(T value)
-        {
-            object obj = value;
-            if (obj is null)
-                return null;
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The string form of the value.</returns>
+    public override string ToString()
+    {
+        return _value.ToString();
+    }
 
-            return new NdrEmbeddedPointer<T>(value);
-        }
+    /// <summary>
+    /// Get the value from the embedded pointer.
+    /// </summary>
+    /// <returns>The value of the pointer.</returns>
+    public T GetValue()
+    {
+        return _value;
+    }
 
-        /// <summary>
-        /// Operator to convert from an embedded pointer to a value.
-        /// </summary>
-        /// <param name="pointer">The embedded pointer.</param>
-        public static implicit operator T (NdrEmbeddedPointer<T> pointer)
-        {
-            if (pointer == null)
-            {
-                return default;
-            }
-            return pointer._value;
-        }
+    internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader(Func<T> unmarshal_func)
+    {
+        NdrEmbeddedPointer<T> ret = new(default);
+        return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func()));
+    }
 
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The string form of the value.</returns>
-        public override string ToString()
-        {
-            return _value.ToString();
-        }
+    internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U>(Func<U, T> unmarshal_func, U arg)
+    {
+        NdrEmbeddedPointer<T> ret = new(default);
+        return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg)));
+    }
 
-        /// <summary>
-        /// Get the value from the embedded pointer.
-        /// </summary>
-        /// <returns>The value of the pointer.</returns>
-        public T GetValue()
-        {
-            return _value;
-        }
-
-        internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader(Func<T> unmarshal_func)
-        {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
-            return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func()));
-        }
-
-        internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U>(Func<U, T> unmarshal_func, U arg)
-        {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
-            return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg)));
-        }
-
-        internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2)
-        {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
-            return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg, arg2)));
-        }
+    internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2)
+    {
+        NdrEmbeddedPointer<T> ret = new(default);
+        return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg, arg2)));
     }
 }

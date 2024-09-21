@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent a raw authorization data value.
+/// </summary>
+public sealed class KerberosAuthorizationDataRawBuilder : KerberosAuthorizationDataBuilder
 {
+    private readonly byte[] _data;
+
     /// <summary>
-    /// Class to represent a raw authorization data value.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataRawBuilder : KerberosAuthorizationDataBuilder
+    /// <param name="data_type">The type of the authorization data.</param>
+    /// <param name="data">The raw data for authorization data.</param>
+    public KerberosAuthorizationDataRawBuilder(KerberosAuthorizationDataType data_type, byte[] data) : base(data_type)
     {
-        private readonly byte[] _data;
+        _data = data;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="data_type">The type of the authorization data.</param>
-        /// <param name="data">The raw data for authorization data.</param>
-        public KerberosAuthorizationDataRawBuilder(KerberosAuthorizationDataType data_type, byte[] data) : base(data_type)
-        {
-            _data = data;
-        }
-
-        /// <summary>
-        /// Convert back to an authorization data object.
-        /// </summary>
-        /// <returns>The authorization data.</returns>
-        public override KerberosAuthorizationData Create()
-        {
-            return new KerberosAuthorizationDataRaw(DataType, _data);
-        }
+    /// <summary>
+    /// Convert back to an authorization data object.
+    /// </summary>
+    /// <returns>The authorization data.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        return new KerberosAuthorizationDataRaw(DataType, _data);
     }
 }

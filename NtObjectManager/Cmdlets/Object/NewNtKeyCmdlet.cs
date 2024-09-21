@@ -12,37 +12,36 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Create a new NT key object.</para>
+/// <para type="description">This cmdlet creates a new NT key object. The absolute path to the object in the NT object manager name space must be specified. 
+/// It's also possible to create the object relative to an existing object by specified the -Root parameter.</para>
+/// </summary>
+/// <example>
+///   <code>$obj = New-NtKey \Registry\Machine\Software\ABC</code>
+///   <para>Create a new key object with an absolute path.</para>
+/// </example>
+/// <example>
+///   <code>$obj = New-NtKey -Path \Registry\Machine\Software\ABC&#x0A;$obj.SetValue("ValueName", String, "DataValue")</code>
+///   <para>Create a new event object and set a string value.</para>
+/// </example>
+/// <para type="link">about_ManagingNtObjectLifetime</para>
+[Cmdlet(VerbsCommon.New, "NtKey")]
+[OutputType(typeof(NtKey))]
+public sealed class NewNtKeyCmdlet : GetNtKeyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Create a new NT key object.</para>
-    /// <para type="description">This cmdlet creates a new NT key object. The absolute path to the object in the NT object manager name space must be specified. 
-    /// It's also possible to create the object relative to an existing object by specified the -Root parameter.</para>
+    /// Method to create an object from a set of object attributes.
     /// </summary>
-    /// <example>
-    ///   <code>$obj = New-NtKey \Registry\Machine\Software\ABC</code>
-    ///   <para>Create a new key object with an absolute path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = New-NtKey -Path \Registry\Machine\Software\ABC&#x0A;$obj.SetValue("ValueName", String, "DataValue")</code>
-    ///   <para>Create a new event object and set a string value.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.New, "NtKey")]
-    [OutputType(typeof(NtKey))]
-    public sealed class NewNtKeyCmdlet : GetNtKeyCmdlet
+    /// <param name="obj_attributes">The object attributes to create/open from.</param>
+    /// <returns>The newly created object.</returns>
+    protected override object CreateObject(ObjectAttributes obj_attributes)
     {
-        /// <summary>
-        /// Method to create an object from a set of object attributes.
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes to create/open from.</param>
-        /// <returns>The newly created object.</returns>
-        protected override object CreateObject(ObjectAttributes obj_attributes)
-        {
-            return NtKey.Create(obj_attributes, Access, Options, Transaction);
-        }
+        return NtKey.Create(obj_attributes, Access, Options, Transaction);
     }
 }

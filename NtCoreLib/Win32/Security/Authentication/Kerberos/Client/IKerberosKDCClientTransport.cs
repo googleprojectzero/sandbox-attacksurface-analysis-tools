@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Interface to implement a KDC transport.
+/// </summary>
+public interface IKerberosKDCClientTransport
 {
     /// <summary>
-    /// Interface to implement a KDC transport.
+    /// Send a request and receive the response.
     /// </summary>
-    public interface IKerberosKDCClientTransport
-    {
-        /// <summary>
-        /// Send a request and receive the response.
-        /// </summary>
-        /// <param name="request">The request to send.</param>
-        /// <returns>The response.</returns>
-        byte[] SendReceive(byte[] request);
-    }
+    /// <param name="request">The request to send.</param>
+    /// <returns>The response.</returns>
+    byte[] SendReceive(byte[] request);
 }

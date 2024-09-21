@@ -12,66 +12,66 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr.Marshal;
+using NtCoreLib.Ndr.Marshal;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Class to implement RPC over a stream based socket.
+/// </summary>
+public abstract class RpcStreamSocketClientTransport : RpcStreamClientTransport
 {
+    #region Private Members
+    private protected readonly Socket _socket;
+    #endregion
+
+    #region Constructors
     /// <summary>
-    /// Class to implement RPC over a stream based socket.
+    /// Constructor.
     /// </summary>
-    public abstract class RpcStreamSocketClientTransport : RpcStreamClientTransport
+    /// <param name="socket">The socket to use to communicate.</param>
+    /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
+    /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
+    /// <param name="config">The transport configuration for the connection.</param>
+    /// <param name="data_rep">The data representation.</param>
+    /// <param name="transport_security">The security for the transport.</param>
+    protected RpcStreamSocketClientTransport(Socket socket, ushort max_recv_fragment, ushort max_send_fragment, 
+        NdrDataRepresentation data_rep, RpcTransportSecurity transport_security, RpcConnectedClientTransportConfiguration config) 
+        : base(new NetworkStream(socket), max_recv_fragment, max_send_fragment, data_rep, transport_security, config)
     {
-        #region Private Members
-        private protected readonly Socket _socket;
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="socket">The socket to use to communicate.</param>
-        /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
-        /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
-        /// <param name="transport_security">The transport security for the connection.</param>
-        /// <param name="data_rep">The data representation.</param>
-        protected RpcStreamSocketClientTransport(Socket socket, ushort max_recv_fragment, ushort max_send_fragment, 
-            NdrDataRepresentation data_rep, RpcTransportSecurity transport_security) 
-            : base(new NetworkStream(socket), max_recv_fragment, max_send_fragment, data_rep, transport_security)
-        {
-            _socket = socket;
-        }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Disconnect the client.
-        /// </summary>
-        public override void Disconnect()
-        {
-            _socket.Disconnect(false);
-        }
-
-        /// <summary>
-        /// Dispose of the client.
-        /// </summary>
-        public override void Dispose()
-        {
-            _socket?.Close();
-            base.Dispose();
-        }
-        #endregion
-
-        #region Public Properties
-        /// <summary>
-        /// Get whether the client is connected or not.
-        /// </summary>
-        public override bool Connected => _socket.Connected;
-
-        /// <summary>
-        /// Get the named pipe port path that we connected to.
-        /// </summary>
-        public override string Endpoint => _socket.RemoteEndPoint.ToString();
-        #endregion
+        _socket = socket;
     }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Disconnect the client.
+    /// </summary>
+    public override void Disconnect()
+    {
+        _socket.Disconnect(false);
+    }
+
+    /// <summary>
+    /// Dispose of the client.
+    /// </summary>
+    public override void Dispose()
+    {
+        _socket?.Close();
+        base.Dispose();
+    }
+    #endregion
+
+    #region Public Properties
+    /// <summary>
+    /// Get whether the client is connected or not.
+    /// </summary>
+    public override bool Connected => _socket.Connected;
+
+    /// <summary>
+    /// Get the named pipe port path that we connected to.
+    /// </summary>
+    public override string Endpoint => _socket.RemoteEndPoint.ToString();
+    #endregion
 }

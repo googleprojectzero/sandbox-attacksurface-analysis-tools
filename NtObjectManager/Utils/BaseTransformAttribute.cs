@@ -12,50 +12,49 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Management.Automation;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+abstract class BaseTransformAttribute : ArgumentTransformationAttribute
 {
-    abstract class BaseTransformAttribute : ArgumentTransformationAttribute
+    protected abstract NtResult<object> Parse(string value, bool throw_on_error);
+    protected abstract object DefaultValue(object obj);
+    private readonly Type _type;
+
+    protected BaseTransformAttribute(Type type)
     {
-        protected abstract NtResult<object> Parse(string value, bool throw_on_error);
-        protected abstract object DefaultValue(object obj);
-        private Type _type;
+        _type = type;
+    }
 
-        protected BaseTransformAttribute(Type type)
+    public override object Transform(EngineIntrinsics engineIntrinsics, object inputData)
+    {
+        if (inputData is string var_name && var_name.StartsWith("$"))
         {
-            _type = type;
+            // Work around a weird bug, if this starts with a $ it's probably a variable.
+            // Query for it from the session state.
+            inputData = engineIntrinsics.SessionState.PSVariable.GetValue(var_name.Substring(1));
         }
 
-        public override object Transform(EngineIntrinsics engineIntrinsics, object inputData)
+        if (inputData is string s)
         {
-            if (inputData is string var_name && var_name.StartsWith("$"))
+            var result = Parse(s, false);
+            if (result.IsSuccess)
             {
-                // Work around a weird bug, if this starts with a $ it's probably a variable.
-                // Query for it from the session state.
-                inputData = engineIntrinsics.SessionState.PSVariable.GetValue(var_name.Substring(1));
+                return result.Result;
             }
-
-            if (inputData is string s)
-            {
-                var result = Parse(s, false);
-                if (result.IsSuccess)
-                {
-                    return result.Result;
-                }
-            }
-
-            if (inputData is PSObject obj && obj.BaseObject != null)
-            {
-                if (_type == obj.BaseObject.GetType())
-                {
-                    return obj.BaseObject;
-                }
-            }
-
-            return DefaultValue(inputData);
         }
+
+        if (inputData is PSObject obj && obj.BaseObject != null)
+        {
+            if (_type == obj.BaseObject.GetType())
+            {
+                return obj.BaseObject;
+            }
+        }
+
+        return DefaultValue(inputData);
     }
 }

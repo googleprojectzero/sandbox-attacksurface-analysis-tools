@@ -12,68 +12,67 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
+using NtCoreLib.Ndr.Rpc;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal enum PresentationResultType
 {
-    internal enum PresentationResultType
+    Acceptance = 0,
+    UserRejection,
+    ProviderRejection,
+    NegotiateAck
+}
+
+internal enum PresentationResultReason
+{
+    ReasonNotSpecified,
+    AbstractSyntaxNotSupported,
+    ProposedTransferSyntaxesNotSupported,
+    LocalLimitExceeded
+}
+
+internal sealed class ContextResult
+{
+    public PresentationResultType Result { get; }
+    public PresentationResultReason Reason { get; }
+    public BindTimeFeatureNegotiation BindTimeFeature { get; }
+    public RpcSyntaxIdentifier TransferSyntax { get; }
+
+    private ContextResult(PresentationResultType result, int reason, RpcSyntaxIdentifier transfer_syntax)
     {
-        Acceptance = 0,
-        UserRejection,
-        ProviderRejection,
-        NegotiateAck
+        Result = result;
+        if (result == PresentationResultType.NegotiateAck)
+        {
+            BindTimeFeature = (BindTimeFeatureNegotiation)reason;
+        }
+        else
+        {
+            Reason = (PresentationResultReason)reason;
+        }
+        TransferSyntax = transfer_syntax;
     }
 
-    internal enum PresentationResultReason
+    public static List<ContextResult> ReadList(BinaryReader reader)
     {
-        ReasonNotSpecified,
-        AbstractSyntaxNotSupported,
-        ProposedTransferSyntaxesNotSupported,
-        LocalLimitExceeded
-    }
+        int count = reader.ReadByte();
+        reader.ReadAllBytes(3);
 
-    internal sealed class ContextResult
-    {
-        public PresentationResultType Result { get; }
-        public PresentationResultReason Reason { get; }
-        public BindTimeFeatureNegotiation BindTimeFeature { get; }
-        public RPC_SYNTAX_IDENTIFIER TransferSyntax { get; }
+        List<ContextResult> ret = new();
 
-        private ContextResult(PresentationResultType result, int reason, RPC_SYNTAX_IDENTIFIER transfer_syntax)
+        for (int i = 0; i < count; ++i)
         {
-            Result = result;
-            if (result == PresentationResultType.NegotiateAck)
-            {
-                BindTimeFeature = (BindTimeFeatureNegotiation)reason;
-            }
-            else
-            {
-                Reason = (PresentationResultReason)reason;
-            }
-            TransferSyntax = transfer_syntax;
+            PresentationResultType result = (PresentationResultType)reader.ReadUInt16();
+            int reason = reader.ReadUInt16();
+            Guid transfer_syntax_id = new(reader.ReadAllBytes(16));
+            ushort major_version = reader.ReadUInt16();
+            ushort minor_version = reader.ReadUInt16();
+            ret.Add(new ContextResult(result, reason, new RpcSyntaxIdentifier(transfer_syntax_id, major_version, minor_version)));
         }
 
-        public static List<ContextResult> ReadList(BinaryReader reader)
-        {
-            int count = reader.ReadByte();
-            reader.ReadAllBytes(3);
-
-            List<ContextResult> ret = new List<ContextResult>();
-
-            for (int i = 0; i < count; ++i)
-            {
-                PresentationResultType result = (PresentationResultType)reader.ReadUInt16();
-                int reason = reader.ReadUInt16();
-                Guid transfer_syntax_id = new Guid(reader.ReadAllBytes(16));
-                ushort major_version = reader.ReadUInt16();
-                ushort minor_version = reader.ReadUInt16();
-                ret.Add(new ContextResult(result, reason, new RPC_SYNTAX_IDENTIFIER(transfer_syntax_id, major_version, minor_version)));
-            }
-
-            return ret;
-        }
+        return ret;
     }
 }

@@ -12,84 +12,77 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr.Marshal;
+using NtCoreLib.Ndr.Marshal;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal struct PDUHeader
 {
-    internal struct PDUHeader
+    public const byte RPC_VERSION_MAJOR = 5;
+    public const byte RPC_VERSION_MINOR = 0;
+    public const int PDU_HEADER_SIZE = 16;
+
+    public byte MajorVersion { get; set; }
+    public byte MinorVersion { get; set; }
+    public PDUType Type { get; set; }
+    public PDUFlags Flags { get; set; }
+    public NdrDataRepresentation DataRep { get; set; }
+    public ushort FragmentLength { get; set; }
+    public ushort AuthLength { get; set; }
+    public int CallId { get; set; }
+
+    public PDUHeader(PDUType type)
     {
-        public const byte RPC_VERSION_MAJOR = 5;
-        public const byte RPC_VERSION_MINOR = 0;
-        public const int PDU_HEADER_SIZE = 16;
+        MajorVersion = RPC_VERSION_MAJOR;
+        MinorVersion = RPC_VERSION_MINOR;
+        Type = type;
+        Flags = PDUFlags.None;
+        DataRep = new NdrDataRepresentation();
+        FragmentLength = 0;
+        AuthLength = 0;
+        CallId = 0;
+    }
 
-        public byte MajorVersion { get; set; }
-        public byte MinorVersion { get; set; }
-        public PDUType Type { get; set; }
-        public PDUFlags Flags { get; set; }
-        public NdrDataRepresentation DataRep { get; set; }
-        public ushort FragmentLength { get; set; }
-        public ushort AuthLength { get; set; }
-        public int CallId { get; set; }
-
-        public PDUHeader(PDUType type)
+    public static PDUHeader Read(BinaryReader reader)
+    {
+        PDUHeader header = new()
         {
-            MajorVersion = RPC_VERSION_MAJOR;
-            MinorVersion = RPC_VERSION_MINOR;
-            Type = type;
-            Flags = PDUFlags.None;
-            DataRep = new NdrDataRepresentation();
-            FragmentLength = 0;
-            AuthLength = 0;
-            CallId = 0;
-        }
+            MajorVersion = reader.ReadByte(),
+            MinorVersion = reader.ReadByte(),
+            Type = (PDUType)reader.ReadByte(),
+            Flags = (PDUFlags)reader.ReadByte(),
+            DataRep = new NdrDataRepresentation(reader.ReadAllBytes(4)),
+            FragmentLength = reader.ReadUInt16(),
+            AuthLength = reader.ReadUInt16(),
+            CallId = reader.ReadInt32()
+        };
+        return header;
+    }
 
-        public static PDUHeader Read(BinaryReader reader)
-        {
-            PDUHeader header = new PDUHeader
-            {
-                MajorVersion = reader.ReadByte(),
-                MinorVersion = reader.ReadByte(),
-                Type = (PDUType)reader.ReadByte(),
-                Flags = (PDUFlags)reader.ReadByte(),
-                DataRep = new NdrDataRepresentation(reader.ReadAllBytes(4)),
-                FragmentLength = reader.ReadUInt16(),
-                AuthLength = reader.ReadUInt16(),
-                CallId = reader.ReadInt32()
-            };
-            return header;
-        }
+    public void Write(BinaryWriter writer)
+    {
+        writer.Write(MajorVersion);
+        writer.Write(MinorVersion);
+        writer.Write((byte)Type);
+        writer.Write((byte)Flags);
+        writer.Write(DataRep.ToArray());
+        writer.Write(FragmentLength);
+        writer.Write(AuthLength);
+        writer.Write(CallId);
+    }
 
-        public void Write(BinaryWriter writer)
+    public PDUBase ToPDU(byte[] data)
+    {
+        return Type switch
         {
-            writer.Write(MajorVersion);
-            writer.Write(MinorVersion);
-            writer.Write((byte)Type);
-            writer.Write((byte)Flags);
-            writer.Write(DataRep.ToArray());
-            writer.Write(FragmentLength);
-            writer.Write(AuthLength);
-            writer.Write(CallId);
-        }
-
-        public PDUBase ToPDU(byte[] data)
-        {
-            switch (Type)
-            {
-                case PDUType.BindAck:
-                    return new PDUBindAck(data, false);
-                case PDUType.AlterContextResp:
-                    return new PDUBindAck(data, true);
-                case PDUType.BindNack:
-                    return new PDUBindNack(data);
-                case PDUType.Response:
-                    return new PDUResponse(data);
-                case PDUType.Shutdown:
-                    return new PDUShutdown();
-                case PDUType.Fault:
-                    return new PDUFault(data);
-            }
-            throw new RpcTransportException($"Unknown PDU type {Type}");
-        }
+            PDUType.BindAck => new PDUBindAck(data, false),
+            PDUType.AlterContextResp => new PDUBindAck(data, true),
+            PDUType.BindNack => new PDUBindNack(data),
+            PDUType.Response => new PDUResponse(data),
+            PDUType.Shutdown => new PDUShutdown(),
+            PDUType.Fault => new PDUFault(data),
+            _ => throw new RpcTransportException($"Unknown PDU type {Type}"),
+        };
     }
 }

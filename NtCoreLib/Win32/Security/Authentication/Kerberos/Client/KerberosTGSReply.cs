@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Class to represent TGS-REP message.
+/// </summary>
+public sealed class KerberosTGSReply : KerberosKDCReply
 {
     /// <summary>
-    /// Class to represent TGS-REP message.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosTGSReply : KerberosKDCReply
+    /// <param name="req_token">The request authentication token.</param>
+    /// <param name="rep_token">The base authentication token.</param>
+    /// <param name="enc_part">The decrypted KDC reply part.</param>
+    public KerberosTGSReply(
+        KerberosKDCRequestAuthenticationToken req_token,
+        KerberosKDCReplyAuthenticationToken rep_token, 
+        KerberosKDCReplyEncryptedPart enc_part) 
+        : base(req_token, rep_token, enc_part)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="req_token">The request authentication token.</param>
-        /// <param name="rep_token">The base authentication token.</param>
-        /// <param name="enc_part">The decrypted KDC reply part.</param>
-        public KerberosTGSReply(
-            KerberosKDCRequestAuthenticationToken req_token,
-            KerberosKDCReplyAuthenticationToken rep_token, 
-            KerberosKDCReplyEncryptedPart enc_part) 
-            : base(req_token, rep_token, enc_part)
-        {
-        }
     }
 }

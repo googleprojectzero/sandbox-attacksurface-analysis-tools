@@ -12,96 +12,96 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Authentication;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// Security buffer for a channel binding.
+/// </summary>
+public sealed class SecurityBufferChannelBinding : SecurityBuffer
 {
     /// <summary>
-    /// Security buffer for a channel binding.
+    /// The channel bindings.
     /// </summary>
-    public sealed class SecurityBufferChannelBinding : SecurityBuffer
+    public SecurityChannelBinding ChannelBinding { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="channel_binding">The channel bindings.</param>
+    public SecurityBufferChannelBinding(SecurityChannelBinding channel_binding)
+        : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
     {
-        /// <summary>
-        /// The channel bindings.
-        /// </summary>
-        public SecurityChannelBinding ChannelBinding { get; }
+        ChannelBinding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="channel_binding">The channel bindings.</param>
-        public SecurityBufferChannelBinding(SecurityChannelBinding channel_binding)
-            : base(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="channel_binding_token">The channel bindings token.</param>
+    public SecurityBufferChannelBinding(byte[] channel_binding_token) 
+        : this(new SecurityChannelBinding(channel_binding_token))
+    {
+    }
+
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+
+        // Manual marshaling of SEC_CHANNEL_BINDINGS
+        int current_ofs = Marshal.SizeOf<SEC_CHANNEL_BINDINGS>();
+        writer.Write(ChannelBinding.InitiatorAddrType);
+        AddBuffer(writer, ref current_ofs, ChannelBinding.Initiator?.Length);
+        writer.Write(ChannelBinding.AcceptorAddrType);
+        AddBuffer(writer, ref current_ofs, ChannelBinding.Acceptor?.Length);
+        AddBuffer(writer, ref current_ofs, ChannelBinding.ApplicationData?.Length);
+
+        WriteBuffer(writer, ChannelBinding.Initiator);
+        WriteBuffer(writer, ChannelBinding.Acceptor);
+        WriteBuffer(writer, ChannelBinding.ApplicationData);
+
+        return stm.ToArray();
+    }
+
+    private void AddBuffer(BinaryWriter writer, ref int current_ofs, int? length)
+    {
+        int next_length = length ?? 0;
+        if (next_length == 0)
         {
-            ChannelBinding = channel_binding ?? throw new ArgumentNullException(nameof(channel_binding));
+            writer.Write(0);
+            writer.Write(0);
         }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="channel_binding_token">The channel bindings token.</param>
-        public SecurityBufferChannelBinding(byte[] channel_binding_token) 
-            : this(new SecurityChannelBinding(channel_binding_token))
+        else
         {
+            writer.Write(next_length);
+            writer.Write(current_ofs);
+            current_ofs += next_length;
         }
+    }
 
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
+    private void WriteBuffer(BinaryWriter writer, byte[] buffer)
+    {
+        writer.Write(buffer ?? Array.Empty<byte>());
+    }
 
-            // Manual marshaling of SEC_CHANNEL_BINDINGS
-            int current_ofs = Marshal.SizeOf<SEC_CHANNEL_BINDINGS>();
-            writer.Write(ChannelBinding.InitiatorAddrType);
-            AddBuffer(writer, ref current_ofs, ChannelBinding.Initiator?.Length);
-            writer.Write(ChannelBinding.AcceptorAddrType);
-            AddBuffer(writer, ref current_ofs, ChannelBinding.Acceptor?.Length);
-            AddBuffer(writer, ref current_ofs, ChannelBinding.ApplicationData?.Length);
+    internal override void FromBuffer(SecBuffer buffer)
+    {
+        return;
+    }
 
-            WriteBuffer(writer, ChannelBinding.Initiator);
-            WriteBuffer(writer, ChannelBinding.Acceptor);
-            WriteBuffer(writer, ChannelBinding.ApplicationData);
-
-            return stm.ToArray();
-        }
-
-        private void AddBuffer(BinaryWriter writer, ref int current_ofs, int? length)
-        {
-            int next_length = length ?? 0;
-            if (next_length == 0)
-            {
-                writer.Write(0);
-                writer.Write(0);
-            }
-            else
-            {
-                writer.Write(next_length);
-                writer.Write(current_ofs);
-                current_ofs += next_length;
-            }
-        }
-
-        private void WriteBuffer(BinaryWriter writer, byte[] buffer)
-        {
-            writer.Write(buffer ?? Array.Empty<byte>());
-        }
-
-        internal override void FromBuffer(SecBuffer buffer)
-        {
-            return;
-        }
-
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return SecBuffer.Create(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, ToArray(), list);
-        }
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return SecBuffer.Create(SecurityBufferType.ChannelBindings | SecurityBufferType.ReadOnly, ToArray(), list);
     }
 }

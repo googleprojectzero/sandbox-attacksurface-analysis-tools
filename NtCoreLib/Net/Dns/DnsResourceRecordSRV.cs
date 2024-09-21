@@ -15,34 +15,33 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal sealed class DnsResourceRecordSRV : DnsResourceRecordBase
 {
-    internal sealed class DnsResourceRecordSRV : DnsResourceRecordBase
+    public int Priority { get; set; }
+    public int Weight { get; set; }
+    public int Port { get; set; }
+    public string Target { get; set; }
+
+    public DnsResourceRecordSRV(byte[] data, byte[] rdata)
     {
-        public int Priority { get; set; }
-        public int Weight { get; set; }
-        public int Port { get; set; }
-        public string Target { get; set; }
+        var reader = new BinaryReader(new MemoryStream(rdata));
+        Priority = reader.ReadUInt16BE();
+        Weight = reader.ReadUInt16BE();
+        Port = reader.ReadUInt16BE();
+        Target = reader.ReadDnsString(data);
+    }
 
-        public DnsResourceRecordSRV(byte[] data, byte[] rdata)
-        {
-            var reader = new BinaryReader(new MemoryStream(rdata));
-            Priority = reader.ReadUInt16BE();
-            Weight = reader.ReadUInt16BE();
-            Port = reader.ReadUInt16BE();
-            Target = reader.ReadDnsString(data);
-        }
+    public DnsResourceRecordSRV()
+    {
+    }
 
-        public DnsResourceRecordSRV()
-        {
-        }
-
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            writer.WriteUInt16BE(Priority);
-            writer.WriteUInt16BE(Weight);
-            writer.WriteUInt16BE(Port);
-            writer.WriteDnsString(Target, null);
-        }
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        writer.WriteUInt16BE(Priority);
+        writer.WriteUInt16BE(Weight);
+        writer.WriteUInt16BE(Port);
+        writer.WriteDnsString(Target, null);
     }
 }

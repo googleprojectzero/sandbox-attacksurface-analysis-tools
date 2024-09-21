@@ -4,8 +4,8 @@
     <SelectionSet>
       <Name>AceTypes</Name>
       <Types>
-        <TypeName>NtApiDotNet.Ace</TypeName>
-        <TypeName>NtApiDotNet.MandatoryLabelAce</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.Ace</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.MandatoryLabelAce</TypeName>
       </Types>
     </SelectionSet>
   </SelectionSets>
@@ -119,7 +119,7 @@
     <View>
       <Name>NtTypeTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtType</TypeName>
+        <TypeName>NtCoreLib.NtType</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -142,7 +142,7 @@
     <View>
       <Name>SidTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Sid</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.Sid</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -217,7 +217,7 @@
     <View>
       <Name>AceList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Ace</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.Ace</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -245,7 +245,7 @@
           <ListEntry>
             <EntrySelectedBy>
               <SelectionCondition>
-                <TypeName>NtApiDotNet.Ace</TypeName>
+                <TypeName>NtCoreLib.Security.Authorization.Ace</TypeName>
                 <PropertyName>IsConditionalAce</PropertyName>
               </SelectionCondition>
             </EntrySelectedBy>
@@ -278,7 +278,7 @@
     <View>
       <Name>TokenPrivilegeTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.TokenPrivilege</TypeName>
+        <TypeName>NtCoreLib.Security.Token.TokenPrivilege</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -315,7 +315,7 @@
     <View>
       <Name>TokenPrivilegeList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.TokenPrivilege</TypeName>
+        <TypeName>NtCoreLib.Security.Token.TokenPrivilege</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -344,7 +344,7 @@
     <View>
       <Name>MandatoryLabelAceList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.MandatoryLabelAce</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.MandatoryLabelAce</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -367,7 +367,7 @@
     <View>
       <Name>UserGroupTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.UserGroup</TypeName>
+        <TypeName>NtCoreLib.Security.Token.UserGroup</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -397,7 +397,7 @@
     <View>
       <Name>UserGroupList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.UserGroup</TypeName>
+        <TypeName>NtCoreLib.Security.Token.UserGroup</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -421,7 +421,7 @@
     <View>
       <Name>AtomTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtAtom</TypeName>
+        <TypeName>NtCoreLib.NtAtom</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -452,7 +452,7 @@
     <View>
       <Name>AtomList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtAtom</TypeName>
+        <TypeName>NtCoreLib.NtAtom</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -473,7 +473,7 @@
     <View>
       <Name>KeyTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtKey</TypeName>
+        <TypeName>NtCoreLib.NtKey</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -521,7 +521,7 @@
     <View>
       <Name>TokenTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtToken</TypeName>
+        <TypeName>NtCoreLib.NtToken</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -572,7 +572,7 @@
     <View>
       <Name>SymlinkTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtSymbolicLink</TypeName>
+        <TypeName>NtCoreLib.NtSymbolicLink</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -602,7 +602,7 @@
     <View>
       <Name>ObjectTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtObject</TypeName>
+        <TypeName>NtCoreLib.NtObject</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -653,7 +653,7 @@
     <View>
       <Name>ObjectWide</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtObject</TypeName>
+        <TypeName>NtCoreLib.NtObject</TypeName>
       </ViewSelectedBy>
       <WideControl>
         <WideEntries>
@@ -668,7 +668,7 @@
     <View>
       <Name>NtHandleTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtHandle</TypeName>
+        <TypeName>NtCoreLib.NtHandle</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -721,7 +721,7 @@
     <View>
       <Name>NtHandleList</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtHandle</TypeName>
+        <TypeName>NtCoreLib.NtHandle</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -808,9 +808,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>ExecutableManifest</Name>
+      <Name>ManifestFile</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.ExecutableManifest</TypeName>
+        <TypeName>NtCoreLib.Win32.SideBySide.ManifestFile</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -854,7 +854,7 @@
     <View>
         <Name>NtProcessInformation</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.NtProcessInformation</TypeName>
+            <TypeName>NtCoreLib.NtProcessInformation</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -898,7 +898,7 @@
     <View>
         <Name>NtThreadInformation</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.NtThreadInformation</TypeName>
+            <TypeName>NtCoreLib.NtThreadInformation</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -943,7 +943,7 @@
     <View>
         <Name>RpcEndpoint</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.RpcEndpoint</TypeName>
+            <TypeName>NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpoint</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -972,10 +972,10 @@
                 <TableRowEntry>
                     <TableColumnItems>
                         <TableColumnItem>
-                            <PropertyName>InterfaceId</PropertyName>
+                            <ScriptBlock>$_.InterfaceId.Uuid</ScriptBlock>
                         </TableColumnItem>
                         <TableColumnItem>
-                            <PropertyName>InterfaceVersion</PropertyName>
+                            <ScriptBlock>$_.InterfaceId.Version</ScriptBlock>
                         </TableColumnItem>
                         <TableColumnItem>
                             <PropertyName>ProtocolSequence</PropertyName>
@@ -994,7 +994,7 @@
     <View>
         <Name>RpcServer</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.RpcServer</TypeName>
+            <TypeName>NtCoreLib.Win32.Rpc.Server.RpcServer</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -1059,7 +1059,7 @@
     <View>
         <Name>NtKeyValue</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.NtKeyValue</TypeName>
+            <TypeName>NtCoreLib.NtKeyValue</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -1134,7 +1134,7 @@
     <View>
         <Name>NtIoControlCode</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.NtIoControlCode</TypeName>
+            <TypeName>NtCoreLib.NtIoControlCode</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -1185,7 +1185,7 @@
     <View>
         <Name>AccessMask</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.AccessMask</TypeName>
+            <TypeName>NtCoreLib.Security.Authorization.AccessMask</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -1210,7 +1210,7 @@
     <View>
       <Name>NtMappedSection</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtMappedSection</TypeName>
+        <TypeName>NtCoreLib.NtMappedSection</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1253,9 +1253,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>Win32Service</Name>
+      <Name>ServiceInstance</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Win32Service</TypeName>
+        <TypeName>NtCoreLib.Win32.Service.ServiceInstance</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1292,7 +1292,7 @@
     <View>
       <Name>AccessMaskEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.AccessMaskEntry</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.AccessMaskEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1330,7 +1330,7 @@
     <View>
       <Name>SecurityDescriptorTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.SecurityDescriptor</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.SecurityDescriptor</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1374,7 +1374,7 @@
     <View>
       <Name>NtWnf</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtWnf</TypeName>
+        <TypeName>NtCoreLib.NtWnf</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1414,7 +1414,7 @@
     <View>
       <Name>NtWindow</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtWindow</TypeName>
+        <TypeName>NtCoreLib.NtWindow</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1458,7 +1458,7 @@
     <View>
       <Name>DllExport</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.DllExport</TypeName>
+        <TypeName>NtCoreLib.Image.DllExport</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1495,7 +1495,7 @@
     <View>
       <Name>DllImportFunction</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.DllImportFunction</TypeName>
+        <TypeName>NtCoreLib.Image.DllImportFunction</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1526,7 +1526,7 @@
     <View>
       <Name>DllImport</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.DllImport</TypeName>
+        <TypeName>NtCoreLib.Image.DllImport</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1561,9 +1561,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>DllImport</Name>
+      <Name>NtProcessMitigations</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtProcessMitigations</TypeName>
+        <TypeName>NtCoreLib.Kernel.Process.NtProcessMitigations</TypeName>
       </ViewSelectedBy>
       <CustomControl>
         <CustomEntries>
@@ -1634,6 +1634,15 @@
                   <ExpressionBinding>
                     <ScriptBlock>$_.AuditDisallowWin32kSystemCalls</ScriptBlock>
                   </ExpressionBinding>
+                  <Text>DisallowFsctlSystemCalls: </Text>
+                    <ExpressionBinding>
+                        <ScriptBlock>$_.DisallowFsctlSystemCalls</ScriptBlock>
+                    </ExpressionBinding>
+                    <NewLine/>
+                    <Text>AuditDisallowFsctlSystemCalls: </Text>
+                    <ExpressionBinding>
+                        <ScriptBlock>$_.AuditDisallowFsctlSystemCalls</ScriptBlock>
+                    </ExpressionBinding>
                   <NewLine/>
                 </CustomItem>
               </Frame>
@@ -2070,7 +2079,7 @@
     <View>
       <Name>ObjectDirectoryInformationTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.ObjectDirectoryInformation</TypeName>
+        <TypeName>NtCoreLib.ObjectDirectoryInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2100,7 +2109,7 @@
     <View>
       <Name>AuthenticationPackageTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authentication.AuthenticationPackage</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2137,7 +2146,7 @@
     <View>
       <Name>SafeLoadLibraryHandleTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.SafeLoadLibraryHandle</TypeName>
+        <TypeName>NtCoreLib.Win32.Loader.SafeLoadLibraryHandle</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2174,9 +2183,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>ProcessModuleTable</Name>
+      <Name>ProcessModuleInformationTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.ProcessModule</TypeName>
+        <TypeName>NtCoreLib.Kernel.Process.ProcessModuleInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2214,7 +2223,7 @@
     <View>
       <Name>SafeKernelObjectHandleTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.SafeKernelObjectHandle</TypeName>
+        <TypeName>NtCoreLib.Native.SafeHandles.SafeKernelObjectHandle</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2265,7 +2274,7 @@
     <View>
       <Name>MemoryInformationTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.MemoryInformation</TypeName>
+        <TypeName>NtCoreLib.MemoryInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2324,7 +2333,7 @@
     <View>
       <Name>PrivilegeCheckResultTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.PrivilegeCheckResult</TypeName>
+        <TypeName>NtCoreLib.Security.Token.PrivilegeCheckResult</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2354,7 +2363,7 @@
     <View>
       <Name>ClaimSecurityAttributeTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.ClaimSecurityAttribute</TypeName>
+        <TypeName>NtCoreLib.Security.Token.ClaimSecurityAttribute</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2398,7 +2407,7 @@
     <View>
       <Name>SecurityDescriptorInheritanceSourceTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authorization.SecurityDescriptorInheritanceSource</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authorization.SecurityDescriptorInheritanceSource</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2479,7 +2488,7 @@
     <View>
       <Name>ObjectTypeTreeTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Utilities.Security.ObjectTypeTree</TypeName>
+        <TypeName>NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2509,7 +2518,7 @@
     <View>
       <Name>AuthZAccessCheckResultGenericTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authorization.AuthZAccessCheckResult</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authorization.AuthZAccessCheckResult</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2546,7 +2555,7 @@
     <View>
       <Name>AccessCheckResultGenericTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.AccessCheckResultGeneric</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.AccessCheckResultGeneric</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2583,7 +2592,7 @@
     <View>
       <Name>CentralAccessPolicyTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Security.Policy.CentralAccessPolicy</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.Policy.CentralAccessPolicy</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2620,7 +2629,7 @@
     <View>
       <Name>CentralAccessRuleTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Security.Policy.CentralAccessRule</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.Policy.CentralAccessRule</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2657,7 +2666,7 @@
     <View>
       <Name>AuditCategoryTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Audit.AuditCategory</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Audit.AuditCategory</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2687,7 +2696,7 @@
     <View>
       <Name>AuditSubCategoryTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Audit.AuditSubCategory</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Audit.AuditSubCategory</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2717,7 +2726,7 @@
     <View>
       <Name>AuditPerUserCategoryTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Audit.AuditPerUserCategory</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Audit.AuditPerUserCategory</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2754,7 +2763,7 @@
     <View>
       <Name>AuditPerUserSubCategoryTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Audit.AuditPerUserSubCategory</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Audit.AuditPerUserSubCategory</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2791,7 +2800,7 @@
     <View>
       <Name>LogonSessionTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.LogonSession</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authentication.LogonSession</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2835,7 +2844,7 @@
     <View>
       <Name>AccountRightTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Policy.AccountRight</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Policy.AccountRight</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2865,7 +2874,7 @@
     <View>
       <Name>ConsoleSessionTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.ConsoleSession</TypeName>
+        <TypeName>NtCoreLib.Win32.TerminalServices.ConsoleSession</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2893,7 +2902,7 @@
                 <PropertyName>SessionId</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>FullQualifiedUserName</PropertyName>
+                <PropertyName>FullyQualifiedUserName</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>SessionName</PropertyName>
@@ -2909,7 +2918,7 @@
     <View>
       <Name>LuidTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Luid</TypeName>
+        <TypeName>NtCoreLib.Luid</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2932,7 +2941,7 @@
     <View>
       <Name>NtlmAuthenticationTokenTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.Ntlm.NtlmAuthenticationToken</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authentication.Ntlm.NtlmAuthenticationToken</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2962,7 +2971,7 @@
     <View>
       <Name>KerberosAuthenticationKeyTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -2999,7 +3008,7 @@
     <View>
       <Name>FilterDriver</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Filter.FilterDriver</TypeName>
+        <TypeName>NtCoreLib.Win32.Filter.FilterDriver</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3036,7 +3045,7 @@
     <View>
       <Name>FilterInstance</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Filter.FilterInstance</TypeName>
+        <TypeName>NtCoreLib.Win32.Filter.FilterInstance</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3080,7 +3089,7 @@
     <View>
       <Name>FilterVolume</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Filter.FilterVolume</TypeName>
+        <TypeName>NtCoreLib.Win32.Filter.FilterVolume</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3110,7 +3119,7 @@
     <View>
       <Name>DeviceSetupClass</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceSetupClass</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceSetupClass</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3147,7 +3156,7 @@
     <View>
       <Name>DeviceProperty</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceProperty</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceProperty</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3184,7 +3193,7 @@
     <View>
       <Name>DeviceNode</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceTreeNode</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceTreeNode</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3221,7 +3230,7 @@
     <View>
       <Name>DeviceInstance</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceNode</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceNode</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3251,7 +3260,7 @@
     <View>
       <Name>DeviceInterfaceClass</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceInterfaceClass</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceInterfaceClass</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3281,7 +3290,7 @@
     <View>
       <Name>DeviceInterfaceInstance</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceInterfaceInstance</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceInterfaceInstance</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3304,7 +3313,7 @@
     <View>
       <Name>DeviceStackEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Device.DeviceStackEntry</TypeName>
+        <TypeName>NtCoreLib.Win32.Device.DeviceStackEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3334,7 +3343,7 @@
     <View>
       <Name>FileIdDirectoryEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileIdDirectoryEntry</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.FileIdDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3378,7 +3387,7 @@
     <View>
       <Name>FileBothDirectoryEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileBothDirectoryEntry</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.FileBothDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3422,7 +3431,7 @@
     <View>
       <Name>FileIdBothDirectoryEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileIdBothDirectoryEntry</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.FileIdBothDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3473,7 +3482,7 @@
     <View>
       <Name>FileDirectoryEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileDirectoryEntry</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.FileDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3510,7 +3519,7 @@
     <View>
       <Name>DirectoryChangeNotificationExtended</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.DirectoryChangeNotificationExtended</TypeName>
+        <TypeName>NtCoreLib.DirectoryChangeNotificationExtended</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3554,7 +3563,7 @@
     <View>
       <Name>DirectoryChangeNotification</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.DirectoryChangeNotification</TypeName>
+        <TypeName>NtCoreLib.DirectoryChangeNotification</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3584,7 +3593,7 @@
     <View>
       <Name>NtFileReparsePoint</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtFileReparsePoint</TypeName>
+        <TypeName>NtCoreLib.NtFileReparsePoint</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3614,7 +3623,7 @@
     <View>
       <Name>NtFileObjectId</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtFileObjectId</TypeName>
+        <TypeName>NtCoreLib.NtFileObjectId</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3644,7 +3653,7 @@
     <View>
       <Name>MountPoint</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.IO.MountPointManager.MountPoint</TypeName>
+        <TypeName>NtCoreLib.IO.MountPointManager.MountPoint</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3674,7 +3683,7 @@
     <View>
       <Name>MountPointReparseBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.MountPointReparseBuffer</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.MountPointReparseBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3711,7 +3720,7 @@
     <View>
       <Name>SymlinkReparseBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.SymlinkReparseBuffer</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.SymlinkReparseBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3755,7 +3764,7 @@
     <View>
       <Name>OpaqueReparseBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.OpaqueReparseBuffer</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.OpaqueReparseBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3785,7 +3794,7 @@
     <View>
       <Name>GenericReparseBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.GenericReparseBuffer</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.GenericReparseBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3822,7 +3831,7 @@
     <View>
       <Name>FileObjectIdBuffer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileObjectIdBuffer</TypeName>
+        <TypeName>NtCoreLib.FileObjectIdBuffer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3859,7 +3868,7 @@
     <View>
       <Name>FileQuotaEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.FileQuotaEntry</TypeName>
+        <TypeName>NtCoreLib.Kernel.IO.FileQuotaEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3903,7 +3912,7 @@
     <View>
       <Name>UsnJournalRecord</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.IO.UsnJournal.UsnJournalRecord</TypeName>
+        <TypeName>NtCoreLib.IO.UsnJournal.UsnJournalRecord</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3941,7 +3950,7 @@
     <View>
       <Name>AppContainerProfile</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.AppContainerProfile</TypeName>
+        <TypeName>NtCoreLib.Win32.AppModel.AppContainerProfile</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3971,7 +3980,7 @@
     <View>
       <Name>PsProtection</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.PsProtection</TypeName>
+        <TypeName>NtCoreLib.PsProtection</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -3999,9 +4008,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>ElamInformation</Name>
+      <Name>ImageElamInformation</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authenticode.ElamInformation</TypeName>
+        <TypeName>NtCoreLib.Image.Security.ImageElamInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4031,7 +4040,7 @@
     <View>
       <Name>ImagePolicyMetadata</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authenticode.ImagePolicyMetadata</TypeName>
+        <TypeName>NtCoreLib.Image.Security.ImagePolicyMetadata</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4061,7 +4070,7 @@
     <View>
       <Name>ImagePolicyEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authenticode.ImagePolicyEntry</TypeName>
+        <TypeName>NtCoreLib.Image.Security.ImagePolicyEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4096,9 +4105,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>EnclaveConfiguration</Name>
+      <Name>ImageEnclaveConfiguration</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authenticode.EnclaveConfiguration</TypeName>
+        <TypeName>NtCoreLib.Image.Security.ImageEnclaveConfiguration</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4195,7 +4204,7 @@
     <View>
       <Name>ApiSetEntry</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.ApiSet.ApiSetEntry</TypeName>
+        <TypeName>NtCoreLib.Image.ApiSet.ApiSetEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4232,7 +4241,7 @@
     <View>
       <Name>SidName</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.SidName</TypeName>
+        <TypeName>NtCoreLib.Security.Authorization.SidName</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4276,7 +4285,7 @@
     <View>
       <Name>Win32DebugString</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Debugger.Win32DebugString</TypeName>
+        <TypeName>NtCoreLib.Win32.Debugger.Win32DebugString</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4304,9 +4313,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>ServiceInformation</Name>
+      <Name>ServiceConfig</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.ServiceInformation</TypeName>
+        <TypeName>NtCoreLib.Win32.Service.ServiceConfig</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4353,7 +4362,7 @@
     <View>
       <Name>SchannelConnectionInfo</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelConnectionInfo</TypeName>
+        <TypeName>NtCoreLib.Win32.Security.Authentication.Schannel.SchannelConnectionInfo</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4397,7 +4406,7 @@
     <View>
       <Name>ServiceTriggerInformation</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.ServiceTriggerInformation</TypeName>
+        <TypeName>NtCoreLib.Win32.Service.Triggers.ServiceTriggerInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4434,7 +4443,7 @@
 	  <View>
       <Name>ServiceTriggerInformation</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.ServiceTriggerInformation</TypeName>
+        <TypeName>NtCoreLib.Win32.Service.Triggers.ServiceTriggerInformation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -4471,7 +4480,7 @@
     <View>
         <Name>KerberosExternalTicket</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4501,7 +4510,7 @@
     <View>
         <Name>SamDomain</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Sam.SamDomain</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Sam.SamDomain</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4531,7 +4540,7 @@
     <View>
         <Name>SamUser</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Sam.SamUser</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Sam.SamUser</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4561,7 +4570,7 @@
     <View>
         <Name>SamGroup</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Sam.SamGroup</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Sam.SamGroup</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4591,7 +4600,7 @@
     <View>
         <Name>SamAlias</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Sam.SamAlias</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Sam.SamAlias</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4621,7 +4630,7 @@
     <View>
         <Name>SamObject</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Sam.SamObject</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Sam.SamObject</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4644,7 +4653,7 @@
     <View>
         <Name>LsaObject</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Policy.LsaObject</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Policy.LsaObject</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4667,7 +4676,7 @@
     <View>
         <Name>LsaTrustedDomainInformation</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Policy.LsaTrustedDomainInformation</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Policy.LsaTrustedDomainInformation</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4704,7 +4713,7 @@
     <View>
         <Name>LsaTrustedDomain</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Policy.LsaTrustedDomain</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Policy.LsaTrustedDomain</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4741,7 +4750,7 @@
     <View>
         <Name>DirectoryServiceExtendedRight</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceExtendedRight</TypeName>
+            <TypeName>NtCoreLib.Win32.DirectoryService.DirectoryServiceExtendedRight</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4771,7 +4780,7 @@
     <View>
         <Name>DirectoryServiceSchemaAttribute</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
+            <TypeName>NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4808,7 +4817,7 @@
     <View>
         <Name>DirectoryServiceSchemaClass</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
+            <TypeName>NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -4845,7 +4854,7 @@
     <View>
         <Name>DirectoryServiceSchemaClass</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
+            <TypeName>NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass</TypeName>
         </ViewSelectedBy>
         <ListControl>
             <ListEntries>
@@ -4880,7 +4889,7 @@
     <View>
         <Name>DirectoryServiceSchemaAttribute</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
+            <TypeName>NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaAttribute</TypeName>
         </ViewSelectedBy>
         <ListControl>
             <ListEntries>
@@ -5085,7 +5094,7 @@
     <View>
         <Name>Credential</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Win32.Security.Credential.Credential</TypeName>
+            <TypeName>NtCoreLib.Win32.Security.Credential.Credential</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -5129,7 +5138,7 @@
     <View>
         <Name>ExtractedString</Name>
         <ViewSelectedBy>
-            <TypeName>NtApiDotNet.Utilities.Text.ExtractedString</TypeName>
+            <TypeName>NtCoreLib.Utilities.Text.ExtractedString</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
@@ -5166,7 +5175,7 @@
     <View>
       <Name>FirewallFilter</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallFilter</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallFilter</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5203,7 +5212,7 @@
     <View>
       <Name>FirewallObject</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallObject</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallObject</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5233,7 +5242,7 @@
     <View>
       <Name>FirewallFilterCondition</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallFilterCondition</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallFilterCondition</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5270,7 +5279,7 @@
     <View>
       <Name>FirewallAleEndpoint</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallAleEndpoint</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallAleEndpoint</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5314,7 +5323,7 @@
     <View>
       <Name>FirewallSession</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallSession</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallSession</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5365,7 +5374,7 @@
     <View>
       <Name>FirewallNetEvent</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallNetEvent</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallNetEvent</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5409,7 +5418,7 @@
     <View>
       <Name>IPsecSecurityAssociationContext</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.IPsecSecurityAssociationContext</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.IPsecSecurityAssociationContext</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5446,7 +5455,7 @@
     <View>
       <Name>IPsecSecurityAssociation</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.IPsecSecurityAssociation</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.IPsecSecurityAssociation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5483,7 +5492,7 @@
     <View>
       <Name>FirewallField</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Net.Firewall.FirewallField</TypeName>
+        <TypeName>NtCoreLib.Net.Firewall.FirewallField</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5520,7 +5529,7 @@
     <View>
       <Name>RpcTransportSecurityContext</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext</TypeName>
+        <TypeName>NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurityContext</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5557,7 +5566,7 @@
     <View>
       <Name>RpcAlpcServer</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Win32.RpcAlpcServer</TypeName>
+        <TypeName>NtCoreLib.Win32.Rpc.Server.RpcAlpcServer</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -5597,6 +5606,188 @@
           </TableRowEntry>
         </TableRowEntries>
       </TableControl>
+    </View>
+    <View>
+        <Name>ImageSection</Name>
+        <ViewSelectedBy>
+            <TypeName>NtCoreLib.Image.ImageSection</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>RelativeVirtualAddress</Label>
+                    <Alignment>right</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Characteristics</Label>
+                    <Alignment>right</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>RelativeVirtualAddress</PropertyName>
+                            <FormatString>X08</FormatString>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Characteristics</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>HyperVSocketTableEntry</Name>
+        <ViewSelectedBy>
+            <TypeName>NtCoreLib.Net.Sockets.HyperV.HyperVSocketTableEntry</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>SystemId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>VmId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProcessId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProcessName</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>SystemIdName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>VmIdName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProcessId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProcessName</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>RpcProcess</Name>
+        <ViewSelectedBy>
+            <TypeName>NtObjectManager.Cmdlets.Rpc.RpcProcess</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>ProcessId</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProcessName</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ServerCount</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>BindingCount</Label>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>ProcessId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProcessName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <ScriptBlock>$_.Servers.Count</ScriptBlock>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <ScriptBlock>$_.Bindings.Count</ScriptBlock>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>ImageFile</Name>
+        <ViewSelectedBy>
+            <TypeName>NtCoreLib.Image.ImageFile</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Width>30</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>MachineType</Label>
+                    <Width>11</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Is64Bit</Label>
+                    <Width>8</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Imports</Label>
+                    <Width>7</Width>
+                    <Alignment>right</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Exports</Label>
+                    <Width>7</Width>
+                    <Alignment>right</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>MachineType</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Is64bit</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <ScriptBlock>$_.Imports.Count</ScriptBlock>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <ScriptBlock>$_.Exports.Count</ScriptBlock>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
     </View>
   </ViewDefinitions>
 </Configuration>

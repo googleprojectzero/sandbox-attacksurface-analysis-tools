@@ -12,47 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Abstract unmarshalled credentials base.
+/// </summary>
+public abstract class CredentialMarshalBase
 {
     /// <summary>
-    /// Abstract unmarshalled credentials base.
+    /// The type of credentials.
     /// </summary>
-    public abstract class CredentialMarshalBase
+    public CredMarshalType CredType { get; }
+
+    internal abstract SafeBuffer ToBuffer();
+
+    internal static CredentialMarshalBase GetCredentialBuffer(SafeCredBuffer buffer, CredMarshalType cred_type)
     {
-        /// <summary>
-        /// The type of credentials.
-        /// </summary>
-        public CredMarshalType CredType { get; }
-
-        internal abstract SafeBuffer ToBuffer();
-
-        internal static CredentialMarshalBase GetCredentialBuffer(SafeCredBuffer buffer, CredMarshalType cred_type)
+        using (buffer)
         {
-            using (buffer)
+            return cred_type switch
             {
-                switch (cred_type)
-                {
-                    case CredMarshalType.CertCredential:
-                        return new CredentialMarshalCertificate(buffer.ReadStructUnsafe<CERT_CREDENTIAL_INFO>());
-                    case CredMarshalType.UsernameTargetCredential:
-                    case CredMarshalType.UsernameForPackedCredentials:
-                        return new CredentialMarshalUsernameTarget(buffer.ReadStructUnsafe<USERNAME_TARGET_CREDENTIAL_INFO>(), cred_type);
-                    case CredMarshalType.BinaryBlobCredential:
-                    case CredMarshalType.BinaryBlobForSystem:
-                        return new CredentialMarshalBinaryBlob(buffer.ReadStructUnsafe<BINARY_BLOB_CREDENTIAL_INFO>(), cred_type);
-                    default:
-                        return new CredentialMarshalUnknown(buffer.Detach(), cred_type);
-                }
-            }
+                CredMarshalType.CertCredential => new CredentialMarshalCertificate(buffer.ReadStructUnsafe<CERT_CREDENTIAL_INFO>()),
+                CredMarshalType.UsernameTargetCredential or CredMarshalType.UsernameForPackedCredentials => new CredentialMarshalUsernameTarget(buffer.ReadStructUnsafe<USERNAME_TARGET_CREDENTIAL_INFO>(), cred_type),
+                CredMarshalType.BinaryBlobCredential or CredMarshalType.BinaryBlobForSystem => new CredentialMarshalBinaryBlob(buffer.ReadStructUnsafe<BINARY_BLOB_CREDENTIAL_INFO>(), cred_type),
+                _ => new CredentialMarshalUnknown(buffer.Detach(), cred_type),
+            };
         }
+    }
 
-        private protected CredentialMarshalBase(CredMarshalType cred_type)
-        {
-            CredType = cred_type;
-        }
+    private protected CredentialMarshalBase(CredMarshalType cred_type)
+    {
+        CredType = cred_type;
     }
 }

@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
-{
+namespace NtCoreLib.Win32.Security.Authorization;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// Progress invoke setting for tree security.
-    /// </summary>
-    public enum ProgressInvokeSetting
-    {
-        InvokeNever = 1,
-        EveryObject,
-        OnError,
-        CancelOperation,
-        RetryOperation,
-        PrePostError
-    }
+/// <summary>
+/// Progress invoke setting for tree security.
+/// </summary>
+public enum ProgressInvokeSetting
+{
+    InvokeNever = 1,
+    EveryObject,
+    OnError,
+    CancelOperation,
+    RetryOperation,
+    PrePostError
 }

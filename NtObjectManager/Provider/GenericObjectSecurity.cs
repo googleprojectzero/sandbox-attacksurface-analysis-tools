@@ -12,43 +12,42 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 
-namespace NtObjectManager.Provider
+namespace NtObjectManager.Provider;
+
+/// <summary>
+/// Generic object security which takes an integer access mask.
+/// </summary>
+public class GenericObjectSecurity : ObjectSecurity<int>
 {
     /// <summary>
-    /// Generic object security which takes an integer access mask.
+    /// Constructor
     /// </summary>
-    public class GenericObjectSecurity : ObjectSecurity<int>
+    public GenericObjectSecurity() : base(false, ResourceType.KernelObject)
     {
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public GenericObjectSecurity() : base(false, ResourceType.KernelObject)
-        {
-        }
+    }
 
-        internal bool IsDirectory { get; }
+    internal bool IsDirectory { get; }
 
-        internal NtType NtType { get; }
+    internal NtType NtType { get; }
 
-        /// <summary>
-        /// Constructor taking security descriptor from an object.
-        /// </summary>
-        /// <param name="obj">The NT object to extract the security descriptor from.</param>
-        /// <param name="include_sections">Indicates which bits of the security descriptor you want to include.</param>
-        public GenericObjectSecurity(NtObject obj, AccessControlSections include_sections) 
-            : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
-        {
-            IsDirectory = obj.IsContainer;
-            NtType = obj.NtType;
-        }
+    /// <summary>
+    /// Constructor taking security descriptor from an object.
+    /// </summary>
+    /// <param name="obj">The NT object to extract the security descriptor from.</param>
+    /// <param name="include_sections">Indicates which bits of the security descriptor you want to include.</param>
+    public GenericObjectSecurity(NtObject obj, AccessControlSections include_sections) 
+        : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
+    {
+        IsDirectory = obj.IsContainer;
+        NtType = obj.NtType;
+    }
 
-        internal void PersistHandle(SafeHandle handle)
-        {
-            Persist(handle);
-        }
+    internal void PersistHandle(SafeHandle handle)
+    {
+        Persist(handle);
     }
 }

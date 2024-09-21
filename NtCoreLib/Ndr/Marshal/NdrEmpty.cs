@@ -12,12 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Structure to represent an empty value.
+/// </summary>
+public struct NdrEmpty
 {
-    /// <summary>
-    /// Structure to represent an empty value.
-    /// </summary>
-    public struct NdrEmpty
-    {
-    }
 }

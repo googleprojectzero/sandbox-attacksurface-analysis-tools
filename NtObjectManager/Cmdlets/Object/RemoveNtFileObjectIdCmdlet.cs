@@ -12,41 +12,40 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Remove the object ID for a file.</para>
+/// <para type="description">This cmdlet removes the object ID for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Remove-NtFileObjectId -File $f</code>
+///   <para>Remove the object ID for the file.</para>
+/// </example>
+/// <example>
+///   <code>Remove-NtFileObjectId -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Remove the object ID for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Remove-NtFileObjectId -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Remove the object ID for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Remove, "NtFileObjectId", DefaultParameterSetName = "Default")]
+public class RemoveNtFileObjectIdCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Remove the object ID for a file.</para>
-    /// <para type="description">This cmdlet removes the object ID for a file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Remove-NtFileObjectId -File $f</code>
-    ///   <para>Remove the object ID for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Remove-NtFileObjectId -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Remove the object ID for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Remove-NtFileObjectId -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Remove the object ID for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Remove, "NtFileObjectId", DefaultParameterSetName = "Default")]
-    public class RemoveNtFileObjectIdCmdlet : BaseNtFilePropertyCmdlet
+    public RemoveNtFileObjectIdCmdlet()
+        : base(FileAccessRights.WriteData, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public RemoveNtFileObjectIdCmdlet()
-            : base(FileAccessRights.WriteData, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            file.DeleteObjectId();
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        file.DeleteObjectId();
     }
 }

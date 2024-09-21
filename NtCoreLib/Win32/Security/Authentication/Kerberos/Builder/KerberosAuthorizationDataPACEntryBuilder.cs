@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent a builder for the PAC entry.
+/// </summary>
+public abstract class KerberosAuthorizationDataPACEntryBuilder
 {
     /// <summary>
-    /// Class to represent a builder for the PAC entry.
+    /// Type of PAC entry.
     /// </summary>
-    public abstract class KerberosAuthorizationDataPACEntryBuilder
+    public KerberosAuthorizationDataPACEntryType PACType { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="pac_type">The PAC type.</param>
+    protected KerberosAuthorizationDataPACEntryBuilder(KerberosAuthorizationDataPACEntryType pac_type)
     {
-        /// <summary>
-        /// Type of PAC entry.
-        /// </summary>
-        public KerberosAuthorizationDataPACEntryType PACType { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="pac_type">The PAC type.</param>
-        protected KerberosAuthorizationDataPACEntryBuilder(KerberosAuthorizationDataPACEntryType pac_type)
-        {
-            PACType = pac_type;
-        }
-
-        /// <summary>
-        /// Create the real PAC entry.
-        /// </summary>
-        /// <returns>The created PAC entry.</returns>
-        public abstract KerberosAuthorizationDataPACEntry Create();
+        PACType = pac_type;
     }
+
+    /// <summary>
+    /// Create the real PAC entry.
+    /// </summary>
+    /// <returns>The created PAC entry.</returns>
+    public abstract KerberosAuthorizationDataPACEntry Create();
 }

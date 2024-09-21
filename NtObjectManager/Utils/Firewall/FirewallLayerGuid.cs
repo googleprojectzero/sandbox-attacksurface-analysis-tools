@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Net.Firewall;
+using NtCoreLib.Net.Firewall;
 
-namespace NtObjectManager.Utils.Firewall
+namespace NtObjectManager.Utils.Firewall;
+
+/// <summary>
+/// Firewall layer GUID.
+/// </summary>
+public sealed class FirewallLayerGuid : FirewallObjectGuid
 {
     /// <summary>
-    /// Firewall layer GUID.
+    /// Constructor.
     /// </summary>
-    public sealed class FirewallLayerGuid : FirewallObjectGuid
+    /// <param name="name">Name of the layer or a GUID</param>
+    public FirewallLayerGuid(string name) 
+        : base(name, FirewallUtils.GetKnownLayerGuid)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">Name of the layer or a GUID</param>
-        public FirewallLayerGuid(string name) 
-            : base(name, FirewallUtils.GetKnownLayerGuid)
-        {
-        }
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="ale_layer">The pre-defined ALE layer.</param>
-        public FirewallLayerGuid(FirewallAleLayer ale_layer) 
-            : base(FirewallUtils.GetLayerGuidForAleLayer(ale_layer))
-        {
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="ale_layer">The pre-defined ALE layer.</param>
+    public FirewallLayerGuid(FirewallAleLayer ale_layer) 
+        : base(FirewallUtils.GetLayerGuidForAleLayer(ale_layer))
+    {
     }
 }

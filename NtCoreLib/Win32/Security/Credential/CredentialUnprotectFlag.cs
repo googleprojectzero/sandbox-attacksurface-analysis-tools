@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Flags for credential protection.
+/// </summary>
+public enum CredentialUnprotectFlag
 {
-    /// <summary>
-    /// Flags for credential protection.
-    /// </summary>
-    public enum CredentialUnprotectFlag
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None,
-        [SDKName("CRED_UNPROTECT_AS_SELF")]
-        AsSelf = 0x1,
-        [SDKName("CRED_UNPROTECT_ALLOW_TO_SYSTEM")]
-        AllowToSystem = 0x2,
+    None,
+    [SDKName("CRED_UNPROTECT_AS_SELF")]
+    AsSelf = 0x1,
+    [SDKName("CRED_UNPROTECT_ALLOW_TO_SYSTEM")]
+    AllowToSystem = 0x2,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

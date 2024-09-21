@@ -12,29 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Language;
 
-namespace NtObjectManager.Utils
-{
-    internal class NtTypeArgumentCompleter : IArgumentCompleter
-    {
-        private static string MapString(string s)
-        {
-            if (s.Contains(" "))
-                return $"\"{s}\"";
-            return s;
-        }
+namespace NtObjectManager.Utils;
 
-        public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName, 
-            string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
-        {
-            return NtType.GetTypes().Where(t => t.Name.StartsWith(wordToComplete))
-                .Select(t => new CompletionResult(MapString(t.Name)));
-        }
+internal class NtTypeArgumentCompleter : IArgumentCompleter
+{
+    private static string MapString(string s)
+    {
+        if (s.Contains(" "))
+            return $"\"{s}\"";
+        return s;
+    }
+
+    public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName, 
+        string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
+    {
+        return NtType.GetTypes().Where(t => t.Name.StartsWith(wordToComplete))
+            .Select(t => new CompletionResult(MapString(t.Name)));
     }
 }

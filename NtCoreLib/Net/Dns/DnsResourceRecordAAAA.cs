@@ -18,38 +18,37 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+/// <summary>
+/// 
+/// </summary>
+internal class DnsResourceRecordAAAA : DnsResourceRecordBase
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    internal class DnsResourceRecordAAAA : DnsResourceRecordBase
+    public IPAddress Address { get; set; }
+
+    public DnsResourceRecordAAAA(byte[] rdata)
     {
-        public IPAddress Address { get; set; }
-
-        public DnsResourceRecordAAAA(byte[] rdata)
+        if (rdata.Length != 16)
         {
-            if (rdata.Length != 16)
-            {
-                throw new ArgumentException("Invalid length for IPv6 address");
-            }
-
-            Address = new IPAddress(rdata);
+            throw new ArgumentException("Invalid length for IPv6 address");
         }
 
-        public DnsResourceRecordAAAA()
+        Address = new IPAddress(rdata);
+    }
+
+    public DnsResourceRecordAAAA()
+    {
+        Address = IPAddress.IPv6Any;
+    }
+
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        if (Address.AddressFamily != AddressFamily.InterNetworkV6)
         {
-            Address = IPAddress.IPv6Any;
+            throw new ArgumentException("Must provide a IPv6 address for a AAAA record");
         }
 
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            if (Address.AddressFamily != AddressFamily.InterNetworkV6)
-            {
-                throw new ArgumentException("Must provide a IPv6 address for a AAAA record");
-            }
-
-            writer.Write(Address.GetAddressBytes());
-        }
+        writer.Write(Address.GetAddressBytes());
     }
 }

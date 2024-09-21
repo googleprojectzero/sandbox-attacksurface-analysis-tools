@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,55 +20,54 @@ using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Language;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+class InfoClassCompleter : IArgumentCompleter
 {
-    class InfoClassCompleter : IArgumentCompleter
+    private readonly bool _query;
+
+    private protected InfoClassCompleter(bool query)
     {
-        private readonly bool _query;
-
-        private protected InfoClassCompleter(bool query)
-        {
-            _query = query;
-        }
-
-        public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName,
-            string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
-        {
-            if (!fakeBoundParameters.Contains("Object"))
-            {
-                return new CompletionResult[0];
-            }
-
-            if (!(((PSObject)fakeBoundParameters["Object"]).BaseObject is NtObject obj))
-            {
-                return new CompletionResult[0];
-            }
-            IEnumerable<string> info_classes = new string[0];
-            if (_query)
-            {
-                info_classes = obj.NtType.QueryInformationClass.Keys;
-            }
-            else
-            {
-                info_classes = obj.NtType.SetInformationClass.Keys;
-            }
-
-            return info_classes.Where(c => wordToComplete.Length == 0 || c.StartsWith(wordToComplete, StringComparison.OrdinalIgnoreCase))
-                .Select(c => new CompletionResult(c));
-        }
+        _query = query;
     }
 
-    class QueryInfoClassCompleter : InfoClassCompleter
+    public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName,
+        string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
     {
-        public QueryInfoClassCompleter() : base(true)
+        if (!fakeBoundParameters.Contains("Object"))
         {
+            return new CompletionResult[0];
         }
-    }
 
-    class SetInfoClassCompleter : InfoClassCompleter
-    {
-        public SetInfoClassCompleter() : base(false)
+        if (!(((PSObject)fakeBoundParameters["Object"]).BaseObject is NtObject obj))
         {
+            return new CompletionResult[0];
         }
+        IEnumerable<string> info_classes = new string[0];
+        if (_query)
+        {
+            info_classes = obj.NtType.QueryInformationClass.Keys;
+        }
+        else
+        {
+            info_classes = obj.NtType.SetInformationClass.Keys;
+        }
+
+        return info_classes.Where(c => wordToComplete.Length == 0 || c.StartsWith(wordToComplete, StringComparison.OrdinalIgnoreCase))
+            .Select(c => new CompletionResult(c));
+    }
+}
+
+class QueryInfoClassCompleter : InfoClassCompleter
+{
+    public QueryInfoClassCompleter() : base(true)
+    {
+    }
+}
+
+class SetInfoClassCompleter : InfoClassCompleter
+{
+    public SetInfoClassCompleter() : base(false)
+    {
     }
 }

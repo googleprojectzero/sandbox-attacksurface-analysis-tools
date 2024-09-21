@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Interface for a marshalled NDR structure.
+/// </summary>
+/// <remarks>This interface is primarily for internal use only.</remarks>
+public interface INdrStructure
 {
     /// <summary>
-    /// Interface for a marshalled NDR structure.
+    /// Marshal the stucture to a stream.
     /// </summary>
-    /// <remarks>This interface is primarily for internal use only.</remarks>
-    public interface INdrStructure
-    {
-        /// <summary>
-        /// Marshal the stucture to a stream.
-        /// </summary>
-        /// <param name="marshal">The marshal stream.</param>
-        void Marshal(NdrMarshalBuffer marshal);
-        /// <summary>
-        /// Unmarshal the structure from a stream.
-        /// </summary>
-        /// <param name="unmarshal">The unmarshal stream.</param>
-        void Unmarshal(NdrUnmarshalBuffer unmarshal);
-        /// <summary>
-        /// Get the structure's alignment.
-        /// </summary>
-        /// <returns></returns>
-        int GetAlignment();
-    }
+    /// <param name="marshal">The marshal stream.</param>
+    void Marshal(INdrMarshalBuffer marshal);
+    /// <summary>
+    /// Unmarshal the structure from a stream.
+    /// </summary>
+    /// <param name="unmarshal">The unmarshal stream.</param>
+    void Unmarshal(INdrUnmarshalBuffer unmarshal);
+    /// <summary>
+    /// Get the structure's alignment.
+    /// </summary>
+    /// <returns></returns>
+    int GetAlignment();
 }

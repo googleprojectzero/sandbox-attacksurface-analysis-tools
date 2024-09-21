@@ -13,27 +13,26 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
-using NtApiDotNet.Win32;
+using NtCoreLib.Win32;
 using System;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+class SafeFwpmEngineHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    class SafeFwpmEngineHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal SafeFwpmEngineHandle() : base(true)
     {
-        internal SafeFwpmEngineHandle() : base(true)
-        {
-        }
+    }
 
-        [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
-        static extern Win32Error FwpmEngineClose0(IntPtr engineHandle);
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    static extern Win32Error FwpmEngineClose0(IntPtr engineHandle);
 
-        protected override bool ReleaseHandle()
-        {
-            return FwpmEngineClose0(handle) == Win32Error.SUCCESS;
-        }
+    protected override bool ReleaseHandle()
+    {
+        return FwpmEngineClose0(handle) == Win32Error.SUCCESS;
     }
 }
 

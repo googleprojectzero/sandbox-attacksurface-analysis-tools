@@ -12,60 +12,59 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Class to represent an LSA secret value.
+/// </summary>
+public sealed class LsaSecretValue
 {
     /// <summary>
-    /// Class to represent an LSA secret value.
+    /// The current value of the secret.
     /// </summary>
-    public sealed class LsaSecretValue
+    public byte[] CurrentValue { get; }
+
+    /// <summary>
+    /// The set time for the current value.
+    /// </summary>
+    public DateTime CurrentValueSetTime { get; }
+
+    /// <summary>
+    /// The old value of the secret.
+    /// </summary>
+    public byte[] OldValue { get; }
+
+    /// <summary>
+    /// The set time for the old value.
+    /// </summary>
+    public DateTime OldValueSetTime { get; }
+
+    internal LsaSecretValue(SafeLsaMemoryBuffer current_value, LargeInteger current_value_set_time,
+        SafeLsaMemoryBuffer old_value, LargeInteger old_value_set_time)
     {
-        /// <summary>
-        /// The current value of the secret.
-        /// </summary>
-        public byte[] CurrentValue { get; }
-
-        /// <summary>
-        /// The set time for the current value.
-        /// </summary>
-        public DateTime CurrentValueSetTime { get; }
-
-        /// <summary>
-        /// The old value of the secret.
-        /// </summary>
-        public byte[] OldValue { get; }
-
-        /// <summary>
-        /// The set time for the old value.
-        /// </summary>
-        public DateTime OldValueSetTime { get; }
-
-        internal LsaSecretValue(SafeLsaMemoryBuffer current_value, LargeInteger current_value_set_time,
-            SafeLsaMemoryBuffer old_value, LargeInteger old_value_set_time)
+        if (!current_value.IsInvalid)
         {
-            if (!current_value.IsInvalid)
-            {
-                CurrentValue = current_value.GetUnicodeString().ToArray();
-                CurrentValueSetTime = current_value_set_time.ToDateTime();
-            }
-            else
-            {
-                CurrentValue = new byte[0];
-                CurrentValueSetTime = DateTime.MinValue;
-            }
+            CurrentValue = current_value.GetUnicodeString().ToArray();
+            CurrentValueSetTime = current_value_set_time.ToDateTime();
+        }
+        else
+        {
+            CurrentValue = new byte[0];
+            CurrentValueSetTime = DateTime.MinValue;
+        }
 
-            if (!old_value.IsInvalid)
-            {
-                OldValue = old_value.GetUnicodeString().ToArray();
-                OldValueSetTime = old_value_set_time.ToDateTime();
-            }
-            else
-            {
-                OldValue = new byte[0];
-                OldValueSetTime = DateTime.MinValue;
-            }
+        if (!old_value.IsInvalid)
+        {
+            OldValue = old_value.GetUnicodeString().ToArray();
+            OldValueSetTime = old_value_set_time.ToDateTime();
+        }
+        else
+        {
+            OldValue = new byte[0];
+            OldValueSetTime = DateTime.MinValue;
         }
     }
 }

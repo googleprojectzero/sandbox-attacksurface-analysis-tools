@@ -14,29 +14,28 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Initialization flags for resource manager.
+/// </summary>
+[Flags]
+public enum AuthZResourceManagerInitializeFlags
 {
     /// <summary>
-    /// Initialization flags for resource manager.
+    /// None
     /// </summary>
-    [Flags]
-    public enum AuthZResourceManagerInitializeFlags
-    {
-        /// <summary>
-        /// None
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Disable auditing.
-        /// </summary>
-        NoAudit = 1,
-        /// <summary>
-        /// Initialize using impersonation token.
-        /// </summary>
-        InitializeUnderImpersonation = 2,
-        /// <summary>
-        /// Disable central access policies.
-        /// </summary>
-        NoCentralAccessPolicies = 4
-    }
+    None = 0,
+    /// <summary>
+    /// Disable auditing.
+    /// </summary>
+    NoAudit = 1,
+    /// <summary>
+    /// Initialize using impersonation token.
+    /// </summary>
+    InitializeUnderImpersonation = 2,
+    /// <summary>
+    /// Disable central access policies.
+    /// </summary>
+    NoCentralAccessPolicies = 4
 }

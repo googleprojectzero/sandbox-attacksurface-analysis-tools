@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+/// <summary>
+/// Type of SMB2 share.
+/// </summary>
+public enum Smb2ShareType
 {
-    /// <summary>
-    /// Type of SMB2 share.
-    /// </summary>
-    public enum Smb2ShareType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Unknown = 0,
-        [SDKName("SMB2_SHARE_TYPE_DISK")]
-        Disk = 1,
-        [SDKName("SMB2_SHARE_TYPE_PIPE")]
-        Pipe = 2,
-        [SDKName("SMB2_SHARE_TYPE_PRINT")]
-        Print = 3
+    Unknown = 0,
+    [SDKName("SMB2_SHARE_TYPE_DISK")]
+    Disk = 1,
+    [SDKName("SMB2_SHARE_TYPE_PIPE")]
+    Pipe = 2,
+    [SDKName("SMB2_SHARE_TYPE_PRINT")]
+    Print = 3
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

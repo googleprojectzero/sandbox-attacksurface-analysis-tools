@@ -26,7 +26,7 @@ Specify optional context buffer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterConnectionPort
+NtCoreLib.Win32.Filter.FilterConnectionPort
 .EXAMPLE
 Get-FilterConnectionPort -Path "\FilterDriver"
 Open the filter communication port named \FilterDriver.
@@ -40,7 +40,7 @@ function Get-FilterConnectionPort {
         [byte[]]$Context = $null
     )
 
-    [NtApiDotNet.Win32.Filter.FilterConnectionPort]::Open($Path, $SyncHandle, $Context) | Write-Output
+    [NtCoreLib.Win32.Filter.FilterConnectionPort]::Open($Path, $SyncHandle, $Context) | Write-Output
 }
 
 <#
@@ -66,7 +66,7 @@ function Send-FilterConnectionPort {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Filter.FilterConnectionPort]$Port,
+        [NtCoreLib.Win32.Filter.FilterConnectionPort]$Port,
         [byte[]]$Input = $null,
         [int]$MaximumOutput = 0
     )
@@ -82,13 +82,13 @@ This cmdlet enumerates the list of filter drivers loaded on the system.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterDriver[]
+NtCoreLib.Win32.Filter.FilterDriver[]
 .EXAMPLE
 Get-FilterDriver
 Get list of filter drivers.
 #>
 function Get-FilterDriver {
-    [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDrivers() | Write-Output
+    [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterDrivers() | Write-Output
 }
 
 <#
@@ -99,7 +99,7 @@ This cmdlet enumerates the list of filter driver instances for a specified filte
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterInstance[]
+NtCoreLib.Win32.Filter.FilterInstance[]
 .EXAMPLE
 Get-FilterDriverInstance 
 Get list of filter driver instances for all filter drivers.
@@ -116,10 +116,10 @@ function Get-FilterDriverInstance {
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances() | Write-Output
+            [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances() | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances($FilterName) | Write-Output
+            [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterDriverInstances($FilterName) | Write-Output
         }
     }
 }
@@ -132,13 +132,13 @@ This cmdlet enumerates the list of filter driver instances for a specified filte
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterVolume[]
+NtCoreLib.Win32.Filter.FilterVolume[]
 .EXAMPLE
 Get-FilterDriverVolume 
 Get list of filter driver volumes.
 #>
 function Get-FilterDriverVolume {
-    [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumes() | Write-Output
+    [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterVolumes() | Write-Output
 }
 
 <#
@@ -149,7 +149,7 @@ This cmdlet enumerates the list of filter driver volume instances for a specifie
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Filter.FilterInstance[]
+NtCoreLib.Win32.Filter.FilterInstance[]
 .EXAMPLE
 Get-FilterDriverVolumeInstance 
 Get list of filter driver instances for all filter driver volumes.
@@ -166,10 +166,10 @@ function Get-FilterDriverVolumeInstance {
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances() | Write-Output
+            [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances() | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances($VolumeName) | Write-Output
+            [NtCoreLib.Win32.Filter.FilterManagerUtils]::GetFilterVolumeInstances($VolumeName) | Write-Output
         }
     }
 }
@@ -186,7 +186,7 @@ The GUID of the setup class.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceSetupClass
+NtCoreLib.Win32.Device.DeviceSetupClass
 .EXAMPLE
 Get-NtDeviceSetupClass
 Get all device setup classes.
@@ -209,13 +209,13 @@ function Get-NtDeviceSetupClass {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Write-Output
             }
             "FromName" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Where-Object Name -eq $Name | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceSetupClasses() | Where-Object Name -eq $Name | Write-Output
             }
             "FromClass" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceSetupClass($Class) | Write-Output
             }
         }
     }
@@ -233,7 +233,7 @@ Get all devices including ones not present.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceInterfaceClass
+NtCoreLib.Win32.Device.DeviceInterfaceClass
 .EXAMPLE
 Get-NtDeviceInterfaceClass
 Get all device interface classes.
@@ -251,10 +251,10 @@ function Get-NtDeviceInterfaceClass {
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClasses($All) | Write-Output
+            [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceClasses($All) | Write-Output
         }
         "FromClass" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceClass($Class, $All) | Write-Output
+            [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceClass($Class, $All) | Write-Output
         }
     }
 }
@@ -277,7 +277,7 @@ Specify a symbolic link name to resolve the device node.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceNode
+NtCoreLib.Win32.Device.DeviceNode
 .EXAMPLE
 Get-NtDeviceNode
 Get all present device instances.
@@ -318,16 +318,16 @@ function Get-NtDeviceNode {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeList($All) | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceNodeList($All) | Write-Output
             }
             "FromClass" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeList($Class, $All) | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceNodeList($Class, $All) | Write-Output
             }
             "FromTree" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeTree() | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceNodeTree() | Write-Output
             }
             "FromInstanceId" {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceNode($InstanceId) | Write-Output
             }
             "FromPDOName" {
                 Get-NtDeviceNode | Where-Object PDOName -eq $PDOName
@@ -352,7 +352,7 @@ This cmdlet gets device properties.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceProperty[]
+NtCoreLib.Win32.Device.DeviceProperty[]
 .EXAMPLE
 Get-NtDeviceProperty -Device $dev
 Get all properties for a device.
@@ -361,7 +361,7 @@ function Get-NtDeviceProperty {
     [CmdletBinding(DefaultParameterSetName = "FromDevice")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromDevice", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Device.IDevicePropertyProvider]$Device
+        [NtCoreLib.Win32.Device.IDevicePropertyProvider]$Device
     )
 
     PROCESS {
@@ -387,7 +387,7 @@ Specify the maximum depth for the recursion.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceTreeNode[]
+NtCoreLib.Win32.Device.DeviceTreeNode[]
 .EXAMPLE
 Get-NtDeviceNodeChild -Node $dev
 Get all children for a device node
@@ -402,7 +402,7 @@ function Get-NtDeviceNodeChild {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
-        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
+        [NtCoreLib.Win32.Device.DeviceNode]$Node,
         [switch]$Recurse,
         [int]$Depth = [int]::MaxValue
     )
@@ -413,8 +413,8 @@ function Get-NtDeviceNodeChild {
 
     try
     {
-        if ($Node -isNot [NtApiDotNet.Win32.Device.DeviceTreeNode]) {
-            $Node = [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceNodeTree($Node.InstanceId)
+        if ($Node -isNot [NtCoreLib.Win32.Device.DeviceTreeNode]) {
+            $Node = [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceNodeTree($Node.InstanceId)
         }
 
         switch($PSCmdlet.ParameterSetName) {
@@ -445,7 +445,7 @@ Get all parents recursively.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceNode[]
+NtCoreLib.Win32.Device.DeviceNode[]
 .EXAMPLE
 Get-NtDeviceNodeParent -Node $dev
 Get parent for device node.
@@ -457,7 +457,7 @@ function Get-NtDeviceNodeParent {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0)]
-        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
+        [NtCoreLib.Win32.Device.DeviceNode]$Node,
         [switch]$Recurse
     )
 
@@ -484,7 +484,7 @@ Summarize the device stack as a single line.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceStackEntry[]
+NtCoreLib.Win32.Device.DeviceStackEntry[]
 .EXAMPLE
 Get-NtDeviceNodeStack -Node $dev
 Get device stack for device node.
@@ -493,7 +493,7 @@ function Get-NtDeviceNodeStack {
     [CmdletBinding(DefaultParameterSetName = "FromNode")]
     Param(
         [parameter(Mandatory, ParameterSetName = "FromNode", Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Device.DeviceNode]$Node,
+        [NtCoreLib.Win32.Device.DeviceNode]$Node,
         [switch]$Summary
     )
 
@@ -522,7 +522,7 @@ The path the instance symbolic link.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Device.DeviceInterfaceInstance[]
+NtCoreLib.Win32.Device.DeviceInterfaceInstance[]
 .EXAMPLE
 Get-NtDeviceInterfaceInstance
 Get all device interface instances.
@@ -544,13 +544,13 @@ function Get-NtDeviceInterfaceInstance {
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances() | Write-Output
+            [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances() | Write-Output
         }
         "FromClass" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances($Class) | Write-Output
+            [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstances($Class) | Write-Output
         }
         "FromInstance" {
-            [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstance($Instance) | Write-Output
+            [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceInstance($Instance) | Write-Output
         }
     }
 }

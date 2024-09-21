@@ -12,39 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 
-namespace TokenViewer
+namespace TokenViewer;
+
+internal class ThreadTokenEntry : ProcessTokenEntry
 {
-    internal class ThreadTokenEntry : ProcessTokenEntry
+    public string ThreadName { get; }
+    public int ThreadId { get; }
+    public NtToken ThreadToken { get; private set; }
+    public SecurityDescriptor ThreadSecurity { get; }
+
+    public ThreadTokenEntry(NtProcess process, NtToken process_token,
+        int thread_id, string thread_name, NtToken thread_token,
+        SecurityDescriptor thread_security)
+        : base(process, process_token)
     {
-        public string ThreadName { get; }
-        public int ThreadId { get; }
-        public NtToken ThreadToken { get; private set; }
-        public SecurityDescriptor ThreadSecurity { get; }
+        ThreadName = thread_name;
+        ThreadId = thread_id;
+        ThreadToken = thread_token.Duplicate();
+        ThreadSecurity = thread_security;
+    }
 
-        public ThreadTokenEntry(NtProcess process, NtToken process_token,
-            int thread_id, string thread_name, NtToken thread_token,
-            SecurityDescriptor thread_security)
-            : base(process, process_token)
-        {
-            ThreadName = thread_name;
-            ThreadId = thread_id;
-            ThreadToken = thread_token.Duplicate();
-            ThreadSecurity = thread_security;
-        }
+    public override void Dispose()
+    {
+        ThreadToken?.Dispose();
+        base.Dispose();
+    }
 
-        public override void Dispose()
-        {
-            ThreadToken?.Dispose();
-            base.Dispose();
-        }
-
-        public override ProcessTokenEntry Clone()
-        {
-            ThreadTokenEntry thread = (ThreadTokenEntry)base.Clone();
-            thread.ThreadToken = ThreadToken.Duplicate();
-            return thread;
-        }
+    public override ProcessTokenEntry Clone()
+    {
+        ThreadTokenEntry thread = (ThreadTokenEntry)base.Clone();
+        thread.ThreadToken = ThreadToken.Duplicate();
+        return thread;
     }
 }

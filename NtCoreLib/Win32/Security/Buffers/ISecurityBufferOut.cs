@@ -12,11 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+internal interface ISecurityBufferOut
 {
-    internal interface ISecurityBufferOut
-    {
-        int Size { get; }
-        void Update(SecurityBufferType type, byte[] data);
-    }
+    int Size { get; }
+    void Update(SecurityBufferType type, byte[] data);
 }

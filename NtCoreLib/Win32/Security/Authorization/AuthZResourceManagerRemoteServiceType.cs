@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Type of remote service to access.
+/// </summary>
+public enum AuthZResourceManagerRemoteServiceType
 {
     /// <summary>
-    /// Type of remote service to access.
+    /// Default, no evaluation of CAPs.
     /// </summary>
-    public enum AuthZResourceManagerRemoteServiceType
-    {
-        /// <summary>
-        /// Default, no evaluation of CAPs.
-        /// </summary>
-        Default,
-        /// <summary>
-        /// Evaluates CAPs.
-        /// </summary>
-        CentralAccessPolicy
-    }
+    Default,
+    /// <summary>
+    /// Evaluates CAPs.
+    /// </summary>
+    CentralAccessPolicy
 }

@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Sam
+namespace NtCoreLib.Win32.Security.Sam;
+
+/// <summary>
+/// Membership entry for a group.
+/// </summary>
+public struct SamGroupMember
 {
     /// <summary>
-    /// Membership entry for a group.
+    /// The group relative ID.
     /// </summary>
-    public struct SamGroupMember
+    public uint RelativeId { get; }
+
+    /// <summary>
+    /// The attributes for the group.
+    /// </summary>
+    public GroupAttributes Attributes { get; }
+
+    internal SamGroupMember(uint relative_id, uint attributes)
     {
-        /// <summary>
-        /// The group relative ID.
-        /// </summary>
-        public uint RelativeId { get; }
-
-        /// <summary>
-        /// The attributes for the group.
-        /// </summary>
-        public GroupAttributes Attributes { get; }
-
-        internal SamGroupMember(uint relative_id, uint attributes)
-        {
-            RelativeId = relative_id;
-            Attributes = (GroupAttributes)attributes;
-        }
+        RelativeId = relative_id;
+        Attributes = (GroupAttributes)attributes;
     }
 }

@@ -14,28 +14,27 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography;
+
+internal class KerberosEncryptionEngineUnsupported : KerberosEncryptionEngine
 {
-    internal class KerberosEncryptionEngineUnsupported : KerberosEncryptionEngine
+    public KerberosEncryptionEngineUnsupported(KerberosEncryptionType encryption_type) 
+        : base(encryption_type, 0, 0, 0, 0, 0, null)
     {
-        public KerberosEncryptionEngineUnsupported(KerberosEncryptionType encryption_type) 
-            : base(encryption_type, 0, 0, 0, 0, 0, null)
-        {
-        }
+    }
 
-        public override byte[] DeriveKey(string password, int iterations, string salt)
-        {
-            throw new NotImplementedException();
-        }
+    public override byte[] DeriveKey(string password, int iterations, string salt)
+    {
+        throw new NotImplementedException();
+    }
 
-        public override byte[] Encrypt(byte[] key, byte[] plain_text, KerberosKeyUsage key_usage)
-        {
-            throw new NotImplementedException();
-        }
+    public override byte[] Encrypt(byte[] key, byte[] plain_text, KerberosKeyUsage key_usage)
+    {
+        throw new NotImplementedException();
+    }
 
-        public override bool TryDecrypt(byte[] key, byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
-        {
-            throw new NotImplementedException();
-        }
+    public override bool TryDecrypt(byte[] key, byte[] cipher_text, KerberosKeyUsage key_usage, out byte[] plain_text)
+    {
+        throw new NotImplementedException();
     }
 }

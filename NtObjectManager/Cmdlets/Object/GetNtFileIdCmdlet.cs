@@ -12,42 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the file ID for a file.</para>
+/// <para type="description">This cmdlet gets the file ID for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileId -File $f</code>
+///   <para>Get the file ID for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileId -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the file ID for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileId -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the file ID for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileId", DefaultParameterSetName = "Default")]
+[OutputType(typeof(long))]
+public class GetNtFileIdCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the file ID for a file.</para>
-    /// <para type="description">This cmdlet gets the file ID for a file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileId -File $f</code>
-    ///   <para>Get the file ID for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileId -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the file ID for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileId -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the file ID for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileId", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(long))]
-    public class GetNtFileIdCmdlet : BaseNtFilePropertyCmdlet
+    public GetNtFileIdCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileIdCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(file.FileIdValue);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(file.FileIdValue);
     }
 }

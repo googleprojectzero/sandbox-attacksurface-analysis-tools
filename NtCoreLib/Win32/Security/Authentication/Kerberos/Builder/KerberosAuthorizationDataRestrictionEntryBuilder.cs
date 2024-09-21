@@ -14,45 +14,44 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent the KERB_AD_RESTRICTION_ENTRY AD type builder.
+/// </summary>
+public sealed class KerberosAuthorizationDataRestrictionEntryBuilder : KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Class to represent the KERB_AD_RESTRICTION_ENTRY AD type builder.
+    /// Flags.
     /// </summary>
-    public sealed class KerberosAuthorizationDataRestrictionEntryBuilder : KerberosAuthorizationDataBuilder
+    public KerberosRestrictionEntryFlags Flags { get; set; }
+    /// <summary>
+    /// Token IL.
+    /// </summary>
+    public TokenIntegrityLevel IntegrityLevel { get; set; }
+    /// <summary>
+    /// Machine ID.
+    /// </summary>
+    public byte[] MachineId { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosAuthorizationDataRestrictionEntryBuilder() 
+        : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
     {
-        /// <summary>
-        /// Flags.
-        /// </summary>
-        public KerberosRestrictionEntryFlags Flags { get; set; }
-        /// <summary>
-        /// Token IL.
-        /// </summary>
-        public TokenIntegrityLevel IntegrityLevel { get; set; }
-        /// <summary>
-        /// Machine ID.
-        /// </summary>
-        public byte[] MachineId { get; set; }
+        IntegrityLevel = TokenIntegrityLevel.High;
+        MachineId = new byte[32];
+        new Random().NextBytes(MachineId);
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataRestrictionEntryBuilder() 
-            : base(KerberosAuthorizationDataType.KERB_AD_RESTRICTION_ENTRY)
-        {
-            IntegrityLevel = TokenIntegrityLevel.High;
-            MachineId = new byte[32];
-            new Random().NextBytes(MachineId);
-        }
-
-        /// <summary>
-        /// Create the Kerberos authorization data.
-        /// </summary>
-        /// <returns>The kerberos authorization data.</returns>
-        public override KerberosAuthorizationData Create()
-        {
-            return new KerberosAuthorizationDataRestrictionEntry(Flags, 
-                IntegrityLevel, MachineId);
-        }
+    /// <summary>
+    /// Create the Kerberos authorization data.
+    /// </summary>
+    /// <returns>The kerberos authorization data.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        return new KerberosAuthorizationDataRestrictionEntry(Flags, 
+            IntegrityLevel, MachineId);
     }
 }

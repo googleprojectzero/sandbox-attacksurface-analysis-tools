@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Type of credential protection.
+/// </summary>
+[SDKName("CRED_PROTECTION_TYPE")]
+public enum CredentialProtectionType
 {
-    /// <summary>
-    /// Type of credential protection.
-    /// </summary>
-    [SDKName("CRED_PROTECTION_TYPE")]
-    public enum CredentialProtectionType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        CredUnprotected,
-        CredUserProtection,
-        CredTrustedProtection,
-        CredForSystemProtection,
+    CredUnprotected,
+    CredUserProtection,
+    CredTrustedProtection,
+    CredForSystemProtection,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

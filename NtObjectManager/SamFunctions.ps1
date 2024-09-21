@@ -24,7 +24,7 @@ Specify the access rights on the server.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamServer
+NtCoreLib.Win32.Security.Sam.SamServer
 .EXAMPLE
 Connect-SamServer
 Connect to the local SAM server with maximum access.
@@ -38,11 +38,11 @@ Connect to the local SAM server with EnumerateDomains access.
 function Connect-SamServer { 
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Win32.Security.Sam.SamServerAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamServerAccessRights]$Access = "MaximumAllowed",
         [string]$ServerName
     )
 
-    [NtApiDotNet.Win32.Security.Sam.SamServer]::Connect($ServerName, $Access)
+    [NtCoreLib.Win32.Security.Sam.SamServer]::Connect($ServerName, $Access)
 }
 
 <#
@@ -67,7 +67,7 @@ Specify to open the user domain.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamDomain
+NtCoreLib.Win32.Security.Sam.SamDomain
 .EXAMPLE
 Get-SamDomain -Server $server
 Get all accessible domain objects from the server.
@@ -82,11 +82,11 @@ function Get-SamDomain {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamServer]$Server,
+        [NtCoreLib.Win32.Security.Sam.SamServer]$Server,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$DomainId,
+        [NtCoreLib.Security.Authorization.Sid]$DomainId,
         [Parameter(Mandatory, ParameterSetName="FromUser")]
         [switch]$User,
         [Parameter(Mandatory, ParameterSetName="FromBuiltin")]
@@ -96,7 +96,7 @@ function Get-SamDomain {
         [Parameter(ParameterSetName="FromSid")]
         [Parameter(ParameterSetName="FromUser")]
         [Parameter(ParameterSetName="FromBuiltin")]
-        [NtApiDotNet.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamDomainAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -149,7 +149,7 @@ Specify to get user by ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamUser
+NtCoreLib.Win32.Security.Sam.SamUser
 .EXAMPLE
 Get-SamUser -Domain $domain
 Get all accessible user objects in the domain.
@@ -167,21 +167,21 @@ function Get-SamUser {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [NtCoreLib.Win32.Security.Sam.SamDomain]$Domain,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Mandatory, ParameterSetName="FromUserId")]
         [uint32]$UserId,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromName")]
         [Parameter(ParameterSetName="FromSid")]
         [Parameter(ParameterSetName="FromUserId")]
-        [NtApiDotNet.Win32.Security.Sam.SamUserAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamUserAccessRights]$Access = "MaximumAllowed",
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="AllInfoOnly")]
-        [NtApiDotNet.Win32.Security.Sam.UserAccountControlFlags]$Flags = 0,
+        [NtCoreLib.Win32.Security.Sam.UserAccountControlFlags]$Flags = 0,
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -231,7 +231,7 @@ Specify to get group by ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamGroup
+NtCoreLib.Win32.Security.Sam.SamGroup
 .EXAMPLE
 Get-SamGroup -Domain $domain
 Get all accessible group objects in the domain.
@@ -249,18 +249,18 @@ function Get-SamGroup {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [NtCoreLib.Win32.Security.Sam.SamDomain]$Domain,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Mandatory, ParameterSetName="FromId")]
         [uint32]$GroupId,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromName")]
         [Parameter(ParameterSetName="FromSid")]
         [Parameter(ParameterSetName="FromId")]
-        [NtApiDotNet.Win32.Security.Sam.SamGroupAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamGroupAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -300,7 +300,7 @@ Specify the group object to get the members from.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamGroupMember[]
+NtCoreLib.Win32.Security.Sam.SamGroupMember[]
 .EXAMPLE
 Get-SamGroupMember -Group $group
 Get members of the group objects.
@@ -309,7 +309,7 @@ function Get-SamGroupMember {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamGroup]$Group
+        [NtCoreLib.Win32.Security.Sam.SamGroup]$Group
     )
 
     $Group.GetMembers() | Write-Output
@@ -325,7 +325,7 @@ Specify the alias object to get the members from.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid[]
+NtCoreLib.Security.Authorization.Sid[]
 .EXAMPLE
 Get-SamGroupMember -Alias $alias
 Get members of the group objects.
@@ -334,7 +334,7 @@ function Get-SamAliasMember {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamAlias]$Alias
+        [NtCoreLib.Win32.Security.Sam.SamAlias]$Alias
     )
 
     $Alias.GetMembers() | Write-Output
@@ -360,7 +360,7 @@ Specify to get alias by ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamAlias
+NtCoreLib.Win32.Security.Sam.SamAlias
 .EXAMPLE
 Get-SamAlias -Domain $domain
 Get all accessible alias objects in the domain.
@@ -378,18 +378,18 @@ function Get-SamAlias {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [NtCoreLib.Win32.Security.Sam.SamDomain]$Domain,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Mandatory, ParameterSetName="FromId")]
         [uint32]$AliasId,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromName")]
         [Parameter(ParameterSetName="FromSid")]
         [Parameter(ParameterSetName="FromId")]
-        [NtApiDotNet.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -435,7 +435,7 @@ Specify the type of account to create.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Sam.SamUser
+NtCoreLib.Win32.Security.Sam.SamUser
 .EXAMPLE
 New-SamUser -Domain $domain -Name "bob"
 Create the bob user in the domain.
@@ -447,11 +447,11 @@ function New-SamUser {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Sam.SamDomain]$Domain,
+        [NtCoreLib.Win32.Security.Sam.SamDomain]$Domain,
         [Parameter(Mandatory, Position = 1)]
         [string]$Name,
-        [NtApiDotNet.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
-        [NtApiDotNet.Win32.Security.Sam.SamUserAccountType]$AccountType = "User"
+        [NtCoreLib.Win32.Security.Sam.SamAliasAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Sam.SamUserAccountType]$AccountType = "User"
     )
     $Domain.CreateUser($Name, $AccountType, $Access)
 }

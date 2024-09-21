@@ -14,40 +14,39 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Utilities.ASN1
+namespace NtCoreLib.Utilities.ASN1;
+
+internal class DERParserStream
 {
-    internal class DERParserStream
+    private readonly MemoryStream _stm;
+    private readonly BinaryReader _reader;
+    private readonly long _offset;
+
+    public DERParserStream(byte[] data, int index, int count, long offset)
     {
-        private readonly MemoryStream _stm;
-        private readonly BinaryReader _reader;
-        private readonly long _offset;
-
-        public DERParserStream(byte[] data, int index, int count, long offset)
-        {
-            _stm = new MemoryStream(data, index, count);
-            _reader = new BinaryReader(_stm);
-            _offset = offset;
-        }
-
-        public DERValue ReadValue()
-        {
-            DERValue ret = new DERValue();
-            ret.Offset = _offset + _stm.Position;
-            byte id = _reader.ReadByte();
-            ret.Type = (DERTagType)(id >> 6);
-            ret.Constructed = (id & 0x20) != 0;
-            ret.Tag = id & 0x1F;
-            if (ret.Tag == 0x1F)
-            {
-                ret.Tag = _reader.ReadEncodedInt();
-            }
-            // TODO: Handle indefinite length?
-            int length = _reader.ReadLength();
-            ret.DataOffset = _offset + _stm.Position;
-            ret.Data = _reader.ReadAllBytes(length);
-            return ret;
-        }
-
-        public bool Done => _stm.Position >= _stm.Length;
+        _stm = new MemoryStream(data, index, count);
+        _reader = new BinaryReader(_stm);
+        _offset = offset;
     }
+
+    public DERValue ReadValue()
+    {
+        DERValue ret = new();
+        ret.Offset = _offset + _stm.Position;
+        byte id = _reader.ReadByte();
+        ret.Type = (DERTagType)(id >> 6);
+        ret.Constructed = (id & 0x20) != 0;
+        ret.Tag = id & 0x1F;
+        if (ret.Tag == 0x1F)
+        {
+            ret.Tag = _reader.ReadEncodedInt();
+        }
+        // TODO: Handle indefinite length?
+        int length = _reader.ReadLength();
+        ret.DataOffset = _offset + _stm.Position;
+        ret.Data = _reader.ReadAllBytes(length);
+        return ret;
+    }
+
+    public bool Done => _stm.Position >= _stm.Length;
 }

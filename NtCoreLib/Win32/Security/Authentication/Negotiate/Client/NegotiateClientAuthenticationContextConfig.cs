@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Negotiate.Client
+namespace NtCoreLib.Win32.Security.Authentication.Negotiate.Client;
+
+/// <summary>
+/// Additional configuration for the Negotiate client.
+/// </summary>
+public sealed class NegotiateClientAuthenticationContextConfig
 {
     /// <summary>
-    /// Additional configuration for the Negotiate client.
+    /// Channel binding.
     /// </summary>
-    public sealed class NegotiateClientAuthenticationContextConfig
-    {
-        /// <summary>
-        /// Channel binding.
-        /// </summary>
-        public SecurityChannelBinding ChannelBinding { get; set; }
-    }
+    public SecurityChannelBinding ChannelBinding { get; set; }
 }

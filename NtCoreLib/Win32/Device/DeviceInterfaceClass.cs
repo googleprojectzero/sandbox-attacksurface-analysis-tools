@@ -16,51 +16,50 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Device
+namespace NtCoreLib.Win32.Device;
+
+/// <summary>
+/// Class to represent a device interface.
+/// </summary>
+public sealed class DeviceInterfaceClass : IDevicePropertyProvider
 {
-    /// <summary>
-    /// Class to represent a device interface.
-    /// </summary>
-    public sealed class DeviceInterfaceClass : IDevicePropertyProvider
+    private readonly Lazy<List<DeviceProperty>> _properties;
+
+    private List<DeviceProperty> GetAllProperties()
     {
-        private readonly Lazy<List<DeviceProperty>> _properties;
+        return DeviceUtils.GetDeviceProperties(Class, true).ToList();
+    }
 
-        private List<DeviceProperty> GetAllProperties()
-        {
-            return DeviceUtils.GetDeviceProperties(Class, true).ToList();
-        }
+    /// <summary>
+    /// The name of the interface class.
+    /// </summary>
+    public string Name { get; }
 
-        /// <summary>
-        /// The name of the interface class.
-        /// </summary>
-        public string Name { get; }
+    /// <summary>
+    /// The device interface GUID.
+    /// </summary>
+    public Guid Class { get; }
 
-        /// <summary>
-        /// The device interface GUID.
-        /// </summary>
-        public Guid Class { get; }
+    /// <summary>
+    /// The list of device interface instances.
+    /// </summary>
+    public IReadOnlyList<DeviceInterfaceInstance> Instances { get; }
 
-        /// <summary>
-        /// The list of device interface instances.
-        /// </summary>
-        public IReadOnlyList<DeviceInterfaceInstance> Instances { get; }
+    /// <summary>
+    /// The list of all device interface properties.
+    /// </summary>
+    /// <returns>The device interface properties.</returns>
+    public IReadOnlyList<DeviceProperty> GetProperties()
+    {
+        return _properties.Value.AsReadOnly();
+    }
 
-        /// <summary>
-        /// The list of all device interface properties.
-        /// </summary>
-        /// <returns>The device interface properties.</returns>
-        public IReadOnlyList<DeviceProperty> GetProperties()
-        {
-            return _properties.Value.AsReadOnly();
-        }
-
-        internal DeviceInterfaceClass(Guid guid, bool all_devices)
-        {
-            Class = guid;
-            Instances = DeviceUtils.GetDeviceInterfaceList(guid, null, all_devices)
-                .Select(s => new DeviceInterfaceInstance(s, guid)).ToList().AsReadOnly();
-            Name = DeviceUtils.GetDeviceInterfaceName(Class);
-            _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
-        }
+    internal DeviceInterfaceClass(Guid guid, bool all_devices)
+    {
+        Class = guid;
+        Instances = DeviceUtils.GetDeviceInterfaceList(guid, null, all_devices)
+            .Select(s => new DeviceInterfaceInstance(s, guid)).ToList().AsReadOnly();
+        Name = DeviceUtils.GetDeviceInterfaceName(Class);
+        _properties = new Lazy<List<DeviceProperty>>(GetAllProperties);
     }
 }

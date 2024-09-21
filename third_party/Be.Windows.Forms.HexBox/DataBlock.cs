@@ -1,5 +1,3 @@
-using System;
-
 namespace Be.Windows.Forms
 {
     internal abstract class DataBlock

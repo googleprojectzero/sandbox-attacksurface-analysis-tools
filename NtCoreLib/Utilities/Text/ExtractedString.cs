@@ -12,45 +12,44 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.Text
+namespace NtCoreLib.Utilities.Text;
+
+/// <summary>
+/// A single extract string instance.
+/// </summary>
+public struct ExtractedString
 {
     /// <summary>
-    /// A single extract string instance.
+    /// The string value.
     /// </summary>
-    public struct ExtractedString
+    public string Value { get; }
+    /// <summary>
+    /// The offset in the buffer.
+    /// </summary>
+    public long Offset { get; }
+    /// <summary>
+    /// True if the string was 16-bit Unicode.
+    /// </summary>
+    public ExtractedStringType Type { get; }
+    /// <summary>
+    /// Source of the string. Empty if was from a byte array.
+    /// </summary>
+    public string Source { get; }
+
+    internal ExtractedString(string value, long offset, ExtractedStringType type, string source)
     {
-        /// <summary>
-        /// The string value.
-        /// </summary>
-        public string Value { get; }
-        /// <summary>
-        /// The offset in the buffer.
-        /// </summary>
-        public long Offset { get; }
-        /// <summary>
-        /// True if the string was 16-bit Unicode.
-        /// </summary>
-        public ExtractedStringType Type { get; }
-        /// <summary>
-        /// Source of the string. Empty if was from a byte array.
-        /// </summary>
-        public string Source { get; }
+        Value = value;
+        Offset = offset;
+        Type = type;
+        Source = source;
+    }
 
-        internal ExtractedString(string value, long offset, ExtractedStringType type, string source)
-        {
-            Value = value;
-            Offset = offset;
-            Type = type;
-            Source = source;
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The value of the extracted string.</returns>
-        public override string ToString()
-        {
-            return Value;
-        }
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The value of the extracted string.</returns>
+    public override string ToString()
+    {
+        return Value;
     }
 }

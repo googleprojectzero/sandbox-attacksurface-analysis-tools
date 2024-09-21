@@ -17,7 +17,9 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
-using NtApiDotNet.Win32;
+using NtCoreLib.Security;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Security;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -25,7 +27,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace NtApiDotNet.Forms
+namespace NtCoreLib.Forms
 {
     /// <summary>
     /// Control for viewing an ACL.
@@ -85,7 +87,7 @@ namespace NtApiDotNet.Forms
             bool has_inherited_object_ace = false;
             bool has_object_ace = false;
 
-            List<string> flags = new List<string>();
+            List<string> flags = new();
             if (acl.Defaulted)
             {
                 flags.Add("Defaulted");
@@ -315,11 +317,11 @@ namespace NtApiDotNet.Forms
             {
                 _generic_access_mask = generic_access_mask;
                 _current_access_type = access_type;
-                var masks = Win32Utils.GetMaskDictionary(access_type, valid_access, _sdk_names);
+                var masks = Win32Security.GetMaskDictionary(access_type, valid_access, _sdk_names);
                 var ordered = generic_access_mask ? masks.OrderByDescending(p => p.Key) : masks.OrderBy(p => p.Key);
                 ListViewItem[] items = ordered.Select(pair =>
                     {
-                        ListViewItem item = new ListViewItem(pair.Value);
+                        ListViewItem item = new(pair.Value);
                         item.SubItems.Add($"0x{pair.Key:X08}");
                         item.Tag = pair.Key;
                         return item;
@@ -374,9 +376,10 @@ namespace NtApiDotNet.Forms
         {
             Ace ace = GetSelectedAce();
             bool selected = ace != null;
+            bool conditional = ace?.IsCompoundAce ?? false;
             copySIDToolStripMenuItem.Enabled = selected;
             copyAccountToolStripMenuItem.Enabled = selected;
-            copyConditionToolStripMenuItem.Enabled = selected && ace.IsConditionalAce;
+            copyConditionToolStripMenuItem.Enabled = selected && conditional;
         }
 
         private void copyAccountToolStripMenuItem_Click(object sender, EventArgs e)
@@ -411,7 +414,7 @@ namespace NtApiDotNet.Forms
                 return;
             }
 
-            SecurityDescriptor sd = new SecurityDescriptor
+            SecurityDescriptor sd = new()
             {
                 Dacl = new Acl() { ace }
             };

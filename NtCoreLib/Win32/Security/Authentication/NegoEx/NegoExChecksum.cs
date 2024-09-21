@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Class to represent a NEGOEX CHECKSUM structure.
+/// </summary>
+public sealed class NegoExChecksum
 {
     /// <summary>
-    /// Class to represent a NEGOEX CHECKSUM structure.
+    /// The checksum scheme.
     /// </summary>
-    public sealed class NegoExChecksum
+    public NegoExChecksumScheme Scheme { get; }
+
+    /// <summary>
+    /// The type of checksum, depends on the scheme.
+    /// </summary>
+    public int Type { get; }
+
+    /// <summary>
+    /// The value of the checksum, depends on the scheme.
+    /// </summary>
+    public byte[] Value { get; }
+
+    internal NegoExChecksum(NegoExChecksumScheme scheme, int type, byte[] value)
     {
-        /// <summary>
-        /// The checksum scheme.
-        /// </summary>
-        public NegoExChecksumScheme Scheme { get; }
-
-        /// <summary>
-        /// The type of checksum, depends on the scheme.
-        /// </summary>
-        public int Type { get; }
-
-        /// <summary>
-        /// The value of the checksum, depends on the scheme.
-        /// </summary>
-        public byte[] Value { get; }
-
-        internal NegoExChecksum(NegoExChecksumScheme scheme, int type, byte[] value)
-        {
-            Scheme = scheme;
-            Type = type;
-            Value = value;
-        }
+        Scheme = scheme;
+        Type = type;
+        Value = value;
     }
 }

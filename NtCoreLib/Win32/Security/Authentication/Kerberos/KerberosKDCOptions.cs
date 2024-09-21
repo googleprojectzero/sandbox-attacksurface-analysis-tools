@@ -14,32 +14,31 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Flags for the KDC-REQ.
+/// </summary>
+[Flags]
+public enum KerberosKDCOptions : uint
 {
-    /// <summary>
-    /// Flags for the KDC-REQ.
-    /// </summary>
-    [Flags]
-    public enum KerberosKDCOptions : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        Forwardable = (1 << 1),
-        Forwarded = (1 << 2),
-        Proxiable = (1 << 3),
-        Proxy = (1 << 4),
-        AllowPostdate = (1 << 5),
-        Postdated = (1 << 6),
-        Renewable = (1 << 8),
-        OptHardwareAuth = (1 << 11),
-        ClientNameInAdditionalTicket = (1 << 14),
-        Canonicalize = (1 << 15),
-        RequestAnonymous = (1 << 16),
-        DisableTransitedCheck = (1 << 26),
-        RenewableOk = (1 << 27),
-        EncTicketInSessionKey = (1 << 28),
-        Renew = (1 << 30),
-        Validate = (1U << 31)
+    None = 0,
+    Forwardable = (1 << 1),
+    Forwarded = (1 << 2),
+    Proxiable = (1 << 3),
+    Proxy = (1 << 4),
+    AllowPostdate = (1 << 5),
+    Postdated = (1 << 6),
+    Renewable = (1 << 8),
+    OptHardwareAuth = (1 << 11),
+    ClientNameInAdditionalTicket = (1 << 14),
+    Canonicalize = (1 << 15),
+    RequestAnonymous = (1 << 16),
+    DisableTransitedCheck = (1 << 26),
+    RenewableOk = (1 << 27),
+    EncTicketInSessionKey = (1 << 28),
+    Renew = (1 << 30),
+    Validate = (1U << 31)
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

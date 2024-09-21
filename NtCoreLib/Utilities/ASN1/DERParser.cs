@@ -15,37 +15,36 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Utilities.ASN1
+namespace NtCoreLib.Utilities.ASN1;
+
+/// <summary>
+/// A basic ASN.1 DER parser to process Kerberos and SPNEGO Tokens.
+/// </summary>
+internal class DERParser
 {
-    /// <summary>
-    /// A basic ASN.1 DER parser to process Kerberos and SPNEGO Tokens.
-    /// </summary>
-    internal class DERParser
+    private static DERValue[] ParseData(long offset, byte[] data, int index)
     {
-        private static DERValue[] ParseData(long offset, byte[] data, int index)
+        DERParserStream stm = new(data, index, data.Length - index, offset);
+        List<DERValue> values = new();
+        while (!stm.Done)
         {
-            DERParserStream stm = new DERParserStream(data, index, data.Length - index, offset);
-            List<DERValue> values = new List<DERValue>();
-            while (!stm.Done)
+            DERValue v = stm.ReadValue();
+            if (v.Constructed)
             {
-                DERValue v = stm.ReadValue();
-                if (v.Constructed)
-                {
-                    v.Children = ParseData(v.DataOffset, v.Data, 0);
-                }
-                values.Add(v);
+                v.Children = ParseData(v.DataOffset, v.Data, 0);
             }
-            return values.ToArray();
+            values.Add(v);
         }
+        return values.ToArray();
+    }
 
-        public static DERValue[] ParseData(byte[] data, int index = 0)
-        {
-            return ParseData(0, data, index);
-        }
+    public static DERValue[] ParseData(byte[] data, int index = 0)
+    {
+        return ParseData(0, data, index);
+    }
 
-        public static DERValue[] ParseFile(string path)
-        {
-            return ParseData(File.ReadAllBytes(path), 0);
-        }
+    public static DERValue[] ParseFile(string path)
+    {
+        return ParseData(File.ReadAllBytes(path), 0);
     }
 }

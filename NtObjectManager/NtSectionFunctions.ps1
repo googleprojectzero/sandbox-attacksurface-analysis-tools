@@ -28,7 +28,7 @@ Specify an object path for the new section object.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtSection
+NtCoreLib.NtSection
 .EXAMPLE
 New-NtSectionImage -Path \??\c:\windows\notepad.exe
 Creates a
@@ -40,7 +40,7 @@ function New-NtSectionImage {
     [CmdletBinding(DefaultParameterSetName = "FromFile")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)]
         [string]$Path,
         [Parameter(ParameterSetName = "FromPath")]
@@ -53,11 +53,11 @@ function New-NtSectionImage {
             $Path = Get-NtFilePath $Path -Resolve
         }
         Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read, Delete -Access GenericExecute) {
-            return [NtApiDotNet.NtSection]::CreateImageSection($ObjectPath, $new_file)
+            return [NtCoreLib.NtSection]::CreateImageSection($ObjectPath, $new_file)
         }
     }
     else {
-        return [NtApiDotNet.NtSection]::CreateImageSection($ObjectPath, $File)
+        return [NtCoreLib.NtSection]::CreateImageSection($ObjectPath, $File)
     }
 }
 
@@ -98,7 +98,7 @@ function Show-NtSection {
     [CmdletBinding(DefaultParameterSetName = "FromSection")]
     Param(
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromSection")]
-        [NtApiDotNet.NtSection]$Section,
+        [NtCoreLib.NtSection]$Section,
         [Parameter(ParameterSetName = "FromSection")]
         [switch]$ReadOnly,
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromData")]
@@ -116,18 +116,11 @@ function Show-NtSection {
                 return
             }
             Use-NtObject($obj = $Section.Duplicate()) {
-                $obj.Inherit = $true
                 $cmdline = [string]::Format("EditSection --handle {0}", $obj.Handle.DangerousGetHandle())
                 if ($ReadOnly) {
                     $cmdline += " --readonly"
                 }
-                $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
-                $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
-                Use-NtObject($p = New-Win32Process -Config $config) {
-                    if ($Wait) {
-                        $p.Process.Wait() | Out-Null
-                    }
-                }
+                [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\EditSection.exe", $cmdline, $Wait, $obj)
             }
         }
         "FromData" {
@@ -137,28 +130,17 @@ function Show-NtSection {
             $tempfile = New-TemporaryFile
             $path = $tempfile.FullName
             [System.IO.File]::WriteAllBytes($path, $Data)
-            Use-NtObject($p = New-Win32Process "EditSection --delete --file=""$path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-                if ($Wait) {
-                    $p.Process.Wait() | Out-Null
-                }
-            }
+
+            [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\EditSection.exe", "EditSection --delete --file=""$path""", $Wait)
         }
         "FromFile" {
             $Path = Resolve-Path $Path
             if ($Path -ne "") {
-                Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-                    if ($Wait) {
-                        $p.Process.Wait() | Out-Null
-                    }
-                }
+                [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\EditSection.exe", "EditSection --file=""$Path""", $Wait)
             }
         }
         "FromPath" {
-            Use-NtObject($p = New-Win32Process "EditSection --path=""$ObjPath""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-                if ($Wait) {
-                    $p.Process.Wait() | Out-Null
-                }
-            }
+            [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\EditSection.exe", "EditSection --path=""$ObjPath""", $Wait)
         }
     }
 }
@@ -189,7 +171,7 @@ Inheritance flags for the section.
 .PARAMETER AllocationType
 The allocation type for the mapping.
 .OUTPUTS
-NtApiDotNet.NtMappedSection - The mapped section.
+NtCoreLib.NtMappedSection - The mapped section.
 .EXAMPLE
 Add-NtSection -Section $sect -Protection ReadWrite
 Map the section as Read/Write.
@@ -203,17 +185,17 @@ Map the section starting from offset 64k.
 function Add-NtSection {
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtSection]$Section,
+        [NtCoreLib.NtSection]$Section,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.MemoryAllocationProtect]$Protection,
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.MemoryAllocationProtect]$Protection,
+        [NtCoreLib.NtProcess]$Process,
         [IntPtr]$ViewSize = 0,
         [IntPtr]$BaseAddress = 0,
         [IntPtr]$ZeroBits = 0,
         [IntPtr]$CommitSize = 0,
-        [NtApiDotNet.LargeInteger]$SectionOffset,
-        [NtApiDotNet.SectionInherit]$SectionInherit = [NtApiDotNet.SectionInherit]::ViewUnmap,
-        [NtApiDotNet.AllocationType]$AllocationType = "None"
+        [NtCoreLib.LargeInteger]$SectionOffset,
+        [NtCoreLib.SectionInherit]$SectionInherit = [NtCoreLib.SectionInherit]::ViewUnmap,
+        [NtCoreLib.AllocationType]$AllocationType = "None"
     )
 
     if ($null -eq $Process) {
@@ -224,8 +206,6 @@ function Add-NtSection {
             $ZeroBits, $CommitSize, $SectionOffset, `
             $SectionInherit, $AllocationType) | Write-Output
 }
-
-Set-Alias -Name Get-NtMappedSection -Value Add-NtSection
 
 <#
 .SYNOPSIS
@@ -256,13 +236,13 @@ function Remove-NtSection {
     [CmdletBinding(DefaultParameterSetName = "FromMapping")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromMapping")]
-        [NtApiDotNet.NtMappedSection]$Mapping,
+        [NtCoreLib.NtMappedSection]$Mapping,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromAddress")]
         [int64]$Address,
         [parameter(Position = 1, ParameterSetName = "FromAddress")]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(ParameterSetName = "FromAddress")]
-        [NtApiDotNet.MemUnmapFlags]$Flags = 0
+        [NtCoreLib.MemUnmapFlags]$Flags = 0
     )
 
     switch ($PsCmdlet.ParameterSetName) {
@@ -289,7 +269,7 @@ Specify to treat Path as a Win32 path.
 .PARAMETER FromEa
 Specify whether to the read the cached signing level from the extended attribute.
 .OUTPUTS
-NtApiDotNet.CachedSigningLevel
+NtCoreLib.Security.CodeIntegrity.CachedSigningLevel
 .EXAMPLE
 Get-NtCachedSigningLevel \??\c:\path\to\file.dll
 Get the cached signing level from \??\c:\path\to\file.dll
@@ -309,10 +289,10 @@ function Get-NtCachedSigningLevel {
     )
 
     $access = if ($FromEa) {
-        [NtApiDotNet.FileAccessRights]::ReadEa
+        [NtCoreLib.FileAccessRights]::ReadEa
     }
     else {
-        [NtApiDotNet.FileAccessRights]::ReadData
+        [NtCoreLib.FileAccessRights]::ReadData
     }
 
     Use-NtObject($f = Get-NtFile $Path -Win32Path:$Win32Path -Access $access -ShareMode Read) {
@@ -347,7 +327,7 @@ Specify to return the cached signing level.
 INPUTS
 None
 .OUTPUTS
-NtApiDotNet.CachedSigningLevel
+NtCoreLib.Security.CodeIntegrity.CachedSigningLevel
 .EXAMPLE
 Set-NtCachedSigningLevel \??\c:\path\to\file.dll
 Set the cached signing level to \??\c:\path\to\file.dll
@@ -361,8 +341,8 @@ function Set-NtCachedSigningLevel {
         [string]$Path,
         [switch]$Win32Path,
         [int]$Flags = 4,
-        [NtApiDotNet.SigningLevel]$SigningLevel = 0,
-        [NtApiDotnet.NtFile[]]$AdditionalFiles,
+        [NtCoreLib.Security.CodeIntegrity.SigningLevel]$SigningLevel = 0,
+        [NtCoreLib.NtFile[]]$AdditionalFiles,
         [string]$CatalogPath,
         [switch]$PassThru
     )
@@ -389,7 +369,7 @@ Specify to not try and resolve the signing level.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SigningLevel
+NtCoreLib.Security.CodeIntegrity.SigningLevel
 #>
 function Get-NtSigningLevel {
     [CmdletBinding(DefaultParameterSetName="FromPath")]
@@ -445,9 +425,9 @@ Compare two signing levels, returns True if the left level is greater or equal t
 function Compare-NtSigningLevel {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.SigningLevel]$Left,
+        [NtCoreLib.Security.CodeIntegrity.SigningLevel]$Left,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.SigningLevel]$Right
+        [NtCoreLib.Security.CodeIntegrity.SigningLevel]$Right
     )
-    [NtApiDotNet.NtSecurity]::CompareSigningLevel($Left, $Right)
+    [NtCoreLib.Security.NtSecurity]::CompareSigningLevel($Left, $Right)
 }

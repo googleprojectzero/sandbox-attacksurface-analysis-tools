@@ -15,42 +15,41 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2QueryInfoRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2QueryInfoRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 41;
+    private readonly Smb2InfoType _info_type;
+    private readonly int _output_buffer_length;
+    private readonly Smb2FileId _file_id;
+
+    public int FileInfoClass { get; set; }
+    public byte[] InputBuffer { get; set; }
+    public uint AdditionalInformation { get; set; }
+    public int Flags { get; set; }
+
+    public Smb2QueryInfoRequestPacket(Smb2InfoType info_type, int output_buffer_length, Smb2FileId file_id) : base(Smb2Command.QUERY_INFO)
     {
-        private const ushort STRUCT_SIZE = 41;
-        private readonly Smb2InfoType _info_type;
-        private readonly int _output_buffer_length;
-        private readonly Smb2FileId _file_id;
+        _info_type = info_type;
+        _file_id = file_id;
+        _output_buffer_length = output_buffer_length;
+    }
 
-        public int FileInfoClass { get; set; }
-        public byte[] InputBuffer { get; set; }
-        public uint AdditionalInformation { get; set; }
-        public int Flags { get; set; }
-
-        public Smb2QueryInfoRequestPacket(Smb2InfoType info_type, int output_buffer_length, Smb2FileId file_id) : base(Smb2Command.QUERY_INFO)
-        {
-            _info_type = info_type;
-            _file_id = file_id;
-            _output_buffer_length = output_buffer_length;
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.Write((byte)_info_type);
-            writer.WriteByte(FileInfoClass);
-            writer.Write(_output_buffer_length);
-            int input_buffer_length = InputBuffer?.Length ?? 0;
-            writer.WriteUInt16(input_buffer_length > 0 ? Smb2PacketHeader.CalculateOffset(STRUCT_SIZE) : 0);
-            // Reserved
-            writer.WriteUInt16(0);
-            writer.Write(input_buffer_length);
-            writer.Write(AdditionalInformation);
-            writer.Write(Flags);
-            _file_id.Write(writer);
-            writer.Write(InputBuffer ?? Array.Empty<byte>());
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.Write((byte)_info_type);
+        writer.WriteByte(FileInfoClass);
+        writer.Write(_output_buffer_length);
+        int input_buffer_length = InputBuffer?.Length ?? 0;
+        writer.WriteUInt16(input_buffer_length > 0 ? Smb2PacketHeader.CalculateOffset(STRUCT_SIZE) : 0);
+        // Reserved
+        writer.WriteUInt16(0);
+        writer.Write(input_buffer_length);
+        writer.Write(AdditionalInformation);
+        writer.Write(Flags);
+        _file_id.Write(writer);
+        writer.Write(InputBuffer ?? Array.Empty<byte>());
     }
 }

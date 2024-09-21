@@ -16,32 +16,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
-{
-    internal class PDUBindAck : PDUBase
-    {
-        public ushort MaxXmitFrag { get; }
-        public ushort MaxRecvFrag { get; }
-        public int AssocGroupId { get; }
-        public string SecondaryAddress { get; }
-        public List<ContextResult> ResultList { get; }
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
 
-        public PDUBindAck(byte[] data, bool alter_context) 
-            : base(alter_context ? PDUType.AlterContextResp : PDUType.BindAck)
+internal class PDUBindAck : PDUBase
+{
+    public ushort MaxXmitFrag { get; }
+    public ushort MaxRecvFrag { get; }
+    public int AssocGroupId { get; }
+    public string SecondaryAddress { get; }
+    public List<ContextResult> ResultList { get; }
+
+    public PDUBindAck(byte[] data, bool alter_context) 
+        : base(alter_context ? PDUType.AlterContextResp : PDUType.BindAck)
+    {
+        MemoryStream stm = new(data);
+        BinaryReader reader = new(stm, Encoding.ASCII);
+        MaxXmitFrag = reader.ReadUInt16();
+        MaxRecvFrag = reader.ReadUInt16();
+        AssocGroupId = reader.ReadInt32();
+        int port_len = reader.ReadUInt16();
+        SecondaryAddress = new string(reader.ReadChars(port_len)).TrimEnd('\0');
+        long padding = stm.Position % 4;
+        if (padding != 0)
         {
-            MemoryStream stm = new MemoryStream(data);
-            BinaryReader reader = new BinaryReader(stm, Encoding.ASCII);
-            MaxXmitFrag = reader.ReadUInt16();
-            MaxRecvFrag = reader.ReadUInt16();
-            AssocGroupId = reader.ReadInt32();
-            int port_len = reader.ReadUInt16();
-            SecondaryAddress = new string(reader.ReadChars(port_len)).TrimEnd('\0');
-            long padding = stm.Position % 4;
-            if (padding != 0)
-            {
-                stm.Position += (4 - padding);
-            }
-            ResultList = ContextResult.ReadList(reader);
+            stm.Position += (4 - padding);
         }
+        ResultList = ContextResult.ReadList(reader);
     }
 }

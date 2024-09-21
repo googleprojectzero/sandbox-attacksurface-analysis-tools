@@ -14,163 +14,153 @@
 
 using System;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// A structure to return the result of an NT system call with status.
+/// This allows a function to return both a status code and a result
+/// without having to resort to out parameters.
+/// </summary>
+/// <typeparam name="T">The result type.</typeparam>
+public readonly struct NtResult<T> : IDisposable
 {
+    private readonly T _result;
+
     /// <summary>
-    /// A structure to return the result of an NT system call with status.
-    /// This allows a function to return both a status code and a result
-    /// without having to resort to out parameters.
+    /// The NT status code.
     /// </summary>
-    /// <typeparam name="T">The result type.</typeparam>
-    public struct NtResult<T> : IDisposable
+    public NtStatus Status { get; }
+    /// <summary>
+    /// The result of the NT call.
+    /// </summary>
+    /// <exception cref="NtException">Thrown if status code is an error and there's no result.</exception>
+    public T Result
     {
-        private readonly T _result;
-
-        /// <summary>
-        /// The NT status code.
-        /// </summary>
-        public NtStatus Status { get; }
-        /// <summary>
-        /// The result of the NT call.
-        /// </summary>
-        public T Result
+        get
         {
-            get
-            {
-                System.Diagnostics.Debug.Assert(Status.IsSuccess());
-                return _result;
-            }
+            if (!IsSuccess)
+                throw new NtException(Status);
+            return _result;
         }
-        /// <summary>
-        /// Get the result object or throw an exception if status code is an error.
-        /// </summary>
-        /// <returns>The result NT result.</returns>
-        /// <exception cref="NtException">Thrown if status code is an error.</exception>
-        public T GetResultOrThrow()
-        {
-            Status.ToNtException();
-            return Result;
-        }
+    }
+    /// <summary>
+    /// Get the result object or a default value if an error occurred.
+    /// </summary>
+    /// <param name="default_value">The default value to return.</param>
+    /// <returns>The result or the default if an error occurred.</returns>
+    public T GetResultOrDefault(T default_value)
+    {
+        if (IsSuccess)
+            return _result;
+        return default_value;
+    }
 
-        /// <summary>
-        /// Get the result object or a default value if an error occurred.
-        /// </summary>
-        /// <param name="default_value">The default value to return.</param>
-        /// <returns>The result or the default if an error occurred.</returns>
-        public T GetResultOrDefault(T default_value)
-        {
-            if (IsSuccess)
-                return _result;
-            return default_value;
-        }
+    /// <summary>
+    /// Get the result object or a default value if an error occurred.
+    /// </summary>
+    /// <returns>The result or the default if an error occurred.</returns>
+    public T GetResultOrDefault()
+    {
+        return GetResultOrDefault(default);
+    }
 
-        /// <summary>
-        /// Get the result object or a default value if an error occurred.
-        /// </summary>
-        /// <returns>The result or the default if an error occurred.</returns>
-        public T GetResultOrDefault()
-        {
-            return GetResultOrDefault(default);
-        }
+    /// <summary>
+    /// Is the result successful.
+    /// </summary>
+    public bool IsSuccess => Status.IsSuccess();
 
-        /// <summary>
-        /// Is the result successful.
-        /// </summary>
-        public bool IsSuccess => Status.IsSuccess();
-
-        /// <summary>
-        /// Map result to a different type.
-        /// </summary>
-        /// <typeparam name="S">The different type to map to.</typeparam>
-        /// <param name="map_func">A function to map the result.</param>
-        /// <returns>The mapped result.</returns>
-        public NtResult<S> Map<S>(Func<T, S> map_func)
+    /// <summary>
+    /// Map result to a different type.
+    /// </summary>
+    /// <typeparam name="S">The different type to map to.</typeparam>
+    /// <param name="map_func">A function to map the result.</param>
+    /// <returns>The mapped result.</returns>
+    public NtResult<S> Map<S>(Func<T, S> map_func)
+    {
+        if (IsSuccess)
         {
-            if (IsSuccess)
-            {
-                return new NtResult<S>(Status, map_func(Result));
-            }
-            return new NtResult<S>(Status, default);
+            return new NtResult<S>(Status, map_func(Result));
         }
+        return new NtResult<S>(Status, default);
+    }
 
-        /// <summary>
-        /// Map result to a different type.
-        /// </summary>
-        /// <typeparam name="S">The different type to map to.</typeparam>
-        /// <param name="map_func">A function to map the result.</param>
-        /// <returns>The mapped result.</returns>
-        public NtResult<S> Map<S>(Func<NtStatus, T, S> map_func)
+    /// <summary>
+    /// Map result to a different type.
+    /// </summary>
+    /// <typeparam name="S">The different type to map to.</typeparam>
+    /// <param name="map_func">A function to map the result.</param>
+    /// <returns>The mapped result.</returns>
+    public NtResult<S> Map<S>(Func<NtStatus, T, S> map_func)
+    {
+        if (IsSuccess)
         {
-            if (IsSuccess)
-            {
-                return new NtResult<S>(Status, map_func(Status, Result));
-            }
-            return new NtResult<S>(Status, default);
+            return new NtResult<S>(Status, map_func(Status, Result));
         }
+        return new NtResult<S>(Status, default);
+    }
 
-        /// <summary>
-        /// Cast result to a different type.
-        /// </summary>
-        /// <typeparam name="S">The different type to cast to.</typeparam>
-        /// <returns>The mapped result.</returns>
-        public NtResult<S> Cast<S>()
-        {
-            return Map(d => (S)(object)d);
-        }
+    /// <summary>
+    /// Cast result to a different type.
+    /// </summary>
+    /// <typeparam name="S">The different type to cast to.</typeparam>
+    /// <returns>The mapped result.</returns>
+    public NtResult<S> Cast<S>()
+    {
+        return Map(d => (S)(object)d);
+    }
 
-        /// <summary>
-        /// Forward the result and check for an exception.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The forwarded result.</returns>
-        public NtResult<T> Forward(bool throw_on_error)
-        {
-            Status.ToNtException(throw_on_error);
-            return this;
-        }
+    /// <summary>
+    /// Forward the result and check for an exception.
+    /// </summary>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The forwarded result.</returns>
+    public NtResult<T> Forward(bool throw_on_error)
+    {
+        Status.ToNtException(throw_on_error);
+        return this;
+    }
 
-        /// <summary>
-        /// Dispose result.
-        /// </summary>
-        public void Dispose()
-        {
-            using (_result as IDisposable) { }
-        }
+    /// <summary>
+    /// Dispose result.
+    /// </summary>
+    public void Dispose()
+    {
+        using (_result as IDisposable) { }
+    }
 
-        /// <summary>
-        /// Create a result from an error.
-        /// </summary>
-        /// <param name="status">The error status code.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The result.</returns>
-        public static NtResult<T> CreateResultFromError(NtStatus status, bool throw_on_error)
-        {
-            return status.CreateResultFromError<T>(throw_on_error);
-        }
+    /// <summary>
+    /// Create a result from an error.
+    /// </summary>
+    /// <param name="status">The error status code.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The result.</returns>
+    public static NtResult<T> CreateResultFromError(NtStatus status, bool throw_on_error)
+    {
+        return status.CreateResultFromError<T>(throw_on_error);
+    }
 
-        /// <summary>
-        /// Create a result.
-        /// </summary>
-        /// <param name="result"></param>
-        /// <returns>Create a new result.</returns>
-        public static NtResult<T> CreateResult(T result)
-        {
-            return new NtResult<T>(NtStatus.STATUS_SUCCESS, result);
-        }
+    /// <summary>
+    /// Create a result.
+    /// </summary>
+    /// <param name="result"></param>
+    /// <returns>Create a new result.</returns>
+    public static NtResult<T> CreateResult(T result)
+    {
+        return new NtResult<T>(NtStatus.STATUS_SUCCESS, result);
+    }
 
-        /// <summary>
-        /// Conversion operator from T to object.
-        /// </summary>
-        /// <param name="result">The result to convert.</param>
-        public static implicit operator NtResult<object>(NtResult<T> result)
-        {
-            return result.Cast<object>();
-        }
+    /// <summary>
+    /// Conversion operator from T to object.
+    /// </summary>
+    /// <param name="result">The result to convert.</param>
+    public static implicit operator NtResult<object>(NtResult<T> result)
+    {
+        return result.Cast<object>();
+    }
 
-        internal NtResult(NtStatus status, T result)
-        {
-            Status = status;
-            _result = result;
-        }
+    internal NtResult(NtStatus status, T result)
+    {
+        Status = status;
+        _result = result;
     }
 }

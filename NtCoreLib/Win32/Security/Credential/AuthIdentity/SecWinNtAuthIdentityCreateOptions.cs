@@ -14,25 +14,24 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
+namespace NtCoreLib.Win32.Security.Credential.AuthIdentity;
+
+/// <summary>
+/// Options when creating an authentication identity credential.
+/// </summary>
+[Flags]
+public enum SecWinNtAuthIdentityCreateOptions
 {
     /// <summary>
-    /// Options when creating an authentication identity credential.
+    /// No options.
     /// </summary>
-    [Flags]
-    public enum SecWinNtAuthIdentityCreateOptions
-    {
-        /// <summary>
-        /// No options.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Use an identity level impersonation token.
-        /// </summary>
-        IdentityOnly = 1,
-        /// <summary>
-        /// Specify the credentials are for an identity provider.
-        /// </summary>
-        IdProvider = 2,
-    }
+    None = 0,
+    /// <summary>
+    /// Use an identity level impersonation token.
+    /// </summary>
+    IdentityOnly = 1,
+    /// <summary>
+    /// Specify the credentials are for an identity provider.
+    /// </summary>
+    IdProvider = 2,
 }

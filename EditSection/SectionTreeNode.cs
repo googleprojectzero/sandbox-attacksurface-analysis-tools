@@ -12,69 +12,64 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Text;
 using System.Windows.Forms;
 
-namespace EditSection
+namespace EditSection;
+
+class SectionTreeNode : TreeNode
 {
-    class SectionTreeNode : TreeNode
+    private NtHandle _ent;
+
+    private static string FormatText(NtHandle ent)
     {
-        private NtHandle _ent;
-
-        private static string FormatText(NtHandle ent)
+        string size = string.Empty;
+        try
         {
-            string size = string.Empty;
-            try
-            {
-                using (NtSection section = NtSection.DuplicateFrom(ent.ProcessId, new IntPtr(ent.Handle), SectionAccessRights.Query))
-                {
-                    size = section.Size.ToString();
-                }
-            }
-            catch (NtException)
-            {
-                size = "Unknown";
-            }
-
-            StringBuilder builder = new StringBuilder();
-            NtType section_type = NtType.GetTypeByType<NtSection>();
-
-            if (section_type.HasReadPermission(ent.GrantedAccess))
-            {
-                builder.Append("R");
-            }
-
-            if (section_type.HasWritePermission(ent.GrantedAccess))
-            {
-                builder.Append("W");
-            }
-
-            return $"[{ent.Handle}/0x{ent.Handle:X}] {ent.Name} Size: {size} Access: {builder}";
+            using NtSection section = NtSection.DuplicateFrom(ent.ProcessId, new IntPtr(ent.Handle), SectionAccessRights.Query);
+            size = section.Size.ToString();
+        }
+        catch (NtException)
+        {
+            size = "Unknown";
         }
 
-        public SectionTreeNode(NtHandle ent)
-            : base(FormatText(ent))
+        StringBuilder builder = new();
+        NtType section_type = NtType.GetTypeByType<NtSection>();
+
+        if (section_type.HasReadPermission(ent.GrantedAccess))
         {
-            _ent = ent;
+            builder.Append("R");
         }
 
-        public NtMappedSection OpenMappedFile(bool writable)
+        if (section_type.HasWritePermission(ent.GrantedAccess))
         {
-            SectionAccessRights accessRights = SectionAccessRights.MapRead;
-
-            if (writable)
-            {
-                accessRights |= SectionAccessRights.MapWrite;
-            }
-
-            using (NtSection section = NtSection.DuplicateFrom(_ent.ProcessId, new IntPtr(_ent.Handle), accessRights))
-            {
-                return section.Map(writable ? MemoryAllocationProtect.ReadWrite : MemoryAllocationProtect.ReadOnly);
-            }
+            builder.Append("W");
         }
 
-        public NtHandle SectionHandle { get { return _ent; } }
+        return $"[{ent.Handle}/0x{ent.Handle:X}] {ent.Name} Size: {size} Access: {builder}";
     }
+
+    public SectionTreeNode(NtHandle ent)
+        : base(FormatText(ent))
+    {
+        _ent = ent;
+    }
+
+    public NtMappedSection OpenMappedFile(bool writable)
+    {
+        SectionAccessRights accessRights = SectionAccessRights.MapRead;
+
+        if (writable)
+        {
+            accessRights |= SectionAccessRights.MapWrite;
+        }
+
+        using NtSection section = NtSection.DuplicateFrom(_ent.ProcessId, new IntPtr(_ent.Handle), accessRights);
+        return section.Map(writable ? MemoryAllocationProtect.ReadWrite : MemoryAllocationProtect.ReadOnly);
+    }
+
+    public NtHandle SectionHandle { get { return _ent; } }
 }

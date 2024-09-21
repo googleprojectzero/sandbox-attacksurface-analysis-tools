@@ -17,100 +17,99 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace NtApiDotNet.Utilities.ASN1.Builder
+namespace NtCoreLib.Utilities.ASN1.Builder;
+
+/// <summary>
+/// Static class for DER builder utility functions.
+/// </summary>
+internal static class DERBuilderUtils
 {
-    /// <summary>
-    /// Static class for DER builder utility functions.
-    /// </summary>
-    internal static class DERBuilderUtils
+    public static byte[] EncodeLength(int value)
     {
-        public static byte[] EncodeLength(int value)
-        {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException("Invalid length value. Can't be negative.", nameof(value));
-            if (value < 0x80)
-                return new byte[] { (byte)value };
-            if (value < 0x100)
-                return new byte[] { 0x81, (byte)value };
-            if (value < 0x10000)
-                return new byte[] { 0x82, (byte)(value >> 8), (byte)(value & 0xFF) };
-            if (value < 0x1000000)
-                return new byte[] { 0x83, (byte)(value >> 16), (byte)(value >> 8), (byte)(value & 0xFF) };
-            return new byte[] { 0x84, (byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)(value & 0xFF) };
-        }
+        if (value < 0)
+            throw new ArgumentOutOfRangeException("Invalid length value. Can't be negative.", nameof(value));
+        if (value < 0x80)
+            return new byte[] { (byte)value };
+        if (value < 0x100)
+            return new byte[] { 0x81, (byte)value };
+        if (value < 0x10000)
+            return new byte[] { 0x82, (byte)(value >> 8), (byte)(value & 0xFF) };
+        if (value < 0x1000000)
+            return new byte[] { 0x83, (byte)(value >> 16), (byte)(value >> 8), (byte)(value & 0xFF) };
+        return new byte[] { 0x84, (byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)(value & 0xFF) };
+    }
 
-        public static void WriteEncodedInt(this BinaryWriter writer, int value)
-        {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException("Invalid length value. Can't be negative.", nameof(value));
+    public static void WriteEncodedInt(this BinaryWriter writer, int value)
+    {
+        if (value < 0)
+            throw new ArgumentOutOfRangeException("Invalid length value. Can't be negative.", nameof(value));
 
-            List<byte> encoded_int = new List<byte>();
-            encoded_int.Add((byte)(value & 0x7F));
+        List<byte> encoded_int = new();
+        encoded_int.Add((byte)(value & 0x7F));
+        value >>= 7;
+        while (value != 0)
+        {
+            encoded_int.Insert(0, (byte)((value & 0x7F) | 0x80));
             value >>= 7;
-            while (value != 0)
-            {
-                encoded_int.Insert(0, (byte)((value & 0x7F) | 0x80));
-                value >>= 7;
-            }
-
-            writer.Write(encoded_int.ToArray());
         }
 
-        public static void WriteLength(this BinaryWriter writer, int length)
+        writer.Write(encoded_int.ToArray());
+    }
+
+    public static void WriteLength(this BinaryWriter writer, int length)
+    {
+        writer.Write(EncodeLength(length));
+    }
+
+    public static void WriteTaggedValue(this BinaryWriter writer, DERTagType tag_type, bool constructed, int tag, byte[] data)
+    {
+        if (data is null)
         {
-            writer.Write(EncodeLength(length));
+            throw new ArgumentNullException(nameof(data));
         }
 
-        public static void WriteTaggedValue(this BinaryWriter writer, DERTagType tag_type, bool constructed, int tag, byte[] data)
+        int id = ((int)tag_type << 6);
+        if (constructed)
+            id |= 0x20;
+        if (tag < 0x1F)
         {
-            if (data is null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            int id = ((int)tag_type << 6);
-            if (constructed)
-                id |= 0x20;
-            if (tag < 0x1F)
-            {
-                writer.WriteByte(id | tag);
-            }
-            else
-            {
-                writer.WriteByte(id | 0x1F);
-                writer.WriteEncodedInt(tag);
-            }
-            writer.WriteLength(data.Length);
-            writer.Write(data);
+            writer.WriteByte(id | tag);
         }
-
-        public static void WriteUniversalValue(this BinaryWriter writer, bool constructed, UniversalTag tag, byte[] data)
+        else
         {
-            WriteTaggedValue(writer, DERTagType.Universal, constructed, (int)tag, data);
+            writer.WriteByte(id | 0x1F);
+            writer.WriteEncodedInt(tag);
         }
+        writer.WriteLength(data.Length);
+        writer.Write(data);
+    }
 
-        public static void WriteUniversalValue(this BinaryWriter writer, bool constructed, UniversalTag tag, Action<BinaryWriter> data_builder)
+    public static void WriteUniversalValue(this BinaryWriter writer, bool constructed, UniversalTag tag, byte[] data)
+    {
+        WriteTaggedValue(writer, DERTagType.Universal, constructed, (int)tag, data);
+    }
+
+    public static void WriteUniversalValue(this BinaryWriter writer, bool constructed, UniversalTag tag, Action<BinaryWriter> data_builder)
+    {
+        MemoryStream stm = new();
+        data_builder(new BinaryWriter(stm));
+
+        WriteTaggedValue(writer, DERTagType.Universal, constructed, (int)tag, stm.ToArray());
+    }
+
+    public static void WriteByte(this BinaryWriter writer, long value)
+    {
+        if (value < 0 || value > byte.MaxValue)
+            throw new ArgumentOutOfRangeException("Value too large for a byte.", nameof(value));
+        writer.Write((byte)value);
+    }
+
+    public static void WriteObjectId(this BinaryWriter writer, int[] values)
+    {
+        writer.WriteByte(values[0] * 40 + values[1]);
+        foreach (var value in values.Skip(2))
         {
-            MemoryStream stm = new MemoryStream();
-            data_builder(new BinaryWriter(stm));
-
-            WriteTaggedValue(writer, DERTagType.Universal, constructed, (int)tag, stm.ToArray());
-        }
-
-        public static void WriteByte(this BinaryWriter writer, long value)
-        {
-            if (value < 0 || value > byte.MaxValue)
-                throw new ArgumentOutOfRangeException("Value too large for a byte.", nameof(value));
-            writer.Write((byte)value);
-        }
-
-        public static void WriteObjectId(this BinaryWriter writer, int[] values)
-        {
-            writer.WriteByte(values[0] * 40 + values[1]);
-            foreach (var value in values.Skip(2))
-            {
-                writer.WriteEncodedInt(value);
-            }
+            writer.WriteEncodedInt(value);
         }
     }
 }

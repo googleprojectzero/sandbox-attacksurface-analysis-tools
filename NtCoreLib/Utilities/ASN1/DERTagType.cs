@@ -12,13 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1
+namespace NtCoreLib.Utilities.ASN1;
+
+internal enum DERTagType
 {
-    internal enum DERTagType
-    {
-        Universal = 0,
-        Application = 1,
-        ContextSpecific = 2,
-        Private = 3,
-    }
+    Universal = 0,
+    Application = 1,
+    ContextSpecific = 2,
+    Private = 3,
 }

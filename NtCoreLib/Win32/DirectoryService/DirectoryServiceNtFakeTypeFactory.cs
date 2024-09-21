@@ -12,17 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Security.Authorization;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+internal class DirectoryServiceNtFakeTypeFactory : NtFakeTypeFactory
 {
-    internal class DirectoryServiceNtFakeTypeFactory : NtFakeTypeFactory
+    public override IEnumerable<NtType> CreateTypes()
     {
-        public override IEnumerable<NtType> CreateTypes()
-        {
-            return new NtType[] { new NtType(DirectoryServiceUtils.DS_NT_TYPE_NAME, DirectoryServiceUtils.GenericMapping,
-                        typeof(DirectoryServiceAccessRights), typeof(DirectoryServiceAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp) };
-        }
+        return new NtType[] { new NtType(DirectoryServiceUtils.DS_NT_TYPE_NAME, DirectoryServiceUtils.GenericMapping,
+                    typeof(DirectoryServiceAccessRights), typeof(DirectoryServiceAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp) };
     }
 }

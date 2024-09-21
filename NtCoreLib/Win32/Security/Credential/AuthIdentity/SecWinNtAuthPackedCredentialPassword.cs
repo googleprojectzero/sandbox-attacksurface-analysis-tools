@@ -14,41 +14,40 @@
 
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
+namespace NtCoreLib.Win32.Security.Credential.AuthIdentity;
+
+/// <summary>
+/// Class to represent a password packed credentials structure.
+/// </summary>
+public sealed class SecWinNtAuthPackedCredentialPassword : SecWinNtAuthPackedCredential
 {
     /// <summary>
-    /// Class to represent a password packed credentials structure.
+    /// The user's password.
     /// </summary>
-    public sealed class SecWinNtAuthPackedCredentialPassword : SecWinNtAuthPackedCredential
+    public string Password => Encoding.Unicode.GetString(_credentials);
+
+    /// <summary>
+    /// The password as raw bytes.
+    /// </summary>
+    public byte[] PasswordBytes => _credentials.CloneBytes();
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="password">The user's password.</param>
+    public SecWinNtAuthPackedCredentialPassword(byte[] password)
+        : base(SecWinNtPackedCredentialTypes.Password,
+              password ?? new byte[0])
     {
-        /// <summary>
-        /// The user's password.
-        /// </summary>
-        public string Password => Encoding.Unicode.GetString(_credentials);
+    }
 
-        /// <summary>
-        /// The password as raw bytes.
-        /// </summary>
-        public byte[] PasswordBytes => _credentials.CloneBytes();
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="password">The user's password.</param>
-        public SecWinNtAuthPackedCredentialPassword(byte[] password)
-            : base(SecWinNtPackedCredentialTypes.Password,
-                  password ?? new byte[0])
-        {
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="password">The user's password.</param>
-        public SecWinNtAuthPackedCredentialPassword(string password)
-            : base(SecWinNtPackedCredentialTypes.Password,
-                  Encoding.Unicode.GetBytes(password ?? string.Empty))
-        {
-        }
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="password">The user's password.</param>
+    public SecWinNtAuthPackedCredentialPassword(string password)
+        : base(SecWinNtPackedCredentialTypes.Password,
+              Encoding.Unicode.GetBytes(password ?? string.Empty))
+    {
     }
 }

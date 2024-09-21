@@ -12,34 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License
 
+using NtCoreLib.Native.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
 
-    public enum QueryWindowType
-    {
-        ProcessId = 0,
-        Owner = 1,
-        ThreadId = 2,
-        Hung = 5,
-    }
+public enum QueryWindowType
+{
+    ProcessId = 0,
+    Owner = 1,
+    ThreadId = 2,
+    Hung = 5,
+}
 
-    public static partial class NtSystemCalls
-    {
-        [DllImport("win32u.dll")]
-        public static extern NtStatus NtUserBuildHwndList(SafeKernelObjectHandle Desktop, IntPtr ParentWindow,
-            [MarshalAs(UnmanagedType.Bool)] bool EnumerateChildren, bool HideImmersiveWindows, int ThreadId, int BufferCount,
-            [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] Buffer, out int RequiredCount);
+public static partial class NtSystemCalls
+{
+    [DllImport("win32u.dll")]
+    public static extern NtStatus NtUserBuildHwndList(SafeKernelObjectHandle Desktop, IntPtr ParentWindow,
+        [MarshalAs(UnmanagedType.Bool)] bool EnumerateChildren, bool HideImmersiveWindows, int ThreadId, int BufferCount,
+        [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] Buffer, out int RequiredCount);
 
-        [DllImport("win32u.dll", SetLastError = true)]
-        public static extern int NtUserQueryWindow(IntPtr Window, QueryWindowType query);
+    [DllImport("win32u.dll", SetLastError = true)]
+    public static extern int NtUserQueryWindow(IntPtr Window, QueryWindowType query);
 
-        [DllImport("win32u.dll", SetLastError = true)]
-        public static extern int NtUserGetClassName(IntPtr Window, [MarshalAs(UnmanagedType.Bool)] bool RealName, UnicodeStringAllocated Name);
-    }
+    [DllImport("win32u.dll", SetLastError = true)]
+    public static extern int NtUserGetClassName(IntPtr Window, [MarshalAs(UnmanagedType.Bool)] bool RealName, UnicodeStringAllocated Name);
+}
 
 #pragma warning restore
-}
+

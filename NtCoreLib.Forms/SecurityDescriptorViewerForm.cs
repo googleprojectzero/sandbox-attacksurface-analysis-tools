@@ -12,10 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Security.Authorization.AclUI;
 using System.Windows.Forms;
 
-namespace NtApiDotNet.Forms
+namespace NtCoreLib.Forms
 {
     /// <summary>
     /// Form to view an object's security descriptor.
@@ -23,6 +24,8 @@ namespace NtApiDotNet.Forms
     public partial class SecurityDescriptorViewerForm : Form
     {
         private readonly NtObject _obj;
+        private readonly NtType _type;
+        private readonly bool _is_container;
 
         private static SecurityDescriptor GetSecurityDescriptor(NtObject obj)
         {
@@ -68,6 +71,8 @@ namespace NtApiDotNet.Forms
         {
             InitializeComponent();
             Text = $"Security for {name}";
+            _type = type;
+            _is_container = is_container;
             securityDescriptorViewerControl.SetSecurityDescriptor(security_descriptor, type, type.ValidAccess, is_container);
             if (show_edit)
             {
@@ -106,7 +111,11 @@ namespace NtApiDotNet.Forms
 
         private void btnEditPermissions_Click(object sender, System.EventArgs e)
         {
-            Win32Utils.EditSecurity(this.Handle, _obj, _obj.Name, false);
+            using EditSecurityDescriptorDialog dlg = new(_obj, _obj.Name, false);
+            if (dlg.Show(Handle))
+            {
+                securityDescriptorViewerControl.SetSecurityDescriptor(GetSecurityDescriptor(_obj), _type, _type.ValidAccess, _is_container);
+            }
         }
     }
 }

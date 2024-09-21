@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class for a KDC-REP-ENC-PART builder.
+/// </summary>
+public class KerberosASReplyEncryptedPartBuilder : KerberosKDCReplyEncryptedPartBuilder
 {
     /// <summary>
-    /// Class for a KDC-REP-ENC-PART builder.
+    /// Constructor.
     /// </summary>
-    public class KerberosASReplyEncryptedPartBuilder : KerberosKDCReplyEncryptedPartBuilder
+    public KerberosASReplyEncryptedPartBuilder() : base(KerberosMessageType.KRB_AS_REP_ENC_PART)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosASReplyEncryptedPartBuilder() : base(KerberosMessageType.KRB_AS_REP_ENC_PART)
-        {
-        }
     }
 }

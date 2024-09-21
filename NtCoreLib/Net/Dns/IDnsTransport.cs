@@ -14,11 +14,10 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal interface IDnsTransport : IDisposable
 {
-    internal interface IDnsTransport : IDisposable
-    {
-        void Send(byte[] data);
-        byte[] Receive();
-    }
+    void Send(byte[] data);
+    byte[] Receive();
 }

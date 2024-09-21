@@ -14,43 +14,42 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+struct FLAGGED_WORD_BLOB : INdrConformantStructure
 {
-    struct FLAGGED_WORD_BLOB : INdrConformantStructure
+    void INdrStructure.Marshal(INdrMarshalBuffer m)
     {
-        void INdrStructure.Marshal(NdrMarshalBuffer m)
-        {
-            m.WriteInt32(cBytes);
-            m.WriteInt32(clSize);
-            if (asData is null)
-                throw new ArgumentNullException(nameof(asData));
-            m.WriteConformantCharArray(asData, clSize);
-        }
+        m.WriteInt32(cBytes);
+        m.WriteInt32(clSize);
+        if (asData is null)
+            throw new ArgumentNullException(nameof(asData));
+        m.WriteConformantCharArray(asData, clSize);
+    }
 
-        void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
-        {
-            cBytes = u.ReadInt32();
-            clSize = u.ReadInt32();
-            asData = u.ReadConformantCharArray();
-        }
+    void INdrStructure.Unmarshal(INdrUnmarshalBuffer u)
+    {
+        cBytes = u.ReadInt32();
+        clSize = u.ReadInt32();
+        asData = u.ReadConformantCharArray();
+    }
 
-        int INdrConformantStructure.GetConformantDimensions()
-        {
-            return 1;
-        }
-        int INdrStructure.GetAlignment()
-        {
-            return 4;
-        }
-        public int cBytes;
-        public int clSize;
-        public char[] asData;
-        
-        public FLAGGED_WORD_BLOB(int cBytes, int clSize, char[] asData)
-        {
-            this.cBytes = cBytes;
-            this.clSize = clSize;
-            this.asData = asData;
-        }
+    int INdrConformantStructure.GetConformantDimensions()
+    {
+        return 1;
+    }
+    int INdrStructure.GetAlignment()
+    {
+        return 4;
+    }
+    public int cBytes;
+    public int clSize;
+    public char[] asData;
+    
+    public FLAGGED_WORD_BLOB(int cBytes, int clSize, char[] asData)
+    {
+        this.cBytes = cBytes;
+        this.clSize = clSize;
+        this.asData = asData;
     }
 }

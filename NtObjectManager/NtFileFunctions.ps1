@@ -48,7 +48,7 @@ function Get-NtFilePath {
 
     PROCESS {
         if ($PSCmdlet.ParameterSetName -eq "FromPath") {
-            $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
+            $type = [NtCoreLib.NtFileUtils]::GetDosPathType($FullName)
             $p = $FullName
             if ($Resolve) {
                 if ($type -eq "Relative" -or $type -eq "Rooted") {
@@ -63,7 +63,7 @@ function Get-NtFilePath {
             }
         } elseif ($PSCmdlet.ParameterSetName -eq "FromGuid") {
             foreach($g in $DeviceGuid) {
-                [NtApiDotNet.Win32.Device.DeviceUtils]::GetDeviceInterfaceList($g) | Get-NtFilePath | Write-Output
+                [NtCoreLib.Win32.Device.DeviceUtils]::GetDeviceInterfaceList($g) | Get-NtFilePath | Write-Output
             }
         }
     }
@@ -79,7 +79,7 @@ The DOS path to convert to NT.
 .INPUTS
 string[] List of paths to convert.
 .OUTPUTS
-NtApiDotNet.RtlPathType
+NtCoreLib.RtlPathType
 .EXAMPLE
 Get-NtFilePathType c:\Windows
 Get the path type for c:\windows.
@@ -90,7 +90,7 @@ function Get-NtFilePathType {
         [string]$FullName
     )
 
-    [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
+    [NtCoreLib.NtFileUtils]::GetDosPathType($FullName)
 }
 
 <#
@@ -105,7 +105,7 @@ An existing buffer to initialize the new buffer from.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.EaBuffer
+NtCoreLib.Kernel.IO.EaBuffer
 .EXAMPLE
 New-NtEaBuffer
 Create a new empty EaBuffer object
@@ -119,18 +119,18 @@ function New-NtEaBuffer {
         [Parameter(ParameterSetName = "FromEntries", Position = 0)]
         [Hashtable]$Entries = @{ },
         [Parameter(ParameterSetName = "FromExisting", Position = 0)]
-        [NtApiDotnet.Eabuffer]$ExistingBuffer
+        [NtCoreLib.Kernel.IO.EaBuffer]$ExistingBuffer
     )
 
     if ($null -eq $ExistingBuffer) {
-        $ea_buffer = New-Object NtApiDotNet.EaBuffer
+        $ea_buffer = New-Object NtCoreLib.Kernel.IO.EaBuffer
         foreach ($entry in $Entries.Keys) {
             $ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
         }
         return $ea_buffer
     }
     else {
-        return New-Object NtApiDotNet.EaBuffer -ArgumentList $ExistingBuffer
+        return New-Object NtCoreLib.Kernel.IO.EaBuffer -ArgumentList $ExistingBuffer
     }
 }
 
@@ -167,7 +167,7 @@ function Add-NtEaBuffer {
     [CmdletBinding(DefaultParameterSetName="FromString")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Eabuffer]$EaBuffer,
+        [NtCoreLib.Kernel.IO.EaBuffer]$EaBuffer,
         [Parameter(Mandatory, Position = 1)]
         [string]$Name,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromString")]
@@ -176,7 +176,7 @@ function Add-NtEaBuffer {
         [byte[]]$Byte,
         [Parameter(Mandatory, ParameterSetName="FromInt")]
         [int]$Int,
-        [NtApiDotNet.EaBufferEntryFlags]$Flags = 0
+        [NtCoreLib.Kernel.IO.EaBufferEntryFlags]$Flags = 0
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromString" {
@@ -209,7 +209,7 @@ Specify to return an asynchronous task which can be waited on with Wait-AsyncTas
 .INPUTS
 None
 .OUTPUTS
-None or NtApiDotNet.RequestOplockOutputBuffer if using LeaseLevel. If Async then a Task.
+None or NtCoreLib.RequestOplockOutputBuffer if using LeaseLevel. If Async then a Task.
 .EXAMPLE
 Start-NtFileOplock $file -Exclusive
 Start an exclusive oplock.
@@ -224,15 +224,15 @@ function Start-NtFileOplock {
     [CmdletBinding(DefaultParameterSetName = "OplockLevel")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, ParameterSetName = "OplockExclusive")]
         [switch]$Exclusive,
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
-        [NtApiDotNet.OplockRequestLevel]$Level,
+        [NtCoreLib.OplockRequestLevel]$Level,
         [parameter(Mandatory, ParameterSetName = "OplockLease")]
-        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [NtCoreLib.OplockLevelCache]$LeaseLevel,
         [parameter(ParameterSetName = "OplockLease")]
-        [NtApiDotNet.RequestOplockInputFlag]$Flags = "Request",
+        [NtCoreLib.RequestOplockInputFlag]$Flags = "Request",
         [switch]$Async
     )
 
@@ -289,9 +289,9 @@ function Confirm-NtFileOplock {
     [CmdletBinding(DefaultParameterSetName = "OplockLevel")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
-        [NtApiDotNet.OplockAcknowledgeLevel]$Level,
+        [NtCoreLib.OplockAcknowledgeLevel]$Level,
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLease")]
         [switch]$Lease,
         [parameter(ParameterSetName = "OplockLease")]
@@ -322,7 +322,7 @@ Specify an existing NtFile object.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.EaBuffer
+NtCoreLib.Kernel.IO.EaBuffer
 #>
 function Get-NtFileEa {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
@@ -332,7 +332,7 @@ function Get-NtFileEa {
         [Parameter(ParameterSetName = "FromPath")]
         [switch]$Win32Path,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromFile")]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [switch]$AsEntries
     )
 
@@ -352,9 +352,6 @@ function Get-NtFileEa {
         $ea | Write-Output
     }
 }
-
-# Legacy name, remove eventually.
-Set-Alias -Name "Get-NtEaBuffer" -Value "Get-NtFileEa"
 
 <#
 .SYNOPSIS
@@ -385,10 +382,10 @@ function Set-NtFileEa {
         [switch]$Win32Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFile")]
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromFileAndName")]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [Parameter(Mandatory, Position = 1, ParameterSetName = "FromFile")]
         [Parameter(Mandatory, Position = 1, ParameterSetName = "FromPath")]
-        [NtApiDotNet.EaBuffer]$EaBuffer,
+        [NtCoreLib.Kernel.IO.EaBuffer]$EaBuffer,
         [Parameter(Mandatory, Position = 1, ParameterSetName = "FromPathAndName")]
         [Parameter(Mandatory, Position = 1, ParameterSetName = "FromFileAndName")]
         [string]$Name,
@@ -397,7 +394,7 @@ function Set-NtFileEa {
         [byte[]]$Byte,
         [Parameter(Position = 3, ParameterSetName = "FromPathAndName")]
         [Parameter(Position = 3, ParameterSetName = "FromFileAndName")]
-        [NtApiDotNet.EaBufferEntryFlags]$Flags = 0
+        [NtCoreLib.Kernel.IO.EaBufferEntryFlags]$Flags = 0
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromPathAndName" -or $PSCmdlet.ParameterSetName -eq "FromFileAndName") {
@@ -413,9 +410,6 @@ function Set-NtFileEa {
         $File.SetEa($EaBuffer)
     }
 }
-
-# Legacy name, remove eventually.
-Set-Alias -Name "Set-NtEaBuffer" -Value "Set-NtFileEa"
 
 <#
 .SYNOPSIS
@@ -441,7 +435,7 @@ function Remove-NtFileEa {
         [Parameter(ParameterSetName = "FromPath")]
         [switch]$Win32Path,
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromFile")]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [Parameter(Mandatory = $true, Position = 1)]
         [string]$Name
     )
@@ -489,7 +483,7 @@ function Write-NtFile {
     [CmdletBinding(DefaultParameterSetName = "NoOffset")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 1)]
         [byte[]]$Bytes,
         [parameter(Position = 2, ParameterSetName="UseOffset")]
@@ -536,7 +530,7 @@ function Read-NtFile {
     [CmdletBinding(DefaultParameterSetName = "NoOffset")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 1)]
         [int]$Length,
         [parameter(Position = 2, ParameterSetName="UseOffset")]
@@ -585,10 +579,10 @@ Open the file case sensitively, also does case sensitive pattern matching.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.FileDirectoryEntry[]
-NtApiDotNet.FileIdDirectoryEntry[]
-NtApiDotNet.NtFileReparsePoint[]
-NtApiDotNet.NtFileObjectId[]
+NtCoreLib.Kernel.IO.FileDirectoryEntry[]
+NtCoreLib.Kernel.IO.FileIdDirectoryEntry[]
+NtCoreLib.Kernel.IO.NtFileReparsePoint[]
+NtCoreLib.Kernel.IO.NtFileObjectId[]
 .EXAMPLE
 Get-NtFileItem -File $f
 Enumerate all file items.
@@ -626,7 +620,7 @@ function Get-NtFileItem {
         [parameter(Mandatory, Position = 0, ParameterSetName="Default")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromReparsePoint")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromObjectID")]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
@@ -636,7 +630,7 @@ function Get-NtFileItem {
         [string]$Pattern = "*",
         [parameter(ParameterSetName="Default")]
         [parameter(ParameterSetName="FromPath")]
-        [NtApiDotNet.FileTypeMask]$FileType = "All",
+        [NtCoreLib.FileTypeMask]$FileType = "All",
         [parameter(ParameterSetName="Default")]
         [parameter(ParameterSetName="FromPath")]
         [switch]$FileId,
@@ -711,7 +705,7 @@ to get the result. The handle must be asynchronous.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.DirectoryChangeNotification[]
+NtCoreLib.DirectoryChangeNotification[]
 .EXAMPLE
 Get-NtFileChange -File $f
 Get all change notifications for the file directory.
@@ -729,8 +723,8 @@ function Get-NtFileChange {
     [CmdletBinding(DefaultParameterSetName = "Sync")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
-        [NtApiDotNet.DirectoryChangeNotifyFilter]$Filter = "All",
+        [NtCoreLib.NtFile]$File,
+        [NtCoreLib.DirectoryChangeNotifyFilter]$Filter = "All",
         [switch]$WatchSubtree,
         [parameter(ParameterSetName="Sync")]
         [int]$TimeoutSec = -1,
@@ -771,7 +765,7 @@ Specify to return a scoped lock which will unlock when disposed.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.IO.NtFileScopedLock
+NtCoreLib.Utilities.IO.NtFileScopedLock
 .EXAMPLE
 Lock-NtFile -File $f -Offset 0 -Length 256
 Lock the first 256 bytes.
@@ -789,7 +783,7 @@ function Lock-NtFile {
     [CmdletBinding(DefaultParameterSetName = "FromOffset")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromOffset")]
         [int64]$Offset,
         [parameter(Mandatory, Position = 2, ParameterSetName="FromOffset")]
@@ -807,7 +801,7 @@ function Lock-NtFile {
     }
 
     if ($PassThru) {
-        [NtApiDotNet.Utilities.IO.NtFileScopedLock]::Create($File, $Offset, $Length, !$Wait, $Exclusive) | Write-Output
+        [NtCoreLib.Utilities.IO.NtFileScopedLock]::Create($File, $Offset, $Length, !$Wait, $Exclusive) | Write-Output
     } else {
         $File.Lock($Offset, $Length, !$Wait, $Exclusive)
     }
@@ -841,7 +835,7 @@ function Unlock-NtFile {
     [CmdletBinding(DefaultParameterSetName = "FromOffset")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromOffset")]
         [int64]$Offset,
         [parameter(Mandatory, Position = 2, ParameterSetName="FromOffset")]
@@ -892,13 +886,13 @@ function Set-NtFileDisposition {
     [CmdletBinding(DefaultParameterSetName="FromDelete")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory, ParameterSetName="FromDelete")]
         [switch]$Delete,
         [parameter(ParameterSetName="FromDelete")]
         [switch]$PosixSemantics,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromFlags")]
-        [NtApiDotNet.FileDispositionInformationExFlags]$Flags
+        [NtCoreLib.FileDispositionInformationExFlags]$Flags
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -933,7 +927,7 @@ Get the file to delete on close flag.
 function Get-NtFileDisposition {
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File
+        [NtCoreLib.NtFile]$File
     )
     $File.DeletePending | Write-Output
 }
@@ -961,7 +955,7 @@ function Get-NtFile8dot3Name {
         [string]$Name,
         [switch]$ExtendedCharacters
     )
-    [NtApiDotNet.NtFileUtils]::Generate8dot3Name($Name, $ExtendedCharacters) | Write-Output
+    [NtCoreLib.NtFileUtils]::Generate8dot3Name($Name, $ExtendedCharacters) | Write-Output
 }
 
 <#
@@ -984,7 +978,7 @@ Tests if the Ntfs driver is in the path.
 function Test-NtFileDriverPath {
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtFile]$File,
+        [NtCoreLib.NtFile]$File,
         [parameter(Mandatory = $true, Position = 1)]
         [string]$DriverPath
     )
@@ -999,13 +993,13 @@ This cmdlet queries the mount point manager for a list of mount points.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.IO.MountPointManager.MountPoint[]
+NtCoreLib.IO.MountPointManager.MountPoint[]
 .EXAMPLE
 Get-NtMountPoint
 Get list of mount points.
 #>
 function Get-NtMountPoint {
-    [NtApiDotNet.IO.MountPointManager.MountPointManagerUtils]::QueryMountPoints() | Write-Output
+    [NtCoreLib.IO.MountPointManager.MountPointManagerUtils]::QueryMountPoints() | Write-Output
 }
 
 <#
@@ -1022,8 +1016,8 @@ Specify data for the reparse buffer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.OpaqueReparseBuffer
-NtApiDotNet.GenericReparseBuffer
+NtCoreLib.Kernel.IO.OpaqueReparseBuffer
+NtCoreLib.Kernel.IO.GenericReparseBuffer
 .EXAMPLE
 New-NtFileReparseBuffer -Tag AF_UNIX -Data @(1, 2, 3, 4)
 Create a new opaque reparse buffer.
@@ -1035,7 +1029,7 @@ function New-NtFileReparseBuffer {
     [CmdletBinding(DefaultParameterSetName = "OpaqueBuffer")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="OpaqueBuffer")]
-        [NtApiDotNet.ReparseTag]$Tag,
+        [NtCoreLib.Kernel.IO.ReparseTag]$Tag,
         [parameter(Mandatory, Position = 0, ParameterSetName="GenericBuffer")]
         [uint32]$GenericTag,
         [parameter(Mandatory, ParameterSetName="GenericBuffer")]
@@ -1048,10 +1042,10 @@ function New-NtFileReparseBuffer {
 
     switch($PSCmdlet.ParameterSetName) {
         "OpaqueBuffer" {
-            [NtApiDotnet.OpaqueReparseBuffer]::new($Tag, $Data) | Write-Output
+            [NtCoreLib.Kernel.IO.OpaqueReparseBuffer]::new($Tag, $Data) | Write-Output
         }
         "GenericBuffer" {
-            [NtApiDotNet.GenericReparseBuffer]::new($GenericTag, $Guid, $Data) | Write-Output
+            [NtCoreLib.Kernel.IO.GenericReparseBuffer]::new($GenericTag, $Guid, $Data) | Write-Output
         }
     }
 }
@@ -1068,7 +1062,7 @@ Specify a list of sids to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.FileQuotaEntry[]
+NtCoreLib.Kernel.IO.FileQuotaEntry[]
 .EXAMPLE
 Get-NtFileQuota -Volume C:
 Query the quota for the C: volume.
@@ -1077,7 +1071,7 @@ function Get-NtFileQuota {
     Param(
         [parameter(Mandatory, Position = 0)]
         [string]$Volume,
-        [NtApiDotNet.Sid[]]$Sid
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid
     )
     try {
         if (!$Volume.StartsWith("\")) {
@@ -1124,13 +1118,13 @@ function Set-NtFileQuota {
         [parameter(Mandatory, Position = 0)]
         [string]$Volume,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, Position = 2, ParameterSetName="FromSid")]
         [int64]$Limit,
         [parameter(Mandatory, Position = 3, ParameterSetName="FromSid")]
         [int64]$Threshold,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromEntry")]
-        [NtApiDotNet.FileQuotaEntry[]]$Quota
+        [NtCoreLib.Kernel.IO.FileQuotaEntry[]]$Quota
     )
     try {
         if (!$Volume.StartsWith("\")) {
@@ -1167,7 +1161,7 @@ Specify to use unprivileged reading. This doesn't return filenames you don't hav
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.IO.UsnJournal.UsnJournalRecord[]
+NtCoreLib.IO.UsnJournal.UsnJournalRecord[]
 .EXAMPLE
 Read-NtFileUsnJournal -Volume C:
 Read the USN journal for the C: volume.
@@ -1178,7 +1172,7 @@ function Read-NtFileUsnJournal {
         [string]$Volume,
         [uint64]$StartUsn = 0,
         [uint64]$EndUsn = [uint64]::MaxValue,
-        [NtApiDotNet.IO.UsnJournal.UsnJournalReasonFlags]$ReasonMask = "All",
+        [NtCoreLib.IO.UsnJournal.UsnJournalReasonFlags]$ReasonMask = "All",
         [switch]$Unprivileged
     )
     try {
@@ -1196,9 +1190,9 @@ function Read-NtFileUsnJournal {
         Use-NtObject($vol = Get-NtFile -Path $Volume `
             -Access $Access -Share Read, Write) {
             if ($Unprivileged) {
-                [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournalUnprivileged($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+                [NtCoreLib.IO.UsnJournal.UsnJournalUtils]::ReadJournalUnprivileged($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
             } else {
-                [NtApiDotNet.IO.UsnJournal.UsnJournalUtils]::ReadJournal($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
+                [NtCoreLib.IO.UsnJournal.UsnJournalUtils]::ReadJournal($vol, $StartUsn, $EndUsn, $ReasonMask) | Write-Output
             }
         }
     } catch {
@@ -1230,7 +1224,7 @@ Specify to lookup an IO control code with a name.
 .PARAMETER AsInt
 When looking up by name return the control code as an integer.
 .OUTPUTS
-NtApiDotNet.NtIoControlCode
+NtCoreLib.NtIoControlCode
 System.String
 .EXAMPLE
 Get-NtIoControlCode 0x110028
@@ -1257,13 +1251,13 @@ function Get-NtIoControlCode {
         [Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)]
         [int]$ControlCode,
         [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
-        [NtApiDotNet.FileDeviceType]$DeviceType,
+        [NtCoreLib.FileDeviceType]$DeviceType,
         [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
         [int]$Function,
         [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
-        [NtApiDotNet.FileControlMethod]$Method,
+        [NtCoreLib.FileControlMethod]$Method,
         [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
-        [NtApiDotNet.FileControlAccess]$Access,
+        [NtCoreLib.FileControlAccess]$Access,
         [Parameter(ParameterSetName = "FromParts")]
         [Parameter(ParameterSetName = "FromCode")]
         [switch]$LookupName,
@@ -1277,21 +1271,21 @@ function Get-NtIoControlCode {
     )
     $result = switch ($PsCmdlet.ParameterSetName) {
         "FromCode" {
-            [NtApiDotNet.NtIoControlCode]::new($ControlCode)
+            [NtCoreLib.NtIoControlCode]::new($ControlCode)
         }
         "FromParts" {
-            [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+            [NtCoreLib.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
         }
         "FromAll" {
-            [NtApiDotNet.NtWellKnownIoControlCodes]::GetKnownControlCodes()
+            [NtCoreLib.NtWellKnownIoControlCodes]::GetKnownControlCodes()
         }
         "FromName" {
-            [NtApiDotNet.NtWellKnownIoControlCodes]::GetKnownControlCodeByName($Name)
+            [NtCoreLib.NtWellKnownIoControlCodes]::GetKnownControlCodeByName($Name)
         }
     }
 
     if ($LookupName) {
-        return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($result)
+        return [NtCoreLib.NtWellKnownIoControlCodes]::KnownControlCodeToName($result)
     }
 
     if ($AsInt) {

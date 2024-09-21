@@ -12,29 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Identifies the type of credentials.
+/// </summary>
+public enum CredentialType
 {
-    /// <summary>
-    /// Identifies the type of credentials.
-    /// </summary>
-    public enum CredentialType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Unknown = 0,
-        [SDKName("CRED_TYPE_GENERIC")]
-        Generic = 1,
-        [SDKName("CRED_TYPE_DOMAIN_PASSWORD")]
-        DomainPassword = 2,
-        [SDKName("CRED_TYPE_DOMAIN_CERTIFICATE")]
-        DomainCertificate = 3,
-        [SDKName("CRED_TYPE_DOMAIN_VISIBLE_PASSWORD")]
-        DomainVisiblePassword = 4,
-        [SDKName("CRED_TYPE_GENERIC_CERTIFICATE")]
-        GenericCertificate = 5,
-        [SDKName("CRED_TYPE_DOMAIN_EXTENDED")]
-        DomainExtended = 6,
+    Unknown = 0,
+    [SDKName("CRED_TYPE_GENERIC")]
+    Generic = 1,
+    [SDKName("CRED_TYPE_DOMAIN_PASSWORD")]
+    DomainPassword = 2,
+    [SDKName("CRED_TYPE_DOMAIN_CERTIFICATE")]
+    DomainCertificate = 3,
+    [SDKName("CRED_TYPE_DOMAIN_VISIBLE_PASSWORD")]
+    DomainVisiblePassword = 4,
+    [SDKName("CRED_TYPE_GENERIC_CERTIFICATE")]
+    GenericCertificate = 5,
+    [SDKName("CRED_TYPE_DOMAIN_EXTENDED")]
+    DomainExtended = 6,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

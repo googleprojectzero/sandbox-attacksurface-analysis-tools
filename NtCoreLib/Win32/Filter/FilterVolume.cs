@@ -12,37 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Filter
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Filter.Interop;
+
+namespace NtCoreLib.Win32.Filter;
+
+/// <summary>
+/// Class to represent a filter volume.
+/// </summary>
+public sealed class FilterVolume
 {
     /// <summary>
-    /// Class to represent a filter volume.
+    /// Is the filter detached from the volume.
     /// </summary>
-    public sealed class FilterVolume
-    {
-        /// <summary>
-        /// Is the filter detached from the volume.
-        /// </summary>
-        public bool Detached { get; }
-        /// <summary>
-        /// Filter frame ID.
-        /// </summary>
-        public int FrameID { get; }
-        /// <summary>
-        /// Filesystem type.
-        /// </summary>
-        public FilterFilesystemType FileSystemType;
-        /// <summary>
-        /// Filter volume name.
-        /// </summary>
-        public string FilterVolumeName { get; }
+    public bool Detached { get; }
+    /// <summary>
+    /// Filter frame ID.
+    /// </summary>
+    public int FrameID { get; }
+    /// <summary>
+    /// Filesystem type.
+    /// </summary>
+    public FilterFilesystemType FileSystemType;
+    /// <summary>
+    /// Filter volume name.
+    /// </summary>
+    public string FilterVolumeName { get; }
 
-        internal FilterVolume(SafeStructureInOutBuffer<FILTER_VOLUME_STANDARD_INFORMATION> buffer)
-        {
-            var result = buffer.Result;
-            Detached = result.Flags.HasFlagSet(FILTER_VOLUME_STANDARD_INFORMATION_FLAGS.FLTFL_VSI_DETACHED_VOLUME);
-            FrameID = result.FrameID;
-            FileSystemType = result.FileSystemType;
-            FilterVolumeName = buffer.Data.ReadUnicodeString(result.FilterVolumeNameLength / 2);
-        }
+    internal FilterVolume(SafeStructureInOutBuffer<FILTER_VOLUME_STANDARD_INFORMATION> buffer)
+    {
+        var result = buffer.Result;
+        Detached = result.Flags.HasFlagSet(FILTER_VOLUME_STANDARD_INFORMATION_FLAGS.FLTFL_VSI_DETACHED_VOLUME);
+        FrameID = result.FrameID;
+        FileSystemType = result.FileSystemType;
+        FilterVolumeName = buffer.Data.ReadUnicodeString(result.FilterVolumeNameLength / 2);
     }
 }

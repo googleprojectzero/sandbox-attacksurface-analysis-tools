@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Net.Firewall;
+using NtCoreLib.Net.Firewall;
 
-namespace NtObjectManager.Utils.Firewall
+namespace NtObjectManager.Utils.Firewall;
+
+/// <summary>
+/// Firewall sublayer GUID.
+/// </summary>
+public sealed class FirewallSubLayerGuid : FirewallObjectGuid
 {
     /// <summary>
-    /// Firewall sublayer GUID.
+    /// Constructor.
     /// </summary>
-    public sealed class FirewallSubLayerGuid : FirewallObjectGuid
+    /// <param name="name">Name of the sub-layer or a GUID</param>
+    public FirewallSubLayerGuid(string name)
+        : base(name, FirewallUtils.GetKnownSubLayerGuid)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">Name of the sub-layer or a GUID</param>
-        public FirewallSubLayerGuid(string name)
-            : base(name, FirewallUtils.GetKnownSubLayerGuid)
-        {
-        }
     }
 }

@@ -14,22 +14,21 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Server;
+
+/// <summary>
+/// Interface for a KDC server listener.
+/// </summary>
+public interface IKerberosKDCServerListener : IDisposable
 {
     /// <summary>
-    /// Interface for a KDC server listener.
+    /// Start the listener.
     /// </summary>
-    public interface IKerberosKDCServerListener : IDisposable
-    {
-        /// <summary>
-        /// Start the listener.
-        /// </summary>
-        /// <param name="handle_request">The function to handle a new request.</param>
-        void Start(Func<byte[], byte[]> handle_request);
+    /// <param name="handle_request">The function to handle a new request.</param>
+    void Start(Func<byte[], byte[]> handle_request);
 
-        /// <summary>
-        /// Stop the listener.
-        /// </summary>
-        void Stop();
-    }
+    /// <summary>
+    /// Stop the listener.
+    /// </summary>
+    void Stop();
 }

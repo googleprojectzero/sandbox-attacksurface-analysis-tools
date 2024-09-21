@@ -14,36 +14,39 @@
 
 <#
 .SYNOPSIS
-Gets the executable manifest for a PE file.
+Gets the executable manifests for a PE file.
 .DESCRIPTION
-This cmdlet extracts the manifes from a PE file and extracts basic information such as UIAccess
+This cmdlet extracts the manifests from a PE file and extracts basic information such as UIAccess
 setting or Auto Elevation.
 .PARAMETER Path
 Filename to get the executable manifest from.
 .INPUTS
 List of filenames
 .OUTPUTS
-NtApiDotNet.Win32.ExecutableManifest
+NtCoreLib.Win32.SideBySide.ManifestFile
 .EXAMPLE
-Get-ExecutableManifest abc.dll
+Get-Win32ModuleManifest abc.dll
 Gets manifest from file abc.dll.
 .EXAMPLE
-Get-ChildItem $env:windir\*.exe -Recurse | Get-ExecutableManifest
+Get-ChildItem $env:windir\*.exe -Recurse | Get-Win32ModuleManifest
 Gets all manifests from EXE files, recursively under Windows.
 .EXAMPLE
-Get-ChildItem $env:windir\*.exe -Recurse | Get-ExecutableManifest | Where-Object AutoElevate | Select-Object FullPath
+Get-ChildItem $env:windir\*.exe -Recurse | Get-Win32ModuleManifest | Where-Object AutoElevate | Select-Object FullPath
 Get the full path of all executables with Auto Elevate manifest configuration.
 #>
-function Get-ExecutableManifest {
+function Get-Win32ModuleManifest {
     [CmdletBinding()]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [string]$Path
     )
     PROCESS {
-        $fullpath = Resolve-Path -LiteralPath $Path
-        $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
-        Write-Output $manifest
+        $fullpath = if (Test-Path $Path) {
+            Resolve-Path -LiteralPath $Path
+        } else {
+            $Path
+        }
+        [NtCoreLib.Win32.SideBySide.ManifestFile]::FromExecutableFile($fullpath) | Write-Output
     }
 }
 
@@ -59,7 +62,7 @@ Specify the flags for loading.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.SafeLoadLibraryHandle
+NtCoreLib.Win32.Loader.SafeLoadLibraryHandle
 #>
 function Import-Win32Module {
     [CmdletBinding()]
@@ -67,14 +70,14 @@ function Import-Win32Module {
         [Parameter(Position = 0, Mandatory)]
         [string]$Path,
         [Parameter(Position = 1)]
-        [NtApiDotNet.Win32.LoadLibraryFlags]$Flags = 0
+        [NtCoreLib.Win32.Loader.LoadLibraryFlags]$Flags = 0
     )
 
     if (Test-Path $Path) {
         $Path = Resolve-Path $Path
     }
 
-    [NtApiDotNet.Win32.SafeLoadLibraryHandle]::LoadLibrary($Path, $Flags) | Write-Output
+    [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]::LoadLibrary($Path, $Flags) | Write-Output
 }
 
 <#
@@ -89,7 +92,7 @@ Specify the address of the module.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.SafeLoadLibraryHandle
+NtCoreLib.Win32.Loader.SafeLoadLibraryHandle
 #>
 function Get-Win32Module {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
@@ -104,10 +107,10 @@ function Get-Win32Module {
         if (Test-Path $Path) {
             $Path = Resolve-Path $Path
         }
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]::GetModuleHandle($Path) | Write-Output
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]::GetModuleHandle($Path) | Write-Output
     }
     else {
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]::GetModuleHandle($Address) | Write-Output
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]::GetModuleHandle($Address) | Write-Output
     }
 }
 
@@ -125,20 +128,20 @@ Specify the name of the function to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DllExport[] or int64.
+NtCoreLib.Image.DllExport[] or int64.
 #>
 function Get-Win32ModuleExport {
     [CmdletBinding(DefaultParameterSetName = "FromModule")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]$Module,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
         [string]$Path,
         [string]$ProcAddress = ""
     )
 
     if ($PsCmdlet.ParameterSetName -eq "FromPath") {
-        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags AsDataFile) {
             if ($null -ne $lib) {
                 Get-Win32ModuleExport -Module $lib -ProcAddress $ProcAddress
             }
@@ -170,13 +173,13 @@ Specify to resolve API set names to the DLl names.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DllImport[]
+NtCoreLib.Image.DllImport[]
 #>
 function Get-Win32ModuleImport {
     [CmdletBinding(DefaultParameterSetName = "FromModule")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]$Module,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
         [string]$Path,
         [string]$DllName,
@@ -184,7 +187,7 @@ function Get-Win32ModuleImport {
     )
 
     $imports = if ($PsCmdlet.ParameterSetName -eq "FromPath") {
-        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags AsDataFile) {
             if ($null -ne $lib) {
                 Get-Win32ModuleImport -Module $lib -ResolveApiSet:$ResolveApiSet
             }
@@ -230,7 +233,7 @@ function Get-Win32ModuleSymbolFile {
     [CmdletBinding(DefaultParameterSetName = "FromModule")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]$Module,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
         [string]$Path,
         [Parameter(Position = 1)]
@@ -240,7 +243,7 @@ function Get-Win32ModuleSymbolFile {
     )
 
     if ($PsCmdlet.ParameterSetName -eq "FromPath") {
-        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags AsDataFile) {
             if ($null -ne $lib) {
                 Get-Win32ModuleSymbolFile -Module $lib -OutPath $OutPath -SymbolServerUrl $SymbolServerUrl -Mirror:$Mirror
             }
@@ -290,19 +293,19 @@ Specify the name of resource tot get. Must be combined with the Type.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Image.ImageResource
+NtCoreLib.Image.ImageResource
 #>
 function Get-Win32ModuleResource {
     [CmdletBinding(DefaultParameterSetName = "FromModule")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromModule")]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]$Module,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPath")]
         [string]$Path,
         [switch]$DontLoadResource,
-        [ValidateNotNullOrEmpty()]
-        [string]$Type,
-        [ValidateNotNullOrEmpty()]
+        [ValidateNotNull()]
+        [System.Nullable[NtCoreLib.Image.ImageResourceType]]$Type,
+        [ValidateNotNull()]
         [ValidateScript({
                 if ($PSBoundParameters.Keys -contains 'Type') {
                         $true
@@ -311,19 +314,19 @@ function Get-Win32ModuleResource {
                     throw "Must specify a type when using a name."
                 }
             })]
-        [string]$Name
+        [NtCoreLib.Image.ResourceString]$Name
     )
 
     try {
         $lib = if ($PSCmdlet.ParameterSetName -eq "FromPath") {
-            Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile
+            Import-Win32Module -Path $Path -Flags AsDataFile
         } else {
             $Module.AddRef()
         }
 
         Use-NtObject($lib) {
-            if ("" -ne $Type) {
-                if ("" -ne $Name) {
+            if ($null -ne $Type) {
+                if ($null -ne $Name) {
                     $lib.LoadResource($Name, $Type)
                 } else {
                     $lib.GetResources($Type, !$DontLoadResource) | Write-Output
@@ -345,19 +348,20 @@ Get the embedded signature information from a file.
 This cmdlet gets the embedded authenticode signature information from a file. This differs
 from Get-AuthenticodeSignature in that it doesn't take into account catalog signing which is
 important for tracking down PP and PPL executables.
-.PARAMETER FullName
+.PARAMETER Path
 The path to the file to extract the signature from.
 #>
 function Get-EmbeddedAuthenticodeSignature {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory, Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [string]$FullName
+        [parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [alias("FullName")]
+        [string]$Path
     )
     PROCESS {
         $content_type = [System.Security.Cryptography.X509Certificates.X509ContentType]::Unknown
         try {
-            $path = Resolve-Path $FullName
+            $path = Resolve-Path $Path
             $content_type = [System.Security.Cryptography.X509Certificates.X509Certificate2]::GetCertContentType($path)
         }
         catch {
@@ -369,7 +373,7 @@ function Get-EmbeddedAuthenticodeSignature {
         }
 
         $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($path)
-        $all_certs = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetCertificates($path) | Write-Output
+        $all_certs = [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::GetCertificates($path) | Write-Output
         $ppl = $false
         $pp = $false
         $tcb = $false
@@ -394,7 +398,7 @@ function Get-EmbeddedAuthenticodeSignature {
             }
         }
 
-        $page_hash = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::ContainsPageHash($path)
+        $page_hash = [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::ContainsPageHash($path)
 
         $props = @{
             Path                  = $Path;
@@ -413,7 +417,7 @@ function Get-EmbeddedAuthenticodeSignature {
         }
 
         if ($elam) {
-            $certs = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetElamInformation($path, $false)
+            $certs = [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::GetElamInformation($path, $false)
             if ($certs.IsSuccess)
             {
                 $props["ElamCerts"] = $certs.Result
@@ -421,13 +425,13 @@ function Get-EmbeddedAuthenticodeSignature {
         }
 
         if ($ium) {
-            $policy = [NtApiDotNet.Win32.Security.Authenticode.ImagePolicyMetadata]::CreateFromFile($Path, $false)
+            $policy = [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::GetImagePolicyMetadata($Path, $false)
             if ($policy.IsSuccess) {
                 $props["TrustletPolicy"] = $policy.Result
             }
         }
         if ($ium -or $enclave) {
-            $enclave = [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetEnclaveConfiguration($path, $false)
+            $enclave = [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::GetEnclaveConfiguration($Path, $false)
             if ($enclave.IsSuccess) {
                 $props["EnclaveConfig"] = $enclave.Result
                 $props["EnclavePrimaryImage"] = $enclave.Result.PrimaryImage
@@ -435,7 +439,94 @@ function Get-EmbeddedAuthenticodeSignature {
             }
         }
 
-        $obj = New-Object –TypeName PSObject –Prop $props
+        $obj = New-Object -TypeName PSObject -Prop $props
         Write-Output $obj
+    }
+}
+
+<#
+.SYNOPSIS
+Get the parsed image file for a path or binary array.
+.DESCRIPTION
+This cmdlet parses a PE image file from a path or a binary array. This isn't the same as a loaded
+module, it can't be executed.
+.PARAMETER Path
+The path to the file to parse. If parsing a byte array it represents the file name on disk.
+.PARAMETER Data
+The PE file as a byte array.
+.INPUTS
+None
+.OUTPUTS
+NtCoreLib.Image.ImageFile
+#>
+function Get-NtImageFile {
+    [CmdletBinding(DefaultParameterSetName="FromFile")]
+    param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromFile", ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [parameter(ParameterSetName="FromArray")]
+        [alias("FullName")]
+        [string]$Path,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromArray")]
+        [byte[]]$Data
+    )
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromFile") {
+            [NtCoreLib.Image.ImageFile]::Parse($Path)
+        } else {
+            [NtCoreLib.Image.ImageFile]::Parse($Data, $Path)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Select parsed image files based on a set of criteria.
+.DESCRIPTION
+This cmdlet compares parsed image files to specific criteria such as having an export or import.
+.PARAMETER ImageFile
+The input image file.
+.PARAMETER Import
+The name of the import to select on. Use #X for ordinals.
+.PARAMETER DllName
+Optional DLL name for the export to come from.
+.PARAMETER UseApiSet
+Specify to search the resolve API set imports for the DLL rather than the normal list.
+.PARAMETER Export
+The name of the export to select on.
+.PARAMETER ElamDriver
+Specify to select driver images with ELAM support.
+.INPUTS
+NtCoreLib.Image.ImageFile[]
+.OUTPUTS
+NtCoreLib.Image.ImageFile[]
+#>
+function Select-NtImageFile {
+    [CmdletBinding(DefaultParameterSetName="FromImport")]
+    param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtCoreLib.Image.ImageFile[]]$ImageFile,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromImport")]
+        [string]$Import,
+        [parameter(Position = 2, ParameterSetName="FromImport")]
+        [string]$DllName,
+        [parameter(ParameterSetName="FromImport")]
+        [switch]$UseApiSet,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromExport")]
+        [string]$Export,
+        [parameter(Mandatory, ParameterSetName="FromElam")]
+        [switch]$ElamDriver
+    )
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromImport" {
+                $ImageFile | ? { $_.HasImport($Import, $DllName, $UseApiSet) }
+            }
+            "FromExport" {
+                $ImageFile | ? { $_.HasExport($Export) }
+            }
+            "FromElam" {
+                $ImageFile | ? { $_.ElamInformation.Count -gt 0 }
+            }
+        }
     }
 }

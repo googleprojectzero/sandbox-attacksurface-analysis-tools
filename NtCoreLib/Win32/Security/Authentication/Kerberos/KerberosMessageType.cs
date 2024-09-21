@@ -12,30 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
-{
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// Kerberos Message Type.
-    /// </summary>
-    public enum KerberosMessageType
-    {
-        UNKNOWN = 0,
-        KRB_AS_REQ  = 10,
-        KRB_AS_REP  = 11,
-        KRB_TGS_REQ = 12,
-        KRB_TGS_REP = 13,
-        KRB_AP_REQ = 14,
-        KRB_AP_REP = 15,
-        KRB_TGT_REQ = 16,
-        KRB_TGT_REP = 17,
-        KRB_SAFE = 20,
-        KRB_PRIV = 21,
-        KRB_CRED = 22,
-        KRB_AS_REP_ENC_PART = 25,
-        KRB_TGS_REP_ENC_PART = 26,
-        KRB_PRIV_ENC_PART = 28,
-        KRB_CRED_ENC_PART = 29,
-        KRB_ERROR = 30,
-    }
+/// <summary>
+/// Kerberos Message Type.
+/// </summary>
+public enum KerberosMessageType
+{
+    UNKNOWN = 0,
+    KRB_AS_REQ  = 10,
+    KRB_AS_REP  = 11,
+    KRB_TGS_REQ = 12,
+    KRB_TGS_REP = 13,
+    KRB_AP_REQ = 14,
+    KRB_AP_REP = 15,
+    KRB_TGT_REQ = 16,
+    KRB_TGT_REP = 17,
+    KRB_SAFE = 20,
+    KRB_PRIV = 21,
+    KRB_CRED = 22,
+    KRB_AS_REP_ENC_PART = 25,
+    KRB_TGS_REP_ENC_PART = 26,
+    KRB_PRIV_ENC_PART = 28,
+    KRB_CRED_ENC_PART = 29,
+    KRB_ERROR = 30,
 }

@@ -14,10 +14,9 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal abstract class Smb2ResponsePacket
 {
-    internal abstract class Smb2ResponsePacket
-    {
-        public abstract void Read(BinaryReader reader);
-    }
+    public abstract void Read(BinaryReader reader);
 }

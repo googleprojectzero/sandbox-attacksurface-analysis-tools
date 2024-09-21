@@ -14,13 +14,12 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+[Flags]
+internal enum Smb2SecurityMode
 {
-    [Flags]
-    internal enum Smb2SecurityMode
-    {
-        None = 0,
-        SIGNING_ENABLED = 1,
-        SIGNING_REQUIRED = 2
-    }
+    None = 0,
+    SIGNING_ENABLED = 1,
+    SIGNING_REQUIRED = 2
 }

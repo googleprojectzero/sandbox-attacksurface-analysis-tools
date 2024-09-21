@@ -12,99 +12,96 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Negotiate
+namespace NtCoreLib.Win32.Security.Authentication.Negotiate;
+
+/// <summary>
+/// State of the Negotiate state.
+/// </summary>
+public enum NegotiateAuthenticationState
 {
     /// <summary>
-    /// State of the Negotiate state.
+    /// Negotiate completed.
     /// </summary>
-    public enum NegotiateAuthenticationState
-    {
-        /// <summary>
-        /// Negotiate completed.
-        /// </summary>
-        Completed = 0,
-        /// <summary>
-        /// Negotiate incomplete.
-        /// </summary>
-        Incomplete = 1,
-        /// <summary>
-        /// Negotiate rejected.
-        /// </summary>
-        Reject = 2,
-        /// <summary>
-        /// Request Message Integrity Code.
-        /// </summary>
-        RequestMIC = 3
-    }
+    Completed = 0,
+    /// <summary>
+    /// Negotiate incomplete.
+    /// </summary>
+    Incomplete = 1,
+    /// <summary>
+    /// Negotiate rejected.
+    /// </summary>
+    Reject = 2,
+    /// <summary>
+    /// Request Message Integrity Code.
+    /// </summary>
+    RequestMIC = 3
+}
+
+/// <summary>
+/// Class to represent the negTokenResp message in SPNEGO.
+/// </summary>
+public sealed class NegotiateResponseAuthenticationToken : NegotiateAuthenticationToken
+{
+    /// <summary>
+    /// Supported mechanism for the token, optional.
+    /// </summary>
+    public string SupportedMechanism { get; }
 
     /// <summary>
-    /// Class to represent the negTokenResp message in SPNEGO.
+    /// Current state of the negotiation.
     /// </summary>
-    public sealed class NegotiateResponseAuthenticationToken : NegotiateAuthenticationToken
+    public NegotiateAuthenticationState? State { get; }
+
+    /// <summary>
+    /// Create a NegTokenInit token.
+    /// </summary>
+    /// <param name="state">The authentication state.</param>
+    /// <param name="mech_type">The authentication mechanisms we support.</param>
+    /// <param name="response_token">An initial authentication token.</param>
+    /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
+    /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
+    /// <returns>The response token.</returns>
+    public static NegotiateResponseAuthenticationToken Create(NegotiateAuthenticationState? state,
+        string mech_type = null, AuthenticationToken response_token = null, byte[] mech_list_mic = null,
+        bool wrap_gssapi = false)
     {
-        /// <summary>
-        /// Supported mechanism for the token, optional.
-        /// </summary>
-        public string SupportedMechanism { get; }
-
-        /// <summary>
-        /// Current state of the negotiation.
-        /// </summary>
-        public NegotiateAuthenticationState? State { get; }
-
-        /// <summary>
-        /// Create a NegTokenInit token.
-        /// </summary>
-        /// <param name="state">The authentication state.</param>
-        /// <param name="mech_type">The authentication mechanisms we support.</param>
-        /// <param name="response_token">An initial authentication token.</param>
-        /// <param name="mech_list_mic">Optional mechanism list MIC.</param>
-        /// <param name="wrap_gssapi">Specify to wrap the token is a GSS-API wrapper.</param>
-        /// <returns>The response token.</returns>
-        public static NegotiateResponseAuthenticationToken Create(NegotiateAuthenticationState? state,
-            string mech_type = null, AuthenticationToken response_token = null, byte[] mech_list_mic = null,
-            bool wrap_gssapi = false)
+        DERBuilder builder = new();
+        using (var context = builder.CreateContextSpecific(1))
         {
-            DERBuilder builder = new DERBuilder();
-            using (var context = builder.CreateContextSpecific(1))
+            using var seq = context.CreateSequence();
+            seq.WriteContextSpecific(0, b => b.WriteEnumerated(state));
+            if (!string.IsNullOrEmpty(mech_type))
             {
-                using (var seq = context.CreateSequence())
-                {
-                    seq.WriteContextSpecific(0, b => b.WriteEnumerated(state));
-                    if (!string.IsNullOrEmpty(mech_type))
-                    {
-                        seq.WriteContextSpecific(1, b => b.WriteObjectId(mech_type));
-                    }
-                    seq.WriteContextSpecific(2, response_token?.ToArray());
-                    seq.WriteContextSpecific(3, mech_list_mic);
-                }
+                seq.WriteContextSpecific(1, b => b.WriteObjectId(mech_type));
             }
-            byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
-            return (NegotiateResponseAuthenticationToken)Parse(token);
+            seq.WriteContextSpecific(2, response_token?.ToArray());
+            seq.WriteContextSpecific(3, mech_list_mic);
         }
+        byte[] token = wrap_gssapi ? GSSAPIUtils.Wrap(OIDValues.SPNEGO, builder.ToArray()) : builder.ToArray();
+        return (NegotiateResponseAuthenticationToken)Parse(token);
+    }
 
-        private protected override void FormatData(StringBuilder builder)
+    private protected override void FormatData(StringBuilder builder)
+    {
+        if (!string.IsNullOrWhiteSpace(SupportedMechanism))
         {
-            if (!string.IsNullOrWhiteSpace(SupportedMechanism))
-            {
-                builder.AppendLine($"Supported Mech  : {SupportedMechanism} - {OIDValues.ToString(SupportedMechanism)}");
-            }
-            if (State.HasValue)
-            {
-                builder.AppendLine($"State           : {State.Value}");
-            }
+            builder.AppendLine($"Supported Mech  : {SupportedMechanism} - {OIDValues.ToString(SupportedMechanism)}");
         }
+        if (State.HasValue)
+        {
+            builder.AppendLine($"State           : {State.Value}");
+        }
+    }
 
-        internal NegotiateResponseAuthenticationToken(byte[] data, 
-            string supported_mech, NegotiateAuthenticationState? state, AuthenticationToken token, byte[] mic)
-            : base(data, token, mic)
-        {
-            SupportedMechanism = supported_mech;
-            State = state;
-        }
+    internal NegotiateResponseAuthenticationToken(byte[] data, 
+        string supported_mech, NegotiateAuthenticationState? state, AuthenticationToken token, byte[] mic)
+        : base(data, token, mic)
+    {
+        SupportedMechanism = supported_mech;
+        State = state;
     }
 }

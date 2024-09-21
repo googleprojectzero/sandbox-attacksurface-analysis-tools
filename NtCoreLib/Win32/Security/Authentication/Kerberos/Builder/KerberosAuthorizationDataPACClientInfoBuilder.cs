@@ -16,62 +16,61 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent a PAC_CLIENT_INFO builder.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACClientInfoBuilder : KerberosAuthorizationDataPACEntryBuilder
 {
     /// <summary>
-    /// Class to represent a PAC_CLIENT_INFO builder.
+    /// Client ID.
     /// </summary>
-    public sealed class KerberosAuthorizationDataPACClientInfoBuilder : KerberosAuthorizationDataPACEntryBuilder
+    public long ClientId { get; set; }
+    /// <summary>
+    /// Name of client.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosAuthorizationDataPACClientInfoBuilder() 
+        : base(KerberosAuthorizationDataPACEntryType.ClientInfo)
     {
-        /// <summary>
-        /// Client ID.
-        /// </summary>
-        public long ClientId { get; set; }
-        /// <summary>
-        /// Name of client.
-        /// </summary>
-        public string Name { get; set; }
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataPACClientInfoBuilder() 
-            : base(KerberosAuthorizationDataPACEntryType.ClientInfo)
+    internal KerberosAuthorizationDataPACClientInfoBuilder(KerberosAuthorizationDataPACClientInfo info) 
+        : this()
+    {
+        ClientId = info.ClientId;
+        Name = info.Name;
+    }
+
+    /// <summary>
+    /// Create the real PAC entry.
+    /// </summary>
+    /// <returns>The created PAC entry.</returns>
+    public override KerberosAuthorizationDataPACEntry Create()
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+
+        if (Name is null)
+            throw new ArgumentNullException(nameof(Name));
+
+        byte[] data = Encoding.Unicode.GetBytes(Name);
+        ushort len = (ushort)data.Length;
+
+        writer.Write(ClientId);
+        writer.Write(len);
+        writer.Write(data);
+
+        if (!KerberosAuthorizationDataPACClientInfo.Parse(stm.ToArray(), 
+            out KerberosAuthorizationDataPACEntry entry))
         {
+            throw new InvalidDataException("Invalid PAC entry.");
         }
-
-        internal KerberosAuthorizationDataPACClientInfoBuilder(KerberosAuthorizationDataPACClientInfo info) 
-            : this()
-        {
-            ClientId = info.ClientId;
-            Name = info.Name;
-        }
-
-        /// <summary>
-        /// Create the real PAC entry.
-        /// </summary>
-        /// <returns>The created PAC entry.</returns>
-        public override KerberosAuthorizationDataPACEntry Create()
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-
-            if (Name is null)
-                throw new ArgumentNullException(nameof(Name));
-
-            byte[] data = Encoding.Unicode.GetBytes(Name);
-            ushort len = (ushort)data.Length;
-
-            writer.Write(ClientId);
-            writer.Write(len);
-            writer.Write(data);
-
-            if (!KerberosAuthorizationDataPACClientInfo.Parse(stm.ToArray(), 
-                out KerberosAuthorizationDataPACEntry entry))
-            {
-                throw new InvalidDataException("Invalid PAC entry.");
-            }
-            return entry;
-        }
+        return entry;
     }
 }

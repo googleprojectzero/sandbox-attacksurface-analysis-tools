@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal enum Smb2InfoType : byte
 {
-    internal enum Smb2InfoType : byte
-    {
-        [SDKName("SMB2_0_INFO_FILE")]
-        File = 1,
-        [SDKName("SMB2_0_INFO_FILESYSTEM")]
-        FileSystem = 2,
-        [SDKName("SMB2_0_INFO_SECURITY")]
-        Security = 3,
-        [SDKName("SMB2_0_INFO_QUOTA")]
-        Quota = 4,
-    }
+    [SDKName("SMB2_0_INFO_FILE")]
+    File = 1,
+    [SDKName("SMB2_0_INFO_FILESYSTEM")]
+    FileSystem = 2,
+    [SDKName("SMB2_0_INFO_SECURITY")]
+    Security = 3,
+    [SDKName("SMB2_0_INFO_QUOTA")]
+    Quota = 4,
 }

@@ -12,55 +12,55 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Grants specific bits on an access mask and returns the updated access mask.</para>
+/// <para type="description">This cmdlet grants specific bits on an access mask and returns the updated access mask</para>
+/// </summary>
+/// <example>
+///   <code>$access = Grant-NtAccessMask $access WriteDac</code>
+///   <para>Adds WriteDac to the access.</para>
+/// </example>
+[Cmdlet(VerbsSecurity.Grant, "NtAccessMask", DefaultParameterSetName = "SetAccess")]
+public class GrantNtAccessMaskCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Grants specific bits on an access mask and returns the updated access mask.</para>
-    /// <para type="description">This cmdlet grants specific bits on an access mask and returns the updated access mask</para>
+    /// <para type="description">The initial access mask to update.</para>
     /// </summary>
-    /// <example>
-    ///   <code>$access = Grant-NtAccessMask $access WriteDac</code>
-    ///   <para>Adds WriteDac to the access.</para>
-    /// </example>
-    [Cmdlet(VerbsSecurity.Grant, "NtAccessMask", DefaultParameterSetName = "SetAccess")]
-    public class GrantNtAccessMaskCmdlet : PSCmdlet
+    [Parameter(Position = 0, Mandatory = true)]
+    public AccessMask AccessMask { get; set; }
+
+    /// <summary>
+    /// <para type="description">The access mask to grant.</para>
+    /// </summary>
+    [Parameter(Position = 1, Mandatory = true, ParameterSetName = "SetAccess")]
+    public GenericAccessRights SetAccess { get; set; }
+
+    /// <summary>
+    /// <para type="description">The raw access mask to grant.</para>
+    /// </summary>
+    [Parameter(Position = 1, Mandatory = true, ParameterSetName = "RawSetAccess")]
+    public AccessMask RawSetAccess { get; set; }
+
+    private AccessMask GetAccessMask()
     {
-        /// <summary>
-        /// <para type="description">The initial access mask to update.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        public AccessMask AccessMask { get; set; }
-
-        /// <summary>
-        /// <para type="description">The access mask to grant.</para>
-        /// </summary>
-        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "SetAccess")]
-        public GenericAccessRights SetAccess { get; set; }
-
-        /// <summary>
-        /// <para type="description">The raw access mask to grant.</para>
-        /// </summary>
-        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "RawSetAccess")]
-        public AccessMask RawSetAccess { get; set; }
-
-        private AccessMask GetAccessMask()
+        if (ParameterSetName == "RawSetAccess")
         {
-            if (ParameterSetName == "RawSetAccess")
-            {
-                return RawSetAccess;
-            }
-            return SetAccess;
+            return RawSetAccess;
         }
+        return SetAccess;
+    }
 
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            WriteObject(AccessMask | GetAccessMask());
-        }
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        WriteObject(AccessMask | GetAccessMask());
     }
 }

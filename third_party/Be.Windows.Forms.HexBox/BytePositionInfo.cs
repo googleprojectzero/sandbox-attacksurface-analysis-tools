@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Be.Windows.Forms
+﻿namespace Be.Windows.Forms
 {
     /// <summary>
     /// Represents a position in the HexBox control

@@ -12,63 +12,62 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Win32.IO;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the final path name for a file.</para>
+/// <para type="description">This cmdlet gets the final pathname for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileFinalPath -File $f</code>
+///   <para>Get the path for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the path for the file by path.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileFinalPath -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the path for the file by win32 path.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe" -FormatWin32Path</code>
+///   <para>Get the path as a win32 path.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe" -FormatWin32Path -Flags NameGuid</code>
+///   <para>Get the path as a volume GUID win32 path.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileFinalPath", DefaultParameterSetName = "Default")]
+[OutputType(typeof(string))]
+public class GetNtFileFinalPathCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the final path name for a file.</para>
-    /// <para type="description">This cmdlet gets the final pathname for a file.</para>
+    /// <para type="description">Specify to format the links as Win32 paths.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileFinalPath -File $f</code>
-    ///   <para>Get the path for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the path for the file by path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileFinalPath -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the path for the file by win32 path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe" -FormatWin32Path</code>
-    ///   <para>Get the path as a win32 path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileFinalPath -Path "\??\c:\windows\notepad.exe" -FormatWin32Path -Flags NameGuid</code>
-    ///   <para>Get the path as a volume GUID win32 path.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileFinalPath", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(string))]
-    public class GetNtFileFinalPathCmdlet : BaseNtFilePropertyCmdlet
+    [Parameter]
+    public SwitchParameter FormatWin32Path { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the name format when formatting as a Win32 path.</para>
+    /// </summary>
+    [Parameter]
+    public Win32PathNameFlags Flags { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public GetNtFileFinalPathCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// <para type="description">Specify to format the links as Win32 paths.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter FormatWin32Path { get; set; }
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the name format when formatting as a Win32 path.</para>
-        /// </summary>
-        [Parameter]
-        public Win32PathNameFlags Flags { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileFinalPathCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
-
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(FormatWin32Path ? file.GetWin32PathName(Flags) : file.FullPath);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(FormatWin32Path ? file.GetWin32PathName(Flags) : file.FullPath);
     }
 }

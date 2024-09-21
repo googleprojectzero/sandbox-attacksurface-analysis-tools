@@ -12,27 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Interface for logon credentials to use with LsaLogonUser.
+/// </summary>
+/// <remarks>Use <see cref="AuthenticationCredentials"/> for SSPI calls.</remarks>
+public interface ILsaLogonCredentials
 {
     /// <summary>
-    /// Interface for logon credentials to use with LsaLogonUser.
+    /// Specify the expected authentication package name.
     /// </summary>
-    /// <remarks>Use <see cref="AuthenticationCredentials"/> for SSPI calls.</remarks>
-    public interface ILsaLogonCredentials
-    {
-        /// <summary>
-        /// Specify the expected authentication package name.
-        /// </summary>
-        /// <remarks>This is advisory only, you could pass the same credentials to a different authentication package.</remarks>
-        string AuthenticationPackage { get; }
+    /// <remarks>This is advisory only, you could pass the same credentials to a different authentication package.</remarks>
+    string AuthenticationPackage { get; }
 
-        /// <summary>
-        /// Convert the credentials into a safe buffer.
-        /// </summary>
-        /// <param name="list">Store for any additional allocations.</param>
-        /// <returns>The safe buffer containing the credentials.</returns>
-        SafeBuffer ToBuffer(DisposableList list);
-    }
+    /// <summary>
+    /// Convert the credentials into a safe buffer.
+    /// </summary>
+    /// <param name="list">Store for any additional allocations.</param>
+    /// <returns>The safe buffer containing the credentials.</returns>
+    SafeBuffer ToBuffer(DisposableList list);
 }

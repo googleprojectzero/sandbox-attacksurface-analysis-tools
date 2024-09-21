@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Class to represent a MSV1_0_LM20_LOGON credentials structure.
+/// </summary>
+public sealed class NtlmNetworkLogonCredentials : NtlmLm20LogonCredentials
 {
     /// <summary>
-    /// Class to represent a MSV1_0_LM20_LOGON credentials structure.
+    /// Parameter control flags.
     /// </summary>
-    public sealed class NtlmNetworkLogonCredentials : NtlmLm20LogonCredentials
-    {
-        /// <summary>
-        /// Parameter control flags.
-        /// </summary>
-        public NtlmNetworkLogonParameterControlFlags ParameterControl { get; set; }
+    public NtlmNetworkLogonParameterControlFlags ParameterControl { get; set; }
 
-        private protected override MSV1_0_LM20_LOGON GetBaseStruct()
+    private protected override MSV1_0_LM20_LOGON GetBaseStruct()
+    {
+        return new MSV1_0_LM20_LOGON()
         {
-            return new MSV1_0_LM20_LOGON()
-            {
-                MessageType = MSV1_0_LOGON_SUBMIT_TYPE.MsV1_0NetworkLogon,
-                ParameterControl = (int)ParameterControl
-            };
-        }
+            MessageType = MSV1_0_LOGON_SUBMIT_TYPE.MsV1_0NetworkLogon,
+            ParameterControl = (int)ParameterControl
+        };
     }
 }

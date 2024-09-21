@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
+using NtCoreLib.Utilities.Data;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Class to represent an Schannel shutdown control token.
+/// </summary>
+public sealed class SchannelShutdownControlToken : SchannelControlToken
 {
-    /// <summary>
-    /// Class to represent an Schannel shutdown control token.
-    /// </summary>
-    public sealed class SchannelShutdownControlToken : SchannelControlToken
-    {
-        private const int SCHANNEL_SHUTDOWN = 1;
+    private const int SCHANNEL_SHUTDOWN = 1;
 
-        private protected override void WriteBuffer(DataWriter writer)
-        {
-            writer.Write(SCHANNEL_SHUTDOWN);
-        }
+    private protected override void WriteBuffer(DataWriter writer)
+    {
+        writer.Write(SCHANNEL_SHUTDOWN);
     }
 }

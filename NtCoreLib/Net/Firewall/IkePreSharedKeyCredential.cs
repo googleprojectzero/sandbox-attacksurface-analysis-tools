@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent an IKE pre-shared key credential.
+/// </summary>
+public sealed class IkePreSharedKeyCredential : IkeCredential
 {
     /// <summary>
-    /// Class to represent an IKE pre-shared key credential.
+    /// The pre-shared key.
     /// </summary>
-    public sealed class IkePreSharedKeyCredential : IkeCredential
+    public byte[] Key { get; }
+
+    /// <summary>
+    /// Key flags.
+    /// </summary>
+    public IkeExtPreSharedKeyFlags Flags { get; }
+
+    internal IkePreSharedKeyCredential(IKEEXT_CREDENTIAL1 creds) 
+        : base(creds)
     {
-        /// <summary>
-        /// The pre-shared key.
-        /// </summary>
-        public byte[] Key { get; }
-
-        /// <summary>
-        /// Key flags.
-        /// </summary>
-        public IkeExtPreSharedKeyFlags Flags { get; }
-
-        internal IkePreSharedKeyCredential(IKEEXT_CREDENTIAL1 creds) 
-            : base(creds)
-        {
-            var key = creds.cred.ReadStruct<IKEEXT_PRESHARED_KEY_AUTHENTICATION1>();
-            Key = key.presharedKey.ToArray();
-            Flags = key.flags;
-        }
+        var key = creds.cred.ReadStruct<IKEEXT_PRESHARED_KEY_AUTHENTICATION1>();
+        Key = key.presharedKey.ToArray();
+        Flags = key.flags;
     }
 }

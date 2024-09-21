@@ -16,38 +16,37 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal abstract class DnsResourceRecordBase
 {
-    internal abstract class DnsResourceRecordBase
+    public string Name { get; set; }
+    public DnsQueryType Type { get; set; }
+    public DnsQueryClass Class { get; set; }
+    public uint TimeToLive { get; set; }
+
+    public void ToWriter(BinaryWriter writer, Dictionary<string, int> string_cache)
     {
-        public string Name { get; set; }
-        public DnsQueryType Type { get; set; }
-        public DnsQueryClass Class { get; set; }
-        public uint TimeToLive { get; set; }
+        writer.WriteDnsString(Name, string_cache);
+        writer.WriteUInt16BE((ushort)Type);
+        writer.WriteUInt16BE((ushort)Class);
+        writer.WriteUInt32BE(TimeToLive);
 
-        public void ToWriter(BinaryWriter writer, Dictionary<string, int> string_cache)
+        long currPos = writer.BaseStream.Position;
+        writer.WriteUInt16BE(0);
+        WriteData(writer, string_cache);
+        long endPos = writer.BaseStream.Position;
+
+        writer.BaseStream.Position = currPos;
+
+        if ((endPos - currPos - 2) > ushort.MaxValue)
         {
-            writer.WriteDnsString(Name, string_cache);
-            writer.WriteUInt16BE((ushort)Type);
-            writer.WriteUInt16BE((ushort)Class);
-            writer.WriteUInt32BE(TimeToLive);
-
-            long currPos = writer.BaseStream.Position;
-            writer.WriteUInt16BE(0);
-            WriteData(writer, string_cache);
-            long endPos = writer.BaseStream.Position;
-
-            writer.BaseStream.Position = currPos;
-
-            if ((endPos - currPos - 2) > ushort.MaxValue)
-            {
-                throw new ArgumentException($"RR data cannot be longer than {ushort.MaxValue}");
-            }
-
-            writer.WriteUInt16BE((ushort)(endPos - currPos - 2));
-            writer.BaseStream.Position = endPos;
+            throw new ArgumentException($"RR data cannot be longer than {ushort.MaxValue}");
         }
 
-        private protected abstract void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache);
+        writer.WriteUInt16BE((ushort)(endPos - currPos - 2));
+        writer.BaseStream.Position = endPos;
     }
+
+    private protected abstract void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache);
 }

@@ -14,17 +14,16 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
-{
-    internal class PDUBindNack : PDUBase
-    {
-        public BindRejectionReason RejectionReason { get; }
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
 
-        public PDUBindNack(byte[] data) 
-            : base(PDUType.BindNack)
-        {
-            RejectionReason = (BindRejectionReason)BitConverter.ToUInt16(data, 0);
-            // TODO: Supported protocol versions.
-        }
+internal class PDUBindNack : PDUBase
+{
+    public BindRejectionReason RejectionReason { get; }
+
+    public PDUBindNack(byte[] data) 
+        : base(PDUType.BindNack)
+    {
+        RejectionReason = (BindRejectionReason)BitConverter.ToUInt16(data, 0);
+        // TODO: Supported protocol versions.
     }
 }

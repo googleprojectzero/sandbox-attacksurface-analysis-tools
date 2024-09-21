@@ -14,17 +14,16 @@
 
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Device
+namespace NtCoreLib.Win32.Device;
+
+/// <summary>
+/// Interface to indicate the device object has properties.
+/// </summary>
+public interface IDevicePropertyProvider
 {
     /// <summary>
-    /// Interface to indicate the device object has properties.
+    /// The list of all device properties.
     /// </summary>
-    public interface IDevicePropertyProvider
-    {
-        /// <summary>
-        /// The list of all device properties.
-        /// </summary>
-        /// <returns>The device properties.</returns>
-        IReadOnlyList<DeviceProperty> GetProperties();
-    }
+    /// <returns>The device properties.</returns>
+    IReadOnlyList<DeviceProperty> GetProperties();
 }

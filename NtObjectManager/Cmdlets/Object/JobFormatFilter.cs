@@ -14,37 +14,36 @@
 
 using System;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="description">Flags for formatting a job.</para>
+/// </summary>
+[Flags]
+public enum JobFormatFilter
 {
     /// <summary>
-    /// <para type="description">Flags for formatting a job.</para>
+    /// Basic information.
     /// </summary>
-    [Flags]
-    public enum JobFormatFilter
-    {
-        /// <summary>
-        /// Basic information.
-        /// </summary>
-        BasicInfo = 1,
-        /// <summary>
-        /// Basic limits.
-        /// </summary>
-        BasicLimits = 2,
-        /// <summary>
-        /// List of processes.
-        /// </summary>
-        ProcessList = 4,
-        /// <summary>
-        /// UI Limits.
-        /// </summary>
-        UILimits = 8,
-        /// <summary>
-        /// Silo information.
-        /// </summary>
-        Silo = 0x10,
-        /// <summary>
-        /// Display all formats.
-        /// </summary>
-        All = BasicLimits | ProcessList | BasicInfo | UILimits | Silo
-    }
+    BasicInfo = 1,
+    /// <summary>
+    /// Basic limits.
+    /// </summary>
+    BasicLimits = 2,
+    /// <summary>
+    /// List of processes.
+    /// </summary>
+    ProcessList = 4,
+    /// <summary>
+    /// UI Limits.
+    /// </summary>
+    UILimits = 8,
+    /// <summary>
+    /// Silo information.
+    /// </summary>
+    Silo = 0x10,
+    /// <summary>
+    /// Display all formats.
+    /// </summary>
+    All = BasicLimits | ProcessList | BasicInfo | UILimits | Silo
 }

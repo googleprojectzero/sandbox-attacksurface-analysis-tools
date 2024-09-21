@@ -12,50 +12,47 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Rpc;
+namespace NtCoreLib.Ndr.Marshal;
 
-namespace NtApiDotNet.Ndr.Marshal
+/// <summary>
+/// Class to represent an NDR interface pointer.
+/// </summary>
+public struct NdrInterfacePointer : INdrConformantStructure
 {
     /// <summary>
-    /// Class to represent an NDR interface pointer.
+    /// The marshaled interface data.
     /// </summary>
-    public struct NdrInterfacePointer : INdrConformantStructure
+    public byte[] Data { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="data">The marshaled interface data.</param>
+    public NdrInterfacePointer(byte[] data)
     {
-        /// <summary>
-        /// The marshaled interface data.
-        /// </summary>
-        public byte[] Data { get; set; }
+        Data = data;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="data">The marshaled interface data.</param>
-        public NdrInterfacePointer(byte[] data)
-        {
-            Data = data;
-        }
+    int INdrConformantStructure.GetConformantDimensions()
+    {
+        return 1;
+    }
 
-        int INdrConformantStructure.GetConformantDimensions()
-        {
-            return 1;
-        }
+    void INdrStructure.Marshal(INdrMarshalBuffer marshal)
+    {
+        NdrMarshalUtils.CheckNull(Data, "Data");
+        marshal.WriteInt32(Data.Length);
+        marshal.WriteConformantByteArray(Data, Data.Length);
+    }
 
-        void INdrStructure.Marshal(NdrMarshalBuffer marshal)
-        {
-            RpcUtils.CheckNull(Data, "Data");
-            marshal.WriteInt32(Data.Length);
-            marshal.WriteConformantByteArray(Data, Data.Length);
-        }
+    void INdrStructure.Unmarshal(INdrUnmarshalBuffer unmarshal)
+    {
+        unmarshal.ReadInt32(); // length.
+        Data = unmarshal.ReadConformantByteArray();
+    }
 
-        void INdrStructure.Unmarshal(NdrUnmarshalBuffer unmarshal)
-        {
-            unmarshal.ReadInt32(); // length.
-            Data = unmarshal.ReadConformantByteArray();
-        }
-
-        int INdrStructure.GetAlignment()
-        {
-            return 4;
-        }
+    int INdrStructure.GetAlignment()
+    {
+        return 4;
     }
 }

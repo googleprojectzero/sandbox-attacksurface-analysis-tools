@@ -12,59 +12,59 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Unmarshalled certificate credentials.
+/// </summary>
+public sealed class CredentialMarshalCertificate : CredentialMarshalBase
 {
+    private const int CERT_HASH_LENGTH = 20;
+
     /// <summary>
-    /// Unmarshalled certificate credentials.
+    /// The hash of the certificate.
     /// </summary>
-    public sealed class CredentialMarshalCertificate : CredentialMarshalBase
+    public byte[] HashOfCert { get; }
+
+    internal override SafeBuffer ToBuffer()
     {
-        private const int CERT_HASH_LENGTH = 20;
+        CERT_CREDENTIAL_INFO cred = new();
+        cred.cbSize = Marshal.SizeOf(cred);
+        cred.rgbHashOfCert = HashOfCert.CloneBytes();
+        Array.Resize(ref cred.rgbHashOfCert, CERT_HASH_LENGTH);
+        return cred.ToBuffer();
+    }
 
-        /// <summary>
-        /// The hash of the certificate.
-        /// </summary>
-        public byte[] HashOfCert { get; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="certificate">The certificate.</param>
+    public CredentialMarshalCertificate(X509Certificate certificate) 
+        : this(certificate?.GetCertHash() ?? throw new ArgumentNullException(nameof(certificate)))
+    {
+    }
 
-        internal override SafeBuffer ToBuffer()
-        {
-            CERT_CREDENTIAL_INFO cred = new CERT_CREDENTIAL_INFO();
-            cred.cbSize = Marshal.SizeOf(cred);
-            cred.rgbHashOfCert = HashOfCert.CloneBytes();
-            Array.Resize(ref cred.rgbHashOfCert, CERT_HASH_LENGTH);
-            return cred.ToBuffer();
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="hash_of_cert">The hash of the certificate (should be 20 bytes)</param>
+    public CredentialMarshalCertificate(byte[] hash_of_cert) : base(CredMarshalType.CertCredential)
+    {
+        if (hash_of_cert is null)
+            throw new ArgumentNullException(nameof(hash_of_cert));
+        if (hash_of_cert.Length != CERT_HASH_LENGTH)
+            throw new ArgumentException($"Hash length must be {CERT_HASH_LENGTH} bytes.", nameof(hash_of_cert));
+        HashOfCert = hash_of_cert.CloneBytes();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="certificate">The certificate.</param>
-        public CredentialMarshalCertificate(X509Certificate certificate) 
-            : this(certificate?.GetCertHash() ?? throw new ArgumentNullException(nameof(certificate)))
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="hash_of_cert">The hash of the certificate (should be 20 bytes)</param>
-        public CredentialMarshalCertificate(byte[] hash_of_cert) : base(CredMarshalType.CertCredential)
-        {
-            if (hash_of_cert is null)
-                throw new ArgumentNullException(nameof(hash_of_cert));
-            if (hash_of_cert.Length != CERT_HASH_LENGTH)
-                throw new ArgumentException($"Hash length must be {CERT_HASH_LENGTH} bytes.", nameof(hash_of_cert));
-            HashOfCert = hash_of_cert.CloneBytes();
-        }
-
-        internal CredentialMarshalCertificate(CERT_CREDENTIAL_INFO info) : base(CredMarshalType.CertCredential)
-        {
-            HashOfCert = info.rgbHashOfCert;
-        }
+    internal CredentialMarshalCertificate(CERT_CREDENTIAL_INFO info) : base(CredMarshalType.CertCredential)
+    {
+        HashOfCert = info.rgbHashOfCert;
     }
 }

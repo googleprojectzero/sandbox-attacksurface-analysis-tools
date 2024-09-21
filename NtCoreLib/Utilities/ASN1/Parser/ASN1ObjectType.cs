@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1.Parser
+namespace NtCoreLib.Utilities.ASN1.Parser;
+
+/// <summary>
+/// ASN.1 object type.
+/// </summary>
+public enum ASN1ObjectType
 {
-    /// <summary>
-    /// ASN.1 object type.
-    /// </summary>
-    public enum ASN1ObjectType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Universal = 0,
-        Application = 1,
-        ContextSpecific = 2,
-        Private = 3,
+    Universal = 0,
+    Application = 1,
+    ContextSpecific = 2,
+    Private = 3,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

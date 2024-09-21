@@ -16,108 +16,99 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Base class for a firewall network event.
+/// </summary>
+public class FirewallNetEvent
 {
     /// <summary>
-    /// Base class for a firewall network event.
+    /// Type of network event.
     /// </summary>
-    public class FirewallNetEvent
+    public FirewallNetEventType Type { get; }
+
+    /// <summary>
+    /// Flags for values set.
+    /// </summary>
+    public FirewallNetEventFlags Flags { get; }
+
+    /// <summary>
+    /// Timestamp of the event.
+    /// </summary>
+    public DateTime Timestamp { get; }
+
+    /// <summary>
+    /// Type of protocol.
+    /// </summary>
+    public ProtocolType IPProtocol { get; }
+
+    /// <summary>
+    /// Local endpoint.
+    /// </summary>
+    public IPEndPoint LocalEndpoint { get; }
+
+    /// <summary>
+    /// Remote endpoint.
+    /// </summary>
+    public IPEndPoint RemoteEndpoint { get; }
+
+    /// <summary>
+    /// IPv6 Scope ID.
+    /// </summary>
+    public uint ScopeId { get; }
+
+    /// <summary>
+    /// Connection AppID.
+    /// </summary>
+    public string AppId { get; }
+
+    /// <summary>
+    /// Connection user ID.
+    /// </summary>
+    public Sid UserId { get; }
+
+    /// <summary>
+    /// Address family.
+    /// </summary>
+    public FirewallAddressFamily AddressFamily { get; }
+
+    /// <summary>
+    /// Package SID.
+    /// </summary>
+    public Sid PackageSid { get; }
+
+    private protected FirewallNetEvent(IFwNetEvent net_event)
     {
-        /// <summary>
-        /// Type of network event.
-        /// </summary>
-        public FirewallNetEventType Type { get; }
+        Type = net_event.Type;
+        var header = net_event.Header;
+        Flags = header.flags;
+        Timestamp = new LargeInteger(header.timeStamp.ToInt64()).ToDateTime();
+        IPProtocol = (ProtocolType)header.ipProtocol;
+        LocalEndpoint = FirewallUtils.GetEndpoint(header.ipVersion, header.localAddrV4, header.localAddrV6, header.localPort);
+        RemoteEndpoint = FirewallUtils.GetEndpoint(header.ipVersion, header.remoteAddrV4, header.remoteAddrV6, header.remotePort);
+        ScopeId = header.scopeId;
+        AppId = Encoding.Unicode.GetString(header.appId.ToArray()).TrimEnd('\0');
+        UserId = Sid.Parse(header.userId, false).GetResultOrDefault();
+        AddressFamily = header.addressFamily;
+        PackageSid = Sid.Parse(header.packageSid, false).GetResultOrDefault();
+    }
 
-        /// <summary>
-        /// Flags for values set.
-        /// </summary>
-        public FirewallNetEventFlags Flags { get; }
-
-        /// <summary>
-        /// Timestamp of the event.
-        /// </summary>
-        public DateTime Timestamp { get; }
-
-        /// <summary>
-        /// Type of protocol.
-        /// </summary>
-        public ProtocolType IPProtocol { get; }
-
-        /// <summary>
-        /// Local endpoint.
-        /// </summary>
-        public IPEndPoint LocalEndpoint { get; }
-
-        /// <summary>
-        /// Remote endpoint.
-        /// </summary>
-        public IPEndPoint RemoteEndpoint { get; }
-
-        /// <summary>
-        /// IPv6 Scope ID.
-        /// </summary>
-        public uint ScopeId { get; }
-
-        /// <summary>
-        /// Connection AppID.
-        /// </summary>
-        public string AppId { get; }
-
-        /// <summary>
-        /// Connection user ID.
-        /// </summary>
-        public Sid UserId { get; }
-
-        /// <summary>
-        /// Address family.
-        /// </summary>
-        public FirewallAddressFamily AddressFamily { get; }
-
-        /// <summary>
-        /// Package SID.
-        /// </summary>
-        public Sid PackageSid { get; }
-
-        private protected FirewallNetEvent(IFwNetEvent net_event)
+    internal static FirewallNetEvent Create(IFwNetEvent net_event)
+    {
+        return net_event.Type switch
         {
-            Type = net_event.Type;
-            var header = net_event.Header;
-            Flags = header.flags;
-            Timestamp = new LargeInteger(header.timeStamp.ToInt64()).ToDateTime();
-            IPProtocol = (ProtocolType)header.ipProtocol;
-            LocalEndpoint = FirewallUtils.GetEndpoint(header.ipVersion, header.localAddrV4, header.localAddrV6, header.localPort);
-            RemoteEndpoint = FirewallUtils.GetEndpoint(header.ipVersion, header.remoteAddrV4, header.remoteAddrV6, header.remotePort);
-            ScopeId = header.scopeId;
-            AppId = Encoding.Unicode.GetString(header.appId.ToArray()).TrimEnd('\0');
-            UserId = Sid.Parse(header.userId, false).GetResultOrDefault();
-            AddressFamily = header.addressFamily;
-            PackageSid = Sid.Parse(header.packageSid, false).GetResultOrDefault();
-        }
-
-        internal static FirewallNetEvent Create(IFwNetEvent net_event)
-        {
-            switch (net_event.Type)
-            {
-                case FirewallNetEventType.IPsecKernelDrop:
-                    return new FirewallNetEventIPsecKernelDrop(net_event);
-                case FirewallNetEventType.ClassifyDrop:
-                    return new FirewallNetEventClassifyDrop(net_event);
-                case FirewallNetEventType.ClassifyAllow:
-                    return new FirewallNetEventClassifyAllow(net_event);
-                case FirewallNetEventType.CapabilityDrop:
-                    return new FirewallNetEventCapabilityDrop(net_event);
-                case FirewallNetEventType.CapabilityAllow:
-                    return new FirewallNetEventCapabilityAllow(net_event);
-                case FirewallNetEventType.IkeExtMmFailure:
-                    return new FirewallNetEventIkeExtMmFailure(net_event);
-                case FirewallNetEventType.IkeExtEmFailure:
-                    return new FirewallNetEventIkeExtEmFailure(net_event);
-                case FirewallNetEventType.IkeExtQmFailure:
-                    return new FirewallNetEventIkeExtQmFailure(net_event);
-            }
-
-            return new FirewallNetEvent(net_event);
-        }
+            FirewallNetEventType.IPsecKernelDrop => new FirewallNetEventIPsecKernelDrop(net_event),
+            FirewallNetEventType.ClassifyDrop => new FirewallNetEventClassifyDrop(net_event),
+            FirewallNetEventType.ClassifyAllow => new FirewallNetEventClassifyAllow(net_event),
+            FirewallNetEventType.CapabilityDrop => new FirewallNetEventCapabilityDrop(net_event),
+            FirewallNetEventType.CapabilityAllow => new FirewallNetEventCapabilityAllow(net_event),
+            FirewallNetEventType.IkeExtMmFailure => new FirewallNetEventIkeExtMmFailure(net_event),
+            FirewallNetEventType.IkeExtEmFailure => new FirewallNetEventIkeExtEmFailure(net_event),
+            FirewallNetEventType.IkeExtQmFailure => new FirewallNetEventIkeExtQmFailure(net_event),
+            _ => new FirewallNetEvent(net_event),
+        };
     }
 }

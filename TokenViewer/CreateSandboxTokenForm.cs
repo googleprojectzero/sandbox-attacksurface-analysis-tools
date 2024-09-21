@@ -12,313 +12,303 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Security;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Security.Token;
+using NtCoreLib.Win32.Security;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace TokenViewer
+namespace TokenViewer;
+
+public partial class CreateSandboxTokenForm : Form
 {
-    public partial class CreateSandboxTokenForm : Form
+    private readonly NtToken _token;
+
+    [Flags]
+    enum SandboxTokenType
     {
-        private NtToken _token;
-        private NtToken _newtoken;
+        RestrictedOnly = 1,
+        LowBoxOnly = 2,
+        RestrictedAndLowBox = RestrictedOnly | LowBoxOnly
+    }
 
-        [Flags]
-        enum SandboxTokenType
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
+    public NtToken? Token { get; private set; }
+
+    private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups)
+    {
+        foreach (UserGroup group in groups)
         {
-            RestrictedOnly = 1,
-            LowBoxOnly = 2,
-            RestrictedAndLowBox = RestrictedOnly | LowBoxOnly
+            ListViewItem item = new(group.ToString());
+            item.SubItems.Add(group.Sid.ToString());
+            item.Tag = group;
+            listView.Items.Add(item);
         }
+    }
 
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NtToken Token
+    private Sid[] GetGroupFromList(IEnumerable<ListViewItem> items)
+    {
+        List<Sid> groups = new();
+        foreach (ListViewItem item in items)
         {
-            get { return _newtoken; }
+            groups.Add(((UserGroup)item.Tag).Sid);
         }
+        return groups.ToArray();
+    }
 
-        private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups)
+    private Luid[] GetPrivileges()
+    {
+        List<Luid> privs = new();
+        foreach (ListViewItem item in listViewDeletePrivs.CheckedItems)
         {
-            foreach (UserGroup group in groups)
-            {
-                ListViewItem item = new ListViewItem(group.ToString());
-                item.SubItems.Add(group.Sid.ToString());
-                item.Tag = group;
-                listView.Items.Add(item);
-            }
+            privs.Add(((TokenPrivilege)item.Tag).Luid);
         }
+        return privs.ToArray();
+    }
 
-        private Sid[] GetGroupFromList(IEnumerable<ListViewItem> items)
+    public CreateSandboxTokenForm(NtToken token)
+    {
+        InitializeComponent();
+        _token = token;
+        PopulateGroupList(listViewDisableSids, new UserGroup[] { token.User});
+        PopulateGroupList(listViewDisableSids, token.Groups.Where(g => !g.DenyOnly));
+        foreach (TokenPrivilege priv in token.Privileges)
         {
-            List<Sid> groups = new List<Sid>();
-            foreach (ListViewItem item in items)
-            {
-                groups.Add(((UserGroup)item.Tag).Sid);
-            }
-            return groups.ToArray();
+            ListViewItem item = new(priv.Name);
+            item.SubItems.Add(priv.DisplayName);
+            item.Tag = priv;
+            listViewDeletePrivs.Items.Add(item);
         }
-
-        private Luid[] GetPrivileges()
+        foreach (object value in Enum.GetValues(typeof(SandboxTokenType)))
         {
-            List<Luid> privs = new List<Luid>();
-            foreach (ListViewItem item in listViewDeletePrivs.CheckedItems)
-            {
-                privs.Add(((TokenPrivilege)item.Tag).Luid);
-            }
-            return privs.ToArray();
+            comboBoxSandboxType.Items.Add(value);
         }
+        comboBoxSandboxType.SelectedItem = SandboxTokenType.RestrictedOnly;
+    }
 
-        public CreateSandboxTokenForm(NtToken token)
+    private NtToken CreateRestrictedToken(NtToken token)
+    {
+        FilterTokenFlags flags = FilterTokenFlags.None;
+        if (checkBoxDisableMaxPrivs.Checked)
         {
-            InitializeComponent();
-            _token = token;
-            PopulateGroupList(listViewDisableSids, new UserGroup[] { token.User});
-            PopulateGroupList(listViewDisableSids, token.Groups.Where(g => !g.DenyOnly));
-            foreach (TokenPrivilege priv in token.Privileges)
-            {
-                ListViewItem item = new ListViewItem(priv.Name);
-                item.SubItems.Add(priv.DisplayName);
-                item.Tag = priv;
-                listViewDeletePrivs.Items.Add(item);
-            }
-            foreach (object value in Enum.GetValues(typeof(SandboxTokenType)))
-            {
-                comboBoxSandboxType.Items.Add(value);
-            }
-            comboBoxSandboxType.SelectedItem = SandboxTokenType.RestrictedOnly;
+            flags |= FilterTokenFlags.DisableMaxPrivileges;
         }
-
-        private NtToken CreateRestrictedToken(NtToken token)
+        if (checkBoxMakeLuaToken.Checked)
         {
-            FilterTokenFlags flags = FilterTokenFlags.None;
-            if (checkBoxDisableMaxPrivs.Checked)
-            {
-                flags |= FilterTokenFlags.DisableMaxPrivileges;
-            }
-            if (checkBoxMakeLuaToken.Checked)
-            {
-                flags |= FilterTokenFlags.LuaToken;
-            }
-            if (checkBoxSandboxInert.Checked)
-            {
-                flags |= FilterTokenFlags.SandboxInert;
-            }
-            if (checkBoxWriteRestricted.Checked)
-            {
-                flags |= FilterTokenFlags.WriteRestricted;
-            }
-            
-            return token.Filter(flags, GetGroupFromList(listViewDisableSids.CheckedItems.OfType<ListViewItem>()),
-                GetPrivileges(), GetGroupFromList(listViewRestrictedSids.Items.OfType<ListViewItem>()));
+            flags |= FilterTokenFlags.LuaToken;
         }
-
-        private NtToken CreateLowBoxToken(NtToken token)
+        if (checkBoxSandboxInert.Checked)
         {
-            Sid package_sid = TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
-            Sid[] capabilities = GetGroupFromList(listViewCapabilities.Items.OfType<ListViewItem>());
-            foreach (Sid cap in capabilities)
-            {
-                if (!NtSecurity.IsCapabilitySid(cap))
-                {
-                    throw new ArgumentException($"Invalid Capability Sid {cap}");
-                }
-            }
-
-            return token.CreateLowBoxToken(package_sid, capabilities,
-                new NtObject[0], TokenAccessRights.MaximumAllowed);
+            flags |= FilterTokenFlags.SandboxInert;
         }
-
-        private NtToken CreateToken()
+        if (checkBoxWriteRestricted.Checked)
         {
-            SandboxTokenType type = GetSelectedTokenType();
-            NtToken current_token = _token.Duplicate();
-
-            if ((type & SandboxTokenType.RestrictedOnly) != 0)
-            {
-                using (NtToken tmp_token = current_token)
-                {
-                    current_token = CreateRestrictedToken(tmp_token);
-                }
-            }
-
-            if ((type & SandboxTokenType.LowBoxOnly) != 0)
-            {
-                using (NtToken tmp_token = current_token)
-                {
-                    current_token = CreateLowBoxToken(tmp_token);
-                }
-            }
-
-            return current_token;
-        }
-
-        private void btnCreate_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                _newtoken = CreateToken();
-                DialogResult = DialogResult.OK;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnAddAllGroups_Click(object sender, EventArgs e)
-        {
-            PopulateGroupList(listViewRestrictedSids, new UserGroup[] { _token.User});
-            PopulateGroupList(listViewRestrictedSids, _token.Groups.Where(g => !g.DenyOnly));
-        }
-
-        private static void DoListViewCheck(ListView listView, bool check)
-        {            
-            foreach (ListViewItem item in listView.Items)
-            {
-                item.Checked = check;
-            }         
-        }
-
-        private void checkAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DoListViewCheck(listViewDisableSids, true);
-        }
-
-        private void uncheckAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            DoListViewCheck(listViewDisableSids, false);
-        }
-
-        private void toolStripMenuItemCheckAllPrivs_Click(object sender, EventArgs e)
-        {
-            DoListViewCheck(listViewDeletePrivs, true);
-        }
-
-        private void toolStripMenuItemUncheckAllPrivs_Click(object sender, EventArgs e)
-        {
-            DoListViewCheck(listViewDeletePrivs, false);
-        }
-
-        private ListView GetListViewOwner(object sender)
-        {
-            ToolStripItem item = sender as ToolStripItem;
-            if (item == null)
-            {
-                return null;
-            }
-            ContextMenuStrip menu = item.Owner as ContextMenuStrip;
-            if (menu == null)
-            {
-                return null;
-            }
-            return menu.SourceControl as ListView;
-        }
-
-        private void addSidToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ListView listView = GetListViewOwner(sender);
-            if (listView != null)
-            {
-                using (AddSidForm form = new AddSidForm())
-                {
-                    if (form.ShowDialog(this) == DialogResult.OK)
-                    {
-                        UserGroup group = new UserGroup(new Sid(form.Sid), GroupAttributes.None);
-                        PopulateGroupList(listView, new UserGroup[] { group });
-                    }
-                }
-            }
-        }
-
-        private void deleteSidToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ListView listView = GetListViewOwner(sender);
-            if (listView != null)
-            {
-                List<ListViewItem> selectedItems = listView.SelectedItems.OfType<ListViewItem>().ToList();
-
-                foreach (ListViewItem item in selectedItems)
-                {
-                    item.Remove();
-                }
-            }
-        }
-
-        private void selectAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ListView listView = GetListViewOwner(sender);
-            if (listView != null)
-            {
-                foreach (ListViewItem item in listView.Items)
-                {
-                    item.Selected = true;
-                }
-            }
-        }
-
-        private void btnCreateNew_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                TokenForm.OpenForm(CreateToken(), null, false);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private static void EnableTabPage(TabPage page, bool enable)
-        {
-            foreach (Control control in page.Controls)
-            {
-                control.Enabled = enable;
-            }
-        }
-
-        private void EnableRestrictedTabPages(bool enable)
-        {
-            EnableTabPage(tabPageRestrictedSids, enable);
-            EnableTabPage(tabPageDisableSids, enable);
-            EnableTabPage(tabPageDeletePrivs, enable);
-        }
-
-        private void EnableLowBoxTabPages(bool enable)
-        {
-            EnableTabPage(tabPageAppContainer, enable);
-        }
-
-        private SandboxTokenType GetSelectedTokenType()
-        {
-            if (comboBoxSandboxType.SelectedItem is SandboxTokenType)
-            {
-                return (SandboxTokenType)comboBoxSandboxType.SelectedItem;
-            }
-            return SandboxTokenType.RestrictedOnly;
+            flags |= FilterTokenFlags.WriteRestricted;
         }
         
-        private void comboBoxSandboxType_SelectedIndexChanged(object sender, EventArgs e)
+        return token.Filter(flags, GetGroupFromList(listViewDisableSids.CheckedItems.OfType<ListViewItem>()),
+            GetPrivileges(), GetGroupFromList(listViewRestrictedSids.Items.OfType<ListViewItem>()));
+    }
+
+    private NtToken CreateLowBoxToken(NtToken token)
+    {
+        Sid package_sid = Win32Security.GetPackageSidFromName(textBoxPackageSid.Text);
+        Sid[] capabilities = GetGroupFromList(listViewCapabilities.Items.OfType<ListViewItem>());
+        foreach (Sid cap in capabilities)
         {
-            switch (GetSelectedTokenType())
+            if (!NtSecurity.IsCapabilitySid(cap))
             {
-                case SandboxTokenType.RestrictedOnly:
-                    EnableRestrictedTabPages(true);
-                    EnableLowBoxTabPages(false);
-                    break;
-                case SandboxTokenType.LowBoxOnly:
-                    EnableRestrictedTabPages(false);
-                    EnableLowBoxTabPages(true);
-                    break;
-                case SandboxTokenType.RestrictedAndLowBox:
-                    EnableRestrictedTabPages(true);
-                    EnableLowBoxTabPages(true);
-                    break;
+                throw new ArgumentException($"Invalid Capability Sid {cap}");
             }
+        }
+
+        return token.CreateLowBoxToken(package_sid, capabilities,
+            new NtObject[0], TokenAccessRights.MaximumAllowed);
+    }
+
+    private NtToken CreateToken()
+    {
+        SandboxTokenType type = GetSelectedTokenType();
+        NtToken current_token = _token.Duplicate();
+
+        if ((type & SandboxTokenType.RestrictedOnly) != 0)
+        {
+            using NtToken tmp_token = current_token;
+            current_token = CreateRestrictedToken(tmp_token);
+        }
+
+        if ((type & SandboxTokenType.LowBoxOnly) != 0)
+        {
+            using NtToken tmp_token = current_token;
+            current_token = CreateLowBoxToken(tmp_token);
+        }
+
+        return current_token;
+    }
+
+    private void btnCreate_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            Token = CreateToken();
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void btnAddAllGroups_Click(object sender, EventArgs e)
+    {
+        PopulateGroupList(listViewRestrictedSids, new UserGroup[] { _token.User});
+        PopulateGroupList(listViewRestrictedSids, _token.Groups.Where(g => !g.DenyOnly));
+    }
+
+    private static void DoListViewCheck(ListView listView, bool check)
+    {            
+        foreach (ListViewItem item in listView.Items)
+        {
+            item.Checked = check;
+        }         
+    }
+
+    private void checkAllToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        DoListViewCheck(listViewDisableSids, true);
+    }
+
+    private void uncheckAllToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        DoListViewCheck(listViewDisableSids, false);
+    }
+
+    private void toolStripMenuItemCheckAllPrivs_Click(object sender, EventArgs e)
+    {
+        DoListViewCheck(listViewDeletePrivs, true);
+    }
+
+    private void toolStripMenuItemUncheckAllPrivs_Click(object sender, EventArgs e)
+    {
+        DoListViewCheck(listViewDeletePrivs, false);
+    }
+
+    private ListView? GetListViewOwner(object sender)
+    {
+        if (sender is not ToolStripItem item)
+        {
+            return null;
+        }
+        if (item.Owner is not ContextMenuStrip menu)
+        {
+            return null;
+        }
+        return menu.SourceControl as ListView;
+    }
+
+    private void addSidToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        ListView? listView = GetListViewOwner(sender);
+        if (listView != null)
+        {
+            using AddSidForm form = new();
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                UserGroup group = new(new Sid(form.Sid), GroupAttributes.None);
+                PopulateGroupList(listView, new UserGroup[] { group });
+            }
+        }
+    }
+
+    private void deleteSidToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        ListView? listView = GetListViewOwner(sender);
+        if (listView != null)
+        {
+            List<ListViewItem> selectedItems = listView.SelectedItems.OfType<ListViewItem>().ToList();
+
+            foreach (ListViewItem item in selectedItems)
+            {
+                item.Remove();
+            }
+        }
+    }
+
+    private void selectAllToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        ListView? listView = GetListViewOwner(sender);
+        if (listView != null)
+        {
+            foreach (ListViewItem item in listView.Items)
+            {
+                item.Selected = true;
+            }
+        }
+    }
+
+    private void btnCreateNew_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            TokenForm.OpenForm(CreateToken(), null, false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private static void EnableTabPage(TabPage page, bool enable)
+    {
+        foreach (Control control in page.Controls)
+        {
+            control.Enabled = enable;
+        }
+    }
+
+    private void EnableRestrictedTabPages(bool enable)
+    {
+        EnableTabPage(tabPageRestrictedSids, enable);
+        EnableTabPage(tabPageDisableSids, enable);
+        EnableTabPage(tabPageDeletePrivs, enable);
+    }
+
+    private void EnableLowBoxTabPages(bool enable)
+    {
+        EnableTabPage(tabPageAppContainer, enable);
+    }
+
+    private SandboxTokenType GetSelectedTokenType()
+    {
+        if (comboBoxSandboxType.SelectedItem is SandboxTokenType)
+        {
+            return (SandboxTokenType)comboBoxSandboxType.SelectedItem;
+        }
+        return SandboxTokenType.RestrictedOnly;
+    }
+    
+    private void comboBoxSandboxType_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        switch (GetSelectedTokenType())
+        {
+            case SandboxTokenType.RestrictedOnly:
+                EnableRestrictedTabPages(true);
+                EnableLowBoxTabPages(false);
+                break;
+            case SandboxTokenType.LowBoxOnly:
+                EnableRestrictedTabPages(false);
+                EnableLowBoxTabPages(true);
+                break;
+            case SandboxTokenType.RestrictedAndLowBox:
+                EnableRestrictedTabPages(true);
+                EnableLowBoxTabPages(true);
+                break;
         }
     }
 }

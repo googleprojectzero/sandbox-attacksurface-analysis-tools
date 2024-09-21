@@ -43,7 +43,7 @@ Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Service
+NtCoreLib.Win32.Service.ServiceInstance
 #>
 function New-Win32Service {
     [CmdletBinding()]
@@ -51,9 +51,9 @@ function New-Win32Service {
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
         [string]$DisplayName,
-        [NtApiDotNet.Win32.ServiceType]$Type = "Win32OwnProcess",
-        [NtApiDotNet.Win32.ServiceStartType]$Start = "Demand",
-        [NtApiDotNet.Win32.ServiceErrorControl]$ErrorControl = 0,
+        [NtCoreLib.Win32.Service.ServiceType]$Type = "Win32OwnProcess",
+        [NtCoreLib.Win32.Service.ServiceStartType]$Start = "Demand",
+        [NtCoreLib.Win32.Service.ServiceErrorControl]$ErrorControl = 0,
         [parameter(Mandatory, Position = 1)]
         [string]$Path,
         [string]$LoadOrderGroup,
@@ -67,7 +67,7 @@ function New-Win32Service {
     $pwd = if ($null -ne $Password) {
         $Password.Password
     }
-    $service = [NtApiDotNet.Win32.ServiceUtils]::CreateService($MachineName, $Name, $DisplayName, $Type, `
+    $service = [NtCoreLib.Win32.Service.ServiceUtils]::CreateService($MachineName, $Name, $DisplayName, $Type, `
         $Start, $ErrorControl, $Path, $LoadOrderGroup, $Dependencies, $Username, $pwd)
     if ($PassThru) {
         $service
@@ -97,7 +97,7 @@ function Remove-Win32Service {
         [string]$MachineName
     )
 
-    [NtApiDotNet.Win32.ServiceUtils]::DeleteService($MachineName, $Name)
+    [NtCoreLib.Win32.Service.ServiceUtils]::DeleteService($MachineName, $Name)
 }
 
 <#
@@ -116,7 +116,7 @@ Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtCoreLib.Security.Authorization.SecurityDescriptor
 #>
 function Get-Win32ServiceSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName="FromName")]
@@ -126,16 +126,16 @@ function Get-Win32ServiceSecurityDescriptor {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromScm")]
         [switch]$ServiceControlManager,
         [parameter(Position = 1)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation = "Owner, Group, Dacl, Label",
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation = "Owner, Group, Dacl, Label",
         [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceSecurityDescriptor($MachineName, $Name, $SecurityInformation)
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceSecurityDescriptor($MachineName, $Name, $SecurityInformation)
         }
         "FromScm" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetScmSecurityDescriptor($MachineName, $SecurityInformation)
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetScmSecurityDescriptor($MachineName, $SecurityInformation)
         }
     }
 }
@@ -168,18 +168,18 @@ function Set-Win32ServiceSecurityDescriptor {
         [parameter(Mandatory, ParameterSetName="FromScm")]
         [switch]$ServiceControlManager,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [parameter(Mandatory, Position = 2)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation,
         [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::SetServiceSecurityDescriptor($MachineName, $Name, $SecurityDescriptor, $SecurityInformation)
+            [NtCoreLib.Win32.Service.ServiceUtils]::SetServiceSecurityDescriptor($MachineName, $Name, $SecurityDescriptor, $SecurityInformation)
         }
         "FromScm" {
-            [NtApiDotNet.Win32.ServiceUtils]::SetScmSecurityDescriptor($MachineName, $SecurityDescriptor, $SecurityInformation)
+            [NtCoreLib.Win32.Service.ServiceUtils]::SetScmSecurityDescriptor($MachineName, $SecurityDescriptor, $SecurityInformation)
         }
     }
 }
@@ -205,7 +205,7 @@ Specify to try and use a service trigger to start the service.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Service
+NtCoreLib.Win32.Service.ServiceInstance
 #>
 function Start-Win32Service {
     [CmdletBinding(DefaultParameterSetName="FromStart")]
@@ -225,7 +225,7 @@ function Start-Win32Service {
     try {
         switch ($PSCmdlet.ParameterSetName) {
             "FromStart" {
-                [NtApiDotNet.Win32.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
+                [NtCoreLib.Win32.Service.ServiceUtils]::StartService($MachineName, $Name, $ArgumentList)
             }
             "FromTrigger" {
                 $service_trigger = Get-Win32ServiceTrigger -Name $Name -Action Start | Select-Object -First 1
@@ -274,7 +274,7 @@ function Test-Win32Service {
         [string]$Name,
         [string]$MachineName,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.ServiceStatus]$Status
+        [NtCoreLib.Win32.Service.ServiceStatus]$Status
     )
 
     try {
@@ -305,7 +305,7 @@ Specify to not wait 30 seconds for the service to start.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Service
+NtCoreLib.Win32.Service.ServiceInstance
 #>
 function Restart-Win32Service {
     [CmdletBinding(DefaultParameterSetName="FromStart")]
@@ -352,7 +352,7 @@ Specify to not wait 30 seconds for the service control to be handled.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Service
+NtCoreLib.Win32.Service.ServiceInstance
 #>
 function Send-Win32Service {
     [CmdletBinding(DefaultParameterSetName="FromControl")]
@@ -360,7 +360,7 @@ function Send-Win32Service {
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromControl")]
-        [NtApiDotNet.Win32.ServiceControlCode]$Control,
+        [NtCoreLib.Win32.Service.ServiceControlCode]$Control,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromCustomControl")]
         [int]$CustomControl,
         [switch]$PassThru,
@@ -372,11 +372,11 @@ function Send-Win32Service {
     try {
         $wait = switch($PSCmdlet.ParameterSetName) {
             "FromControl" {
-                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $Control)
+                [NtCoreLib.Win32.Service.ServiceUtils]::ControlService($MachineName, $Name, $Control)
                 !$NoWait
             }
             "FromCustomControl" {
-                [NtApiDotNet.Win32.ServiceUtils]::ControlService($MachineName, $Name, $CustomControl)
+                [NtCoreLib.Win32.Service.ServiceUtils]::ControlService($MachineName, $Name, $CustomControl)
                 $false
             }
         }
@@ -436,7 +436,7 @@ function Wait-Win32Service {
         [parameter(Mandatory, Position = 0)]
         [string]$Name,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.ServiceStatus]$Status,
+        [NtCoreLib.Win32.Service.ServiceStatus]$Status,
         [string]$MachineName,
         [int]$TimeoutSec = [int]::MaxValue
     )
@@ -480,7 +480,7 @@ Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.ServiceInformation[]
+NtCoreLib.Win32.Service.ServiceConfig[]
 #>
 function Get-Win32ServiceConfig {
     [CmdletBinding(DefaultParameterSetName="All")]
@@ -488,16 +488,16 @@ function Get-Win32ServiceConfig {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes(),
+        [NtCoreLib.Win32.Service.ServiceType]$ServiceType = [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceTypes(),
         [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $Name)
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceConfiguration($MachineName, $Name)
         }
         "All" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $ServiceType) | Write-Output
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceConfiguration($MachineName, $ServiceType) | Write-Output
         }
     }
 }
@@ -516,7 +516,7 @@ Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.ServiceInformation[]
+NtCoreLib.Win32.Service.ServiceConfig[]
 #>
 function Get-Win32ServiceConfig {
     [CmdletBinding(DefaultParameterSetName="All")]
@@ -524,16 +524,16 @@ function Get-Win32ServiceConfig {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceType]$ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes(),
+        [NtCoreLib.Win32.Service.ServiceType]$ServiceType = [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceTypes(),
         [string]$MachineName
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $Name)
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceConfiguration($MachineName, $Name)
         }
         "All" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServiceInformation($MachineName, $ServiceType) | Write-Output
+            [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceConfiguration($MachineName, $ServiceType) | Write-Output
         }
     }
 }
@@ -552,9 +552,9 @@ Specify an action to filter on.
 .PARAMETER Service
 Specify a service object.
 .INPUTS
-NtApiDotNet.Win32.Win32Service[]
+NtCoreLib.Win32.Service.ServiceInstance[]
 .OUTPUTS
-NtApiDotNet.Win32.ServiceTriggerInformation[]
+NtCoreLib.Win32.Service.Triggers.ServiceTriggerInformation[]
 .EXAMPLE
 Get-Win32ServiceTrigger -Name "WebClient"
 Get the service triggers for the WebClient service.
@@ -565,8 +565,8 @@ function Get-Win32ServiceTrigger {
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromService", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Win32Service]$Service,
-        [NtApiDotNet.Win32.ServiceTriggerAction]$Action = 0,
+        [NtCoreLib.Win32.Service.ServiceInstance]$Service,
+        [NtCoreLib.Win32.Service.Triggers.ServiceTriggerAction]$Action = 0,
         [string]$MachineName
     )
 
@@ -580,83 +580,6 @@ function Get-Win32ServiceTrigger {
                 $triggers = $triggers | Where-Object Action -eq $Action
             }
             $triggers | Write-Output
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Gets a list of running services.
-.DESCRIPTION
-This cmdlet gets a list of running services. It can also include in the list non-active services.
-.PARAMETER IncludeNonActive
-Specify to return all services including non-active ones.
-.PARAMETER Driver
-Specify to include drivers.
-.PARAMETER State
-Specify the state of the services to get.
-.PARAMETER ServiceType
-Specify to filter the services to specific types only.
-.PARAMETER Name
-Specify names to lookup.
-.INPUTS
-None
-.OUTPUTS
-NtApiDotNet.Win32.Win32Service[]
-.EXAMPLE
-Get-RunningService
-Get all running services.
-.EXAMPLE
-Get-RunningService -IncludeNonActive
-Get all services including non-active services.
-.EXAMPLE
-Get-RunningService -Driver
-Get all running drivers.
-.EXAMPLE
-Get-RunningService -Name Fax
-Get the Fax running service.
-.EXAMPLE
-Get-RunningService -State All -ServiceType UserService
-Get all user services.
-#>
-function Get-RunningService {
-    [CmdletBinding(DefaultParameterSetName = "All")]
-    Param(
-        [parameter(ParameterSetName = "All")]
-        [switch]$IncludeNonActive,
-        [parameter(ParameterSetName = "All")]
-        [switch]$Driver,
-        [parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ServiceState]$State = "Active",
-        [parameter(Mandatory, ParameterSetName = "FromArgs")]
-        [NtApiDotNet.Win32.ServiceType]$ServiceType = 0,
-        [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
-        [string[]]$Name
-    )
-
-    PROCESS {
-        switch ($PSCmdlet.ParameterSetName) {
-            "All" {
-                $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
-                if ($Driver) {
-                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetDriverTypes()
-                }
-
-                if ($IncludeNonActive) {
-                    $State = "All"
-                }
-                else {
-                    $State = "Active"
-                }
-
-                Get-Win32Service -State $State -Type $ServiceType
-            }
-            "FromArgs" {
-                Get-Win32Service -State $State -Type $ServiceType
-            }
-            "FromName" {
-                Get-Win32Service -Name $Name
-            }
         }
     }
 }
@@ -677,7 +600,7 @@ Specify the target computer.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Win32Service[]
+NtCoreLib.Win32.Service.ServiceInstance[]
 .EXAMPLE
 Get-Win32Service
 Get all services.
@@ -698,9 +621,9 @@ function Get-Win32Service {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceState]$State = "All",
+        [NtCoreLib.Win32.Service.ServiceState]$State = "All",
         [parameter(ParameterSetName = "All")]
-        [NtApiDotNet.Win32.ServiceType]$Type = 0,
+        [NtCoreLib.Win32.Service.ServiceType]$Type = 0,
         [parameter(Mandatory, ParameterSetName = "FromName", Position = 0)]
         [string[]]$Name,
         [parameter(Mandatory, ParameterSetName = "FromPid", Position = 0)]
@@ -712,13 +635,13 @@ function Get-Win32Service {
         switch ($PSCmdlet.ParameterSetName) {
             "All" {
                 if ($Type -eq 0) {
-                    $Type = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
+                    $Type = [NtCoreLib.Win32.Service.ServiceUtils]::GetServiceTypes()
                 }
-                [NtApiDotNet.Win32.ServiceUtils]::GetServices($MachineName, $State, $Type) | Write-Output
+                [NtCoreLib.Win32.Service.ServiceUtils]::GetServices($MachineName, $State, $Type) | Write-Output
             }
             "FromName" {
                 foreach ($n in $Name) {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetService($MachineName, $n) | Write-Output
+                    [NtCoreLib.Win32.Service.ServiceUtils]::GetService($MachineName, $n) | Write-Output
                 }
             }
             "FromPid" {

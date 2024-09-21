@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Class to represent a AS-REP message.
+/// </summary>
+public sealed class KerberosASReply : KerberosKDCReply
 {
     /// <summary>
-    /// Class to represent a AS-REP message.
+    /// The key used to decrypt the AS-REP.
     /// </summary>
-    public sealed class KerberosASReply : KerberosKDCReply
-    {
-        /// <summary>
-        /// The key used to decrypt the AS-REP.
-        /// </summary>
-        public KerberosAuthenticationKey ReplyKey { get; }
+    public KerberosAuthenticationKey ReplyKey { get; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="req_token">The request authentication token.</param>
-        /// <param name="rep_token">The reply authentication token.</param>
-        /// <param name="enc_part">The decrypted KDC reply part.</param>
-        /// <param name="reply_key">The key used to decrypt the AS-REP.</param>
-        public KerberosASReply(
-            KerberosKDCRequestAuthenticationToken req_token,
-            KerberosKDCReplyAuthenticationToken rep_token, 
-            KerberosKDCReplyEncryptedPart enc_part, KerberosAuthenticationKey reply_key = null)
-                : base(req_token, rep_token, enc_part)
-        {
-            ReplyKey = reply_key;
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="req_token">The request authentication token.</param>
+    /// <param name="rep_token">The reply authentication token.</param>
+    /// <param name="enc_part">The decrypted KDC reply part.</param>
+    /// <param name="reply_key">The key used to decrypt the AS-REP.</param>
+    public KerberosASReply(
+        KerberosKDCRequestAuthenticationToken req_token,
+        KerberosKDCReplyAuthenticationToken rep_token, 
+        KerberosKDCReplyEncryptedPart enc_part, KerberosAuthenticationKey reply_key = null)
+            : base(req_token, rep_token, enc_part)
+    {
+        ReplyKey = reply_key;
     }
 }

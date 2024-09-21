@@ -14,14 +14,13 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+[Flags]
+internal enum Smb2Flags : uint
 {
-    [Flags]
-    internal enum Smb2Flags : uint
-    {
-        SERVER_TO_REDIR = 0x00000001,
-        ASYNC_COMMAND = 0x00000002,
-        RELATED_OPERATIONS = 0x00000004,
-        SIGNED = 0x00000008
-    }
+    SERVER_TO_REDIR = 0x00000001,
+    ASYNC_COMMAND = 0x00000002,
+    RELATED_OPERATIONS = 0x00000004,
+    SIGNED = 0x00000008
 }

@@ -29,7 +29,7 @@ function Get-NtSystemEnvironmentValue {
         [string]$Name = [System.Management.Automation.Language.NullString]::Value
     )
     Set-NtTokenPrivilege SeSystemEnvironmentPrivilege | Out-Null
-    $values = [NtApiDotNet.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
+    $values = [NtCoreLib.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
     if ($Name -eq [string]::Empty) {
         $values
     }
@@ -48,14 +48,14 @@ The name of the license value to get.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtKeyValue
+NtCoreLib.NtKeyValue
 #>
 function Get-NtLicenseValue {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
         [string]$Name
     )
-    [NtApiDotNet.NtKey]::QueryLicenseValue($Name)
+    [NtCoreLib.NtKey]::QueryLicenseValue($Name)
 }
 
 <#
@@ -93,7 +93,7 @@ function Get-NtKeyValue {
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromKeyAll")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromKeyName")]
-        [NtApiDotNet.NtKey]$Key,
+        [NtCoreLib.NtKey]$Key,
         [parameter(ParameterSetName = "FromKeyName", Mandatory, Position = 1)]
         [parameter(ParameterSetName = "FromPathName", Mandatory, Position = 1)]
         [string]$Name,
@@ -160,7 +160,7 @@ function Remove-NtKeyValue {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtKey]$Key,
+        [NtCoreLib.NtKey]$Key,
         [parameter(Mandatory, Position = 1)]
         [string[]]$Name
     )
@@ -191,7 +191,7 @@ function Get-NtKeyHive {
     Param(
         [switch]$FormatWin32File
     )
-    [NtApiDotNet.NtKeyUtils]::GetHiveList($FormatWin32File) | Write-Output
+    [NtCoreLib.NtKeyUtils]::GetHiveList($FormatWin32File) | Write-Output
 }
 
 <#
@@ -227,14 +227,14 @@ function Backup-NtKey {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
     Param(
         [parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.NtKey]$Key,
-        [NtApiDotNet.SaveKeyFlags]$Flags = "StandardFormat",
+        [NtCoreLib.NtKey]$Key,
+        [NtCoreLib.SaveKeyFlags]$Flags = "StandardFormat",
         [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
         [switch]$Win32Path,
         [parameter(Position = 1, Mandatory, ParameterSetName="FromFile")]
-        [NtApiDotNet.NtFile]$File
+        [NtCoreLib.NtFile]$File
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromFile" {
@@ -282,14 +282,14 @@ function Restore-NtKey {
     [CmdletBinding(DefaultParameterSetName = "FromPath")]
     Param(
         [parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.NtKey]$Key,
-        [NtApiDotNet.RestoreKeyFlags]$Flags = "None",
+        [NtCoreLib.NtKey]$Key,
+        [NtCoreLib.RestoreKeyFlags]$Flags = "None",
         [parameter(Position = 1, Mandatory, ParameterSetName="FromPath")]
         [string]$Path,
         [parameter(ParameterSetName="FromPath")]
         [switch]$Win32Path,
         [parameter(Position = 1, Mandatory, ParameterSetName="FromFile")]
-        [NtApiDotNet.NtFile]$File
+        [NtCoreLib.NtFile]$File
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromFile" {

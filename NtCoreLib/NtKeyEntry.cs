@@ -13,33 +13,33 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Native.SafeBuffers;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// A key entry.
+/// </summary>
+public class NtKeyEntry
 {
     /// <summary>
-    /// A key entry.
+    /// The name of the key.
     /// </summary>
-    public class NtKeyEntry
-    {
-        /// <summary>
-        /// The name of the key.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The last write time.
-        /// </summary>
-        public DateTime LastWriteTime { get; }
-        /// <summary>
-        /// The key's title index.
-        /// </summary>
-        public int TitleIndex { get; }
+    public string Name { get; }
+    /// <summary>
+    /// The last write time.
+    /// </summary>
+    public DateTime LastWriteTime { get; }
+    /// <summary>
+    /// The key's title index.
+    /// </summary>
+    public int TitleIndex { get; }
 
-        internal NtKeyEntry(SafeStructureInOutBuffer<KeyBasicInformation> buffer)
-        {
-            var result = buffer.Result;
-            LastWriteTime = result.LastWriteTime.ToDateTime();
-            TitleIndex = result.TitleIndex;
-            Name = buffer.Data.ReadUnicodeString(result.NameLength / 2);
-        }
+    internal NtKeyEntry(SafeStructureInOutBuffer<KeyBasicInformation> buffer)
+    {
+        var result = buffer.Result;
+        LastWriteTime = result.LastWriteTime.ToDateTime();
+        TitleIndex = result.TitleIndex;
+        Name = buffer.Data.ReadUnicodeString(result.NameLength / 2);
     }
 }

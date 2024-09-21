@@ -15,26 +15,25 @@
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2TreeConnectRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2TreeConnectRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 9;
+    private readonly byte[] _path;
+
+    public Smb2TreeConnectRequestPacket(string path) 
+        : base(Smb2Command.TREE_CONNECT)
     {
-        private const ushort STRUCT_SIZE = 9;
-        private readonly byte[] _path;
+        _path = Encoding.Unicode.GetBytes(path);
+    }
 
-        public Smb2TreeConnectRequestPacket(string path) 
-            : base(Smb2Command.TREE_CONNECT)
-        {
-            _path = Encoding.Unicode.GetBytes(path);
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.WriteUInt16(0);
-            writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            writer.WriteUInt16(_path.Length);
-            writer.Write(_path);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.WriteUInt16(0);
+        writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
+        writer.WriteUInt16(_path.Length);
+        writer.Write(_path);
     }
 }

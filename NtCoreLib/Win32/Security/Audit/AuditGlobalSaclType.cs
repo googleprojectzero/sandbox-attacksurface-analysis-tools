@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Audit
+namespace NtCoreLib.Win32.Security.Audit;
+
+/// <summary>
+/// Type of global SACL to query or set.
+/// </summary>
+public enum AuditGlobalSaclType
 {
     /// <summary>
-    /// Type of global SACL to query or set.
+    /// File type.
     /// </summary>
-    public enum AuditGlobalSaclType
-    {
-        /// <summary>
-        /// File type.
-        /// </summary>
-        File,
-        /// <summary>
-        /// Key type.
-        /// </summary>
-        Key
-    }
+    File,
+    /// <summary>
+    /// Key type.
+    /// </summary>
+    Key
 }

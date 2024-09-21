@@ -12,24 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Security.Authorization;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Printing
+namespace NtCoreLib.Win32.Printing;
+
+internal class PrinterSpoolerFakeNtTypeFactory : NtFakeTypeFactory
 {
-    internal class PrinterSpoolerFakeNtTypeFactory : NtFakeTypeFactory
+    public override IEnumerable<NtType> CreateTypes()
     {
-        public override IEnumerable<NtType> CreateTypes()
-        {
-            return new NtType[] { new NtType(PrintSpoolerUtils.PRINTER_NT_TYPE_NAME, PrintSpoolerUtils.PrinterGenericMapping,
-                        typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp),
-                        new NtType(PrintSpoolerUtils.PRINT_SERVER_NT_TYPE_NAME, PrintSpoolerUtils.PrintServerGenericMapping,
-                        typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp),
-                        new NtType(PrintSpoolerUtils.PRINT_JOB_NT_TYPE_NAME, PrintSpoolerUtils.PrintJobGenericMapping,
-                        typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp)
-            };
-        }
+        return new NtType[] { new NtType(PrintSpoolerUtils.PRINTER_NT_TYPE_NAME, PrintSpoolerUtils.PrinterGenericMapping,
+                    typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp),
+                    new NtType(PrintSpoolerUtils.PRINT_SERVER_NT_TYPE_NAME, PrintSpoolerUtils.PrintServerGenericMapping,
+                    typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp),
+                    new NtType(PrintSpoolerUtils.PRINT_JOB_NT_TYPE_NAME, PrintSpoolerUtils.PrintJobGenericMapping,
+                    typeof(PrintSpoolerAccessRights), typeof(PrintSpoolerAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp)
+        };
     }
 }

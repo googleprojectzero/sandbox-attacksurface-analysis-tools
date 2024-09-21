@@ -15,67 +15,66 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Utilities;
+
+/// <summary>
+/// Configuration entry.
+/// </summary>
+public sealed class KerberosCredentialCacheFileConfigEntry
 {
     /// <summary>
-    /// Configuration entry.
+    /// The configuaration key.
     /// </summary>
-    public sealed class KerberosCredentialCacheFileConfigEntry
+    public string Key { get; }
+
+    /// <summary>
+    /// Optional principal for the config entry.
+    /// </summary>
+    public string Principal { get; }
+
+    /// <summary>
+    /// The configuration data.
+    /// </summary>
+    public byte[] Data { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="data">The configuration data.</param>
+    /// <param name="principal"></param>
+    public KerberosCredentialCacheFileConfigEntry(string key, byte[] data, string principal)
     {
-        /// <summary>
-        /// The configuaration key.
-        /// </summary>
-        public string Key { get; }
+        Key = key ?? throw new System.ArgumentNullException(nameof(key));
+        Data = data ?? throw new System.ArgumentNullException(nameof(data));
+        Principal = principal;
+    }
 
-        /// <summary>
-        /// Optional principal for the config entry.
-        /// </summary>
-        public string Principal { get; }
-
-        /// <summary>
-        /// The configuration data.
-        /// </summary>
-        public byte[] Data { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="data">The configuration data.</param>
-        /// <param name="principal"></param>
-        public KerberosCredentialCacheFileConfigEntry(string key, byte[] data, string principal)
+    internal void Write(BinaryWriter writer, KerberosCredentialCacheFilePrincipal default_principal)
+    {
+        List<string> parts = new()
         {
-            Key = key ?? throw new System.ArgumentNullException(nameof(key));
-            Data = data ?? throw new System.ArgumentNullException(nameof(data));
-            Principal = principal;
-        }
-
-        internal void Write(BinaryWriter writer, KerberosCredentialCacheFilePrincipal default_principal)
+            "krb5_ccache_conf_data",
+            Key
+        };
+        if (!string.IsNullOrEmpty(Principal))
         {
-            List<string> parts = new List<string>()
-            {
-                "krb5_ccache_conf_data",
-                Key
-            };
-            if (!string.IsNullOrEmpty(Principal))
-            {
-                parts.Add(Principal);
-            }
-            var server = new KerberosCredentialCacheFilePrincipal(new KerberosPrincipalName(KerberosNameType.UNKNOWN, parts), "X-CACHECONF:");
-
-            writer.WritePrincipal(default_principal);
-            writer.WritePrincipal(server);
-            writer.WriteKeyBlock(null);
-            writer.WriteUnixTime(null);
-            writer.WriteUnixTime(null);
-            writer.WriteUnixTime(null);
-            writer.WriteUnixTime(null);
-            writer.Write((byte)0);
-            writer.Write(0);
-            writer.WriteAddresses(null);
-            writer.WriteAuthData(null);
-            writer.WriteData(Data);
-            writer.WriteData(null);
+            parts.Add(Principal);
         }
+        var server = new KerberosCredentialCacheFilePrincipal(new KerberosPrincipalName(KerberosNameType.UNKNOWN, parts), "X-CACHECONF:");
+
+        writer.WritePrincipal(default_principal);
+        writer.WritePrincipal(server);
+        writer.WriteKeyBlock(null);
+        writer.WriteUnixTime(null);
+        writer.WriteUnixTime(null);
+        writer.WriteUnixTime(null);
+        writer.WriteUnixTime(null);
+        writer.Write((byte)0);
+        writer.Write(0);
+        writer.WriteAddresses(null);
+        writer.WriteAuthData(null);
+        writer.WriteData(Data);
+        writer.WriteData(null);
     }
 }

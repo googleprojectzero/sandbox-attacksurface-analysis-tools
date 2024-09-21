@@ -15,85 +15,85 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
-    [StructLayout(LayoutKind.Explicit)]
-    public class LargeInteger
+[StructLayout(LayoutKind.Explicit)]
+public class LargeInteger
+{
+    [FieldOffset(0)]
+    public uint LowPart;
+    [FieldOffset(4)]
+    public int HighPart;
+    [FieldOffset(0)]
+    public long QuadPart;
+
+    public LargeInteger()
     {
-        [FieldOffset(0)]
-        public uint LowPart;
-        [FieldOffset(4)]
-        public int HighPart;
-        [FieldOffset(0)]
-        public long QuadPart;
+    }
 
-        public LargeInteger()
-        {
-        }
+    public LargeInteger(long value)
+    {
+        QuadPart = value;
+    }
 
-        public LargeInteger(long value)
-        {
-            QuadPart = value;
-        }
+    internal DateTime ToDateTime()
+    {
+        return DateTime.FromFileTime(QuadPart);
+    }
 
-        internal DateTime ToDateTime()
+    internal LargeIntegerStruct ToStruct()
+    {
+        return new LargeIntegerStruct() { QuadPart = QuadPart };
+    }
+
+    internal NtWaitTimeout ToTimeout()
+    {
+        return new NtWaitTimeout(QuadPart);
+    }
+
+    public override string ToString()
+    {
+        return QuadPart.ToString();
+    }
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct LargeIntegerStruct
+{
+    [FieldOffset(0)]
+    public uint LowPart;
+    [FieldOffset(4)]
+    public int HighPart;
+    [FieldOffset(0)]
+    public long QuadPart;
+
+    internal DateTime ToDateTime()
+    {
+        try
         {
             return DateTime.FromFileTime(QuadPart);
         }
-
-        internal LargeIntegerStruct ToStruct()
+        catch (ArgumentException)
         {
-            return new LargeIntegerStruct() { QuadPart = QuadPart };
-        }
-
-        internal NtWaitTimeout ToTimeout()
-        {
-            return new NtWaitTimeout(QuadPart);
-        }
-
-        public override string ToString()
-        {
-            return QuadPart.ToString();
+            return DateTime.MinValue;
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    public struct LargeIntegerStruct
+    internal NtWaitTimeout ToTimeout()
     {
-        [FieldOffset(0)]
-        public uint LowPart;
-        [FieldOffset(4)]
-        public int HighPart;
-        [FieldOffset(0)]
-        public long QuadPart;
-
-        internal DateTime ToDateTime()
-        {
-            try
-            {
-                return DateTime.FromFileTime(QuadPart);
-            }
-            catch (ArgumentException)
-            {
-                return DateTime.MinValue;
-            }
-        }
-
-        internal NtWaitTimeout ToTimeout()
-        {
-            return new NtWaitTimeout(QuadPart);
-        }
-
-        internal ulong ToUInt64()
-        {
-            return (ulong)QuadPart;
-        }
-
-        public override string ToString()
-        {
-            return QuadPart.ToString();
-        }
+        return new NtWaitTimeout(QuadPart);
     }
-#pragma warning restore 1591
+
+    internal ulong ToUInt64()
+    {
+        return (ulong)QuadPart;
+    }
+
+    public override string ToString()
+    {
+        return QuadPart.ToString();
+    }
 }
+#pragma warning restore 1591
+

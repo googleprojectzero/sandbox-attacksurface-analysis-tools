@@ -15,47 +15,46 @@
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent the AD-AUTH-DATA-AP-OPTIONS authorization data.
+/// </summary>
+public sealed class KerberosAuthorizationDataApOptions : KerberosAuthorizationData
 {
     /// <summary>
-    /// Class to represent the AD-AUTH-DATA-AP-OPTIONS authorization data.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataApOptions : KerberosAuthorizationData
+    /// <param name="flags">The AP options flags.</param>
+    public KerberosAuthorizationDataApOptions(KerberosApOptionsFlags flags) 
+        : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="flags">The AP options flags.</param>
-        public KerberosAuthorizationDataApOptions(KerberosApOptionsFlags flags) 
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_AP_OPTIONS)
-        {
-            Flags = flags;
-        }
+        Flags = flags;
+    }
 
-        /// <summary>
-        /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
-        /// </summary>
-        public KerberosApOptionsFlags Flags { get; }
+    /// <summary>
+    /// Flags for the AD-AUTH-DATA-AP-OPTIONS authorization data.
+    /// </summary>
+    public KerberosApOptionsFlags Flags { get; }
 
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"Flags           : {Flags}");
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"Flags           : {Flags}");
+    }
 
-        private protected override byte[] GetData()
-        {
-            return BitConverter.GetBytes((uint)Flags);
-        }
+    private protected override byte[] GetData()
+    {
+        return BitConverter.GetBytes((uint)Flags);
+    }
 
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataApOptions entry)
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataApOptions entry)
+    {
+        if (data.Length != 4)
         {
-            if (data.Length != 4)
-            {
-                entry = null;
-                return false;
-            }
-            entry = new KerberosAuthorizationDataApOptions((KerberosApOptionsFlags)BitConverter.ToUInt32(data, 0));
-            return true;
+            entry = null;
+            return false;
         }
+        entry = new KerberosAuthorizationDataApOptions((KerberosApOptionsFlags)BitConverter.ToUInt32(data, 0));
+        return true;
     }
 }

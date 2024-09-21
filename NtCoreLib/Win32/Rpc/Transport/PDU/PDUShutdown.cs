@@ -12,13 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal class PDUShutdown : PDUBase
 {
-    internal class PDUShutdown : PDUBase
+    public PDUShutdown() 
+        : base(PDUType.Shutdown)
     {
-        public PDUShutdown() 
-            : base(PDUType.Shutdown)
-        {
-        }
     }
 }

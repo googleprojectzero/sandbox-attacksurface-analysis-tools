@@ -12,49 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.DirectoryService;
-using NtApiDotNet.Win32.Security.Authorization;
+using NtCoreLib.Win32.DirectoryService;
+using NtCoreLib.Win32.Security.Authorization;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// Access check result for an object type.
+/// </summary>
+public sealed class DsObjectTypeAccessCheckResult<T> where T : IDirectoryServiceObjectTree
 {
     /// <summary>
-    /// Access check result for an object type.
+    /// The object for the access check.
     /// </summary>
-    public sealed class DsObjectTypeAccessCheckResult<T> where T : IDirectoryServiceObjectTree
+    public T Object { get; }
+
+    /// <summary>
+    /// The granted access.
+    /// </summary>
+    public DirectoryServiceAccessRights GrantedAccess { get; }
+
+    /// <summary>
+    /// Indicates if a specific access has been granted.
+    /// </summary>
+    /// <param name="access">The access to check.</param>
+    /// <returns>True if access granted.</returns>
+    public bool IsAccessGranted(DirectoryServiceAccessRights access)
     {
-        /// <summary>
-        /// The object for the access check.
-        /// </summary>
-        public T Object { get; }
+        return GrantedAccess.HasFlag(access);
+    }
 
-        /// <summary>
-        /// The granted access.
-        /// </summary>
-        public DirectoryServiceAccessRights GrantedAccess { get; }
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The name of the object.</returns>
+    public override string ToString()
+    {
+        return Object.Name;
+    }
 
-        /// <summary>
-        /// Indicates if a specific access has been granted.
-        /// </summary>
-        /// <param name="access">The access to check.</param>
-        /// <returns>True if access granted.</returns>
-        public bool IsAccessGranted(DirectoryServiceAccessRights access)
-        {
-            return GrantedAccess.HasFlag(access);
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The name of the object.</returns>
-        public override string ToString()
-        {
-            return Object.Name;
-        }
-
-        internal DsObjectTypeAccessCheckResult(T obj, AuthZAccessCheckResult result)
-        {
-            Object = obj;
-            GrantedAccess = result.GrantedAccess.ToSpecificAccess<DirectoryServiceAccessRights>();
-        }
+    internal DsObjectTypeAccessCheckResult(T obj, AuthZAccessCheckResult result)
+    {
+        Object = obj;
+        GrantedAccess = result.GrantedAccess.ToSpecificAccess<DirectoryServiceAccessRights>();
     }
 }

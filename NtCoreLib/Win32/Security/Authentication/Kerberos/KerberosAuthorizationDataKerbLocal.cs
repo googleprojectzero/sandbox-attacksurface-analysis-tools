@@ -12,63 +12,62 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a KERB_LOCAL authorization data value.
+/// </summary>
+public sealed class KerberosAuthorizationDataKerbLocal : KerberosAuthorizationData
 {
     /// <summary>
-    /// Class to represent a KERB_LOCAL authorization data value.
+    /// The security context identifier for the KERB_LOCAL value.
     /// </summary>
-    public sealed class KerberosAuthorizationDataKerbLocal : KerberosAuthorizationData
+    public byte[] SecurityContext { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="security_context">The security context identifier.</param>
+    public KerberosAuthorizationDataKerbLocal(byte[] security_context)
+        : base(KerberosAuthorizationDataType.KERB_LOCAL)
     {
-        /// <summary>
-        /// The security context identifier for the KERB_LOCAL value.
-        /// </summary>
-        public byte[] SecurityContext { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="security_context">The security context identifier.</param>
-        public KerberosAuthorizationDataKerbLocal(byte[] security_context)
-            : base(KerberosAuthorizationDataType.KERB_LOCAL)
+        if (security_context is null)
         {
-            if (security_context is null)
-            {
-                throw new ArgumentNullException(nameof(security_context));
-            }
-
-            SecurityContext = security_context.CloneBytes();
+            throw new ArgumentNullException(nameof(security_context));
         }
 
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"Security Context: {NtObjectUtils.ToHexString(SecurityContext)}");
-        }
+        SecurityContext = security_context.CloneBytes();
+    }
 
-        private protected override byte[] GetData()
-        {
-            return SecurityContext;
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"Security Context: {NtObjectUtils.ToHexString(SecurityContext)}");
+    }
 
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataKerbLocal entry)
-        {
-            entry = new KerberosAuthorizationDataKerbLocal(data);
-            return true;
-        }
+    private protected override byte[] GetData()
+    {
+        return SecurityContext;
+    }
 
-        /// <summary>
-        /// Convert the authorization data into a builder.
-        /// </summary>
-        /// <returns>The authorization builder.</returns>
-        public override KerberosAuthorizationDataBuilder ToBuilder()
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataKerbLocal entry)
+    {
+        entry = new KerberosAuthorizationDataKerbLocal(data);
+        return true;
+    }
+
+    /// <summary>
+    /// Convert the authorization data into a builder.
+    /// </summary>
+    /// <returns>The authorization builder.</returns>
+    public override KerberosAuthorizationDataBuilder ToBuilder()
+    {
+        return new KerberosAuthorizationDataKerbLocalBuilder()
         {
-            return new KerberosAuthorizationDataKerbLocalBuilder()
-            {
-                SecurityContext = SecurityContext.CloneBytes()
-            };
-        }
+            SecurityContext = SecurityContext.CloneBytes()
+        };
     }
 }

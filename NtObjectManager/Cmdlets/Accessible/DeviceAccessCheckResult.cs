@@ -12,37 +12,37 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="description">Access check result for a device.</para>
+/// </summary>
+public class DeviceAccessCheckResult : CommonAccessCheckResult
 {
     /// <summary>
-    /// <para type="description">Access check result for a device.</para>
+    /// Indicates this was a namespace open
     /// </summary>
-    public class DeviceAccessCheckResult : CommonAccessCheckResult
+    public bool NamespacePath { get; }
+
+    /// <summary>
+    /// Indicates the type of device.
+    /// </summary>
+    public FileDeviceType DeviceType { get; }
+
+    /// <summary>
+    /// Indicates the device characteristics.
+    /// </summary>
+    public FileDeviceCharacteristics Characteristics { get; }
+
+    internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
+        AccessMask granted_access, SecurityDescriptor sd, TokenInformation token_info) : base(name, "Device",
+            granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sd, typeof(FileAccessRights), true, token_info)
     {
-        /// <summary>
-        /// Indicates this was a namespace open
-        /// </summary>
-        public bool NamespacePath { get; }
-
-        /// <summary>
-        /// Indicates the type of device.
-        /// </summary>
-        public FileDeviceType DeviceType { get; }
-
-        /// <summary>
-        /// Indicates the device characteristics.
-        /// </summary>
-        public FileDeviceCharacteristics Characteristics { get; }
-
-        internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
-            AccessMask granted_access, SecurityDescriptor sd, TokenInformation token_info) : base(name, "Device",
-                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sd, typeof(FileAccessRights), true, token_info)
-        {
-            NamespacePath = namespace_path;
-            DeviceType = device_type;
-            Characteristics = device_chars;
-        }
+        NamespacePath = namespace_path;
+        DeviceType = device_type;
+        Characteristics = device_chars;
     }
 }

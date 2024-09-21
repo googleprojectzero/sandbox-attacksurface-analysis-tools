@@ -14,79 +14,78 @@
 
 using System.IO;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class to represent memory information.
+/// </summary>
+public class MemoryInformation
 {
     /// <summary>
-    /// Class to represent memory information.
+    /// Base address of memory region.
     /// </summary>
-    public class MemoryInformation
+    public long BaseAddress { get; }
+
+    /// <summary>
+    /// Allocation base for memory region.
+    /// </summary>
+    public long AllocationBase { get; }
+
+    /// <summary>
+    /// Initial allocation protection.
+    /// </summary>
+    public MemoryAllocationProtect AllocationProtect { get; }
+
+    /// <summary>
+    /// Region size.
+    /// </summary>
+    public long RegionSize { get; }
+
+    /// <summary>
+    /// Memory state.
+    /// </summary>
+    public MemoryState State { get; }
+
+    /// <summary>
+    /// Current memory protection.
+    /// </summary>
+    public MemoryAllocationProtect Protect { get; }
+
+    /// <summary>
+    /// Memory type.
+    /// </summary>
+    public MemoryType Type { get; }
+
+    /// <summary>
+    /// The mapped image path, if an image.
+    /// </summary>
+    public string MappedImagePath { get; }
+
+    /// <summary>
+    /// The mapped image path name, if an image.
+    /// </summary>
+    public string Name => Path.GetFileName(MappedImagePath);
+
+    /// <summary>
+    /// The region type.
+    /// </summary>
+    public MemoryRegionTypeFlags RegionType { get; }
+
+    /// <summary>
+    /// Is this a software enclave.
+    /// </summary>
+    public bool SoftwareEnclave => RegionType.HasFlagSet(MemoryRegionTypeFlags.SoftwareEnclave);
+
+    internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path, MemoryRegionInformation region_info)
     {
-        /// <summary>
-        /// Base address of memory region.
-        /// </summary>
-        public long BaseAddress { get; }
-
-        /// <summary>
-        /// Allocation base for memory region.
-        /// </summary>
-        public long AllocationBase { get; }
-
-        /// <summary>
-        /// Initial allocation protection.
-        /// </summary>
-        public MemoryAllocationProtect AllocationProtect { get; }
-
-        /// <summary>
-        /// Region size.
-        /// </summary>
-        public long RegionSize { get; }
-
-        /// <summary>
-        /// Memory state.
-        /// </summary>
-        public MemoryState State { get; }
-
-        /// <summary>
-        /// Current memory protection.
-        /// </summary>
-        public MemoryAllocationProtect Protect { get; }
-
-        /// <summary>
-        /// Memory type.
-        /// </summary>
-        public MemoryType Type { get; }
-
-        /// <summary>
-        /// The mapped image path, if an image.
-        /// </summary>
-        public string MappedImagePath { get; }
-
-        /// <summary>
-        /// The mapped image path name, if an image.
-        /// </summary>
-        public string Name => Path.GetFileName(MappedImagePath);
-
-        /// <summary>
-        /// The region type.
-        /// </summary>
-        public MemoryRegionTypeFlags RegionType { get; }
-
-        /// <summary>
-        /// Is this a software enclave.
-        /// </summary>
-        public bool SoftwareEnclave => RegionType.HasFlagSet(MemoryRegionTypeFlags.SoftwareEnclave);
-
-        internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path, MemoryRegionInformation region_info)
-        {
-            BaseAddress = basic_info.BaseAddress.ToInt64();
-            AllocationBase = basic_info.AllocationBase.ToInt64();
-            AllocationProtect = basic_info.AllocationProtect;
-            RegionSize = basic_info.RegionSize.ToInt64();
-            State = basic_info.State;
-            Protect = basic_info.Protect;
-            Type = basic_info.Type;
-            MappedImagePath = mapped_image_path ?? string.Empty;
-            RegionType = region_info.RegionType;
-        }
+        BaseAddress = basic_info.BaseAddress.ToInt64();
+        AllocationBase = basic_info.AllocationBase.ToInt64();
+        AllocationProtect = basic_info.AllocationProtect;
+        RegionSize = basic_info.RegionSize.ToInt64();
+        State = basic_info.State;
+        Protect = basic_info.Protect;
+        Type = basic_info.Type;
+        MappedImagePath = mapped_image_path ?? string.Empty;
+        RegionType = region_info.RegionType;
     }
 }

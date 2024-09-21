@@ -15,54 +15,53 @@
 using System;
 using TaskScheduler;
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// State of the running task.
+/// </summary>
+public enum TaskState
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    Unknown = 0,
+    Disabled,
+    Queued,
+    Ready,
+    Running
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// <para type="description">Class to represent a running scheduled task.</para>
+/// </summary>
+public sealed class RunningScheduledTaskEntry : ScheduledTaskEntry
 {
     /// <summary>
-    /// State of the running task.
+    /// Process ID of the instance.
     /// </summary>
-    public enum TaskState
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Unknown = 0,
-        Disabled,
-        Queued,
-        Ready,
-        Running
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
-
+    public int ProcessId { get; }
     /// <summary>
-    /// <para type="description">Class to represent a running scheduled task.</para>
+    /// The GUID ID.
     /// </summary>
-    public sealed class RunningScheduledTaskEntry : ScheduledTaskEntry
-    {
-        /// <summary>
-        /// Process ID of the instance.
-        /// </summary>
-        public int ProcessId { get; }
-        /// <summary>
-        /// The GUID ID.
-        /// </summary>
-        public Guid InstanceId { get; }
-        /// <summary>
-        /// The state of the task.
-        /// </summary>
-        public TaskState State { get; }
-        /// <summary>
-        /// The current action.
-        /// </summary>
-        public string CurrentAction { get; }
+    public Guid InstanceId { get; }
+    /// <summary>
+    /// The state of the task.
+    /// </summary>
+    public TaskState State { get; }
+    /// <summary>
+    /// The current action.
+    /// </summary>
+    public string CurrentAction { get; }
 
-        internal RunningScheduledTaskEntry(IRunningTask running_task, IRegisteredTask task)
-            : base(task)
+    internal RunningScheduledTaskEntry(IRunningTask running_task, IRegisteredTask task)
+        : base(task)
+    {
+        ProcessId = (int)running_task.EnginePID;
+        if (Guid.TryParse(running_task.InstanceGuid, out Guid guid))
         {
-            ProcessId = (int)running_task.EnginePID;
-            if (Guid.TryParse(running_task.InstanceGuid, out Guid guid))
-            {
-                InstanceId = guid;
-            }
-            State = (TaskState)(int)running_task.State;
-            CurrentAction = running_task.CurrentAction;
+            InstanceId = guid;
         }
+        State = (TaskState)(int)running_task.State;
+        CurrentAction = running_task.CurrentAction;
     }
 }

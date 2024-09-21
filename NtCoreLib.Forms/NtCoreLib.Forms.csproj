@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyName>NtCoreLib.Forms</AssemblyName>
+        <TargetFramework>net461</TargetFramework>
+        <PackageId>NtCoreLib.Forms</PackageId>
+        <Authors>James Forshaw</Authors>
+        <Company>Google LLC.</Company>
+        <Product>NtCoreLib.Forms</Product>
+        <FileVersion>2.0.0.0</FileVersion>
+        <Version>2.0.0</Version>
+        <Copyright>Copyright © Google LLC. 2016-2023</Copyright>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</RepositoryUrl>
+        <Description>A .NET class library to access native NT API system calls</Description>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <LangVersion>10.0</LangVersion>
+        <PackageReleaseNotes>
+            2.0.0.
+            --------
+            * Major refactor.
+        </PackageReleaseNotes>
+        <Configurations>Debug;Release;Publish</Configurations>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="System.Windows.Forms" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <Nullable>warnings</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Publish|net481|AnyCPU'">
+      <Optimize>True</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NtCoreLib\NtCoreLib.csproj" />
+    </ItemGroup>
+</Project>

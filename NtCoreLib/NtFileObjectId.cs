@@ -12,72 +12,68 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
 using System;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class to represet a file object ID.
+/// </summary>
+public sealed class NtFileObjectId
 {
     /// <summary>
-    /// Class to represet a file object ID.
+    /// Full path to the file with the reparse point.
     /// </summary>
-    public sealed class NtFileObjectId
+    public string FullPath { get; }
+    /// <summary>
+    /// Win32 path to the file with the reparse point.
+    /// </summary>
+    public string Win32Path { get; }
+    /// <summary>
+    /// Reference number for the file.
+    /// </summary>
+    public long FileReferenceNumber { get; }
+    /// <summary>
+    /// The file's attributes.
+    /// </summary>
+    public FileAttributes FileAttributes { get; }
+    /// <summary>
+    /// The file's object ID.
+    /// </summary>
+    public Guid ObjectId { get; }
+    /// <summary>
+    /// The file's extended info.
+    /// </summary>
+    public byte[] ExtendedInfo { get; }
+    /// <summary>
+    /// File's birth volume ID.
+    /// </summary>
+    public Guid BirthVolumeId => new(ExtendedInfo.Slice(0, 16));
+    /// <summary>
+    /// File's birth object ID.
+    /// </summary>
+    public Guid BirthObjectId => new(ExtendedInfo.Slice(16, 16));
+    /// <summary>
+    /// File's domain ID.
+    /// </summary>
+    public Guid DomainId => new(ExtendedInfo.Slice(32, 16));
+
+    internal NtFileObjectId(NtFile volume, FileObjectIdInformation info)
     {
-        /// <summary>
-        /// Full path to the file with the reparse point.
-        /// </summary>
-        public string FullPath { get; }
-        /// <summary>
-        /// Win32 path to the file with the reparse point.
-        /// </summary>
-        public string Win32Path { get; }
-        /// <summary>
-        /// Reference number for the file.
-        /// </summary>
-        public long FileReferenceNumber { get; }
-        /// <summary>
-        /// The file's attributes.
-        /// </summary>
-        public FileAttributes FileAttributes { get; }
-        /// <summary>
-        /// The file's object ID.
-        /// </summary>
-        public Guid ObjectId { get; }
-        /// <summary>
-        /// The file's extended info.
-        /// </summary>
-        public byte[] ExtendedInfo { get; }
-        /// <summary>
-        /// File's birth volume ID.
-        /// </summary>
-        public Guid BirthVolumeId => new Guid(ExtendedInfo.Slice(0, 16));
-        /// <summary>
-        /// File's birth object ID.
-        /// </summary>
-        public Guid BirthObjectId => new Guid(ExtendedInfo.Slice(16, 16));
-        /// <summary>
-        /// File's domain ID.
-        /// </summary>
-        public Guid DomainId => new Guid(ExtendedInfo.Slice(32, 16));
-
-        internal NtFileObjectId(NtFile volume, FileObjectIdInformation info)
+        FileReferenceNumber = info.FileReference;
+        ExtendedInfo = info.ExtendedInfo;
+        ObjectId = info.ObjectId;
+        FullPath = string.Empty;
+        Win32Path = string.Empty;
+        using var file = NtFile.OpenFileById(volume, FileReferenceNumber, FileAccessRights.ReadAttributes,
+            FileShareMode.None, FileOpenOptions.OpenReparsePoint | FileOpenOptions.OpenForBackupIntent, false);
+        if (!file.IsSuccess)
         {
-            FileReferenceNumber = info.FileReference;
-            ExtendedInfo = info.ExtendedInfo;
-            ObjectId = info.ObjectId;
-            FullPath = string.Empty;
-            Win32Path = string.Empty;
-            using (var file = NtFile.OpenFileById(volume, FileReferenceNumber, FileAccessRights.ReadAttributes,
-                FileShareMode.None, FileOpenOptions.OpenReparsePoint | FileOpenOptions.OpenForBackupIntent, false))
-            {
-                if (!file.IsSuccess)
-                {
-                    return;
-                }
-
-                FileAttributes = file.Result.FileAttributes;
-                FullPath = file.Result.FullPath;
-                Win32Path = file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty);
-            }
+            return;
         }
+
+        FileAttributes = file.Result.FileAttributes;
+        FullPath = file.Result.FullPath;
+        Win32Path = file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty);
     }
 }

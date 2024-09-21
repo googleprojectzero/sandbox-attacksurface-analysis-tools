@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Network layer address type.
+/// </summary>
+[SDKName("NL_ADDRESS_TYPE")]
+public enum NetworkLayerAddressType : uint
 {
-    /// <summary>
-    /// Network layer address type.
-    /// </summary>
-    [SDKName("NL_ADDRESS_TYPE")]
-    public enum NetworkLayerAddressType : uint
-    {
-        [SDKName("NlatUnspecified")]
-        Unspecified,
-        [SDKName("NlatUnicast")]
-        Unicast,
-        [SDKName("NlatAnycast")]
-        Anycast,
-        [SDKName("NlatMulticast")]
-        Multicast,
-        [SDKName("NlatBroadcast")]
-        Broadcast,
-        [SDKName("NlatInvalid")]
-        Invalid
-    }
+    [SDKName("NlatUnspecified")]
+    Unspecified,
+    [SDKName("NlatUnicast")]
+    Unicast,
+    [SDKName("NlatAnycast")]
+    Anycast,
+    [SDKName("NlatMulticast")]
+    Multicast,
+    [SDKName("NlatBroadcast")]
+    Broadcast,
+    [SDKName("NlatInvalid")]
+    Invalid
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

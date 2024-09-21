@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Interface for a marshalled NDR conformant structure.
+/// </summary>
+/// <remarks>This interface is primarily for internal use only.</remarks>
+public interface INdrConformantStructure : INdrStructure
 {
     /// <summary>
-    /// Interface for a marshalled NDR conformant structure.
+    /// Gets the number of conformant dimensions, should be at least one.
     /// </summary>
-    /// <remarks>This interface is primarily for internal use only.</remarks>
-    public interface INdrConformantStructure : INdrStructure
-    {
-        /// <summary>
-        /// Gets the number of conformant dimensions, should be at least one.
-        /// </summary>
-        /// <returns>The number of conformant dimensions.</returns>
-        int GetConformantDimensions();
-    }
+    /// <returns>The number of conformant dimensions.</returns>
+    int GetConformantDimensions();
 }

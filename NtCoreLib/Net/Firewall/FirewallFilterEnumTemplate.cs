@@ -12,159 +12,161 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authorization;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Options for enumerating a filter.
+/// </summary>
+public sealed class FirewallFilterEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallFilter>
 {
     /// <summary>
-    /// Options for enumerating a filter.
+    /// Specify the key for the layer to search for.
     /// </summary>
-    public sealed class FirewallFilterEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallFilter>
+    public Guid LayerKey { get; set; }
+
+    /// <summary>
+    /// Specify the provider key.
+    /// </summary>
+    public Guid? ProviderKey { get; set; }
+
+    /// <summary>
+    /// Specify the flags for the enumeration.
+    /// </summary>
+    public FirewallFilterEnumFlags Flags { get; set; }
+
+    /// <summary>
+    /// Specify the action type.
+    /// </summary>
+    public FirewallActionType ActionType { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="layer_key">The layer key.</param>
+    public FirewallFilterEnumTemplate(Guid layer_key)
     {
-        /// <summary>
-        /// Specify the key for the layer to search for.
-        /// </summary>
-        public Guid LayerKey { get; set; }
+        LayerKey = layer_key;
+        ActionType = FirewallActionType.All;
+    }
 
-        /// <summary>
-        /// Specify the provider key.
-        /// </summary>
-        public Guid? ProviderKey { get; set; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="ale_layer">The ALE layer type..</param>
+    public FirewallFilterEnumTemplate(FirewallAleLayer ale_layer)
+        : this(FirewallUtils.GetLayerGuidForAleLayer(ale_layer))
+    {
+    }
 
-        /// <summary>
-        /// Specify the flags for the enumeration.
-        /// </summary>
-        public FirewallFilterEnumFlags Flags { get; set; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public FirewallFilterEnumTemplate() 
+        : this(Guid.Empty)
+    {
+    }
 
-        /// <summary>
-        /// Specify the action type.
-        /// </summary>
-        public FirewallActionType ActionType { get; set; }
+    private bool CheckUserId(FirewallFilter filter, Guid condition_guid, AuthZContext context)
+    {
+        if (!filter.HasCondition(condition_guid))
+            return true;
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="layer_key">The layer key.</param>
-        public FirewallFilterEnumTemplate(Guid layer_key)
+        FirewallFilterCondition condition = filter.GetCondition(condition_guid);
+        if (!(condition.Value.Value is SecurityDescriptor sd))
+            return false;
+        switch (condition.MatchType)
         {
-            LayerKey = layer_key;
-            ActionType = FirewallActionType.All;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="ale_layer">The ALE layer type..</param>
-        public FirewallFilterEnumTemplate(FirewallAleLayer ale_layer)
-            : this(FirewallUtils.GetLayerGuidForAleLayer(ale_layer))
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public FirewallFilterEnumTemplate() 
-            : this(Guid.Empty)
-        {
-        }
-
-        private bool CheckUserId(FirewallFilter filter, Guid condition_guid, AuthZContext context)
-        {
-            if (!filter.HasCondition(condition_guid))
-                return true;
-
-            FirewallFilterCondition condition = filter.GetCondition(condition_guid);
-            if (!(condition.Value.Value is SecurityDescriptor sd))
+            case FirewallMatchType.Equal:
+            case FirewallMatchType.NotEqual:
+                break;
+            default:
                 return false;
-            switch (condition.MatchType)
-            {
-                case FirewallMatchType.Equal:
-                case FirewallMatchType.NotEqual:
-                    break;
-                default:
-                    return false;
-            }
-
-            if (sd.Owner == null || sd.Group == null)
-            {
-                sd = sd.Clone();
-                if (sd.Owner == null)
-                    sd.Owner = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
-                if (sd.Group == null)
-                    sd.Group = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
-            }
-            bool result = context.AccessCheck(sd, null, FirewallFilterAccessRights.Match,
-                null, null, FirewallUtils.FirewallFilterType).First().IsSuccess;
-            return condition.MatchType == FirewallMatchType.Equal ? result : !result;
         }
 
-        private bool FilterFunc(Dictionary<Guid, AuthZContext> contexts, FirewallFilter filter)
+        if (sd.Owner == null || sd.Group == null)
         {
-            bool result = true;
-            foreach (var pair in contexts)
-            {
-                result &= CheckUserId(filter, pair.Key, pair.Value);
-            }
-            return result;
+            sd = sd.Clone();
+            if (sd.Owner == null)
+                sd.Owner = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
+            if (sd.Group == null)
+                sd.Group = new SecurityDescriptorSid(KnownSids.LocalSystem, true);
         }
+        bool result = context.AccessCheck(sd, null, FirewallFilterAccessRights.Match,
+            null, null, FirewallUtils.FirewallFilterType).First().IsSuccess;
+        return condition.MatchType == FirewallMatchType.Equal ? result : !result;
+    }
 
-        Func<FirewallFilter, bool> IFirewallEnumTemplate<FirewallFilter>.GetFilterFunc(DisposableList list)
+    private bool FilterFunc(Dictionary<Guid, AuthZContext> contexts, FirewallFilter filter)
+    {
+        bool result = true;
+        foreach (var pair in contexts)
         {
-            var user_conditions = Conditions.Where(c => FirewallConditionGuids.IsUserId(c.FieldKey));
-
-            if (!user_conditions.Any())
-                return _ => true;
-
-            var rm = list.AddResource(AuthZResourceManager.Create());
-            Dictionary<Guid, AuthZContext> contexts = new Dictionary<Guid, AuthZContext>();
-            foreach (var condition in user_conditions)
-            {
-                if (contexts.ContainsKey(condition.FieldKey))
-                {
-                    continue;
-                }
-                if (!(condition.Value.ContextValue is FirewallTokenInformation token) || token.UserSid == null)
-                {
-                    continue;
-                }
-                contexts.Add(condition.FieldKey, token.CreateContext(rm, list));
-            }
-
-            return f => FilterFunc(contexts, f);
+            result &= CheckUserId(filter, pair.Key, pair.Value);
         }
+        return result;
+    }
 
-        SafeBuffer IFirewallEnumTemplate<FirewallFilter>.ToTemplateBuffer(DisposableList list)
+    Func<FirewallFilter, bool> IFirewallEnumTemplate<FirewallFilter>.GetFilterFunc(DisposableList list)
+    {
+        var user_conditions = Conditions.Where(c => FirewallConditionGuids.IsUserId(c.FieldKey));
+
+        if (!user_conditions.Any())
+            return _ => true;
+
+        var rm = list.AddResource(AuthZResourceManager.Create());
+        Dictionary<Guid, AuthZContext> contexts = new();
+        foreach (var condition in user_conditions)
         {
-            FirewallActionType action_type = ActionType;
-            switch (action_type)
+            if (contexts.ContainsKey(condition.FieldKey))
             {
-                case FirewallActionType.Permit:
-                case FirewallActionType.Block:
-                    action_type &= ~FirewallActionType.Terminating;
-                    break;
+                continue;
             }
-
-            var template = new FWPM_FILTER_ENUM_TEMPLATE0
+            if (!(condition.Value.ContextValue is FirewallTokenInformation token) || token.UserSid == null)
             {
-                layerKey = LayerKey,
-                flags = Flags,
-                providerKey = ProviderKey.HasValue ? list.AddResource(ProviderKey.Value.ToBuffer()).DangerousGetHandle() : IntPtr.Zero,
-                actionMask = action_type
-            };
-
-            var valid_conditions = Conditions.Where(c => !FirewallConditionGuids.IsUserId(c.FieldKey));
-            int count = valid_conditions.Count();
-            if (count > 0)
-            {
-                template.numFilterConditions = count;
-                template.filterCondition = list.AddList(valid_conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+                continue;
             }
-
-            return list.AddStructure(template);
+            contexts.Add(condition.FieldKey, token.CreateContext(rm, list));
         }
+
+        return f => FilterFunc(contexts, f);
+    }
+
+    SafeBuffer IFirewallEnumTemplate<FirewallFilter>.ToTemplateBuffer(DisposableList list)
+    {
+        FirewallActionType action_type = ActionType;
+        switch (action_type)
+        {
+            case FirewallActionType.Permit:
+            case FirewallActionType.Block:
+                action_type &= ~FirewallActionType.Terminating;
+                break;
+        }
+
+        var template = new FWPM_FILTER_ENUM_TEMPLATE0
+        {
+            layerKey = LayerKey,
+            flags = Flags,
+            providerKey = ProviderKey.HasValue ? list.AddResource(ProviderKey.Value.ToBuffer()).DangerousGetHandle() : IntPtr.Zero,
+            actionMask = action_type
+        };
+
+        var valid_conditions = Conditions.Where(c => !FirewallConditionGuids.IsUserId(c.FieldKey));
+        int count = valid_conditions.Count();
+        if (count > 0)
+        {
+            template.numFilterConditions = count;
+            template.filterCondition = list.AddList(valid_conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+        }
+
+        return list.AddStructure(template);
     }
 }

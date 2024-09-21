@@ -12,56 +12,56 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
-using NtApiDotNet.Win32.Security.Buffers;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Utilities.Data;
+using NtCoreLib.Win32.Security.Buffers;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Security.Cryptography.X509Certificates;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Class to represent a security buffer containing the TSSSP server certificate.
+/// </summary>
+public sealed class SecurityBufferTSSSPCertificate : SecurityBuffer
 {
     /// <summary>
-    /// Class to represent a security buffer containing the TSSSP server certificate.
+    /// The server certificate to use.
     /// </summary>
-    public sealed class SecurityBufferTSSSPCertificate : SecurityBuffer
+    public X509Certificate Certificate { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="certificate">The server certificate to use.</param>
+    public SecurityBufferTSSSPCertificate(X509Certificate certificate) 
+        : base(SecurityBufferType.Token | SecurityBufferType.ReadOnly)
     {
-        /// <summary>
-        /// The server certificate to use.
-        /// </summary>
-        public X509Certificate Certificate { get; }
+        Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="certificate">The server certificate to use.</param>
-        public SecurityBufferTSSSPCertificate(X509Certificate certificate) 
-            : base(SecurityBufferType.Token | SecurityBufferType.ReadOnly)
-        {
-            Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
-        }
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        byte[] ba = Certificate.Export(X509ContentType.Cert);
+        DataWriter writer = new();
+        writer.Write(3);
+        writer.Write(ba.Length);
+        writer.Write(ba);
+        writer.Write(0);
+        return writer.ToArray();
+    }
 
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
-        {
-            byte[] ba = Certificate.Export(X509ContentType.Cert);
-            DataWriter writer = new DataWriter();
-            writer.Write(3);
-            writer.Write(ba.Length);
-            writer.Write(ba);
-            writer.Write(0);
-            return writer.ToArray();
-        }
+    internal override void FromBuffer(SecBuffer _)
+    {
+    }
 
-        internal override void FromBuffer(SecBuffer _)
-        {
-        }
-
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return SecBuffer.Create(Type, ToArray(), list);
-        }
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return SecBuffer.Create(Type, ToArray(), list);
     }
 }

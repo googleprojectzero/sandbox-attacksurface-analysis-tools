@@ -12,99 +12,98 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
-using NtApiDotNet.Win32;
+using NtCoreLib.Utilities.Memory;
+using NtCoreLib.Win32;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+///  Class to represent an IKEEXT main mode failure event.
+/// </summary>
+public sealed class FirewallNetEventIkeExtMmFailure : FirewallNetEvent
 {
     /// <summary>
-    ///  Class to represent an IKEEXT main mode failure event.
+    /// Windows error code for the failure
     /// </summary>
-    public sealed class FirewallNetEventIkeExtMmFailure : FirewallNetEvent
+    public Win32Error FailureErrorCode { get; }
+    /// <summary>
+    /// Point of failure
+    /// </summary>
+    public IPsecFailurePoint FailurePoint { get; }
+    /// <summary>
+    /// Flags for the failure event
+    /// </summary>
+    public IkeExtMmFailureFlags FailureFlags { get; }
+    /// <summary>
+    /// IKE or Authip.
+    /// </summary>
+    public IkeExtKeyModuleType KeyingModuleType { get; }
+    /// <summary>
+    /// Main mode state
+    /// </summary>
+    public IkeExtMmSaState MmState { get; }
+    /// <summary>
+    /// Initiator or Responder
+    /// </summary>
+    public IkeExtSaRole SaRole { get; }
+    /// <summary>
+    /// Authentication method
+    /// </summary>
+    public IkeExtAuthenticationMethodType MmAuthMethod { get; }
+    /// <summary>
+    /// Hash (SHA thumbprint) of the end certificate corresponding to failures 
+    /// that happen during building or validating certificate chains.
+    /// </summary>
+    public byte[] EndCertHash { get; }
+    /// <summary>
+    /// LUID for the MM SA
+    /// </summary>
+    public long MmId { get; }
+    /// <summary>
+    /// Main mode filter ID
+    /// </summary>
+    public ulong MmFilterId { get; }
+    /// <summary>
+    /// Name of local security principal that was authenticated, if available. 
+    /// If not available, an empty string will be stored.
+    /// </summary>
+    public string LocalPrincipalNameForAuth { get; }
+    /// <summary>
+    /// Name of remote security principal that was authenticated, if available.
+    /// If not available, an empty string will be stored. 
+    /// </summary>
+    public string RemotePrincipalNameForAuth { get; }
+
+    /// <summary>
+    /// Array of group SIDs corresponding to the local security principal that 
+    /// was authenticated, if available.
+    /// </summary>
+    public IReadOnlyList<string> LocalPrincipalGroupSids { get; }
+
+    /// <summary>
+    /// Array of group SIDs corresponding to the remote security principal that 
+    /// was authenticated, if available.
+    /// </summary>
+    public IReadOnlyList<string> RemotePrincipalGroupSids { get; }
+
+    internal FirewallNetEventIkeExtMmFailure(IFwNetEvent net_event) : base(net_event)
     {
-        /// <summary>
-        /// Windows error code for the failure
-        /// </summary>
-        public Win32Error FailureErrorCode { get; }
-        /// <summary>
-        /// Point of failure
-        /// </summary>
-        public IPsecFailurePoint FailurePoint { get; }
-        /// <summary>
-        /// Flags for the failure event
-        /// </summary>
-        public IkeExtMmFailureFlags FailureFlags { get; }
-        /// <summary>
-        /// IKE or Authip.
-        /// </summary>
-        public IkeExtKeyModuleType KeyingModuleType { get; }
-        /// <summary>
-        /// Main mode state
-        /// </summary>
-        public IkeExtMmSaState MmState { get; }
-        /// <summary>
-        /// Initiator or Responder
-        /// </summary>
-        public IkeExtSaRole SaRole { get; }
-        /// <summary>
-        /// Authentication method
-        /// </summary>
-        public IkeExtAuthenticationMethodType MmAuthMethod { get; }
-        /// <summary>
-        /// Hash (SHA thumbprint) of the end certificate corresponding to failures 
-        /// that happen during building or validating certificate chains.
-        /// </summary>
-        public byte[] EndCertHash { get; }
-        /// <summary>
-        /// LUID for the MM SA
-        /// </summary>
-        public long MmId { get; }
-        /// <summary>
-        /// Main mode filter ID
-        /// </summary>
-        public ulong MmFilterId { get; }
-        /// <summary>
-        /// Name of local security principal that was authenticated, if available. 
-        /// If not available, an empty string will be stored.
-        /// </summary>
-        public string LocalPrincipalNameForAuth { get; }
-        /// <summary>
-        /// Name of remote security principal that was authenticated, if available.
-        /// If not available, an empty string will be stored. 
-        /// </summary>
-        public string RemotePrincipalNameForAuth { get; }
-
-        /// <summary>
-        /// Array of group SIDs corresponding to the local security principal that 
-        /// was authenticated, if available.
-        /// </summary>
-        public IReadOnlyList<string> LocalPrincipalGroupSids { get; }
-
-        /// <summary>
-        /// Array of group SIDs corresponding to the remote security principal that 
-        /// was authenticated, if available.
-        /// </summary>
-        public IReadOnlyList<string> RemotePrincipalGroupSids { get; }
-
-        internal FirewallNetEventIkeExtMmFailure(IFwNetEvent net_event) : base(net_event)
-        {
-            var ev = net_event.Value.ReadStruct<FWPM_NET_EVENT_IKEEXT_MM_FAILURE1>();
-            FailureErrorCode = ev.failureErrorCode;
-            FailurePoint = ev.failurePoint;
-            FailureFlags = ev.flags;
-            KeyingModuleType = ev.keyingModuleType;
-            MmState = ev.mmState;
-            SaRole = ev.saRole;
-            MmAuthMethod = ev.mmAuthMethod;
-            EndCertHash = ev.endCertHash;
-            MmId = ev.mmId;
-            MmFilterId = ev.mmFilterId;
-            LocalPrincipalNameForAuth = ev.localPrincipalNameForAuth;
-            RemotePrincipalNameForAuth = ev.remotePrincipalNameForAuth;
-            LocalPrincipalGroupSids = ev.localPrincipalGroupSids.ReadStringArray(ev.numLocalPrincipalGroupSids)?.ToList().AsReadOnly();
-            RemotePrincipalGroupSids = ev.remotePrincipalGroupSids.ReadStringArray(ev.numRemotePrincipalGroupSids)?.ToList().AsReadOnly();
-        }
+        var ev = net_event.Value.ReadStruct<FWPM_NET_EVENT_IKEEXT_MM_FAILURE1>();
+        FailureErrorCode = ev.failureErrorCode;
+        FailurePoint = ev.failurePoint;
+        FailureFlags = ev.flags;
+        KeyingModuleType = ev.keyingModuleType;
+        MmState = ev.mmState;
+        SaRole = ev.saRole;
+        MmAuthMethod = ev.mmAuthMethod;
+        EndCertHash = ev.endCertHash;
+        MmId = ev.mmId;
+        MmFilterId = ev.mmFilterId;
+        LocalPrincipalNameForAuth = ev.localPrincipalNameForAuth;
+        RemotePrincipalNameForAuth = ev.remotePrincipalNameForAuth;
+        LocalPrincipalGroupSids = ev.localPrincipalGroupSids.ReadStringArray(ev.numLocalPrincipalGroupSids)?.ToList().AsReadOnly();
+        RemotePrincipalGroupSids = ev.remotePrincipalGroupSids.ReadStringArray(ev.numRemotePrincipalGroupSids)?.ToList().AsReadOnly();
     }
 }

@@ -24,7 +24,7 @@ Specify to open the profile even if it doesn't exist.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.AppContainerProfile
+NtCoreLib.Win32.AppModel.AppContainerProfile
 .EXAMPLE
 Get-AppContainerProfile
 Get appcontainer profiles for all installed packages.
@@ -45,17 +45,17 @@ function Get-AppContainerProfile {
 
     switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.AppContainerProfile]::GetAppContainerProfiles() | Write-Output
+            [NtCoreLib.Win32.AppModel.AppContainerProfile]::GetAppContainerProfiles() | Write-Output
         }
         "FromName" {
             if ($OpenAlways) {
-                $prof = [NtApiDotNet.Win32.AppContainerProfile]::OpenExisting($Name, $false)
+                $prof = [NtCoreLib.Win32.AppModel.AppContainerProfile]::OpenExisting($Name, $false)
                 if (!$prof.IsSuccess) {
-                    $prof = [NtApiDotNet.Win32.AppContainerProfile]::Open($Name)
+                    $prof = [NtCoreLib.Win32.AppModel.AppContainerProfile]::Open($Name)
                 }
                 $prof | Write-Output
             } else {
-                [NtApiDotNet.Win32.AppContainerProfile]::OpenExisting($Name) | Write-Output
+                [NtCoreLib.Win32.AppModel.AppContainerProfile]::OpenExisting($Name) | Write-Output
             }
         }
     }
@@ -79,7 +79,7 @@ Specify to create a temporary profile. Close the profile after use to delete it.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.AppContainerProfile
+NtCoreLib.Win32.AppModel.AppContainerProfile
 .EXAMPLE
 New-AppContainerProfile -Name Package_aslkjdskjds
 Create a new AppContainer profile with a specified name.
@@ -98,7 +98,7 @@ function New-AppContainerProfile {
         [string]$Description = "Description",
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromTemp")]
-        [NtApiDotNet.Sid[]]$Capabilities,
+        [NtCoreLib.Security.Authorization.Sid[]]$Capabilities,
         [parameter(ParameterSetName = "FromName")]
         [switch]$DeleteOnClose,
         [parameter(Mandatory, ParameterSetName = "FromTemp")]
@@ -107,14 +107,14 @@ function New-AppContainerProfile {
 
     switch ($PSCmdlet.ParameterSetName) {
         "FromName" {
-            $prof = [NtApiDotNet.Win32.AppContainerProfile]::Create($Name, $DisplayName, $Description, $Capabilities)
+            $prof = [NtCoreLib.Win32.AppModel.AppContainerProfile]::Create($Name, $DisplayName, $Description, $Capabilities)
             if ($null -ne $prof) {
                 $prof.DeleteOnClose = $DeleteOnClose
                 Write-Output $prof
             }
         }
         "FromTemp" {
-            [NtApiDotNet.Win32.AppContainerProfile]::CreateTemporary($Capabilities) | Write-Output
+            [NtCoreLib.Win32.AppModel.AppContainerProfile]::CreateTemporary($Capabilities) | Write-Output
         }
     }
 }
@@ -143,7 +143,7 @@ function Remove-AppContainerProfile {
     [CmdletBinding(DefaultParameterSetName = "FromName")]
     param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProfile")]
-        [NtApiDotNet.Win32.AppContainerProfile]$Profile,
+        [NtCoreLib.Win32.AppModel.AppContainerProfile]$Profile,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]
         [string]$Name
     )
@@ -153,7 +153,7 @@ function Remove-AppContainerProfile {
             $Profile.Delete()
         }
         "FromName" {
-            [NtApiDotNet.Win32.AppContainerProfile]::Delete($Name)
+            [NtCoreLib.Win32.AppModel.AppContainerProfile]::Delete($Name)
         }
     }
 }
@@ -172,7 +172,7 @@ Specify to pass through a process object for the application.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtProcess
+NtCoreLib.NtProcess
 .EXAMPLE
 Start-AppModelApplication -AppModelId "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"
 Start the Windows calculator.
@@ -186,7 +186,7 @@ function Start-AppModelApplication {
         [switch]$PassThru
     )
     try {
-        $app_id = [NtApiDotNet.Win32.AppModel.AppModelUtils]::ActivateApplication($AppModelId, $Argument)
+        $app_id = [NtCoreLib.Win32.AppModel.AppModelUtils]::ActivateApplication($AppModelId, $Argument)
         if ($PassThru) {
             Get-NtProcess -ProcessId $app_id
         }
@@ -207,7 +207,7 @@ Specify a specific policy to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.AppModelPolicy_PolicyValue
+NtCoreLib.AppModelPolicy_PolicyValue
 .EXAMPLE
 Get-AppModelApplicationPolicy -Process $proc
 Query all app model policies.
@@ -216,9 +216,9 @@ function Get-AppModelApplicationPolicy {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromPolicy")]
-        [NtApiDotNet.AppModelPolicy_Type[]]$Policy
+        [NtCoreLib.AppModelPolicy_Type[]]$Policy
     )
 
     try {
@@ -377,13 +377,13 @@ This cmdlet gets the list of package SIDs which have been granted loopback excep
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid[]
+NtCoreLib.Security.Authorization.Sid[]
 .EXAMPLE
 Get-AppModelLoopbackException
 Get the list of loopback exception package SIDs.
 #>
 function Get-AppModelLoopbackException {
-    [NtApiDotNet.Win32.AppModel.AppModelUtils]::GetLoopbackException()
+    [NtCoreLib.Win32.AppModel.AppModelUtils]::GetLoopbackException()
 }
 
 <#
@@ -412,8 +412,8 @@ function Add-AppModelLoopbackException {
     )
     PROCESS {
         try {
-            $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
-            [NtApiDotNet.Win32.AppModel.AppModelUtils]::AddLoopbackException($sid)
+            $sid = [NtCoreLib.Win32.Security.Win32Security]::GetPackageSidFromName($PackageSid)
+            [NtCoreLib.Win32.AppModel.AppModelUtils]::AddLoopbackException($sid)
         } catch {
             Write-Error $_
         }
@@ -446,8 +446,8 @@ function Remove-AppModelLoopbackException {
     )
     PROCESS {
         try {
-            $sid = [NtApiDotNet.Win32.TokenUtils]::GetPackageSidFromName($PackageSid)
-            [NtApiDotNet.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($sid)
+            $sid = [NtCoreLib.Win32.Security.Win32Security]::GetPackageSidFromName($PackageSid)
+            [NtCoreLib.Win32.AppModel.AppModelUtils]::RemoveLoopbackException($sid)
         } catch {
             Write-Error $_
         }
@@ -517,11 +517,11 @@ function Set-ExecutionAlias {
         [string]$EntryPoint,
         [Parameter(Mandatory = $true, Position = 3)]
         [string]$Target,
-        [NtApiDotNet.ExecutionAliasAppType]$AppType = "Desktop",
+        [NtCoreLib.Kernel.IO.ExecutionAliasAppType]$AppType = "Desktop",
         [Int32]$Version = 3
     )
 
-    $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $AppType)
+    $rp = [NtCoreLib.Kernel.IO.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $AppType)
     Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint, SynchronousIoNonAlert `
             -Access GenericWrite, Synchronize -Disposition OpenIf) {
         $file.SetReparsePoint($rp)

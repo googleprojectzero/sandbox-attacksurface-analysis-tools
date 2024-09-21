@@ -34,10 +34,14 @@ Get API set entries
 This cmdlet gets API set entries for the current system.
 .PARAMETER Name
 Specify an API set name to lookup.
+.PARAMETER Path
+Specify a path to the API set file rather than using the current system's.
+.PARAMETER AsNamespace
+Specify to return the namespace object rather than the entries.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.ApiSet.ApiSetEntry[]
+NtCoreLib.Image.ApiSet.ApiSetEntry[]
 .EXAMPLE
 Get-NtApiSet
 Get all API set entries.
@@ -49,13 +53,31 @@ function Get-NtApiSet {
     [CmdletBinding(DefaultParameterSetName="All")]
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
-        [string]$Name
+        [string]$Name,
+        [string]$Path,
+        [parameter(ParameterSetName="All")]
+        [switch]$AsNamespace
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromName") {
-        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.GetApiSet($Name)
-    } else {
-        [NtApiDotNet.ApiSet.ApiSetNamespace]::Current.Entries | Write-Output
+    try {
+        $apiset = if ($Path -ne "") {
+            $Path = Resolve-Path -LiteralPath $Path
+            [NtCoreLib.Image.ApiSet.ApiSetNamespace]::FromPath($Path)
+        } else {
+            [NtCoreLib.Image.ApiSet.ApiSetNamespace]::Current
+        }
+
+        if ($PSCmdlet.ParameterSetName -eq "FromName") {
+            $apiset.GetApiSet($Name)
+        } else {
+            if ($AsNamespace) {
+                $apiset
+            } else {
+                $apiset.Entries | Write-Output
+            }
+        }
+    } catch {
+        Write-Error $_
     }
 }
 
@@ -81,7 +103,7 @@ function Get-NtSDKName {
         $InputObject
     )
     PROCESS {
-        [NtApiDotNet.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
+        [NtCoreLib.Utilities.Reflection.ReflectionUtils]::GetSDKName($InputObject)
     }
 }
 
@@ -108,7 +130,7 @@ function ConvertFrom-HexDump {
     )
 
     PROCESS {
-        [NtApiDotNet.Utilities.Text.HexDumpBuilder]::ParseHexDump($Hex)
+        [NtCoreLib.Utilities.Text.HexDumpBuilder]::ParseHexDump($Hex)
     }
 }
 
@@ -264,13 +286,13 @@ function Format-HexDump {
 
         switch ($PSCmdlet.ParameterSetName) {
             "FromBytes" {
-                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
+                $builder = [NtCoreLib.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
             }
             "FromBuffer" {
-                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
+                $builder = [NtCoreLib.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
             }
             "FromFile" {
-                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $Offset);
+                $builder = [NtCoreLib.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $Offset);
             }
         }
     }
@@ -310,7 +332,7 @@ Specify the SPN.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName
+NtCoreLib.Win32.Security.Authentication.ServicePrincipalName
 .EXAMPLE
 Get-ServicePrincipalName -Name "HTTP/www.domain.com"
 Get the SPN from a string.
@@ -320,7 +342,7 @@ function Get-ServicePrincipalName {
         [parameter(Mandatory, Position = 0)]
         [string]$Name
     )
-    [NtApiDotNet.Win32.Security.Authentication.ServicePrincipalName]::Parse($Name) | Write-Output
+    [NtCoreLib.Win32.Security.Authentication.ServicePrincipalName]::Parse($Name) | Write-Output
 }
 
 <#
@@ -362,10 +384,10 @@ function Get-MD4Hash {
     switch($PSCmdlet.ParameterSetName) {
         "FromString" {
             $enc = [System.Text.Encoding]::GetEncoding($Encoding)
-            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($String, $enc)
+            [NtCoreLib.Utilities.Security.Cryptography.MD4]::CalculateHash($String, $enc)
         }
         "FromBytes" {
-            [NtApiDotNet.Utilities.Security.MD4]::CalculateHash($Bytes)
+            [NtCoreLib.Utilities.Security.Cryptography.MD4]::CalculateHash($Bytes)
         }
     }
 }
@@ -406,10 +428,10 @@ function Format-ASN1DER {
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromPath" {
-            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Path, $Depth)
+            [NtCoreLib.Utilities.ASN1.ASN1Utils]::FormatDER($Path, $Depth)
         }
         "FromBytes" {
-            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::FormatDER($Byte, $Depth)
+            [NtCoreLib.Utilities.ASN1.ASN1Utils]::FormatDER($Byte, $Depth)
         }
     }
 }
@@ -426,7 +448,7 @@ Specify file containing the DER data.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.ASN1.Parser.ASN1Object
+NtCoreLib.Utilities.ASN1.Parser.ASN1Object
 .EXAMPLE
 Get-ASN1DER -Bytes $ba
 Parse the byte array into ASN.1 DER data objects.
@@ -442,10 +464,10 @@ function Get-ASN1DER {
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromPath" {
-            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::ParseDER($Path)
+            [NtCoreLib.Utilities.ASN1.ASN1Utils]::ParseDER($Path)
         }
         "FromBytes" {
-            [NtApiDotNet.Utilities.ASN1.ASN1Utils]::ParseDER($Byte)
+            [NtCoreLib.Utilities.ASN1.ASN1Utils]::ParseDER($Byte)
         }
     }
 }
@@ -458,13 +480,13 @@ This cmdlet creates a new ASN.1 DER builder object which can be used to create D
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.ASN1.Builder.DERBuilder
+NtCoreLib.Utilities.ASN1.Builder.DERBuilder
 .EXAMPLE
 New-ASN1DER
 Creates a new ASN.1 DER builder.
 #>
 function New-ASN1DER {
-    [NtApiDotNet.Utilities.ASN1.Builder.DERBuilder]::new()
+    [NtCoreLib.Utilities.ASN1.Builder.DERBuilder]::new()
 }
 
 <#
@@ -487,7 +509,7 @@ function Split-Win32CommandLine {
         [parameter(Position = 0, Mandatory)]
         [string]$CommandLine
     )
-    [NtApiDotNet.Win32.Win32Utils]::ParseCommandLine($CommandLine) | Write-Output
+    [NtCoreLib.Win32.Process.Win32ProcessUtils]::ParseCommandLine($CommandLine) | Write-Output
 }
 
 # We use this incase we're running on a downlevel PowerShell.
@@ -531,7 +553,7 @@ function Protect-RC4 {
     if ($Length -lt 0) {
         $Length = $Data.Length - $Offset
     }
-    [NtApiDotNet.Utilities.Security.ARC4]::Transform($Data, $Offset, $Length, $Key)
+    [NtCoreLib.Utilities.Security.Cryptography.ARC4]::Transform($Data, $Offset, $Length, $Key)
 }
 
 Set-Alias -Name Unprotect-RC4 -Value Protect-RC4
@@ -554,7 +576,7 @@ Specify the types of string to return. Defaults to ASCII and Unicode.
 .INPUTS
 byte[]
 .OUTPUTS
-NtApiDotNet.Utilities.Text.ExtractedString
+NtCoreLib.Utilities.Text.ExtractedString
 #>
 function Select-BinaryString {
     [CmdletBinding(DefaultParameterSetName = "FromBytes")]
@@ -567,7 +589,7 @@ function Select-BinaryString {
         [string]$Path,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromBuffer")]
         [System.Runtime.InteropServices.SafeBuffer]$Buffer,
-        [NtApiDotNet.Utilities.Text.ExtractedStringType]$Type = "Ascii, Unicode",
+        [NtCoreLib.Utilities.Text.ExtractedStringType]$Type = "Ascii, Unicode",
         [int]$MinimumLength = 3
     )
 
@@ -582,15 +604,15 @@ function Select-BinaryString {
                 if ($in_pipeline) {
                     $stm.Write($Byte, 0, $Byte.Length)
                 } else {
-                    [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Byte, $MinimumLength, $Type) | Write-Output
+                    [NtCoreLib.Utilities.Text.StringExtractor]::Extract($Byte, $MinimumLength, $Type) | Write-Output
                 }
             }
             "FromBuffer" {
-                [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Buffer, $MinimumLength, $Type) | Write-Output
+                [NtCoreLib.Utilities.Text.StringExtractor]::Extract($Buffer, $MinimumLength, $Type) | Write-Output
             }
             "FromFile" {
                 $Path = Resolve-Path $Path -ErrorAction Stop
-                [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($Path, $MinimumLength, $Type) | Write-Output
+                [NtCoreLib.Utilities.Text.StringExtractor]::Extract($Path, $MinimumLength, $Type) | Write-Output
             }
         }
     }
@@ -598,7 +620,7 @@ function Select-BinaryString {
     END {
         if ($stm.Length -gt 0) {
             $stm.Position = 0
-            [NtApiDotNet.Utilities.Text.StringExtractor]::Extract($stm, $MinimumLength, $Type) | Write-Output
+            [NtCoreLib.Utilities.Text.StringExtractor]::Extract($stm, $MinimumLength, $Type) | Write-Output
         }
     }
 }
@@ -617,7 +639,7 @@ None
 function Update-Win32Environment {
     $str = [System.Runtime.InteropServices.Marshal]::StringToHGlobalUni("Environment")
     try {
-        [NtApiDotNet.NtWindow]::Broadcast.SendMessage(0x1A, [System.IntPtr]::Zero, $str) | Out-Null
+        [NtCoreLib.NtWindow]::Broadcast.SendMessage(0x1A, [System.IntPtr]::Zero, $str) | Out-Null
     } finally {
         [System.Runtime.InteropServices.Marshal]::FreeHGlobal($str)
     }

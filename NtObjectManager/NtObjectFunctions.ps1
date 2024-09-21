@@ -29,7 +29,7 @@ Export an object to a JSON string.
 function Export-NtObject {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
-        [NtApiDotNet.NtObject]$Object
+        [NtCoreLib.NtObject]$Object
     )
     $obj = [PSCustomObject]@{ProcessId = $PID; Handle = $Object.Handle.DangerousGetHandle().ToInt32() }
     $obj | ConvertTo-Json -Compress
@@ -48,7 +48,7 @@ Specify the process ID to import from.
 .PARAMETER Handle
 Specify the handle value to import from.
 .OUTPUTS
-NtApiDotNet.NtObject (the best available type).
+NtCoreLib.NtObject (the best available type).
 .EXAMPLE
 Import-NtObject '{"ProcessId":3300,"Handle":2660}'
 Import an object from a JSON string.
@@ -72,7 +72,7 @@ function Import-NtObject {
             Import-NtObject -ProcessId $obj.ProcessId -Handle $obj.Handle
         }
         "FromPid" {
-            Use-NtObject($generic = [NtApiDotNet.NtGeneric]::DuplicateFrom($ProcessId, $Handle)) {
+            Use-NtObject($generic = [NtCoreLib.NtGeneric]::DuplicateFrom($ProcessId, $Handle)) {
                 $generic.ToTypedObject()
             }
         }
@@ -99,7 +99,7 @@ function Resolve-NtObjectAddress {
     [CmdletBinding()]
     param (
         [parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
-        [NtApiDotNet.NtObject[]]$Objects,
+        [NtCoreLib.NtObject[]]$Objects,
         [switch]$PassThru
     )
     BEGIN {
@@ -109,7 +109,7 @@ function Resolve-NtObjectAddress {
         $objs += $Objects
     }
     END {
-        [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
+        [NtCoreLib.NtSystemInfo]::ResolveObjectAddress([NtCoreLib.NtObject[]]$objs)
         if ($PassThru) {
             $objs | Select-Object -ExpandProperty Address | Write-Output
         }
@@ -128,7 +128,7 @@ Specify the own the handle (closed when object is disposed).
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtObject
+NtCoreLib.NtObject
 .EXAMPLE
 Get-NtObjectFromHandle -Handle 0x1234
 Get an object from handle 0x1234.
@@ -143,8 +143,8 @@ function Get-NtObjectFromHandle {
         [switch]$OwnsHandle
     )
 
-    $temp_handle = [NtApiDotNet.SafeKernelObjectHandle]::new($Handle, $false)
-    [NtApiDotNet.NtType]::GetTypeForHandle($temp_handle, $true).FromHandle($Handle, $OwnsHandle)
+    $temp_handle = [NtCoreLib.Native.SafeHandles.SafeKernelObjectHandle]::new($Handle, $false)
+    [NtCoreLib.NtType]::GetTypeForHandle($temp_handle, $true).FromHandle($Handle, $OwnsHandle)
 }
 
 <#
@@ -182,9 +182,9 @@ function Close-NtObject {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromObject", ValueFromPipeline)]
-        [NtApiDotNet.NtObject]$Object,
+        [NtCoreLib.NtObject]$Object,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProcess")]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromProcessId")]
         [int]$ProcessId,
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromProcess")]
@@ -195,16 +195,16 @@ function Close-NtObject {
         [parameter(Mandatory, ParameterSetName = "FromCurrentProcessSafe")]
         [switch]$CurrentProcess,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromCurrentProcessSafe")]
-        [NtApiDotNet.SafeKernelObjectHandle]$SafeHandle
+        [NtCoreLib.Native.SafeHandles.SafeKernelObjectHandle]$SafeHandle
     )
 
     PROCESS {
         switch ($PsCmdlet.ParameterSetName) {
             "FromObject" { $Object.Close() }
-            "FromProcess" { [NtApiDotNet.NtObject]::CloseHandle($Process, $Handle) }
-            "FromProcessId" { [NtApiDotNet.NtObject]::CloseHandle($ProcessId, $Handle) }
-            "FromCurrentProcess" { [NtApiDotNet.NtObject]::CloseHandle($Handle) }
-            "FromCurrentProcessSafe" { [NtApiDotNet.NtObject]::CloseHandle($SafeHandle) }
+            "FromProcess" { [NtCoreLib.NtObject]::CloseHandle($Process, $Handle) }
+            "FromProcessId" { [NtCoreLib.NtObject]::CloseHandle($ProcessId, $Handle) }
+            "FromCurrentProcess" { [NtCoreLib.NtObject]::CloseHandle($Handle) }
+            "FromCurrentProcessSafe" { [NtCoreLib.NtObject]::CloseHandle($SafeHandle) }
         }
     }
 }
@@ -231,9 +231,9 @@ function Get-NtObjectInformationClass {
     [CmdletBinding(DefaultParameterSetName = "FromType")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromType")]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromObject")]
-        [NtApiDotNet.NtObject]$Object,
+        [NtCoreLib.NtObject]$Object,
         [Parameter(ParameterSetName = "FromObject")]
         [Parameter(ParameterSetName = "FromType")]
         [switch]$Set,
@@ -276,9 +276,9 @@ bool
 function Compare-NtObject {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.NtObject]$Left,
+        [NtCoreLib.NtObject]$Left,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.NtObject]$Right
+        [NtCoreLib.NtObject]$Right
     )
     $Left.SameObject($Right) | Write-Output
 }
@@ -317,7 +317,7 @@ function Test-NtObject {
         [parameter(ParameterSetName = "FromPath")]
         [string]$TypeName,
         [parameter(ParameterSetName = "FromPath")]
-        [NtApiDotNet.NtObject]$Root
+        [NtCoreLib.NtObject]$Root
     )
     switch ($PsCmdlet.ParameterSetName) {
         "FromPath" {
@@ -360,10 +360,10 @@ function New-NtObjectAttributes {
     Param(
         [Parameter(Position = 0)]
         [string]$Name,
-        [NtApiDotNet.NtObject]$Root,
-        [NtApiDotNet.AttributeFlags]$Attributes = "None",
-        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.NtObject]$Root,
+        [NtCoreLib.AttributeFlags]$Attributes = "None",
+        [NtCoreLib.Security.Token.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [string]$Sddl
     )
 
@@ -372,5 +372,5 @@ function New-NtObjectAttributes {
         $sd = New-NtSecurityDescriptor -Sddl $Sddl
     }
 
-    [NtApiDotNet.ObjectAttributes]::new($Name, $Attributes, [NtApiDotNet.NtObject]$Root, $SecurityQualityOfService, $sd)
+    [NtCoreLib.ObjectAttributes]::new($Name, $Attributes, [NtCoreLib.NtObject]$Root, $SecurityQualityOfService, $sd)
 }

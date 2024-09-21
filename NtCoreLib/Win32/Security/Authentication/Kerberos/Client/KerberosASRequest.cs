@@ -12,66 +12,65 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Class to represent an AS request with a known encryption key.
+/// </summary>
+public sealed class KerberosASRequest : KerberosASRequestBase
 {
+    #region Public Properties
     /// <summary>
-    /// Class to represent an AS request with a known encryption key.
+    /// The key for the principal.
     /// </summary>
-    public sealed class KerberosASRequest : KerberosASRequestBase
+    public KerberosAuthenticationKey Key { get; }
+
+    /// <summary>
+    /// Disable sending initial pre-authentication.
+    /// </summary>
+    public bool DisablePreAuthentication { get; set; }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="key">The kerberos key for the user.</param>
+    public KerberosASRequest(KerberosAuthenticationKey key) 
+        : this(key, key?.Name, key?.Realm)
     {
-        #region Public Properties
-        /// <summary>
-        /// The key for the principal.
-        /// </summary>
-        public KerberosAuthenticationKey Key { get; }
-
-        /// <summary>
-        /// Disable sending initial pre-authentication.
-        /// </summary>
-        public bool DisablePreAuthentication { get; set; }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="key">The kerberos key for the user.</param>
-        public KerberosASRequest(KerberosAuthenticationKey key) 
-            : this(key, key?.Name, key?.Realm)
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="key">The kerberos key for the user.</param>
-        /// <param name="client_name">The client name for the ticket.</param>
-        /// <param name="realm">The client and server realm realm.</param>
-        public KerberosASRequest(KerberosAuthenticationKey key, KerberosPrincipalName client_name, string realm)
-        {
-            Key = key ?? throw new ArgumentNullException(nameof(key));
-            ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
-            Realm = realm ?? throw new ArgumentNullException(nameof(realm));
-        }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Convert the request to a builder.
-        /// </summary>
-        /// <returns>The builder.</returns>
-        public override KerberosKDCRequestBuilder ToBuilder()
-        {
-            var ret = base.ToBuilder();
-            if (!DisablePreAuthentication)
-            {
-                ret.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, Key));
-            }
-            return ret;
-        }
-        #endregion
     }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="key">The kerberos key for the user.</param>
+    /// <param name="client_name">The client name for the ticket.</param>
+    /// <param name="realm">The client and server realm realm.</param>
+    public KerberosASRequest(KerberosAuthenticationKey key, KerberosPrincipalName client_name, string realm)
+    {
+        Key = key ?? throw new ArgumentNullException(nameof(key));
+        ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
+        Realm = realm ?? throw new ArgumentNullException(nameof(realm));
+    }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Convert the request to a builder.
+    /// </summary>
+    /// <returns>The builder.</returns>
+    public override KerberosKDCRequestBuilder ToBuilder()
+    {
+        var ret = base.ToBuilder();
+        if (!DisablePreAuthentication)
+        {
+            ret.AddPreAuthenticationData(KerberosPreAuthenticationDataEncTimestamp.Create(KerberosTime.Now, Key));
+        }
+        return ret;
+    }
+    #endregion
 }

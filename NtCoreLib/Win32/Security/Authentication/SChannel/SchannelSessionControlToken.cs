@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
+using NtCoreLib.Utilities.Data;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Class to represent an Schannel shutdown control token.
+/// </summary>
+public sealed class SchannelSessionControlToken : SchannelControlToken
 {
+    private const int SCHANNEL_SESSION = 3;
+    private readonly SchannelSessionFlags _flags;
+
     /// <summary>
-    /// Class to represent an Schannel shutdown control token.
+    /// Constructor.
     /// </summary>
-    public sealed class SchannelSessionControlToken : SchannelControlToken
+    /// <param name="flags">The session flags.</param>
+    public SchannelSessionControlToken(SchannelSessionFlags flags)
     {
-        private const int SCHANNEL_SESSION = 3;
-        private readonly SchannelSessionFlags _flags;
+        _flags = flags;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="flags">The session flags.</param>
-        public SchannelSessionControlToken(SchannelSessionFlags flags)
-        {
-            _flags = flags;
-        }
-
-        private protected override void WriteBuffer(DataWriter writer)
-        {
-            writer.Write(SCHANNEL_SESSION);
-            writer.Write((int)_flags);
-        }
+    private protected override void WriteBuffer(DataWriter writer)
+    {
+        writer.Write(SCHANNEL_SESSION);
+        writer.Write((int)_flags);
     }
 }

@@ -14,23 +14,22 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2ReadResponsePacket : Smb2ResponsePacket
-    {
-        public byte[] Data { get; private set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
-        {
-            if (reader.ReadUInt16() != 17)
-                throw new InvalidDataException("Invalid response size for READ packet.");
-            int offset = reader.ReadByte();
-            // Reserved
-            reader.ReadByte();
-            int length = reader.ReadInt32();
-            // Ignore remaining reserved fields.
-            reader.BaseStream.Position = offset;
-            Data = reader.ReadAllBytes(length);
-        }
+internal sealed class Smb2ReadResponsePacket : Smb2ResponsePacket
+{
+    public byte[] Data { get; private set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 17)
+            throw new InvalidDataException("Invalid response size for READ packet.");
+        int offset = reader.ReadByte();
+        // Reserved
+        reader.ReadByte();
+        int length = reader.ReadInt32();
+        // Ignore remaining reserved fields.
+        reader.BaseStream.Position = offset;
+        Data = reader.ReadAllBytes(length);
     }
 }

@@ -14,41 +14,40 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.Misc
+namespace NtCoreLib.Utilities.Misc;
+
+/// <summary>
+/// Class which calls a delegate on dispose.
+/// </summary>
+public sealed class CallOnDispose : IDisposable
 {
+    private readonly Action _action;
+    private bool _disposed;
+
     /// <summary>
-    /// Class which calls a delegate on dispose.
+    /// Constructor.
     /// </summary>
-    public sealed class CallOnDispose : IDisposable
+    /// <param name="action">The delegate to call on dispose.</param>
+    public CallOnDispose(Action action)
     {
-        private readonly Action _action;
-        private bool _disposed;
+        _action = action;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="action">The delegate to call on dispose.</param>
-        public CallOnDispose(Action action)
+    /// <summary>
+    /// Dispose and call the action.
+    /// </summary>
+    public void Dispose()
+    {
+        try
         {
-            _action = action;
+            if (!_disposed)
+            {
+                _disposed = true;
+            }
+            _action();
         }
-
-        /// <summary>
-        /// Dispose and call the action.
-        /// </summary>
-        public void Dispose()
+        catch
         {
-            try
-            {
-                if (!_disposed)
-                {
-                    _disposed = true;
-                }
-                _action();
-            }
-            catch
-            {
-            }
         }
     }
 }

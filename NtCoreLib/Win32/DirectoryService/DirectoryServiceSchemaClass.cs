@@ -14,82 +14,82 @@
 
 using System;
 using System.Collections.Generic;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Class to represent a directory service schema class.
+/// </summary>
+public sealed class DirectoryServiceSchemaClass : DirectoryServiceSchemaObject
 {
     /// <summary>
-    /// Class to represent a directory service schema class.
+    /// The subclass schema name.
     /// </summary>
-    public sealed class DirectoryServiceSchemaClass : DirectoryServiceSchemaObject
+    public string SubClassOf { get; }
+
+    /// <summary>
+    /// List of attributes the class can contain.
+    /// </summary>
+    public IReadOnlyList<DirectoryServiceSchemaClassAttribute> Attributes { get; }
+
+    /// <summary>
+    /// The default security descriptor.
+    /// </summary>
+    public SecurityDescriptor DefaultSecurityDescriptor { get; }
+
+    /// <summary>
+    /// The default security descriptor in SDDL format.
+    /// </summary>
+    public string DefaultSecurityDescriptorSddl { get; }
+
+    /// <summary>
+    /// The list of auxiliary classes for this class.
+    /// </summary>
+    public IReadOnlyList<DirectoryServiceReferenceClass> AuxiliaryClasses { get; }
+
+    /// <summary>
+    /// The category of schema class.
+    /// </summary>
+    public DirectoryServiceSchemaClassCategory Category { get; }
+
+    /// <summary>
+    /// The list of possible superior classes for this class.
+    /// </summary>
+    public IReadOnlyList<DirectoryServiceReferenceClass> PossibleSuperiors { get; }
+
+    /// <summary>
+    /// Possible inferiors of the class.
+    /// </summary>
+    public IReadOnlyList<string> PossibleInferiors { get; }
+
+    internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
+        string name, string ldap_name, string description, string object_class, 
+        bool system_only, string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
+        string default_security_desc, List<DirectoryServiceReferenceClass> auxiliary_classes,
+        List<DirectoryServiceReferenceClass> superior_classes, int category, string[] possible_inferiors)
+        : base(domain, dn, schema_id, name, ldap_name, description, object_class, system_only)
     {
-        /// <summary>
-        /// The subclass schema name.
-        /// </summary>
-        public string SubClassOf { get; }
-
-        /// <summary>
-        /// List of attributes the class can contain.
-        /// </summary>
-        public IReadOnlyList<DirectoryServiceSchemaClassAttribute> Attributes { get; }
-
-        /// <summary>
-        /// The default security descriptor.
-        /// </summary>
-        public SecurityDescriptor DefaultSecurityDescriptor { get; }
-
-        /// <summary>
-        /// The default security descriptor in SDDL format.
-        /// </summary>
-        public string DefaultSecurityDescriptorSddl { get; }
-
-        /// <summary>
-        /// The list of auxiliary classes for this class.
-        /// </summary>
-        public IReadOnlyList<DirectoryServiceReferenceClass> AuxiliaryClasses { get; }
-
-        /// <summary>
-        /// The category of schema class.
-        /// </summary>
-        public DirectoryServiceSchemaClassCategory Category { get; }
-
-        /// <summary>
-        /// The list of possible superior classes for this class.
-        /// </summary>
-        public IReadOnlyList<DirectoryServiceReferenceClass> PossibleSuperiors { get; }
-
-        /// <summary>
-        /// Possible inferiors of the class.
-        /// </summary>
-        public IReadOnlyList<string> PossibleInferiors { get; }
-
-        internal DirectoryServiceSchemaClass(string domain, string dn, Guid schema_id, 
-            string name, string ldap_name, string description, string object_class, 
-            bool system_only, string subclass_of, List<DirectoryServiceSchemaClassAttribute> attributes, 
-            string default_security_desc, List<DirectoryServiceReferenceClass> auxiliary_classes,
-            List<DirectoryServiceReferenceClass> superior_classes, int category, string[] possible_inferiors)
-            : base(domain, dn, schema_id, name, ldap_name, description, object_class, system_only)
+        SubClassOf = subclass_of ?? string.Empty;
+        Attributes = attributes.AsReadOnly();
+        DefaultSecurityDescriptorSddl = default_security_desc;
+        if (!string.IsNullOrWhiteSpace(default_security_desc))
         {
-            SubClassOf = subclass_of ?? string.Empty;
-            Attributes = attributes.AsReadOnly();
-            DefaultSecurityDescriptorSddl = default_security_desc;
-            if (!string.IsNullOrWhiteSpace(default_security_desc))
-            {
-                DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, 
-                    DirectoryServiceUtils.NtType, true, false).GetResultOrDefault();
-            }
-            AuxiliaryClasses = auxiliary_classes.AsReadOnly();
-            PossibleSuperiors = superior_classes.AsReadOnly();
-            Category = (DirectoryServiceSchemaClassCategory)category;
-            PossibleInferiors = new List<string>(possible_inferiors ?? new string[0]).AsReadOnly();
+            DefaultSecurityDescriptor = SecurityDescriptor.Parse(default_security_desc, 
+                DirectoryServiceUtils.NtType, true, false).GetResultOrDefault();
         }
+        AuxiliaryClasses = auxiliary_classes.AsReadOnly();
+        PossibleSuperiors = superior_classes.AsReadOnly();
+        Category = (DirectoryServiceSchemaClassCategory)category;
+        PossibleInferiors = new List<string>(possible_inferiors ?? new string[0]).AsReadOnly();
+    }
 
-        internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
-            : this(domain, string.Empty, schema_id,
-                  schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
-                  string.Empty, false, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
-                  string.Empty, new List<DirectoryServiceReferenceClass>(), 
-                  new List<DirectoryServiceReferenceClass>(), 0, new string[0])
-        {
-        }
+    internal DirectoryServiceSchemaClass(string domain, Guid schema_id)
+        : this(domain, string.Empty, schema_id,
+              schema_id.ToString(), schema_id.ToString(), schema_id.ToString(),
+              string.Empty, false, string.Empty, new List<DirectoryServiceSchemaClassAttribute>(),
+              string.Empty, new List<DirectoryServiceReferenceClass>(), 
+              new List<DirectoryServiceReferenceClass>(), 0, new string[0])
+    {
     }
 }

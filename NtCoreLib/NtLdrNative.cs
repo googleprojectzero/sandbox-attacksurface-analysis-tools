@@ -14,58 +14,59 @@
 
 using System;
 using System.Runtime.InteropServices;
+using NtCoreLib.Kernel.Interop;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
-    public static partial class NtLdrNative
-    {
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus LdrLoadDll(
-            string DllPath,
-            OptionalInt32 DllCharacteristics,
-            UnicodeString DllName,
-            out IntPtr DllHandle
-        );
+public static partial class NtLdrNative
+{
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus LdrLoadDll(
+        string DllPath,
+        OptionalInt32 DllCharacteristics,
+        UnicodeString DllName,
+        out IntPtr DllHandle
+    );
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus LdrLoadDll(
-            IntPtr Flags,
-            OptionalInt32 DllCharacteristics,
-            UnicodeString DllName,
-            out IntPtr DllHandle
-        );
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus LdrLoadDll(
+        IntPtr Flags,
+        OptionalInt32 DllCharacteristics,
+        UnicodeString DllName,
+        out IntPtr DllHandle
+    );
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus LdrUnloadDll(
-            IntPtr DllHandle
-        );
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus LdrUnloadDll(
+        IntPtr DllHandle
+    );
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus LdrGetProcedureAddress(
-            IntPtr DllHandle,
-            [In] AnsiString ProcedureName,
-            int ProcedureNumber,
-            out IntPtr ProcedureAddress
-        );
-    }
-
-    [Flags]
-    public enum RtlImageNtHeaderExFlags
-    {
-        None = 0,
-        NoRangeCheck = 1,
-    }
-
-    public static partial class NtRtl
-    {
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus RtlImageNtHeaderEx(
-            RtlImageNtHeaderExFlags Flags,
-            IntPtr Base,
-            long Size,
-            out IntPtr OutHeaders // PIMAGE_NT_HEADERS
-        );
-    }
-#pragma warning restore 1591
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus LdrGetProcedureAddress(
+        IntPtr DllHandle,
+        [In] AnsiString ProcedureName,
+        int ProcedureNumber,
+        out IntPtr ProcedureAddress
+    );
 }
+
+[Flags]
+public enum RtlImageNtHeaderExFlags
+{
+    None = 0,
+    NoRangeCheck = 1,
+}
+
+public static partial class NtRtl
+{
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus RtlImageNtHeaderEx(
+        RtlImageNtHeaderExFlags Flags,
+        IntPtr Base,
+        long Size,
+        out IntPtr OutHeaders // PIMAGE_NT_HEADERS
+    );
+}
+#pragma warning restore 1591
+

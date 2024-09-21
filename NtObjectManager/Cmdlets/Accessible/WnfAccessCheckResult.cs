@@ -12,41 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="description">Access check result for a WNF notification.</para>
+/// </summary>
+public class WnfAccessCheckResult : CommonAccessCheckResult
 {
     /// <summary>
-    /// <para type="description">Access check result for a WNF notification.</para>
+    /// Get the state name for this WNF entry.
     /// </summary>
-    public class WnfAccessCheckResult : CommonAccessCheckResult
+    public ulong StateName { get; }
+
+    /// <summary>
+    /// Get the associated lifetime for the state name.
+    /// </summary>
+    public WnfStateNameLifetime Lifetime { get; }
+
+    /// <summary>
+    /// Get if the state has subscribers.
+    /// </summary>
+    public bool SubscribersPresent { get; }
+
+    internal WnfAccessCheckResult(NtWnf wnf,
+            AccessMask granted_access,
+        SecurityDescriptor sd, TokenInformation token_info)
+        : base(wnf.Name,
+              "Wnf", granted_access,
+                NtWnf.GenericMapping, sd,
+                typeof(WnfAccessRights), false, token_info)
     {
-        /// <summary>
-        /// Get the state name for this WNF entry.
-        /// </summary>
-        public ulong StateName { get; }
-
-        /// <summary>
-        /// Get the associated lifetime for the state name.
-        /// </summary>
-        public WnfStateNameLifetime Lifetime { get; }
-
-        /// <summary>
-        /// Get if the state has subscribers.
-        /// </summary>
-        public bool SubscribersPresent { get; }
-
-        internal WnfAccessCheckResult(NtWnf wnf,
-                AccessMask granted_access,
-            SecurityDescriptor sd, TokenInformation token_info)
-            : base(wnf.Name,
-                  "Wnf", granted_access,
-                    NtWnf.GenericMapping, sd,
-                    typeof(WnfAccessRights), false, token_info)
-        {
-            StateName = wnf.StateName;
-            Lifetime = wnf.Lifetime;
-            SubscribersPresent = wnf.GetSubscribersPresent(false).GetResultOrDefault();
-        }
+        StateName = wnf.StateName;
+        Lifetime = wnf.Lifetime;
+        SubscribersPresent = wnf.GetSubscribersPresent(false).GetResultOrDefault();
     }
 }

@@ -12,48 +12,47 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent an IPsec kernel drop event.
+/// </summary>
+public sealed class FirewallNetEventIPsecKernelDrop : FirewallNetEvent
 {
     /// <summary>
-    /// Class to represent an IPsec kernel drop event.
+    /// Failure error code.
     /// </summary>
-    public sealed class FirewallNetEventIPsecKernelDrop : FirewallNetEvent
+    public NtStatus FailureStatus { get; }
+
+    /// <summary>
+    /// Connection direction.
+    /// </summary>
+    public FirewallDirectionType Direction { get; }
+
+    /// <summary>
+    /// Security parameter index.
+    /// </summary>
+    public uint Spi { get; }
+
+    /// <summary>
+    /// Filter ID.
+    /// </summary>
+    public ulong FilterId { get; }
+
+    /// <summary>
+    /// Layer ID.
+    /// </summary>
+    public ushort LayerId { get; }
+
+    internal FirewallNetEventIPsecKernelDrop(IFwNetEvent net_event) : base(net_event)
     {
-        /// <summary>
-        /// Failure error code.
-        /// </summary>
-        public NtStatus FailureStatus { get; }
-
-        /// <summary>
-        /// Connection direction.
-        /// </summary>
-        public FirewallDirectionType Direction { get; }
-
-        /// <summary>
-        /// Security parameter index.
-        /// </summary>
-        public uint Spi { get; }
-
-        /// <summary>
-        /// Filter ID.
-        /// </summary>
-        public ulong FilterId { get; }
-
-        /// <summary>
-        /// Layer ID.
-        /// </summary>
-        public ushort LayerId { get; }
-
-        internal FirewallNetEventIPsecKernelDrop(IFwNetEvent net_event) : base(net_event)
-        {
-            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>();
-            FailureStatus = inner_event.failureStatus;
-            Direction = inner_event.direction;
-            Spi = inner_event.spi;
-            FilterId = inner_event.filterId;
-            LayerId = inner_event.layerId;
-        }
+        var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_IPSEC_KERNEL_DROP0>();
+        FailureStatus = inner_event.failureStatus;
+        Direction = inner_event.direction;
+        Spi = inner_event.spi;
+        FilterId = inner_event.filterId;
+        LayerId = inner_event.layerId;
     }
 }

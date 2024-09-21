@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class to represent a loaded hive from the Hive List.
+/// </summary>
+public sealed class NtKeyHive
 {
     /// <summary>
-    /// Class to represent a loaded hive from the Hive List.
+    /// Path to the root key.
     /// </summary>
-    public sealed class NtKeyHive
-    {
-        /// <summary>
-        /// Path to the root key.
-        /// </summary>
-        public string KeyPath { get; }
-        /// <summary>
-        /// Path to the hive file.
-        /// </summary>
-        public string HivePath { get; }
+    public string KeyPath { get; }
+    /// <summary>
+    /// Path to the hive file.
+    /// </summary>
+    public string HivePath { get; }
 
-        internal NtKeyHive(string key_path, string hive_path)
-        {
-            KeyPath = key_path;
-            HivePath = hive_path;
-        }
+    internal NtKeyHive(string key_path, string hive_path)
+    {
+        KeyPath = key_path;
+        HivePath = hive_path;
     }
 }

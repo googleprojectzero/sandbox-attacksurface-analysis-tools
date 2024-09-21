@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// SID operation for an AuthZ client context.
+/// </summary>
+public enum AuthZSidOperation
 {
     /// <summary>
-    /// SID operation for an AuthZ client context.
+    /// None.
     /// </summary>
-    public enum AuthZSidOperation
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Replace all SIDs.
-        /// </summary>
-        ReplaceAll,
-        /// <summary>
-        /// Add SIDs.
-        /// </summary>
-        Add,
-        /// <summary>
-        /// Delete SIDs.
-        /// </summary>
-        Delete,
-        /// <summary>
-        /// Replace SIDs.
-        /// </summary>
-        Replace
-    }
+    None = 0,
+    /// <summary>
+    /// Replace all SIDs.
+    /// </summary>
+    ReplaceAll,
+    /// <summary>
+    /// Add SIDs.
+    /// </summary>
+    Add,
+    /// <summary>
+    /// Delete SIDs.
+    /// </summary>
+    Delete,
+    /// <summary>
+    /// Replace SIDs.
+    /// </summary>
+    Replace
 }

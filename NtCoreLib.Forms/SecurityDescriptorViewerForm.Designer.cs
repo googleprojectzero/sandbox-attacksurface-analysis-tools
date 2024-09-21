@@ -1,4 +1,4 @@
-﻿namespace NtApiDotNet.Forms
+﻿namespace NtCoreLib.Forms
 {
     partial class SecurityDescriptorViewerForm
     {
@@ -30,7 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SecurityDescriptorViewerForm));
             this.btnEditPermissions = new System.Windows.Forms.Button();
-            this.securityDescriptorViewerControl = new NtApiDotNet.Forms.SecurityDescriptorViewerControl();
+            this.securityDescriptorViewerControl = new NtCoreLib.Forms.SecurityDescriptorViewerControl();
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel.SuspendLayout();
             this.SuspendLayout();

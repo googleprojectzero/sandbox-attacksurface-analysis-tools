@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 
-namespace NtObjectManager.Provider
+namespace NtObjectManager.Provider;
+
+internal class NtObjectContainerEntry
 {
-    internal class NtObjectContainerEntry
+    public string Name { get; }
+
+    public string NtTypeName { get; }
+
+    public string FullPath { get; }
+
+    internal NtObjectContainerEntry(string full_path,
+        string name, string typename, bool is_directory)
     {
-        public string Name { get; }
-
-        public string NtTypeName { get; }
-
-        public string FullPath { get; }
-
-        internal NtObjectContainerEntry(string full_path,
-            string name, string typename, bool is_directory)
-        {
-            Name = name;
-            NtTypeName = typename;
-            FullPath = full_path;
-            IsDirectory = is_directory;
-        }
-
-        internal NtObjectContainerEntry(ObjectDirectoryInformation dir_info) 
-            : this(dir_info.FullPath, dir_info.Name, dir_info.NtTypeName,
-                dir_info.IsDirectory)
-        {
-        }
-
-        internal NtObjectContainerEntry(NtKey key)
-            : this(key.FullPath, key.Name, key.NtTypeName,
-                true)
-        {
-        }
-
-        public bool IsDirectory { get; }
+        Name = name;
+        NtTypeName = typename;
+        FullPath = full_path;
+        IsDirectory = is_directory;
     }
+
+    internal NtObjectContainerEntry(ObjectDirectoryInformation dir_info) 
+        : this(dir_info.FullPath, dir_info.Name, dir_info.NtTypeName,
+            dir_info.IsDirectory)
+    {
+    }
+
+    internal NtObjectContainerEntry(NtKey key)
+        : this(key.FullPath, key.Name, key.NtTypeName,
+            true)
+    {
+    }
+
+    public bool IsDirectory { get; }
 }

@@ -14,35 +14,34 @@
 
 using System;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// LDR static methods.
+/// </summary>
+public static class NtLdr
 {
     /// <summary>
-    /// LDR static methods.
+    /// Get address of a procedure in a mapped image.
     /// </summary>
-    public static class NtLdr
+    /// <param name="dll_handle">The handle to the mapped image.</param>
+    /// <param name="name">The name of the procedure to find.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The procedure address.</returns>
+    public static NtResult<IntPtr> GetProcedureAddress(IntPtr dll_handle, string name, bool throw_on_error)
     {
-        /// <summary>
-        /// Get address of a procedure in a mapped image.
-        /// </summary>
-        /// <param name="dll_handle">The handle to the mapped image.</param>
-        /// <param name="name">The name of the procedure to find.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The procedure address.</returns>
-        public static NtResult<IntPtr> GetProcedureAddress(IntPtr dll_handle, string name, bool throw_on_error)
-        {
-            return NtLdrNative.LdrGetProcedureAddress(dll_handle, 
-                new AnsiString(name), 0, out IntPtr addr).CreateResult(throw_on_error, () => addr);
-        }
+        return NtLdrNative.LdrGetProcedureAddress(dll_handle, 
+            new AnsiString(name), 0, out IntPtr addr).CreateResult(throw_on_error, () => addr);
+    }
 
-        /// <summary>
-        /// Get address of a procedure in a mapped image.
-        /// </summary>
-        /// <param name="dll_handle">The handle to the mapped image.</param>
-        /// <param name="name">The name of the procedure to find.</param>
-        /// <returns>The procedure address.</returns>
-        public static IntPtr GetProcedureAddress(IntPtr dll_handle, string name)
-        {
-            return GetProcedureAddress(dll_handle, name, true).Result;
-        }
+    /// <summary>
+    /// Get address of a procedure in a mapped image.
+    /// </summary>
+    /// <param name="dll_handle">The handle to the mapped image.</param>
+    /// <param name="name">The name of the procedure to find.</param>
+    /// <returns>The procedure address.</returns>
+    public static IntPtr GetProcedureAddress(IntPtr dll_handle, string name)
+    {
+        return GetProcedureAddress(dll_handle, name, true).Result;
     }
 }

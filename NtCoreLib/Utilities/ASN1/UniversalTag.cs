@@ -12,30 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1
+namespace NtCoreLib.Utilities.ASN1;
+
+internal enum UniversalTag
 {
-    internal enum UniversalTag
-    {
-        EOC = 0,
-        BOOLEAN = 1,
-        INTEGER = 2,
-        BIT_STRING = 3,
-        OCTET_STRING = 4,
-        NULL = 5,
-        OBJECT_IDENTIFIER = 6,
-        ENUMERATED = 10,
-        UTF8String = 12,
-        RELATIVE_OBJECT_IDENTIFIER = 13,
-        SEQUENCE = 16,
-        SET = 17,
-        PrintableString = 19,
-        T16String = 20,
-        IA5String = 22,
-        UTCTime = 23,
-        GeneralizedTime = 24,
-        GeneralString = 27,
-        UniversalString = 28,
-        CharacterString = 29,
-        BMPString = 30
-    }
+    EOC = 0,
+    BOOLEAN = 1,
+    INTEGER = 2,
+    BIT_STRING = 3,
+    OCTET_STRING = 4,
+    NULL = 5,
+    OBJECT_IDENTIFIER = 6,
+    ENUMERATED = 10,
+    UTF8String = 12,
+    RELATIVE_OBJECT_IDENTIFIER = 13,
+    SEQUENCE = 16,
+    SET = 17,
+    PrintableString = 19,
+    T16String = 20,
+    IA5String = 22,
+    UTCTime = 23,
+    GeneralizedTime = 24,
+    GeneralString = 27,
+    UniversalString = 28,
+    CharacterString = 29,
+    BMPString = 30
 }

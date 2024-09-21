@@ -12,40 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1.Builder;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Base class to represent TSSSP credentials.
+/// </summary>
+public abstract class TSCredentials
 {
     /// <summary>
-    /// Base class to represent TSSSP credentials.
+    /// Specify the type of credentials.
     /// </summary>
-    public abstract class TSCredentials
+    public TSCredentialsType CredType { get; }
+
+    /// <summary>
+    /// Convert the credentials to an array.
+    /// </summary>
+    /// <returns>The credential array.</returns>
+    public byte[] ToArray()
     {
-        /// <summary>
-        /// Specify the type of credentials.
-        /// </summary>
-        public TSCredentialsType CredType { get; }
-
-        /// <summary>
-        /// Convert the credentials to an array.
-        /// </summary>
-        /// <returns>The credential array.</returns>
-        public byte[] ToArray()
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
         {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, (int)CredType);
-                seq.WriteContextSpecific(1, GetCredentials());
-            }
-            return builder.ToArray();
+            seq.WriteContextSpecific(0, (int)CredType);
+            seq.WriteContextSpecific(1, GetCredentials());
         }
-
-        private protected TSCredentials(TSCredentialsType type)
-        {
-            CredType = type;
-        }
-
-        private protected abstract byte[] GetCredentials();
+        return builder.ToArray();
     }
+
+    private protected TSCredentials(TSCredentialsType type)
+    {
+        CredType = type;
+    }
+
+    private protected abstract byte[] GetCredentials();
 }

@@ -12,48 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Security.Interop;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Information for a trusted domain.
+/// </summary>
+public struct LsaTrustedDomainInformation
 {
     /// <summary>
-    /// Information for a trusted domain.
+    /// DNS name of domain.
     /// </summary>
-    public struct LsaTrustedDomainInformation
-    {
-        /// <summary>
-        /// DNS name of domain.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Flat name (NETBIOS) of domain.
-        /// </summary>
-        public string FlatName { get; }
-        /// <summary>
-        /// Domain SID.
-        /// </summary>
-        public Sid Sid { get; }
-        /// <summary>
-        /// Domain trust direction.
-        /// </summary>
-        public LsaTrustDirection TrustDirection { get; }
-        /// <summary>
-        /// Domain trust type.
-        /// </summary>
-        public LsaTrustType TrustType { get; }
-        /// <summary>
-        /// Domain trust attributes.
-        /// </summary>
-        public LsaTrustAttributes TrustAttributes { get; }
+    public string Name { get; }
+    /// <summary>
+    /// Flat name (NETBIOS) of domain.
+    /// </summary>
+    public string FlatName { get; }
+    /// <summary>
+    /// Domain SID.
+    /// </summary>
+    public Sid Sid { get; }
+    /// <summary>
+    /// Domain trust direction.
+    /// </summary>
+    public LsaTrustDirection TrustDirection { get; }
+    /// <summary>
+    /// Domain trust type.
+    /// </summary>
+    public LsaTrustType TrustType { get; }
+    /// <summary>
+    /// Domain trust attributes.
+    /// </summary>
+    public LsaTrustAttributes TrustAttributes { get; }
 
-        internal LsaTrustedDomainInformation(TRUSTED_DOMAIN_INFORMATION_EX info)
-        {
-            Name = info.Name.ToString();
-            FlatName = info.FlatName.ToString();
-            Sid = new Sid(info.Sid);
-            TrustDirection = info.TrustDirection;
-            TrustType = info.TrustType;
-            TrustAttributes = info.TrustAttributes;
-        }
+    internal LsaTrustedDomainInformation(TRUSTED_DOMAIN_INFORMATION_EX info)
+    {
+        Name = info.Name.ToString();
+        FlatName = info.FlatName.ToString();
+        Sid = new Sid(info.Sid);
+        TrustDirection = info.TrustDirection;
+        TrustType = info.TrustType;
+        TrustAttributes = info.TrustAttributes;
     }
 }

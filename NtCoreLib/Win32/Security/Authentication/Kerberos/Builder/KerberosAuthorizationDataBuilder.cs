@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Builder class for kerberos authorization data.
+/// </summary>
+public abstract class KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Builder class for kerberos authorization data.
+    /// Type of authentication data.
     /// </summary>
-    public abstract class KerberosAuthorizationDataBuilder
+    public KerberosAuthorizationDataType DataType { get; }
+
+    /// <summary>
+    /// Create the authorization data.
+    /// </summary>
+    /// <returns>The authorization data.</returns>
+    public abstract KerberosAuthorizationData Create();
+
+    private protected KerberosAuthorizationDataBuilder(KerberosAuthorizationDataType data_type)
     {
-        /// <summary>
-        /// Type of authentication data.
-        /// </summary>
-        public KerberosAuthorizationDataType DataType { get; }
-
-        /// <summary>
-        /// Create the authorization data.
-        /// </summary>
-        /// <returns>The authorization data.</returns>
-        public abstract KerberosAuthorizationData Create();
-
-        private protected KerberosAuthorizationDataBuilder(KerberosAuthorizationDataType data_type)
-        {
-            DataType = data_type;
-        }
+        DataType = data_type;
     }
 }

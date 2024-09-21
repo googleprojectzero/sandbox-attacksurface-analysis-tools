@@ -12,65 +12,64 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos;
-using NtApiDotNet.Win32.Security.Authentication.PKU2U;
+using NtCoreLib.Utilities.Data;
+using NtCoreLib.Win32.Security.Authentication.Kerberos;
+using NtCoreLib.Win32.Security.Authentication.PKU2U;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Class for a NEGOEX EXCHANGE_MESSAGE message.
+/// </summary>
+public sealed class NegoExMessageExchange : NegoExMessage
 {
     /// <summary>
-    /// Class for a NEGOEX EXCHANGE_MESSAGE message.
+    /// The authentication scheme selected.
     /// </summary>
-    public sealed class NegoExMessageExchange : NegoExMessage
+    public Guid AuthScheme { get; }
+
+    /// <summary>
+    /// The exchanged authentication token.
+    /// </summary>
+    public AuthenticationToken Exchange { get; }
+
+    private NegoExMessageExchange(NegoExMessageHeader header, Guid auth_scheme, AuthenticationToken exchange) : base(header)
     {
-        /// <summary>
-        /// The authentication scheme selected.
-        /// </summary>
-        public Guid AuthScheme { get; }
+        AuthScheme = auth_scheme;
+        Exchange = exchange;
+    }
 
-        /// <summary>
-        /// The exchanged authentication token.
-        /// </summary>
-        public AuthenticationToken Exchange { get; }
-
-        private NegoExMessageExchange(NegoExMessageHeader header, Guid auth_scheme, AuthenticationToken exchange) : base(header)
+    internal static NegoExMessageExchange Parse(NegoExMessageHeader header, byte[] data)
+    {
+        DataReader reader = new(data);
+        reader.Position = NegoExMessageHeader.HEADER_SIZE;
+        Guid auth_scheme = reader.ReadGuid();
+        byte[] exchange = ReadByteVector(reader, data);
+        AuthenticationToken token = null;
+        if (auth_scheme == NegoExAuthSchemes.PKU2U)
         {
-            AuthScheme = auth_scheme;
-            Exchange = exchange;
-        }
-
-        internal static NegoExMessageExchange Parse(NegoExMessageHeader header, byte[] data)
-        {
-            DataReader reader = new DataReader(data);
-            reader.Position = NegoExMessageHeader.HEADER_SIZE;
-            Guid auth_scheme = reader.ReadGuid();
-            byte[] exchange = ReadByteVector(reader, data);
-            AuthenticationToken token = null;
-            if (auth_scheme == NegoExAuthSchemes.PKU2U)
+            if (header.MessageType == NegoExMessageType.AcceptorMetaData || header.MessageType == NegoExMessageType.InitiatorMetaData)
             {
-                if (header.MessageType == NegoExMessageType.AcceptorMetaData || header.MessageType == NegoExMessageType.InitiatorMetaData)
+                if (PKU2UMetaDataAuthenticationToken.TryParse(exchange, 0, false, out PKU2UMetaDataAuthenticationToken pku2u_token))
                 {
-                    if (PKU2UMetaDataAuthenticationToken.TryParse(exchange, 0, false, out PKU2UMetaDataAuthenticationToken pku2u_token))
-                    {
-                        token = pku2u_token;
-                    }
-                }
-                else if (KerberosAuthenticationToken.TryParse(exchange, 0, false, out KerberosAuthenticationToken kerb_token))
-                {
-                    token = kerb_token;
+                    token = pku2u_token;
                 }
             }
-
-            return new NegoExMessageExchange(header, auth_scheme, token ?? new AuthenticationToken(exchange));
+            else if (KerberosAuthenticationToken.TryParse(exchange, 0, false, out KerberosAuthenticationToken kerb_token))
+            {
+                token = kerb_token;
+            }
         }
 
-        private protected override void InnerFormat(StringBuilder builder)
-        {
-            builder.AppendLine($"Auth Scheme      : {FormatAuthScheme(AuthScheme)}");
-            builder.AppendLine("Exchange         :");
-            builder.AppendLine(Exchange.Format().TrimEnd());
-        }
+        return new NegoExMessageExchange(header, auth_scheme, token ?? new AuthenticationToken(exchange));
+    }
+
+    private protected override void InnerFormat(StringBuilder builder)
+    {
+        builder.AppendLine($"Auth Scheme      : {FormatAuthScheme(AuthScheme)}");
+        builder.AppendLine("Exchange         :");
+        builder.AppendLine(Exchange.Format().TrimEnd());
     }
 }

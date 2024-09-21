@@ -12,201 +12,193 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Management.Automation;
 using NtObjectManager.Utils;
 using System.Net.Sockets;
-using NtApiDotNet.Net.Sockets;
 using System.Net;
+using NtCoreLib.Security.Token;
+using NtCoreLib.Net.Sockets.Security;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Invokes a script block while impersonating a token.</para>
+/// <para type="description">This cmdlet invokes a script block while impersonating a token. Optionally can impersonate the anonymous token directly.</para>
+/// </summary>
+/// <example>
+///   <code>Invoke-NtToken -Token $token -Script { Get-NtFile \Path\To\File }</code>
+///   <para>Open a file under impersonation.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Token $token -ImpersonationLevel Identification -Script { Get-NtToken -Impersonation -OpenAsSelf }</code>
+///   <para>Open the impersontation token under identification level impersonation.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Anonymous</code>
+///   <para>Open a process while impersonating the anonymous token.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -System</code>
+///   <para>Open a process while impersonating a system token. Needs administrator privileges.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Current -ImpersonationLevel Identification </code>
+///   <para>Open a process while impersonating a current token at identitification level.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Socket $socket</code>
+///   <para>Open a process while impersonating a secure socket.</para>
+/// </example>
+/// <example>
+///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Client $client</code>
+///   <para>Open a process while impersonating a secure TCP client.</para>
+/// </example>
+[Cmdlet(VerbsLifecycle.Invoke, "NtToken", DefaultParameterSetName = "FromToken")]
+[OutputType(typeof(object))]
+public sealed class InvokeNtTokenCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Invokes a script block while impersonating a token.</para>
-    /// <para type="description">This cmdlet invokes a script block while impersonating a token. Optionally can impersonate the anonymous token directly.</para>
+    /// <para type="description">Specify the token to impersonate.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Invoke-NtToken -Token $token -Script { Get-NtFile \Path\To\File }</code>
-    ///   <para>Open a file under impersonation.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Token $token -ImpersonationLevel Identification -Script { Get-NtToken -Impersonation -OpenAsSelf }</code>
-    ///   <para>Open the impersontation token under identification level impersonation.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Anonymous</code>
-    ///   <para>Open a process while impersonating the anonymous token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -System</code>
-    ///   <para>Open a process while impersonating a system token. Needs administrator privileges.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Current -ImpersonationLevel Identification </code>
-    ///   <para>Open a process while impersonating a current token at identitification level.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Socket $socket</code>
-    ///   <para>Open a process while impersonating a secure socket.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Client $client</code>
-    ///   <para>Open a process while impersonating a secure TCP client.</para>
-    /// </example>
-    [Cmdlet(VerbsLifecycle.Invoke, "NtToken", DefaultParameterSetName = "FromToken")]
-    [OutputType(typeof(object))]
-    public sealed class InvokeNtTokenCmdlet : PSCmdlet
+    [Parameter(ParameterSetName = "FromToken", Position = 0, Mandatory = true)]
+    public NtToken Token { get; set; }
+
+    /// <summary>
+    /// <para type="description">The script block to execute during impersonation.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromToken")]
+    [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
+    [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromCurrent")]
+    [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSystem")]
+    [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSocket")]
+    [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromTcpClient")]
+    public ScriptBlock Script { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to impersonate the current Token.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
+    public SwitchParameter Current { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to impersonate a system Token. Must be an administrator.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromSystem")]
+    public SwitchParameter System { get; set; }
+
+    /// <summary>
+    /// <para type="description">When the token is duplicated specify the impersonation level to use.</para>
+    /// </summary>
+    [Parameter(Position = 2, ParameterSetName = "FromToken")]
+    [Parameter(ParameterSetName = "FromCurrent")]
+    public SecurityImpersonationLevel ImpersonationLevel { get; set; }
+
+    /// <summary>
+    /// <para type="description">When the token is duplicated specify an Integrity Level to use.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromCurrent")]
+    public TokenIntegrityLevel? IntegrityLevel { get; set; }
+
+    /// <summary>
+    /// <para type="description">Impersonate the anonymous token and run the script.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromAnonymous")]
+    public SwitchParameter Anonymous { get; set; }
+
+    /// <summary>
+    /// <para type="description">Impersonate a secure socket.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromSocket")]
+    public Socket Socket { get; set; }
+
+    /// <summary>
+    /// <para type="description">Peer address for socket impersonation.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromSocket")]
+    public IPEndPoint PeerAddress { get; set; }
+
+    /// <summary>
+    /// <para type="description">Impersonate a secure TCP client.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromTcpClient")]
+    public TcpClient Client { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify an object to pass to the script.</para>
+    /// </summary>
+    [Parameter(ValueFromPipeline = true)]
+    public object InputObject { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public InvokeNtTokenCmdlet()
     {
-        /// <summary>
-        /// <para type="description">Specify the token to impersonate.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromToken", Position = 0, Mandatory = true)]
-        public NtToken Token { get; set; }
+        ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+    }
 
-        /// <summary>
-        /// <para type="description">The script block to execute during impersonation.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromToken")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromCurrent")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSystem")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSocket")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromTcpClient")]
-        public ScriptBlock Script { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to impersonate the current Token.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
-        public SwitchParameter Current { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to impersonate a system Token. Must be an administrator.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromSystem")]
-        public SwitchParameter System { get; set; }
-
-        /// <summary>
-        /// <para type="description">When the token is duplicated specify the impersonation level to use.</para>
-        /// </summary>
-        [Parameter(Position = 2, ParameterSetName = "FromToken")]
-        [Parameter(ParameterSetName = "FromCurrent")]
-        public SecurityImpersonationLevel ImpersonationLevel { get; set; }
-
-        /// <summary>
-        /// <para type="description">When the token is duplicated specify an Integrity Level to use.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromCurrent")]
-        public TokenIntegrityLevel? IntegrityLevel { get; set; }
-
-        /// <summary>
-        /// <para type="description">Impersonate the anonymous token and run the script.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromAnonymous")]
-        public SwitchParameter Anonymous { get; set; }
-
-        /// <summary>
-        /// <para type="description">Impersonate a secure socket.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromSocket")]
-        public Socket Socket { get; set; }
-
-        /// <summary>
-        /// <para type="description">Peer address for socket impersonation.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSocket")]
-        public IPEndPoint PeerAddress { get; set; }
-
-        /// <summary>
-        /// <para type="description">Impersonate a secure TCP client.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromTcpClient")]
-        public TcpClient Client { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify an object to pass to the script.</para>
-        /// </summary>
-        [Parameter(ValueFromPipeline = true)]
-        public object InputObject { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public InvokeNtTokenCmdlet()
+    private NtToken GetCurrentToken()
+    {
+        using var token = NtToken.OpenProcessToken();
+        using var new_token = token.DuplicateToken(ImpersonationLevel);
+        if (IntegrityLevel.HasValue)
         {
-            ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+            new_token.SetIntegrityLevel(IntegrityLevel.Value);
         }
+        return new_token.Duplicate();
+    }
 
-        private NtToken GetCurrentToken()
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        object obj = null;
+        if (ParameterSetName == "FromToken")
         {
-            using (var token = NtToken.OpenProcessToken())
+            if (Token.TokenType == TokenType.Impersonation && Token.ImpersonationLevel < ImpersonationLevel)
             {
-                using (var new_token = token.DuplicateToken(ImpersonationLevel))
-                {
-                    if (IntegrityLevel.HasValue)
-                    {
-                        new_token.SetIntegrityLevel(IntegrityLevel.Value);
-                    }
-                    return new_token.Duplicate();
-                }
+                throw new ArgumentException("Impersonation level can't be raised, specify an appropriate impersonation level");
+            }
+
+            obj = Token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+        }
+        else if (ParameterSetName == "FromCurrent")
+        {
+            using var token = GetCurrentToken();
+            obj = token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+        }
+        else if (ParameterSetName == "FromSystem")
+        {
+            using (PSUtils.ImpersonateSystem())
+            {
+                obj = PSUtils.InvokeWithArg(Script, InputObject);
             }
         }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        else if (ParameterSetName == "FromSocket")
         {
-            object obj = null;
-            if (ParameterSetName == "FromToken")
+            using (Socket.Impersonate(PeerAddress))
             {
-                if (Token.TokenType == TokenType.Impersonation && Token.ImpersonationLevel < ImpersonationLevel)
-                {
-                    throw new ArgumentException("Impersonation level can't be raised, specify an appropriate impersonation level");
-                }
-
-                obj = Token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+                obj = PSUtils.InvokeWithArg(Script, InputObject);
             }
-            else if (ParameterSetName == "FromCurrent")
+        }
+        else if (ParameterSetName == "FromTcpClient")
+        {
+            using (Client.Impersonate())
             {
-                using (var token = GetCurrentToken())
-                {
-                    obj = token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
-                }
+                obj = PSUtils.InvokeWithArg(Script, InputObject);
             }
-            else if (ParameterSetName == "FromSystem")
-            {
-                using (PSUtils.ImpersonateSystem())
-                {
-                    obj = PSUtils.InvokeWithArg(Script, InputObject);
-                }
-            }
-            else if (ParameterSetName == "FromSocket")
-            {
-                using (Socket.Impersonate(PeerAddress))
-                {
-                    obj = PSUtils.InvokeWithArg(Script, InputObject);
-                }
-            }
-            else if (ParameterSetName == "FromTcpClient")
-            {
-                using (Client.Impersonate())
-                {
-                    obj = PSUtils.InvokeWithArg(Script, InputObject);
-                }
-            }
-            else
-            {
-                using (var imp = NtThread.Current.ImpersonateAnonymousToken())
-                {
-                    obj = PSUtils.InvokeWithArg(Script, InputObject);
-                }
-            }
-            if (obj != null)
-            {
-                WriteObject(obj, true);
-            }
+        }
+        else
+        {
+            using var imp = NtThread.Current.ImpersonateAnonymousToken();
+            obj = PSUtils.InvokeWithArg(Script, InputObject);
+        }
+        if (obj != null)
+        {
+            WriteObject(obj, true);
         }
     }
 }

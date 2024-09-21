@@ -12,110 +12,110 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
+using NtCoreLib.Ndr.Rpc;
+using NtCoreLib.Utilities.Text;
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.EndpointMapper
+namespace NtCoreLib.Win32.Rpc.EndpointMapper;
+
+/// <summary>
+/// A floor for an RPC protocol tower.
+/// </summary>
+public sealed class RpcProtocolTowerFloor
 {
     /// <summary>
-    /// A floor for an RPC protocol tower.
+    /// The protocol identifier data.
     /// </summary>
-    public sealed class RpcProtocolTowerFloor
+    public byte[] ProtocolIdentifierData { get; }
+
+    /// <summary>
+    /// The related or address data.
+    /// </summary>
+    public byte[] RelatedOrAddressData { get; }
+
+    internal RpcProtocolTowerFloor(RpcSyntaxIdentifier if_id)
     {
-        /// <summary>
-        /// The protocol identifier data.
-        /// </summary>
-        public byte[] ProtocolIdentifierData { get; }
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write((byte)0xD);
+        writer.Write(if_id.Uuid.ToByteArray());
+        writer.Write(if_id.Version.Major);
+        ProtocolIdentifierData = stm.ToArray();
+        stm.SetLength(0);
+        writer.Write(if_id.Version.Minor);
+        RelatedOrAddressData = stm.ToArray();
+    }
 
-        /// <summary>
-        /// The related or address data.
-        /// </summary>
-        public byte[] RelatedOrAddressData { get; }
+    internal RpcProtocolTowerFloor(byte[] protocol_identifier, byte[] related)
+    {
+        ProtocolIdentifierData = protocol_identifier;
+        RelatedOrAddressData = related;
+    }
 
-        internal RpcProtocolTowerFloor(RpcInterfaceId if_id)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((byte)0xD);
-            writer.Write(if_id.Uuid.ToByteArray());
-            writer.Write((ushort)if_id.Version.Major);
-            ProtocolIdentifierData = stm.ToArray();
-            stm.SetLength(0);
-            writer.Write((ushort)if_id.Version.Minor);
-            RelatedOrAddressData = stm.ToArray();
-        }
+    internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, byte[] data)
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write((byte)protseq);
+        ProtocolIdentifierData = stm.ToArray();
+        RelatedOrAddressData = data;
+    }
 
-        internal RpcProtocolTowerFloor(byte[] protocol_identifier, byte[] related)
-        {
-            ProtocolIdentifierData = protocol_identifier;
-            RelatedOrAddressData = related;
-        }
+    internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, string data) 
+        : this(protseq, BinaryEncoding.Instance.GetBytes(data + "\0"))
+    {
+    }
 
-        internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, byte[] data)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((byte)protseq);
-            ProtocolIdentifierData = stm.ToArray();
-            RelatedOrAddressData = data;
-        }
+    internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, ushort minor_version)
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write((byte)type);
+        ProtocolIdentifierData = stm.ToArray();
+        stm.SetLength(0);
+        writer.Write(minor_version);
+        RelatedOrAddressData = stm.ToArray();
+    }
 
-        internal RpcProtocolTowerFloor(RpcProtocolSequenceIdentifier protseq, string data) 
-            : this(protseq, BinaryEncoding.Instance.GetBytes(data + "\0"))
-        {
-        }
+    internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, byte[] data)
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write((byte)type);
+        ProtocolIdentifierData = stm.ToArray();
+        stm.SetLength(0);
+        writer.Write(data);
+        RelatedOrAddressData = stm.ToArray();
+    }
 
-        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, ushort minor_version)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((byte)type);
-            ProtocolIdentifierData = stm.ToArray();
-            stm.SetLength(0);
-            writer.Write(minor_version);
-            RelatedOrAddressData = stm.ToArray();
-        }
+    internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, string data) 
+        : this(type, BinaryEncoding.Instance.GetBytes(data + '\0'))
+    {
+    }
 
-        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, byte[] data)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((byte)type);
-            ProtocolIdentifierData = stm.ToArray();
-            stm.SetLength(0);
-            writer.Write(data);
-            RelatedOrAddressData = stm.ToArray();
-        }
+    internal RpcSyntaxIdentifier? GetIdentifier()
+    {
+        if (ProtocolIdentifierData.Length != 19)
+            return null;
+        if (ProtocolIdentifierData[0] != 0xD)
+            return null;
+        if (RelatedOrAddressData.Length != 2)
+            return null;
+        byte[] guid = new byte[16];
+        Buffer.BlockCopy(ProtocolIdentifierData, 1, guid, 0, guid.Length);
 
-        internal RpcProtocolTowerFloor(RpcProtocolIdentifier type, string data) 
-            : this(type, BinaryEncoding.Instance.GetBytes(data + '\0'))
-        {
-        }
+        return new RpcSyntaxIdentifier(new Guid(guid), new RpcVersion(
+            BitConverter.ToUInt16(ProtocolIdentifierData, 17),
+            BitConverter.ToUInt16(RelatedOrAddressData, 0)
+            ));
+    }
 
-        internal RpcInterfaceId GetIdentifier()
-        {
-            if (ProtocolIdentifierData.Length != 19)
-                return null;
-            if (ProtocolIdentifierData[0] != 0xD)
-                return null;
-            if (RelatedOrAddressData.Length != 2)
-                return null;
-            byte[] guid = new byte[16];
-            Buffer.BlockCopy(ProtocolIdentifierData, 1, guid, 0, guid.Length);
-
-            return new RpcInterfaceId(new Guid(guid), new Version(
-                BitConverter.ToUInt16(ProtocolIdentifierData, 17),
-                BitConverter.ToUInt16(RelatedOrAddressData, 0)
-                ));
-        }
-
-        internal void ToWriter(BinaryWriter writer)
-        {
-            writer.Write((ushort)ProtocolIdentifierData.Length);
-            writer.Write(ProtocolIdentifierData);
-            writer.Write((ushort)RelatedOrAddressData.Length);
-            writer.Write(RelatedOrAddressData);
-        }
+    internal void ToWriter(BinaryWriter writer)
+    {
+        writer.Write((ushort)ProtocolIdentifierData.Length);
+        writer.Write(ProtocolIdentifierData);
+        writer.Write((ushort)RelatedOrAddressData.Length);
+        writer.Write(RelatedOrAddressData);
     }
 }

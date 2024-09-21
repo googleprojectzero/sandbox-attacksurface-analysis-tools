@@ -15,84 +15,83 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
+
+/// <summary>
+/// Base class for an NTLM authentication authentication token builder.
+/// </summary>
+public abstract class NtlmAuthenticateAuthenticationTokenBuilderBase : NtlmAuthenticationTokenBuilder
 {
+    #region Public Properties
     /// <summary>
-    /// Base class for an NTLM authentication authentication token builder.
+    /// Domain name.
     /// </summary>
-    public abstract class NtlmAuthenticateAuthenticationTokenBuilderBase : NtlmAuthenticationTokenBuilder
+    public string Domain { get; set; }
+    /// <summary>
+    /// Workstation name.
+    /// </summary>
+    public string Workstation { get; set; }
+    /// <summary>
+    /// Username.
+    /// </summary>
+    public string UserName { get; set; }
+    /// <summary>
+    /// NTLM version.
+    /// </summary>
+    public Version Version { get; set; }
+    /// <summary>
+    /// Encrypted session key.
+    /// </summary>
+    public byte[] EncryptedSessionKey { get; set; }
+    /// <summary>
+    /// LM Challenge Response.
+    /// </summary>
+    public byte[] LmChallengeResponse { get; set; }
+    /// <summary>
+    /// Message integrity code.
+    /// </summary>
+    public byte[] MessageIntegrityCode { get; set; }
+    #endregion
+
+    #region Private Members
+    private const int BASE_OFFSET = 72;
+
+    private protected NtlmAuthenticateAuthenticationTokenBuilderBase() 
+        : base(NtlmMessageType.Authenticate)
     {
-        #region Public Properties
-        /// <summary>
-        /// Domain name.
-        /// </summary>
-        public string Domain { get; set; }
-        /// <summary>
-        /// Workstation name.
-        /// </summary>
-        public string Workstation { get; set; }
-        /// <summary>
-        /// Username.
-        /// </summary>
-        public string UserName { get; set; }
-        /// <summary>
-        /// NTLM version.
-        /// </summary>
-        public Version Version { get; set; }
-        /// <summary>
-        /// Encrypted session key.
-        /// </summary>
-        public byte[] EncryptedSessionKey { get; set; }
-        /// <summary>
-        /// LM Challenge Response.
-        /// </summary>
-        public byte[] LmChallengeResponse { get; set; }
-        /// <summary>
-        /// Message integrity code.
-        /// </summary>
-        public byte[] MessageIntegrityCode { get; set; }
-        #endregion
-
-        #region Private Members
-        private const int BASE_OFFSET = 72;
-
-        private protected NtlmAuthenticateAuthenticationTokenBuilderBase() 
-            : base(NtlmMessageType.Authenticate)
-        {
-        }
-
-        private protected abstract byte[] GetNtChallenge();
-
-        private protected override byte[] GetBytes()
-        {
-            var flags = Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version | 
-                NtlmNegotiateFlags.TargetTypeDomain | NtlmNegotiateFlags.TargetTypeServer | NtlmNegotiateFlags.TargetTypeShare);
-            bool unicode = flags.HasFlagSet(NtlmNegotiateFlags.Unicode);
-            if (EncryptedSessionKey != null && EncryptedSessionKey.Length > 0)
-                flags |= NtlmNegotiateFlags.KeyExchange;
-            if (Version != null)
-                flags |= NtlmNegotiateFlags.Version;
-
-            byte[] mic = MessageIntegrityCode ?? Array.Empty<byte>();
-            if (mic.Length != 0 && mic.Length < 16)
-                    throw new ArgumentException("MIC must be 16 bytes in size if present.", nameof(MessageIntegrityCode));
-            int base_offset = BASE_OFFSET + mic.Length;
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            MemoryStream payload = new MemoryStream();
-            writer.WriteBinary(LmChallengeResponse, base_offset, payload);
-            writer.WriteBinary(GetNtChallenge(), base_offset, payload);
-            writer.WriteString(Domain, unicode, base_offset, payload);
-            writer.WriteString(UserName, unicode, base_offset, payload);
-            writer.WriteString(Workstation, unicode, base_offset, payload);
-            writer.WriteBinary(EncryptedSessionKey, base_offset, payload);
-            writer.Write((uint)flags);
-            writer.WriteVersion(Version);
-            writer.Write(mic);
-            writer.Write(payload.ToArray());
-            return stm.ToArray();
-        }
-        #endregion
     }
+
+    private protected abstract byte[] GetNtChallenge();
+
+    private protected override byte[] GetBytes()
+    {
+        var flags = Flags & ~(NtlmNegotiateFlags.KeyExchange | NtlmNegotiateFlags.Version | 
+            NtlmNegotiateFlags.TargetTypeDomain | NtlmNegotiateFlags.TargetTypeServer | NtlmNegotiateFlags.TargetTypeShare);
+        bool unicode = flags.HasFlagSet(NtlmNegotiateFlags.Unicode);
+        if (EncryptedSessionKey != null && EncryptedSessionKey.Length > 0)
+            flags |= NtlmNegotiateFlags.KeyExchange;
+        if (Version != null)
+            flags |= NtlmNegotiateFlags.Version;
+
+        byte[] mic = MessageIntegrityCode ?? Array.Empty<byte>();
+        if (mic.Length != 0 && mic.Length < 16)
+                throw new ArgumentException("MIC must be 16 bytes in size if present.", nameof(MessageIntegrityCode));
+        int base_offset = BASE_OFFSET + mic.Length;
+
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        MemoryStream payload = new();
+        writer.WriteBinary(LmChallengeResponse, base_offset, payload);
+        writer.WriteBinary(GetNtChallenge(), base_offset, payload);
+        writer.WriteString(Domain, unicode, base_offset, payload);
+        writer.WriteString(UserName, unicode, base_offset, payload);
+        writer.WriteString(Workstation, unicode, base_offset, payload);
+        writer.WriteBinary(EncryptedSessionKey, base_offset, payload);
+        writer.Write((uint)flags);
+        writer.WriteVersion(Version);
+        writer.Write(mic);
+        writer.Write(payload.ToArray());
+        return stm.ToArray();
+    }
+    #endregion
 }

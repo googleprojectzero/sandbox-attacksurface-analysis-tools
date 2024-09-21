@@ -14,20 +14,19 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2LogoffRequestPackaget : Smb2RequestPacket
 {
-    internal sealed class Smb2LogoffRequestPackaget : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 4;
+
+    public Smb2LogoffRequestPackaget() : base(Smb2Command.LOGOFF)
     {
-        private const ushort STRUCT_SIZE = 4;
+    }
 
-        public Smb2LogoffRequestPackaget() : base(Smb2Command.LOGOFF)
-        {
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.WriteUInt16(0);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.WriteUInt16(0);
     }
 }

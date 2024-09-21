@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Schannel session flags.
+/// </summary>
+public enum SchannelSessionFlags
 {
-    /// <summary>
-    /// Schannel session flags.
-    /// </summary>
-    public enum SchannelSessionFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("SSL_SESSION_ENABLE_RECONNECTS")]
-        EnableReconnects = 1,
-        [SDKName("SSL_SESSION_DISABLE_RECONNECTS")]
-        DisableReconnects = 2,
+    [SDKName("SSL_SESSION_ENABLE_RECONNECTS")]
+    EnableReconnects = 1,
+    [SDKName("SSL_SESSION_DISABLE_RECONNECTS")]
+    DisableReconnects = 2,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

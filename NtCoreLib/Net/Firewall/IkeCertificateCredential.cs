@@ -12,56 +12,55 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a certificate credential.
+/// </summary>
+public sealed class IkeCertificateCredential : IkeCredential
 {
     /// <summary>
-    /// Class to represent a certificate credential.
+    /// Certificate subject name.
     /// </summary>
-    public sealed class IkeCertificateCredential : IkeCredential
+    public X500DistinguishedName SubjectName { get; }
+    /// <summary>
+    /// Certificatehash.
+    /// </summary>
+    public byte[] CertHash { get; }
+    /// <summary>
+    /// Flags.
+    /// </summary>
+    public IkeextCertCredentialFlags Flags;
+    /// <summary>
+    /// Certificate.
+    /// </summary>
+    public X509Certificate2 Certificate { get; }
+
+    internal IkeCertificateCredential(IKEEXT_CREDENTIAL1 creds) : base(creds)
     {
-        /// <summary>
-        /// Certificate subject name.
-        /// </summary>
-        public X500DistinguishedName SubjectName { get; }
-        /// <summary>
-        /// Certificatehash.
-        /// </summary>
-        public byte[] CertHash { get; }
-        /// <summary>
-        /// Flags.
-        /// </summary>
-        public IkeextCertCredentialFlags Flags;
-        /// <summary>
-        /// Certificate.
-        /// </summary>
-        public X509Certificate2 Certificate { get; }
-
-        internal IkeCertificateCredential(IKEEXT_CREDENTIAL1 creds) : base(creds)
+        var cred = creds.cred.ReadStruct<IKEEXT_CERTIFICATE_CREDENTIAL1>();
+        SubjectName = new X500DistinguishedName(cred.subjectName.ToArray());
+        CertHash = cred.certHash.ToArray();
+        Flags = cred.flags;
+        try
         {
-            var cred = creds.cred.ReadStruct<IKEEXT_CERTIFICATE_CREDENTIAL1>();
-            SubjectName = new X500DistinguishedName(cred.subjectName.ToArray());
-            CertHash = cred.certHash.ToArray();
-            Flags = cred.flags;
-            try
-            {
-                Certificate = new X509Certificate2(cred.certificate.ToArray());
-            }
-            catch (CryptographicException)
-            {
-            }
+            Certificate = new X509Certificate2(cred.certificate.ToArray());
         }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The pair as a string.</returns>
-        public override string ToString()
+        catch (CryptographicException)
         {
-            return $"{AuthenticationMethodType} - {SubjectName.Format(false)}";
         }
+    }
+
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The pair as a string.</returns>
+    public override string ToString()
+    {
+        return $"{AuthenticationMethodType} - {SubjectName.Format(false)}";
     }
 }

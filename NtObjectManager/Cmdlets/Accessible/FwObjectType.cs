@@ -14,24 +14,23 @@
 
 using System;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="description">Type of firewall object to check.</para>
+/// </summary>
+[Flags]
+public enum FwObjectType
 {
-    /// <summary>
-    /// <para type="description">Type of firewall object to check.</para>
-    /// </summary>
-    [Flags]
-    public enum FwObjectType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        Engine = 1,
-        Layer = 2,
-        SubLayer = 4,
-        Filter = 8,
-        AleEndpoint = 0x10,
-        Callout = 0x20,
-        Provider = 0x40,
-        All = Engine | Layer | SubLayer | Filter | AleEndpoint | Callout | Provider
+    None = 0,
+    Engine = 1,
+    Layer = 2,
+    SubLayer = 4,
+    Filter = 8,
+    AleEndpoint = 0x10,
+    Callout = 0x20,
+    Provider = 0x40,
+    All = Engine | Layer | SubLayer | Filter | AleEndpoint | Callout | Provider
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

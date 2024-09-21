@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Sam
+namespace NtCoreLib.Win32.Security.Sam;
+
+/// <summary>
+/// Flags for password properties.
+/// </summary>
+public enum SamDomainPasswordPropertyFlags
 {
-    /// <summary>
-    /// Flags for password properties.
-    /// </summary>
-    public enum SamDomainPasswordPropertyFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("DOMAIN_PASSWORD_COMPLEX")]
-        Complex = 0x00000001,
-        [SDKName("DOMAIN_PASSWORD_NO_ANON_CHANGE")]
-        NoAnonChange = 0x00000002,
-        [SDKName("DOMAIN_PASSWORD_NO_CLEAR_CHANGE")]
-        NoClearChange = 0x00000004,
-        [SDKName("DOMAIN_LOCKOUT_ADMINS")]
-        LockoutAdmins = 0x00000008,
-        [SDKName("DOMAIN_PASSWORD_STORE_CLEARTEXT")]
-        StoreCleartext = 0x00000010,
-        [SDKName("DOMAIN_REFUSE_PASSWORD_CHANGE")]
-        RefusePasswordChange = 0x00000020,
-        [SDKName("DOMAIN_NO_LM_OWF_CHANGE")]
-        NoLMOWFChange = 0x00000040,
+    None = 0,
+    [SDKName("DOMAIN_PASSWORD_COMPLEX")]
+    Complex = 0x00000001,
+    [SDKName("DOMAIN_PASSWORD_NO_ANON_CHANGE")]
+    NoAnonChange = 0x00000002,
+    [SDKName("DOMAIN_PASSWORD_NO_CLEAR_CHANGE")]
+    NoClearChange = 0x00000004,
+    [SDKName("DOMAIN_LOCKOUT_ADMINS")]
+    LockoutAdmins = 0x00000008,
+    [SDKName("DOMAIN_PASSWORD_STORE_CLEARTEXT")]
+    StoreCleartext = 0x00000010,
+    [SDKName("DOMAIN_REFUSE_PASSWORD_CHANGE")]
+    RefusePasswordChange = 0x00000020,
+    [SDKName("DOMAIN_NO_LM_OWF_CHANGE")]
+    NoLMOWFChange = 0x00000040,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

@@ -12,34 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent a KERB_LOCAL authorization data value builder.
+/// </summary>
+public sealed class KerberosAuthorizationDataKerbLocalBuilder : KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Class to represent a KERB_LOCAL authorization data value builder.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataKerbLocalBuilder : KerberosAuthorizationDataBuilder
+    public KerberosAuthorizationDataKerbLocalBuilder() 
+        : base(KerberosAuthorizationDataType.KERB_LOCAL)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataKerbLocalBuilder() 
-            : base(KerberosAuthorizationDataType.KERB_LOCAL)
-        {
-            SecurityContext = new byte[16];
-        }
+        SecurityContext = new byte[16];
+    }
 
-        /// <summary>
-        /// The security context identifier for the KERB_LOCAL value.
-        /// </summary>
-        public byte[] SecurityContext { get; set; }
+    /// <summary>
+    /// The security context identifier for the KERB_LOCAL value.
+    /// </summary>
+    public byte[] SecurityContext { get; set; }
 
-        /// <summary>
-        /// Create the Kerberos authorization data.
-        /// </summary>
-        /// <returns>The kerberos authorization data.</returns>
-        public override KerberosAuthorizationData Create()
-        {
-            return new KerberosAuthorizationDataKerbLocal(SecurityContext);
-        }
+    /// <summary>
+    /// Create the Kerberos authorization data.
+    /// </summary>
+    /// <returns>The kerberos authorization data.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        return new KerberosAuthorizationDataKerbLocal(SecurityContext);
     }
 }

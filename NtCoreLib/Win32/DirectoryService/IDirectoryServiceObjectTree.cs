@@ -12,30 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Security;
+using NtCoreLib.Utilities.Security.Authorization;
 using System;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Interface to convert a directory object to a tree for access checking.
+/// </summary>
+public interface IDirectoryServiceObjectTree
 {
     /// <summary>
-    /// Interface to convert a directory object to a tree for access checking.
+    /// The name of the object.
     /// </summary>
-    public interface IDirectoryServiceObjectTree
-    {
-        /// <summary>
-        /// The name of the object.
-        /// </summary>
-        string Name { get; }
+    string Name { get; }
 
-        /// <summary>
-        /// The ID of the object.
-        /// </summary>
-        Guid Id { get; }
+    /// <summary>
+    /// The ID of the object.
+    /// </summary>
+    Guid Id { get; }
 
-        /// <summary>
-        /// Convert the schema class to an object type tree.
-        /// </summary>
-        /// <returns>The tree of object types.</returns>
-        ObjectTypeTree ToObjectTypeTree();
-    }
+    /// <summary>
+    /// Convert the schema class to an object type tree.
+    /// </summary>
+    /// <returns>The tree of object types.</returns>
+    ObjectTypeTree ToObjectTypeTree();
 }

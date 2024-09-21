@@ -14,39 +14,38 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.ASN1.Builder
+namespace NtCoreLib.Utilities.ASN1.Builder;
+
+/// <summary>
+/// A DER builder for a sub-structure..
+/// </summary>
+/// <remarks>You should call Close or dispose the builder to write the sub-structure.</remarks>
+public sealed class DERBuilderSubStructure : DERBuilder, IDisposable
 {
-    /// <summary>
-    /// A DER builder for a sub-structure..
-    /// </summary>
-    /// <remarks>You should call Close or dispose the builder to write the sub-structure.</remarks>
-    public sealed class DERBuilderSubStructure : DERBuilder, IDisposable
+    private readonly Action<DERBuilder> _write_value;
+    private bool _is_closed;
+
+    internal DERBuilderSubStructure(Action<DERBuilder> write_value)
     {
-        private readonly Action<DERBuilder> _write_value;
-        private bool _is_closed;
+        _write_value = write_value;
+    }
 
-        internal DERBuilderSubStructure(Action<DERBuilder> write_value)
-        {
-            _write_value = write_value;
-        }
+    /// <summary>
+    /// Close the builder and write its contents to the parent builder.
+    /// </summary>
+    public void Close()
+    {
+        if (_is_closed)
+            throw new ObjectDisposedException("DERBuilder");
+        _is_closed = true;
+        _write_value(this);
+    }
 
-        /// <summary>
-        /// Close the builder and write its contents to the parent builder.
-        /// </summary>
-        public void Close()
+    void IDisposable.Dispose()
+    {
+        if (!_is_closed)
         {
-            if (_is_closed)
-                throw new ObjectDisposedException("DERBuilder");
-            _is_closed = true;
-            _write_value(this);
-        }
-
-        void IDisposable.Dispose()
-        {
-            if (!_is_closed)
-            {
-                Close();
-            }
+            Close();
         }
     }
 }

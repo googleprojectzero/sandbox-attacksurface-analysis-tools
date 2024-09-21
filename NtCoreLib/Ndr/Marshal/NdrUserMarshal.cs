@@ -12,12 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+internal static class NdrUserMarshal
 {
-    internal static class NdrUserMarshal
-    {
-        public const int WDT_INPROC_CALL = 0x48746457;
-        public const int WDT_REMOTE_CALL = 0x52746457;
-        public const int WDT_INPROC64_CALL = 0x50746457;
-    }
+    public const int WDT_INPROC_CALL = 0x48746457;
+    public const int WDT_REMOTE_CALL = 0x52746457;
+    public const int WDT_INPROC64_CALL = 0x50746457;
 }

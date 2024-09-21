@@ -12,75 +12,75 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// A security buffer which takes a raw pointer. The lifetime of the pointer
+/// should be managed manually by the caller.
+/// </summary>
+public sealed class SecurityBufferPointer : SecurityBuffer
 {
     /// <summary>
-    /// A security buffer which takes a raw pointer. The lifetime of the pointer
-    /// should be managed manually by the caller.
+    /// Constructor.
     /// </summary>
-    public sealed class SecurityBufferPointer : SecurityBuffer
+    /// <param name="type">The type of buffer.</param>
+    /// <param name="pointer">The raw pointer.</param>
+    /// <param name="size">The size of the raw pointer.</param>
+    public SecurityBufferPointer(SecurityBufferType type, IntPtr pointer, int size) : base(type)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of buffer.</param>
-        /// <param name="pointer">The raw pointer.</param>
-        /// <param name="size">The size of the raw pointer.</param>
-        public SecurityBufferPointer(SecurityBufferType type, IntPtr pointer, int size) : base(type)
+        Pointer = pointer;
+        Size = size;
+    }
+
+    /// <summary>
+    /// The size of the buffer.
+    /// </summary>
+    public int Size { get; private set; }
+
+    /// <summary>
+    /// The pointer for the buffer. The lifetime needs to be manually managed.
+    /// </summary>
+    public IntPtr Pointer { get; private set; }
+
+    /// <summary>
+    /// This will free pointer using the SSPI APIs. Used to release automatically allocated
+    /// buffers. If you control the value of the Pointer you don't need to release it.
+    /// </summary>
+    public void Release()
+    {
+        SecurityNativeMethods.FreeContextBuffer(Pointer);
+        Pointer = IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        if (Pointer == IntPtr.Zero)
+            return null;
+        byte[] ret = new byte[Size];
+        Marshal.Copy(Pointer, ret, 0, Size);
+        return ret;
+    }
+
+    internal override void FromBuffer(SecBuffer buffer)
+    {
+        if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
         {
-            Pointer = pointer;
-            Size = size;
+            return;
         }
+        _type = buffer.BufferType;
+    }
 
-        /// <summary>
-        /// The size of the buffer.
-        /// </summary>
-        public int Size { get; private set; }
-
-        /// <summary>
-        /// The pointer for the buffer. The lifetime needs to be manually managed.
-        /// </summary>
-        public IntPtr Pointer { get; private set; }
-
-        /// <summary>
-        /// This will free pointer using the SSPI APIs. Used to release automatically allocated
-        /// buffers. If you control the value of the Pointer you don't need to release it.
-        /// </summary>
-        public void Release()
-        {
-            SecurityNativeMethods.FreeContextBuffer(Pointer);
-            Pointer = IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
-        {
-            if (Pointer == IntPtr.Zero)
-                return null;
-            byte[] ret = new byte[Size];
-            Marshal.Copy(Pointer, ret, 0, Size);
-            return ret;
-        }
-
-        internal override void FromBuffer(SecBuffer buffer)
-        {
-            if (_type.HasFlagSet(SecurityBufferType.ReadOnly | SecurityBufferType.ReadOnlyWithChecksum))
-            {
-                return;
-            }
-            _type = buffer.BufferType;
-        }
-
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return new SecBuffer(Type, Pointer, Size);
-        }
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return new SecBuffer(Type, Pointer, Size);
     }
 }

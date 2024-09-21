@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Direction of trust for a trusted domain.
+/// </summary>
+public enum LsaTrustDirection
 {
-    /// <summary>
-    /// Direction of trust for a trusted domain.
-    /// </summary>
-    public enum LsaTrustDirection
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("TRUST_DIRECTION_DISABLED")]
-        Disabled = 0,
-        [SDKName("TRUST_DIRECTION_INBOUND")]
-        Inbound = 1,
-        [SDKName("TRUST_DIRECTION_OUTBOUND")]
-        Outbound = 2,
-        [SDKName("TRUST_DIRECTION_BIDIRECTIONAL")]
-        BiDirectional = Inbound | Outbound,
+    [SDKName("TRUST_DIRECTION_DISABLED")]
+    Disabled = 0,
+    [SDKName("TRUST_DIRECTION_INBOUND")]
+    Inbound = 1,
+    [SDKName("TRUST_DIRECTION_OUTBOUND")]
+    Outbound = 2,
+    [SDKName("TRUST_DIRECTION_BIDIRECTIONAL")]
+    BiDirectional = Inbound | Outbound,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

@@ -12,34 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Flags for retrieving a ticket.
+/// </summary>
+[Flags]
+public enum KerberosRetrieveTicketFlags
 {
-    /// <summary>
-    /// Flags for retrieving a ticket.
-    /// </summary>
-    [Flags]
-    public enum KerberosRetrieveTicketFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("KERB_RETRIEVE_TICKET_DEFAULT")]
-        Default = 0,
-        [SDKName("KERB_RETRIEVE_TICKET_DONT_USE_CACHE")]
-        DontUseCache = 1,
-        [SDKName("KERB_RETRIEVE_TICKET_USE_CACHE_ONLY")]
-        UseCacheOnly = 2,
-        [SDKName("KERB_RETRIEVE_TICKET_USE_CREDHANDLE")]
-        UseCredHandle = 4,
-        [SDKName("KERB_RETRIEVE_TICKET_AS_KERB_CRED")]
-        AsKerbCred = 8,
-        [SDKName("KERB_RETRIEVE_TICKET_WITH_SEC_CRED")]
-        WithSecCred = 0x10,
-        [SDKName("KERB_RETRIEVE_TICKET_CACHE_TICKET")]
-        CacheTicket = 0x20,
-        [SDKName("KERB_RETRIEVE_TICKET_MAX_LIFETIME")]
-        MaxLifetime = 0x40
+    [SDKName("KERB_RETRIEVE_TICKET_DEFAULT")]
+    Default = 0,
+    [SDKName("KERB_RETRIEVE_TICKET_DONT_USE_CACHE")]
+    DontUseCache = 1,
+    [SDKName("KERB_RETRIEVE_TICKET_USE_CACHE_ONLY")]
+    UseCacheOnly = 2,
+    [SDKName("KERB_RETRIEVE_TICKET_USE_CREDHANDLE")]
+    UseCredHandle = 4,
+    [SDKName("KERB_RETRIEVE_TICKET_AS_KERB_CRED")]
+    AsKerbCred = 8,
+    [SDKName("KERB_RETRIEVE_TICKET_WITH_SEC_CRED")]
+    WithSecCred = 0x10,
+    [SDKName("KERB_RETRIEVE_TICKET_CACHE_TICKET")]
+    CacheTicket = 0x20,
+    [SDKName("KERB_RETRIEVE_TICKET_MAX_LIFETIME")]
+    MaxLifetime = 0x40
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.34'
+ModuleVersion = '2.0.1'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -27,10 +27,10 @@ GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
 Author = 'James Forshaw'
 
 # Company or vendor of this module
-CompanyName = 'Google Inc.'
+CompanyName = 'Google LLC.'
 
 # Copyright statement for this module
-Copyright = '(c) 2016-2020 Google Inc. All rights reserved.'
+Copyright = '(c) 2016-2023 Google LLC. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
@@ -54,16 +54,16 @@ TypesToProcess = 'TypeExtensions.ps1xml'
 FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Set-NtTokenIntegrityLevel', 'Get-NtProcessMitigations', 'New-NtKernelCrashDump', 'New-NtObjectAttributes',
           'New-NtSecurityQualityOfService', 'Get-NtLicenseValue', 'Get-NtSystemEnvironmentValue', 'New-Win32Process',
-          'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-ExecutableManifest',
+          'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-Win32ModuleManifest',
           'New-NtProcess', 'New-NtProcessConfig', 'Get-NtFilePath', 'Show-NtTokenEffective', 'Show-NtSecurityDescriptor', 'Get-NtIoControlCode',
           'Import-NtObject', 'Export-NtObject', 'Get-ExecutionAlias', 'Set-ExecutionAlias', 'Set-ExecutionAlias', 'Show-NtToken', 'Show-NtSection',
           'Resolve-NtObjectAddress', 'Get-NtSecurityDescriptor', 'Get-NtSecurityDescriptorIntegrityLevel',
           'Set-NtSecurityDescriptor', 'Add-NtVirtualMemory', 'Get-NtVirtualMemory', 'Remove-NtVirtualMemory', 'Set-NtVirtualMemory',
           'Read-NtVirtualMemory', 'Write-NtVirtualMemory', 'Get-EmbeddedAuthenticodeSignature', 'Get-NtSidName', 'New-SymbolResolver', 
           'New-NdrParser', 'Format-NdrComplexType', 'Format-NdrProcedure', 'Format-NdrComProxy', 'Get-NdrComProxy', 'Get-NdrRpcServerInterface',
-          'Format-NdrRpcServerInterface', 'Get-NtWnf', 'Get-NtCachedSigningLevel', 'Add-NtSecurityDescriptorDaclAce',
+          'Format-NdrRpcServerInterface', 'Get-NtWnf', 'Get-NtCachedSigningLevel', 
           'Get-NtFilePathType', 'New-NtType', 'Get-NtAlpcServer', 'Get-RpcEndpoint', 'Get-RpcServer', 'Set-GlobalSymbolResolver',
-          'Get-RunningService', 'Copy-NtToken', 'Get-RpcAlpcServer', 'Get-NtObjectFromHandle', 'Start-Win32ChildProcess', 'Get-NtKeyValue',
+          'Copy-NtToken', 'Get-RpcAlpcServer', 'Get-NtObjectFromHandle', 'Start-Win32ChildProcess', 'Get-NtKeyValue',
           'Start-NtFileOplock', 'Format-RpcServer', 'Get-NtProcessMitigationPolicy',
           'Set-NtProcessMitigationPolicy', 'Format-NtSecurityDescriptor', 'Get-AppContainerProfile', 'New-AppContainerProfile',
           'Get-RpcClient', 'Format-RpcClient', 'Set-RpcServer', 'Connect-RpcClient', 'New-RpcContextHandle', 'Format-RpcComplexType',
@@ -136,7 +136,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Read-FwNetEvent', 'New-FwNetEventListener', 'Start-FwNetEventListener', 'Get-IPsecSaContext',
           'Get-FwEngineOption', 'Set-FwEngineOption', 'New-FwNetEventTemplate', 'Add-FwCondition',
           'Get-FwCallout', 'Add-RpcClientSecurityContext', 'Set-RpcClientSecurityContext', 
-          'Get-RpcClientSecurityContext', 'Get-RpcSecurityPrincipalName', 'Get-FwProvider',
+          'Get-RpcClientSecurityContext', 'Get-RpcServicePrincipalName', 'Get-FwProvider',
           'Update-Win32Environment', 'New-KerberosChecksum', 'New-KerberosPrincipalName',
           'New-KerberosAuthenticator', 'New-KerberosApRequest', 'New-KerberosTicket',
           'Add-KerberosTicket', 'Remove-KerberosTicket', 'New-KerberosTicketCache',
@@ -146,7 +146,10 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'New-KerberosAsRequest', 'New-KerberosKdcServer', 'New-KerberosKdcServerUser',
           'New-KerberosAuthorizationData', 'Resolve-KerberosKdcAddress', 'Get-ASN1DER',
           'New-ASN1DER', 'New-KerberosKeyTab', 'Export-KerberosTicketCache', 'Import-KerberosTicketCache',
-          'Export-KerberosTicket', 'Import-KerberosTicket'
+          'Export-KerberosTicket', 'Import-KerberosTicket', 'New-Win32MemoryBuffer', 'Get-HyperVSocketTable',
+          'New-RpcTransportSecurity', 'Get-RpcInterface', 'New-RpcClientTransportConfig', 'Get-HyperVSocketAddress',
+          'Get-RpcClientAssociationGroupId', 'Get-ComProxyFile', 'Format-ComProxyFile', 'Get-NtImageFile',
+          'Select-NtImageFile'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -199,7 +202,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Get-NtFileFinalPath', 'Add-NtThreadApc', 'New-NtThread', 'New-NtEnclave', 'Get-RandomByte',
                'Get-RunningScheduledTask', 'Set-Win32ServiceConfig', 'ConvertTo-NtSecurityDescriptor',
                'Compare-NtSecurityDescriptor', 'Clear-AuthZSid', 'Get-AccessibleDsObject',
-               'Get-Win32GrantedAccess', 'Get-AccessibleFwObject', 'New-KerberosKdcProxy'
+               'Get-Win32GrantedAccess', 'Get-AccessibleFwObject', 'New-KerberosKdcProxy', 'Get-RpcProcess'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = 'Get-NtEaBuffer', 'Set-NtEaBuffer', 'Get-AuthPackage', 'Read-AuthCredential', 'Get-AuthCredential', 
@@ -223,23 +226,19 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.34
+        ReleaseNotes = '2.0.1.
 --------
-* Last release of v1 branch.
-'
+* Improvements to RPC tooling.
 
-        # External dependent modules of this module
-        # ExternalModuleDependencies = ''
+NOTE: This version is a major refactor of the code. Scripts which only use exposed PowerShell commands
+should work when upgrading from v1 to v2, however if you use internal APIs it will almost certainly
+not work due to refactoring and renaming. Going forward it''s recommended to not rely on internal 
+APIs to work across releases.
+'
 
     } # End of PSData hashtable
     
  } # End of PrivateData hashtable
-
-# HelpInfo URI of this module
-# HelpInfoURI = ''
-
-# Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-# DefaultCommandPrefix = ''
 
 }
 

@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// The type of logon used for the task.
+/// </summary>
+public enum TaskLogonType
 {
     /// <summary>
-    /// The type of logon used for the task.
+    /// No logon type.
     /// </summary>
-    public enum TaskLogonType
-    {
-        /// <summary>
-        /// No logon type.
-        /// </summary>
-        None,
-        /// <summary>
-        /// Group activation.
-        /// </summary>
-        Group,
-        /// <summary>
-        /// User activation.
-        /// </summary>
-        User,
-        /// <summary>
-        /// Uses Services for User.
-        /// </summary>
-        S4U,
-        /// <summary>
-        /// Service account.
-        /// </summary>
-        ServiceAccount,
-    }
+    None,
+    /// <summary>
+    /// Group activation.
+    /// </summary>
+    Group,
+    /// <summary>
+    /// User activation.
+    /// </summary>
+    User,
+    /// <summary>
+    /// Uses Services for User.
+    /// </summary>
+    S4U,
+    /// <summary>
+    /// Service account.
+    /// </summary>
+    ServiceAccount,
 }

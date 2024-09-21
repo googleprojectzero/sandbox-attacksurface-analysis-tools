@@ -14,39 +14,38 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Exception class for a KDC client error.
+/// </summary>
+public sealed class KerberosKDCClientException : ApplicationException
 {
     /// <summary>
-    /// Exception class for a KDC client error.
+    /// The kerberos error code.
     /// </summary>
-    public sealed class KerberosKDCClientException : ApplicationException
+    public KerberosErrorType ErrorCode => Error.ErrorCode;
+
+    /// <summary>
+    /// The detailed kerberos error.
+    /// </summary>
+    public KerberosErrorAuthenticationToken Error { get; }
+
+    private static string FormatError(KerberosErrorAuthenticationToken error)
     {
-        /// <summary>
-        /// The kerberos error code.
-        /// </summary>
-        public KerberosErrorType ErrorCode => Error.ErrorCode;
+        var status = error.Status;
+        if (status.HasValue)
+            return $"{error.ErrorCode} - {status.Value}";
+        return error.ErrorCode.ToString();
+    }
 
-        /// <summary>
-        /// The detailed kerberos error.
-        /// </summary>
-        public KerberosErrorAuthenticationToken Error { get; }
+    internal KerberosKDCClientException(string message) : base(message)
+    {
+    }
 
-        private static string FormatError(KerberosErrorAuthenticationToken error)
-        {
-            var status = error.Status;
-            if (status.HasValue)
-                return $"{error.ErrorCode} - {status.Value}";
-            return error.ErrorCode.ToString();
-        }
-
-        internal KerberosKDCClientException(string message) : base(message)
-        {
-        }
-
-        internal KerberosKDCClientException(KerberosErrorAuthenticationToken error) 
-            : base($"Kerberos Error: {FormatError(error)}")
-        {
-            Error = error;
-        }
+    internal KerberosKDCClientException(KerberosErrorAuthenticationToken error) 
+        : base($"Kerberos Error: {FormatError(error)}")
+    {
+        Error = error;
     }
 }

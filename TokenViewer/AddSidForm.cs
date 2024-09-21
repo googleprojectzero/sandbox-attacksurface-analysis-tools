@@ -12,55 +12,55 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib.Security;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
 
-namespace TokenViewer
+namespace TokenViewer;
+
+public partial class AddSidForm : Form
 {
-    public partial class AddSidForm : Form
+    public AddSidForm()
     {
-        public AddSidForm()
+        InitializeComponent();
+    }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
+    public Sid? Sid {
+        get; private set;
+    }
+
+    private void btnOK_Click(object sender, EventArgs e)
+    {
+        bool success = false;
+        try
         {
-            InitializeComponent();
+            Sid = new Sid(textBoxSid.Text);
+            success = true;
+        }
+        catch (Exception)
+        {
         }
 
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public Sid Sid {
-            get; private set;
-        }
-
-        private void btnOK_Click(object sender, EventArgs e)
+        if (!success)
         {
-            bool success = false;
             try
             {
-                Sid = new Sid(textBoxSid.Text);
+                Sid = NtSecurity.LookupAccountName(textBoxSid.Text);
                 success = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
 
-            if (!success)
-            {
-                try
-                {
-                    Sid = NtSecurity.LookupAccountName(textBoxSid.Text);
-                    success = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
-            if (success)
-            {
-                DialogResult = DialogResult.OK;
-                Close();
-            }
+        if (success)
+        {
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }

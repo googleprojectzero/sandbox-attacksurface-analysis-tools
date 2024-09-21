@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Abstract class for a server authentication context delegate.
+/// </summary>
+public abstract class ServerAuthenticationContextDelegate : AuthenticationContextDelegate<IServerAuthenticationContext>, IServerAuthenticationContext
 {
-    /// <summary>
-    /// Abstract class for a server authentication context delegate.
-    /// </summary>
-    public abstract class ServerAuthenticationContextDelegate : AuthenticationContextDelegate<IServerAuthenticationContext>, IServerAuthenticationContext
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        protected ServerAuthenticationContextDelegate(IServerAuthenticationContext context)
-            : base(context)
-        {
-        }
-
-        public virtual AcceptContextReqFlags RequestAttributes { get => _context.RequestAttributes; set => _context.RequestAttributes = value; }
-
-        public virtual AcceptContextRetFlags ReturnAttributes => _context.ReturnAttributes;
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+    protected ServerAuthenticationContextDelegate(IServerAuthenticationContext context)
+        : base(context)
+    {
     }
+
+    public virtual AcceptContextReqFlags RequestAttributes { get => _context.RequestAttributes; set => _context.RequestAttributes = value; }
+
+    public virtual AcceptContextRetFlags ReturnAttributes => _context.ReturnAttributes;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

@@ -16,45 +16,44 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Class to represent the KERB_CERTIFICATE_HASHINFO CSP data.
+/// </summary>
+public sealed class KerberosCertificateHashInfo : KerberosCertificateLogonData
 {
     /// <summary>
-    /// Class to represent the KERB_CERTIFICATE_HASHINFO CSP data.
+    /// The name of the store.
     /// </summary>
-    public sealed class KerberosCertificateHashInfo : KerberosCertificateLogonData
+    public string StoreName { get; set; }
+
+    /// <summary>
+    /// The certificate hash.
+    /// </summary>
+    public byte[] Hash { get; set; }
+
+    internal override byte[] GetData()
     {
-        /// <summary>
-        /// The name of the store.
-        /// </summary>
-        public string StoreName { get; set; }
-
-        /// <summary>
-        /// The certificate hash.
-        /// </summary>
-        public byte[] Hash { get; set; }
-
-        internal override byte[] GetData()
+        if (Hash is null)
+            throw new ArgumentNullException(nameof(Hash));
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        byte[] name = Array.Empty<byte>();
+        if (!(StoreName is null))
         {
-            if (Hash is null)
-                throw new ArgumentNullException(nameof(Hash));
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            byte[] name = Array.Empty<byte>();
-            if (!(StoreName is null))
-            {
-                name = Encoding.Unicode.GetBytes(StoreName + "\0");
-            }
-            writer.Write((ushort)name.Length);
-            writer.Write((ushort)Hash.Length);
-            writer.Write(name);
-            writer.Write(Hash);
-            return stm.ToArray();
+            name = Encoding.Unicode.GetBytes(StoreName + "\0");
         }
+        writer.Write((ushort)name.Length);
+        writer.Write((ushort)Hash.Length);
+        writer.Write(name);
+        writer.Write(Hash);
+        return stm.ToArray();
+    }
 
-        internal override int GetLogonType()
-        {
-            // KERB_CERTIFICATE_INFO_TYPE::CertHashInfo = 1
-            return 1;
-        }
+    internal override int GetLogonType()
+    {
+        // KERB_CERTIFICATE_INFO_TYPE::CertHashInfo = 1
+        return 1;
     }
 }

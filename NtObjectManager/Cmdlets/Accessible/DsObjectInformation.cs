@@ -12,131 +12,130 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Security;
-using NtApiDotNet.Win32.DirectoryService;
+using NtCoreLib.Utilities.Security.Authorization;
+using NtCoreLib.Win32.DirectoryService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+internal sealed class DsObjectInformation
 {
-    internal sealed class DsObjectInformation
+    private struct ExtendedRightsComparer : IEqualityComparer<DirectoryServiceExtendedRight>
     {
-        private struct ExtendedRightsComparer : IEqualityComparer<DirectoryServiceExtendedRight>
+        public bool Equals(DirectoryServiceExtendedRight x, DirectoryServiceExtendedRight y)
         {
-            public bool Equals(DirectoryServiceExtendedRight x, DirectoryServiceExtendedRight y)
-            {
-                return x.RightsId == y.RightsId;
-            }
-
-            public int GetHashCode(DirectoryServiceExtendedRight obj)
-            {
-                return obj.RightsId.GetHashCode();
-            }
+            return x.RightsId == y.RightsId;
         }
 
-        private struct AttributeComparer : IEqualityComparer<DirectoryServiceSchemaAttribute>
+        public int GetHashCode(DirectoryServiceExtendedRight obj)
         {
-            public bool Equals(DirectoryServiceSchemaAttribute x, DirectoryServiceSchemaAttribute y)
-            {
-                return x.SchemaId == y.SchemaId;
-            }
+            return obj.RightsId.GetHashCode();
+        }
+    }
 
-            public int GetHashCode(DirectoryServiceSchemaAttribute obj)
-            {
-                return obj.SchemaId.GetHashCode();
-            }
+    private struct AttributeComparer : IEqualityComparer<DirectoryServiceSchemaAttribute>
+    {
+        public bool Equals(DirectoryServiceSchemaAttribute x, DirectoryServiceSchemaAttribute y)
+        {
+            return x.SchemaId == y.SchemaId;
         }
 
-        public DirectoryServiceSchemaClass SchemaClass { get; private set; }
-        public IReadOnlyList<DirectoryServiceSchemaClass> InferiorClasses { get; private set; }
-        public IReadOnlyList<DirectoryServiceSchemaAttribute> Attributes { get; private set; }
-        public IReadOnlyList<DirectoryServiceExtendedRight> ExtendedRights { get; private set; }
-        public IEnumerable<DirectoryServiceExtendedRight> PropertySets => ExtendedRights.Where(r => r.IsPropertySet);
-        public IEnumerable<DirectoryServiceExtendedRight> Control => ExtendedRights.Where(r => r.IsControl);
-        public IEnumerable<DirectoryServiceExtendedRight> ValidatedWrite => ExtendedRights.Where(r => r.IsValidatedWrite);
-        public Dictionary<Guid, IDirectoryServiceObjectTree> ObjectTypes { get; private set; }
-        public HashSet<string> ClassNames { get; private set; }
-
-        public ObjectTypeTree GetInferiorClasses()
+        public int GetHashCode(DirectoryServiceSchemaAttribute obj)
         {
-            ObjectTypeTree ret = DirectoryServiceUtils.DefaultPropertySet.ToObjectTypeTree();
-            ret.AddNodeRange(InferiorClasses.Select(c => c.ToObjectTypeTree()));
-            return ret;
+            return obj.SchemaId.GetHashCode();
         }
+    }
 
-        public ObjectTypeTree GetAttributes(IEnumerable<DsObjectInformation> dynamic_aux_classes)
+    public DirectoryServiceSchemaClass SchemaClass { get; private set; }
+    public IReadOnlyList<DirectoryServiceSchemaClass> InferiorClasses { get; private set; }
+    public IReadOnlyList<DirectoryServiceSchemaAttribute> Attributes { get; private set; }
+    public IReadOnlyList<DirectoryServiceExtendedRight> ExtendedRights { get; private set; }
+    public IEnumerable<DirectoryServiceExtendedRight> PropertySets => ExtendedRights.Where(r => r.IsPropertySet);
+    public IEnumerable<DirectoryServiceExtendedRight> Control => ExtendedRights.Where(r => r.IsControl);
+    public IEnumerable<DirectoryServiceExtendedRight> ValidatedWrite => ExtendedRights.Where(r => r.IsValidatedWrite);
+    public Dictionary<Guid, IDirectoryServiceObjectTree> ObjectTypes { get; private set; }
+    public HashSet<string> ClassNames { get; private set; }
+
+    public ObjectTypeTree GetInferiorClasses()
+    {
+        ObjectTypeTree ret = DirectoryServiceUtils.DefaultPropertySet.ToObjectTypeTree();
+        ret.AddNodeRange(InferiorClasses.Select(c => c.ToObjectTypeTree()));
+        return ret;
+    }
+
+    public ObjectTypeTree GetAttributes(IEnumerable<DsObjectInformation> dynamic_aux_classes)
+    {
+        ObjectTypeTree ret = SchemaClass.ToObjectTypeTree();
+
+        var prop_sets = dynamic_aux_classes.SelectMany(c => c.PropertySets).Concat(PropertySets).Distinct(new ExtendedRightsComparer());
+
+        ret.AddNodeRange(prop_sets.Select(c => c.ToObjectTypeTree()));
+        ObjectTypeTree unclass = DirectoryServiceUtils.DefaultPropertySet.ToObjectTypeTree();
+        var attrs = dynamic_aux_classes.SelectMany(c => c.Attributes).Concat(Attributes).Distinct(new AttributeComparer());
+        unclass.AddNodeRange(attrs.Where(a => !a.InPropertySet).Select(a => a.ToObjectTypeTree()));
+        if (unclass.Nodes.Count > 0)
         {
-            ObjectTypeTree ret = SchemaClass.ToObjectTypeTree();
-
-            var prop_sets = dynamic_aux_classes.SelectMany(c => c.PropertySets).Concat(PropertySets).Distinct(new ExtendedRightsComparer());
-
-            ret.AddNodeRange(prop_sets.Select(c => c.ToObjectTypeTree()));
-            ObjectTypeTree unclass = DirectoryServiceUtils.DefaultPropertySet.ToObjectTypeTree();
-            var attrs = dynamic_aux_classes.SelectMany(c => c.Attributes).Concat(Attributes).Distinct(new AttributeComparer());
-            unclass.AddNodeRange(attrs.Where(a => !a.InPropertySet).Select(a => a.ToObjectTypeTree()));
-            if (unclass.Nodes.Count > 0)
-            {
-                ret.AddNode(unclass);
-            }
-            return ret;
+            ret.AddNode(unclass);
         }
+        return ret;
+    }
 
-        public ObjectTypeTree GetExtendedRights()
-        {
-            ObjectTypeTree ret = SchemaClass.ToObjectTypeTree();
-            ret.AddNodeRange(Control.Select(c => c.ToObjectTypeTree()));
-            ret.AddNodeRange(ValidatedWrite.Select(c => c.ToObjectTypeTree()));
-            return ret;
-        }
+    public ObjectTypeTree GetExtendedRights()
+    {
+        ObjectTypeTree ret = SchemaClass.ToObjectTypeTree();
+        ret.AddNodeRange(Control.Select(c => c.ToObjectTypeTree()));
+        ret.AddNodeRange(ValidatedWrite.Select(c => c.ToObjectTypeTree()));
+        return ret;
+    }
 
-        private static List<DirectoryServiceSchemaAttribute> GetAttributes(string domain, string name)
-        {
-            List<DirectoryServiceSchemaAttribute> attrs = new List<DirectoryServiceSchemaAttribute>();
-            var schema_class = DirectoryServiceUtils.GetSchemaClass(domain, name);
-            if (schema_class == null)
-                return attrs;
-
-            attrs.AddRange(schema_class.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name)));
-            schema_class.AuxiliaryClasses.SelectMany(a => GetAttributes(domain, a.Name));
-            if (schema_class.SubClassOf == null)
-                return attrs;
-            attrs.AddRange(GetAttributes(domain, schema_class.SubClassOf));
+    private static List<DirectoryServiceSchemaAttribute> GetAttributes(string domain, string name)
+    {
+        List<DirectoryServiceSchemaAttribute> attrs = new();
+        var schema_class = DirectoryServiceUtils.GetSchemaClass(domain, name);
+        if (schema_class == null)
             return attrs;
-        }
 
-        private DsObjectInformation()
+        attrs.AddRange(schema_class.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name)));
+        schema_class.AuxiliaryClasses.SelectMany(a => GetAttributes(domain, a.Name));
+        if (schema_class.SubClassOf == null)
+            return attrs;
+        attrs.AddRange(GetAttributes(domain, schema_class.SubClassOf));
+        return attrs;
+    }
+
+    private DsObjectInformation()
+    {
+    }
+
+    private static void AddObjectTypes(Dictionary<Guid, IDirectoryServiceObjectTree> obj_types, IEnumerable<IDirectoryServiceObjectTree> objs)
+    {
+        foreach (var obj in objs)
         {
+            obj_types[obj.Id] = obj;
         }
+    }
 
-        private static void AddObjectTypes(Dictionary<Guid, IDirectoryServiceObjectTree> obj_types, IEnumerable<IDirectoryServiceObjectTree> objs)
-        {
-            foreach (var obj in objs)
-            {
-                obj_types[obj.Id] = obj;
-            }
-        }
+    public static DsObjectInformation Get(string domain, string object_class)
+    {
+        var schema_class = DirectoryServiceUtils.GetSchemaClass(domain, object_class);
+        if (schema_class == null)
+            return null;
+        var ret = new DsObjectInformation();
+        ret.SchemaClass = schema_class;
+        var classes = DirectoryServiceUtils.GetSchemaClasses(domain, object_class, true);
+        ret.ClassNames = new HashSet<string>(classes.Select(c => c.Name));
+        ret.InferiorClasses = schema_class.PossibleInferiors.Select(i => DirectoryServiceUtils.GetSchemaClass(domain, i)).ToList();
+        ret.Attributes = classes.SelectMany(c => c.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name))).Distinct(new AttributeComparer()).ToList();
+        ret.ExtendedRights = DirectoryServiceUtils.GetExtendedRights(domain, schema_class.SchemaId).Distinct(new ExtendedRightsComparer()).ToList();
 
-        public static DsObjectInformation Get(string domain, string object_class)
-        {
-            var schema_class = DirectoryServiceUtils.GetSchemaClass(domain, object_class);
-            if (schema_class == null)
-                return null;
-            var ret = new DsObjectInformation();
-            ret.SchemaClass = schema_class;
-            var classes = DirectoryServiceUtils.GetSchemaClasses(domain, object_class, true);
-            ret.ClassNames = new HashSet<string>(classes.Select(c => c.Name));
-            ret.InferiorClasses = schema_class.PossibleInferiors.Select(i => DirectoryServiceUtils.GetSchemaClass(domain, i)).ToList();
-            ret.Attributes = classes.SelectMany(c => c.Attributes.Select(a => DirectoryServiceUtils.GetSchemaAttribute(domain, a.Name))).Distinct(new AttributeComparer()).ToList();
-            ret.ExtendedRights = DirectoryServiceUtils.GetExtendedRights(domain, schema_class.SchemaId).Distinct(new ExtendedRightsComparer()).ToList();
+        ret.ObjectTypes = new Dictionary<Guid, IDirectoryServiceObjectTree>();
+        ret.ObjectTypes[ret.SchemaClass.SchemaId] = ret.SchemaClass;
+        AddObjectTypes(ret.ObjectTypes, ret.InferiorClasses);
+        AddObjectTypes(ret.ObjectTypes, ret.Attributes);
+        AddObjectTypes(ret.ObjectTypes, ret.ExtendedRights);
 
-            ret.ObjectTypes = new Dictionary<Guid, IDirectoryServiceObjectTree>();
-            ret.ObjectTypes[ret.SchemaClass.SchemaId] = ret.SchemaClass;
-            AddObjectTypes(ret.ObjectTypes, ret.InferiorClasses);
-            AddObjectTypes(ret.ObjectTypes, ret.Attributes);
-            AddObjectTypes(ret.ObjectTypes, ret.ExtendedRights);
-
-            return ret;
-        }
+        return ret;
     }
 }

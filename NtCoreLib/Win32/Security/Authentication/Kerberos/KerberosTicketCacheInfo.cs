@@ -12,159 +12,158 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Flags for a ticket cache entry
+/// </summary>
+[Flags]
+public enum KerberosTicketCacheInfoFlags
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    None = 0,
+    Primary = 1,
+    Delegation = 2,
+    S4U = 4,
+    ASC = 8,
+    EncInSKey = 0x10,
+    X509 = 0x20,
+    Fast = 0x40,
+    Compound = 0x80,
+    HubPrimary = 0x100,
+    DisableTgtDelegation = 0x200
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// Class to represent information about a ticket cache entry.
+/// </summary>
+public sealed class KerberosTicketCacheInfo
 {
     /// <summary>
-    /// Flags for a ticket cache entry
+    /// The client name.
     /// </summary>
-    [Flags]
-    public enum KerberosTicketCacheInfoFlags
+    public string ClientName { get; }
+    /// <summary>
+    /// The client realm.
+    /// </summary>
+    public string ClientRealm { get; }
+    /// <summary>
+    /// The server name.
+    /// </summary>
+    public string ServerName { get; }
+    /// <summary>
+    /// The server realm.
+    /// </summary>
+    public string ServerRealm { get;}
+    /// <summary>
+    /// The start time.
+    /// </summary>
+    public DateTime StartTime { get; }
+    /// <summary>
+    /// The end time.
+    /// </summary>
+    public DateTime EndTime { get; }
+    /// <summary>
+    /// The renew time.
+    /// </summary>
+    public DateTime RenewTime { get; }
+    /// <summary>
+    /// The key encryption type.
+    /// </summary>
+    public KerberosEncryptionType EncryptionType { get; }
+    /// <summary>
+    /// The ticket flags.
+    /// </summary>
+    public KerberosTicketFlags TicketFlags { get; }
+    /// <summary>
+    /// The session key type.
+    /// </summary>
+    public KerberosEncryptionType SessionKeyType { get; }
+    /// <summary>
+    /// The branch ID.
+    /// </summary>
+    public int BranchId { get; }
+    /// <summary>
+    /// The cache flags.
+    /// </summary>
+    public KerberosTicketCacheInfoFlags CacheFlags { get; }
+    /// <summary>
+    /// The KDC which was called.
+    /// </summary>
+    public string KdcCalled { get; }
+
+    internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX info)
     {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        Primary = 1,
-        Delegation = 2,
-        S4U = 4,
-        ASC = 8,
-        EncInSKey = 0x10,
-        X509 = 0x20,
-        Fast = 0x40,
-        Compound = 0x80,
-        HubPrimary = 0x100,
-        DisableTgtDelegation = 0x200
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+        ClientName = info.ClientName.ToString();
+        ClientRealm = info.ClientRealm.ToString();
+        ServerName = info.ServerName.ToString();
+        ServerRealm = info.ServerRealm.ToString();
+        StartTime = info.StartTime.ToDateTime();
+        EndTime = info.EndTime.ToDateTime();
+        RenewTime = info.RenewTime.ToDateTime();
+        EncryptionType = info.EncryptionType;
+        TicketFlags = (KerberosTicketFlags)info.TicketFlags.RotateBits();
+    }
+
+    internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX2 info) : this(info.InfoEx)
+    {
+        SessionKeyType = info.SessionKeyType;
+        BranchId = info.BranchId;
+    }
+
+    internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX3 info) : this(info.InfoEx2)
+    {
+        CacheFlags = info.CacheFlags;
+        KdcCalled = info.KdcCalled.ToString();
     }
 
     /// <summary>
-    /// Class to represent information about a ticket cache entry.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosTicketCacheInfo
+    /// <param name="client_name">The client name.</param>
+    /// <param name="client_realm">The client realm.</param>
+    /// <param name="server_name">The server name.</param>
+    /// <param name="server_realm">The server realm.</param>
+    /// <param name="start_time">The ticket start time.</param>
+    /// <param name="end_time">The ticket end time.</param>
+    /// <param name="renew_time">The ticket renew time.</param>
+    /// <param name="encryption_type">The ticket encryption type.</param>
+    /// <param name="ticket_flags">The ticket flags.</param>
+    public KerberosTicketCacheInfo(string client_name, string client_realm, string server_name, string server_realm, 
+        DateTime start_time, DateTime end_time, DateTime renew_time, KerberosEncryptionType encryption_type, KerberosTicketFlags ticket_flags)
     {
-        /// <summary>
-        /// The client name.
-        /// </summary>
-        public string ClientName { get; }
-        /// <summary>
-        /// The client realm.
-        /// </summary>
-        public string ClientRealm { get; }
-        /// <summary>
-        /// The server name.
-        /// </summary>
-        public string ServerName { get; }
-        /// <summary>
-        /// The server realm.
-        /// </summary>
-        public string ServerRealm { get;}
-        /// <summary>
-        /// The start time.
-        /// </summary>
-        public DateTime StartTime { get; }
-        /// <summary>
-        /// The end time.
-        /// </summary>
-        public DateTime EndTime { get; }
-        /// <summary>
-        /// The renew time.
-        /// </summary>
-        public DateTime RenewTime { get; }
-        /// <summary>
-        /// The key encryption type.
-        /// </summary>
-        public KerberosEncryptionType EncryptionType { get; }
-        /// <summary>
-        /// The ticket flags.
-        /// </summary>
-        public KerberosTicketFlags TicketFlags { get; }
-        /// <summary>
-        /// The session key type.
-        /// </summary>
-        public KerberosEncryptionType SessionKeyType { get; }
-        /// <summary>
-        /// The branch ID.
-        /// </summary>
-        public int BranchId { get; }
-        /// <summary>
-        /// The cache flags.
-        /// </summary>
-        public KerberosTicketCacheInfoFlags CacheFlags { get; }
-        /// <summary>
-        /// The KDC which was called.
-        /// </summary>
-        public string KdcCalled { get; }
-
-        internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX info)
+        if (string.IsNullOrEmpty(client_name))
         {
-            ClientName = info.ClientName.ToString();
-            ClientRealm = info.ClientRealm.ToString();
-            ServerName = info.ServerName.ToString();
-            ServerRealm = info.ServerRealm.ToString();
-            StartTime = info.StartTime.ToDateTime();
-            EndTime = info.EndTime.ToDateTime();
-            RenewTime = info.RenewTime.ToDateTime();
-            EncryptionType = info.EncryptionType;
-            TicketFlags = (KerberosTicketFlags)info.TicketFlags.RotateBits();
+            throw new ArgumentException($"'{nameof(client_name)}' cannot be null or empty.", nameof(client_name));
         }
 
-        internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX2 info) : this(info.InfoEx)
+        if (string.IsNullOrEmpty(client_realm))
         {
-            SessionKeyType = info.SessionKeyType;
-            BranchId = info.BranchId;
+            throw new ArgumentException($"'{nameof(client_realm)}' cannot be null or empty.", nameof(client_realm));
         }
 
-        internal KerberosTicketCacheInfo(KERB_TICKET_CACHE_INFO_EX3 info) : this(info.InfoEx2)
+        if (string.IsNullOrEmpty(server_name))
         {
-            CacheFlags = info.CacheFlags;
-            KdcCalled = info.KdcCalled.ToString();
+            throw new ArgumentException($"'{nameof(server_name)}' cannot be null or empty.", nameof(server_name));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="client_name">The client name.</param>
-        /// <param name="client_realm">The client realm.</param>
-        /// <param name="server_name">The server name.</param>
-        /// <param name="server_realm">The server realm.</param>
-        /// <param name="start_time">The ticket start time.</param>
-        /// <param name="end_time">The ticket end time.</param>
-        /// <param name="renew_time">The ticket renew time.</param>
-        /// <param name="encryption_type">The ticket encryption type.</param>
-        /// <param name="ticket_flags">The ticket flags.</param>
-        public KerberosTicketCacheInfo(string client_name, string client_realm, string server_name, string server_realm, 
-            DateTime start_time, DateTime end_time, DateTime renew_time, KerberosEncryptionType encryption_type, KerberosTicketFlags ticket_flags)
+        if (string.IsNullOrEmpty(server_realm))
         {
-            if (string.IsNullOrEmpty(client_name))
-            {
-                throw new ArgumentException($"'{nameof(client_name)}' cannot be null or empty.", nameof(client_name));
-            }
-
-            if (string.IsNullOrEmpty(client_realm))
-            {
-                throw new ArgumentException($"'{nameof(client_realm)}' cannot be null or empty.", nameof(client_realm));
-            }
-
-            if (string.IsNullOrEmpty(server_name))
-            {
-                throw new ArgumentException($"'{nameof(server_name)}' cannot be null or empty.", nameof(server_name));
-            }
-
-            if (string.IsNullOrEmpty(server_realm))
-            {
-                throw new ArgumentException($"'{nameof(server_realm)}' cannot be null or empty.", nameof(server_realm));
-            }
-
-            ClientName = client_name;
-            ClientRealm = client_realm;
-            ServerName = server_name;
-            ServerRealm = server_realm;
-            StartTime = start_time;
-            EndTime = end_time;
-            RenewTime = renew_time;
-            EncryptionType = encryption_type;
-            TicketFlags = ticket_flags;
+            throw new ArgumentException($"'{nameof(server_realm)}' cannot be null or empty.", nameof(server_realm));
         }
+
+        ClientName = client_name;
+        ClientRealm = client_realm;
+        ServerName = server_name;
+        ServerRealm = server_realm;
+        StartTime = start_time;
+        EndTime = end_time;
+        RenewTime = renew_time;
+        EncryptionType = encryption_type;
+        TicketFlags = ticket_flags;
     }
 }

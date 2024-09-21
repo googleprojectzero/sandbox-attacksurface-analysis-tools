@@ -14,20 +14,19 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2QueryInfoResponsePacket : Smb2ResponsePacket
-    {
-        public byte[] Data { get; private set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
-        {
-            if (reader.ReadUInt16() != 9)
-                throw new InvalidDataException("Invalid response size for QUERY_INFO packet.");
-            int ofs = reader.ReadUInt16();
-            int length = reader.ReadInt32();
-            reader.BaseStream.Position = ofs;
-            Data = reader.ReadAllBytes(length);
-        }
+internal sealed class Smb2QueryInfoResponsePacket : Smb2ResponsePacket
+{
+    public byte[] Data { get; private set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 9)
+            throw new InvalidDataException("Invalid response size for QUERY_INFO packet.");
+        int ofs = reader.ReadUInt16();
+        int length = reader.ReadInt32();
+        reader.BaseStream.Position = ofs;
+        Data = reader.ReadAllBytes(length);
     }
 }

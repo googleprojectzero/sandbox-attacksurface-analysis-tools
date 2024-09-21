@@ -12,121 +12,120 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Utilities.Reflection;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Flags for the certificate logon.
+/// </summary>
+[Flags]
+public enum KerberosCertificateLogonFlags
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    None = 0,
+    [SDKName("KERB_CERTIFICATE_LOGON_FLAG_CHECK_DUPLICATES")]
+    CheckDuplicates = 0x1,
+    [SDKName("KERB_CERTIFICATE_LOGON_FLAG_USE_CERTIFICATE_INFO")]
+    UseCertificateInfo = 0x2,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// Class to represent a KERB_CERTIFICATE_LOGON structure.
+/// </summary>
+public class KerberosCertificateLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
 {
     /// <summary>
-    /// Flags for the certificate logon.
+    /// The domain name.
     /// </summary>
-    [Flags]
-    public enum KerberosCertificateLogonFlags
+    public string DomainName { get; set; }
+    /// <summary>
+    /// The user name.
+    /// </summary>
+    public string UserName { get; set; }
+    /// <summary>
+    /// The PIN for the certificate.
+    /// </summary>
+    public string Pin { get; set; }
+    /// <summary>
+    /// Flags.
+    /// </summary>
+    public KerberosCertificateLogonFlags Flags { get; set; }
+    /// <summary>
+    /// The CSP data.
+    /// </summary>
+    public KerberosCertificateLogonData CspData { get; set; }
+    /// <summary>
+    /// If specified will create a KERB_CERTIFICATE_UNLOCK_LOGON credential buffer.
+    /// </summary>
+    public Luid? LogonId { get; set; }
+
+    string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+
+    private void PopulateLogon(LsaBufferBuilder<KERB_CERTIFICATE_LOGON> builder, bool relative)
     {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("KERB_CERTIFICATE_LOGON_FLAG_CHECK_DUPLICATES")]
-        CheckDuplicates = 0x1,
-        [SDKName("KERB_CERTIFICATE_LOGON_FLAG_USE_CERTIFICATE_INFO")]
-        UseCertificateInfo = 0x2,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+        builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.UserName), UserName, relative);
+        builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.DomainName), DomainName, relative);
+        builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.Pin), Pin, relative);
+        builder.AddPointerBuffer(nameof(KERB_CERTIFICATE_LOGON.CspData),
+            nameof(KERB_CERTIFICATE_LOGON.CspDataLength), CspData.ToArray(), relative);
     }
 
-    /// <summary>
-    /// Class to represent a KERB_CERTIFICATE_LOGON structure.
-    /// </summary>
-    public class KerberosCertificateLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
+    byte[] ILsaLogonCredentialsSerializable.ToArray()
     {
-        /// <summary>
-        /// The domain name.
-        /// </summary>
-        public string DomainName { get; set; }
-        /// <summary>
-        /// The user name.
-        /// </summary>
-        public string UserName { get; set; }
-        /// <summary>
-        /// The PIN for the certificate.
-        /// </summary>
-        public string Pin { get; set; }
-        /// <summary>
-        /// Flags.
-        /// </summary>
-        public KerberosCertificateLogonFlags Flags { get; set; }
-        /// <summary>
-        /// The CSP data.
-        /// </summary>
-        public KerberosCertificateLogonData CspData { get; set; }
-        /// <summary>
-        /// If specified will create a KERB_CERTIFICATE_UNLOCK_LOGON credential buffer.
-        /// </summary>
-        public Luid? LogonId { get; set; }
+        using var buffer = ToBuffer(true);
+        return buffer.ToArray();
+    }
 
-        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+    SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+    {
+        return ToBuffer(false);
+    }
 
-        private void PopulateLogon(LsaBufferBuilder<KERB_CERTIFICATE_LOGON> builder, bool relative)
+    private SafeBufferGeneric ToBuffer(bool relative)
+    {
+        if (CspData is null)
         {
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.UserName), UserName, relative);
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.DomainName), DomainName, relative);
-            builder.AddUnicodeString(nameof(KERB_CERTIFICATE_LOGON.Pin), Pin, relative);
-            builder.AddPointerBuffer(nameof(KERB_CERTIFICATE_LOGON.CspData),
-                nameof(KERB_CERTIFICATE_LOGON.CspDataLength), CspData.ToArray(), relative);
+            throw new ArgumentNullException(nameof(CspData));
         }
 
-        byte[] ILsaLogonCredentialsSerializable.ToArray()
+        KerberosCertificateLogonFlags flags = Flags;
+
+        if (CspData is KerberosCertificateHashInfo)
         {
-            using (var buffer = ToBuffer(true))
-            {
-                return buffer.ToArray();
-            }
+            flags |= KerberosCertificateLogonFlags.UseCertificateInfo;
         }
 
-        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        if (LogonId.HasValue)
         {
-            return ToBuffer(false);
-        }
-
-        private SafeBufferGeneric ToBuffer(bool relative)
-        {
-            if (CspData is null)
+            var builder = new KERB_CERTIFICATE_UNLOCK_LOGON()
             {
-                throw new ArgumentNullException(nameof(CspData));
-            }
-
-            KerberosCertificateLogonFlags flags = Flags;
-
-            if (CspData is KerberosCertificateHashInfo)
-            {
-                flags |= KerberosCertificateLogonFlags.UseCertificateInfo;
-            }
-
-            if (LogonId.HasValue)
-            {
-                var builder = new KERB_CERTIFICATE_UNLOCK_LOGON()
+                LogonId = LogonId.Value
+            }.ToBuilder();
+            PopulateLogon(builder.GetSubBuilder(nameof(KERB_CERTIFICATE_UNLOCK_LOGON.Logon),
+                new KERB_CERTIFICATE_LOGON()
                 {
-                    LogonId = LogonId.Value
-                }.ToBuilder();
-                PopulateLogon(builder.GetSubBuilder(nameof(KERB_CERTIFICATE_UNLOCK_LOGON.Logon),
-                    new KERB_CERTIFICATE_LOGON()
-                    {
-                        MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateUnlockLogon,
-                        Flags = (int)Flags
-                    }), relative);
-                return builder.ToBuffer();
-            }
-            else
+                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateUnlockLogon,
+                    Flags = (int)Flags
+                }), relative);
+            return builder.ToBuffer();
+        }
+        else
+        {
+            var builder = new KERB_CERTIFICATE_LOGON()
             {
-                var builder = new KERB_CERTIFICATE_LOGON()
-                {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateLogon,
-                    Flags = (int)flags
-                }.ToBuilder();
+                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbCertificateLogon,
+                Flags = (int)flags
+            }.ToBuilder();
 
-                PopulateLogon(builder, relative);
-                return builder.ToBuffer();
-            }
+            PopulateLogon(builder, relative);
+            return builder.ToBuffer();
         }
     }
 }

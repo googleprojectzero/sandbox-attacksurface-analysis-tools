@@ -12,17 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Interface for logon credentials where the credentials can be serialized into a blob.
+/// </summary>
+public interface ILsaLogonCredentialsSerializable
 {
     /// <summary>
-    /// Interface for logon credentials where the credentials can be serialized into a blob.
+    /// Convert the credentials into a serialized array.
     /// </summary>
-    public interface ILsaLogonCredentialsSerializable
-    {
-        /// <summary>
-        /// Convert the credentials into a serialized array.
-        /// </summary>
-        /// <returns>The serialized array.</returns>
-        byte[] ToArray();
-    }
+    /// <returns>The serialized array.</returns>
+    byte[] ToArray();
 }

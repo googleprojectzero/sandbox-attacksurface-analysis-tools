@@ -12,32 +12,34 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Filter
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Filter.Interop;
+
+namespace NtCoreLib.Win32.Filter;
+
+/// <summary>
+/// Class to represent a filter communications port message.
+/// </summary>
+public class FilterConnectionPortMessage
 {
     /// <summary>
-    /// Class to represent a filter communications port message.
+    /// The message ID.
     /// </summary>
-    public class FilterConnectionPortMessage
-    {
-        /// <summary>
-        /// The message ID.
-        /// </summary>
-        public ulong MessageId { get; }
-        /// <summary>
-        /// The returned data.
-        /// </summary>
-        public byte[] Data { get; }
-        /// <summary>
-        /// The length of the reply to send.
-        /// </summary>
-        public int ReplyLength { get; }
+    public ulong MessageId { get; }
+    /// <summary>
+    /// The returned data.
+    /// </summary>
+    public byte[] Data { get; }
+    /// <summary>
+    /// The length of the reply to send.
+    /// </summary>
+    public int ReplyLength { get; }
 
-        internal FilterConnectionPortMessage(SafeStructureInOutBuffer<FILTER_MESSAGE_HEADER> buffer)
-        {
-            var result = buffer.Result;
-            MessageId = result.MessageId;
-            ReplyLength = result.ReplyLength;
-            Data = buffer.Data.ToArray();
-        }
+    internal FilterConnectionPortMessage(SafeStructureInOutBuffer<FILTER_MESSAGE_HEADER> buffer)
+    {
+        var result = buffer.Result;
+        MessageId = result.MessageId;
+        ReplyLength = result.ReplyLength;
+        Data = buffer.Data.ToArray();
     }
 }

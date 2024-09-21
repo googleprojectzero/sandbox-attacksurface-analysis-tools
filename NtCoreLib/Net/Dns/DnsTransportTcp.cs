@@ -16,39 +16,38 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal class DnsTransportTcp : IDnsTransport
 {
-    internal class DnsTransportTcp : IDnsTransport
+    private readonly TcpClient _client;
+    private readonly BinaryReader _reader;
+    private readonly BinaryWriter _writer;
+
+    public DnsTransportTcp(IPAddress address, int timeout)
     {
-        private readonly TcpClient _client;
-        private readonly BinaryReader _reader;
-        private readonly BinaryWriter _writer;
+        _client = new TcpClient(address.AddressFamily);
+        _client.Connect(address, 53);
+        _client.Client.ReceiveTimeout = timeout;
+        var stm = _client.GetStream();
+        _reader = new BinaryReader(stm);
+        _writer = new BinaryWriter(stm);
+    }
 
-        public DnsTransportTcp(IPAddress address, int timeout)
-        {
-            _client = new TcpClient(address.AddressFamily);
-            _client.Connect(address, 53);
-            _client.Client.ReceiveTimeout = timeout;
-            var stm = _client.GetStream();
-            _reader = new BinaryReader(stm);
-            _writer = new BinaryWriter(stm);
-        }
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
 
-        public void Dispose()
-        {
-            _client.Dispose();
-        }
+    public byte[] Receive()
+    {
+        int length = _reader.ReadUInt16BE();
+        return _reader.ReadAllBytes(length);
+    }
 
-        public byte[] Receive()
-        {
-            int length = _reader.ReadUInt16BE();
-            return _reader.ReadAllBytes(length);
-        }
-
-        public void Send(byte[] data)
-        {
-            _writer.WriteUInt16BE(data.Length);
-            _writer.Write(data);
-        }
+    public void Send(byte[] data)
+    {
+        _writer.WriteUInt16BE(data.Length);
+        _writer.Write(data);
     }
 }

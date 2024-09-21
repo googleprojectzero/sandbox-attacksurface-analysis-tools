@@ -12,79 +12,80 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Schannel;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Authentication.Schannel;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Credentials for the CredSSP package.
+/// </summary>
+/// <remarks>This is only needed if you must have both schannel and user credentials. Otherwise use UserCredentials or SchannelCredentials.</remarks>
+public sealed class CredSSPCredentials : AuthenticationCredentials
 {
+    private readonly SchannelCredentials _schannel;
+    private readonly AuthenticationCredentials _user;
+    private readonly bool _redirect;
+
     /// <summary>
-    /// Credentials for the CredSSP package.
+    /// Constructor.
     /// </summary>
-    /// <remarks>This is only needed if you must have both schannel and user credentials. Otherwise use UserCredentials or SchannelCredentials.</remarks>
-    public sealed class CredSSPCredentials : AuthenticationCredentials
+    /// <param name="schannel">The credentials for the Schannel connection.</param>
+    /// <param name="user">The credentials for the user.</param>
+    /// <param name="redirect">Indicates that the credentials should be redirected.</param>
+    public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials user, bool redirect)
     {
-        private readonly SchannelCredentials _schannel;
-        private readonly AuthenticationCredentials _user;
-        private readonly bool _redirect;
+        _schannel = schannel ?? throw new ArgumentNullException(nameof(schannel));
+        _user = user ?? throw new ArgumentNullException(nameof(user));
+        _redirect = redirect;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="schannel">The credentials for the Schannel connection.</param>
-        /// <param name="user">The credentials for the user.</param>
-        /// <param name="redirect">Indicates that the credentials should be redirected.</param>
-        public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials user, bool redirect)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="schannel">The credentials for the Schannel connection.</param>
+    /// <param name="credentials">The credentials for the user.</param>
+    public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials credentials) 
+        : this(schannel, credentials, false)
+    {
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="credentials">The credentials for the user.</param>
+    public CredSSPCredentials(AuthenticationCredentials credentials)
+    {
+        _user = credentials ?? throw new ArgumentNullException(nameof(credentials));
+    }
+
+    internal override SafeBuffer ToBuffer(DisposableList list, string package)
+    {
+        if (!AuthenticationPackage.CheckCredSSP(package) && !AuthenticationPackage.CheckTSSSP(package))
         {
-            _schannel = schannel ?? throw new ArgumentNullException(nameof(schannel));
-            _user = user ?? throw new ArgumentNullException(nameof(user));
-            _redirect = redirect;
+            throw new ArgumentException("Can only use CredSSPCredentials for the CredSSP package.", nameof(package));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="schannel">The credentials for the Schannel connection.</param>
-        /// <param name="credentials">The credentials for the user.</param>
-        public CredSSPCredentials(SchannelCredentials schannel, AuthenticationCredentials credentials) 
-            : this(schannel, credentials, false)
+        CREDSSP_CRED ret = new()
         {
-        }
+            Type = CREDSSP_SUBMIT_TYPE.CredsspSubmitBufferBoth,
+            pSchannelCred = list.AddBuffer(_schannel?.ToBuffer(list, package)),
+            pSpnegoCred = list.AddBuffer(_user?.ToBuffer(list, package))
+        };
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="credentials">The credentials for the user.</param>
-        public CredSSPCredentials(AuthenticationCredentials credentials)
+        if (!AuthenticationPackage.CheckTSSSP(package) && !_redirect)
+            return ret.ToBuffer();
+
+        return new CREDSSP_CRED_EX()
         {
-            _user = credentials ?? throw new ArgumentNullException(nameof(credentials));
-        }
-
-        internal override SafeBuffer ToBuffer(DisposableList list, string package)
-        {
-            if (!AuthenticationPackage.CheckCredSSP(package) && !AuthenticationPackage.CheckTSSSP(package))
-            {
-                throw new ArgumentException("Can only use CredSSPCredentials for the CredSSP package.", nameof(package));
-            }
-
-            CREDSSP_CRED ret = new CREDSSP_CRED
-            {
-                Type = CREDSSP_SUBMIT_TYPE.CredsspSubmitBufferBoth,
-                pSchannelCred = list.AddBuffer(_schannel?.ToBuffer(list, package)),
-                pSpnegoCred = list.AddBuffer(_user?.ToBuffer(list, package))
-            };
-
-            if (!AuthenticationPackage.CheckTSSSP(package) && !_redirect)
-                return ret.ToBuffer();
-
-            return new CREDSSP_CRED_EX()
-            {
-                Type = CREDSSP_SUBMIT_TYPE.CredsspCredEx,
-                Version = 0,
-                Flags = _redirect ? CredSspExFlags.Redirect : 0,
-                Cred = ret
-            }.ToBuffer();
-        }
+            Type = CREDSSP_SUBMIT_TYPE.CredsspCredEx,
+            Version = 0,
+            Flags = _redirect ? CredSspExFlags.Redirect : 0,
+            Cred = ret
+        }.ToBuffer();
     }
 }

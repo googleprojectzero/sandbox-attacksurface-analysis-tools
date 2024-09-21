@@ -1,4 +1,4 @@
-﻿namespace NtApiDotNet.Forms
+﻿namespace NtCoreLib.Forms
 {
     partial class SecurityDescriptorViewerControl
     {
@@ -38,8 +38,8 @@
             this.lblOwnerValue = new System.Windows.Forms.Label();
             this.lblGroupValue = new System.Windows.Forms.Label();
             this.lblIntegrityValue = new System.Windows.Forms.Label();
-            this.aclViewerControlDacl = new NtApiDotNet.Forms.AclViewerControl();
-            this.aclViewerControlSacl = new NtApiDotNet.Forms.AclViewerControl();
+            this.aclViewerControlDacl = new NtCoreLib.Forms.AclViewerControl();
+            this.aclViewerControlSacl = new NtCoreLib.Forms.AclViewerControl();
             lblOwner = new System.Windows.Forms.Label();
             lblGroup = new System.Windows.Forms.Label();
             lblIntegrity = new System.Windows.Forms.Label();

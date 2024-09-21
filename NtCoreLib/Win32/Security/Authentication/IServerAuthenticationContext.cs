@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Placeholder interface for a server authentication context.
+/// </summary>
+public interface IServerAuthenticationContext : IAuthenticationContext
 {
     /// <summary>
-    /// Placeholder interface for a server authentication context.
+    /// Current request attributes.
     /// </summary>
-    public interface IServerAuthenticationContext : IAuthenticationContext
-    {
-        /// <summary>
-        /// Current request attributes.
-        /// </summary>
-        AcceptContextReqFlags RequestAttributes { get; set; }
+    AcceptContextReqFlags RequestAttributes { get; set; }
 
-        /// <summary>
-        /// Current return attributes.
-        /// </summary>
-        AcceptContextRetFlags ReturnAttributes { get; }
-    }
+    /// <summary>
+    /// Current return attributes.
+    /// </summary>
+    AcceptContextRetFlags ReturnAttributes { get; }
 }

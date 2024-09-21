@@ -12,38 +12,36 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
+using NtCoreLib.Utilities.Data;
 using System;
-using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+internal struct NegoExMessageHeader
 {
-    internal struct NegoExMessageHeader
+    public ulong Signature;
+    public NegoExMessageType MessageType;
+    public uint SequenceNum;
+    public int cbHeaderLength;
+    public int cbMessageLength;
+    public Guid ConversationId;
+
+    // Magic of NEGOEXTS
+    public const ulong MESSAGE_SIGNATURE = 0x535458454F47454EUL;
+
+    public const int HEADER_SIZE = 40;
+
+    public static bool TryParse(DataReader reader, out NegoExMessageHeader header)
     {
-        public ulong Signature;
-        public NegoExMessageType MessageType;
-        public uint SequenceNum;
-        public int cbHeaderLength;
-        public int cbMessageLength;
-        public Guid ConversationId;
-
-        // Magic of NEGOEXTS
-        public const ulong MESSAGE_SIGNATURE = 0x535458454F47454EUL;
-
-        public const int HEADER_SIZE = 40;
-
-        public static bool TryParse(DataReader reader, out NegoExMessageHeader header)
-        {
-            header = new NegoExMessageHeader();
-            header.Signature = reader.ReadUInt64();
-            if (header.Signature != MESSAGE_SIGNATURE)
-                return false;
-            header.MessageType = reader.ReadInt32Enum<NegoExMessageType>();
-            header.SequenceNum = reader.ReadUInt32();
-            header.cbHeaderLength = reader.ReadInt32();
-            header.cbMessageLength = reader.ReadInt32();
-            header.ConversationId = reader.ReadGuid();
-            return true;
-        }
+        header = new NegoExMessageHeader();
+        header.Signature = reader.ReadUInt64();
+        if (header.Signature != MESSAGE_SIGNATURE)
+            return false;
+        header.MessageType = reader.ReadInt32Enum<NegoExMessageType>();
+        header.SequenceNum = reader.ReadUInt32();
+        header.cbHeaderLength = reader.ReadInt32();
+        header.cbMessageLength = reader.ReadInt32();
+        header.ConversationId = reader.ReadGuid();
+        return true;
     }
 }

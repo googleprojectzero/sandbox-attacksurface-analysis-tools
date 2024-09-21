@@ -12,42 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the file attributes for a file.</para>
+/// <para type="description">This cmdlet gets the file attributes for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileAttribute -File $f</code>
+///   <para>Get the file attributes for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileAttribute -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the file attributes for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileAttribute -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the file attributes for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileAttribute", DefaultParameterSetName = "Default")]
+[OutputType(typeof(FileAttributes))]
+public class GetNtFileAttributeCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the file attributes for a file.</para>
-    /// <para type="description">This cmdlet gets the file attributes for a file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileAttribute -File $f</code>
-    ///   <para>Get the file attributes for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileAttribute -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the file attributes for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileAttribute -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the file attributes for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileAttribute", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(FileAttributes))]
-    public class GetNtFileAttributeCmdlet : BaseNtFilePropertyCmdlet
+    public GetNtFileAttributeCmdlet() 
+        : base(FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileAttributeCmdlet() 
-            : base(FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(file.FileAttributes);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(file.FileAttributes);
     }
 }

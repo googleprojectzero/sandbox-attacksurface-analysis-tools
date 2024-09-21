@@ -16,59 +16,58 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Class to represent a AS request with a password.
+/// </summary>
+public sealed class KerberosASRequestPassword : KerberosASRequestBase
 {
+    #region Public Properties
     /// <summary>
-    /// Class to represent a AS request with a password.
+    /// The user's password.
     /// </summary>
-    public sealed class KerberosASRequestPassword : KerberosASRequestBase
+    public string Password { get; }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="password">The password for the user.</param>
+    /// <param name="client_name">The client name for the ticket.</param>
+    /// <param name="realm">The client and server realm realm.</param>
+    public KerberosASRequestPassword(string password, KerberosPrincipalName client_name, string realm)
     {
-        #region Public Properties
-        /// <summary>
-        /// The user's password.
-        /// </summary>
-        public string Password { get; }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="password">The password for the user.</param>
-        /// <param name="client_name">The client name for the ticket.</param>
-        /// <param name="realm">The client and server realm realm.</param>
-        public KerberosASRequestPassword(string password, KerberosPrincipalName client_name, string realm)
-        {
-            Password = password ?? throw new ArgumentNullException(nameof(password));
-            ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
-            Realm = realm ?? throw new ArgumentNullException(nameof(realm));
-        }
-        #endregion
-
-        #region Internal Members
-        internal KerberosAuthenticationKey DeriveKey(KerberosEncryptionType enc_type, IEnumerable<KerberosPreAuthenticationData> pre_auth_data)
-        {
-            switch (enc_type)
-            {
-                case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
-                    return KerberosAuthenticationKey.DeriveKey(KerberosEncryptionType.ARCFOUR_HMAC_MD5, Password, 0, null, null, 0);
-                case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
-                case KerberosEncryptionType.NULL:
-                    break;
-                default:
-                    throw new ArgumentException($"Unsupported encryption type for key derivation {enc_type}", nameof(enc_type));
-            }
-
-            var etype_info2 = pre_auth_data?.OfType<KerberosPreAuthenticationDataEncryptionTypeInfo2>().FirstOrDefault();
-            if (etype_info2 == null || etype_info2.Entries.Count == 0)
-                throw new ArgumentException("No PA-ETYPE-INFO2 available.", nameof(pre_auth_data));
-            var etype_entry = etype_info2.Entries.FirstOrDefault(e => enc_type == KerberosEncryptionType.NULL || e.EncryptionType == enc_type);
-            if (etype_entry == null)
-                throw new ArgumentException("No salt available for key.", nameof(pre_auth_data));
-            return KerberosAuthenticationKey.DeriveKey(etype_entry.EncryptionType, Password, 4096, 
-                KerberosNameType.PRINCIPAL, "UNKNOWN", etype_entry.Salt ?? string.Empty, 0);
-        }
-        #endregion
+        Password = password ?? throw new ArgumentNullException(nameof(password));
+        ClientName = client_name ?? throw new ArgumentNullException(nameof(client_name));
+        Realm = realm ?? throw new ArgumentNullException(nameof(realm));
     }
+    #endregion
+
+    #region Internal Members
+    internal KerberosAuthenticationKey DeriveKey(KerberosEncryptionType enc_type, IEnumerable<KerberosPreAuthenticationData> pre_auth_data)
+    {
+        switch (enc_type)
+        {
+            case KerberosEncryptionType.ARCFOUR_HMAC_MD5:
+                return KerberosAuthenticationKey.DeriveKey(KerberosEncryptionType.ARCFOUR_HMAC_MD5, Password, 0, null, null, 0);
+            case KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96:
+            case KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96:
+            case KerberosEncryptionType.NULL:
+                break;
+            default:
+                throw new ArgumentException($"Unsupported encryption type for key derivation {enc_type}", nameof(enc_type));
+        }
+
+        var etype_info2 = pre_auth_data?.OfType<KerberosPreAuthenticationDataEncryptionTypeInfo2>().FirstOrDefault();
+        if (etype_info2 == null || etype_info2.Entries.Count == 0)
+            throw new ArgumentException("No PA-ETYPE-INFO2 available.", nameof(pre_auth_data));
+        var etype_entry = etype_info2.Entries.FirstOrDefault(e => enc_type == KerberosEncryptionType.NULL || e.EncryptionType == enc_type);
+        if (etype_entry == null)
+            throw new ArgumentException("No salt available for key.", nameof(pre_auth_data));
+        return KerberosAuthenticationKey.DeriveKey(etype_entry.EncryptionType, Password, 4096, 
+            KerberosNameType.PRINCIPAL, "UNKNOWN", etype_entry.Salt ?? string.Empty, 0);
+    }
+    #endregion
 }

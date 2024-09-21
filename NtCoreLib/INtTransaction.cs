@@ -12,32 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet
+using NtCoreLib.Native.SafeHandles;
+
+namespace NtCoreLib;
+
+/// <summary>
+/// Interface to abstract the kernel transaction manager support.
+/// </summary>
+public interface INtTransaction
 {
     /// <summary>
-    /// Interface to abstract the kernel transaction manager support.
+    /// Get handle for the transaction.
     /// </summary>
-    public interface INtTransaction
-    {
-        /// <summary>
-        /// Get handle for the transaction.
-        /// </summary>
-        SafeKernelObjectHandle Handle { get; }
+    SafeKernelObjectHandle Handle { get; }
 
-        /// <summary>
-        /// Commit the transaction
-        /// </summary>
-        void Commit();
+    /// <summary>
+    /// Commit the transaction
+    /// </summary>
+    void Commit();
 
-        /// <summary>
-        /// Rollback the transaction
-        /// </summary>
-        void Rollback();
+    /// <summary>
+    /// Rollback the transaction
+    /// </summary>
+    void Rollback();
 
-        /// <summary>
-        /// Enable the transaction for anything in the current thread context.
-        /// </summary>
-        /// <returns>The transaction context. This should be disposed to disable the transaction.</returns>
-        TransactionContext Enable();
-    }
+    /// <summary>
+    /// Enable the transaction for anything in the current thread context.
+    /// </summary>
+    /// <returns>The transaction context. This should be disposed to disable the transaction.</returns>
+    TransactionContext Enable();
 }

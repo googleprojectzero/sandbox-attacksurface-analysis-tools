@@ -14,22 +14,21 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.Misc
+namespace NtCoreLib.Utilities.Misc;
+
+/// <summary>
+/// Miscellaneous utilities.
+/// </summary>
+public static class MiscUtils
 {
     /// <summary>
-    /// Miscellaneous utilities.
+    /// Convert a disposable object to a detachable object.
     /// </summary>
-    public static class MiscUtils
+    /// <typeparam name="T">The disposable object type.</typeparam>
+    /// <param name="obj">The disposable object.</param>
+    /// <returns>The disposable container.</returns>
+    public static DetachableContainer<T> AsDetachable<T>(this T obj) where T : class, IDisposable
     {
-        /// <summary>
-        /// Convert a disposable object to a detachable object.
-        /// </summary>
-        /// <typeparam name="T">The disposable object type.</typeparam>
-        /// <param name="obj">The disposable object.</param>
-        /// <returns>The disposable container.</returns>
-        public static DetachableContainer<T> AsDetachable<T>(this T obj) where T : class, IDisposable
-        {
-            return new DetachableContainer<T>(obj);
-        }
+        return new DetachableContainer<T>(obj);
     }
 }

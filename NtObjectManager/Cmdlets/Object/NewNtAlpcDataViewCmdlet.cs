@@ -12,52 +12,53 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Kernel.Alpc;
+using NtCoreLib.Native.SafeBuffers;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Creates a new data view from a port section.</para>
+/// <para type="description">This cmdlet creates a new data view from a port section specified size and flags.</para>
+/// </summary>
+/// <example>
+///   <code>$s = New-NtAlpcDataView -Section $section -Size 10000</code>
+///   <para>Create a new data view with size 10000.</para>
+/// </example>
+/// <example>
+///   <code>$s = New-NtAlpcDataView -Size 10000 -Flags Secure</code>
+///   <para>Create a new secure data view section of size 10000.</para>
+/// </example>
+/// <para type="link">about_ManagingNtObjectLifetime</para>
+[Cmdlet(VerbsCommon.New, "NtAlpcDataView")]
+[OutputType(typeof(SafeAlpcDataViewBuffer))]
+public class NewNtAlpcDataViewCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Creates a new data view from a port section.</para>
-    /// <para type="description">This cmdlet creates a new data view from a port section specified size and flags.</para>
+    /// <para type="description">Specify the port to create the port section from.</para>
     /// </summary>
-    /// <example>
-    ///   <code>$s = New-NtAlpcDataView -Section $section -Size 10000</code>
-    ///   <para>Create a new data view with size 10000.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$s = New-NtAlpcDataView -Size 10000 -Flags Secure</code>
-    ///   <para>Create a new secure data view section of size 10000.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.New, "NtAlpcDataView")]
-    [OutputType(typeof(SafeAlpcDataViewBuffer))]
-    public class NewNtAlpcDataViewCmdlet : PSCmdlet
+    [Parameter(Position = 0, Mandatory = true)]
+    public AlpcPortSection Section { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the size of the data view. This will be rounded up to the nearest allocation boundary.</para>
+    /// </summary>
+    [Parameter(Position = 1)]
+    public long Size { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify data view attribute flags.</para>
+    /// </summary>
+    [Parameter]
+    public AlpcDataViewAttrFlags Flags { get; set; }
+
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the port to create the port section from.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        public AlpcPortSection Section { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the size of the data view. This will be rounded up to the nearest allocation boundary.</para>
-        /// </summary>
-        [Parameter(Position = 1)]
-        public long Size { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify data view attribute flags.</para>
-        /// </summary>
-        [Parameter]
-        public AlpcDataViewAttrFlags Flags { get; set; }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            WriteObject(Section.CreateSectionView(Flags, Size == 0 ? Section.Size : Size));
-        }
+        WriteObject(Section.CreateSectionView(Flags, Size == 0 ? Section.Size : Size));
     }
 }

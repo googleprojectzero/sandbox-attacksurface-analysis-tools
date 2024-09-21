@@ -12,114 +12,103 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a PAC signature.
+/// </summary>
+public class KerberosAuthorizationDataPACSignature : KerberosAuthorizationDataPACEntry
 {
     /// <summary>
-    /// Class to represent a PAC signature.
+    /// Signature type.
     /// </summary>
-    public class KerberosAuthorizationDataPACSignature : KerberosAuthorizationDataPACEntry
+    public KerberosChecksumType SignatureType { get; }
+    /// <summary>
+    /// Signature.
+    /// </summary>
+    public byte[] Signature { get; }
+    /// <summary>
+    /// Read-only Domain Controller Identifier.
+    /// </summary>
+    public int? RODCIdentifier { get; }
+
+    /// <summary>
+    /// Convert to a builder.
+    /// </summary>
+    /// <returns>The builder object.</returns>
+    public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
     {
-        /// <summary>
-        /// Signature type.
-        /// </summary>
-        public KerberosChecksumType SignatureType { get; }
-        /// <summary>
-        /// Signature.
-        /// </summary>
-        public byte[] Signature { get; }
-        /// <summary>
-        /// Read-only Domain Controller Identifier.
-        /// </summary>
-        public int? RODCIdentifier { get; }
+        return new KerberosAuthorizationDataPACSignatureBuilder(PACType, SignatureType, Signature, RODCIdentifier);
+    }
 
-        /// <summary>
-        /// Convert to a builder.
-        /// </summary>
-        /// <returns>The builder object.</returns>
-        public override KerberosAuthorizationDataPACEntryBuilder ToBuilder()
+    /// <summary>
+    /// Compare the signature against another.
+    /// </summary>
+    /// <param name="obj">The signature to check.</param>
+    /// <returns>True if the signatures are equal.</returns>
+    public override bool Equals(object obj)
+    {
+        if (!(obj is KerberosAuthorizationDataPACSignature other))
+            return false;
+        return other.SignatureType == SignatureType && other.RODCIdentifier == RODCIdentifier &&
+            NtObjectUtils.EqualByteArray(other.Signature, Signature);
+    }
+
+    /// <summary>
+    /// Calculate hash code.
+    /// </summary>
+    /// <returns>The hash code.</returns>
+    public override int GetHashCode()
+    {
+        return SignatureType.GetHashCode() ^ RODCIdentifier.GetHashCode() 
+            ^ NtObjectUtils.GetHashCodeByteArray(Signature);
+    }
+
+    private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
+        byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)
+        : base(type, data)
+    {
+        SignatureType = sig_type;
+        Signature = signature;
+        RODCIdentifier = rodc_id;
+    }
+
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"Signature Type   : {SignatureType}");
+        builder.AppendLine($"Signature        : {NtObjectUtils.ToHexString(Signature)}");
+        if (RODCIdentifier.HasValue)
         {
-            return new KerberosAuthorizationDataPACSignatureBuilder(PACType, SignatureType, Signature, RODCIdentifier);
+            builder.AppendLine($"RODC Identifier  : {RODCIdentifier}");
         }
+    }
 
-        /// <summary>
-        /// Compare the signature against another.
-        /// </summary>
-        /// <param name="obj">The signature to check.</param>
-        /// <returns>True if the signatures are equal.</returns>
-        public override bool Equals(object obj)
+    internal static bool Parse(KerberosAuthorizationDataPACEntryType type, byte[] data, out KerberosAuthorizationDataPACEntry entry)
+    {
+        entry = null;
+
+        if (data.Length < 4)
+            return false;
+        KerberosChecksumType signature_type = (KerberosChecksumType)BitConverter.ToInt32(data, 0);
+        var signature_length = signature_type switch
         {
-            if (!(obj is KerberosAuthorizationDataPACSignature other))
-                return false;
-            return other.SignatureType == SignatureType && other.RODCIdentifier == RODCIdentifier &&
-                NtObjectUtils.EqualByteArray(other.Signature, Signature);
-        }
-
-        /// <summary>
-        /// Calculate hash code.
-        /// </summary>
-        /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+            KerberosChecksumType.HMAC_MD5 => 16,
+            KerberosChecksumType.HMAC_SHA1_96_AES_128 or KerberosChecksumType.HMAC_SHA1_96_AES_256 => 12,
+            _ => data.Length - 4,
+        };
+        byte[] signature = new byte[signature_length];
+        Buffer.BlockCopy(data, 4, signature, 0, signature_length);
+        int? rodc_id = null;
+        int total_size = 4 + signature_length;
+        if (data.Length - total_size >= 2)
         {
-            return SignatureType.GetHashCode() ^ RODCIdentifier.GetHashCode() 
-                ^ NtObjectUtils.GetHashCodeByteArray(Signature);
+            rodc_id = BitConverter.ToUInt16(data, total_size);
         }
-
-        private KerberosAuthorizationDataPACSignature(KerberosAuthorizationDataPACEntryType type, 
-            byte[] data, KerberosChecksumType sig_type, byte[] signature, int? rodc_id)
-            : base(type, data)
-        {
-            SignatureType = sig_type;
-            Signature = signature;
-            RODCIdentifier = rodc_id;
-        }
-
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"Signature Type   : {SignatureType}");
-            builder.AppendLine($"Signature        : {NtObjectUtils.ToHexString(Signature)}");
-            if (RODCIdentifier.HasValue)
-            {
-                builder.AppendLine($"RODC Identifier  : {RODCIdentifier}");
-            }
-        }
-
-        internal static bool Parse(KerberosAuthorizationDataPACEntryType type, byte[] data, out KerberosAuthorizationDataPACEntry entry)
-        {
-            entry = null;
-
-            if (data.Length < 4)
-                return false;
-            KerberosChecksumType signature_type = (KerberosChecksumType)BitConverter.ToInt32(data, 0);
-
-            int signature_length;
-            switch (signature_type)
-            {
-                case KerberosChecksumType.HMAC_MD5:
-                    signature_length = 16;
-                    break;
-                case KerberosChecksumType.HMAC_SHA1_96_AES_128:
-                case KerberosChecksumType.HMAC_SHA1_96_AES_256:
-                    signature_length = 12;
-                    break;
-                default:
-                    signature_length = data.Length - 4;
-                    break;
-            }
-
-            byte[] signature = new byte[signature_length];
-            Buffer.BlockCopy(data, 4, signature, 0, signature_length);
-            int? rodc_id = null;
-            int total_size = 4 + signature_length;
-            if (data.Length - total_size >= 2)
-            {
-                rodc_id = BitConverter.ToUInt16(data, total_size);
-            }
-            entry = new KerberosAuthorizationDataPACSignature(type, data, signature_type, signature, rodc_id);
-            return true;
-        }
+        entry = new KerberosAuthorizationDataPACSignature(type, data, signature_type, signature, rodc_id);
+        return true;
     }
 }

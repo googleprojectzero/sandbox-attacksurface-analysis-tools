@@ -12,85 +12,85 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Template for network event enumeration.
+/// </summary>
+public sealed class FirewallNetEventEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallNetEvent>
 {
     /// <summary>
-    /// Template for network event enumeration.
+    /// Start time for events.
     /// </summary>
-    public sealed class FirewallNetEventEnumTemplate : FirewallConditionBuilder, IFirewallEnumTemplate<FirewallNetEvent>
+    public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// End time for event.s
+    /// </summary>
+    public DateTime EndTime { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public FirewallNetEventEnumTemplate()
     {
-        /// <summary>
-        /// Start time for events.
-        /// </summary>
-        public DateTime StartTime { get; set; }
+        StartTime = DateTime.FromFileTime(0);
+        EndTime = DateTime.MaxValue;
+    }
 
-        /// <summary>
-        /// End time for event.s
-        /// </summary>
-        public DateTime EndTime { get; set; }
+    private static bool IsValidCondition(FirewallFilterCondition condition)
+    {
+        Guid key = condition.FieldKey;
+        return key == FirewallConditionGuids.FWPM_CONDITION_IP_PROTOCOL ||
+            key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_ADDRESS ||
+            key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS ||
+            key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_PORT ||
+            key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_PORT ||
+            key == FirewallConditionGuids.FWPM_CONDITION_ALE_APP_ID ||
+            key == FirewallConditionGuids.FWPM_CONDITION_NET_EVENT_TYPE ||
+            key == FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public FirewallNetEventEnumTemplate()
+    private static FirewallFilterCondition ConvertUserId(FirewallFilterCondition condition)
+    {
+        if (condition.FieldKey != FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID)
+            return condition;
+        if (condition.Value.Type == FirewallDataType.Sid)
+            return condition;
+        if (!(condition.Value.Value is FirewallTokenInformation token_info))
+            throw new ArgumentException("Must specify a SID or FirewallTokenInformation for FWPM_CONDITION_ALE_USER_ID.");
+        if (token_info.UserSid == null)
+            throw new ArgumentException("Must specify a user SID for the TokenInformation for FWPM_CONDITION_ALE_USER_ID.");
+        return new FirewallFilterCondition(condition.MatchType, condition.FieldKey, FirewallValue.FromSid(token_info.UserSid));
+    }
+
+    SafeBuffer IFirewallEnumTemplate<FirewallNetEvent>.ToTemplateBuffer(DisposableList list)
+    {
+        var template = new FWPM_NET_EVENT_ENUM_TEMPLATE0
         {
-            StartTime = DateTime.FromFileTime(0);
-            EndTime = DateTime.MaxValue;
+            startTime = new Luid(StartTime.ToFileTime()),
+            endTime = new Luid(EndTime.ToFileTime())
+        };
+
+        var conditions = Conditions.Where(IsValidCondition).Select(ConvertUserId);
+        int count = conditions.Count();
+
+        if (count > 0)
+        {
+            template.numFilterConditions = count;
+            template.filterCondition = list.AddList(conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
         }
 
-        private static bool IsValidCondition(FirewallFilterCondition condition)
-        {
-            Guid key = condition.FieldKey;
-            return key == FirewallConditionGuids.FWPM_CONDITION_IP_PROTOCOL ||
-                key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_ADDRESS ||
-                key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS ||
-                key == FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_PORT ||
-                key == FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_PORT ||
-                key == FirewallConditionGuids.FWPM_CONDITION_ALE_APP_ID ||
-                key == FirewallConditionGuids.FWPM_CONDITION_NET_EVENT_TYPE ||
-                key == FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID;
-        }
+        return list.AddStructureRef(template);
+    }
 
-        private static FirewallFilterCondition ConvertUserId(FirewallFilterCondition condition)
-        {
-            if (condition.FieldKey != FirewallConditionGuids.FWPM_CONDITION_ALE_USER_ID)
-                return condition;
-            if (condition.Value.Type == FirewallDataType.Sid)
-                return condition;
-            if (!(condition.Value.Value is FirewallTokenInformation token_info))
-                throw new ArgumentException("Must specify a SID or FirewallTokenInformation for FWPM_CONDITION_ALE_USER_ID.");
-            if (token_info.UserSid == null)
-                throw new ArgumentException("Must specify a user SID for the TokenInformation for FWPM_CONDITION_ALE_USER_ID.");
-            return new FirewallFilterCondition(condition.MatchType, condition.FieldKey, FirewallValue.FromSid(token_info.UserSid));
-        }
-
-        SafeBuffer IFirewallEnumTemplate<FirewallNetEvent>.ToTemplateBuffer(DisposableList list)
-        {
-            var template = new FWPM_NET_EVENT_ENUM_TEMPLATE0
-            {
-                startTime = new Luid(StartTime.ToFileTime()),
-                endTime = new Luid(EndTime.ToFileTime())
-            };
-
-            var conditions = Conditions.Where(IsValidCondition).Select(ConvertUserId);
-            int count = conditions.Count();
-
-            if (count > 0)
-            {
-                template.numFilterConditions = count;
-                template.filterCondition = list.AddList(conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
-            }
-
-            return list.AddStructureRef(template);
-        }
-
-        Func<FirewallNetEvent, bool> IFirewallEnumTemplate<FirewallNetEvent>.GetFilterFunc(DisposableList list)
-        {
-            return null;
-        }
+    Func<FirewallNetEvent, bool> IFirewallEnumTemplate<FirewallNetEvent>.GetFilterFunc(DisposableList list)
+    {
+        return null;
     }
 }

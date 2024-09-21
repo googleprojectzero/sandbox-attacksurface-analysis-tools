@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// The type of action the task performs when run.
+/// </summary>
+public enum TaskActionType
 {
     /// <summary>
-    /// The type of action the task performs when run.
+    /// None or unknown.
     /// </summary>
-    public enum TaskActionType
-    {
-        /// <summary>
-        /// None or unknown.
-        /// </summary>
-        None,
-        /// <summary>
-        /// Execute a process.
-        /// </summary>
-        Execute,
-        /// <summary>
-        /// Load a COM object.
-        /// </summary>
-        ComObject,
-        /// <summary>
-        /// Send an email.
-        /// </summary>
-        SendEmail,
-        /// <summary>
-        /// Show a message.
-        /// </summary>
-        ShowMessage,
-    }
+    None,
+    /// <summary>
+    /// Execute a process.
+    /// </summary>
+    Execute,
+    /// <summary>
+    /// Load a COM object.
+    /// </summary>
+    ComObject,
+    /// <summary>
+    /// Send an email.
+    /// </summary>
+    SendEmail,
+    /// <summary>
+    /// Show a message.
+    /// </summary>
+    ShowMessage,
 }

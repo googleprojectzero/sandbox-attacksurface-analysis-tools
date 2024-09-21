@@ -14,20 +14,19 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal abstract class PDUBase
 {
-    internal abstract class PDUBase
+    public PDUType PDUType { get; }
+
+    protected PDUBase(PDUType pdu_type)
     {
-        public PDUType PDUType { get; }
+        PDUType = pdu_type;
+    }
 
-        protected PDUBase(PDUType pdu_type)
-        {
-            PDUType = pdu_type;
-        }
-
-        public virtual byte[] ToArray()
-        {
-            throw new NotImplementedException();
-        }
+    public virtual byte[] ToArray()
+    {
+        throw new NotImplementedException();
     }
 }

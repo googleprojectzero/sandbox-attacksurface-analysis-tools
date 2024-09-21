@@ -15,29 +15,28 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2SessionSetupResponsePacket : Smb2ResponsePacket
-    {
-        public Smb2SessionResponseFlags Flags { get; private set; }
-        public byte[] SecurityBuffer { get; private set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
+internal sealed class Smb2SessionSetupResponsePacket : Smb2ResponsePacket
+{
+    public Smb2SessionResponseFlags Flags { get; private set; }
+    public byte[] SecurityBuffer { get; private set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 9)
+            throw new InvalidDataException("Invalid response size for SESSION_SETUP packet.");
+        Flags = (Smb2SessionResponseFlags)reader.ReadUInt16();
+        int security_buffer_ofs = reader.ReadUInt16();
+        int security_buffer_size = reader.ReadUInt16();
+        if (security_buffer_size == 0)
         {
-            if (reader.ReadUInt16() != 9)
-                throw new InvalidDataException("Invalid response size for SESSION_SETUP packet.");
-            Flags = (Smb2SessionResponseFlags)reader.ReadUInt16();
-            int security_buffer_ofs = reader.ReadUInt16();
-            int security_buffer_size = reader.ReadUInt16();
-            if (security_buffer_size == 0)
-            {
-                SecurityBuffer = Array.Empty<byte>();
-            }
-            else
-            {
-                reader.BaseStream.Position = security_buffer_ofs;
-                SecurityBuffer = reader.ReadAllBytes(security_buffer_size);
-            }
+            SecurityBuffer = Array.Empty<byte>();
+        }
+        else
+        {
+            reader.BaseStream.Position = security_buffer_ofs;
+            SecurityBuffer = reader.ReadAllBytes(security_buffer_size);
         }
     }
 }

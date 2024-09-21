@@ -16,101 +16,135 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Utilities.Memory
+#nullable enable
+
+namespace NtCoreLib.Utilities.Memory;
+
+internal class CurrentProcessMemoryReader : IMemoryReader
 {
-    internal class CurrentProcessMemoryReader : IMemoryReader
+    private readonly List<MemoryZone> _restricted_zones = new();
+
+    [HandleProcessCorruptedStateExceptions]
+    private static T RunWithAccessCatch<T>(Func<T> func)
     {
-        private List<Tuple<long, long>> _restricted_zones = new List<Tuple<long, long>>();
-
-        internal CurrentProcessMemoryReader()
+        try
         {
+            return func();
+        }
+        catch
+        {
+            throw new NtException(NtStatus.STATUS_ACCESS_VIOLATION);
+        }
+    }
+
+    internal CurrentProcessMemoryReader()
+    {
+    }
+
+    internal CurrentProcessMemoryReader(IEnumerable<Tuple<long, int>> restricted_zones)
+    {
+        _restricted_zones = MemoryZone.MergeZones(restricted_zones.Select(
+            t => new MemoryZone(t.Item1, t.Item1 + t.Item2)).OrderBy(t => t.StartAddress));
+    }
+
+    private void CheckAddress(IntPtr address, int size)
+    {
+        if (_restricted_zones.Count == 0)
+        {
+            return;
         }
 
-        internal CurrentProcessMemoryReader(IEnumerable<Tuple<long, int>> restricted_zones)
+        long base_address = address.ToInt64();
+        MemoryZone zone = MemoryZone.FindZone(_restricted_zones, base_address) ?? throw new NtException(NtStatus.STATUS_ACCESS_VIOLATION);
+        if (base_address + size >= zone.EndAddress)
         {
-            _restricted_zones.AddRange(restricted_zones.Select(t => Tuple.Create(t.Item1, t.Item1 + t.Item2)).OrderBy(t => t.Item1));
+            throw new NtException(NtStatus.STATUS_PARTIAL_COPY);
+        }
+    }
+
+    public bool InProcess => true;
+
+    public Stream GetStream(IntPtr address, int length)
+    {
+        long max_length = int.MaxValue;
+        if (_restricted_zones.Count > 0)
+        {
+            MemoryZone zone = MemoryZone.FindZone(_restricted_zones, address.ToInt64()) ?? throw new NtException(NtStatus.STATUS_ACCESS_VIOLATION);
+            max_length = zone.EndAddress - address.ToInt64();
         }
 
-        private void CheckAddress(IntPtr address, int size)
+        return new UnmanagedMemoryStream(new SafeBufferWrapper(address), 0, Math.Min(length, max_length));
+    }
+
+    public byte ReadByte(IntPtr address)
+    {
+        CheckAddress(address, 1);
+        return RunWithAccessCatch(() => Marshal.ReadByte(address));
+    }
+
+    public short ReadInt16(IntPtr address)
+    {
+        CheckAddress(address, 2);
+        return RunWithAccessCatch(() => Marshal.ReadInt16(address));
+    }
+
+    public int ReadInt32(IntPtr address)
+    {
+        CheckAddress(address, 4);
+        return RunWithAccessCatch(() => Marshal.ReadInt32(address));
+    }
+
+    public IntPtr ReadIntPtr(IntPtr address)
+    {
+        CheckAddress(address, IntPtr.Size);
+        return RunWithAccessCatch(() => Marshal.ReadIntPtr(address));
+    }
+
+    public byte[] ReadBytes(IntPtr address, int length)
+    {
+        CheckAddress(address, length);
+        byte[] ret = new byte[length];
+        return RunWithAccessCatch(() =>
         {
-            if (_restricted_zones.Count == 0)
-            {
-                return;
-            }
-
-            long base_address = address.ToInt64();
-            foreach (var t in _restricted_zones)
-            {
-                if (base_address >= t.Item1 && base_address < t.Item2)
-                {
-                    return;
-                }
-            }
-            throw new NtException(NtStatus.STATUS_NO_MEMORY);
-        }
-
-        public bool InProcess => true;
-
-        public BinaryReader GetReader(IntPtr address)
-        {
-            CheckAddress(address, 1);
-            return new BinaryReader(new UnmanagedMemoryStream(new SafeBufferWrapper(address), 0, int.MaxValue));
-        }
-
-        public byte ReadByte(IntPtr address)
-        {
-            CheckAddress(address, 1);
-            return System.Runtime.InteropServices.Marshal.ReadByte(address);
-        }
-
-        public short ReadInt16(IntPtr address)
-        {
-            CheckAddress(address, 2);
-            return System.Runtime.InteropServices.Marshal.ReadInt16(address);
-        }
-
-        public int ReadInt32(IntPtr address)
-        {
-            CheckAddress(address, 4);
-            return System.Runtime.InteropServices.Marshal.ReadInt32(address);
-        }
-
-        public IntPtr ReadIntPtr(IntPtr address)
-        {
-            CheckAddress(address, IntPtr.Size);
-            return System.Runtime.InteropServices.Marshal.ReadIntPtr(address);
-        }
-
-        public byte[] ReadBytes(IntPtr address, int length)
-        {
-            CheckAddress(address, length);
-            byte[] ret = new byte[length];
-            System.Runtime.InteropServices.Marshal.Copy(address, ret, 0, length);
+            Marshal.Copy(address, ret, 0, length); 
             return ret;
-        }
+        });
+    }
 
-        public T ReadStruct<T>(IntPtr address) where T : struct
-        {
-            CheckAddress(address, System.Runtime.InteropServices.Marshal.SizeOf(typeof(T)));
-            return (T)System.Runtime.InteropServices.Marshal.PtrToStructure(address, typeof(T));
-        }
+    public T ReadStruct<T>(IntPtr address, int index) where T : struct
+    {
+        int size = Marshal.SizeOf<T>();
+        int offset = index > 0 ? index * Marshal.SizeOf<T>() : 0;
+        CheckAddress(address + offset, size) ;
+        return RunWithAccessCatch(() => Marshal.PtrToStructure<T>(address + offset));
+    }
 
-        public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+    public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+    {
+        CheckAddress(address, Marshal.SizeOf<T>() * count);
+        var buffer = new SafeBufferWrapper(address);
+        T[] ret = new T[count];
+        return RunWithAccessCatch(() =>
         {
-            CheckAddress(address, System.Runtime.InteropServices.Marshal.SizeOf(typeof(T)) * count);
-            var buffer = new SafeBufferWrapper(address);
-            T[] ret = new T[count];
             buffer.ReadArray(0, ret, 0, count);
             return ret;
-        }
-
-        public string ReadAnsiStringZ(IntPtr address)
-        {
-            CheckAddress(address, 1);
-            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(address);
-        }
-
-        public int PointerSize { get { return IntPtr.Size; } }
+        });
     }
+
+    public string ReadAnsiStringZ(IntPtr address)
+    {
+        return GetStream(address, int.MaxValue).ReadAnsiStringZ();
+    }
+
+    public string ReadUnicodeStringZ(IntPtr address)
+    {
+        return GetStream(address, int.MaxValue).ReadUnicodeStringZ();
+    }
+
+    public int PointerSize => IntPtr.Size;
+
+    public bool Is64Bit => Environment.Is64BitProcess;
 }

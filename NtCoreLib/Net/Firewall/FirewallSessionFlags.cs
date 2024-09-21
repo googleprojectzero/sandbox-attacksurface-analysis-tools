@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+[Flags]
+public enum FirewallSessionFlags
 {
-    [Flags]
-    public enum FirewallSessionFlags
-    {
-        None = 0,
-        [SDKName("FWPM_SESSION_FLAG_DYNAMIC")]
-        Dynamic = 0x00000001,
-        [SDKName("FWPM_SESSION_FLAG_RESERVED")]
-        Reserved = 0x10000000
-    }
+    None = 0,
+    [SDKName("FWPM_SESSION_FLAG_DYNAMIC")]
+    Dynamic = 0x00000001,
+    [SDKName("FWPM_SESSION_FLAG_RESERVED")]
+    Reserved = 0x10000000
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

@@ -14,52 +14,50 @@
 
 using System;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Exception class representing an NT status error.
+/// </summary>
+[Serializable]
+public class NtException : ApplicationException
 {
-    /// <summary>
-    /// Exception class representing an NT status error.
-    /// </summary>
-    [Serializable]
-    public class NtException : ApplicationException
+    private string GetMessage()
     {
-        private string GetMessage()
+        string message = NtObjectUtils.GetNtStatusMessage(Status);
+        if (!string.IsNullOrEmpty(message))
+            return message;
+
+        if (Enum.IsDefined(typeof(NtStatus), Status))
         {
-            string message = NtObjectUtils.GetNtStatusMessage(Status);
-            if (!string.IsNullOrEmpty(message))
-                return message;
-
-            if (Enum.IsDefined(typeof(NtStatus), Status))
-            {
-                return Status.ToString();
-            }
-
-            var error = Status.MapNtStatusToDosError();
-            if (Enum.IsDefined(error.GetType(), error))
-            {
-                return error.ToString();
-            }
-
-            return "Unknown NTSTATUS";
+            return Status.ToString();
         }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="status">Status result</param>
-        public NtException(NtStatus status) 
+        var error = Status.MapNtStatusToDosError();
+        if (Enum.IsDefined(error.GetType(), error))
         {
-            Status = status;
+            return error.ToString();
         }
 
-        /// <summary>
-        /// Returns the contained NT status code
-        /// </summary>
-        public NtStatus Status { get; }
-
-        /// <summary>
-        /// Returns a string form of the NT status code.
-        /// </summary>
-        public override string Message => $"(0x{(uint)Status:X08}) - {GetMessage()}";
+        return "Unknown NTSTATUS";
     }
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="status">Status result</param>
+    public NtException(NtStatus status) 
+    {
+        Status = status;
+    }
+
+    /// <summary>
+    /// Returns the contained NT status code
+    /// </summary>
+    public NtStatus Status { get; }
+
+    /// <summary>
+    /// Returns a string form of the NT status code.
+    /// </summary>
+    public override string Message => $"(0x{(uint)Status:X08}) - {GetMessage()}";
 }

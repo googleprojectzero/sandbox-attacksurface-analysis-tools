@@ -12,35 +12,34 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1.Parser
+namespace NtCoreLib.Utilities.ASN1.Parser;
+
+/// <summary>
+/// Class to represent a ASN1 universal object.
+/// </summary>
+public class ASN1Universal : ASN1Object
 {
     /// <summary>
-    /// Class to represent a ASN1 universal object.
+    /// The universal type tag.
     /// </summary>
-    public class ASN1Universal : ASN1Object
+    new public ASN1UniversalTag Tag => (ASN1UniversalTag)base.Tag;
+
+    private protected override string FormatTag()
     {
-        /// <summary>
-        /// The universal type tag.
-        /// </summary>
-        new public ASN1UniversalTag Tag => (ASN1UniversalTag)base.Tag;
+        return Tag.ToString();
+    }
 
-        private protected override string FormatTag()
+    new internal static ASN1Object ToObject(DERValue value)
+    {
+        if (value.Constructed)
         {
-            return Tag.ToString();
+            return new ASN1Universal(value);
         }
+        return new ASN1UniversalPrimitive(value);
+    }
 
-        new internal static ASN1Object ToObject(DERValue value)
-        {
-            if (value.Constructed)
-            {
-                return new ASN1Universal(value);
-            }
-            return new ASN1UniversalPrimitive(value);
-        }
-
-        internal ASN1Universal(DERValue value) : base(value)
-        {
-            System.Diagnostics.Debug.Assert(value.Type == DERTagType.Universal);
-        }
+    internal ASN1Universal(DERValue value) : base(value)
+    {
+        System.Diagnostics.Debug.Assert(value.Type == DERTagType.Universal);
     }
 }

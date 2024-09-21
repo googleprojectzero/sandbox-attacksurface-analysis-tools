@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to build a TGT-REP token.
+/// </summary>
+public sealed class KerberosTGSReplyBuilder : KerberosKDCReplyBuilder
 {
     /// <summary>
-    /// Class to build a TGT-REP token.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosTGSReplyBuilder : KerberosKDCReplyBuilder
+    public KerberosTGSReplyBuilder() : base(KerberosMessageType.KRB_TGS_REP)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosTGSReplyBuilder() : base(KerberosMessageType.KRB_TGS_REP)
-        {
-        }
     }
 }

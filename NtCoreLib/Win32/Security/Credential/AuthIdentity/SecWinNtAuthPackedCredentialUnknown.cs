@@ -12,30 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
+using NtCoreLib.Win32.Security.Credential.AuthIdentity;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Class to represent an unknown packed credentials structure.
+/// </summary>
+public sealed class SecWinNtAuthPackedCredentialUnknown : SecWinNtAuthPackedCredential
 {
     /// <summary>
-    /// Class to represent an unknown packed credentials structure.
+    /// The credentials data.
     /// </summary>
-    public sealed class SecWinNtAuthPackedCredentialUnknown : SecWinNtAuthPackedCredential
-    {
-        /// <summary>
-        /// The credentials data.
-        /// </summary>
-        /// <remarks>Changing the data </remarks>
-        public byte[] Credentials => _credentials.CloneBytes();
+    /// <remarks>Changing the data </remarks>
+    public byte[] Credentials => _credentials.CloneBytes();
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="cred_type">The type of packed credentials.</param>
-        /// <param name="credentials">The packed credentials structure.</param>
-        public SecWinNtAuthPackedCredentialUnknown(Guid cred_type, byte[] credentials)
-            : base(cred_type, credentials)
-        {
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="cred_type">The type of packed credentials.</param>
+    /// <param name="credentials">The packed credentials structure.</param>
+    public SecWinNtAuthPackedCredentialUnknown(Guid cred_type, byte[] credentials)
+        : base(cred_type, credentials)
+    {
     }
 }

@@ -15,15 +15,14 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Dns
-{
-    internal class DnsResourceRecordUnknown : DnsResourceRecordBase
-    {
-        public byte[] RData { get; set; }
+namespace NtCoreLib.Net.Dns;
 
-        private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
-        {
-            writer.Write(RData);
-        }
+internal class DnsResourceRecordUnknown : DnsResourceRecordBase
+{
+    public byte[] RData { get; set; }
+
+    private protected override void WriteData(BinaryWriter writer, Dictionary<string, int> string_cache)
+    {
+        writer.Write(RData);
     }
 }

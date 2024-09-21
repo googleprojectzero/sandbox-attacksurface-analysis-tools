@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Policy
-{
+namespace NtCoreLib.Win32.Security.Policy;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// List of account rights. Not the same as privileges.
-    /// </summary>
-    public enum AccountRightLogonType
-    {
-        SeInteractiveLogonRight,
-        SeNetworkLogonRight,
-        SeBatchLogonRight,
-        SeServiceLogonRight,
-        SeRemoteInteractiveLogonRight,
-        SeDenyInteractiveLogonRight,
-        SeDenyNetworkLogonRight,
-        SeDenyBatchLogonRight,
-        SeDenyServiceLogonRight,
-        SeDenyRemoteInteractiveLogonRight,
-    }
+/// <summary>
+/// List of account rights. Not the same as privileges.
+/// </summary>
+public enum AccountRightLogonType
+{
+    SeInteractiveLogonRight,
+    SeNetworkLogonRight,
+    SeBatchLogonRight,
+    SeServiceLogonRight,
+    SeRemoteInteractiveLogonRight,
+    SeDenyInteractiveLogonRight,
+    SeDenyNetworkLogonRight,
+    SeDenyBatchLogonRight,
+    SeDenyServiceLogonRight,
+    SeDenyRemoteInteractiveLogonRight,
 }

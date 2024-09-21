@@ -13,56 +13,76 @@
 //  limitations under the License.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
-namespace NtApiDotNet.Utilities.Memory
+namespace NtCoreLib.Utilities.Memory;
+
+internal static class UnmanagedUtils
 {
-    internal static class UnmanagedUtils
+    internal static T ReadStruct<T>(this SafeBuffer buffer)
     {
-        internal static T ReadStruct<T>(this SafeBuffer buffer)
-        {
-            return ReadStruct<T>(buffer.DangerousGetHandle());
-        }
+        return ReadStruct<T>(buffer.DangerousGetHandle());
+    }
 
+    internal static T ReadStruct<T>(this IntPtr ptr)
+    {
+        if (ptr == IntPtr.Zero)
+            return default;
+        return Marshal.PtrToStructure<T>(ptr);
+    }
 
-        internal static T ReadStruct<T>(this IntPtr ptr)
-        {
-            if (ptr == IntPtr.Zero)
-                return default;
-            return Marshal.PtrToStructure<T>(ptr);
-        }
+    internal static Guid? ReadGuid(this IntPtr ptr)
+    {
+        if (ptr == IntPtr.Zero)
+            return null;
+        return ReadStruct<Guid>(ptr);
+    }
 
-        internal static Guid? ReadGuid(this IntPtr ptr)
+    internal static T[] ReadArray<T>(this IntPtr ptr, int count)
+    {
+        if (ptr == IntPtr.Zero)
+            return null;
+        T[] ret = new T[count];
+        int element_size = Marshal.SizeOf<T>();
+        for (int i = 0; i < count; ++i)
         {
-            if (ptr == IntPtr.Zero)
-                return null;
-            return ReadStruct<Guid>(ptr);
+            ret[i] = ReadStruct<T>(ptr + (i * element_size));
         }
+        return ret;
+    }
 
-        internal static T[] ReadArray<T>(this IntPtr ptr, int count)
-        {
-            if (ptr == IntPtr.Zero)
-                return null;
-            T[] ret = new T[count];
-            int element_size = Marshal.SizeOf<T>();
-            for (int i = 0; i < count; ++i)
-            {
-                ret[i] = ReadStruct<T>(ptr + (i * element_size));
-            }
-            return ret;
-        }
+    internal static string[] ReadStringArray(this IntPtr ptr, int count)
+    {
+        if (ptr == IntPtr.Zero)
+            return null;
+        return ReadArray<IntPtr>(ptr, count).Select(p => Marshal.PtrToStringUni(p)).ToArray();
+    }
 
-        internal static string[] ReadStringArray(this IntPtr ptr, int count)
+    internal static string ReadAnsiStringZ(this Stream stm)
+    {
+        StringBuilder builder = new();
+        int ch = stm.ReadByte();
+        while (ch > 0)
         {
-            if (ptr == IntPtr.Zero)
-                return null;
-            return ReadArray<IntPtr>(ptr, count).Select(p => Marshal.PtrToStringUni(p)).ToArray();
+            builder.Append((char)ch);
+            ch = stm.ReadByte();
         }
+        return builder.ToString();
+    }
 
-        internal static T[] ReadArray<T, U>(this IntPtr ptr, int count, Func<U, T> map_func)
+    internal static string ReadUnicodeStringZ(this Stream stm)
+    {
+        StringBuilder builder = new();
+        BinaryReader reader = new(stm, Encoding.Unicode);
+        char ch = reader.ReadChar();
+        while (ch != 0)
         {
-            return ptr.ReadArray<U>(count).Select(map_func).ToArray();
+            builder.Append(ch);
+            ch = reader.ReadChar();
         }
+        return builder.ToString();
     }
 }

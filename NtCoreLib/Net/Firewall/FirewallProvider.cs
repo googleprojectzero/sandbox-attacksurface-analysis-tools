@@ -13,35 +13,35 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall provider.
+/// </summary>
+public sealed class FirewallProvider : FirewallObject
 {
     /// <summary>
-    /// Class to represent a firewall provider.
+    /// Name of the service which implements the provider.
     /// </summary>
-    public sealed class FirewallProvider : FirewallObject
+    public string ServiceName { get; }
+
+    /// <summary>
+    /// Flags for the provider.
+    /// </summary>
+    public FirewallProviderFlags Flags { get; }
+
+    /// <summary>
+    /// Provider data.
+    /// </summary>
+    public byte[] ProviderData { get; }
+
+    internal FirewallProvider(FWPM_PROVIDER0 provider, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
+        : base(provider.providerKey, provider.displayData, new NamedGuidDictionary(), engine, get_sd)
     {
-        /// <summary>
-        /// Name of the service which implements the provider.
-        /// </summary>
-        public string ServiceName { get; }
-
-        /// <summary>
-        /// Flags for the provider.
-        /// </summary>
-        public FirewallProviderFlags Flags { get; }
-
-        /// <summary>
-        /// Provider data.
-        /// </summary>
-        public byte[] ProviderData { get; }
-
-        internal FirewallProvider(FWPM_PROVIDER0 provider, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd)
-            : base(provider.providerKey, provider.displayData, new NamedGuidDictionary(), engine, get_sd)
-        {
-            ServiceName = provider.serviceName ?? string.Empty;
-            Flags = provider.flags;
-            ProviderData = provider.providerData.ToArray();
-        }
+        ServiceName = provider.serviceName ?? string.Empty;
+        Flags = provider.flags;
+        ProviderData = provider.providerData.ToArray();
     }
 }

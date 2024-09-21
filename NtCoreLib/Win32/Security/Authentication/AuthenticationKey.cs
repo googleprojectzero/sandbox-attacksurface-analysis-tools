@@ -12,12 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Base class which represents an authentication key.
+/// </summary>
+public abstract class AuthenticationKey
 {
-    /// <summary>
-    /// Base class which represents an authentication key.
-    /// </summary>
-    public abstract class AuthenticationKey
-    {
-    }
 }

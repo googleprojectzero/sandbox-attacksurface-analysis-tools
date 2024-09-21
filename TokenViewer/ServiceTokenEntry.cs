@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Win32.Service;
 using System;
 
-namespace TokenViewer
+namespace TokenViewer;
+
+internal class ServiceTokenEntry : IDisposable
 {
-    internal class ServiceTokenEntry : IDisposable
+    public ServiceInstance Service { get; }
+    public NtToken ProcessToken { get; }
+
+    public ServiceTokenEntry(ServiceInstance service, NtToken token)
     {
-        public Win32Service Service { get; }
-        public NtToken ProcessToken { get; }
+        Service = service;
+        ProcessToken = token.Duplicate();
+    }
 
-        public ServiceTokenEntry(Win32Service service, NtToken token)
-        {
-            Service = service;
-            ProcessToken = token.Duplicate();
-        }
-
-        public virtual void Dispose()
-        {
-            ProcessToken?.Dispose();
-        }
+    public virtual void Dispose()
+    {
+        ProcessToken?.Dispose();
     }
 }

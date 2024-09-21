@@ -12,34 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System;
 using System.Windows.Forms;
 
-namespace EditSection
+namespace EditSection;
+
+class ProcessTreeNode : TreeNode
 {
-    class ProcessTreeNode : TreeNode
+    private readonly int _id;
+    private readonly string _name;
+
+    public ProcessTreeNode(NtProcess p)
+        : base($"[{p.ProcessId}/0x{p.ProcessId:X}] {p.Name}")
     {
-        private readonly int _id;
-        private readonly string _name;
+        _id = p.ProcessId;
+        _name = p.Name;
+        Nodes.Add(new TreeNode("Dummy"));
+    }
 
-        public ProcessTreeNode(NtProcess p)
-            : base($"[{p.ProcessId}/0x{p.ProcessId:X}] {p.Name}")
+    public void PopulateChildren()
+    {
+        Nodes.Clear();
+        foreach (NtHandle h in NtSystemInfo.GetHandles(_id, true))
         {
-            _id = p.ProcessId;
-            _name = p.Name;
-            Nodes.Add(new TreeNode("Dummy"));
-        }
-
-        public void PopulateChildren()
-        {
-            Nodes.Clear();
-            foreach (NtHandle h in NtSystemInfo.GetHandles(_id, true))
+            if (h.ObjectType.Equals("section", StringComparison.OrdinalIgnoreCase))
             {
-                if (h.ObjectType.Equals("section", StringComparison.OrdinalIgnoreCase))
-                {
-                    Nodes.Add(new SectionTreeNode(h));
-                }
+                Nodes.Add(new SectionTreeNode(h));
             }
         }
     }

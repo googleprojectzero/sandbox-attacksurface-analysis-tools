@@ -17,86 +17,85 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal static class DnsUtils
 {
-    internal static class DnsUtils
+    private static void WriteStringPart(this BinaryWriter writer, string value, Dictionary<string, int> string_cache)
     {
-        private static void WriteStringPart(this BinaryWriter writer, string value, Dictionary<string, int> string_cache)
+        if (string.IsNullOrEmpty(value) || (value == "."))
         {
-            if (string.IsNullOrEmpty(value) || (value == "."))
+            writer.WriteByte(0);
+        }
+        else
+        {
+            if (string_cache?.ContainsKey(value) ?? false)
             {
-                writer.WriteByte(0);
+                writer.WriteUInt16BE(0xC000 | string_cache[value]);
             }
             else
             {
-                if (string_cache?.ContainsKey(value) ?? false)
+                string[] values = value.Split(new[] { '.' }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+                if (values[0].Length > 63)
                 {
-                    writer.WriteUInt16BE(0xC000 | string_cache[value]);
+                    throw new InvalidDataException("DNS names components cannot be longer than 63 characters");
+                }
+
+                long pos = writer.BaseStream.Position;
+                writer.WriteByte(values[0].Length & 0x3F);
+                writer.WriteBinaryString(values[0]);
+                string_cache?.Add(value, (int)pos);
+
+                if (values.Length > 1)
+                {
+                    writer.WriteStringPart(values[1], string_cache);
                 }
                 else
                 {
-                    string[] values = value.Split(new[] { '.' }, 2, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (values[0].Length > 63)
-                    {
-                        throw new InvalidDataException("DNS names components cannot be longer than 63 characters");
-                    }
-
-                    long pos = writer.BaseStream.Position;
-                    writer.WriteByte(values[0].Length & 0x3F);
-                    writer.WriteBinaryString(values[0]);
-                    string_cache?.Add(value, (int)pos);
-
-                    if (values.Length > 1)
-                    {
-                        writer.WriteStringPart(values[1], string_cache);
-                    }
-                    else
-                    {
-                        writer.WriteStringPart(null, string_cache);
-                    }
+                    writer.WriteStringPart(null, string_cache);
                 }
             }
         }
+    }
 
-        internal static void WriteDnsString(this BinaryWriter writer, string value, Dictionary<string, int> stringCache)
+    internal static void WriteDnsString(this BinaryWriter writer, string value, Dictionary<string, int> stringCache)
+    {
+        value = value.TrimEnd().TrimEnd('.');
+
+        writer.WriteStringPart(value, stringCache);
+    }
+
+    internal static string ReadDnsString(this BinaryReader reader, byte[] data)
+    {
+        StringBuilder name = new();
+        int len = reader.ReadByte();
+
+        while (len != 0)
         {
-            value = value.TrimEnd().TrimEnd('.');
-
-            writer.WriteStringPart(value, stringCache);
-        }
-
-        internal static string ReadDnsString(this BinaryReader reader, byte[] data)
-        {
-            StringBuilder name = new StringBuilder();
-            int len = reader.ReadByte();
-
-            while (len != 0)
+            if ((len & 0xC0) != 0)
             {
-                if ((len & 0xC0) != 0)
+                int ofs = (len & ~0xC0) << 8;
+
+                ofs |= reader.ReadByte();
+
+                MemoryStream stm = new(data)
                 {
-                    int ofs = (len & ~0xC0) << 8;
+                    Position = ofs
+                };
 
-                    ofs |= reader.ReadByte();
+                name.Append(new BinaryReader(stm).ReadDnsString(data));
 
-                    MemoryStream stm = new MemoryStream(data)
-                    {
-                        Position = ofs
-                    };
-
-                    name.Append(new BinaryReader(stm).ReadDnsString(data));
-
-                    break;
-                }
-                else
-                {
-                    name.Append(reader.ReadBinaryString(len)).Append(".");
-                }
-
-                len = reader.ReadByte();
+                break;
+            }
+            else
+            {
+                name.Append(reader.ReadBinaryString(len)).Append(".");
             }
 
-            return name.ToString();
+            len = reader.ReadByte();
         }
+
+        return name.ToString();
     }
 }

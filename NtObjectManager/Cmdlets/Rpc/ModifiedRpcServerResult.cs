@@ -12,41 +12,40 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
-using NtApiDotNet.Win32;
+using NtCoreLib.Ndr.Dce;
+using NtCoreLib.Win32.Rpc.Server;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtObjectManager.Cmdlets.Rpc
+namespace NtObjectManager.Cmdlets.Rpc;
+
+/// <summary>
+/// Result of a modified RPC server.
+/// </summary>
+public class ModifiedRpcServerResult
 {
     /// <summary>
-    /// Result of a modified RPC server.
+    /// The server which was modified.
     /// </summary>
-    public class ModifiedRpcServerResult
-    {
-        /// <summary>
-        /// The server which was modified.
-        /// </summary>
-        public RpcServer Server { get; }
-        /// <summary>
-        /// The original compare server.
-        /// </summary>
-        public RpcServer CompareServer { get; }
-        /// <summary>
-        /// A collection of added procedures.
-        /// </summary>
-        public ICollection<NdrProcedureDefinition> AddedProcedure { get; }
-        /// <summary>
-        /// The count of added procedures.
-        /// </summary>
-        public int AddedProcedureCount => AddedProcedure.Count;
+    public RpcServer Server { get; }
+    /// <summary>
+    /// The original compare server.
+    /// </summary>
+    public RpcServer CompareServer { get; }
+    /// <summary>
+    /// A collection of added procedures.
+    /// </summary>
+    public ICollection<NdrProcedureDefinition> AddedProcedure { get; }
+    /// <summary>
+    /// The count of added procedures.
+    /// </summary>
+    public int AddedProcedureCount => AddedProcedure.Count;
 
-        internal ModifiedRpcServerResult(RpcServer server, RpcServer compare_server, 
-            IEnumerable<NdrProcedureDefinition> added_procedure)
-        {
-            Server = server;
-            CompareServer = compare_server;
-            AddedProcedure = added_procedure.ToList().AsReadOnly();
-        }
+    internal ModifiedRpcServerResult(RpcServer server, RpcServer compare_server, 
+        IEnumerable<NdrProcedureDefinition> added_procedure)
+    {
+        Server = server;
+        CompareServer = compare_server;
+        AddedProcedure = added_procedure.ToList().AsReadOnly();
     }
 }

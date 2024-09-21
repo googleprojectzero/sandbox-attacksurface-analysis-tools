@@ -12,73 +12,72 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32.Security.Authorization;
+using NtCoreLib.Security.Token;
+using NtCoreLib.Win32.Security.Authorization;
 using System;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// <para type="synopsis">Removes all SIDs from the AuthZ context..</para>
+/// <para type="description">This cmdlet allows you to remove all SIDs from an AuthZ context. You can specify
+/// normal, restricted or device SIDs.</para>
+/// </summary>
+/// <example>
+///   <code>Clear-AuthZSid $ctx</code>
+///   <para>Removes all normal SIDs in the context.</para>
+/// </example>
+/// <example>
+///   <code>Clear-AuthZSid $ctx -SidType Restricted</code>
+///   <para>Removes all restricted SIDs in the context.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Clear, "AuthZSid")]
+public class ClearAuthZSidCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Removes all SIDs from the AuthZ context..</para>
-    /// <para type="description">This cmdlet allows you to remove all SIDs from an AuthZ context. You can specify
-    /// normal, restricted or device SIDs.</para>
+    /// <para type="description">Specify the AuthZ client context.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Clear-AuthZSid $ctx</code>
-    ///   <para>Removes all normal SIDs in the context.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Clear-AuthZSid $ctx -SidType Restricted</code>
-    ///   <para>Removes all restricted SIDs in the context.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Clear, "AuthZSid")]
-    public class ClearAuthZSidCmdlet : PSCmdlet
+    [Parameter(Mandatory = true, Position = 0)]
+    public AuthZContext Context { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the the type of SIDs to remove.</para>
+    /// </summary>
+    [Parameter(Position = 1)]
+    public AuthZGroupSidType SidType { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public ClearAuthZSidCmdlet()
     {
-        /// <summary>
-        /// <para type="description">Specify the AuthZ client context.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public AuthZContext Context { get; set; }
+        SidType = AuthZGroupSidType.Normal;
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the the type of SIDs to remove.</para>
-        /// </summary>
-        [Parameter(Position = 1)]
-        public AuthZGroupSidType SidType { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ClearAuthZSidCmdlet()
+    private UserGroup[] GetSids()
+    {
+        switch (SidType)
         {
-            SidType = AuthZGroupSidType.Normal;
+            case AuthZGroupSidType.Normal:
+                return Context.Groups;
+            case AuthZGroupSidType.Device:
+                return Context.DeviceGroups;
+            case AuthZGroupSidType.Capability:
+                return Context.Capabilities;
+            case AuthZGroupSidType.Restricted:
+                return Context.RestrictedSids;
+            default:
+                throw new ArgumentException("Invalid SID type.");
         }
+    }
 
-        private UserGroup[] GetSids()
-        {
-            switch (SidType)
-            {
-                case AuthZGroupSidType.Normal:
-                    return Context.Groups;
-                case AuthZGroupSidType.Device:
-                    return Context.DeviceGroups;
-                case AuthZGroupSidType.Capability:
-                    return Context.Capabilities;
-                case AuthZGroupSidType.Restricted:
-                    return Context.RestrictedSids;
-                default:
-                    throw new ArgumentException("Invalid SID type.");
-            }
-        }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            Context.ModifyGroups(SidType, GetSids().Select(g => g.Sid), AuthZSidOperation.Delete);
-        }
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        Context.ModifyGroups(SidType, GetSids().Select(g => g.Sid), AuthZSidOperation.Delete);
     }
 }

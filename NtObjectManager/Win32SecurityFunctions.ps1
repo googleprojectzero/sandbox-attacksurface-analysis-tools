@@ -63,8 +63,8 @@ function Format-Win32SecurityDescriptor {
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromName", Mandatory)]
         [string]$Name,
-        [NtApiDotNet.Win32.Security.Authorization.SeObjectType]$Type = "File",
-        [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
+        [NtCoreLib.Win32.Security.Authorization.SeObjectType]$Type = "File",
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$Container,
         [alias("ToSddl")]
         [switch]$AsSddl,
@@ -100,7 +100,7 @@ Specify the type of credential.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Credential.Credential[]
+NtCoreLib.Win32.Security.Credential.Credential[]
 .EXAMPLE
 Get-Win32Credential
 Get Win32 credentials.
@@ -121,7 +121,7 @@ function Get-Win32Credential {
         [Parameter(ParameterSetName = "FromName", Position = 0, Mandatory)]
         [string]$TargetName,
         [Parameter(ParameterSetName = "FromName", Position = 1, Mandatory)]
-        [NtApiDotNet.Win32.Security.Credential.CredentialType]$Type
+        [NtCoreLib.Win32.Security.Credential.CredentialType]$Type
     )
 
     if ($PSCmdlet.ParameterSetName -eq "All") {
@@ -130,9 +130,9 @@ function Get-Win32Credential {
         } else {
             0
         }
-        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::GetCredentials($Filter, $flags) | Write-Output
+        [NtCoreLib.Win32.Security.Credential.CredentialManager]::GetCredentials($Filter, $flags) | Write-Output
     } else {
-        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::GetCredential($TargetName, $Type)
+        [NtCoreLib.Win32.Security.Credential.CredentialManager]::GetCredential($TargetName, $Type)
     }
 }
 
@@ -162,13 +162,13 @@ function Backup-Win32Credential {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [byte[]]$Key,
         [switch]$KeyEncoded
     )
 
     Enable-NtTokenPrivilege SeTrustedCredmanAccessPrivilege
-    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::Backup($Token, $Key, $KeyEncoded)
+    [NtCoreLib.Win32.Security.Credential.CredentialManager]::Backup($Token, $Key, $KeyEncoded)
 }
 
 <#
@@ -187,10 +187,10 @@ function Remove-Win32Credential {
         [Parameter(Position = 0, Mandatory)]
         [string]$TargetName,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.Win32.Security.Credential.CredentialType]$Type
+        [NtCoreLib.Win32.Security.Credential.CredentialType]$Type
     )
 
-    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::DeleteCredential($TargetName, $Type)
+    [NtCoreLib.Win32.Security.Credential.CredentialManager]::DeleteCredential($TargetName, $Type)
 }
 
 <#
@@ -230,13 +230,13 @@ function Set-Win32Credential {
 
     $cred = switch($PSCmdlet.ParameterSetName) {
         "FromPassword" {
-            [NtApiDotNet.Win32.Security.Credential.Credential]::CreateFromPassword($TargetName, $Username, $Password)
+            [NtCoreLib.Win32.Security.Credential.Credential]::CreateFromPassword($TargetName, $Username, $Password)
         }
         "FromCertificate" {
-            [NtApiDotNet.Win32.Security.Credential.Credential]::CreateFromCertificate($TargetName, $Certificate, $Pin)
+            [NtCoreLib.Win32.Security.Credential.Credential]::CreateFromCertificate($TargetName, $Certificate, $Pin)
         }
     }
-    [NtApiDotNet.Win32.Security.Credential.CredentialManager]::SetCredential($cred)
+    [NtCoreLib.Win32.Security.Credential.CredentialManager]::SetCredential($cred)
 }
 
 <#
@@ -268,24 +268,24 @@ function Protect-Win32Credential {
         [byte[]]$Byte
     )
 
-    $flags = [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::None
+    $flags = [NtCoreLib.Win32.Security.Credential.CredentialProtectFlag]::None
     if ($AsSelf) {
-        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::AsSelf
+        $flags = $flags -bor [NtCoreLib.Win32.Security.Credential.CredentialProtectFlag]::AsSelf
     }
     if ($AllowToSystem) {
-        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialProtectFlag]::AllowToSystem
+        $flags = $flags -bor [NtCoreLib.Win32.Security.Credential.CredentialProtectFlag]::AllowToSystem
     }
 
     switch($PSCmdlet.ParameterSetName) {
         "FromPassword" {
             if ($AllowToSystem) {
-                [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Password)
+                [NtCoreLib.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Password)
             } else {
-                [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredential($AsSelf, $Password)
+                [NtCoreLib.Win32.Security.Credential.CredentialManager]::ProtectCredential($AsSelf, $Password)
             }
         }
         "FromByte" {
-            [NtApiDotNet.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Byte)
+            [NtCoreLib.Win32.Security.Credential.CredentialManager]::ProtectCredentialEx($flags, $Byte)
         }
     }
 }
@@ -319,22 +319,22 @@ function Unprotect-Win32Credential {
         [switch]$AsByte
     )
 
-    $flags = [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::None
+    $flags = [NtCoreLib.Win32.Security.Credential.CredentialUnprotectFlag]::None
     if ($AsSelf) {
-        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::AsSelf
+        $flags = $flags -bor [NtCoreLib.Win32.Security.Credential.CredentialUnprotectFlag]::AsSelf
     }
     if ($AllowToSystem) {
-        $flags = $flags -bor [NtApiDotNet.Win32.Security.Credential.CredentialUnprotectFlag]::AllowToSystem
+        $flags = $flags -bor [NtCoreLib.Win32.Security.Credential.CredentialUnprotectFlag]::AllowToSystem
     }
 
     if ($AllowToSystem -or $AsByte) {
-        $ba = [NtApiDotNet.Win32.Security.Credential.CredentialManager]::UnprotectCredentialEx($flags, $Credential)
+        $ba = [NtCoreLib.Win32.Security.Credential.CredentialManager]::UnprotectCredentialEx($flags, $Credential)
         if ($AsByte) {
             $ba
         } else {
             [System.Text.Encoding]::Unicode.GetString($ba)
         }
     } else {
-        [NtApiDotNet.Win32.Security.Credential.CredentialManager]::UnprotectCredential($AsSelf, $Credential)
+        [NtCoreLib.Win32.Security.Credential.CredentialManager]::UnprotectCredential($AsSelf, $Credential)
     }
 }

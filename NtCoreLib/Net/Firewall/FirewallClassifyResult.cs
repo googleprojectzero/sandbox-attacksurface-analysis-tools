@@ -12,41 +12,40 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represet the result of a classify operations.
+/// </summary>
+public sealed class FirewallClassifyResult
 {
     /// <summary>
-    /// Class to represet the result of a classify operations.
+    /// Action type of the classify result.
     /// </summary>
-    public sealed class FirewallClassifyResult
-    {
-        /// <summary>
-        /// Action type of the classify result.
-        /// </summary>
-        public FirewallActionType ActionType { get; }
-        /// <summary>
-        /// Internal context.
-        /// </summary>
-        public ulong OutContext { get; }
-        /// <summary>
-        /// ID of the filter.
-        /// </summary>
-        public ulong FilterId { get; }
-        /// <summary>
-        /// Associated rights.
-        /// </summary>
-        public FirewallRightActions Rights { get; }
-        /// <summary>
-        /// Classify flags.
-        /// </summary>
-        public FirewallClassifyOutFlags Flags { get; }
+    public FirewallActionType ActionType { get; }
+    /// <summary>
+    /// Internal context.
+    /// </summary>
+    public ulong OutContext { get; }
+    /// <summary>
+    /// ID of the filter.
+    /// </summary>
+    public ulong FilterId { get; }
+    /// <summary>
+    /// Associated rights.
+    /// </summary>
+    public FirewallRightActions Rights { get; }
+    /// <summary>
+    /// Classify flags.
+    /// </summary>
+    public FirewallClassifyOutFlags Flags { get; }
 
-        internal FirewallClassifyResult(FWPS_CLASSIFY_OUT0 result)
-        {
-            ActionType = result.actionType;
-            OutContext = result.outContext;
-            FilterId = result.filterId;
-            Rights = result.rights;
-            Flags = result.flags;
-        }
+    internal FirewallClassifyResult(FWPS_CLASSIFY_OUT0 result)
+    {
+        ActionType = result.actionType;
+        OutContext = result.outContext;
+        FilterId = result.filterId;
+        Rights = result.rights;
+        Flags = result.flags;
     }
 }

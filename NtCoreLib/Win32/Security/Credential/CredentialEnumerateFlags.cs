@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Flags for enumeration credentials.
+/// </summary>
+[Flags]
+public enum CredentialEnumerateFlags
 {
     /// <summary>
-    /// Flags for enumeration credentials.
+    /// None.
     /// </summary>
-    [Flags]
-    public enum CredentialEnumerateFlags
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Get all credentials.
-        /// </summary>
-        [SDKName("CRED_ENUMERATE_ALL_CREDENTIALS")]
-        AllCredentials = 1,
-    }
+    None = 0,
+    /// <summary>
+    /// Get all credentials.
+    /// </summary>
+    [SDKName("CRED_ENUMERATE_ALL_CREDENTIALS")]
+    AllCredentials = 1,
 }

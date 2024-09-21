@@ -12,65 +12,65 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr.Marshal;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Ndr;
+using NtCoreLib.Ndr.Marshal;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Ndr;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Structure
+/// </summary>
+public sealed class KerberosDomainGroupMembership
 {
     /// <summary>
-    /// Structure
+    /// The domain ID SID.
     /// </summary>
-    public sealed class KerberosDomainGroupMembership
+    public Sid DomainId { get; set; }
+
+    /// <summary>
+    /// The list of membership groups.
+    /// </summary>
+    public List<KerberosGroupMembership> GroupIds { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosDomainGroupMembership()
     {
-        /// <summary>
-        /// The domain ID SID.
-        /// </summary>
-        public Sid DomainId { get; set; }
+        GroupIds = new List<KerberosGroupMembership>();
+    }
 
-        /// <summary>
-        /// The list of membership groups.
-        /// </summary>
-        public List<KerberosGroupMembership> GroupIds { get; }
+    private KerberosDomainGroupMembership(DOMAIN_GROUP_MEMBERSHIP group) : this()
+    {
+        DomainId = group.DomainId.GetValue().ToSid();
+        GroupIds.AddRange(KerberosGroupMembership.CreateGroup(group.GroupIds) ?? new List<KerberosGroupMembership>());
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosDomainGroupMembership()
-        {
-            GroupIds = new List<KerberosGroupMembership>();
-        }
-
-        private KerberosDomainGroupMembership(DOMAIN_GROUP_MEMBERSHIP group) : this()
-        {
-            DomainId = group.DomainId.GetValue().ToSid();
-            GroupIds.AddRange(KerberosGroupMembership.CreateGroup(group.GroupIds) ?? new List<KerberosGroupMembership>());
-        }
-
-        internal static List<KerberosDomainGroupMembership> FromGroup(NdrEmbeddedPointer<DOMAIN_GROUP_MEMBERSHIP[]> groups)
-        {
-            if (groups == null)
-                return null;
-            return groups.GetValue().Select(g => new KerberosDomainGroupMembership(g)).ToList();
-        }
-
-        private static DOMAIN_GROUP_MEMBERSHIP ToStruct(KerberosDomainGroupMembership group)
-        {
-            DOMAIN_GROUP_MEMBERSHIP ret = new DOMAIN_GROUP_MEMBERSHIP();
-            ret.DomainId = new RPC_SID_DEVICE(group.DomainId);
-            ret.GroupIds = KerberosGroupMembership.FromGroupDevice(group.GroupIds, ref ret.GroupCount);
-            return ret;
-        }
-
-        internal static NdrEmbeddedPointer<DOMAIN_GROUP_MEMBERSHIP[]> FromGroup(IList<KerberosDomainGroupMembership> groups, ref int count)
-        {
-            count = groups?.Count ?? 0;
-            if (groups != null)
-            {
-                return groups.Select(ToStruct).ToArray();
-            }
+    internal static List<KerberosDomainGroupMembership> FromGroup(NdrEmbeddedPointer<DOMAIN_GROUP_MEMBERSHIP[]> groups)
+    {
+        if (groups == null)
             return null;
+        return groups.GetValue().Select(g => new KerberosDomainGroupMembership(g)).ToList();
+    }
+
+    private static DOMAIN_GROUP_MEMBERSHIP ToStruct(KerberosDomainGroupMembership group)
+    {
+        DOMAIN_GROUP_MEMBERSHIP ret = new();
+        ret.DomainId = new RPC_SID_DEVICE(group.DomainId);
+        ret.GroupIds = KerberosGroupMembership.FromGroupDevice(group.GroupIds, ref ret.GroupCount);
+        return ret;
+    }
+
+    internal static NdrEmbeddedPointer<DOMAIN_GROUP_MEMBERSHIP[]> FromGroup(IList<KerberosDomainGroupMembership> groups, ref int count)
+    {
+        count = groups?.Count ?? 0;
+        if (groups != null)
+        {
+            return groups.Select(ToStruct).ToArray();
         }
+        return null;
     }
 }

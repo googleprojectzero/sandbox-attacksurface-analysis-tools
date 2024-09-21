@@ -12,97 +12,94 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// The supported transited encoding types.
+/// </summary>
+public enum KerberosTransitedEncodingType
 {
     /// <summary>
-    /// The supported transited encoding types.
+    /// None.
     /// </summary>
-    public enum KerberosTransitedEncodingType
+    None = 0,
+    /// <summary>
+    /// X.500 Compress.
+    /// </summary>
+    X500Compress = 1,
+}
+
+/// <summary>
+/// Class to represent a Kerberos Transiting Encoding.
+/// </summary>
+public sealed class KerberosTransitedEncoding : IDERObject
+{
+    /// <summary>
+    /// Transited encoding type.
+    /// </summary>
+    public KerberosTransitedEncodingType TransitedType { get; }
+
+    /// <summary>
+    /// Transited encoding data.
+    /// </summary>
+    public byte[] Data { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosTransitedEncoding() 
+        : this(KerberosTransitedEncodingType.X500Compress, Array.Empty<byte>())
     {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// X.500 Compress.
-        /// </summary>
-        X500Compress = 1,
     }
 
     /// <summary>
-    /// Class to represent a Kerberos Transiting Encoding.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosTransitedEncoding : IDERObject
+    /// <param name="type">The transited encoding type.</param>
+    /// <param name="data">The transited encoding data.</param>
+    public KerberosTransitedEncoding(KerberosTransitedEncodingType type, byte[] data)
     {
-        /// <summary>
-        /// Transited encoding type.
-        /// </summary>
-        public KerberosTransitedEncodingType TransitedType { get; }
+        TransitedType = type;
+        Data = data;
+    }
 
-        /// <summary>
-        /// Transited encoding data.
-        /// </summary>
-        public byte[] Data { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosTransitedEncoding() 
-            : this(KerberosTransitedEncodingType.X500Compress, Array.Empty<byte>())
+    internal static KerberosTransitedEncoding Parse(DERValue value)
+    {
+        if (!value.CheckSequence())
+            throw new InvalidDataException();
+        KerberosTransitedEncodingType type = 0;
+        byte[] data = null;
+        foreach (var next in value.Children)
         {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The transited encoding type.</param>
-        /// <param name="data">The transited encoding data.</param>
-        public KerberosTransitedEncoding(KerberosTransitedEncodingType type, byte[] data)
-        {
-            TransitedType = type;
-            Data = data;
-        }
-
-        internal static KerberosTransitedEncoding Parse(DERValue value)
-        {
-            if (!value.CheckSequence())
+            if (next.Type != DERTagType.ContextSpecific)
                 throw new InvalidDataException();
-            KerberosTransitedEncodingType type = 0;
-            byte[] data = null;
-            foreach (var next in value.Children)
+            switch (next.Tag)
             {
-                if (next.Type != DERTagType.ContextSpecific)
+                case 0:
+                    type = (KerberosTransitedEncodingType)next.ReadChildInteger();
+                    break;
+                case 1:
+                    data = next.ReadChildOctetString();
+                    break;
+                default:
                     throw new InvalidDataException();
-                switch (next.Tag)
-                {
-                    case 0:
-                        type = (KerberosTransitedEncodingType)next.ReadChildInteger();
-                        break;
-                    case 1:
-                        data = next.ReadChildOctetString();
-                        break;
-                    default:
-                        throw new InvalidDataException();
-                }
-            }
-
-            if (data == null)
-                throw new InvalidDataException();
-            return new KerberosTransitedEncoding(type, data);
-        }
-
-        void IDERObject.Write(DERBuilder builder)
-        {
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, (int)TransitedType);
-                seq.WriteContextSpecific(1, Data);
             }
         }
+
+        if (data == null)
+            throw new InvalidDataException();
+        return new KerberosTransitedEncoding(type, data);
+    }
+
+    void IDERObject.Write(DERBuilder builder)
+    {
+        using var seq = builder.CreateSequence();
+        seq.WriteContextSpecific(0, (int)TransitedType);
+        seq.WriteContextSpecific(1, Data);
     }
 }

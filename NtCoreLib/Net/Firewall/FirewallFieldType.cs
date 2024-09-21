@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Field type.
+/// </summary>
+public enum FirewallFieldType
 {
-    /// <summary>
-    /// Field type.
-    /// </summary>
-    public enum FirewallFieldType
-    {
-        [SDKName("FWPM_FIELD_RAW_DATA")]
-        RawData = 0,
-        [SDKName("FWPM_FIELD_IP_ADDRESS")]
-        IPAddress = RawData + 1,
-        [SDKName("FWPM_FIELD_FLAGS")]
-        Flags = IPAddress + 1
-    }
+    [SDKName("FWPM_FIELD_RAW_DATA")]
+    RawData = 0,
+    [SDKName("FWPM_FIELD_IP_ADDRESS")]
+    IPAddress = RawData + 1,
+    [SDKName("FWPM_FIELD_FLAGS")]
+    Flags = IPAddress + 1
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

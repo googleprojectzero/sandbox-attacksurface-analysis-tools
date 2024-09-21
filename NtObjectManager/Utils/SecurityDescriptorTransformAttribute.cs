@@ -12,29 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 
-namespace NtObjectManager.Utils
+namespace NtObjectManager.Utils;
+
+class SecurityDescriptorTransformAttribute : BaseTransformAttribute
 {
-    class SecurityDescriptorTransformAttribute : BaseTransformAttribute
+    public SecurityDescriptorTransformAttribute() 
+        : base(typeof(SecurityDescriptor))
     {
-        public SecurityDescriptorTransformAttribute() 
-            : base(typeof(SecurityDescriptor))
-        {
-        }
+    }
 
-        protected override object DefaultValue(object obj)
+    protected override object DefaultValue(object obj)
+    {
+        if (obj is SecurityDescriptor sd)
         {
-            if (obj is SecurityDescriptor sd)
-            {
-                return sd;
-            }
-            return new SecurityDescriptor();
+            return sd;
         }
+        return new SecurityDescriptor();
+    }
 
-        protected override NtResult<object> Parse(string value, bool throw_on_error)
-        {
-            return SecurityDescriptor.Parse(value, false);
-        }
+    protected override NtResult<object> Parse(string value, bool throw_on_error)
+    {
+        return SecurityDescriptor.Parse(value, false);
     }
 }

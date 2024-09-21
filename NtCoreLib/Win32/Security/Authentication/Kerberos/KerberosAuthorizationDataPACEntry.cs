@@ -12,77 +12,76 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Utilities.Text;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
-{
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// Type for the PAC Entry.
-    /// </summary>
-    public enum KerberosAuthorizationDataPACEntryType
-    {
-        Logon = 1,
-        Credentials = 2,
-        ServerChecksum = 6,
-        KDCChecksum = 7,
-        ClientInfo = 0xA,
-        ConstrainedDelegation = 0xB,
-        UserPrincipalName = 0xC,
-        UserClaims = 0xD,
-        Device = 0xE,
-        DeviceClaims = 0xF,
-        TicketChecksum = 0x10,
-        Attributes = 0x11,
-        Requestor = 0x12,
-        FullPacChecksum = 0x13
-    }
+/// <summary>
+/// Type for the PAC Entry.
+/// </summary>
+public enum KerberosAuthorizationDataPACEntryType
+{
+    Logon = 1,
+    Credentials = 2,
+    ServerChecksum = 6,
+    KDCChecksum = 7,
+    ClientInfo = 0xA,
+    ConstrainedDelegation = 0xB,
+    UserPrincipalName = 0xC,
+    UserClaims = 0xD,
+    Device = 0xE,
+    DeviceClaims = 0xF,
+    TicketChecksum = 0x10,
+    Attributes = 0x11,
+    Requestor = 0x12,
+    FullPacChecksum = 0x13
+}
 #pragma warning restore 1591
 
+/// <summary>
+/// Single PAC Entry.
+/// </summary>
+public class KerberosAuthorizationDataPACEntry
+{
     /// <summary>
-    /// Single PAC Entry.
+    /// Type of PAC entry.
     /// </summary>
-    public class KerberosAuthorizationDataPACEntry
+    public KerberosAuthorizationDataPACEntryType PACType { get; }
+    /// <summary>
+    /// The PAC data.
+    /// </summary>
+    public byte[] Data { get; }
+
+    /// <summary>
+    /// Convert the entry into a builder.
+    /// </summary>
+    /// <returns>The builder entry.</returns>
+    public virtual KerberosAuthorizationDataPACEntryBuilder ToBuilder()
     {
-        /// <summary>
-        /// Type of PAC entry.
-        /// </summary>
-        public KerberosAuthorizationDataPACEntryType PACType { get; }
-        /// <summary>
-        /// The PAC data.
-        /// </summary>
-        public byte[] Data { get; }
+        return new KerberosAuthorizationDataPACEntryRawBuilder(this);
+    }
 
-        /// <summary>
-        /// Convert the entry into a builder.
-        /// </summary>
-        /// <returns>The builder entry.</returns>
-        public virtual KerberosAuthorizationDataPACEntryBuilder ToBuilder()
-        {
-            return new KerberosAuthorizationDataPACEntryRawBuilder(this);
-        }
+    internal KerberosAuthorizationDataPACEntry(KerberosAuthorizationDataPACEntryType type, byte[] data)
+    {
+        PACType = type;
+        Data = data;
+    }
 
-        internal KerberosAuthorizationDataPACEntry(KerberosAuthorizationDataPACEntryType type, byte[] data)
-        {
-            PACType = type;
-            Data = data;
-        }
+    private protected virtual void FormatData(StringBuilder builder)
+    {
+        HexDumpBuilder hex = new(false, true, true, false, 0);
+        hex.Append(Data);
+        hex.Complete();
+        builder.Append(hex.ToString());
+    }
 
-        private protected virtual void FormatData(StringBuilder builder)
-        {
-            HexDumpBuilder hex = new HexDumpBuilder(false, true, true, false, 0);
-            hex.Append(Data);
-            hex.Complete();
-            builder.Append(hex.ToString());
-        }
-
-        internal void Format(StringBuilder builder)
-        {
-            builder.AppendLine($"<PAC Entry {PACType}>");
-            FormatData(builder);
-            builder.AppendLine();
-        }
+    internal void Format(StringBuilder builder)
+    {
+        builder.AppendLine($"<PAC Entry {PACType}>");
+        FormatData(builder);
+        builder.AppendLine();
     }
 }

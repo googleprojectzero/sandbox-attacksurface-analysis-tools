@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1.Parser
+namespace NtCoreLib.Utilities.ASN1.Parser;
+
+/// <summary>
+/// Class to represent an ASN1 context specific object.
+/// </summary>
+public class ASN1ContextSpecific : ASN1Object
 {
-    /// <summary>
-    /// Class to represent an ASN1 context specific object.
-    /// </summary>
-    public class ASN1ContextSpecific : ASN1Object
+    internal ASN1ContextSpecific(DERValue value) : base(value)
     {
-        internal ASN1ContextSpecific(DERValue value) : base(value)
-        {
-            System.Diagnostics.Debug.Assert(value.Type == DERTagType.ContextSpecific);
-        }
+        System.Diagnostics.Debug.Assert(value.Type == DERTagType.ContextSpecific);
     }
 }

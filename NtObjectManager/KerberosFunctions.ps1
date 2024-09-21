@@ -22,7 +22,7 @@ List of keys to write to the file.
 .PARAMETER Path
 The path to the file to export.
 .INPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 .OUTPUTS
 None
 #>
@@ -32,7 +32,7 @@ function Export-KerberosKeyTab {
         [Parameter(Position = 0, Mandatory)]
         [string]$Path,
         [Parameter(Position = 1, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key
     )
 
     BEGIN {
@@ -46,8 +46,8 @@ function Export-KerberosKeyTab {
     }
 
     END {
-        $key_arr = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$keys
-        $keytab = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr)
+        $key_arr = [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$keys
+        $keytab = [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosUtils]::GenerateKeyTabFile($key_arr)
         Write-BinaryFile -Path $Path -Byte $keytab
     }
 }
@@ -62,7 +62,7 @@ The path to the file to import.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
 #>
 function Import-KerberosKeyTab {
     [CmdletBinding()]
@@ -72,7 +72,7 @@ function Import-KerberosKeyTab {
     )
 
     $Path = Resolve-Path -Path $Path -ErrorAction Stop
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosUtils]::ReadKeyTabFile($Path) | Write-Output
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosUtils]::ReadKeyTabFile($Path) | Write-Output
 }
 
 <#
@@ -93,13 +93,13 @@ The password to use.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]
 #>
 function New-KerberosKeyTab {
     [CmdletBinding(DefaultParameterSetName="FromCreds")]
     Param(
         [Parameter(Mandatory, ParameterSetName="FromCreds")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
         [Parameter(ParameterSetName="FromParts")]
         [switch]$ReadCredential,
         [Parameter(ParameterSetName="FromParts")]
@@ -121,7 +121,7 @@ function New-KerberosKeyTab {
         }
     }
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeySet]::GetKeyTab($Credential) | Write-Output
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosKeySet]::GetKeyTab($Credential) | Write-Output
 }
 
 <#
@@ -146,7 +146,7 @@ The key as a hex string.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 #>
 function Get-KerberosKey {
     [CmdletBinding(DefaultParameterSetName="FromPassword")]
@@ -163,10 +163,10 @@ function Get-KerberosKey {
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromKey")]
         [Parameter(Mandatory, ParameterSetName="FromBase64Key")]
         [Parameter(Mandatory, ParameterSetName="FromHexKey")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
         [Parameter(ParameterSetName="FromPassword")]
         [int]$Interations = 4096,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosNameType]$NameType = "PRINCIPAL",
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosNameType]$NameType = "PRINCIPAL",
         [Parameter(Position = 2, Mandatory, ParameterSetName="FromPassword")]
         [Parameter(Position = 2, ParameterSetName="FromKey")]
         [Parameter(ParameterSetName="FromBase64Key")]
@@ -184,18 +184,18 @@ function Get-KerberosKey {
     try {
         $k = switch($PSCmdlet.ParameterSetName) {
             "FromPassword" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password.ToPlainText(), $Interations, $NameType, $Principal, $Salt, $Version)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::DeriveKey($KeyType, $Password.ToPlainText(), $Interations, $NameType, $Principal, $Salt, $Version)
             }
             "FromKey" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
             }
             "FromBase64Key" {
                 $Key = [System.Convert]::FromBase64String($Base64Key)
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
             }
             "FromHexKey" {
                 $Key = ConvertFrom-HexDump -Hex $HexKey
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::new($KeyType, $Key, $NameType, $Principal, $Timestamp, $Version)
             }
         }
         $k | Write-Output
@@ -220,23 +220,23 @@ The realm to use.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey
 #>
 function New-KerberosKey {
     [CmdletBinding(DefaultParameterSetName="FromEncType")]
     Param(
         [Parameter(Mandatory, ParameterSetName="FromEncType", Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$KeyType,
         [Parameter(Mandatory, ParameterSetName="FromKey", Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
         [string]$Realm
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromKey") {
         $Key.GenerateKey($Name, $Realm)
     } else {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::GenerateKey($KeyType, $Name, $Realm)
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]::GenerateKey($KeyType, $Name, $Realm)
     }
 }
 
@@ -262,7 +262,7 @@ Specify to only return information from the cache not the tickets themselves.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
 #>
 function Get-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="CurrentLuid")]
@@ -272,13 +272,13 @@ function Get-KerberosTicket {
         [string]$TargetName,
         [Parameter(Position = 0, ParameterSetName="FromLuid", Mandatory)]
         [Parameter(Position = 1, ParameterSetName="FromTarget")]
-        [NtApiDotNet.Luid]$LogonId = [NtApiDotNet.Luid]::new(0),
+        [NtCoreLib.Luid]$LogonId = [NtCoreLib.Luid]::new(0),
         [Parameter(Position = 0, ParameterSetName="FromLogonSession", ValueFromPipeline, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.LogonSession[]]$LogonSession,
+        [NtCoreLib.Win32.Security.Authentication.LogonSession[]]$LogonSession,
         [Parameter(ParameterSetName="FromTarget")]
-        [NtApiDotNet.Win32.Security.Authentication.CredentialHandle]$CredHandle,
+        [NtCoreLib.Win32.Security.Authentication.CredentialHandle]$CredHandle,
         [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(ParameterSetName="FromTarget")]
         [Parameter(ParameterSetName="FromLocalCache")]
         [switch]$CacheOnly,
@@ -287,11 +287,11 @@ function Get-KerberosTicket {
         [Parameter(ParameterSetName="FromLogonSession")]
         [switch]$InfoOnly,
         [Parameter(ParameterSetName="FromTarget")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosRetrieveTicketFlags]$Flags = 0,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosRetrieveTicketFlags]$Flags = 0,
         [Parameter(ParameterSetName="FromTarget")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketFlags]$TicketFlags = 0,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketFlags]$TicketFlags = 0,
         [Parameter(ParameterSetName="FromTarget")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$EncryptionType = 0
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]$EncryptionType = 0
     )
 
     PROCESS {
@@ -299,24 +299,24 @@ function Get-KerberosTicket {
             switch($PSCmdlet.ParameterSetName) {
                 "CurrentLuid" {
                     if ($InfoOnly) {
-                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo() | Write-Output
+                        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo() | Write-Output
                     } else {
-                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
+                        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache() | Write-Output
                     }
                 }
                 "FromLuid" {
                     if ($InfoOnly) {
-                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($LogonId) | Write-Output
+                        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($LogonId) | Write-Output
                     } else {
-                        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
+                        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($LogonId) | Write-Output
                     }
                 }
                 "FromLogonSession" {
                     foreach($l in $LogonSession) {
                         if ($InfoOnly) {
-                            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($l.LogonId) | Write-Output
+                            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCacheInfo($l.LogonId) | Write-Output
                         } else {
-                            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
+                            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::QueryTicketCache($l.LogonId) | Write-Output
                         }
                     }
                 }
@@ -326,7 +326,7 @@ function Get-KerberosTicket {
                         $Flags = $Flags -bor "UseCacheOnly"
                     }
 
-                    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::RetrieveTicket($TargetName, $LogonId, $CredHandle, $Flags, $TicketFlags, $EncryptionType) | Write-Output
+                    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::RetrieveTicket($TargetName, $LogonId, $CredHandle, $Flags, $TicketFlags, $EncryptionType) | Write-Output
                 }
                 "FromLocalCache" {
                     $Cache.GetTicket($TargetName, $CacheOnly)
@@ -354,7 +354,7 @@ function Format-KerberosTicket {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket
     )
 
     PROCESS {
@@ -391,7 +391,7 @@ Specify the data to checksum.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksum
 #>
 function New-KerberosChecksum {
     [CmdletBinding(DefaultParameterSetName="FromGssApi")]
@@ -399,21 +399,21 @@ function New-KerberosChecksum {
         [Parameter(ParameterSetName="FromGssApi")]
         [byte[]]$ChannelBinding,
         [Parameter(ParameterSetName="FromGssApi")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApiFlags]$ContextFlags = 0,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApiFlags]$ContextFlags = 0,
         [Parameter(ParameterSetName="FromGssApi")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(ParameterSetName="FromGssApi")]
         [int]$DelegationOptionIdentifier = 0,
         [Parameter(ParameterSetName="FromGssApi")]
         [byte[]]$Extension,
         [Parameter(Mandatory, ParameterSetName="FromRaw")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumType]$Type,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksumType]$Type,
         [Parameter(Mandatory, ParameterSetName="FromRaw")]
         [byte[]]$Checksum,
         [Parameter(Mandatory, ParameterSetName="FromKey")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(Mandatory, ParameterSetName="FromKey")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosKeyUsage]$KeyUsage,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosKeyUsage]$KeyUsage,
         [Parameter(Mandatory, ParameterSetName="FromKey")]
         [byte[]]$Data
     )
@@ -421,13 +421,13 @@ function New-KerberosChecksum {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "FromGssApi" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApi]::new($ContextFlags, $ChannelBinding, $DelegationOptionIdentifier, $Credential, $Extension)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksumGSSApi]::new($ContextFlags, $ChannelBinding, $DelegationOptionIdentifier, $Credential, $Extension)
             }
             "FromRaw" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]::new($Type, $Checksum)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksum]::new($Type, $Checksum)
             }
             "FromKey" {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]::Create($Key, $Data, $KeyUsage)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksum]::Create($Key, $Data, $KeyUsage)
             }
         }
     }
@@ -447,13 +447,13 @@ Specify the name parts as a single name with forward slashes.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName
 #>
 function New-KerberosPrincipalName {
     [CmdletBinding(DefaultParameterSetName="FromName")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosNameType]$Type,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosNameType]$Type,
         [Parameter(Mandatory, Position = 1, ParameterSetName = "FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName = "FromNamePart")]
@@ -463,10 +463,10 @@ function New-KerberosPrincipalName {
 
     switch($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $Name)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $Name)
         }
         "FromNamePart" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $NamePart)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]::new($Type, $NamePart)
         }
     }
 }
@@ -491,7 +491,7 @@ Specify authorization data.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticator
 #>
 function New-KerberosAuthenticator {
     [CmdletBinding()]
@@ -499,19 +499,19 @@ function New-KerberosAuthenticator {
         [Parameter(Mandatory, Position = 0)]
         [string]$ClientRealm,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [datetime]$ClientTime = [datetime]::MinValue,
         [int]$ClientUSec = 0,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosChecksum]$Checksum,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosChecksum]$Checksum,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
         [System.Nullable[int]]$SequenceNumber = $null,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData
     )
 
     if ($ClientTime -eq [datetime]::MinValue) {
         $ClientTime = [datetime]::Now
     }
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticator]::Create($ClientRealm, $ClientName, $ClientTime, `
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticator]::Create($ClientRealm, $ClientName, $ClientTime, `
             $ClientUSec, $Checksum, $SubKey, $SequenceNumber, $AuthorizationData)
 }
 
@@ -537,24 +537,24 @@ Specify to return a raw token with no GSSAPI header.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken
 #>
 function New-KerberosApRequest {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$Authenticator,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestOptions]$Options = 0,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$AuthenticatorKey,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$Authenticator,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAPRequestOptions]$Options = 0,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$AuthenticatorKey,
         [System.Nullable[int]]$AuthenticatorKeyVersion,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$TicketKey,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$TicketKey,
         [System.Nullable[int]]$TicketKeyVersion,
         [switch]$RawToken
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken]::Create($Ticket, $Authenticator, $Options, `
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAPRequestAuthenticationToken]::Create($Ticket, $Authenticator, $Options, `
                 $AuthenticatorKey, $AuthenticatorKeyVersion, $TicketKey, $TicketKeyVersion, $RawToken)
 }
 
@@ -572,7 +572,7 @@ Specify the ticket encrypted data.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket
 #>
 function New-KerberosTicket {
     [CmdletBinding()]
@@ -580,12 +580,12 @@ function New-KerberosTicket {
         [Parameter(Mandatory, Position = 0)]
         [string]$Realm,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [Parameter(Mandatory, Position = 2)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$EncryptedData
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptedData]$EncryptedData
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $ServerName, $EncryptedData)
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $ServerName, $EncryptedData)
 }
 
 <#
@@ -610,18 +610,18 @@ function Add-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="FromSystem")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(ParameterSetName="FromSystem")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(ParameterSetName="FromSystem")]
-        [NtApiDotNet.Luid]$LogonId = 0,
+        [NtCoreLib.Luid]$LogonId = 0,
         [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromSystem" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::SubmitTicket($Credential, $LogonId, $Key)
         }
         "FromLocalCache" {
             $Cache.AddTicket($Credential)
@@ -653,12 +653,12 @@ function Remove-KerberosTicket {
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$ServerName,
         [Parameter(Position = 2, ParameterSetName="FromName")]
-        [NtApiDotNet.Luid]$LogonId = 0,
+        [NtCoreLib.Luid]$LogonId = 0,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromAll")]
         [switch]$All
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PurgeTicketCache($LogonId, $ServerName, $Realm)
 }
 
 <#
@@ -687,7 +687,7 @@ Specify an AS-REQ to authentication the user for the new ticket cache.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
 #>
 function New-KerberosTicketCache {
     [CmdletBinding(DefaultParameterSetName="FromSystem")]
@@ -696,13 +696,13 @@ function New-KerberosTicketCache {
         [Parameter(ParameterSetName="FromTickets")]
         [switch]$CreateClient,
         [Parameter(ParameterSetName="FromSystem")]
-        [NtApiDotNet.Luid]$LogonId = 0,
+        [NtCoreLib.Luid]$LogonId = 0,
         [Parameter(ParameterSetName="FromTgt", Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(ParameterSetName="FromKey", Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(ParameterSetName="FromRequest", Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]$Request,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]$Request,
         [Parameter(ParameterSetName="FromTgt")]
         [Parameter(ParameterSetName="FromKey")]
         [string]$Hostname,
@@ -713,27 +713,27 @@ function New-KerberosTicketCache {
         [string]$Realm = [NullString]::Value,
         [Parameter(ParameterSetName="FromTgt")]
         [Parameter(Mandatory, ParameterSetName="FromTickets")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket[]]$AdditionalTicket
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket[]]$AdditionalTicket
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromSystem" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromSystemCache($CreateClient, $LogonId)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromSystemCache($CreateClient, $LogonId)
         }
         "FromTgt" {
-            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::new($Credential, $client, $Realm, $AdditionalTicket)
+            $client = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::new($Credential, $client, $Realm, $AdditionalTicket)
         }
         "FromKey" {
-            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Key)
+            $client = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Key)
         }
         "FromRequest" {
-            $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Request)
+            $client = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromClient($client, $Request)
         }
         "FromTickets" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromTickets($AdditionalTicket, $CreateClient)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromTickets($AdditionalTicket, $CreateClient)
         }
     }
 }
@@ -750,7 +750,7 @@ Specify to create a KDC client.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
 #>
 function Import-KerberosTicketCache {
     [CmdletBinding()]
@@ -762,7 +762,7 @@ function Import-KerberosTicketCache {
 
     $Path = Resolve-Path $Path
     if ($null -ne $Path) {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromFile($Path, $CreateClient)
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]::FromFile($Path, $CreateClient)
     }
 }
 
@@ -778,13 +778,13 @@ Specify the path to export to.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache
 #>
 function Export-KerberosTicketCache {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(Mandatory, Position = 1)]
         [string]$Path
     )
@@ -809,15 +809,15 @@ Specify the realm
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket
 #>
 function Rename-KerberosTicket {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$Ticket,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$Name,
         [string]$Realm
     )
 
@@ -825,7 +825,7 @@ function Rename-KerberosTicket {
         $Realm = $Ticket.Realm
     }
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $Name, $Ticket.EncryptedData)
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]::Create($Realm, $Name, $Ticket.EncryptedData)
 }
 
 <#
@@ -858,41 +858,41 @@ Specify the error data.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken
 #>
 function New-KerberosError {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorType]$ErrorCode,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosErrorType]$ErrorCode,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [Parameter(Mandatory, Position = 2)]
         [string]$ServerRealm,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]$ServerTime,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTime]$ServerTime,
         [int]$ServerUsec = 0,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [string]$ClientRealm,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]$ClientTime,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTime]$ClientTime,
         [System.Nullable[int]]$ClientUsec,
         [string]$ErrorText,
         [Parameter(ParameterSetName="FromBytes")]
         [byte[]]$ErrorData,
         [Parameter(Mandatory, Position = 3, ParameterSetName="FromErrorData")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorData]$ErrorDataValue,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosErrorData]$ErrorDataValue,
         [switch]$NoWrapper
     )
 
     if ($ServerTime -eq $null) {
-        $ServerTime = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTime]::Now
+        $ServerTime = [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTime]::Now
     }
 
     if ($PSCmdlet.ParameterSetName -eq "FromErrorData") {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
             $ErrorCode, $ServerRealm, $ServerName, $ErrorDataValue, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText,
             $NoWrapper)
     } else {
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosErrorAuthenticationToken]::Create($ServerTime, $ServerUsec,
             $ErrorCode, $ServerRealm, $ServerName, $ClientTime, $ClientUsec, $ClientRealm, $ClientName, $ErrorText, $ErrorData,
             $NoWrapper)
     }
@@ -920,7 +920,7 @@ function Add-KerberosKdcPin {
         [Parameter(Mandatory, Position = 1)]
         [string]$Hostname
     )
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PinKdc($Realm, $Hostname, 0)
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::PinKdc($Realm, $Hostname, 0)
 }
 
 <#
@@ -934,7 +934,7 @@ None
 None
 #>
 function Clear-KerberosKdcPin {
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::UnpinAllKdcs()
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicketCache]::UnpinAllKdcs()
 }
 
 <#
@@ -963,14 +963,14 @@ Specify the user's certificate.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest
 #>
 function New-KerberosAsRequest {
     [CmdletBinding(DefaultParameterSetName="FromKey")]
     Param(
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromKey")]
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromKeyWithName")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromPassword")]
         [NtObjectManager.Utils.PasswordHolder]$Password,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCertificate")]
@@ -978,17 +978,17 @@ function New-KerberosAsRequest {
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromPassword")]
         [Parameter(Position = 1, ParameterSetName="FromCertificate")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ClientName,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeyWithName")]
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromPassword")]
         [Parameter(Position = 2, ParameterSetName="FromCertificate")]
         [string]$Realm,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromCredential")]
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.UserCredentials]$Credential,
         [Parameter(Mandatory, Position = 0, ParameterSetName="FromReadCredential")]
         [switch]$ReadCredential,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
         [switch]$Forwardable,
         [switch]$Canonicalize,
         [switch]$Renewable
@@ -996,19 +996,19 @@ function New-KerberosAsRequest {
 
     $req = switch($PSCmdlet.ParameterSetName) {
         "FromKey" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key)
         }
         "FromKeyWithName" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequest]::new($Key, $ClientName, $Realm)
         }
         "FromPassword" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestPassword]::new($Password.ToPlainText(), $ClientName, $Realm)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestPassword]::new($Password.ToPlainText(), $ClientName, $Realm)
         }
         "FromCertificate" {
             if ($null -eq $ClientName -and "" -eq $Realm) {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate)
             } else {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate, $ClientName, $Realm)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestCertificate]::new($Certificate, $ClientName, $Realm)
             }
         }
         "FromCredential" {
@@ -1067,7 +1067,7 @@ Specify additional tickets. Typically used with EncryptTicketInSessionKey.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest
 #>
 function New-KerberosTgsRequest {
     [CmdletBinding(DefaultParameterSetName="Create")]
@@ -1075,39 +1075,39 @@ function New-KerberosTgsRequest {
         [Parameter(Mandatory, Position = 0, ParameterSetName="Create")]
         [Parameter(Mandatory, Position = 0, ParameterSetName="Renew")]
         [Parameter(Mandatory, Position = 0, ParameterSetName="S4U2Self")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(Mandatory, Position = 1, ParameterSetName="Create")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName]$ServerName,
         [Parameter(Mandatory, Position = 2, ParameterSetName="Create")]
         [Parameter(Mandatory, ParameterSetName="S4U2Self")]
         [string]$Realm,
         [Parameter(ParameterSetName="Create")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$S4U2Proxy,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$S4U2Proxy,
         [Parameter(Mandatory, ParameterSetName="Renew")]
         [switch]$Renew,
         [Parameter(Mandatory, ParameterSetName="S4U2Self")]
         [string]$S4UUserName,
         [switch]$EncryptTicketInSessionKey,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType[]]$EncryptionType,
         [switch]$Forwardable,
         [switch]$Canonicalize,
         [switch]$Renewable,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket[]]$AdditionalTicket
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket[]]$AdditionalTicket
     )
 
     $tgs = switch($PSCmdlet.ParameterSetName) {
         "Create" {
             if ($S4U2Proxy -eq $null) {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::Create($Credential, $ServerName, $Realm)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::Create($Credential, $ServerName, $Realm)
             } else {
-                [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Proxy($Credential, $ServerName, $Realm, $S4U2Proxy)
+                [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Proxy($Credential, $ServerName, $Realm, $S4U2Proxy)
             }
         }
         "Renew" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForRenewal($Credential)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForRenewal($Credential)
         }
         "S4U2Self" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Self($Credential, $S4UUserName, $Realm, $EncryptTicketInSessionKey)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]::CreateForS4U2Self($Credential, $S4UUserName, $Realm, $EncryptTicketInSessionKey)
         }
     }
 
@@ -1144,24 +1144,24 @@ Specify to return the raw reply.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKdcReply
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket
+NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKdcReply
 #>
 function Send-KerberosKdcRequest {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCRequest]$Request,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCRequest]$Request,
         [string]$Hostname,
         [int]$Port = 88,
         [switch]$AsExternalTicket,
         [switch]$AsKdcReply
     )
-    $client = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
-    $reply = if ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]) {
+    $client = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::CreateTCPClient($Hostname, $Port)
+    $reply = if ($Request -is [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTGSRequest]) {
         $client.RequestServiceTicket($Request)
-    } elseif ($Request -is [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]) {
+    } elseif ($Request -is [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosASRequestBase]) {
         $client.Authenticate($Request)
     } else {
         throw "Unknown KDC request type."
@@ -1199,25 +1199,25 @@ Specify optional krbtgt key.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServer
+NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServer
 #>
 function New-KerberosKdcServer {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [string]$Realm,
-        [NtApiDotNet.Sid]$DomainSid,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser[]]$User,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$AdditionalKey,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$KrbTgtKey,
+        [NtCoreLib.Security.Authorization.Sid]$DomainSid,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser[]]$User,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$AdditionalKey,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$KrbTgtKey,
         [ipaddress]$Address = [ipaddress]::Loopback,
         [int]$Port = 88
     )
 
-    $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerConfig]::new()
+    $config = [NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerConfig]::new()
     $config.Realm = $Realm
     $config.DomainSid = $DomainSid
-    $config.Listener = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerListenerTCP]::new($Address, $Port)
+    $config.Listener = [NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerListenerTCP]::new($Address, $Port)
     if ($User -ne $null) {
         $config.Users.AddRange($User)
     }
@@ -1259,7 +1259,7 @@ Specify the user's account control flags.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser
+NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser
 #>
 function New-KerberosKdcServerUser {
     [CmdletBinding(DefaultParameterSetName="FromPassword")]
@@ -1272,18 +1272,18 @@ function New-KerberosKdcServerUser {
         [AllowEmptyString()]
         [string]$Password,
         [Parameter(Mandatory, Position = 2, ParameterSetName="FromKeys")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key,
-        [NtApiDotNet.Sid]$DomainSid,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey[]]$Key,
+        [NtCoreLib.Security.Authorization.Sid]$DomainSid,
         [uint32[]]$GroupId,
         [uint32]$PrimaryGroupId = 513,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosPrincipalName[]]$ServicePrincipalName,
-        [NtApiDotNet.Sid[]]$ExtraSid,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
-        [NtApiDotNet.Sid]$ResourceGroupDomainSid,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosPrincipalName[]]$ServicePrincipalName,
+        [NtCoreLib.Security.Authorization.Sid[]]$ExtraSid,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
+        [NtCoreLib.Security.Authorization.Sid]$ResourceGroupDomainSid,
         [uint32[]]$ResourceGroupId,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.UserAccountControlFlags]$UserAccountControlFlag = "NormalAccount"
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.UserAccountControlFlags]$UserAccountControlFlag = "NormalAccount"
     )
-    $user = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser]::new($username)
+    $user = [NtCoreLib.Win32.Security.Authentication.Kerberos.Server.KerberosKDCServerUser]::new($username)
     $user.UserId = $UserId
     switch($PSCmdlet.ParameterSetName) {
         "FromPassword" {
@@ -1339,31 +1339,31 @@ Specify the machine ID for a KERB-AD-RESTRICTION-ENTRY authorization data.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData
 #>
 function New-KerberosAuthorizationData {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0, ParameterSetName="IfRelevant")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationData[]]$AuthorizationData,
         [Parameter(Mandatory, ParameterSetName="KerbLocal")]
         [byte[]]$SecurityContext,
         [Parameter(Mandatory, ParameterSetName="KerbRest")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosRestrictionEntryFlags]$RestrictionFlag,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosRestrictionEntryFlags]$RestrictionFlag,
         [Parameter(Mandatory, ParameterSetName="KerbRest")]
-        [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
+        [NtCoreLib.TokenIntegrityLevel]$IntegrityLevel,
         [Parameter(Mandatory, ParameterSetName="KerbRest")]
         [byte[]]$MachineId
     )
     switch($PSCmdlet.ParameterSetName) {
         "IfRelevant" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataIfRelevant]::new($AuthorizationData)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataIfRelevant]::new($AuthorizationData)
         }
         "KerbLocal" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataKerbLocal]::new($SecurityContext)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataKerbLocal]::new($SecurityContext)
         }
         "KerbRest" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataRestrictionEntry]::new($RestrictionFlag, $IntegrityLevel, $MachineId)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthorizationDataRestrictionEntry]::new($RestrictionFlag, $IntegrityLevel, $MachineId)
         }
     }
 }
@@ -1380,7 +1380,7 @@ Specify the address of the DNS server.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Net.Dns.DnsServiceRecord[]
+NtCoreLib.Net.Dns.DnsServiceRecord[]
 #>
 function Resolve-KerberosKdcAddress {
     [CmdletBinding()]
@@ -1390,7 +1390,7 @@ function Resolve-KerberosKdcAddress {
         [System.Net.IPAddress]$DnsServerAddress
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::QueryKdcForRealm($Realm, $DnsServerAddress) | Write-Output
+    [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosKDCClient]::QueryKdcForRealm($Realm, $DnsServerAddress) | Write-Output
 }
 
 <#
@@ -1417,14 +1417,14 @@ function Export-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="ToFile")]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]$Credential,
         [Parameter(Mandatory, Position = 1, ParameterSetName="ToFile")]
         [string]$Path,
         [Parameter(Mandatory, ParameterSetName="ToBase64")]
         [switch]$Base64,
         [Parameter(ParameterSetName="ToBase64")]
         [switch]$InsertLineBreaks,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
     )
 
     if ($null -ne $Key) {
@@ -1460,7 +1460,7 @@ Specify a key to decrypt the credential.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential
+NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential
 #>
 function Import-KerberosTicket {
     [CmdletBinding(DefaultParameterSetName="FromFile")]
@@ -1469,7 +1469,7 @@ function Import-KerberosTicket {
         [string]$Path,
         [Parameter(Mandatory, ParameterSetName="FromBase64")]
         [string]$Base64,
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$Key
     )
 
     $ba = if ($PSCmdlet.ParameterSetName -eq "FromFile") {
@@ -1482,7 +1482,7 @@ function Import-KerberosTicket {
         return
     }
 
-    $cred = [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosCredential]::Parse($ba)
+    $cred = [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosCredential]::Parse($ba)
     if ($null -eq $cred) {
         return
     }

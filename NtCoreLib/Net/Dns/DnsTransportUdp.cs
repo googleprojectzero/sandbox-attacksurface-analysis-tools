@@ -15,35 +15,34 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+internal sealed class DnsTransportUdp : IDnsTransport
 {
-    internal sealed class DnsTransportUdp : IDnsTransport
+    private readonly UdpClient _client;
+
+    public DnsTransportUdp(IPAddress address, int timeout)
     {
-        private readonly UdpClient _client;
+        _client = new UdpClient(address.AddressFamily);
+        _client.Connect(address, 53);
+        _client.Client.ReceiveTimeout = timeout;
+    }
 
-        public DnsTransportUdp(IPAddress address, int timeout)
-        {
-            _client = new UdpClient(address.AddressFamily);
-            _client.Connect(address, 53);
-            _client.Client.ReceiveTimeout = timeout;
-        }
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
 
-        public void Dispose()
-        {
-            _client.Dispose();
-        }
+    public byte[] Receive()
+    {
+        IPEndPoint ep = (IPEndPoint)_client.Client.RemoteEndPoint;
+        return _client.Receive(ref ep);
+    }
 
-        public byte[] Receive()
-        {
-            IPEndPoint ep = (IPEndPoint)_client.Client.RemoteEndPoint;
-            return _client.Receive(ref ep);
-        }
-
-        public void Send(byte[] data)
-        {
-            int length = _client.Send(data, data.Length);
-            if (data.Length != length)
-                throw new ProtocolViolationException("Couldn't send all data to server.");
-        }
+    public void Send(byte[] data)
+    {
+        int length = _client.Send(data, data.Length);
+        if (data.Length != length)
+            throw new ProtocolViolationException("Couldn't send all data to server.");
     }
 }

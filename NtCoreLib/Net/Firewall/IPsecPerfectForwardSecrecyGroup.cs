@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IPsec perfect forward secrecy group.
+/// </summary>
+[SDKName("IPSEC_PFS_GROUP")]
+public enum IPsecPerfectForwardSecrecyGroup
 {
-    /// <summary>
-    /// IPsec perfect forward secrecy group.
-    /// </summary>
-    [SDKName("IPSEC_PFS_GROUP")]
-    public enum IPsecPerfectForwardSecrecyGroup
-    {
-        [SDKName("IPSEC_PFS_NONE")]
-        None,
-        [SDKName("IPSEC_PFS_1")]
-        PFS1,
-        [SDKName("IPSEC_PFS_2")]
-        PFS2,
-        [SDKName("IPSEC_PFS_2048")]
-        PFS2048,
-        [SDKName("IPSEC_PFS_ECP_256")]
-        ECP_256,
-        [SDKName("IPSEC_PFS_ECP_384")]
-        ECP_384,
-        [SDKName("IPSEC_PFS_MM")]
-        MainMode,
-    }
+    [SDKName("IPSEC_PFS_NONE")]
+    None,
+    [SDKName("IPSEC_PFS_1")]
+    PFS1,
+    [SDKName("IPSEC_PFS_2")]
+    PFS2,
+    [SDKName("IPSEC_PFS_2048")]
+    PFS2048,
+    [SDKName("IPSEC_PFS_ECP_256")]
+    ECP_256,
+    [SDKName("IPSEC_PFS_ECP_384")]
+    ECP_384,
+    [SDKName("IPSEC_PFS_MM")]
+    MainMode,
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

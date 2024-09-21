@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Type of the NEGOEX checksum.
+/// </summary>
+public enum NegoExChecksumScheme
 {
-    /// <summary>
-    /// Type of the NEGOEX checksum.
-    /// </summary>
-    public enum NegoExChecksumScheme
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("CHECKSUM_SCHEME_RFC3961")]
-        Rfc3961 = 1,
+    None = 0,
+    [SDKName("CHECKSUM_SCHEME_RFC3961")]
+    Rfc3961 = 1,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

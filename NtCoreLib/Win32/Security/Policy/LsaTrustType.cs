@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Trust type for a trusted domain.
+/// </summary>
+public enum LsaTrustType
 {
-    /// <summary>
-    /// Trust type for a trusted domain.
-    /// </summary>
-    public enum LsaTrustType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("TRUST_TYPE_DOWNLEVEL")]
-        Downlevel = 0x00000001,
-        [SDKName("TRUST_TYPE_UPLEVEL")]
-        Uplevel = 0x00000002,
-        [SDKName("TRUST_TYPE_MIT")]
-        MIT = 0x00000003,
-        [SDKName("TRUST_TYPE_DCE")]
-        DCE = 0x00000004
+    None = 0,
+    [SDKName("TRUST_TYPE_DOWNLEVEL")]
+    Downlevel = 0x00000001,
+    [SDKName("TRUST_TYPE_UPLEVEL")]
+    Uplevel = 0x00000002,
+    [SDKName("TRUST_TYPE_MIT")]
+    MIT = 0x00000003,
+    [SDKName("TRUST_TYPE_DCE")]
+    DCE = 0x00000004
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

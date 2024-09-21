@@ -12,35 +12,34 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// A PAC authorization builder where the contents aren't known.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACEntryRawBuilder : KerberosAuthorizationDataPACEntryBuilder
 {
     /// <summary>
-    /// A PAC authorization builder where the contents aren't known.
+    /// The raw data.
     /// </summary>
-    public sealed class KerberosAuthorizationDataPACEntryRawBuilder : KerberosAuthorizationDataPACEntryBuilder
+    public byte[] Data { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="entry">The unknown element.</param>
+    public KerberosAuthorizationDataPACEntryRawBuilder(KerberosAuthorizationDataPACEntry entry) 
+        : base(entry.PACType)
     {
-        /// <summary>
-        /// The raw data.
-        /// </summary>
-        public byte[] Data { get; set; }
+        Data = entry.Data;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="entry">The unknown element.</param>
-        public KerberosAuthorizationDataPACEntryRawBuilder(KerberosAuthorizationDataPACEntry entry) 
-            : base(entry.PACType)
-        {
-            Data = entry.Data;
-        }
-
-        /// <summary>
-        /// Create the PAC entry.
-        /// </summary>
-        /// <returns>The PAC entry.</returns>
-        public override KerberosAuthorizationDataPACEntry Create()
-        {
-            return new KerberosAuthorizationDataPACEntry(PACType, Data);
-        }
+    /// <summary>
+    /// Create the PAC entry.
+    /// </summary>
+    /// <returns>The PAC entry.</returns>
+    public override KerberosAuthorizationDataPACEntry Create()
+    {
+        return new KerberosAuthorizationDataPACEntry(PACType, Data);
     }
 }

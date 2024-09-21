@@ -12,79 +12,78 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Server;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Server;
 using NtObjectManager.Utils.Kerberos;
 using System.DirectoryServices.ActiveDirectory;
 using System.Management.Automation;
 using System.Net;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// <para type="synopsis">Create a new KDC proxy with PowerShell handlers.</para>
+/// <para type="description">This cmdlet creates a KDC proxy instance with PowerShell scripts to filter requests and replies.</para>
+/// </summary>
+/// <example>
+///   <code>$proxy = New-KerberosKdcProxy -HandleRequest { $_.Format() | Out-Host } -HandleReply { $_.Format() | Out-Host }&#x0A;$proxy.Start()</code>
+///   <para>Create a new KDC proxy and display the request and reply tokens.</para>
+/// </example>
+[Cmdlet(VerbsCommon.New, "KerberosKdcProxy")]
+public class NewKerberosKDCProxyCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Create a new KDC proxy with PowerShell handlers.</para>
-    /// <para type="description">This cmdlet creates a KDC proxy instance with PowerShell scripts to filter requests and replies.</para>
+    /// <para type="description">Specify a script block to handle the request.</para>
     /// </summary>
-    /// <example>
-    ///   <code>$proxy = New-KerberosKdcProxy -HandleRequest { $_.Format() | Out-Host } -HandleReply { $_.Format() | Out-Host }&#x0A;$proxy.Start()</code>
-    ///   <para>Create a new KDC proxy and display the request and reply tokens.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.New, "KerberosKdcProxy")]
-    public class NewKerberosKDCProxyCmdlet : PSCmdlet
+    [Parameter]
+    public ScriptBlock HandleRequest { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify a script block to handle a reply.</para>
+    /// </summary>
+    [Parameter]
+    public ScriptBlock HandleReply { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify a script block to handle an error in the proxy.</para>
+    /// </summary>
+    [Parameter]
+    public ScriptBlock HandleError { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the server listener.</para>
+    /// </summary>
+    [Parameter]
+    public IKerberosKDCServerListener Listener { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the server hostname. If not specified then will use the current PDC for the domain.</para>
+    /// </summary>
+    public string Hostname { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the server TCP port.</para>
+    /// </summary>
+    [Parameter]
+    public int Port { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public NewKerberosKDCProxyCmdlet()
     {
-        /// <summary>
-        /// <para type="description">Specify a script block to handle the request.</para>
-        /// </summary>
-        [Parameter]
-        public ScriptBlock HandleRequest { get; set; }
+        Port = 88;
+    }
 
-        /// <summary>
-        /// <para type="description">Specify a script block to handle a reply.</para>
-        /// </summary>
-        [Parameter]
-        public ScriptBlock HandleReply { get; set; }
+    /// <summary>
+    /// Process the command.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        if (string.IsNullOrWhiteSpace(Hostname))
+            Hostname = Domain.GetCurrentDomain().PdcRoleOwner.Name;
 
-        /// <summary>
-        /// <para type="description">Specify a script block to handle an error in the proxy.</para>
-        /// </summary>
-        [Parameter]
-        public ScriptBlock HandleError { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the server listener.</para>
-        /// </summary>
-        [Parameter]
-        public IKerberosKDCServerListener Listener { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the server hostname. If not specified then will use the current PDC for the domain.</para>
-        /// </summary>
-        public string Hostname { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the server TCP port.</para>
-        /// </summary>
-        [Parameter]
-        public int Port { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public NewKerberosKDCProxyCmdlet()
-        {
-            Port = 88;
-        }
-
-        /// <summary>
-        /// Process the command.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            if (string.IsNullOrWhiteSpace(Hostname))
-                Hostname = Domain.GetCurrentDomain().PdcRoleOwner.Name;
-
-            WriteObject(new PSKerberosKDCProxy(Listener ?? new KerberosKDCServerListenerTCP(IPAddress.Loopback, 88),
-                new KerberosKDCClientTransportTCP(Hostname, Port), HandleRequest, HandleReply, HandleError));
-        }
+        WriteObject(new PSKerberosKDCProxy(Listener ?? new KerberosKDCServerListenerTCP(IPAddress.Loopback, 88),
+            new KerberosKDCClientTransportTCP(Hostname, Port), HandleRequest, HandleReply, HandleError));
     }
 }

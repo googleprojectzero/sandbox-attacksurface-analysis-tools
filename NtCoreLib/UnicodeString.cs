@@ -12,306 +12,349 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Memory;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
-    /// <summary>
-    /// Standard UNICODE_STRING class
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public sealed class UnicodeString
+/// <summary>
+/// Standard UNICODE_STRING class
+/// </summary>
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public sealed class UnicodeString
+{
+    private readonly ushort Length;
+    private readonly ushort MaximumLength;
+    [MarshalAs(UnmanagedType.LPWStr)]
+    private readonly string Buffer;
+
+    public UnicodeString(string str)
     {
-        ushort Length;
-        ushort MaximumLength;
-        [MarshalAs(UnmanagedType.LPWStr)]
-        string Buffer;
-
-        public UnicodeString(string str)
-        {
-            Length = (ushort)(str.Length * 2);
-            MaximumLength = (ushort)((str.Length + 1) * 2);
-            Buffer = str;
-        }
-
-        public UnicodeString()
-        {
-            Length = 0;
-            MaximumLength = 0;
-            Buffer = null;
-        }
-
-        public override string ToString()
-        {
-            return Buffer;
-        }
+        Length = (ushort)(str.Length * 2);
+        MaximumLength = (ushort)((str.Length + 1) * 2);
+        Buffer = str;
     }
 
-    /// <summary>
-    /// Standard UNICODE_STRING class based on a SecureString class.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class UnicodeStringSecure
+    public UnicodeString()
     {
-        ushort Length;
-        ushort MaximumLength;
-        SecureStringMarshalBuffer Buffer;
-
-        public UnicodeStringSecure(SecureStringMarshalBuffer str, int length)
-        {
-            Length = (ushort)(length * 2);
-            MaximumLength = (ushort)((length + 1) * 2);
-            Buffer = str;
-        }
+        Length = 0;
+        MaximumLength = 0;
+        Buffer = null;
     }
 
-    /// <summary>
-    /// Structure to use when passing in a unicode string as a sub-structure with a seure string.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct UnicodeStringInSecure
+    public override string ToString()
     {
-        ushort Length;
-        ushort MaximumLength;
-        SecureStringMarshalBuffer Buffer;
-
-        public UnicodeStringInSecure(SecureStringMarshalBuffer str, int length)
-        {
-            Length = (ushort)(length * 2);
-            MaximumLength = (ushort)((length + 1) * 2);
-            Buffer = str;
-        }
+        return Buffer;
     }
-
-    /// <summary>
-    /// Standard ANSI_STRING class
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    public sealed class AnsiString
-    {
-        private readonly ushort Length;
-        private readonly ushort MaximumLength;
-        [MarshalAs(UnmanagedType.LPStr)]
-        private readonly string Buffer;
-
-        public AnsiString(string str)
-        {
-            Length = (ushort)str.Length;
-            MaximumLength = (ushort)(str.Length + 1);
-            Buffer = str;
-        }
-
-        public AnsiString()
-        {
-            Length = 0;
-            MaximumLength = 0;
-            Buffer = null;
-        }
-
-        public override string ToString()
-        {
-            return Buffer;
-        }
-    }
-
-    /// <summary>
-    /// A structure to represent an ANSI_STRING with a raw buffer pointer.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct AnsiStringOut
-    {
-        public ushort Length;
-        public ushort MaximumLength;
-        public IntPtr Buffer;
-
-        public override string ToString()
-        {
-            if (Buffer != IntPtr.Zero)
-                return Marshal.PtrToStringAnsi(Buffer, Length / 2);
-            return string.Empty;
-        }
-    }
-
-    /// <summary>
-    /// This class is used when the UNICODE_STRING is an output parameter.
-    /// The allocatation of the buffer is handled elsewhere.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(UnicodeStringOut32))]
-    public struct UnicodeStringOut
-    {
-        public ushort Length;
-        public ushort MaximumLength;
-        public IntPtr Buffer;
-        public override string ToString()
-        {
-            if (Buffer != IntPtr.Zero)
-                return Marshal.PtrToStringUni(Buffer, Length / 2);
-            return string.Empty;
-        }
-
-        /// <summary>
-        /// Convert unicode string to an array.
-        /// </summary>
-        /// <returns>The unicode string data as an array.</returns>
-        public byte[] ToArray()
-        {
-            if (Buffer == IntPtr.Zero || Length == 0)
-                return new byte[0];
-
-            byte[] ret = new byte[Length];
-            Marshal.Copy(Buffer, ret, 0, ret.Length);
-            return ret;
-        }
-
-        internal string ToString(NtProcess process)
-        {
-            if (Length == 0 || Buffer == IntPtr.Zero)
-            {
-                return string.Empty;
-            }
-
-            return Encoding.Unicode.GetString(process.ReadMemory(Buffer.ToInt64(), Length, true));
-        }
-    }
-
-    /// <summary>
-    /// This class is used when the UNICODE_STRING is an output parameter.
-    /// The allocatation of the buffer is handled elsewhere.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct UnicodeStringOut32 : IConvertToNative<UnicodeStringOut>
-    {
-        public ushort Length;
-        public ushort MaximumLength;
-        public IntPtr32 Buffer;
-
-        public UnicodeStringOut Convert()
-        {
-            return new UnicodeStringOut
-            {
-                Length = Length,
-                MaximumLength = MaximumLength,
-                Buffer = Buffer.Convert()
-            };
-        }
-    }
-
-    /// <summary>
-    /// Structure to use when passing in a unicode string as a sub-structure.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct UnicodeStringIn
-    {
-        ushort Length;
-        ushort MaximumLength;
-        [MarshalAs(UnmanagedType.LPWStr)]
-        string Buffer;
-
-        public UnicodeStringIn(string str)
-        {
-            Length = 0;
-            MaximumLength = 0;
-            Buffer = null;
-            SetString(str);
-        }
-
-        public void SetString(string str)
-        {
-            if (str.Length > ushort.MaxValue / 2)
-            {
-                throw new ArgumentException("String too long for UnicodeString");
-            }
-            Length = (ushort)(str.Length * 2);
-            MaximumLength = (ushort)((str.Length + 1) * 2);
-            Buffer = str;
-        }
-    }
-
-    /// <summary>
-    /// This class is used when the UNICODE_STRING needs to be preallocated
-    /// and then returned back from a caller.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public sealed class UnicodeStringAllocated : IDisposable
-    {
-        public UnicodeStringOut String;
-
-        public UnicodeStringAllocated(int max_size)
-        {
-            String.Length = 0;
-            String.MaximumLength = (ushort)max_size;
-            String.Buffer = Marshal.AllocHGlobal(String.MaximumLength);
-        }
-
-        public UnicodeStringAllocated() : this(MaxStringLength)
-        {
-        }
-
-        public UnicodeStringAllocated(string str)
-        {
-            String.Length = (ushort)(str.Length * 2);
-            String.MaximumLength = (ushort)(String.Length + 2);
-            String.Buffer = Marshal.StringToHGlobalUni(str);
-        }
-
-        public const int MaxStringLength = ushort.MaxValue - 1;
-
-        public override string ToString()
-        {
-            return String.ToString();
-        }
-
-        private void DisposeUnmanaged()
-        {
-            if (String.Buffer != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(String.Buffer);
-                String.Buffer = IntPtr.Zero;
-            }
-        }
-
-        public void Dispose()
-        {
-            DisposeUnmanaged();
-            GC.SuppressFinalize(this);
-        }
-
-        ~UnicodeStringAllocated()
-        {
-            DisposeUnmanaged();
-        }
-    }
-
-    public static partial class NtRtl
-    {
-        [DllImport("ntdll.dll")]
-        public static extern void RtlFreeUnicodeString([In, Out] ref UnicodeStringOut UnicodeString);
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern char RtlUpcaseUnicodeChar(char SourceCharacter);
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus RtlUpcaseUnicodeString(
-            ref UnicodeStringOut DestinationString,
-            UnicodeString SourceString,
-            bool AllocateDestinationString
-        );
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern char RtlDowncaseUnicodeChar(char SourceCharacter);
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus RtlDowncaseUnicodeString(
-            ref UnicodeStringOut DestinationString,
-            UnicodeString SourceString,
-            bool AllocateDestinationString
-        );
-    }
-#pragma warning restore 1591
 }
+
+/// <summary>
+/// Standard UNICODE_STRING class based on a SecureString class.
+/// </summary>
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+internal sealed class UnicodeStringSecure
+{
+    private readonly ushort Length;
+    private readonly ushort MaximumLength;
+    SecureStringMarshalBuffer Buffer;
+
+    public UnicodeStringSecure(SecureStringMarshalBuffer str, int length)
+    {
+        Length = (ushort)(length * 2);
+        MaximumLength = (ushort)((length + 1) * 2);
+        Buffer = str;
+    }
+}
+
+/// <summary>
+/// Structure to use when passing in a unicode string as a sub-structure with a seure string.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct UnicodeStringInSecure
+{
+    private readonly ushort Length;
+    private readonly ushort MaximumLength;
+    SecureStringMarshalBuffer Buffer;
+
+    public UnicodeStringInSecure(SecureStringMarshalBuffer str, int length)
+    {
+        Length = (ushort)(length * 2);
+        MaximumLength = (ushort)((length + 1) * 2);
+        Buffer = str;
+    }
+}
+
+/// <summary>
+/// Standard ANSI_STRING class
+/// </summary>
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+public sealed class AnsiString
+{
+    private readonly ushort Length;
+    private readonly ushort MaximumLength;
+    [MarshalAs(UnmanagedType.LPStr)]
+    private readonly string Buffer;
+
+    public AnsiString(string str)
+    {
+        Length = (ushort)str.Length;
+        MaximumLength = (ushort)(str.Length + 1);
+        Buffer = str;
+    }
+
+    public AnsiString()
+    {
+        Length = 0;
+        MaximumLength = 0;
+        Buffer = null;
+    }
+
+    public override string ToString()
+    {
+        return Buffer;
+    }
+}
+
+/// <summary>
+/// A structure to represent an ANSI_STRING with a raw buffer pointer.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct AnsiStringOut
+{
+    public ushort Length;
+    public ushort MaximumLength;
+    public IntPtr Buffer;
+
+    public override string ToString()
+    {
+        if (Buffer != IntPtr.Zero)
+            return Marshal.PtrToStringAnsi(Buffer, Length / 2);
+        return string.Empty;
+    }
+}
+
+/// <summary>
+/// This class is used when the UNICODE_STRING is an output parameter.
+/// The allocatation of the buffer is handled elsewhere.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct UnicodeStringOut : IConvertToNative<UnicodeStringOut>
+{
+    public ushort Length;
+    public ushort MaximumLength;
+    public IntPtr Buffer;
+    public override string ToString()
+    {
+        if (Buffer != IntPtr.Zero)
+            return Marshal.PtrToStringUni(Buffer, Length / 2);
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Convert unicode string to an array.
+    /// </summary>
+    /// <returns>The unicode string data as an array.</returns>
+    public byte[] ToArray()
+    {
+        if (Buffer == IntPtr.Zero || Length == 0)
+            return new byte[0];
+
+        byte[] ret = new byte[Length];
+        Marshal.Copy(Buffer, ret, 0, ret.Length);
+        return ret;
+    }
+
+    internal string ToString(NtProcess process)
+    {
+        if (Length == 0 || Buffer == IntPtr.Zero)
+        {
+            return string.Empty;
+        }
+
+        return Encoding.Unicode.GetString(process.ReadMemory(Buffer.ToInt64(), Length, true));
+    }
+
+    UnicodeStringOut IConvertToNative<UnicodeStringOut>.Read(IMemoryReader reader, IntPtr address, int index)
+    {
+        return reader.ReadStruct<UnicodeStringOut32>(address, index).Convert();
+    }
+}
+
+/// <summary>
+/// This class is used when the UNICODE_STRING is an output parameter.
+/// The allocatation of the buffer is handled elsewhere.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct UnicodeStringOut32
+{
+    public ushort Length;
+    public ushort MaximumLength;
+    public IntPtr32 Buffer;
+
+    public UnicodeStringOut Convert()
+    {
+        return new UnicodeStringOut
+        {
+            Length = Length,
+            MaximumLength = MaximumLength,
+            Buffer = Buffer.Convert()
+        };
+    }
+}
+
+/// <summary>
+/// Structure to use when passing in a unicode string as a sub-structure.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct UnicodeStringIn
+{
+    ushort Length;
+    ushort MaximumLength;
+    [MarshalAs(UnmanagedType.LPWStr)]
+    string Buffer;
+
+    public UnicodeStringIn(string str)
+    {
+        Length = 0;
+        MaximumLength = 0;
+        Buffer = null;
+        SetString(str);
+    }
+
+    public void SetString(string str)
+    {
+        if (str.Length > ushort.MaxValue / 2)
+        {
+            throw new ArgumentException("String too long for UnicodeString");
+        }
+        Length = (ushort)(str.Length * 2);
+        MaximumLength = (ushort)((str.Length + 1) * 2);
+        Buffer = str;
+    }
+}
+
+/// <summary>
+/// This class is used when the UNICODE_STRING needs to be preallocated
+/// and then returned back from a caller.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public sealed class UnicodeStringAllocated : IDisposable
+{
+    public UnicodeStringOut String;
+
+    public UnicodeStringAllocated(int max_size)
+    {
+        String.Length = 0;
+        String.MaximumLength = (ushort)max_size;
+        String.Buffer = Marshal.AllocHGlobal(String.MaximumLength);
+    }
+
+    public UnicodeStringAllocated() : this(MaxStringLength)
+    {
+    }
+
+    public UnicodeStringAllocated(string str)
+    {
+        String.Length = (ushort)(str.Length * 2);
+        String.MaximumLength = (ushort)(String.Length + 2);
+        String.Buffer = Marshal.StringToHGlobalUni(str);
+    }
+
+    public const int MaxStringLength = ushort.MaxValue - 1;
+
+    public override string ToString()
+    {
+        return String.ToString();
+    }
+
+    private void DisposeUnmanaged()
+    {
+        if (String.Buffer != IntPtr.Zero)
+        {
+            Marshal.FreeHGlobal(String.Buffer);
+            String.Buffer = IntPtr.Zero;
+        }
+    }
+
+    public void Dispose()
+    {
+        DisposeUnmanaged();
+        GC.SuppressFinalize(this);
+    }
+
+    ~UnicodeStringAllocated()
+    {
+        DisposeUnmanaged();
+    }
+}
+
+/// <summary>
+/// This class is used when the UNICODE_STRING needs released by
+/// RtlFreeUnicodeString
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public sealed class UnicodeStringHeap : IDisposable
+{
+    public UnicodeStringOut String;
+
+    public UnicodeStringHeap()
+    {
+        String = new UnicodeStringOut();
+    }
+
+    public override string ToString()
+    {
+        return String.ToString();
+    }
+
+    private void DisposeUnmanaged()
+    {
+        if (String.Buffer != IntPtr.Zero)
+        {
+            NtRtl.RtlFreeUnicodeString(ref String);
+        }
+    }
+
+    public void Dispose()
+    {
+        DisposeUnmanaged();
+        GC.SuppressFinalize(this);
+    }
+
+    ~UnicodeStringHeap()
+    {
+        DisposeUnmanaged();
+    }
+}
+
+public static partial class NtRtl
+{
+    [DllImport("ntdll.dll")]
+    public static extern void RtlFreeUnicodeString([In, Out] ref UnicodeStringOut UnicodeString);
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern char RtlUpcaseUnicodeChar(char SourceCharacter);
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus RtlUpcaseUnicodeString(
+        UnicodeStringHeap DestinationString,
+        UnicodeString SourceString,
+        bool AllocateDestinationString
+    );
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern char RtlDowncaseUnicodeChar(char SourceCharacter);
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus RtlDowncaseUnicodeString(
+        UnicodeStringHeap DestinationString,
+        UnicodeString SourceString,
+        bool AllocateDestinationString
+    );
+}
+#pragma warning restore 1591
+

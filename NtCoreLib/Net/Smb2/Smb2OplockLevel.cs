@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+/// <summary>
+/// Requested oplock level for SMB2 file.
+/// </summary>
+public enum Smb2OplockLevel
 {
-    /// <summary>
-    /// Requested oplock level for SMB2 file.
-    /// </summary>
-    public enum Smb2OplockLevel
-    {
-        [SDKName("SMB2_OPLOCK_LEVEL_NONE")]
+    [SDKName("SMB2_OPLOCK_LEVEL_NONE")]
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0x00,
-        [SDKName("SMB2_OPLOCK_LEVEL_II")]
-        LevelII = 0x01,
-        [SDKName("SMB2_OPLOCK_LEVEL_EXCLUSIVE")]
-        Exclusive = 0x08,
-        [SDKName("SMB2_OPLOCK_LEVEL_BATCH")]
-        Batch = 0x09,
-        [SDKName("SMB2_OPLOCK_LEVEL_LEASE")]
-        Lease = 0xFF
+    None = 0x00,
+    [SDKName("SMB2_OPLOCK_LEVEL_II")]
+    LevelII = 0x01,
+    [SDKName("SMB2_OPLOCK_LEVEL_EXCLUSIVE")]
+    Exclusive = 0x08,
+    [SDKName("SMB2_OPLOCK_LEVEL_BATCH")]
+    Batch = 0x09,
+    [SDKName("SMB2_OPLOCK_LEVEL_LEASE")]
+    Lease = 0xFF
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

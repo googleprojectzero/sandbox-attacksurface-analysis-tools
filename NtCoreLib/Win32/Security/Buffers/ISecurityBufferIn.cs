@@ -12,10 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+internal interface ISecurityBufferIn
 {
-    internal interface ISecurityBufferIn
-    {
-        byte[] ToArray();
-    }
+    byte[] ToArray();
 }

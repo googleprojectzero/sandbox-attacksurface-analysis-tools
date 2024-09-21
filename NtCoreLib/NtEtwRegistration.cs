@@ -12,25 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet
-{
-    /// <summary>
-    /// Class to represent an NT trace GUID.
-    /// </summary>
-    [NtType("EtwRegistration")]
-    public class NtEtwRegistration : NtObjectWithDuplicate<NtEtwRegistration, TraceAccessRights>
-    {
-        #region Constructors
-        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
-        {
-            public NtTypeFactoryImpl() : base(false)
-            {
-            }
-        }
+using NtCoreLib.Native.SafeHandles;
 
-        internal NtEtwRegistration(SafeKernelObjectHandle handle) : base(handle)
+namespace NtCoreLib;
+
+/// <summary>
+/// Class to represent an NT trace GUID.
+/// </summary>
+[NtType("EtwRegistration")]
+public class NtEtwRegistration : NtObjectWithDuplicate<NtEtwRegistration, TraceAccessRights>
+{
+    #region Constructors
+    internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+    {
+        public NtTypeFactoryImpl() : base(false)
         {
         }
-        #endregion
     }
+
+    internal NtEtwRegistration(SafeKernelObjectHandle handle) : base(handle)
+    {
+    }
+    #endregion
 }

@@ -12,59 +12,59 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// A security buffer which can only be an output.
+/// </summary>
+public sealed class SecurityBufferOut : SecurityBuffer, ISecurityBufferOut
 {
+    private byte[] _array;
+    private int _size;
+
     /// <summary>
-    /// A security buffer which can only be an output.
+    /// Constructor.
     /// </summary>
-    public sealed class SecurityBufferOut : SecurityBuffer, ISecurityBufferOut
+    /// <param name="type">The type of buffer.</param>
+    /// <param name="size">The size of the output buffer.</param>
+    public SecurityBufferOut(SecurityBufferType type, int size) : base(type)
     {
-        private byte[] _array;
-        private int _size;
+        _size = size;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of buffer.</param>
-        /// <param name="size">The size of the output buffer.</param>
-        public SecurityBufferOut(SecurityBufferType type, int size) : base(type)
-        {
-            _size = size;
-        }
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public override byte[] ToArray()
+    {
+        if (_array == null)
+            throw new InvalidOperationException("Can't access buffer until it's been populated.");
+        return _array;
+    }
 
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public override byte[] ToArray()
-        {
-            if (_array == null)
-                throw new InvalidOperationException("Can't access buffer until it's been populated.");
-            return _array;
-        }
+    internal override SecBuffer ToBuffer(DisposableList list)
+    {
+        return SecBuffer.Create(_type, _size, list);
+    }
 
-        internal override SecBuffer ToBuffer(DisposableList list)
-        {
-            return SecBuffer.Create(_type, _size, list);
-        }
+    internal override void FromBuffer(SecBuffer buffer)
+    {
+        _array = buffer.ToArray();
+        _size = _array.Length;
+        _type = buffer.BufferType;
+    }
 
-        internal override void FromBuffer(SecBuffer buffer)
-        {
-            _array = buffer.ToArray();
-            _size = _array.Length;
-            _type = buffer.BufferType;
-        }
+    int ISecurityBufferOut.Size => _size;
 
-        int ISecurityBufferOut.Size => _size;
-
-        void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
-        {
-            _array = data;
-            _size = data.Length;
-            _type = type;
-        }
+    void ISecurityBufferOut.Update(SecurityBufferType type, byte[] data)
+    {
+        _array = data;
+        _size = data.Length;
+        _type = type;
     }
 }

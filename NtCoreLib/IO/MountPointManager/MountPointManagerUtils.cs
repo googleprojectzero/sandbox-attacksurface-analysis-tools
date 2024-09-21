@@ -15,74 +15,70 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using NtCoreLib.Native.SafeBuffers;
 
-namespace NtApiDotNet.IO.MountPointManager
+namespace NtCoreLib.IO.MountPointManager;
+
+/// <summary>
+/// Class to access mount point manager utilities.
+/// </summary>
+public static class MountPointManagerUtils
 {
+    #region Public Members
     /// <summary>
-    /// Class to access mount point manager utilities.
+    /// Query the list of mount points.
     /// </summary>
-    public static class MountPointManagerUtils
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The list of mount points.</returns>
+    public static NtResult<IReadOnlyList<MountPoint>> QueryMountPoints(bool throw_on_error)
     {
-        #region Public Members
-        /// <summary>
-        /// Query the list of mount points.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The list of mount points.</returns>
-        public static NtResult<IReadOnlyList<MountPoint>> QueryMountPoints(bool throw_on_error)
+        using var mgr = OpenMountPointManager(throw_on_error);
+        if (!mgr.IsSuccess)
+            return mgr.Cast<IReadOnlyList<MountPoint>>();
+
+        using var in_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINT>();
+        int total_size = 0;
+        using (var out_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS>(Marshal.SizeOf(typeof(MOUNTMGR_MOUNT_POINTS)), false))
         {
-            using (var mgr = OpenMountPointManager(throw_on_error))
-            {
-                if (!mgr.IsSuccess)
-                    return mgr.Cast<IReadOnlyList<MountPoint>>();
-
-                using (var in_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINT>())
-                {
-                    int total_size = 0;
-                    using (var out_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS>(Marshal.SizeOf(typeof(MOUNTMGR_MOUNT_POINTS)), false))
-                    {
-                        var result = mgr.Result.DeviceIoControl(NtWellKnownIoControlCodes.IOCTL_MOUNTMGR_QUERY_POINTS,
-                            in_buffer, out_buffer, false);
-                        if (result.Status != NtStatus.STATUS_BUFFER_OVERFLOW)
-                            return result.Status.CreateResultFromError<IReadOnlyList<MountPoint>>(throw_on_error);
-                        total_size = out_buffer.Result.Size;
-                    }
-
-                    using (var out_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS>(total_size, false))
-                    {
-                        return mgr.Result.DeviceIoControl(NtWellKnownIoControlCodes.IOCTL_MOUNTMGR_QUERY_POINTS,
-                            in_buffer, out_buffer, true).Map(i => ParseMountPoints(out_buffer, i));
-                    }
-                }
-            }
+            var result = mgr.Result.DeviceIoControl(NtWellKnownIoControlCodes.IOCTL_MOUNTMGR_QUERY_POINTS,
+                in_buffer, out_buffer, false);
+            if (result.Status != NtStatus.STATUS_BUFFER_OVERFLOW)
+                return result.Status.CreateResultFromError<IReadOnlyList<MountPoint>>(throw_on_error);
+            total_size = out_buffer.Result.Size;
         }
 
-        /// <summary>
-        /// Query the list of mount points.
-        /// </summary>
-        /// <returns>The list of mount points.</returns>
-        public static IReadOnlyList<MountPoint> QueryMountPoints()
+        using (var out_buffer = new SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS>(total_size, false))
         {
-            return QueryMountPoints(true).Result;
+            return mgr.Result.DeviceIoControl(NtWellKnownIoControlCodes.IOCTL_MOUNTMGR_QUERY_POINTS,
+                in_buffer, out_buffer, true).Map(i => ParseMountPoints(out_buffer, i));
         }
-        #endregion
-
-        #region Private Members
-        private static NtResult<NtFile> OpenMountPointManager(bool throw_on_error)
-        {
-            return NtFile.Open(@"\Device\MountPointManager", null, FileAccessRights.Synchronize, FileShareMode.None,
-                FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert, throw_on_error);
-        }
-
-        private static IReadOnlyList<MountPoint> ParseMountPoints(SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS> buffer, int length)
-        {
-            buffer.Initialize((uint)length);
-            var result = buffer.Result;
-            MOUNTMGR_MOUNT_POINT[] mount_point = new MOUNTMGR_MOUNT_POINT[result.NumberOfMountPoints];
-            buffer.Data.ReadArray(0, mount_point, 0, mount_point.Length);
-
-            return mount_point.Select(m => new MountPoint(buffer, m)).ToList().AsReadOnly();
-        }
-        #endregion
     }
+
+    /// <summary>
+    /// Query the list of mount points.
+    /// </summary>
+    /// <returns>The list of mount points.</returns>
+    public static IReadOnlyList<MountPoint> QueryMountPoints()
+    {
+        return QueryMountPoints(true).Result;
+    }
+    #endregion
+
+    #region Private Members
+    private static NtResult<NtFile> OpenMountPointManager(bool throw_on_error)
+    {
+        return NtFile.Open(@"\Device\MountPointManager", null, FileAccessRights.Synchronize, FileShareMode.None,
+            FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert, throw_on_error);
+    }
+
+    private static IReadOnlyList<MountPoint> ParseMountPoints(SafeStructureInOutBuffer<MOUNTMGR_MOUNT_POINTS> buffer, int length)
+    {
+        buffer.Initialize((uint)length);
+        var result = buffer.Result;
+        MOUNTMGR_MOUNT_POINT[] mount_point = new MOUNTMGR_MOUNT_POINT[result.NumberOfMountPoints];
+        buffer.Data.ReadArray(0, mount_point, 0, mount_point.Length);
+
+        return mount_point.Select(m => new MountPoint(buffer, m)).ToList().AsReadOnly();
+    }
+    #endregion
 }

@@ -12,79 +12,78 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall classification drop.
+/// </summary>
+public sealed class FirewallNetEventClassifyDrop : FirewallNetEvent
 {
     /// <summary>
-    /// Class to represent a firewall classification drop.
+    /// Filter ID.
     /// </summary>
-    public sealed class FirewallNetEventClassifyDrop : FirewallNetEvent
+    public ulong FilterId { get; }
+
+    /// <summary>
+    /// Layer ID.
+    /// </summary>
+    public ushort LayerId { get; }
+
+    /// <summary>
+    /// Reason for reauthorizing 
+    /// </summary>
+    public uint ReauthReason { get; }
+    
+    /// <summary>
+    /// The original profile the connection was received on.
+    /// </summary>
+    public FirewallProfileId OriginalProfile { get; }
+
+    /// <summary>
+    /// The profile the error occurred on.
+    /// </summary>
+    public FirewallProfileId CurrentProfile { get; }
+
+    /// <summary>
+    /// Indicates the direction of the packet transmission.
+    /// </summary>
+    public FirewallNetEventDirectionType MsFwpDirection { get; }
+
+    /// <summary>
+    /// Indicates whether the packet originated from (or was heading to) the loopback adapter.
+    /// </summary>
+    public bool IsLoopback { get; }
+
+    /// <summary>
+    /// GUID identifier of a vSwitch.
+    /// </summary>
+    public Guid VSwitchId { get; }
+
+    /// <summary>
+    /// Transient source port of a packet within the vSwitch.
+    /// </summary>
+    public uint VSwitchSourcePort { get; }
+
+    /// <summary>
+    /// Transient destination port of a packet within the vSwitch.
+    /// </summary>
+    public uint VSwitchDestinationPort { get; }
+
+    internal FirewallNetEventClassifyDrop(IFwNetEvent net_event) : base(net_event)
     {
-        /// <summary>
-        /// Filter ID.
-        /// </summary>
-        public ulong FilterId { get; }
-
-        /// <summary>
-        /// Layer ID.
-        /// </summary>
-        public ushort LayerId { get; }
-
-        /// <summary>
-        /// Reason for reauthorizing 
-        /// </summary>
-        public uint ReauthReason { get; }
-        
-        /// <summary>
-        /// The original profile the connection was received on.
-        /// </summary>
-        public FirewallProfileId OriginalProfile { get; }
-
-        /// <summary>
-        /// The profile the error occurred on.
-        /// </summary>
-        public FirewallProfileId CurrentProfile { get; }
-
-        /// <summary>
-        /// Indicates the direction of the packet transmission.
-        /// </summary>
-        public FirewallNetEventDirectionType MsFwpDirection { get; }
-
-        /// <summary>
-        /// Indicates whether the packet originated from (or was heading to) the loopback adapter.
-        /// </summary>
-        public bool IsLoopback { get; }
-
-        /// <summary>
-        /// GUID identifier of a vSwitch.
-        /// </summary>
-        public Guid VSwitchId { get; }
-
-        /// <summary>
-        /// Transient source port of a packet within the vSwitch.
-        /// </summary>
-        public uint VSwitchSourcePort { get; }
-
-        /// <summary>
-        /// Transient destination port of a packet within the vSwitch.
-        /// </summary>
-        public uint VSwitchDestinationPort { get; }
-
-        internal FirewallNetEventClassifyDrop(IFwNetEvent net_event) : base(net_event)
-        {
-            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CLASSIFY_DROP2>();
-            FilterId = inner_event.filterId;
-            LayerId = inner_event.layerId;
-            VSwitchId = inner_event.vSwitchId.ToGuid();
-            VSwitchSourcePort = inner_event.vSwitchSourcePort;
-            VSwitchDestinationPort = inner_event.vSwitchDestinationPort;
-            ReauthReason = inner_event.reauthReason;
-            OriginalProfile = inner_event.originalProfile;
-            CurrentProfile = inner_event.currentProfile;
-            MsFwpDirection = inner_event.msFwpDirection;
-            IsLoopback = inner_event.isLoopback;
-        }
+        var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CLASSIFY_DROP2>();
+        FilterId = inner_event.filterId;
+        LayerId = inner_event.layerId;
+        VSwitchId = inner_event.vSwitchId.ToGuid();
+        VSwitchSourcePort = inner_event.vSwitchSourcePort;
+        VSwitchDestinationPort = inner_event.vSwitchDestinationPort;
+        ReauthReason = inner_event.reauthReason;
+        OriginalProfile = inner_event.originalProfile;
+        CurrentProfile = inner_event.currentProfile;
+        MsFwpDirection = inner_event.msFwpDirection;
+        IsLoopback = inner_event.isLoopback;
     }
 }

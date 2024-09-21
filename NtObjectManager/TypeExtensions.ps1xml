@@ -6,7 +6,7 @@
       <ScriptProperty>
         <Name>ToBeSignedHash</Name>
         <GetScriptBlock>
-            [NtApiDotNet.Win32.Security.Authenticode.AuthenticodeUtils]::GetToBeSignedHashString($this)
+            [NtCoreLib.Win32.Security.Authenticode.AuthenticodeUtils]::GetToBeSignedHashString($this)
         </GetScriptBlock>
       </ScriptProperty>
     </Members>

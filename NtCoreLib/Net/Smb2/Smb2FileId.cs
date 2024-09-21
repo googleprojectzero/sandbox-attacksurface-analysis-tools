@@ -14,26 +14,25 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal struct Smb2FileId
 {
-    internal struct Smb2FileId
+    public ulong Persistent;
+    public ulong Volatile;
+
+    public void Write(BinaryWriter writer)
     {
-        public ulong Persistent;
-        public ulong Volatile;
+        writer.Write(Persistent);
+        writer.Write(Volatile);
+    }
 
-        public void Write(BinaryWriter writer)
+    public static Smb2FileId Read(BinaryReader reader)
+    {
+        return new Smb2FileId()
         {
-            writer.Write(Persistent);
-            writer.Write(Volatile);
-        }
-
-        public static Smb2FileId Read(BinaryReader reader)
-        {
-            return new Smb2FileId()
-            {
-                Persistent = reader.ReadUInt64(),
-                Volatile = reader.ReadUInt64()
-            };
-        }
+            Persistent = reader.ReadUInt64(),
+            Volatile = reader.ReadUInt64()
+        };
     }
 }

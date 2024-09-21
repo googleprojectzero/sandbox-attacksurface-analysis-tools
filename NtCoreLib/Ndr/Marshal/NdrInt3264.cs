@@ -14,154 +14,153 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Structure which represents an NDR FC_INT3264
+/// </summary>
+public struct NdrInt3264 : IFormattable
 {
     /// <summary>
-    /// Structure which represents an NDR FC_INT3264
+    /// Value of the structure.
     /// </summary>
-    public struct NdrInt3264 : IFormattable
+    public readonly int Value;
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The value to construct from.</param>
+    public NdrInt3264(int value) 
     {
-        /// <summary>
-        /// Value of the structure.
-        /// </summary>
-        public readonly int Value;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The value to construct from.</param>
-        public NdrInt3264(int value) 
-        {
-            Value = value;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The value to construct from.</param>
-        public NdrInt3264(IntPtr value)
-        {
-            Value = (int)value.ToInt64();
-        }
-
-        /// <summary>
-        /// Convert to a native IntPtr.
-        /// </summary>
-        /// <param name="i">The value to convert from.</param>
-        public static implicit operator IntPtr(NdrInt3264 i)
-        {
-            return new IntPtr(i.Value);
-        }
-
-        /// <summary>
-        /// Overridden ToString.
-        /// </summary>
-        /// <returns>The value as a string.</returns>
-        public override string ToString()
-        {
-            return Value.ToString();
-        }
-
-        /// <summary>
-        /// ToString method.
-        /// </summary>
-        /// <param name="format">The formatting string.</param>
-        /// <returns>The value as a string.</returns>
-        public string ToString(string format)
-        {
-            return Value.ToString(format);
-        }
-
-        /// <summary>
-        /// IFormattable ToString.
-        /// </summary>
-        /// <param name="format">The formatting string.</param>
-        /// <param name="formatProvider">Formatting provider.</param>
-        /// <returns>The value as a string.</returns>
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            return Value.ToString(format, formatProvider);
-        }
+        Value = value;
     }
 
     /// <summary>
-    /// Structure which represents an NDR FC_UINT3264
+    /// Constructor.
     /// </summary>
-    public struct NdrUInt3264 : IFormattable
+    /// <param name="value">The value to construct from.</param>
+    public NdrInt3264(IntPtr value)
     {
-        /// <summary>
-        /// Value of the structure.
-        /// </summary>
-        public readonly uint Value;
+        Value = (int)value.ToInt64();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The value to construct from.</param>
-        public NdrUInt3264(uint value)
-        {
-            Value = value;
-        }
+    /// <summary>
+    /// Convert to a native IntPtr.
+    /// </summary>
+    /// <param name="i">The value to convert from.</param>
+    public static implicit operator IntPtr(NdrInt3264 i)
+    {
+        return new IntPtr(i.Value);
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The value to construct from.</param>
-        public NdrUInt3264(int value) 
-            : this((uint)value)
-        {
-        }
+    /// <summary>
+    /// Overridden ToString.
+    /// </summary>
+    /// <returns>The value as a string.</returns>
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="value">The value to construct from.</param>
-        public NdrUInt3264(IntPtr value)
-        {
-            Value = (uint)(value.ToInt64() & uint.MaxValue);
-        }
+    /// <summary>
+    /// ToString method.
+    /// </summary>
+    /// <param name="format">The formatting string.</param>
+    /// <returns>The value as a string.</returns>
+    public string ToString(string format)
+    {
+        return Value.ToString(format);
+    }
 
-        /// <summary>
-        /// Convert to a native IntPtr.
-        /// </summary>
-        /// <param name="i">The value to convert from.</param>
-        public static implicit operator IntPtr(NdrUInt3264 i)
-        {
-            if (IntPtr.Size == 8)
-            {
-                return new IntPtr(i.Value);
-            }
-            return new IntPtr((int)i.Value);
-        }
+    /// <summary>
+    /// IFormattable ToString.
+    /// </summary>
+    /// <param name="format">The formatting string.</param>
+    /// <param name="formatProvider">Formatting provider.</param>
+    /// <returns>The value as a string.</returns>
+    public string ToString(string format, IFormatProvider formatProvider)
+    {
+        return Value.ToString(format, formatProvider);
+    }
+}
 
-        /// <summary>
-        /// Overridden ToString.
-        /// </summary>
-        /// <returns>The value as a string.</returns>
-        public override string ToString()
-        {
-            return Value.ToString();
-        }
+/// <summary>
+/// Structure which represents an NDR FC_UINT3264
+/// </summary>
+public struct NdrUInt3264 : IFormattable
+{
+    /// <summary>
+    /// Value of the structure.
+    /// </summary>
+    public readonly uint Value;
 
-        /// <summary>
-        /// ToString method.
-        /// </summary>
-        /// <param name="format">The formatting string.</param>
-        /// <returns>The value as a string.</returns>
-        public string ToString(string format)
-        {
-            return Value.ToString(format);
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The value to construct from.</param>
+    public NdrUInt3264(uint value)
+    {
+        Value = value;
+    }
 
-        /// <summary>
-        /// IFormattable ToString.
-        /// </summary>
-        /// <param name="format">The formatting string.</param>
-        /// <param name="formatProvider">Formatting provider.</param>
-        /// <returns>The value as a string.</returns>
-        public string ToString(string format, IFormatProvider formatProvider)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The value to construct from.</param>
+    public NdrUInt3264(int value) 
+        : this((uint)value)
+    {
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="value">The value to construct from.</param>
+    public NdrUInt3264(IntPtr value)
+    {
+        Value = (uint)(value.ToInt64() & uint.MaxValue);
+    }
+
+    /// <summary>
+    /// Convert to a native IntPtr.
+    /// </summary>
+    /// <param name="i">The value to convert from.</param>
+    public static implicit operator IntPtr(NdrUInt3264 i)
+    {
+        if (IntPtr.Size == 8)
         {
-            return Value.ToString(format, formatProvider);
+            return new IntPtr(i.Value);
         }
+        return new IntPtr((int)i.Value);
+    }
+
+    /// <summary>
+    /// Overridden ToString.
+    /// </summary>
+    /// <returns>The value as a string.</returns>
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
+
+    /// <summary>
+    /// ToString method.
+    /// </summary>
+    /// <param name="format">The formatting string.</param>
+    /// <returns>The value as a string.</returns>
+    public string ToString(string format)
+    {
+        return Value.ToString(format);
+    }
+
+    /// <summary>
+    /// IFormattable ToString.
+    /// </summary>
+    /// <param name="format">The formatting string.</param>
+    /// <param name="formatProvider">Formatting provider.</param>
+    /// <returns>The value as a string.</returns>
+    public string ToString(string format, IFormatProvider formatProvider)
+    {
+        return Value.ToString(format, formatProvider);
     }
 }

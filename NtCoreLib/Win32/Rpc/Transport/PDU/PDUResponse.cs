@@ -14,37 +14,36 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal class PDUResponse : PDUBase
 {
-    internal class PDUResponse : PDUBase
+    public int AllocHint { get; }
+    public ushort ContextId { get; }
+    public byte CancelCount { get; }
+    public byte[] StubData { get; }
+
+    public PDUResponse(byte[] data)
+        : base(PDUType.Response)
     {
-        public int AllocHint { get; }
-        public ushort ContextId { get; }
-        public byte CancelCount { get; }
-        public byte[] StubData { get; }
+        MemoryStream stm = new(data);
+        BinaryReader reader = new(stm);
+        AllocHint = reader.ReadInt32();
+        ContextId = reader.ReadUInt16();
+        CancelCount = reader.ReadByte();
+        reader.ReadByte(); // reserved.
+        StubData = reader.ReadAllBytes((int)stm.RemainingLength());
+    }
 
-        public PDUResponse(byte[] data)
-            : base(PDUType.Response)
-        {
-            MemoryStream stm = new MemoryStream(data);
-            BinaryReader reader = new BinaryReader(stm);
-            AllocHint = reader.ReadInt32();
-            ContextId = reader.ReadUInt16();
-            CancelCount = reader.ReadByte();
-            reader.ReadByte(); // reserved.
-            StubData = reader.ReadAllBytes((int)stm.RemainingLength());
-        }
-
-        public byte[] ToArray(PDUHeader header)
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            header.Write(writer);
-            writer.Write(AllocHint);
-            writer.Write(ContextId);
-            writer.Write(CancelCount);
-            writer.Write((byte)0);
-            return stm.ToArray();
-        }
+    public byte[] ToArray(PDUHeader header)
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        header.Write(writer);
+        writer.Write(AllocHint);
+        writer.Write(ContextId);
+        writer.Write(CancelCount);
+        writer.Write((byte)0);
+        return stm.ToArray();
     }
 }

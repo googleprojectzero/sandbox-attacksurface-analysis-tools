@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent the AD-AUTH-DATA-TARGET-NAME authorization data builder.
+/// </summary>
+public sealed class KerberosAuthorizationDataTargetNameBuilder : KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Class to represent the AD-AUTH-DATA-TARGET-NAME authorization data builder.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataTargetNameBuilder : KerberosAuthorizationDataBuilder
+    public KerberosAuthorizationDataTargetNameBuilder()
+        : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataTargetNameBuilder()
-            : base(KerberosAuthorizationDataType.AD_AUTH_DATA_TARGET_NAME)
-        {
-        }
+    }
 
-        /// <summary>
-        /// The target name.
-        /// </summary>
-        public string TargetName { get; set; }
+    /// <summary>
+    /// The target name.
+    /// </summary>
+    public string TargetName { get; set; }
 
-        /// <summary>
-        /// Create the Kerberos authorization data.
-        /// </summary>
-        /// <returns>The kerberos authorization data.</returns>
-        public override KerberosAuthorizationData Create()
-        {
-            return new KerberosAuthorizationDataTargetName(TargetName);
-        }
+    /// <summary>
+    /// Create the Kerberos authorization data.
+    /// </summary>
+    /// <returns>The kerberos authorization data.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        return new KerberosAuthorizationDataTargetName(TargetName);
     }
 }

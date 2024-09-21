@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 $native_dir = if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
-    switch([NtApiDotNet.NtSystemInfo]::ProcessorInformation.ProcessorArchitecture) {
+    switch([NtCoreLib.NtSystemInfo]::ProcessorInformation.ProcessorArchitecture) {
         "AMD64" { 
             "$PSScriptRoot\x64"
         }
@@ -35,13 +35,8 @@ $native_dir = if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
 }
 
 if ("" -ne $native_dir -and (Test-Path "$native_dir\dbghelp.dll")) {
-    $Script:GlobalDbgHelpPath = "$native_dir\dbghelp.dll"
+    [NtCoreLib.Win32.Debugger.Symbols.SymbolResolver]::DefaultDbgHelpPath = "$native_dir\dbghelp.dll"
 }
-else {
-    $Script:GlobalDbgHelpPath = "dbghelp.dll"
-}
-
-$Script:GlobalSymbolPath = "srv*https://msdl.microsoft.com/download/symbols"
 
 <#
 .SYNOPSIS
@@ -61,7 +56,7 @@ Flags for the symbol resolver.
 .PARAMETER TraceWriter
 Specify the output text writer for symbol tracing when enabled by the flags.
 .OUTPUTS
-NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
+NtCoreLib.Win32.Debugger.Symbols.ISymbolResolver - The symbol resolver. Dispose after use.
 .EXAMPLE
 New-SymbolResolver
 Get a symbol resolver for the current process with default settings.
@@ -74,25 +69,16 @@ Get a symbol resolver specifying a dbghelp path and symbol path and a specific p
 #>
 function New-SymbolResolver {
     Param(
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [string]$DbgHelpPath,
         [string]$SymbolPath,
-        [NtApiDotNet.Win32.Debugger.SymbolResolverFlags]$Flags = 0,
+        [NtCoreLib.Win32.Debugger.Symbols.SymbolResolverFlags]$Flags = 0,
         [System.IO.TextWriter]$TraceWriter
     )
-    if ($DbgHelpPath -eq "") {
-        $DbgHelpPath = $Script:GlobalDbgHelpPath
-    }
-    if ($SymbolPath -eq "") {
-        $SymbolPath = $env:_NT_SYMBOL_PATH
-        if ($SymbolPath -eq "") {
-            $SymbolPath = $Script:GlobalSymbolPath
-        }
-    }
     if ($null -eq $Process) {
         $Process = Get-NtProcess -Current
     }
-    [NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath, $Flags, $TraceWriter)
+    [NtCoreLib.Win32.Debugger.Symbols.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath, $Flags, $TraceWriter)
 }
 
 <#
@@ -124,9 +110,9 @@ function Set-GlobalSymbolResolver {
         [string]$SymbolPath
     )
 
-    $Script:GlobalDbgHelpPath = $DbgHelpPath
+    [NtCoreLib.Win32.Debugger.Symbols.SymbolResolver]::DefaultDbgHelpPath = $DbgHelpPath
     if ("" -ne $SymbolPath) {
-        $Script:GlobalSymbolPath = $SymbolPath
+        [NtCoreLib.Win32.Debugger.Symbols.SymbolResolver]::DefaultSymbolPath = $SymbolPath
     }
 }
 
@@ -182,7 +168,7 @@ Capture debug output for session 0.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Debugger.Win32DebugConsole
+NtCoreLib.Win32.Debugger.Win32DebugConsole
 #>
 function New-Win32DebugConsole {
     param(
@@ -194,7 +180,7 @@ function New-Win32DebugConsole {
     } else {
         (Get-NtProcess -Current).SessionId
     }
-    [NtApiDotNet.Win32.Debugger.Win32DebugConsole]::Create($session_id)
+    [NtCoreLib.Win32.Debugger.Win32DebugConsole]::Create($session_id)
 }
 
 <#
@@ -211,13 +197,13 @@ Read the string asynchronously.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Debugger.Win32DebugString
+NtCoreLib.Win32.Debugger.Win32DebugString
 System.Threading.Tasks.Task[Win32DebugString]
 #>
 function Read-Win32DebugConsole {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Debugger.Win32DebugConsole]$Console,
+        [NtCoreLib.Win32.Debugger.Win32DebugConsole]$Console,
         [int]$TimeoutMs = -1,
         [switch]$Async
     )

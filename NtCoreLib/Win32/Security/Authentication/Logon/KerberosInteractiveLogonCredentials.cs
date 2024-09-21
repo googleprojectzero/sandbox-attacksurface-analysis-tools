@@ -12,96 +12,99 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Class to represent a KERB_INTERACTIVE_LOGON or a KERB_INTERACTIVE_UNLOCK_LOGON credential buffer.
+/// </summary>
+public sealed class KerberosInteractiveLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
 {
     /// <summary>
-    /// Class to represent a KERB_INTERACTIVE_LOGON or a KERB_INTERACTIVE_UNLOCK_LOGON credential buffer.
+    /// The logon domain name.
     /// </summary>
-    public sealed class KerberosInteractiveLogonCredentials : ILsaLogonCredentials, ILsaLogonCredentialsSerializable
+    public string LogonDomainName { get; set; }
+    /// <summary>
+    /// The logon user name.
+    /// </summary>
+    public string UserName { get; set; }
+    /// <summary>
+    /// The logon password.
+    /// </summary>
+    public SecureString Password { get; set; }
+    /// <summary>
+    /// If specified will create a KERB_INTERACTIVE_UNLOCK_LOGON credential buffer.
+    /// </summary>
+    public Luid? LogonId { get; set; }
+    /// <summary>
+    /// Specify along with the LogonId to use the KerbLuidLogon type.
+    /// </summary>
+    public bool LuidLogon { get; set; }
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="credentials">The user's credentials.</param>
+    public KerberosInteractiveLogonCredentials(UserCredentials credentials)
     {
-        /// <summary>
-        /// The logon domain name.
-        /// </summary>
-        public string LogonDomainName { get; set; }
-        /// <summary>
-        /// The logon user name.
-        /// </summary>
-        public string UserName { get; set; }
-        /// <summary>
-        /// The logon password.
-        /// </summary>
-        public SecureString Password { get; set; }
-        /// <summary>
-        /// If specified will create a KERB_INTERACTIVE_UNLOCK_LOGON credential buffer.
-        /// </summary>
-        public Luid? LogonId { get; set; }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
-        public KerberosInteractiveLogonCredentials(UserCredentials credentials)
+        if (credentials is null)
         {
-            if (credentials is null)
-            {
-                throw new ArgumentNullException(nameof(credentials));
-            }
-
-            LogonDomainName = credentials.Domain;
-            UserName = credentials.UserName;
-            Password = credentials.Password;
+            throw new ArgumentNullException(nameof(credentials));
         }
 
-        private void PopulateLogon(LsaBufferBuilder<KERB_INTERACTIVE_LOGON> builder, bool relative)
-        {
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.LogonDomainName), LogonDomainName, relative);
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.UserName), UserName, relative);
-            builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.Password), Password, relative);
-        }
-
-        private SafeBufferGeneric ToBuffer(bool relative)
-        {
-            if (LogonId.HasValue)
-            {
-                var builder =  new KERB_INTERACTIVE_UNLOCK_LOGON()
-                {
-                    LogonId = LogonId.Value
-                }.ToBuilder();
-                PopulateLogon(builder.GetSubBuilder(nameof(KERB_INTERACTIVE_UNLOCK_LOGON.Logon), 
-                    new KERB_INTERACTIVE_LOGON() {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbWorkstationUnlockLogon
-                }), relative);
-                return builder.ToBuffer();
-            }
-            else
-            {
-                var builder = new KERB_INTERACTIVE_LOGON()
-                {
-                    MessageType = KERB_LOGON_SUBMIT_TYPE.KerbInteractiveLogon
-                }.ToBuilder();
-                PopulateLogon(builder, relative);
-                return builder.ToBuffer();
-            }
-        }
-
-        byte[] ILsaLogonCredentialsSerializable.ToArray()
-        {
-            using (var buffer = ToBuffer(true))
-            {
-                return buffer.ToArray();
-            }
-        }
-
-        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
-        {
-            return ToBuffer(false);
-        }
-
-        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+        LogonDomainName = credentials.Domain;
+        UserName = credentials.UserName;
+        Password = credentials.Password;
     }
+
+    private void PopulateLogon(LsaBufferBuilder<KERB_INTERACTIVE_LOGON> builder, bool relative)
+    {
+        builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.LogonDomainName), LogonDomainName, relative);
+        builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.UserName), UserName, relative);
+        builder.AddUnicodeString(nameof(KERB_INTERACTIVE_LOGON.Password), Password, relative);
+    }
+
+    private SafeBufferGeneric ToBuffer(bool relative)
+    {
+        if (LogonId.HasValue)
+        {
+            var builder =  new KERB_INTERACTIVE_UNLOCK_LOGON()
+            {
+                LogonId = LogonId.Value
+            }.ToBuilder();
+            PopulateLogon(builder.GetSubBuilder(nameof(KERB_INTERACTIVE_UNLOCK_LOGON.Logon), 
+                new KERB_INTERACTIVE_LOGON() {
+                MessageType = LuidLogon ? KERB_LOGON_SUBMIT_TYPE.KerbLuidLogon : KERB_LOGON_SUBMIT_TYPE.KerbWorkstationUnlockLogon
+            }), relative);
+            return builder.ToBuffer();
+        }
+        else
+        {
+            var builder = new KERB_INTERACTIVE_LOGON()
+            {
+                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbInteractiveLogon
+            }.ToBuilder();
+            PopulateLogon(builder, relative);
+            return builder.ToBuffer();
+        }
+    }
+
+    byte[] ILsaLogonCredentialsSerializable.ToArray()
+    {
+        using var buffer = ToBuffer(true);
+        return buffer.ToArray();
+    }
+
+    SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+    {
+        return ToBuffer(false);
+    }
+
+    string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
 }

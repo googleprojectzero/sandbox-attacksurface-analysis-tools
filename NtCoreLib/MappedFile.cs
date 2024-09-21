@@ -12,78 +12,79 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeHandles;
+using NtCoreLib.Security.CodeIntegrity;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class which represents a mapped file.
+/// </summary>
+public class MappedFile
 {
     /// <summary>
-    /// Class which represents a mapped file.
+    /// Native path to file.
     /// </summary>
-    public class MappedFile
+    public string Path { get; }
+    /// <summary>
+    /// Name of the file.
+    /// </summary>
+    public string Name => NtObjectUtils.GetFileName(Path);
+    /// <summary>
+    /// List of mapped sections.
+    /// </summary>
+    public IEnumerable<MemoryInformation> Sections { get; }
+    /// <summary>
+    /// Mapped base address of file.
+    /// </summary>
+    public long BaseAddress { get; }
+    /// <summary>
+    /// Mapped size of file.
+    /// </summary>
+    public long Size { get; }
+
+    /// <summary>
+    /// True if the mapped file is an image section.
+    /// </summary>
+    public bool IsImage { get; }
+
+    /// <summary>
+    /// Specified the signing level if an image (only on RS3+).
+    /// </summary>
+    public SigningLevel ImageSigningLevel { get; }
+
+    internal MappedFile(IEnumerable<MemoryInformation> sections, SafeKernelObjectHandle process)
     {
-        /// <summary>
-        /// Native path to file.
-        /// </summary>
-        public string Path { get; }
-        /// <summary>
-        /// Name of the file.
-        /// </summary>
-        public string Name => NtObjectUtils.GetFileName(Path);
-        /// <summary>
-        /// List of mapped sections.
-        /// </summary>
-        public IEnumerable<MemoryInformation> Sections { get; }
-        /// <summary>
-        /// Mapped base address of file.
-        /// </summary>
-        public long BaseAddress { get; }
-        /// <summary>
-        /// Mapped size of file.
-        /// </summary>
-        public long Size { get; }
-
-        /// <summary>
-        /// True if the mapped file is an image section.
-        /// </summary>
-        public bool IsImage { get; }
-
-        /// <summary>
-        /// Specified the signing level if an image (only on RS3+).
-        /// </summary>
-        public SigningLevel ImageSigningLevel { get; }
-
-        internal MappedFile(IEnumerable<MemoryInformation> sections, SafeKernelObjectHandle process)
+        MemoryInformation first = sections.First();
+        BaseAddress = first.AllocationBase;
+        MemoryInformation last = sections.Last();
+        Size = (last.BaseAddress - BaseAddress) + last.RegionSize;
+        Sections = sections;
+        Path = first.MappedImagePath;
+        IsImage = first.Type == MemoryType.Image;
+        if (IsImage)
         {
-            MemoryInformation first = sections.First();
-            BaseAddress = first.AllocationBase;
-            MemoryInformation last = sections.Last();
-            Size = (last.BaseAddress - BaseAddress) + last.RegionSize;
-            Sections = sections;
-            Path = first.MappedImagePath;
-            IsImage = first.Type == MemoryType.Image;
-            if (IsImage)
+            var image_info = NtVirtualMemory.QueryImageInformation(process, BaseAddress, false);
+            if (image_info.IsSuccess)
             {
-                var image_info = NtVirtualMemory.QueryImageInformation(process, BaseAddress, false);
-                if (image_info.IsSuccess)
-                {
-                    ImageSigningLevel = image_info.Result.ImageSigningLevel;
-                }
+                ImageSigningLevel = image_info.Result.ImageSigningLevel;
             }
         }
+    }
 
-        static IEnumerable<MemoryInformation> ToEnumerable(MemoryInformation mem_info)
+    static IEnumerable<MemoryInformation> ToEnumerable(MemoryInformation mem_info)
+    {
+        List<MemoryInformation> ret = new()
         {
-            List<MemoryInformation> ret = new List<MemoryInformation>
-            {
-                mem_info
-            };
-            return ret.AsReadOnly();
-        }
+            mem_info
+        };
+        return ret.AsReadOnly();
+    }
 
-        internal MappedFile(MemoryInformation mem_info, SafeKernelObjectHandle process)
-            : this(ToEnumerable(mem_info), process)
-        {
-        }
+    internal MappedFile(MemoryInformation mem_info, SafeKernelObjectHandle process)
+        : this(ToEnumerable(mem_info), process)
+    {
     }
 }

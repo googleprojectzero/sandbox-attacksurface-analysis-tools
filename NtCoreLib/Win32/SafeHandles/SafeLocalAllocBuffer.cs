@@ -12,26 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Memory.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtCoreLib.Win32.SafeHandles;
+
+internal sealed class SafeLocalAllocBuffer : SafeBufferGeneric
 {
-    internal sealed class SafeLocalAllocBuffer : SafeBufferGeneric
+    protected override bool ReleaseHandle()
     {
-        protected override bool ReleaseHandle()
-        {
-            return Win32NativeMethods.LocalFree(handle) == IntPtr.Zero;
-        }
-
-        public SafeLocalAllocBuffer(IntPtr handle, bool owns_handle)
-            : base(handle, 0, owns_handle)
-        {
-        }
-
-        public SafeLocalAllocBuffer() : base(true)
-        {
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        return NativeMethods.LocalFree(handle) == IntPtr.Zero;
     }
+
+    public SafeLocalAllocBuffer(IntPtr handle, bool owns_handle)
+        : base(handle, 0, owns_handle)
+    {
+    }
+
+    public SafeLocalAllocBuffer() : base(true)
+    {
+    }
+
+    public override bool IsInvalid => handle == IntPtr.Zero;
 }

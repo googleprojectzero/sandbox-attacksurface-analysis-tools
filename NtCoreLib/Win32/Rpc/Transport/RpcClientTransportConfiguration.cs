@@ -13,41 +13,57 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Base class for a low-level client RPC transport configuration.
+/// </summary>
+public abstract class RpcClientTransportConfiguration
 {
     /// <summary>
-    /// Base class for a low-level client RPC transport configuration.
+    /// Specify the transfer syntax.
     /// </summary>
-    public class RpcClientTransportConfiguration
+    public RpcClientTransportTransferSyntax TransferSyntax { get; set; }
+
+    /// <summary>
+    /// Create a transport configuration for a specified protocol sequence.
+    /// </summary>
+    /// <param name="protocol_sequence">The protocol sequence.</param>
+    /// <returns>The transport configuration. Returns a default object if no specific configuration supported.</returns>
+    public static RpcClientTransportConfiguration Create(string protocol_sequence)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        protected RpcClientTransportConfiguration()
+        if (string.IsNullOrWhiteSpace(protocol_sequence))
         {
+            throw new ArgumentException($"'{nameof(protocol_sequence)}' cannot be null or whitespace.", nameof(protocol_sequence));
         }
 
-        /// <summary>
-        /// Create a transport configuration for a specified protocol sequence.
-        /// </summary>
-        /// <param name="protocol_sequence">The protocol sequence.</param>
-        /// <returns>The transport configuration. Returns a default object if no specific configuration supported.</returns>
-        public static RpcClientTransportConfiguration Create(string protocol_sequence)
+        return protocol_sequence.ToLower() switch
         {
-            if (string.IsNullOrWhiteSpace(protocol_sequence))
-            {
-                throw new ArgumentException($"'{nameof(protocol_sequence)}' cannot be null or whitespace.", nameof(protocol_sequence));
-            }
+            RpcProtocolSequence.NamedPipe => new RpcNamedPipeClientTransportConfiguration(),
+            RpcProtocolSequence.LRPC => new RpcAlpcClientTransportConfiguration(),
+            _ => new RpcConnectedClientTransportConfiguration(),
+        };
+    }
 
-            switch (protocol_sequence.ToLower())
-            {
-                case RpcProtocolSequence.NamedPipe:
-                    return new RpcNamedPipeClientTransportConfiguration();
-                case RpcProtocolSequence.LRPC:
-                    return new RpcAlpcClientTransportConfiguration();
-            }
-            return new RpcClientTransportConfiguration();
-        }
+    /// <summary>
+    /// Create a transport configuration for a binding string.
+    /// </summary>
+    /// <param name="binding">The binding string. </param>
+    /// <returns>The transport configuration.</returns>
+    public static RpcClientTransportConfiguration Create(RpcStringBinding binding)
+    {
+        return Create(binding.ProtocolSequence);
+    }
+
+    /// <summary>
+    /// Create a transport configuration for an endpoint.
+    /// </summary>
+    /// <param name="endpoint">The endpoint.</param>
+    /// <returns>The transport configuration.</returns>
+    public static RpcClientTransportConfiguration Create(RpcEndpoint endpoint)
+    {
+        return Create(endpoint.Binding);
     }
 }

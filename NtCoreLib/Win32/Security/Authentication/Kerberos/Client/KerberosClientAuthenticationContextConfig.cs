@@ -14,65 +14,64 @@
 
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Configuration class for the client authentication context.
+/// </summary>
+public sealed class KerberosClientAuthenticationContextConfig
 {
     /// <summary>
-    /// Configuration class for the client authentication context.
+    /// Specify the sub-key encryption type.
     /// </summary>
-    public sealed class KerberosClientAuthenticationContextConfig
+    public KerberosEncryptionType? SubKeyEncryptionType { get; set; }
+
+    /// <summary>
+    /// Specify an explicit sub-key. Used in preference to SubKeyEncryptionType.
+    /// </summary>
+    public KerberosAuthenticationKey SubKey { get; set; }
+
+    /// <summary>
+    /// Channel binding.
+    /// </summary>
+    public SecurityChannelBinding ChannelBinding { get; set; }
+
+    /// <summary>
+    /// Specify a ticket to generate a U2U ticket.
+    /// </summary>
+    public KerberosTicket SessionKeyTicket { get; set; }
+
+    /// <summary>
+    /// KRB-CRED for the delegation ticket.
+    /// </summary>
+    public KerberosCredential DelegationTicket { get; set; }
+
+    /// <summary>
+    /// Authorization data for the authenticator.
+    /// </summary>
+    public List<KerberosAuthorizationData> AuthorizationData { get; }
+
+    /// <summary>
+    /// Request an S4U2Self ticket.
+    /// </summary>
+    public bool S4U2Self { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosClientAuthenticationContextConfig()
     {
-        /// <summary>
-        /// Specify the sub-key encryption type.
-        /// </summary>
-        public KerberosEncryptionType? SubKeyEncryptionType { get; set; }
+        AuthorizationData = new List<KerberosAuthorizationData>();
+    }
 
-        /// <summary>
-        /// Specify an explicit sub-key. Used in preference to SubKeyEncryptionType.
-        /// </summary>
-        public KerberosAuthenticationKey SubKey { get; set; }
-
-        /// <summary>
-        /// Channel binding.
-        /// </summary>
-        public SecurityChannelBinding ChannelBinding { get; set; }
-
-        /// <summary>
-        /// Specify a ticket to generate a U2U ticket.
-        /// </summary>
-        public KerberosTicket SessionKeyTicket { get; set; }
-
-        /// <summary>
-        /// KRB-CRED for the delegation ticket.
-        /// </summary>
-        public KerberosCredential DelegationTicket { get; set; }
-
-        /// <summary>
-        /// Authorization data for the authenticator.
-        /// </summary>
-        public List<KerberosAuthorizationData> AuthorizationData { get; }
-
-        /// <summary>
-        /// Request an S4U2Self ticket.
-        /// </summary>
-        public bool S4U2Self { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosClientAuthenticationContextConfig()
-        {
-            AuthorizationData = new List<KerberosAuthorizationData>();
-        }
-
-        /// <summary>
-        /// Create a client authentication context using this configuration.
-        /// </summary>
-        /// <param name="ticket">A kerberos ticket.</param>
-        /// <param name="request_attributes">The request attributes.</param>
-        /// <returns>The client authentication context.</returns>
-        public KerberosClientAuthenticationContext Create(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes)
-        {
-            return new KerberosClientAuthenticationContext(ticket, request_attributes, this);
-        }
+    /// <summary>
+    /// Create a client authentication context using this configuration.
+    /// </summary>
+    /// <param name="ticket">A kerberos ticket.</param>
+    /// <param name="request_attributes">The request attributes.</param>
+    /// <returns>The client authentication context.</returns>
+    public KerberosClientAuthenticationContext Create(KerberosExternalTicket ticket, InitializeContextReqFlags request_attributes)
+    {
+        return new KerberosClientAuthenticationContext(ticket, request_attributes, this);
     }
 }

@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Directory services name error.
+/// </summary>
+[SDKName("DS_NAME_ERROR")]
+public enum DirectoryServiceNameError
 {
-    /// <summary>
-    /// Directory services name error.
-    /// </summary>
-    [SDKName("DS_NAME_ERROR")]
-    public enum DirectoryServiceNameError
-    {
-        [SDKName("DS_NAME_NO_ERROR")]
+    [SDKName("DS_NAME_NO_ERROR")]
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("DS_NAME_ERROR_RESOLVING")]
-        Resolving = 1,
-        [SDKName("DS_NAME_ERROR_NOT_FOUND")]
-        NotFound = 2,
-        [SDKName("DS_NAME_ERROR_NOT_UNIQUE")]
-        NotUnique = 3,
-        [SDKName("DS_NAME_ERROR_NO_MAPPING")]
-        NoMapping = 4,
-        [SDKName("DS_NAME_ERROR_DOMAIN_ONLY")]
-        DomainOnly = 5,
-        [SDKName("DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING")]
-        NoSyntacticalMapping = 6,
-        [SDKName("DS_NAME_ERROR_TRUST_REFERRAL")]
-        TrustReferral = 7
+    None = 0,
+    [SDKName("DS_NAME_ERROR_RESOLVING")]
+    Resolving = 1,
+    [SDKName("DS_NAME_ERROR_NOT_FOUND")]
+    NotFound = 2,
+    [SDKName("DS_NAME_ERROR_NOT_UNIQUE")]
+    NotUnique = 3,
+    [SDKName("DS_NAME_ERROR_NO_MAPPING")]
+    NoMapping = 4,
+    [SDKName("DS_NAME_ERROR_DOMAIN_ONLY")]
+    DomainOnly = 5,
+    [SDKName("DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING")]
+    NoSyntacticalMapping = 6,
+    [SDKName("DS_NAME_ERROR_TRUST_REFERRAL")]
+    TrustReferral = 7
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

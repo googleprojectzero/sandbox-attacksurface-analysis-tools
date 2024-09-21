@@ -16,52 +16,51 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// Utilities for security buffers.
+/// </summary>
+public static class SecurityBufferUtils
 {
     /// <summary>
-    /// Utilities for security buffers.
+    /// Convert a list of data buffers to a byte array.
     /// </summary>
-    public static class SecurityBufferUtils
+    /// <param name="buffers">List of data security buffers. Only buffers used for input are processed.</param>
+    /// <returns>The data buffers as one bytes array.</returns>
+    public static byte[] ToByteArray(this IEnumerable<SecurityBuffer> buffers)
     {
-        /// <summary>
-        /// Convert a list of data buffers to a byte array.
-        /// </summary>
-        /// <param name="buffers">List of data security buffers. Only buffers used for input are processed.</param>
-        /// <returns>The data buffers as one bytes array.</returns>
-        public static byte[] ToByteArray(this IEnumerable<SecurityBuffer> buffers)
-        {
-            return ToByteArray(buffers.Where(b => b.Type == SecurityBufferType.Data).OfType<ISecurityBufferIn>());
-        }
+        return ToByteArray(buffers.Where(b => b.Type == SecurityBufferType.Data).OfType<ISecurityBufferIn>());
+    }
 
-        /// <summary>
-        /// Update a list of data buffers with known data.
-        /// </summary>
-        /// <param name="buffers">The buffers to update.</param>
-        /// <param name="data">The data to update with.</param>
-        public static void UpdateDataBuffers(this IEnumerable<SecurityBuffer> buffers, byte[] data)
-        {
-            UpdateDataBuffers(buffers.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly).OfType<ISecurityBufferOut>(), data);
-        }
+    /// <summary>
+    /// Update a list of data buffers with known data.
+    /// </summary>
+    /// <param name="buffers">The buffers to update.</param>
+    /// <param name="data">The data to update with.</param>
+    public static void UpdateDataBuffers(this IEnumerable<SecurityBuffer> buffers, byte[] data)
+    {
+        UpdateDataBuffers(buffers.Where(b => b.Type == SecurityBufferType.Data && !b.ReadOnly).OfType<ISecurityBufferOut>(), data);
+    }
 
-        internal static void UpdateDataBuffers(this IEnumerable<ISecurityBufferOut> buffers, byte[] data)
+    internal static void UpdateDataBuffers(this IEnumerable<ISecurityBufferOut> buffers, byte[] data)
+    {
+        MemoryStream stm = new(data);
+        BinaryReader reader = new(stm);
+        foreach (var buffer in buffers)
         {
-            MemoryStream stm = new MemoryStream(data);
-            BinaryReader reader = new BinaryReader(stm);
-            foreach (var buffer in buffers)
-            {
-                buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
-            }
+            buffer.Update(SecurityBufferType.Data, reader.ReadAllBytes(buffer.Size));
         }
+    }
 
-        internal static byte[] ToByteArray(this IEnumerable<ISecurityBufferIn> buffers)
+    internal static byte[] ToByteArray(this IEnumerable<ISecurityBufferIn> buffers)
+    {
+        MemoryStream stm = new();
+        foreach (var buffer in buffers)
         {
-            MemoryStream stm = new MemoryStream();
-            foreach (var buffer in buffers)
-            {
-                byte[] ba = buffer.ToArray();
-                stm.Write(ba, 0, ba.Length);
-            }
-            return stm.ToArray();
+            byte[] ba = buffer.ToArray();
+            stm.Write(ba, 0, ba.Length);
         }
+        return stm.ToArray();
     }
 }

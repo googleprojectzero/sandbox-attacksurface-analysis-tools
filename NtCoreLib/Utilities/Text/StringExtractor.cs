@@ -18,204 +18,199 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace NtApiDotNet.Utilities.Text
+namespace NtCoreLib.Utilities.Text;
+
+/// <summary>
+/// Utility class to extract strings from a byte value.
+/// </summary>
+public static class StringExtractor
 {
-    /// <summary>
-    /// Utility class to extract strings from a byte value.
-    /// </summary>
-    public static class StringExtractor
+    private static bool IsPrintable(char c)
     {
-        private static bool IsPrintable(char c)
+        return c switch
         {
-            switch (c)
-            {
-                case '\t':
-                case ' ':
-                    return true;
-            }
-            return c > 32 && c < 128;
+            '\t' or ' ' => true,
+            _ => c > 32 && c < 128,
+        };
+    }
+
+    private static ExtractedString CreateResult(this StringBuilder builder, long base_offset, long i, ExtractedStringType type, string source)
+    {
+        int str_length = type.HasFlagSet(ExtractedStringType.Unicode) ? (builder.Length * 2 + 1) : builder.Length;
+        return new ExtractedString(builder.ToString(), base_offset + i - str_length, type, source);
+    }
+
+    private static IEnumerable<ExtractedString> Extract(Stream data, long base_offset, int minimum_length, ExtractedStringType type, string source)
+    {
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data));
         }
 
-        private static ExtractedString CreateResult(this StringBuilder builder, long base_offset, long i, ExtractedStringType type, string source)
+        if (minimum_length <= 0)
+            throw new ArgumentException("Must specify a minimum length of at least 1.");
+
+        StringBuilder ascii = new();
+        StringBuilder unicode = new();
+        StringBuilder unicode_unaligned = new();
+        bool parse_ascii = type.HasFlagSet(ExtractedStringType.Ascii);
+        bool parse_unicode = type.HasFlagSet(ExtractedStringType.Unicode);
+        byte[] unicode_char = new byte[2];
+        int b = data.ReadByte();
+        long i = 0;
+        while(b >= 0)
         {
-            int str_length = type.HasFlagSet(ExtractedStringType.Unicode) ? (builder.Length * 2 + 1) : builder.Length;
-            return new ExtractedString(builder.ToString(), base_offset + i - str_length, type, source);
-        }
-
-        private static IEnumerable<ExtractedString> Extract(Stream data, long base_offset, int minimum_length, ExtractedStringType type, string source)
-        {
-            if (data is null)
+            if (parse_ascii)
             {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            if (minimum_length <= 0)
-                throw new ArgumentException("Must specify a minimum length of at least 1.");
-
-            StringBuilder ascii = new StringBuilder();
-            StringBuilder unicode = new StringBuilder();
-            StringBuilder unicode_unaligned = new StringBuilder();
-            bool parse_ascii = type.HasFlagSet(ExtractedStringType.Ascii);
-            bool parse_unicode = type.HasFlagSet(ExtractedStringType.Unicode);
-            byte[] unicode_char = new byte[2];
-            int b = data.ReadByte();
-            long i = 0;
-            while(b >= 0)
-            {
-                if (parse_ascii)
+                char c = (char)b;
+                if (IsPrintable(c))
                 {
-                    char c = (char)b;
+                    ascii.Append(c);
+                }
+                else
+                {
+                    if (ascii.Length >= minimum_length)
+                    {
+                        yield return ascii.CreateResult(base_offset, i, ExtractedStringType.Ascii, source);
+                    }
+                    ascii.Clear();
+                }
+            }
+            if (parse_unicode)
+            {
+                unicode_char[0] = unicode_char[1];
+                unicode_char[1] = (byte)b;
+                char c = BitConverter.ToChar(unicode_char, 0);
+                if ((i & 1) == 1)
+                {
                     if (IsPrintable(c))
                     {
-                        ascii.Append(c);
+                        unicode.Append(c);
                     }
                     else
                     {
-                        if (ascii.Length >= minimum_length)
+                        if (unicode.Length >= minimum_length)
                         {
-                            yield return ascii.CreateResult(base_offset, i, ExtractedStringType.Ascii, source);
+                            yield return unicode.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
                         }
-                        ascii.Clear();
+                        unicode.Clear();
                     }
                 }
-                if (parse_unicode)
+                else if (i > 1)
                 {
-                    unicode_char[0] = unicode_char[1];
-                    unicode_char[1] = (byte)b;
-                    char c = BitConverter.ToChar(unicode_char, 0);
-                    if ((i & 1) == 1)
+                    if (IsPrintable(c))
                     {
-                        if (IsPrintable(c))
-                        {
-                            unicode.Append(c);
-                        }
-                        else
-                        {
-                            if (unicode.Length >= minimum_length)
-                            {
-                                yield return unicode.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
-                            }
-                            unicode.Clear();
-                        }
+                        unicode_unaligned.Append(c);
                     }
-                    else if (i > 1)
+                    else
                     {
-                        if (IsPrintable(c))
+                        if (unicode_unaligned.Length >= minimum_length)
                         {
-                            unicode_unaligned.Append(c);
+                            yield return unicode_unaligned.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
                         }
-                        else
-                        {
-                            if (unicode_unaligned.Length >= minimum_length)
-                            {
-                                yield return unicode_unaligned.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
-                            }
-                            unicode_unaligned.Clear();
-                        }
+                        unicode_unaligned.Clear();
                     }
                 }
-
-                i++;
-                b = data.ReadByte();
             }
 
-            if (ascii.Length >= minimum_length)
-            {
-                yield return ascii.CreateResult(base_offset, i, ExtractedStringType.Ascii, source);
-            }
-
-            if (unicode.Length >= minimum_length)
-            {
-                yield return unicode.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
-            }
-
-            if (unicode_unaligned.Length >= minimum_length)
-            {
-                yield return unicode_unaligned.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
-            }
+            i++;
+            b = data.ReadByte();
         }
 
-        /// <summary>
-        /// Extracts strings from a binary buffer.
-        /// </summary>
-        /// <param name="data">The data to search.</param>
-        /// <param name="count">The length of the data to search.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="offset">The offset into the data to search.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(byte[] data, int offset, int count, int minimum_length, ExtractedStringType type)
+        if (ascii.Length >= minimum_length)
         {
-            return Extract(new MemoryStream(data, offset, count), offset, minimum_length, type, string.Empty);
+            yield return ascii.CreateResult(base_offset, i, ExtractedStringType.Ascii, source);
         }
 
-        /// <summary>
-        /// Extracts strings from a binary buffer.
-        /// </summary>
-        /// <param name="data">The data to search.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(byte[] data, int minimum_length, ExtractedStringType type)
+        if (unicode.Length >= minimum_length)
         {
-            return Extract(data, 0, data.Length, minimum_length, type);
+            yield return unicode.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
         }
 
-        /// <summary>
-        /// Extracts strings from a stream.
-        /// </summary>
-        /// <param name="stm">The stream to extract strings from.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(Stream stm, int minimum_length, ExtractedStringType type)
+        if (unicode_unaligned.Length >= minimum_length)
         {
-            return Extract(stm, 0, minimum_length, type, string.Empty);
+            yield return unicode_unaligned.CreateResult(base_offset, i, ExtractedStringType.Unicode, source);
         }
+    }
 
-        /// <summary>
-        /// Extracts strings from a file.
-        /// </summary>
-        /// <param name="path">The file to search.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(string path, int minimum_length, ExtractedStringType type)
-        {
-            using (var stm = File.OpenRead(path))
-            {
-                foreach (var res in Extract(stm, 0, minimum_length, type, stm.Name))
-                {
-                    yield return res;
-                }
-            }
-        }
+    /// <summary>
+    /// Extracts strings from a binary buffer.
+    /// </summary>
+    /// <param name="data">The data to search.</param>
+    /// <param name="count">The length of the data to search.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="offset">The offset into the data to search.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(byte[] data, int offset, int count, int minimum_length, ExtractedStringType type)
+    {
+        return Extract(new MemoryStream(data, offset, count), offset, minimum_length, type, string.Empty);
+    }
 
-        /// <summary>
-        /// Extracts strings from a safe buffer.
-        /// </summary>
-        /// <param name="buffer">Safe buffer to extract the value from.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(SafeBuffer buffer, int minimum_length, ExtractedStringType type)
-        {
-            return Extract(buffer, 0, buffer.GetLength(), minimum_length, type);
-        }
+    /// <summary>
+    /// Extracts strings from a binary buffer.
+    /// </summary>
+    /// <param name="data">The data to search.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(byte[] data, int minimum_length, ExtractedStringType type)
+    {
+        return Extract(data, 0, data.Length, minimum_length, type);
+    }
 
-        /// <summary>
-        /// Extracts strings from a safe buffer.
-        /// </summary>
-        /// <param name="buffer">Safe buffer to extract the value from.</param>
-        /// <param name="minimum_length">The minimum string length.</param>
-        /// <param name="type">The type of strings to search for.</param>
-        /// <param name="count">The length of the data to search.</param>
-        /// <param name="offset">The offset into the data to search.</param>
-        /// <returns>The list of extracted strings.</returns>
-        public static IEnumerable<ExtractedString> Extract(SafeBuffer buffer, int offset, int count, int minimum_length, ExtractedStringType type)
+    /// <summary>
+    /// Extracts strings from a stream.
+    /// </summary>
+    /// <param name="stm">The stream to extract strings from.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(Stream stm, int minimum_length, ExtractedStringType type)
+    {
+        return Extract(stm, 0, minimum_length, type, string.Empty);
+    }
+
+    /// <summary>
+    /// Extracts strings from a file.
+    /// </summary>
+    /// <param name="path">The file to search.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(string path, int minimum_length, ExtractedStringType type)
+    {
+        using var stm = File.OpenRead(path);
+        foreach (var res in Extract(stm, 0, minimum_length, type, stm.Name))
         {
-            return Extract(new UnmanagedMemoryStream(buffer, offset, count), buffer.DangerousGetHandle().ToInt64() + offset,
-                    minimum_length, type, string.Empty);
+            yield return res;
         }
+    }
+
+    /// <summary>
+    /// Extracts strings from a safe buffer.
+    /// </summary>
+    /// <param name="buffer">Safe buffer to extract the value from.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(SafeBuffer buffer, int minimum_length, ExtractedStringType type)
+    {
+        return Extract(buffer, 0, buffer.GetLength(), minimum_length, type);
+    }
+
+    /// <summary>
+    /// Extracts strings from a safe buffer.
+    /// </summary>
+    /// <param name="buffer">Safe buffer to extract the value from.</param>
+    /// <param name="minimum_length">The minimum string length.</param>
+    /// <param name="type">The type of strings to search for.</param>
+    /// <param name="count">The length of the data to search.</param>
+    /// <param name="offset">The offset into the data to search.</param>
+    /// <returns>The list of extracted strings.</returns>
+    public static IEnumerable<ExtractedString> Extract(SafeBuffer buffer, int offset, int count, int minimum_length, ExtractedStringType type)
+    {
+        return Extract(new UnmanagedMemoryStream(buffer, offset, count), buffer.DangerousGetHandle().ToInt64() + offset,
+                minimum_length, type, string.Empty);
     }
 }

@@ -12,61 +12,57 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Credential.AuthIdentity;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Credential.AuthIdentity;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential.CredUI
+namespace NtCoreLib.Win32.Security.Credential.CredUI;
+
+/// <summary>
+/// Class to represent an SSPI credential prompt.
+/// </summary>
+public sealed class SspiCredentialPromptDialog : CredentialPromptDialog
 {
     /// <summary>
-    /// Class to represent an SSPI credential prompt.
+    /// Specify the target name.
     /// </summary>
-    public sealed class SspiCredentialPromptDialog : CredentialPromptDialog
+    public string TargetName { get; set; }
+
+    /// <summary>
+    /// Specify the input authentication identity.
+    /// </summary>
+    public SecWinNtAuthIdentity InputAuthIdentity { get; set; }
+
+    /// <summary>
+    /// Specify flags for the prompt.
+    /// </summary>
+    public SspiCredentialPromptDialogFlags Flags { get; set; }
+
+    /// <summary>
+    /// Show the credential prompt.
+    /// </summary>
+    /// <returns>The result of the credential prompt.</returns>
+    /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
+    public NtResult<SspiCredentialPromptResult> Show(bool throw_on_error)
     {
-        /// <summary>
-        /// Specify the target name.
-        /// </summary>
-        public string TargetName { get; set; }
+        if (Package is null)
+            throw new ArgumentNullException("Must specify an authentication package.", nameof(Package));
+        using var input_auth = InputAuthIdentity?.Copy()?.DangerousBuffer ?? SafeSecWinNtAuthIdentityBuffer.Null;
+        int save = Save ? 1 : 0;
+        var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package.Name,
+            input_auth, out SafeSecWinNtAuthIdentityBuffer auth_id, ref save, (int)Flags);
+        if (result == Win32Error.ERROR_CANCELLED)
+            return new SspiCredentialPromptResult(Package).CreateResult();
+        return result.CreateWin32Result(throw_on_error, () => new SspiCredentialPromptResult(auth_id, save, Package));
+    }
 
-        /// <summary>
-        /// Specify the input authentication identity.
-        /// </summary>
-        public SecWinNtAuthIdentity InputAuthIdentity { get; set; }
-
-        /// <summary>
-        /// Specify flags for the prompt.
-        /// </summary>
-        public SspiCredentialPromptDialogFlags Flags { get; set; }
-
-        /// <summary>
-        /// Show the credential prompt.
-        /// </summary>
-        /// <returns>The result of the credential prompt.</returns>
-        /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
-        public NtResult<SspiCredentialPromptResult> Show(bool throw_on_error)
-        {
-            if (Package is null)
-                throw new ArgumentNullException("Must specify an authentication package.", nameof(Package));
-            using (var input_auth = InputAuthIdentity?.Copy()?.DangerousBuffer ?? SafeSecWinNtAuthIdentityBuffer.Null)
-            {
-                int save = Save ? 1 : 0;
-                var result = SecurityNativeMethods.SspiPromptForCredentials(TargetName, CreateCredUiInfo(), AuthError, Package.Name,
-                    input_auth, out SafeSecWinNtAuthIdentityBuffer auth_id, ref save, (int)Flags);
-                if (result == Win32Error.ERROR_CANCELLED)
-                    return new SspiCredentialPromptResult(Package).CreateResult();
-                return result.CreateWin32Result(throw_on_error, () => new SspiCredentialPromptResult(auth_id, save, Package));
-            }
-        }
-
-        /// <summary>
-        /// Show the credential prompt.
-        /// </summary>
-        /// <returns>The result of the credential prompt.</returns>
-        /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
-        public SspiCredentialPromptResult Show()
-        {
-            return Show(true).Result;
-        }
+    /// <summary>
+    /// Show the credential prompt.
+    /// </summary>
+    /// <returns>The result of the credential prompt.</returns>
+    /// <remarks>If the dialog is cancelled this will return successfully but the Cancelled property will be set to true.</remarks>
+    public SspiCredentialPromptResult Show()
+    {
+        return Show(true).Result;
     }
 }

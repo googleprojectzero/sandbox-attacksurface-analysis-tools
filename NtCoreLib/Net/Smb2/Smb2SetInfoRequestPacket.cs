@@ -14,37 +14,36 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2SetInfoRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2SetInfoRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 33;
+    private readonly Smb2InfoType _info_type;
+    private readonly Smb2FileId _file_id;
+    private readonly byte[] _input_buffer;
+
+    public int FileInfoClass { get; set; }
+    public uint AdditionalInformation { get; set; }
+
+    public Smb2SetInfoRequestPacket(Smb2InfoType info_type, byte[] input_buffer, Smb2FileId file_id) : base(Smb2Command.SET_INFO)
     {
-        private const ushort STRUCT_SIZE = 33;
-        private readonly Smb2InfoType _info_type;
-        private readonly Smb2FileId _file_id;
-        private readonly byte[] _input_buffer;
+        _info_type = info_type;
+        _file_id = file_id;
+        _input_buffer = input_buffer;
+    }
 
-        public int FileInfoClass { get; set; }
-        public uint AdditionalInformation { get; set; }
-
-        public Smb2SetInfoRequestPacket(Smb2InfoType info_type, byte[] input_buffer, Smb2FileId file_id) : base(Smb2Command.SET_INFO)
-        {
-            _info_type = info_type;
-            _file_id = file_id;
-            _input_buffer = input_buffer;
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.Write((byte)_info_type);
-            writer.WriteByte(FileInfoClass);
-            writer.Write(_input_buffer.Length);
-            writer.WriteUInt16(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            // Reserved
-            writer.WriteUInt16(0);
-            writer.Write(AdditionalInformation);
-            _file_id.Write(writer);
-            writer.Write(_input_buffer);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.Write((byte)_info_type);
+        writer.WriteByte(FileInfoClass);
+        writer.Write(_input_buffer.Length);
+        writer.WriteUInt16(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
+        // Reserved
+        writer.WriteUInt16(0);
+        writer.Write(AdditionalInformation);
+        _file_id.Write(writer);
+        writer.Write(_input_buffer);
     }
 }

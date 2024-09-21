@@ -15,117 +15,116 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class for a Kerberos authorization data signature.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACSignatureBuilder : KerberosAuthorizationDataPACEntryBuilder
 {
-    /// <summary>
-    /// Class for a Kerberos authorization data signature.
-    /// </summary>
-    public sealed class KerberosAuthorizationDataPACSignatureBuilder : KerberosAuthorizationDataPACEntryBuilder
+    internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type) : base(pac_type)
     {
-        internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type) : base(pac_type)
+        switch (pac_type)
         {
-            switch (pac_type)
-            {
-                case KerberosAuthorizationDataPACEntryType.TicketChecksum:
-                case KerberosAuthorizationDataPACEntryType.ServerChecksum:
-                case KerberosAuthorizationDataPACEntryType.KDCChecksum:
-                case KerberosAuthorizationDataPACEntryType.FullPacChecksum:
-                    break;
-                default:
-                    System.Diagnostics.Debug.Assert(false, "The type must be one of the checksum types.");
-                    break;
-            }
+            case KerberosAuthorizationDataPACEntryType.TicketChecksum:
+            case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+            case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+            case KerberosAuthorizationDataPACEntryType.FullPacChecksum:
+                break;
+            default:
+                System.Diagnostics.Debug.Assert(false, "The type must be one of the checksum types.");
+                break;
+        }
+    }
+
+    internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type, 
+        KerberosChecksumType signature_type, byte[] signature, int? rodc_identifier) : this(pac_type)
+    {
+        SignatureType = signature_type;
+        Signature = signature;
+        RODCIdentifier = rodc_identifier;
+    }
+
+    /// <summary>
+    /// Signature type.
+    /// </summary>
+    public KerberosChecksumType SignatureType { get; set; }
+    /// <summary>
+    /// Signature.
+    /// </summary>
+    public byte[] Signature { get; set; }
+    /// <summary>
+    /// Read-only Domain Controller Identifier.
+    /// </summary>
+    public int? RODCIdentifier { get; set; }
+
+    /// <summary>
+    /// Create the authorization data.
+    /// </summary>
+    /// <returns>The authorization data object.</returns>
+    public override KerberosAuthorizationDataPACEntry Create()
+    {
+        MemoryStream stream = new();
+        BinaryWriter writer = new(stream);
+
+        writer.Write((int)SignatureType);
+        writer.Write(Signature);
+
+        if (RODCIdentifier != null)
+        {
+            writer.Write((int)RODCIdentifier);
         }
 
-        internal KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType pac_type, 
-            KerberosChecksumType signature_type, byte[] signature, int? rodc_identifier) : this(pac_type)
+        if (!KerberosAuthorizationDataPACSignature.Parse(PACType, stream.ToArray(), out KerberosAuthorizationDataPACEntry entry))
+            throw new InvalidDataException("PAC signature entry is invalid.");
+        return entry;
+    }
+
+    /// <summary>
+    /// Update the signature using a key and data.
+    /// </summary>
+    /// <param name="key">The key to use for the update.</param>
+    /// <param name="data">The data to use for the signature.</param>
+    public void UpdateSignature(KerberosAuthenticationKey key, byte[] data)
+    {
+        if (key is null)
         {
-            SignatureType = signature_type;
-            Signature = signature;
-            RODCIdentifier = rodc_identifier;
+            throw new ArgumentNullException(nameof(key));
         }
 
-        /// <summary>
-        /// Signature type.
-        /// </summary>
-        public KerberosChecksumType SignatureType { get; set; }
-        /// <summary>
-        /// Signature.
-        /// </summary>
-        public byte[] Signature { get; set; }
-        /// <summary>
-        /// Read-only Domain Controller Identifier.
-        /// </summary>
-        public int? RODCIdentifier { get; set; }
-
-        /// <summary>
-        /// Create the authorization data.
-        /// </summary>
-        /// <returns>The authorization data object.</returns>
-        public override KerberosAuthorizationDataPACEntry Create()
+        if (data is null)
         {
-            MemoryStream stream = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stream);
-
-            writer.Write((int)SignatureType);
-            writer.Write(Signature);
-
-            if (RODCIdentifier != null)
-            {
-                writer.Write((int)RODCIdentifier);
-            }
-
-            if (!KerberosAuthorizationDataPACSignature.Parse(PACType, stream.ToArray(), out KerberosAuthorizationDataPACEntry entry))
-                throw new InvalidDataException("PAC signature entry is invalid.");
-            return entry;
+            throw new ArgumentNullException(nameof(data));
         }
 
-        /// <summary>
-        /// Update the signature using a key and data.
-        /// </summary>
-        /// <param name="key">The key to use for the update.</param>
-        /// <param name="data">The data to use for the signature.</param>
-        public void UpdateSignature(KerberosAuthenticationKey key, byte[] data)
-        {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+        SignatureType = key.ChecksumType;
+        Signature = key.ComputeHash(data, KerberosKeyUsage.KerbNonKerbChksumSalt);
+    }
 
-            if (data is null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
+    /// <summary>
+    /// Create a ticket checksum builder.
+    /// </summary>
+    /// <returns>The ticket checksum builder.</returns>
+    public static KerberosAuthorizationDataPACSignatureBuilder CreateTicketChecksum()
+    {
+        return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.TicketChecksum);
+    }
 
-            SignatureType = key.ChecksumType;
-            Signature = key.ComputeHash(data, KerberosKeyUsage.KerbNonKerbChksumSalt);
-        }
+    /// <summary>
+    /// Create a server checksum builder.
+    /// </summary>
+    /// <returns>The server checksum builder.</returns>
+    public static KerberosAuthorizationDataPACSignatureBuilder CreateServerChecksum()
+    {
+        return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.ServerChecksum);
+    }
 
-        /// <summary>
-        /// Create a ticket checksum builder.
-        /// </summary>
-        /// <returns>The ticket checksum builder.</returns>
-        public static KerberosAuthorizationDataPACSignatureBuilder CreateTicketChecksum()
-        {
-            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.TicketChecksum);
-        }
-
-        /// <summary>
-        /// Create a server checksum builder.
-        /// </summary>
-        /// <returns>The server checksum builder.</returns>
-        public static KerberosAuthorizationDataPACSignatureBuilder CreateServerChecksum()
-        {
-            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.ServerChecksum);
-        }
-
-        /// <summary>
-        /// Create a KDC checksum builder.
-        /// </summary>
-        /// <returns>The KDC checksum builder.</returns>
-        public static KerberosAuthorizationDataPACSignatureBuilder CreateKDCChecksum()
-        {
-            return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.KDCChecksum);
-        }
+    /// <summary>
+    /// Create a KDC checksum builder.
+    /// </summary>
+    /// <returns>The KDC checksum builder.</returns>
+    public static KerberosAuthorizationDataPACSignatureBuilder CreateKDCChecksum()
+    {
+        return new KerberosAuthorizationDataPACSignatureBuilder(KerberosAuthorizationDataPACEntryType.KDCChecksum);
     }
 }

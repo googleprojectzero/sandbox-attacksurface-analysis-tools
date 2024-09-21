@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Flags for network events to capture.
+/// </summary>
+[Flags]
+public enum FirewallNetEventKeywords : uint
 {
-    /// <summary>
-    /// Flags for network events to capture.
-    /// </summary>
-    [Flags]
-    public enum FirewallNetEventKeywords : uint
-    {
-        None = 0,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_INBOUND_MCAST")]
-        InboundMCast = 0x00000001,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_INBOUND_BCAST")]
-        InboundBCast = 0x00000002,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_CAPABILITY_DROP")]
-        CapabilityDrop = 0x00000004,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_CAPABILITY_ALLOW")]
-        CapabilityAllow = 0x00000008,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_CLASSIFY_ALLOW")]
-        ClassifyAllow = 0x00000010,
-        [SDKName("FWPM_NET_EVENT_KEYWORD_PORT_SCANNING_DROP")]
-        PortScanningDrop = 0x00000020,
-    }
+    None = 0,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_INBOUND_MCAST")]
+    InboundMCast = 0x00000001,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_INBOUND_BCAST")]
+    InboundBCast = 0x00000002,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_CAPABILITY_DROP")]
+    CapabilityDrop = 0x00000004,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_CAPABILITY_ALLOW")]
+    CapabilityAllow = 0x00000008,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_CLASSIFY_ALLOW")]
+    ClassifyAllow = 0x00000010,
+    [SDKName("FWPM_NET_EVENT_KEYWORD_PORT_SCANNING_DROP")]
+    PortScanningDrop = 0x00000020,
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

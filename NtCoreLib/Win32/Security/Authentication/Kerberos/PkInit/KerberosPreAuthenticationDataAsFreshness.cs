@@ -14,36 +14,35 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.PkInit
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.PkInit;
+
+/// <summary>
+/// Class to represent PKINIT AS Freshness data.
+/// </summary>
+public sealed class KerberosPreAuthenticationDataAsFreshness : KerberosPreAuthenticationData
 {
     /// <summary>
-    /// Class to represent PKINIT AS Freshness data.
+    /// The freshness token.
     /// </summary>
-    public sealed class KerberosPreAuthenticationDataAsFreshness : KerberosPreAuthenticationData
+    public byte[] FreshnessToken { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="freshness_token">The data for the preauthentication.</param>
+    public KerberosPreAuthenticationDataAsFreshness(byte[] freshness_token) 
+        : base(KerberosPreAuthenticationType.PA_AS_FRESHNESS)
     {
-        /// <summary>
-        /// The freshness token.
-        /// </summary>
-        public byte[] FreshnessToken { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="freshness_token">The data for the preauthentication.</param>
-        public KerberosPreAuthenticationDataAsFreshness(byte[] freshness_token) 
-            : base(KerberosPreAuthenticationType.PA_AS_FRESHNESS)
+        if (freshness_token is null)
         {
-            if (freshness_token is null)
-            {
-                throw new ArgumentNullException(nameof(freshness_token));
-            }
-
-            FreshnessToken = freshness_token.CloneBytes();
+            throw new ArgumentNullException(nameof(freshness_token));
         }
 
-        private protected override byte[] GetData()
-        {
-            return FreshnessToken;
-        }
+        FreshnessToken = freshness_token.CloneBytes();
+    }
+
+    private protected override byte[] GetData()
+    {
+        return FreshnessToken;
     }
 }

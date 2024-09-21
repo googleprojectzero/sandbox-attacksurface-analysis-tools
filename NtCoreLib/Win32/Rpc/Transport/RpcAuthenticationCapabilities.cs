@@ -14,29 +14,28 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Flags to specify RPC authentication capabilities.
+/// </summary>
+[Flags]
+public enum RpcAuthenticationCapabilities
 {
     /// <summary>
-    /// Flags to specify RPC authentication capabilities.
+    /// None.
     /// </summary>
-    [Flags]
-    public enum RpcAuthenticationCapabilities
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Enable mutual authentication.
-        /// </summary>
-        MutualAuthentication = 1,
-        /// <summary>
-        /// Enable a NULL session authentication.
-        /// </summary>
-        NullSession = 2,
-        /// <summary>
-        /// Enable delegation of credentials if supported.
-        /// </summary>
-        Delegation = 4,
-    }
+    None = 0,
+    /// <summary>
+    /// Enable mutual authentication.
+    /// </summary>
+    MutualAuthentication = 1,
+    /// <summary>
+    /// Enable a NULL session authentication.
+    /// </summary>
+    NullSession = 2,
+    /// <summary>
+    /// Enable delegation of credentials if supported.
+    /// </summary>
+    Delegation = 4,
 }

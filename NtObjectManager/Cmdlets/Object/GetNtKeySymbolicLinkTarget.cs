@@ -12,57 +12,54 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Open and reads the symbolic link target for a key.</para>
+/// <para type="description">This cmdlet opens a existing NT keys object and reads out the symbolic link target. 
+/// The absolute path to the object in the NT object manager name space can be specified. 
+/// It's also possible to open the object relative to an existing object by specified the -Root parameter.
+/// To simplify calling it's also possible to specify the path in a Win32 format when using the -Win32Path parameter.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtKeySymbolicLinkTarget -Path \Registry\Machine\SYSTEM\CurrentControlSet</code>
+///   <para>Reads the CurrentControlSet symbolic link target.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtKeySymbolicLinkTarget -Win32Path HKLM\SYSTEM\CurrentControlSet</code>
+///   <para>Reads the CurrentControlSet symbolic link target with a Win32 path.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtKeySymbolicLinkTarget")]
+[OutputType(typeof(string))]
+public class GetNtKeySymbolicLinkTarget : GetNtKeyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Open and reads the symbolic link target for a key.</para>
-    /// <para type="description">This cmdlet opens a existing NT keys object and reads out the symbolic link target. 
-    /// The absolute path to the object in the NT object manager name space can be specified. 
-    /// It's also possible to open the object relative to an existing object by specified the -Root parameter.
-    /// To simplify calling it's also possible to specify the path in a Win32 format when using the -Win32Path parameter.</para>
+    /// <para type="description">Specify to pass through the created key.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtKeySymbolicLinkTarget -Path \Registry\Machine\SYSTEM\CurrentControlSet</code>
-    ///   <para>Reads the CurrentControlSet symbolic link target.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtKeySymbolicLinkTarget -Win32Path HKLM\SYSTEM\CurrentControlSet</code>
-    ///   <para>Reads the CurrentControlSet symbolic link target with a Win32 path.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtKeySymbolicLinkTarget")]
-    [OutputType(typeof(string))]
-    public class GetNtKeySymbolicLinkTarget : GetNtKeyCmdlet
+    [Parameter]
+    public SwitchParameter FormatWin32Path { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public GetNtKeySymbolicLinkTarget()
     {
-        /// <summary>
-        /// <para type="description">Specify to pass through the created key.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter FormatWin32Path { get; set; }
+        AttributeFlags |= AttributeFlags.OpenLink;
+        Access = KeyAccessRights.QueryValue;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtKeySymbolicLinkTarget()
-        {
-            AttributeFlags |= AttributeFlags.OpenLink;
-            Access = KeyAccessRights.QueryValue;
-        }
-
-        /// <summary>
-        /// Method to create an object from a set of object attributes.
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes to create/open from.</param>
-        /// <returns>The newly created object.</returns>
-        protected override object CreateObject(ObjectAttributes obj_attributes)
-        {
-            using (NtKey key = (NtKey)base.CreateObject(obj_attributes))
-            {
-                string target = key.GetSymbolicLinkTarget();
-                return FormatWin32Path ? NtKeyUtils.NtKeyNameToWin32(target) : target;
-            }
-        }
+    /// <summary>
+    /// Method to create an object from a set of object attributes.
+    /// </summary>
+    /// <param name="obj_attributes">The object attributes to create/open from.</param>
+    /// <returns>The newly created object.</returns>
+    protected override object CreateObject(ObjectAttributes obj_attributes)
+    {
+        using NtKey key = (NtKey)base.CreateObject(obj_attributes);
+        string target = key.GetSymbolicLinkTarget();
+        return FormatWin32Path ? NtKeyUtils.NtKeyNameToWin32(target) : target;
     }
 }

@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Policy
+namespace NtCoreLib.Win32.Security.Policy;
+
+/// <summary>
+/// Flags for looking up SID names.
+/// </summary>
+[Flags]
+public enum LsaLookupSidOptionFlags : uint
 {
-    /// <summary>
-    /// Flags for looking up SID names.
-    /// </summary>
-    [Flags]
-    public enum LsaLookupSidOptionFlags : uint
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("LSA_LOOKUP_RETURN_LOCAL_NAMES")]
-        ReturnLocalNames = 0,
-        [SDKName("LSA_LOOKUP_PREFER_INTERNET_NAMES")]
-        PreferInternetNames = 0x40000000,
-        [SDKName("LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID")]
-        DisallowConnectedAccountInternetSid = 0x80000000
+    [SDKName("LSA_LOOKUP_RETURN_LOCAL_NAMES")]
+    ReturnLocalNames = 0,
+    [SDKName("LSA_LOOKUP_PREFER_INTERNET_NAMES")]
+    PreferInternetNames = 0x40000000,
+    [SDKName("LSA_LOOKUP_DISALLOW_CONNECTED_ACCOUNT_INTERNET_SID")]
+    DisallowConnectedAccountInternetSid = 0x80000000
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Network interface type.
+/// </summary>
+/// <remarks>See https://www.iana.org/assignments/ianaiftype-mib</remarks>
+public enum NetworkInterfaceType : uint
 {
-    /// <summary>
-    /// Network interface type.
-    /// </summary>
-    /// <remarks>See https://www.iana.org/assignments/ianaiftype-mib</remarks>
-    public enum NetworkInterfaceType : uint
-    {
-        [SDKName("IF_TYPE_OTHER")]
-        Other = 1,
-        [SDKName("IF_TYPE_TUNNEL")]
-        Tunnel = 131
-    }
+    [SDKName("IF_TYPE_OTHER")]
+    Other = 1,
+    [SDKName("IF_TYPE_TUNNEL")]
+    Tunnel = 131
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

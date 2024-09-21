@@ -12,64 +12,63 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Security;
+using NtCoreLib.Utilities.Security.Cryptography;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography;
+
+internal static class KerberosEncryptionUtils
 {
-    internal static class KerberosEncryptionUtils
+    public const int MD5_CHECKSUM_SIZE = 16;
+    public const int AES_CHECKSUM_SIZE = 12;
+
+    public static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)
     {
-        public const int MD5_CHECKSUM_SIZE = 16;
-        public const int AES_CHECKSUM_SIZE = 12;
+        Aes encrypt = new AesManaged();
+        encrypt.Mode = CipherMode.ECB;
 
-        public static byte[] DeriveAesKey(byte[] base_key, byte[] folded_key)
+        folded_key = folded_key.CloneBytes();
+
+        byte[] ret = new byte[base_key.Length];
+        var transform = encrypt.CreateEncryptor(base_key, new byte[16]);
+        transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
+        Array.Copy(folded_key, ret, 16);
+        if (ret.Length > 16)
         {
-            Aes encrypt = new AesManaged();
-            encrypt.Mode = CipherMode.ECB;
-
-            folded_key = folded_key.CloneBytes();
-
-            byte[] ret = new byte[base_key.Length];
-            var transform = encrypt.CreateEncryptor(base_key, new byte[16]);
             transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-            Array.Copy(folded_key, ret, 16);
-            if (ret.Length > 16)
-            {
-                transform.TransformBlock(folded_key, 0, 16, folded_key, 0);
-                Array.Copy(folded_key, 0, ret, 16, 16);
-            }
-            return ret;
+            Array.Copy(folded_key, 0, ret, 16, 16);
         }
+        return ret;
+    }
 
-        public static byte[] DeriveTempKey(KerberosKeyUsage key_usage, byte key_type)
+    public static byte[] DeriveTempKey(KerberosKeyUsage key_usage, byte key_type)
+    {
+        byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
+        Array.Resize(ref r, 5);
+        r[4] = key_type;
+        return NFold.Compute(r, 16);
+    }
+
+    public static string MakeSalt(KerberosPrincipalName name, string realm)
+    {
+        return MakeSalt(name.Names, realm);
+    }
+
+    public static string MakeSalt(IEnumerable<string> names, string realm)
+    {
+        if (names is null)
         {
-            byte[] r = BitConverter.GetBytes((int)key_usage).Reverse().ToArray();
-            Array.Resize(ref r, 5);
-            r[4] = key_type;
-            return NFold.Compute(r, 16);
+            throw new ArgumentNullException(nameof(names));
         }
 
-        public static string MakeSalt(KerberosPrincipalName name, string realm)
+        if (realm is null)
         {
-            return MakeSalt(name.Names, realm);
+            throw new ArgumentNullException(nameof(realm));
         }
 
-        public static string MakeSalt(IEnumerable<string> names, string realm)
-        {
-            if (names is null)
-            {
-                throw new ArgumentNullException(nameof(names));
-            }
-
-            if (realm is null)
-            {
-                throw new ArgumentNullException(nameof(realm));
-            }
-
-            return realm.ToUpper() + string.Join("", names);
-        }
+        return realm.ToUpper() + string.Join("", names);
     }
 }

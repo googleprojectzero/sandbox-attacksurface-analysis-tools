@@ -15,60 +15,59 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
+
+/// <summary>
+/// Class to build an NTLM negotiate authentication token.
+/// </summary>
+public sealed class NtlmNegotiateAuthenticationTokenBuilder : NtlmAuthenticationTokenBuilder
 {
+    #region Public Properties
     /// <summary>
-    /// Class to build an NTLM negotiate authentication token.
+    /// Domain name.
     /// </summary>
-    public sealed class NtlmNegotiateAuthenticationTokenBuilder : NtlmAuthenticationTokenBuilder
+    public string Domain { get; set; }
+    /// <summary>
+    /// Workstation name.
+    /// </summary>
+    public string Workstation { get; set; }
+    /// <summary>
+    /// NTLM version.
+    /// </summary>
+    public Version Version { get; set; }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public NtlmNegotiateAuthenticationTokenBuilder() : base(NtlmMessageType.Negotiate)
     {
-        #region Public Properties
-        /// <summary>
-        /// Domain name.
-        /// </summary>
-        public string Domain { get; set; }
-        /// <summary>
-        /// Workstation name.
-        /// </summary>
-        public string Workstation { get; set; }
-        /// <summary>
-        /// NTLM version.
-        /// </summary>
-        public Version Version { get; set; }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public NtlmNegotiateAuthenticationTokenBuilder() : base(NtlmMessageType.Negotiate)
-        {
-        }
-        #endregion
-
-        #region Private Members
-        private const int BASE_OFFSET = 40;
-
-        private protected override byte[] GetBytes()
-        {
-            var flags = Flags & ~(NtlmNegotiateFlags.OemDomainSupplied | NtlmNegotiateFlags.OemWorkstationSupplied | NtlmNegotiateFlags.Version);
-            if (Domain != null)
-                flags |= NtlmNegotiateFlags.OemDomainSupplied;
-            if (Workstation != null)
-                flags |= NtlmNegotiateFlags.OemWorkstationSupplied;
-            if (Version != null)
-                flags |= NtlmNegotiateFlags.Version;
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            MemoryStream payload = new MemoryStream();
-            writer.Write((uint)flags);
-            writer.WriteString(Domain, false, BASE_OFFSET, payload);
-            writer.WriteString(Workstation, false, BASE_OFFSET, payload);
-            writer.WriteVersion(Version);
-            writer.Write(payload.ToArray());
-            return stm.ToArray();
-        }
-        #endregion
     }
+    #endregion
+
+    #region Private Members
+    private const int BASE_OFFSET = 40;
+
+    private protected override byte[] GetBytes()
+    {
+        var flags = Flags & ~(NtlmNegotiateFlags.OemDomainSupplied | NtlmNegotiateFlags.OemWorkstationSupplied | NtlmNegotiateFlags.Version);
+        if (Domain != null)
+            flags |= NtlmNegotiateFlags.OemDomainSupplied;
+        if (Workstation != null)
+            flags |= NtlmNegotiateFlags.OemWorkstationSupplied;
+        if (Version != null)
+            flags |= NtlmNegotiateFlags.Version;
+
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        MemoryStream payload = new();
+        writer.Write((uint)flags);
+        writer.WriteString(Domain, false, BASE_OFFSET, payload);
+        writer.WriteString(Workstation, false, BASE_OFFSET, payload);
+        writer.WriteVersion(Version);
+        writer.Write(payload.ToArray());
+        return stm.ToArray();
+    }
+    #endregion
 }

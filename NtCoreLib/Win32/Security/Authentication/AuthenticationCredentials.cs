@@ -12,29 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Utilities.Collections;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Base class for authentication credentials.
+/// </summary>
+public abstract class AuthenticationCredentials
 {
-    /// <summary>
-    /// Base class for authentication credentials.
-    /// </summary>
-    public abstract class AuthenticationCredentials
+    internal bool Mananged { get; }
+
+    internal AuthenticationCredentials(bool managed)
     {
-        internal bool Mananged { get; }
-
-        internal AuthenticationCredentials(bool managed)
-        {
-            Mananged = managed;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        protected AuthenticationCredentials() : this(false)
-        {
-        }
-
-        internal abstract SafeBuffer ToBuffer(DisposableList list, string package);
+        Mananged = managed;
     }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    protected AuthenticationCredentials() : this(false)
+    {
+    }
+
+    internal abstract SafeBuffer ToBuffer(DisposableList list, string package);
 }

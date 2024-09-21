@@ -14,51 +14,50 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Structure to represent a context handle.
+/// </summary>
+public readonly struct NdrContextHandle
 {
     /// <summary>
-    /// Structure to represent a context handle.
+    /// Context handle attributes.
     /// </summary>
-    public struct NdrContextHandle
+    public int Attributes { get; }
+
+    /// <summary>
+    /// Context handle UUID.
+    /// </summary>
+    public Guid Uuid { get; }
+
+    /// <summary>
+    /// Return an empty handle.
+    /// </summary>
+    public static NdrContextHandle Empty => default;
+
+    /// <summary>
+    /// Returns true if the context handle is invalid.
+    /// </summary>
+    public bool IsInvalid => Uuid == Guid.Empty && Attributes == 0;
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="attributes">Context handle attributes.</param>
+    /// <param name="uuid">Context handle UUID.</param>
+    public NdrContextHandle(int attributes, Guid uuid)
     {
-        /// <summary>
-        /// Context handle attributes.
-        /// </summary>
-        public int Attributes { get; }
+        Attributes = attributes;
+        Uuid = uuid;
+    }
 
-        /// <summary>
-        /// Context handle UUID.
-        /// </summary>
-        public Guid Uuid { get; }
-
-        /// <summary>
-        /// Return and empty handle.
-        /// </summary>
-        public static NdrContextHandle Empty => default;
-
-        /// <summary>
-        /// Returns true if the context handle is invalid.
-        /// </summary>
-        public bool IsInvalid => Uuid == Guid.Empty && Attributes == 0;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="attributes">Context handle attributes.</param>
-        /// <param name="uuid">Context handle UUID.</param>
-        public NdrContextHandle(int attributes, Guid uuid)
-        {
-            Attributes = attributes;
-            Uuid = uuid;
-        }
-
-        /// <summary>
-        /// Overidden ToString method.
-        /// </summary>
-        /// <returns>The handle as string.</returns>
-        public override string ToString()
-        {
-            return $"Handle: {Uuid} - Attributes: {Attributes}";
-        }
+    /// <summary>
+    /// Overidden ToString method.
+    /// </summary>
+    /// <returns>The handle as string.</returns>
+    public override string ToString()
+    {
+        return $"Handle: {Uuid} - Attributes: {Attributes}";
     }
 }

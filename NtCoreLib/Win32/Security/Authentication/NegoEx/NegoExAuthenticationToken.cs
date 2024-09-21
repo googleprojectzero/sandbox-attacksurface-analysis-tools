@@ -12,104 +12,94 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
+using NtCoreLib.Utilities.Data;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Class for a NEGOEX authentication token.
+/// </summary>
+/// <remarks>Based on the MS-NEGOEX specification.</remarks>
+public sealed class NegoExAuthenticationToken : AuthenticationToken
 {
     /// <summary>
-    /// Class for a NEGOEX authentication token.
+    /// The list of messages in this token. Can be one or more.
     /// </summary>
-    /// <remarks>Based on the MS-NEGOEX specification.</remarks>
-    public sealed class NegoExAuthenticationToken : AuthenticationToken
+    public IReadOnlyList<NegoExMessage> Messages { get; }
+
+    internal NegoExAuthenticationToken(List<NegoExMessage> messages, byte[] data) : base(data)
     {
-        /// <summary>
-        /// The list of messages in this token. Can be one or more.
-        /// </summary>
-        public IReadOnlyList<NegoExMessage> Messages { get; }
+        Messages = messages.AsReadOnly();
+    }
 
-        internal NegoExAuthenticationToken(List<NegoExMessage> messages, byte[] data) : base(data)
+    /// <summary>
+    /// Format the authentication token.
+    /// </summary>
+    /// <returns>The token as a formatted string.</returns>
+    public override string Format()
+    {
+        StringBuilder builder = new();
+        foreach (var msg in Messages)
         {
-            Messages = messages.AsReadOnly();
+            msg.Format(builder);
         }
+        return builder.ToString();
+    }
 
-        /// <summary>
-        /// Format the authentication token.
-        /// </summary>
-        /// <returns>The token as a formatted string.</returns>
-        public override string Format()
+    /// <summary>
+    /// Parse a NEGOEX token from a byte array.
+    /// </summary>
+    /// <param name="data">The byte array to parse.</param>
+    /// <returns>The authentication token.</returns>
+    public static NegoExAuthenticationToken Parse(byte[] data)
+    {
+        if (!TryParse(data, 0, false, out NegoExAuthenticationToken token))
+            throw new InvalidDataException("Invalid NEGOEX token.");
+        return token;
+    }
+
+    private static NegoExMessage ReadMessage(NegoExMessageHeader header, byte[] data)
+    {
+        return header.MessageType switch
         {
-            StringBuilder builder = new StringBuilder();
-            foreach (var msg in Messages)
+            NegoExMessageType.InitiatorNego or NegoExMessageType.AcceptorNego => NegoExMessageNego.Parse(header, data),
+            NegoExMessageType.InitiatorMetaData or NegoExMessageType.AcceptorMetaData or NegoExMessageType.ApRequest or NegoExMessageType.Challenge => NegoExMessageExchange.Parse(header, data),
+            NegoExMessageType.Verify => NegoExMessageVerify.Parse(header, data),
+            NegoExMessageType.Alert => NegoExMessageAlert.Parse(header, data),
+            _ => throw new EndOfStreamException("Unknown message type."),
+        };
+    }
+
+    internal static bool TryParse(byte[] data, int token_count, bool client, out NegoExAuthenticationToken token)
+    {
+        token = null;
+        if (data.Length < NegoExMessageHeader.HEADER_SIZE)
+            return false;
+        try
+        {
+            DataReader reader = new(data);
+            List<NegoExMessage> messages = new();
+            while (reader.RemainingLength > 0)
             {
-                msg.Format(builder);
-            }
-            return builder.ToString();
-        }
-
-        /// <summary>
-        /// Parse a NEGOEX token from a byte array.
-        /// </summary>
-        /// <param name="data">The byte array to parse.</param>
-        /// <returns>The authentication token.</returns>
-        public static NegoExAuthenticationToken Parse(byte[] data)
-        {
-            if (!TryParse(data, 0, false, out NegoExAuthenticationToken token))
-                throw new InvalidDataException("Invalid NEGOEX token.");
-            return token;
-        }
-
-        private static NegoExMessage ReadMessage(NegoExMessageHeader header, byte[] data)
-        {
-            switch (header.MessageType)
-            {
-                case NegoExMessageType.InitiatorNego:
-                case NegoExMessageType.AcceptorNego:
-                    return NegoExMessageNego.Parse(header, data);
-                case NegoExMessageType.InitiatorMetaData:
-                case NegoExMessageType.AcceptorMetaData:
-                case NegoExMessageType.ApRequest:
-                case NegoExMessageType.Challenge:
-                    return NegoExMessageExchange.Parse(header, data);
-                case NegoExMessageType.Verify:
-                    return NegoExMessageVerify.Parse(header, data);
-                case NegoExMessageType.Alert:
-                    return NegoExMessageAlert.Parse(header, data);
-                default:
-                    throw new EndOfStreamException("Unknown message type.");
-            }
-        }
-
-        internal static bool TryParse(byte[] data, int token_count, bool client, out NegoExAuthenticationToken token)
-        {
-            token = null;
-            if (data.Length < NegoExMessageHeader.HEADER_SIZE)
-                return false;
-            try
-            {
-                DataReader reader = new DataReader(data);
-                List<NegoExMessage> messages = new List<NegoExMessage>();
-                while (reader.RemainingLength > 0)
+                long current_pos = reader.Position;
+                if (!NegoExMessageHeader.TryParse(reader, out NegoExMessageHeader header))
                 {
-                    long current_pos = reader.Position;
-                    if (!NegoExMessageHeader.TryParse(reader, out NegoExMessageHeader header))
-                    {
-                        return false;
-                    }
-                    reader.Position = current_pos;
-                    byte[] message_data = reader.ReadAllBytes(header.cbMessageLength);
-
-                    messages.Add(ReadMessage(header, message_data));
+                    return false;
                 }
-                token = new NegoExAuthenticationToken(messages, data);
+                reader.Position = current_pos;
+                byte[] message_data = reader.ReadAllBytes(header.cbMessageLength);
+
+                messages.Add(ReadMessage(header, message_data));
             }
-            catch (EndOfStreamException)
-            {
-                return false;
-            }
-            return true;
+            token = new NegoExAuthenticationToken(messages, data);
         }
+        catch (EndOfStreamException)
+        {
+            return false;
+        }
+        return true;
     }
 }

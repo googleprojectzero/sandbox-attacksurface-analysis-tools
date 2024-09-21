@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
-using NtApiDotNet.Win32.Security.Buffers;
+using NtCoreLib.Utilities.Data;
+using NtCoreLib.Win32.Security.Buffers;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Base class for an Schannel Control Token.
+/// </summary>
+public abstract class SchannelControlToken : ControlToken
 {
-    /// <summary>
-    /// Base class for an Schannel Control Token.
-    /// </summary>
-    public abstract class SchannelControlToken : ControlToken
-    {
-        private protected abstract void WriteBuffer(DataWriter writer);
+    private protected abstract void WriteBuffer(DataWriter writer);
 
-        /// <summary>
-        /// Convert the token into a security buffer.
-        /// </summary>
-        /// <returns>The security buffer.</returns>
-        public override SecurityBuffer ToBuffer()
-        {
-            DataWriter writer = new DataWriter();
-            WriteBuffer(writer);
-            return new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, writer.ToArray());
-        }
+    /// <summary>
+    /// Convert the token into a security buffer.
+    /// </summary>
+    /// <returns>The security buffer.</returns>
+    public override SecurityBuffer ToBuffer()
+    {
+        DataWriter writer = new();
+        WriteBuffer(writer);
+        return new SecurityBufferInOut(SecurityBufferType.Token | SecurityBufferType.ReadOnly, writer.ToArray());
     }
 }

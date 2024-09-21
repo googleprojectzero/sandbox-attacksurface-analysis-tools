@@ -48,15 +48,15 @@ function Show-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)]
-        [NtApiDotNet.Security.INtObjectSecurity]$Object,
+        [NtCoreLib.Security.Authorization.INtObjectSecurity]$Object,
         [Parameter(ParameterSetName = "FromObject")]
         [switch]$ReadOnly,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true)]
         [NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult]$AccessCheckResult,
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [Parameter(ParameterSetName = "FromSecurityDescriptor")]
         [string]$Name = "Object",
         [Parameter(ParameterSetName = "FromSecurityDescriptor")]
@@ -66,27 +66,21 @@ function Show-NtSecurityDescriptor {
 
     switch ($PsCmdlet.ParameterSetName) {
         "FromObject" {
-            if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
+            if (!$Object.IsAccessMaskGranted([NtCoreLib.GenericAccessRights]::ReadControl)) {
                 Write-Error "Object doesn't have Read Control access."
                 return
             }
             # If an ALPC Port or not an NtObject pass as an SD.
-            if (($Object.NtType.Name -eq "ALPC Port" ) -or !($Object -is [NtApiDotNet.NtObject])) {
+            if (($Object.NtType.Name -eq "ALPC Port" ) -or !($Object -is [NtCoreLib.NtObject])) {
                 Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.ObjectName -Wait:$Wait
                 return
             }
             Use-NtObject($obj = $Object.Duplicate()) {
-                $cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
+                $cmdline = "ViewSecurityDescriptor {0}" -f $obj.Handle.DangerousGetHandle()
                 if ($ReadOnly) {
                     $cmdline += " --readonly"
                 }
-                $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
-                $config.AddInheritedHandle($obj) | Out-Null
-                Use-NtObject($p = New-Win32Process -Config $config) {
-                    if ($Wait) {
-                        $p.Process.Wait() | Out-Null
-                    }
-                }
+                [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\ViewSecurityDescriptor.exe", $cmdline, $Wait, $obj)
             }
         }
         "FromSecurityDescriptor" {
@@ -103,7 +97,8 @@ function Show-NtSecurityDescriptor {
             }
 
             $sd = [Convert]::ToBase64String($SecurityDescriptor.ToByteArray())
-            Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "-$sd", "`"$($Type.Name)`"", "$Container") -Wait:$Wait
+            $cmdline = "ViewSecurityDescriptor `"$Name`" -$sd `"$($Type.Name)`" $Container"
+            [NtObjectManager.Utils.PSUtils]::StartUtilityProcess("$PSScriptRoot\ViewSecurityDescriptor.exe", $cmdline, $Wait)
         }
         "FromAccessCheck" {
             if ($AccessCheckResult.SecurityDescriptorBase64 -eq "") {
@@ -130,25 +125,27 @@ Optional tracking mode, defaults to static tracking
 Optional flag to specify if only the effective rights should be impersonated
 .INPUTS
 None
+OUTPUTS
+NtCoreLib.Security.Token.SecurityQualityOfService
 #>
 function New-NtSecurityQualityOfService {
     Param(
         [Parameter(Mandatory = $true, Position = 0)]
-        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
-        [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
+        [NtCoreLib.Security.Token.SecurityImpersonationLevel]$ImpersonationLevel,
+        [NtCoreLib.Security.Token.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
         [switch]$EffectiveOnly
     )
 
-    [NtApiDotNet.SecurityQualityOfService]::new($ImpersonationLevel, $ContextTrackingMode, $EffectiveOnly)
+    [NtCoreLib.Security.Token.SecurityQualityOfService]::new($ImpersonationLevel, $ContextTrackingMode, $EffectiveOnly)
 }
 
 function Format-NtAce {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline)]
-        [NtApiDotNet.Ace]$Ace,
+        [NtCoreLib.Security.Authorization.Ace]$Ace,
         [Parameter(Position = 1, Mandatory = $true)]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [switch]$MapGeneric,
         [switch]$Summary,
         [switch]$Container,
@@ -161,7 +158,7 @@ function Format-NtAce {
         $mask = $ace.Mask
         $access_name = "Access"
         $mask_str = if ($ace.Type -eq "MandatoryLabel") {
-            [NtApiDotNet.NtSecurity]::AccessMaskToString($mask.ToMandatoryLabelPolicy(), $SDKName)
+            [NtCoreLib.Security.NtSecurity]::AccessMaskToString($mask.ToMandatoryLabelPolicy(), $SDKName)
             $access_name = "Policy"
         }
         else {
@@ -169,8 +166,8 @@ function Format-NtAce {
         }
 
         if ($SDKName) {
-            $ace_type = [NtApiDotNet.NtSecurity]::AceTypeToSDKName($ace.Type)
-            $ace_flags = [NtApiDotNet.NtSecurity]::AceFlagsToSDKName($ace.Flags)
+            $ace_type = [NtCoreLib.Security.NtSecurity]::AceTypeToSDKName($ace.Type)
+            $ace_flags = [NtCoreLib.Security.NtSecurity]::AceFlagsToSDKName($ace.Flags)
         } else {
             $ace_type = $ace.Type
             $ace_flags = $ace.Flags
@@ -248,9 +245,9 @@ function Format-NtAcl {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [AllowEmptyCollection()]
-        [NtApiDotNet.Acl]$Acl,
+        [NtCoreLib.Security.Authorization.Acl]$Acl,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [Parameter(Position = 2, Mandatory)]
         [string]$Name,
         [switch]$MapGeneric,
@@ -383,25 +380,25 @@ function Format-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.Security.INtObjectSecurity]$Object,
+        [NtCoreLib.Security.Authorization.INtObjectSecurity]$Object,
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory, ValueFromPipeline)]
         [NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult]$AccessCheckResult,
         [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory)]
         [AllowEmptyCollection()]
-        [NtApiDotNet.Acl]$Acl,
+        [NtCoreLib.Security.Authorization.Acl]$Acl,
         [Parameter(ParameterSetName = "FromAcl")]
         [switch]$AuditOnly,
         [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
         [Parameter(Position = 1, ParameterSetName = "FromAcl")]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [switch]$Container,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory, ValueFromPipeline)]
         [string]$Path,
         [parameter(ParameterSetName = "FromPath")]
-        [NtApiDotNet.NtObject]$Root,
-        [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
+        [NtCoreLib.NtObject]$Root,
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
         [alias("ToSddl")]
         [switch]$AsSddl,
@@ -465,7 +462,7 @@ function Format-NtSecurityDescriptor {
 
             $si = $SecurityInformation
             if ($ShowAll) {
-                $si = [NtApiDotNet.SecurityInformation]::All
+                $si = [NtCoreLib.Security.Authorization.SecurityInformation]::All
             }
 
             if ($AsSddl) {
@@ -489,7 +486,7 @@ function Format-NtSecurityDescriptor {
                 Write-Output "Type: $($t.Name)"
                 $sd_control = $sd.Control
                 if ($SDKName) {
-                    $sd_control = [NtApiDotNet.NtSecurity]::ControlFlagsToSDKName($sd_control)
+                    $sd_control = [NtCoreLib.Security.NtSecurity]::ControlFlagsToSDKName($sd_control)
                 }
                 Write-Output "Control: $sd_control"
                 if ($null -ne $sd.RmControl) {
@@ -544,39 +541,40 @@ function Format-NtSecurityDescriptor {
             if (($sd.HasAuditAce -or $sd.SaclNull) -and (($si -band "Sacl") -ne 0)) {
                 Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container -SDKName:$SDKName -ResolveObjectType:$ResolveObjectType -Domain $Domain
             }
-            $label = $sd.GetMandatoryLabel()
-            if ($null -ne $label -and (($si -band "Label") -ne 0)) {
-                Write-Output "<Mandatory Label>"
-                Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
+
+            if (($si -band "Label") -ne 0) {
+                $label = $sd.FindAllSaclAce("MandatoryLabel", $true)
+                if ($label.Count -gt 0) {
+                    Write-Output "<Mandatory Label>"
+                    $label | Format-NtAce -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
+                }
             }
-            $trust = $sd.ProcessTrustLabel
-            if ($null -ne $trust -and (($si -band "ProcessTrustLabel") -ne 0)) {
-                Write-Output "<Process Trust Label>"
-                Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
+            if (($si -band "ProcessTrustLabel") -ne 0) {
+                $trust = $sd.FindAllSaclAce("ProcessTrustLabel", $true)
+                if ($trust.Count -gt 0) {
+                    Write-Output "<Process Trust Label>"
+                    $trust | Format-NtAce -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
+                }
             }
             if (($si -band "Attribute") -ne 0) {
-                $attrs = $sd.ResourceAttributes
+                $attrs = $sd.FindAllSaclAce("ResourceAttribute", $true)
                 if ($attrs.Count -gt 0) {
                     Write-Output "<Resource Attributes>"
-                    foreach ($attr in $attrs) {
-                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
-                    }
+                    $attrs | Format-NtAce -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                 }
             }
             if (($si -band "AccessFilter") -ne 0) {
-                $filters = $sd.AccessFilters
+                $filters = $sd.FindAllSaclAce("AccessFilter", $true)
                 if ($filters.Count -gt 0) {
                     Write-Output "<Access Filters>"
-                    foreach ($filter in $filters) {
-                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
-                    }
+                    $filters | Format-NtAce -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                 }
             }
             if (($si -band "Scope") -ne 0) {
-                $scope = $sd.ScopedPolicyID
-                if ($null -ne $scope) {
+                $scope = $sd.FindAllSaclAce("ScopedPolicyId", $true)
+                if ($scope.Count -gt 0) {
                     Write-Output "<Scoped Policy ID>"
-                    Format-NtAce -Ace $scope -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
+                    $scope | Format-NtAce -Type $t -Summary:$Summary -Container:$Container -SDKName:$SDKName
                 }
             }
         }
@@ -610,9 +608,9 @@ Specify a root object for Path.
 .PARAMETER NamedPipeDefault
  Specify to get the default security descriptor for a named pipe.
 .INPUTS
-NtApiDotNet.NtObject[]
+NtCoreLib.NtObject[]
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtCoreLib.Security.Authorization.SecurityDescriptor
 string
 .EXAMPLE
 Get-NtSecurityDescriptor $obj
@@ -649,14 +647,14 @@ function Get-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "FromObject")]
-        [NtApiDotNet.Security.INtObjectSecurity]$Object,
+        [NtCoreLib.Security.Authorization.INtObjectSecurity]$Object,
         [parameter(Position = 1, ParameterSetName = "FromObject")]
         [parameter(Position = 1, ParameterSetName = "FromPath")]
         [parameter(ParameterSetName = "FromPid")]
         [parameter(ParameterSetName = "FromTid")]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation = "AllBasic",
         [parameter(Mandatory, ParameterSetName = "FromProcess")]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, ParameterSetName = "FromProcess")]
         [int64]$Address,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromPath")]
@@ -664,7 +662,7 @@ function Get-NtSecurityDescriptor {
         [parameter(ParameterSetName = "FromPath")]
         [string]$TypeName,
         [parameter(ParameterSetName = "FromPath")]
-        [NtApiDotNet.NtObject]$Root,
+        [NtCoreLib.NtObject]$Root,
         [parameter(Mandatory, ParameterSetName = "FromPid")]
         [alias("pid")]
         [int]$ProcessId,
@@ -682,7 +680,7 @@ function Get-NtSecurityDescriptor {
                 $Object.GetSecurityDescriptor($SecurityInformation)
             }
             "FromProcess" {
-                [NtApiDotNet.SecurityDescriptor]::new($Process, [IntPtr]::new($Address))
+                [NtCoreLib.Security.Authorization.SecurityDescriptor]::new($Process, [IntPtr]::new($Address))
             }
             "FromPath" {
                 $mask = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
@@ -703,7 +701,7 @@ function Get-NtSecurityDescriptor {
                 }
             }
             "FromNp" {
-                $dacl = [NtApiDotNet.NtNamedPipeFile]::GetDefaultNamedPipeAcl();
+                $dacl = [NtCoreLib.NtNamedPipeFile]::GetDefaultNamedPipeAcl();
                 New-NtSecurityDescriptor -Dacl $dacl -Type File
             }
         }
@@ -734,7 +732,7 @@ Specify the type name of the object at Path. Needed if the module cannot automat
 .PARAMETER SecurityDescriptor
 The security descriptor to set. Can specify an SDDL string which will be auto-converted.
 .INPUTS
-NtApiDotNet.NtObject[]
+NtCoreLib.NtObject[]
 .OUTPUTS
 None
 .EXAMPLE
@@ -748,15 +746,15 @@ function Set-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "ToObject")]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "ToObject")]
-        [NtApiDotNet.Security.INtObjectSecurity]$Object,
+        [NtCoreLib.Security.Authorization.INtObjectSecurity]$Object,
         [parameter(Mandatory, Position = 0, ParameterSetName = "ToPath")]
         [string]$Path,
         [parameter(ParameterSetName = "ToPath")]
-        [NtApiDotNet.NtObject]$Root,
+        [NtCoreLib.NtObject]$Root,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [parameter(Mandatory, Position = 2)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation,
         [parameter(ParameterSetName = "ToPath")]
         [string]$TypeName
 
@@ -778,89 +776,6 @@ function Set-NtSecurityDescriptor {
 
 <#
 .SYNOPSIS
-Adds an ACE to a security descriptor DACL.
-.DESCRIPTION
-This cmdlet adds a new ACE to a security descriptor DACL. This cmdlet is deprecated.
-.PARAMETER SecurityDescriptor
-The security descriptor to add the ACE to.
-.PARAMETER Sid
-The SID to add to the ACE.
-.PARAMETER Name
-The username to add to the ACE.
-.PARAMETER KnownSid
-A known SID to add to the ACE.
-.PARAMETER AccessMask
-The access mask for the ACE.
-.PARAMETER GenericAccess
-A generic access mask for the ACE.
-.PARAMETER Type
-The type of the ACE.
-.PARAMETER Flags
-The flags for the ACE.
-.PARAMETER Condition
-The condition string for the ACE.
-.PARAMETER PassThru
-Pass through the created ACE.
-.INPUTS
-None
-.OUTPUTS
-None
-.EXAMPLE
-Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask 0x1234
-Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask of 0x1234
-.EXAMPLE
-Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask (Get-NtAccessMask -FileAccess ReadData)
-Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask for the file ReadData access right.
-#>
-function Add-NtSecurityDescriptorDaclAce {
-    [CmdletBinding(DefaultParameterSetName = "FromSid")]
-    Param(
-        [parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [parameter(Mandatory, ParameterSetName = "FromSid")]
-        [NtApiDotNet.Sid]$Sid,
-        [parameter(Mandatory, ParameterSetName = "FromName")]
-        [string]$Name,
-        [parameter(Mandatory, ParameterSetName = "FromKnownSid")]
-        [NtApiDotNet.KnownSidValue]$KnownSid,
-        [NtApiDotNet.AccessMask]$AccessMask = 0,
-        [NtApiDotNet.GenericAccessRights]$GenericAccess = 0,
-        [NtApiDotNet.AceType]$Type = "Allowed",
-        [NtApiDotNet.AceFlags]$Flags = "None",
-        [string]$Condition,
-        [switch]$PassThru
-    )
-
-    Write-Warning "Use Add-NtSecurityDescriptorAce instead of this."
-
-    switch ($PSCmdlet.ParameterSetName) {
-        "FromSid" {
-            # Do nothing.
-        }
-        "FromName" {
-            $Sid = Get-NtSid -Name $Name
-        }
-        "FromKnownSid" {
-            $Sid = Get-NtSid -KnownSid $KnownSid
-        }
-    }
-
-    $AccessMask = $AccessMask.Access -bor [uint32]$GenericAccess
-
-    if ($null -ne $Sid) {
-        $ace = [NtApiDotNet.Ace]::new($Type, $Flags, $AccessMask, $Sid)
-        if ($Condition -ne "") {
-            $ace.Condition = $Condition
-        }
-        $SecurityDescriptor.AddAce($ace)
-        if ($PassThru) {
-            Write-Output $ace
-        }
-    }
-}
-
-<#
-.SYNOPSIS
 Copies a security descriptor to a new one.
 .DESCRIPTION
 This cmdlet copies the details from a security descriptor into a new object so
@@ -870,12 +785,12 @@ The security descriptor to copy.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtCoreLib.Security.Authorization.SecurityDescriptor
 #>
 function Copy-NtSecurityDescriptor {
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Clone() | Write-Output
 }
@@ -907,7 +822,7 @@ Passthrough the security descriptor.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtCoreLib.Security.Authorization.SecurityDescriptor
 .EXAMPLE
 Edit-NtSecurityDescriptor $sd -CanonicalizeDacl
 Canonicalize the security descriptor's DACL.
@@ -921,20 +836,20 @@ Make a copy of a security descriptor and edit the copy.
 function Edit-NtSecurityDescriptor {
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "ModifySd")]
-        [NtApiDotNet.SecurityDescriptor]$NewSecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$NewSecurityDescriptor,
         [Parameter(Position = 2, Mandatory, ParameterSetName = "ModifySd")]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [NtCoreLib.Security.Authorization.SecurityInformation]$SecurityInformation,
         [Parameter(ParameterSetName = "ModifySd")]
-        [NtApiDotNet.NtToken]$Token,
+        [NtCoreLib.NtToken]$Token,
         [Parameter(ParameterSetName = "ModifySd")]
-        [NtApiDotNet.SecurityAutoInheritFlags]$Flags = 0,
+        [NtCoreLib.Security.Authorization.SecurityAutoInheritFlags]$Flags = 0,
         [Parameter(ParameterSetName = "ModifySd")]
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [Parameter(ParameterSetName = "MapGenericSd")]
         [Parameter(ParameterSetName = "UnmapGenericSd")]
-        [NtApiDotNet.NtType]$Type,
+        [NtCoreLib.NtType]$Type,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
         [switch]$CanonicalizeDacl,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
@@ -948,7 +863,7 @@ function Edit-NtSecurityDescriptor {
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [switch]$Container,
         [Parameter(ParameterSetName = "ToAutoInherit")]
-        [NtApiDotNet.SecurityDescriptor]$Parent,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$Parent,
         [Parameter(ParameterSetName = "ToAutoInherit")]
         [Nullable[Guid]]$ObjectType = $null,
         [Parameter(ParameterSetName = "StandardizeSd")]
@@ -1026,13 +941,13 @@ function Set-NtSecurityDescriptorOwner {
     [CmdletBinding(DefaultParameterSetName = "FromSid")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "FromSid")]
-        [NtApiDotNet.Sid]$Owner,
+        [NtCoreLib.Security.Authorization.Sid]$Owner,
         [Parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName = "FromKnownSid")]
-        [NtApiDotNet.KnownSidValue]$KnownSid,
+        [NtCoreLib.Security.Authorization.KnownSidValue]$KnownSid,
         [switch]$Defaulted
     )
 
@@ -1048,7 +963,7 @@ function Set-NtSecurityDescriptorOwner {
         }
     }
 
-    $SecurityDescriptor.Owner = [NtApiDotNet.SecurityDescriptorSid]::new($sid, $Defaulted)
+    $SecurityDescriptor.Owner = [NtCoreLib.Security.Authorization.SecurityDescriptorSid]::new($sid, $Defaulted)
 }
 
 <#
@@ -1084,7 +999,7 @@ function Test-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "DaclPresent")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(ParameterSetName = "DaclPresent")]
         [switch]$DaclPresent,
         [Parameter(Mandatory, ParameterSetName = "SaclPresent")]
@@ -1132,12 +1047,12 @@ The security descriptor to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptorSid
+NtCoreLib.Security.Authorization.SecurityDescriptorSid
 #>
 function Get-NtSecurityDescriptorOwner {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Owner | Write-Output
 }
@@ -1152,12 +1067,12 @@ The security descriptor to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptorSid
+NtCoreLib.Security.Authorization.SecurityDescriptorSid
 #>
 function Get-NtSecurityDescriptorGroup {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Group | Write-Output
 }
@@ -1172,12 +1087,12 @@ The security descriptor to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Acl
+NtCoreLib.Security.Authorization.Acl
 #>
 function Get-NtSecurityDescriptorDacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     Write-Output $SecurityDescriptor.Dacl -NoEnumerate
 }
@@ -1192,12 +1107,12 @@ The security descriptor to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Acl
+NtCoreLib.Security.Authorization.Acl
 #>
 function Get-NtSecurityDescriptorSacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     Write-Output $SecurityDescriptor.Sacl -NoEnumerate
 }
@@ -1212,12 +1127,12 @@ The security descriptor to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptorControl
+NtCoreLib.Security.Authorization.SecurityDescriptorControl
 #>
 function Get-NtSecurityDescriptorControl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     Write-Output $SecurityDescriptor.Control
 }
@@ -1234,13 +1149,13 @@ Get the Integrity Level as a SID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid or NtApiDotNet.TokenIntegrityLevel
+NtCoreLib.Security.Authorization.Sid or NtCoreLib.TokenIntegrityLevel
 #>
 function Get-NtSecurityDescriptorIntegrityLevel {
     [CmdletBinding(DefaultParameterSetName = "ToIL")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(ParameterSetName = "ToSid")]
         [switch]$AsSid,
         [Parameter(ParameterSetName = "ToAce")]
@@ -1285,9 +1200,9 @@ None
 function Set-NtSecurityDescriptorControl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [NtCoreLib.Security.Authorization.SecurityDescriptorControl]$Control,
         [switch]$PassThru
     )
     $SecurityDescriptor.Control = $Control
@@ -1317,9 +1232,9 @@ None
 function Add-NtSecurityDescriptorControl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [NtCoreLib.Security.Authorization.SecurityDescriptorControl]$Control,
         [switch]$PassThru
     )
 
@@ -1352,9 +1267,9 @@ None
 function Remove-NtSecurityDescriptorControl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [NtCoreLib.Security.Authorization.SecurityDescriptorControl]$Control,
         [switch]$PassThru
     )
 
@@ -1388,7 +1303,7 @@ Specify to set the Defaulted flag.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Acl
+NtCoreLib.Security.Authorization.Acl
 #>
 function New-NtAcl {
     [CmdletBinding(DefaultParameterSetName = "FromAce")]
@@ -1396,14 +1311,14 @@ function New-NtAcl {
         [Parameter(Mandatory, ParameterSetName = "NullAcl")]
         [switch]$NullAcl,
         [Parameter(ParameterSetName = "FromAce")]
-        [NtApiDotNet.Ace[]]$Ace,
+        [NtCoreLib.Security.Authorization.Ace[]]$Ace,
         [switch]$AutoInheritReq,
         [switch]$AutoInherited,
         [switch]$Protected,
         [switch]$Defaulted
     )
 
-    $acl = New-Object NtApiDotNet.Acl
+    $acl = New-Object NtCoreLib.Security.Authorization.Acl
     $acl.AutoInherited = $AutoInherited
     $acl.AutoInheritReq = $AutoInheritReq
     $acl.Protected = $Protected
@@ -1456,11 +1371,11 @@ function Set-NtSecurityDescriptorDacl {
     [CmdletBinding(DefaultParameterSetName = "FromAce")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Mandatory, ParameterSetName = "NullAcl")]
         [switch]$NullAcl,
         [Parameter(ParameterSetName = "FromAce")]
-        [NtApiDotNet.Ace[]]$Ace,
+        [NtCoreLib.Security.Authorization.Ace[]]$Ace,
         [Parameter(ParameterSetName = "NullAcl")]
         [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInheritReq,
@@ -1532,11 +1447,11 @@ function Set-NtSecurityDescriptorSacl {
     [CmdletBinding(DefaultParameterSetName = "FromAce")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Mandatory, ParameterSetName = "NullAcl")]
         [switch]$NullAcl,
         [Parameter(ParameterSetName = "FromAce")]
-        [NtApiDotNet.Ace[]]$Ace,
+        [NtCoreLib.Security.Authorization.Ace[]]$Ace,
         [Parameter(ParameterSetName = "NullAcl")]
         [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInheritReq,
@@ -1587,7 +1502,7 @@ None
 function Remove-NtSecurityDescriptorDacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Dacl = $null
 }
@@ -1607,7 +1522,7 @@ None
 function Remove-NtSecurityDescriptorSacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Sacl = $null
 }
@@ -1628,7 +1543,7 @@ None
 function Clear-NtSecurityDescriptorDacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
 
     if ($SecurityDescriptor.DaclPresent) {
@@ -1653,7 +1568,7 @@ None
 function Clear-NtSecurityDescriptorSacl {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     if ($SecurityDescriptor.SaclPresent) {
         $SecurityDescriptor.Sacl.Clear()
@@ -1676,7 +1591,7 @@ None
 function Remove-NtSecurityDescriptorOwner {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Owner = $null
 }
@@ -1705,13 +1620,13 @@ function Set-NtSecurityDescriptorGroup {
     [CmdletBinding(DefaultParameterSetName = "FromSid")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "FromSid")]
-        [NtApiDotNet.Sid]$Group,
+        [NtCoreLib.Security.Authorization.Sid]$Group,
         [Parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name,
         [Parameter(Mandatory, ParameterSetName = "FromKnownSid")]
-        [NtApiDotNet.KnownSidValue]$KnownSid,
+        [NtCoreLib.Security.Authorization.KnownSidValue]$KnownSid,
         [switch]$Defaulted
     )
 
@@ -1727,7 +1642,7 @@ function Set-NtSecurityDescriptorGroup {
         }
     }
 
-    $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($sid, $Defaulted)
+    $SecurityDescriptor.Group = [NtCoreLib.Security.Authorization.SecurityDescriptorSid]::new($sid, $Defaulted)
 }
 
 <#
@@ -1745,7 +1660,7 @@ None
 function Remove-NtSecurityDescriptorGroup {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Group = $null
 }
@@ -1765,7 +1680,7 @@ None
 function Remove-NtSecurityDescriptorIntegrityLevel {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.RemoveMandatoryLabel()
 }
@@ -1794,17 +1709,17 @@ function Set-NtSecurityDescriptorIntegrityLevel {
     [CmdletBinding(DefaultParameterSetName = "FromLevel")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "FromLevel")]
-        [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
+        [NtCoreLib.TokenIntegrityLevel]$IntegrityLevel,
         [Parameter(ParameterSetName = "FromLevel")]
         [Parameter(ParameterSetName = "FromSid")]
-        [NtApiDotNet.AceFlags]$Flags = 0,
+        [NtCoreLib.Security.Authorization.AceFlags]$Flags = 0,
         [Parameter(ParameterSetName = "FromLevel")]
         [Parameter(ParameterSetName = "FromSid")]
-        [NtApiDotNet.MandatoryLabelPolicy]$Policy = "NoWriteUp"
+        [NtCoreLib.Security.Authorization.MandatoryLabelPolicy]$Policy = "NoWriteUp"
     )
 
     switch ($PSCmdlet.ParameterSetName) {
@@ -1830,7 +1745,7 @@ Specify to the return the conditional expression as a parsed object.
 None
 .OUTPUTS
 byte[]
-NtApiDotNet.Security.ConditionalExpression.ConditionalExpression
+NtCoreLib.Security.Authorization.ConditionalExpression.ConditionalExpression
 .EXAMPLE
 ConvertFrom-NtAceCondition -Condition 'WIN://TokenId == "TEST"'
 Gets the data for the condition expression 'WIN://TokenId == "TEST"'
@@ -1848,9 +1763,9 @@ function ConvertFrom-NtAceCondition {
     )
 
     if ($AsObject) {
-        [NtApiDotNet.Security.ConditionalExpression.ConditionalExpression]::Parse($Condition)
+        [NtCoreLib.Security.Authorization.ConditionalExpression.ConditionalExpression]::Parse($Condition)
     } else {
-        [NtApiDotNet.NtSecurity]::StringToConditionalAce($Condition)
+        [NtCoreLib.Security.NtSecurity]::StringToConditionalAce($Condition)
     }
 }
 
@@ -1876,7 +1791,7 @@ function ConvertTo-NtAceCondition {
         [byte[]]$ConditionData
     )
 
-    [NtApiDotNet.NtSecurity]::ConditionalAceToString($ConditionData)
+    [NtCoreLib.Security.NtSecurity]::ConditionalAceToString($ConditionData)
 }
 
 <#
@@ -1906,7 +1821,7 @@ function ConvertFrom-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "ToBytes")]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Mandatory, ParameterSetName = "ToBase64")]
         [alias("Base64")]
         [switch]$AsBase64,
@@ -1943,7 +1858,7 @@ function ConvertFrom-NtSid {
     [CmdletBinding(DefaultParameterSetName = "ToBytes")]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.Sid]$Sid
+        [NtCoreLib.Security.Authorization.Sid]$Sid
     )
 
     PROCESS {
@@ -1961,9 +1876,9 @@ List of SIDs to use to create object.
 .PARAMETER Attribute
 Common attributes for the new object.
 .INPUTS
-NtApiDotNet.Sid[]
+NtCoreLib.Security.Authorization.Sid[]
 .OUTPUTS
-NtApiDotNet.UserGroup[]
+NtCoreLib.Security.Token.UserGroup[]
 .EXAMPLE
 New-NtUserGroup -Sid "WD" -Attribute Enabled
 Creates a new UserGroup with the World SID and the Enabled Flag.
@@ -1972,13 +1887,13 @@ function New-NtUserGroup {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline)]
-        [NtApiDotNet.Sid[]]$Sid,
-        [NtApiDotNet.GroupAttributes]$Attribute = 0
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid,
+        [NtCoreLib.GroupAttributes]$Attribute = 0
     )
 
     PROCESS {
         foreach ($s in $Sid) {
-            New-Object NtApiDotNet.UserGroup -ArgumentList $s, $Attribute
+            New-Object NtCoreLib.Security.Token.UserGroup -ArgumentList $s, $Attribute
         }
     }
 }
@@ -2000,7 +1915,7 @@ Specify to create from a schema object such as a schema class or extended right.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.Security.ObjectTypeTree
+NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree
 .EXAMPLE
 $tree = New-ObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2"
 Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
@@ -2014,16 +1929,16 @@ function New-ObjectTypeTree {
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromGuid")]
         [guid]$ObjectType,
         [Parameter(ParameterSetName = "FromGuid")]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree[]]$Nodes,
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree[]]$Nodes,
         [Parameter(ParameterSetName = "FromGuid")]
         [string]$Name = "",
         [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 0)]
-        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
+        [NtCoreLib.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromGuid" {
-            $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
+            $tree = New-Object NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree -ArgumentList $ObjectType
             if ($null -ne $Nodes) {
                 $tree.AddNodeRange($Nodes)
             }
@@ -2054,7 +1969,7 @@ Specify to add a schema object such as a schema class or extended right.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.Security.ObjectTypeTree
+NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree
 .EXAMPLE
 Add-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
 Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
@@ -2069,13 +1984,13 @@ function Add-ObjectTypeTree {
     [CmdletBinding(DefaultParameterSetName="FromGuid")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree]$Tree,
         [Parameter(Position = 1, Mandatory, ParameterSetName = "FromGuid")]
         [guid]$ObjectType,
         [Parameter(ParameterSetName = "FromGuid")]
         [string]$Name = "",
         [parameter(Mandatory, ParameterSetName = "FromSchemaObject", Position = 1, ValueFromPipeline)]
-        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject,
+        [NtCoreLib.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject,
         [switch]$PassThru
     )
 
@@ -2116,7 +2031,7 @@ Removes the tree node $tree from its parent.
 function Remove-ObjectTypeTree {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree]$Tree
     )
     $Tree.Remove()
 }
@@ -2141,9 +2056,9 @@ Sets the Remaning Access for this tree and all children to 0xFF.
 function Set-ObjectTypeTreeAccess {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree]$Tree,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.AccessMask]$Access
+        [NtCoreLib.Security.Authorization.AccessMask]$Access
     )
     $Tree.SetRemainingAccess($Access)
 }
@@ -2168,9 +2083,9 @@ Revokes the Remaining Access of 0xFF for this tree and all children.
 function Revoke-ObjectTypeTreeAccess {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree]$Tree,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.AccessMask]$Access
+        [NtCoreLib.Security.Authorization.AccessMask]$Access
     )
     $Tree.RemoveRemainingAccess($Access)
 }
@@ -2190,7 +2105,7 @@ Specify to return the added tree.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.Security.ObjectTypeTree
+NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree
 .EXAMPLE
 Select-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
 Selects an Object Type tree with the type of 'bf967a86-0de6-11d0-a285-00aa003049e2'.
@@ -2198,7 +2113,7 @@ Selects an Object Type tree with the type of 'bf967a86-0de6-11d0-a285-00aa003049
 function Select-ObjectTypeTree {
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree]$Tree,
         [Parameter(Position = 1, Mandatory)]
         [guid]$ObjectType
     )
@@ -2223,7 +2138,7 @@ Specify an object convertable to the tree such as a schema object or extended ri
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Utilities.Security.ObjectTypeTree
+NtCoreLib.Utilities.Security.Authorization.ObjectTypeTree
 .EXAMPLE
 ConvertTo-ObjectTypeTree -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
 Get the object type tree for a user object by name.
@@ -2239,7 +2154,7 @@ function ConvertTo-ObjectTypeTree {
         [parameter(Mandatory, ParameterSetName = "FromObject")]
         [System.DirectoryServices.DirectoryEntry]$Object,
         [parameter(Mandatory, ParameterSetName = "FromSchemaObject", ValueFromPipeline, Position = 0)]
-        [NtApiDotNet.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
+        [NtCoreLib.Win32.DirectoryService.IDirectoryServiceObjectTree]$SchemaObject
     )
 
     PROCESS {
@@ -2270,7 +2185,7 @@ Specify the CAPID SID to select.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Security.Policy.CentralAccessPolic
+NtCoreLib.Security.Authorization.Policy.CentralAccessPolicy
 .EXAMPLE
 Get-CentralAccessPolicy
 Gets the Central Access Policy from the Registry.
@@ -2281,14 +2196,14 @@ Gets the Central Access Policy from the LSA.
 function Get-CentralAccessPolicy {
     Param(
         [Parameter(Position=0)]
-        [NtApiDotNet.Sid]$CapId,
+        [NtCoreLib.Security.Authorization.Sid]$CapId,
         [switch]$FromLsa
     )
     $policy = if ($FromLsa) {
-        [NtApiDotNet.Security.Policy.CentralAccessPolicy]::ParseFromLsa()
+        [NtCoreLib.Security.Authorization.Policy.CentralAccessPolicy]::ParseFromLsa()
     }
     else {
-        [NtApiDotNet.Security.Policy.CentralAccessPolicy]::ParseFromRegistry()
+        [NtCoreLib.Security.Authorization.Policy.CentralAccessPolicy]::ParseFromRegistry()
     }
     if ($null -eq $CapId) {
         $policy | Write-Output
@@ -2315,10 +2230,10 @@ Specify to get all users for all per-user Audit Policies.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Audit.AuditCategory
-NtApiDotNet.Win32.Security.Audit.AuditSubCategory
-NtApiDotNet.Win32.Security.Audit.AuditPerUserCategory
-NtApiDotNet.Win32.Security.Audit.AuditPerUserSubCategory
+NtCoreLib.Win32.Security.Audit.AuditCategory
+NtCoreLib.Win32.Security.Audit.AuditSubCategory
+NtCoreLib.Win32.Security.Audit.AuditPerUserCategory
+NtCoreLib.Win32.Security.Audit.AuditPerUserSubCategory
 .EXAMPLE
 Get-NtAuditPolicy
 Get all audit policy categories.
@@ -2339,7 +2254,7 @@ function Get-NtAuditPolicy {
     [CmdletBinding(DefaultParameterSetName = "All")]
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategory")]
-        [NtApiDotNet.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
+        [NtCoreLib.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
         [parameter(Mandatory, ParameterSetName = "FromCategoryGuid")]
         [Guid[]]$CategoryGuid,
         [parameter(Mandatory, ParameterSetName = "FromSubCategoryName")]
@@ -2352,28 +2267,28 @@ function Get-NtAuditPolicy {
         [switch]$ExpandCategory,
         [parameter(ParameterSetName = "All")]
         [switch]$AllUser,
-        [NtApiDotNet.Sid]$User
+        [NtCoreLib.Security.Authorization.Sid]$User
     )
 
     $cats = switch ($PSCmdlet.ParameterSetName) {
         "All" {
             if ($null -ne $User) {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories($User)
+                [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories($User)
             }
             elseif ($AllUser) {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories()
+                [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories()
             }
             else {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategories()
+                [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetCategories()
             }
         }
         "FromCategory" {
             $ret = @()
             foreach($cat in $Category) {
                 if ($null -ne $User) {
-                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
+                    $ret += [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
                 } else {
-                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                    $ret += [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
                 }
             }
             $ret
@@ -2382,9 +2297,9 @@ function Get-NtAuditPolicy {
             $ret = @()
             foreach($cat in $CategoryGuid) {
                 if ($null -ne $User) {
-                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
+                    $ret += [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
                 } else {
-                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                    $ret += [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
                 }
             }
             $ret
@@ -2423,8 +2338,8 @@ Specify the policy to set for a per-user policy.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Audit.AuditSubCategory
-NtApiDotNet.Win32.Security.Audit.AuditPerUserSubCategory
+NtCoreLib.Win32.Security.Audit.AuditSubCategory
+NtCoreLib.Win32.Security.Audit.AuditPerUserSubCategory
 .EXAMPLE
 Set-NtAuditPolicy -Category 
 Get all audit policy categories.
@@ -2440,7 +2355,7 @@ function Set-NtAuditPolicy {
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategoryType")]
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategoryTypeUser")]
-        [NtApiDotNet.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
+        [NtCoreLib.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
         [parameter(Mandatory, ParameterSetName = "FromCategoryGuid")]
         [parameter(Mandatory, ParameterSetName = "FromCategoryGuidUser")]
         [Guid[]]$CategoryGuid,
@@ -2454,17 +2369,17 @@ function Set-NtAuditPolicy {
         [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryGuid")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryName")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryGuid")]
-        [NtApiDotNet.Win32.Security.Audit.AuditPolicyFlags]$Policy,
+        [NtCoreLib.Win32.Security.Audit.AuditPolicyFlags]$Policy,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryTypeUser")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromCategoryGuidUser")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryNameUser")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSubCategoryGuidUser")]
-        [NtApiDotNet.Win32.Security.Audit.AuditPerUserPolicyFlags]$UserPolicy,
+        [NtCoreLib.Win32.Security.Audit.AuditPerUserPolicyFlags]$UserPolicy,
         [parameter(Mandatory, ParameterSetName="FromCategoryTypeUser")]
         [parameter(Mandatory, ParameterSetName="FromCategoryGuidUser")]
         [parameter(Mandatory, ParameterSetName="FromSubCategoryNameUser")]
         [parameter(Mandatory, ParameterSetName="FromSubCategoryGuidUser")]
-        [NtApiDotNet.Sid]$User,
+        [NtCoreLib.Security.Authorization.Sid]$User,
         [switch]$PassThru
     )
     if (!(Test-NtTokenPrivilege SeSecurityPrivilege)) {
@@ -2512,7 +2427,7 @@ Specify the type of object to query the global SACL.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtCoreLib.Security.Authorization.SecurityDescriptor
 .EXAMPLE
 Get-NtAuditSecurity
 Get the Audit security descriptor.
@@ -2524,14 +2439,14 @@ function Get-NtAuditSecurity {
     [CmdletBinding(DefaultParameterSetName = "FromSecurityDescriptor")]
     param (
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromGlobalSacl")]
-        [NtApiDotNet.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
+        [NtCoreLib.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromSecurityDescriptor" {
-            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::QuerySecurity() | Write-Output
+            [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::QuerySecurity() | Write-Output
         }
         "FromGlobalSacl" {
-            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::QueryGlobalSacl($GlobalSacl) | Write-Output
+            [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::QueryGlobalSacl($GlobalSacl) | Write-Output
         }
     }
 }
@@ -2558,19 +2473,19 @@ function Set-NtAuditSecurity {
     [CmdletBinding(DefaultParameterSetName = "FromSecurityDescriptor", SupportsShouldProcess)]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromGlobalSacl")]
-        [NtApiDotNet.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
+        [NtCoreLib.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromSecurityDescriptor" {
             if ($PSCmdlet.ShouldProcess("$SecurityDescriptor", "Set Audit SD")) {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetSecurity("Dacl", $SecurityDescriptor)
+                [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::SetSecurity("Dacl", $SecurityDescriptor)
             }
         }
         "FromGlobalSacl" {
             if ($PSCmdlet.ShouldProcess("$SecurityDescriptor", "Set $GlobalSacl SACL")) {
-                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetGlobalSacl($GlobalSacl, $SecurityDescriptor)
+                [NtCoreLib.Win32.Security.Audit.AuditSecurityUtils]::SetGlobalSacl($GlobalSacl, $SecurityDescriptor)
             }
         }
     }
@@ -2588,7 +2503,7 @@ Specify a SID to get all account rights for.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AccountRight
+NtCoreLib.Win32.Security.Policy.AccountRight
 .EXAMPLE
 Get-NtAccountRight
 Get all account rights.
@@ -2612,27 +2527,27 @@ function Get-NtAccountRight {
     [CmdletBinding(DefaultParameterSetName = "All")]
     param (
         [parameter(Position = 0, ParameterSetName = "All")]
-        [NtApiDotNet.Win32.AccountRightType]$Type = "All",
+        [NtCoreLib.Win32.Security.Policy.AccountRightType]$Type = "All",
         [parameter(Mandatory, ParameterSetName = "FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, ParameterSetName = "FromKnownSid")]
-        [NtApiDotNet.KnownSidValue]$KnownSid,
+        [NtCoreLib.Security.Authorization.KnownSidValue]$KnownSid,
         [parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights($Type) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRights($Type) | Write-Output
         }
         "FromSid" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights($Sid) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRights($Sid) | Write-Output
         }
         "FromKnownSid" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights((Get-NtSid -KnownSid $KnownSid)) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRights((Get-NtSid -KnownSid $KnownSid)) | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRights((Get-NtSid -Name $Name)) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRights((Get-NtSid -Name $Name)) | Write-Output
         }
     }
 }
@@ -2662,24 +2577,24 @@ function Add-NtAccountRight {
     [CmdletBinding(DefaultParameterSetName = "FromPrivs")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, ParameterSetName = "FromPrivs")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
         [parameter(Mandatory, ParameterSetName = "FromString")]
         [string[]]$Name,
         [parameter(Mandatory, ParameterSetName = "FromLogonType")]
-        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
+        [NtCoreLib.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromString" {
-            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $Name)
+            [NtCoreLib.Win32.Security.Win32Security]::AddAccountRights($Sid, $Name)
         }
         "FromPrivs" {
-            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $Privilege)
+            [NtCoreLib.Win32.Security.Win32Security]::AddAccountRights($Sid, $Privilege)
         }
         "FromLogonType" {
-            [NtApiDotNet.Win32.LogonUtils]::AddAccountRights($Sid, $LogonType)
+            [NtCoreLib.Win32.Security.Win32Security]::AddAccountRights($Sid, $LogonType)
         }
     }
 }
@@ -2709,24 +2624,24 @@ function Remove-NtAccountRight {
     [CmdletBinding(DefaultParameterSetName = "FromPrivs")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, ParameterSetName = "FromPrivs")]
-        [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue[]]$Privilege,
         [parameter(Mandatory, ParameterSetName = "FromString")]
         [string[]]$Name,
         [parameter(Mandatory, ParameterSetName = "FromLogonType")]
-        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
+        [NtCoreLib.Win32.Security.Policy.AccountRightLogonType[]]$LogonType
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromString" {
-            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $Name)
+            [NtCoreLib.Win32.Security.Win32Security]::RemoveAccountRights($Sid, $Name)
         }
         "FromPrivs" {
-            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $Privilege)
+            [NtCoreLib.Win32.Security.Win32Security]::RemoveAccountRights($Sid, $Privilege)
         }
         "FromLogonType" {
-            [NtApiDotNet.Win32.LogonUtils]::RemoveAccountRights($Sid, $LogonType)
+            [NtCoreLib.Win32.Security.Win32Security]::RemoveAccountRights($Sid, $LogonType)
         }
     }
 }
@@ -2743,7 +2658,7 @@ Specify a logon rights to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid
+NtCoreLib.Security.Authorization.Sid
 .EXAMPLE
 Get-NtAccountRightSid -Privilege SeBackupPrivilege
 Get all SIDs for SeBackupPrivilege.
@@ -2755,16 +2670,16 @@ function Get-NtAccountRightSid {
     [CmdletBinding(DefaultParameterSetName = "Privilege")]
     param (
         [parameter(Mandatory, ParameterSetName = "FromPrivilege")]
-        [NtApiDotNet.TokenPrivilegeValue]$Privilege,
+        [NtCoreLib.Security.Token.TokenPrivilegeValue]$Privilege,
         [parameter(Mandatory, ParameterSetName = "FromLogon")]
-        [NtApiDotNet.Win32.Security.Policy.AccountRightLogonType]$Logon
+        [NtCoreLib.Win32.Security.Policy.AccountRightLogonType]$Logon
     )
     switch($PSCmdlet.ParameterSetName) {
         "FromPrivilege" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRightSids($Privilege) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRightSids($Privilege) | Write-Output
         }
         "FromLogon" {
-            [NtApiDotNet.Win32.LogonUtils]::GetAccountRightSids($Logon) | Write-Output
+            [NtCoreLib.Win32.Security.Win32Security]::GetAccountRightSids($Logon) | Write-Output
         }
     }
 }
@@ -2800,7 +2715,7 @@ function Add-NtSidName {
     [CmdletBinding(DefaultParameterSetName="FromName")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [parameter(Position = 2, ParameterSetName="RegisterSid")]
         [string]$Name,
@@ -2808,15 +2723,15 @@ function Add-NtSidName {
         [parameter(Mandatory, Position = 1, ParameterSetName="RegisterSid")]
         [string]$Domain,
         [parameter(Position = 3, ParameterSetName="FromName")]
-        [NtApiDotNet.Win32.SidNameUse]$NameUse = "Group",
+        [NtCoreLib.Security.Authorization.SidNameUse]$NameUse = "Group",
         [parameter(Mandatory, ParameterSetName="RegisterSid")]
         [switch]$Register
     )
 
     if ($Register) {
-        [NtApiDotNet.Win32.Security.Win32Security]::AddSidNameMapping($Domain, $Name, $Sid)
+        [NtCoreLib.Win32.Security.Win32Security]::AddSidNameMapping($Domain, $Name, $Sid)
     } else {
-        [NtApiDotNet.NtSecurity]::AddSidName($Sid, $Domain, $Name, $NameUse)
+        [NtCoreLib.Security.NtSecurity]::AddSidName($Sid, $Domain, $Name, $NameUse)
     }
 }
 
@@ -2843,14 +2758,14 @@ function Remove-NtSidName {
     [CmdletBinding()]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [switch]$Unregister
     )
 
     if ($Unregister) {
-        [NtApiDotNet.Win32.Security.Win32Security]::RemoveSidNameMapping($Sid)
+        [NtCoreLib.Win32.Security.Win32Security]::RemoveSidNameMapping($Sid)
     }
-    [NtApiDotNet.NtSecurity]::RemoveSidName($Sid)
+    [NtCoreLib.Security.NtSecurity]::RemoveSidName($Sid)
 }
 
 <#
@@ -2867,7 +2782,7 @@ Clear-NtSidName
 Clears the SID to name cache.
 #>
 function Clear-NtSidName {
-    [NtApiDotNet.NtSecurity]::ClearSidNameCache()
+    [NtCoreLib.Security.NtSecurity]::ClearSidNameCache()
 }
 
 <#
@@ -2880,9 +2795,9 @@ The SID to lookup the name for.
 .PARAMETER BypassCache
 Specify to bypass the name cache for this lookup.
 .INPUTS
-NtApiDotNet.Sid[]
+NtCoreLib.Security.Authorization.Sid[]
 .OUTPUTS
-NtApiDotNet.SidName
+NtCoreLib.Security.Authorization.SidName
 .EXAMPLE
 Get-NtSidName "S-1-1-0"
 Lookup the name for the SID S-1-1-0.
@@ -2894,7 +2809,7 @@ function Get-NtSidName {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipelineByPropertyName)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [switch]$BypassCache
     )
 
@@ -2927,7 +2842,7 @@ Specify to check if the SID is a domain SID.
 .PARAMETER LocalDomain
 Specify to check if the SID is the local domain SID.
 .INPUTS
-NtApiDotNet.Sid[]
+NtCoreLib.Security.Authorization.Sid[]
 .OUTPUTS
 bool
 .EXAMPLE
@@ -2938,7 +2853,7 @@ function Test-NtSid {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipelineByPropertyName)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [parameter(Mandatory, ParameterSetName="Integrity")]
         [switch]$Integrity,
         [parameter(Mandatory, ParameterSetName="Capability")]
@@ -2960,28 +2875,28 @@ function Test-NtSid {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "Integrity" {
-                [NtApiDotNet.NtSecurity]::IsIntegritySid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsIntegritySid($Sid)
             }
             "Capability" {
-                [NtApiDotNet.NtSecurity]::IsCapabilitySid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsCapabilitySid($Sid)
             }
             "CapabilityGroup" {
-                [NtApiDotNet.NtSecurity]::IsCapabilityGroupSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsCapabilityGroupSid($Sid)
             }
             "Service" {
-                [NtApiDotNet.NtSecurity]::IsServiceSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsServiceSid($Sid)
             }
             "LogonSession" {
-                [NtApiDotNet.NtSecurity]::IsLogonSessionSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsLogonSessionSid($Sid)
             }
             "ProcessTrust" {
-                [NtApiDotNet.NtSecurity]::IsProcessTrustSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsProcessTrustSid($Sid)
             }
             "Domain" {
-                [NtApiDotNet.NtSecurity]::IsDomainSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsDomainSid($Sid)
             }
             "LocalDomain" {
-                [NtApiDotNet.NtSecurity]::IsLocalDomainSid($Sid)
+                [NtCoreLib.Security.NtSecurity]::IsLocalDomainSid($Sid)
             }
         }
     }

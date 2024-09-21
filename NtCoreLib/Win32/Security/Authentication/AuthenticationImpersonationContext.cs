@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Impersonation context for a server authentication.
+/// </summary>
+public struct AuthenticationImpersonationContext : IDisposable
 {
-    /// <summary>
-    /// Impersonation context for a server authentication.
-    /// </summary>
-    public struct AuthenticationImpersonationContext : IDisposable
+    private readonly SecHandle _context;
+
+    internal AuthenticationImpersonationContext(SecHandle context)
     {
-        private readonly SecHandle _context;
+        _context = context;
+    }
 
-        internal AuthenticationImpersonationContext(SecHandle context)
-        {
-            _context = context;
-        }
-
-        void IDisposable.Dispose()
-        {
-            SecurityNativeMethods.RevertSecurityContext(_context);
-        }
+    void IDisposable.Dispose()
+    {
+        SecurityNativeMethods.RevertSecurityContext(_context);
     }
 }

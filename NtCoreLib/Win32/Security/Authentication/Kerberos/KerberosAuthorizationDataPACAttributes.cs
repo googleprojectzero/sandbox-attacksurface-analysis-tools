@@ -16,50 +16,49 @@ using System;
 using System.Collections;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a PAC_ATTRIBUTES_INFO entry.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACAttributes : KerberosAuthorizationDataPACEntry
 {
+    private readonly BitArray _flags;
+
     /// <summary>
-    /// Class to represent a PAC_ATTRIBUTES_INFO entry.
+    /// The PAC was requested (PAC_WAS_REQUESTED)
     /// </summary>
-    public sealed class KerberosAuthorizationDataPACAttributes : KerberosAuthorizationDataPACEntry
+    public bool PACWasRequested => _flags[0];
+    /// <summary>
+    /// The PAC was given implicitly (PAC_WAS_GIVEN_IMPLICITLY)
+    /// </summary>
+    public bool PACWasGivenImplicitly => _flags[1];
+
+    private KerberosAuthorizationDataPACAttributes(byte[] data, BitArray flags)
+        : base(KerberosAuthorizationDataPACEntryType.Attributes, data)
     {
-        private readonly BitArray _flags;
+        _flags = flags;
+    }
 
-        /// <summary>
-        /// The PAC was requested (PAC_WAS_REQUESTED)
-        /// </summary>
-        public bool PACWasRequested => _flags[0];
-        /// <summary>
-        /// The PAC was given implicitly (PAC_WAS_GIVEN_IMPLICITLY)
-        /// </summary>
-        public bool PACWasGivenImplicitly => _flags[1];
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
+    {
+        entry = null;
+        if (data.Length < 4)
+            return false;
 
-        private KerberosAuthorizationDataPACAttributes(byte[] data, BitArray flags)
-            : base(KerberosAuthorizationDataPACEntryType.Attributes, data)
-        {
-            _flags = flags;
-        }
+        int bits = BitConverter.ToInt32(data, 0);
+        if (bits < 2)
+            return false;
 
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
-        {
-            entry = null;
-            if (data.Length < 4)
-                return false;
+        int[] words = new int[(data.Length - 4) / 4];
+        Buffer.BlockCopy(data, 4, words, 0, words.Length * 4);
+        entry = new KerberosAuthorizationDataPACAttributes(data, new BitArray(words));
+        return true;
+    }
 
-            int bits = BitConverter.ToInt32(data, 0);
-            if (bits < 2)
-                return false;
-
-            int[] words = new int[(data.Length - 4) / 4];
-            Buffer.BlockCopy(data, 4, words, 0, words.Length * 4);
-            entry = new KerberosAuthorizationDataPACAttributes(data, new BitArray(words));
-            return true;
-        }
-
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"PAC was requested: {PACWasRequested}");
-            builder.AppendLine($"PAC was given    : {PACWasGivenImplicitly}");
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"PAC was requested: {PACWasRequested}");
+        builder.AppendLine($"PAC was given    : {PACWasGivenImplicitly}");
     }
 }

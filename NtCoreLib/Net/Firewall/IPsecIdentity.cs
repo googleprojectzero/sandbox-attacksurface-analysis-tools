@@ -12,51 +12,50 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a IPsec identity 
+/// </summary>
+public sealed class IPsecIdentity
 {
     /// <summary>
-    /// Class to represent a IPsec identity 
+    /// Main-mode target name.
     /// </summary>
-    public sealed class IPsecIdentity
-    {
-        /// <summary>
-        /// Main-mode target name.
-        /// </summary>
-        public string MmTargetName { get; }
-        /// <summary>
-        /// Extended mode target name.
-        /// </summary>
-        public string EmTargetName { get; }
-        /// <summary>
-        /// List of tokens.
-        /// </summary>
-        public IReadOnlyList<IPsecToken> Tokens { get; }
-        /// <summary>
-        /// Explicit credentials handle.
-        /// </summary>
-        public ulong ExplicitCredentials { get; }
-        /// <summary>
-        /// Logon ID.
-        /// </summary>
-        public ulong LogonId { get; }
+    public string MmTargetName { get; }
+    /// <summary>
+    /// Extended mode target name.
+    /// </summary>
+    public string EmTargetName { get; }
+    /// <summary>
+    /// List of tokens.
+    /// </summary>
+    public IReadOnlyList<IPsecToken> Tokens { get; }
+    /// <summary>
+    /// Explicit credentials handle.
+    /// </summary>
+    public ulong ExplicitCredentials { get; }
+    /// <summary>
+    /// Logon ID.
+    /// </summary>
+    public ulong LogonId { get; }
 
-        internal IPsecIdentity(IPSEC_ID0 id)
+    internal IPsecIdentity(IPSEC_ID0 id)
+    {
+        MmTargetName = id.mmTargetName ?? string.Empty;
+        EmTargetName = id.emTargetName ?? string.Empty;
+        List<IPsecToken> tokens = new();
+        if (id.numTokens > 0 && id.tokens != IntPtr.Zero)
         {
-            MmTargetName = id.mmTargetName ?? string.Empty;
-            EmTargetName = id.emTargetName ?? string.Empty;
-            List<IPsecToken> tokens = new List<IPsecToken>();
-            if (id.numTokens > 0 && id.tokens != IntPtr.Zero)
-            {
-                tokens.AddRange(id.tokens.ReadArray<IPSEC_TOKEN0>(id.numTokens).Select(t => new IPsecToken(t)));
-            }
-            Tokens = tokens.AsReadOnly();
-            ExplicitCredentials = id.explicitCredentials;
-            LogonId = id.logonId;
+            tokens.AddRange(id.tokens.ReadArray<IPSEC_TOKEN0>(id.numTokens).Select(t => new IPsecToken(t)));
         }
+        Tokens = tokens.AsReadOnly();
+        ExplicitCredentials = id.explicitCredentials;
+        LogonId = id.logonId;
     }
 }

@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Engine option to query or set.
+/// </summary>
+[SDKName("FWPM_ENGINE_OPTION")]
+public enum FirewallEngineOption
 {
-    /// <summary>
-    /// Engine option to query or set.
-    /// </summary>
-    [SDKName("FWPM_ENGINE_OPTION")]
-    public enum FirewallEngineOption
-    {
-        [SDKName("FWPM_ENGINE_COLLECT_NET_EVENTS")]
-        CollectNetEvents = 0,
-        [SDKName("FWPM_ENGINE_NET_EVENT_MATCH_ANY_KEYWORDS")]
-        NetEventMatchAnyKeywords,
-        [SDKName("FWPM_ENGINE_NAME_CACHE")]
-        NameCache,
-        [SDKName("FWPM_ENGINE_MONITOR_IPSEC_CONNECTIONS")]
-        MonitorIPsecConnections,
-        [SDKName("FWPM_ENGINE_PACKET_QUEUING")]
-        PacketQueuing,
-        [SDKName("FWPM_ENGINE_TXN_WATCHDOG_TIMEOUT_IN_MSEC")]
-        TxnWatchdogTimeoutInMsec
-    }
+    [SDKName("FWPM_ENGINE_COLLECT_NET_EVENTS")]
+    CollectNetEvents = 0,
+    [SDKName("FWPM_ENGINE_NET_EVENT_MATCH_ANY_KEYWORDS")]
+    NetEventMatchAnyKeywords,
+    [SDKName("FWPM_ENGINE_NAME_CACHE")]
+    NameCache,
+    [SDKName("FWPM_ENGINE_MONITOR_IPSEC_CONNECTIONS")]
+    MonitorIPsecConnections,
+    [SDKName("FWPM_ENGINE_PACKET_QUEUING")]
+    PacketQueuing,
+    [SDKName("FWPM_ENGINE_TXN_WATCHDOG_TIMEOUT_IN_MSEC")]
+    TxnWatchdogTimeoutInMsec
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

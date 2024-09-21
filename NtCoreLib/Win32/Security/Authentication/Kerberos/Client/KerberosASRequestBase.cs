@@ -12,105 +12,104 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
 using System;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Client
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
+
+/// <summary>
+/// Base class for an AS request.
+/// </summary>
+public abstract class KerberosASRequestBase : KerberosKDCRequest
 {
+    #region Public Properties
     /// <summary>
-    /// Base class for an AS request.
+    /// Specify to include the PAC in the ticket.
     /// </summary>
-    public abstract class KerberosASRequestBase : KerberosKDCRequest
+    public bool? IncludePac { get; set; }
+
+    /// <summary>
+    /// Specify additional pre-authentication data to send in the request.
+    /// </summary>
+    public List<KerberosPreAuthenticationData> AdditionalPreAuthenticationData { get; }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Convert the request to a builder.
+    /// </summary>
+    /// <returns>The builder.</returns>
+    public override KerberosKDCRequestBuilder ToBuilder()
     {
-        #region Public Properties
-        /// <summary>
-        /// Specify to include the PAC in the ticket.
-        /// </summary>
-        public bool? IncludePac { get; set; }
+        Validate();
 
-        /// <summary>
-        /// Specify additional pre-authentication data to send in the request.
-        /// </summary>
-        public List<KerberosPreAuthenticationData> AdditionalPreAuthenticationData { get; }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Convert the request to a builder.
-        /// </summary>
-        /// <returns>The builder.</returns>
-        public override KerberosKDCRequestBuilder ToBuilder()
+        List<KerberosEncryptionType> encryption_types;
+        if (EncryptionTypes.Count > 0)
         {
-            Validate();
-
-            List<KerberosEncryptionType> encryption_types;
-            if (EncryptionTypes.Count > 0)
+            encryption_types = EncryptionTypes;
+        }
+        else
+        {
+            encryption_types = new List<KerberosEncryptionType>()
             {
-                encryption_types = EncryptionTypes;
-            }
-            else
-            {
-                encryption_types = new List<KerberosEncryptionType>()
-                {
-                    KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
-                    KerberosEncryptionType.ARCFOUR_HMAC_MD5
-                };
-            }
-
-            var ret = new KerberosASRequestBuilder
-            {
-                ClientName = ClientName,
-                EncryptionTypes = encryption_types,
-                KDCOptions = KDCOptions,
-                Realm = Realm,
-                ServerName = ServerName ?? new KerberosPrincipalName(KerberosNameType.SRV_INST, $"krbtgt/{Realm.ToUpper()}"),
-                Nonce = KerberosBuilderUtils.GetRandomNonce(),
-                TillTime = TillTime
+                KerberosEncryptionType.AES256_CTS_HMAC_SHA1_96,
+                KerberosEncryptionType.AES128_CTS_HMAC_SHA1_96,
+                KerberosEncryptionType.ARCFOUR_HMAC_MD5
             };
-
-            if (IncludePac.HasValue)
-            {
-                ret.AddPreAuthenticationData(new KerberosPreAuthenticationDataPACRequest(IncludePac.Value));
-            }
-
-            foreach (var pa_data in AdditionalPreAuthenticationData)
-            {
-                ret.AddPreAuthenticationData(pa_data);
-            }
-            return ret;
         }
-        #endregion
 
-        #region Private Members
-        private void Validate()
+        var ret = new KerberosASRequestBuilder
         {
-            if (string.IsNullOrEmpty(Realm))
-            {
-                throw new ArgumentException($"{nameof(Realm)} must not be empty.");
-            }
-            if (TillTime is null)
-            {
-                throw new ArgumentNullException(nameof(TillTime));
-            }
-            if (ClientName is null)
-            {
-                throw new ArgumentNullException(nameof(ClientName));
-            }
-        }
-        #endregion
+            ClientName = ClientName,
+            EncryptionTypes = encryption_types,
+            KDCOptions = KDCOptions,
+            Realm = Realm,
+            ServerName = ServerName ?? new KerberosPrincipalName(KerberosNameType.SRV_INST, $"krbtgt/{Realm.ToUpper()}"),
+            Nonce = KerberosBuilderUtils.GetRandomNonce(),
+            TillTime = TillTime
+        };
 
-        #region Protected Members
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        protected KerberosASRequestBase()
+        if (IncludePac.HasValue)
         {
-            TillTime = KerberosTime.MaximumTime;
-            EncryptionTypes = new List<KerberosEncryptionType>();
-            AdditionalPreAuthenticationData = new List<KerberosPreAuthenticationData>();
+            ret.AddPreAuthenticationData(new KerberosPreAuthenticationDataPACRequest(IncludePac.Value));
         }
-        #endregion
+
+        foreach (var pa_data in AdditionalPreAuthenticationData)
+        {
+            ret.AddPreAuthenticationData(pa_data);
+        }
+        return ret;
     }
+    #endregion
+
+    #region Private Members
+    private void Validate()
+    {
+        if (string.IsNullOrEmpty(Realm))
+        {
+            throw new ArgumentException($"{nameof(Realm)} must not be empty.");
+        }
+        if (TillTime is null)
+        {
+            throw new ArgumentNullException(nameof(TillTime));
+        }
+        if (ClientName is null)
+        {
+            throw new ArgumentNullException(nameof(ClientName));
+        }
+    }
+    #endregion
+
+    #region Protected Members
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    protected KerberosASRequestBase()
+    {
+        TillTime = KerberosTime.MaximumTime;
+        EncryptionTypes = new List<KerberosEncryptionType>();
+        AdditionalPreAuthenticationData = new List<KerberosPreAuthenticationData>();
+    }
+    #endregion
 }

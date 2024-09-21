@@ -12,37 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+#pragma warning disable 1591
+public enum WaitType
 {
-#pragma warning disable 1591
-    public enum WaitType
-    {
-        WaitAll,
-        WaitAny
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtWaitForSingleObject(
-          SafeKernelObjectHandle Handle,
-          bool Alertable,
-          LargeInteger Timeout
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtWaitForMultipleObjects(int HandleCount,
-            IntPtr[] Handles, WaitType WaitType, bool Alertable, LargeInteger Timeout);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSignalAndWaitForSingleObject(
-          SafeKernelObjectHandle ObjectToSignal,
-          SafeKernelObjectHandle WaitableObject,
-          bool Alertable,
-          LargeInteger Timeout);
-    }
-#pragma warning disable 1591
+    WaitAll,
+    WaitAny
 }
+
+public static partial class NtSystemCalls
+{
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtWaitForSingleObject(
+      SafeKernelObjectHandle Handle,
+      bool Alertable,
+      LargeInteger Timeout
+    );
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtWaitForMultipleObjects(int HandleCount,
+        IntPtr[] Handles, WaitType WaitType, bool Alertable, LargeInteger Timeout);
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtSignalAndWaitForSingleObject(
+      SafeKernelObjectHandle ObjectToSignal,
+      SafeKernelObjectHandle WaitableObject,
+      bool Alertable,
+      LargeInteger Timeout);
+}
+#pragma warning disable 1591
+

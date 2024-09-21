@@ -17,18 +17,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace NtApiDotNet.Utilities.Collections
-{
-    internal static class CollectionUtils
-    {
-        public static IDictionary<K, string> GetTypedNamesFromType<K>(Type type, IEqualityComparer<K> comparer)
-        {
-            return type.GetFields(BindingFlags.Public | BindingFlags.Static).ToDictionary(f => (K)f.GetValue(null), f => f.Name, comparer);
-        }
+namespace NtCoreLib.Utilities.Collections;
 
-        public static IDictionary<Guid, string> GetGuidNamesFromType(Type type)
-        {
-            return GetTypedNamesFromType<Guid>(type, EqualityComparer<Guid>.Default);
-        }
+internal static class CollectionUtils
+{
+    public static IDictionary<K, string> GetTypedNamesFromType<K>(Type type, IEqualityComparer<K> comparer)
+    {
+        return type.GetFields(BindingFlags.Public | BindingFlags.Static).ToDictionary(f => (K)f.GetValue(null), f => f.Name, comparer);
+    }
+
+    public static IDictionary<Guid, string> GetGuidNamesFromType(Type type)
+    {
+        return GetTypedNamesFromType(type, EqualityComparer<Guid>.Default);
     }
 }

@@ -1,146 +1,57 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DB2E01DD-F102-49E4-9CFA-A6769073BE6D}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TokenViewer</RootNamespace>
-    <AssemblyName>TokenViewer</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>Lock.ico</ApplicationIcon>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AddSidForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="AddSidForm.Designer.cs">
-      <DependentUpon>AddSidForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CreateSandboxTokenForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CreateSandboxTokenForm.Designer.cs">
-      <DependentUpon>CreateSandboxTokenForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ListItemComparer.cs" />
-    <Compile Include="MainForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ProcessTokenEntry.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ServiceTokenEntry.cs" />
-    <Compile Include="ThreadTokenEntry.cs" />
-    <Compile Include="TokenForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="TokenForm.Designer.cs">
-      <DependentUpon>TokenForm.cs</DependentUpon>
-    </Compile>
-    <EmbeddedResource Include="AddSidForm.resx">
-      <DependentUpon>AddSidForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="CreateSandboxTokenForm.resx">
-      <DependentUpon>CreateSandboxTokenForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <EmbeddedResource Include="TokenForm.resx">
-      <DependentUpon>TokenForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <None Include="app.manifest">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NtApiDotNet.Forms\NtApiDotNet.Forms.csproj">
-      <Project>{fd4cb5f2-24ed-4561-b0e1-bb397ae5c636}</Project>
-      <Name>NtApiDotNet.Forms</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
-      <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
-      <Name>NtApiDotNet</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Lock.ico" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyName>TokenViewer</AssemblyName>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net461</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWindowsForms>true</UseWindowsForms>
+        <LangVersion>10.0</LangVersion>
+        <ApplicationIcon>Lock.ico</ApplicationIcon>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <Authors>James Forshaw</Authors>
+        <Company>Google LLC.</Company>
+        <Product>TokenViewer</Product>
+        <FileVersion>2.0.0.0</FileVersion>
+        <Version>2.0.0</Version>
+        <Copyright>Copyright © Google LLC. 2016-2023</Copyright>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <BaseOutputPath>..\bin</BaseOutputPath>
+        <Configurations>Debug;Release;Publish</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
+      <Optimize>True</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="Lock.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NDesk.Options" Version="0.2.1" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' != 'Publish'">
+        <ProjectReference Include="..\NtCoreLib\NtCoreLib.csproj" />
+        <ProjectReference Include="..\NtCoreLib.Forms\NtCoreLib.Forms.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Publish'">
+        <Compile Include="..\NtCoreLib\**\*.cs" LinkBase="NtCoreLib" />
+        <Compile Remove="..\NtCoreLib\obj\**" />
+        <Compile Include="..\NtCoreLib.Forms\*.cs" LinkBase="NtCoreLibForms" />
+        <EmbeddedResource Include="..\NtCoreLib.Forms\AclViewerControl.resx" LinkBase="NtCoreLibForms" LogicalName="NtCoreLib.Forms.AclViewerControl.resources" />
+        <EmbeddedResource Include="..\NtCoreLib.Forms\SecurityDescriptorViewerControl.resx" LinkBase="NtCoreLibForms" LogicalName="NtCoreLib.Forms.SecurityDescriptorViewerControl.resources" />
+        <EmbeddedResource Include="..\NtCoreLib.Forms\SecurityDescriptorViewerForm.resx" LinkBase="NtCoreLibForms" LogicalName="NtCoreLib.Forms.SecurityDescriptorViewerForm.resources" />
+        <Reference Include="System.DirectoryServices" />
+        <Reference Include="System.Security" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="System.Management" />
+    </ItemGroup>
 </Project>

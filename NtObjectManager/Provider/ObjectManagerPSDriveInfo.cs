@@ -12,45 +12,45 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Token;
 using System;
 using System.Management.Automation;
 
-namespace NtObjectManager.Provider
+namespace NtObjectManager.Provider;
+
+internal class ObjectManagerPSDriveInfo : PSDriveInfo
 {
-    internal class ObjectManagerPSDriveInfo : PSDriveInfo
+    public ObjectManagerPSDriveInfo(NtObject root, PSDriveInfo drive_info) 
+        : base(drive_info)
     {
-        public ObjectManagerPSDriveInfo(NtObject root, PSDriveInfo drive_info) 
-            : base(drive_info)
+        if (root is NtDirectory dir)
         {
-            if (root is NtDirectory dir)
+            DirectoryRoot = new NtDirectoryContainer(dir);
+        }
+        else if (root is NtKey key)
+        {
+            bool open_for_backup = false;
+            using (var token = NtToken.OpenProcessToken())
             {
-                DirectoryRoot = new NtDirectoryContainer(dir);
-            }
-            else if (root is NtKey key)
-            {
-                bool open_for_backup = false;
-                using (var token = NtToken.OpenProcessToken())
+                if (token.SinglePrivilegeCheck(TokenPrivilegeValue.SeBackupPrivilege))
                 {
-                    if (token.SinglePrivilegeCheck(TokenPrivilegeValue.SeBackupPrivilege))
-                    {
-                        open_for_backup = true;
-                    }
+                    open_for_backup = true;
                 }
+            }
 
-                DirectoryRoot = new NtKeyContainer(key, open_for_backup);
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid root object. {root.NtTypeName}");
-            }
+            DirectoryRoot = new NtKeyContainer(key, open_for_backup);
         }
-
-        public NtObjectContainer DirectoryRoot { get; }
-
-        public void Close()
+        else
         {
-            DirectoryRoot?.Dispose();
+            throw new ArgumentException($"Invalid root object. {root.NtTypeName}");
         }
+    }
+
+    public NtObjectContainer DirectoryRoot { get; }
+
+    public void Close()
+    {
+        DirectoryRoot?.Dispose();
     }
 }

@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Specify the type of SIDs.
+/// </summary>
+public enum AuthZGroupSidType
 {
     /// <summary>
-    /// Specify the type of SIDs.
+    /// Normal Group SIDs.
     /// </summary>
-    public enum AuthZGroupSidType
-    {
-        /// <summary>
-        /// Normal Group SIDs.
-        /// </summary>
-        Normal,
-        /// <summary>
-        /// Restricted SIDs.
-        /// </summary>
-        Restricted,
-        /// <summary>
-        /// Device Group SIDs.
-        /// </summary>
-        Device,
-        /// <summary>
-        /// Capability SIDs.
-        /// </summary>
-        Capability,
-    }
+    Normal,
+    /// <summary>
+    /// Restricted SIDs.
+    /// </summary>
+    Restricted,
+    /// <summary>
+    /// Device Group SIDs.
+    /// </summary>
+    Device,
+    /// <summary>
+    /// Capability SIDs.
+    /// </summary>
+    Capability,
 }

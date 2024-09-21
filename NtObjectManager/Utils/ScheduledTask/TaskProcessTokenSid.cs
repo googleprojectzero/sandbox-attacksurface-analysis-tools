@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// Task process token SID type.
+/// </summary>
+public enum TaskProcessTokenSid
 {
     /// <summary>
-    /// Task process token SID type.
+    /// None.
     /// </summary>
-    public enum TaskProcessTokenSid
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Unrestricted task SID.
-        /// </summary>
-        Unrestricted = 1,
-        /// <summary>
-        /// Default task SID.
-        /// </summary>
-        Default = 2
-    }
+    None = 0,
+    /// <summary>
+    /// Unrestricted task SID.
+    /// </summary>
+    Unrestricted = 1,
+    /// <summary>
+    /// Default task SID.
+    /// </summary>
+    Default = 2
 }

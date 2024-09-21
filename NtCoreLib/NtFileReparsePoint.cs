@@ -12,59 +12,56 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
+using NtCoreLib.Kernel.IO;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class to represent a file reparse point.
+/// </summary>
+public sealed class NtFileReparsePoint
 {
     /// <summary>
-    /// Class to represent a file reparse point.
+    /// Full path to the file with the reparse point.
     /// </summary>
-    public sealed class NtFileReparsePoint
+    public string FullPath { get; }
+    /// <summary>
+    /// Win32 path to the file with the reparse point.
+    /// </summary>
+    public string Win32Path { get; }
+    /// <summary>
+    /// Reference number for the file.
+    /// </summary>
+    public long FileReferenceNumber { get; }
+    /// <summary>
+    /// The file's attributes.
+    /// </summary>
+    public FileAttributes FileAttributes { get; }
+    /// <summary>
+    /// The reparse point buffer.
+    /// </summary>
+    public ReparseBuffer Buffer { get; }
+    /// <summary>
+    /// The reparse point tag.
+    /// </summary>
+    public ReparseTag Tag => Buffer.Tag;
+
+    internal NtFileReparsePoint(NtFile volume, FileReparsePointInformation info)
     {
-        /// <summary>
-        /// Full path to the file with the reparse point.
-        /// </summary>
-        public string FullPath { get; }
-        /// <summary>
-        /// Win32 path to the file with the reparse point.
-        /// </summary>
-        public string Win32Path { get; }
-        /// <summary>
-        /// Reference number for the file.
-        /// </summary>
-        public long FileReferenceNumber { get; }
-        /// <summary>
-        /// The file's attributes.
-        /// </summary>
-        public FileAttributes FileAttributes { get; }
-        /// <summary>
-        /// The reparse point buffer.
-        /// </summary>
-        public ReparseBuffer Buffer { get; }
-        /// <summary>
-        /// The reparse point tag.
-        /// </summary>
-        public ReparseTag Tag => Buffer.Tag;
-
-        internal NtFileReparsePoint(NtFile volume, FileReparsePointInformation info)
+        FileReferenceNumber = info.FileReferenceNumber;
+        Buffer = new OpaqueReparseBuffer(info.Tag, new byte[0]);
+        FullPath = string.Empty;
+        Win32Path = string.Empty;
+        using var file = NtFile.OpenFileById(volume, info.FileReferenceNumber, FileAccessRights.ReadAttributes,
+            FileShareMode.None, FileOpenOptions.OpenReparsePoint | FileOpenOptions.OpenForBackupIntent, false);
+        if (!file.IsSuccess)
         {
-            FileReferenceNumber = info.FileReferenceNumber;
-            Buffer = new OpaqueReparseBuffer(info.Tag, new byte[0]);
-            FullPath = string.Empty;
-            Win32Path = string.Empty;
-            using (var file = NtFile.OpenFileById(volume, info.FileReferenceNumber, FileAccessRights.ReadAttributes,
-                FileShareMode.None, FileOpenOptions.OpenReparsePoint | FileOpenOptions.OpenForBackupIntent, false))
-            {
-                if (!file.IsSuccess)
-                {
-                    return;
-                }
-
-                FileAttributes = file.Result.FileAttributes;
-                FullPath = file.Result.FullPath;
-                Win32Path = file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty);
-                Buffer = file.Result.GetReparsePoint(false).GetResultOrDefault(Buffer);
-            }
+            return;
         }
+
+        FileAttributes = file.Result.FileAttributes;
+        FullPath = file.Result.FullPath;
+        Win32Path = file.Result.GetWin32PathName(0, false).GetResultOrDefault(string.Empty);
+        Buffer = file.Result.GetReparsePoint(false).GetResultOrDefault(Buffer);
     }
 }

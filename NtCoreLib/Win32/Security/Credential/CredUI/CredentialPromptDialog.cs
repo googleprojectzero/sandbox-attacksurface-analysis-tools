@@ -12,63 +12,62 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Authentication;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential.CredUI
+namespace NtCoreLib.Win32.Security.Credential.CredUI;
+
+/// <summary>
+/// Base class to represent a credential UI prompt.
+/// </summary>
+public abstract class CredentialPromptDialog
 {
     /// <summary>
-    /// Base class to represent a credential UI prompt.
+    /// Message text for UI.
     /// </summary>
-    public abstract class CredentialPromptDialog
+    public string MessageText { get; set; }
+    /// <summary>
+    /// Caption text.
+    /// </summary>
+    public string CaptionText { get; set; }
+    /// <summary>
+    /// Parent HWND.
+    /// </summary>
+    public IntPtr HwndParent { get; set; }
+    /// <summary>
+    /// Bitmap for banner.
+    /// </summary>
+    public IntPtr HbmBanner { get; set; }
+    /// <summary>
+    /// Specify the last authentication error.
+    /// </summary>
+    public Win32Error AuthError { get; set; }
+    /// <summary>
+    /// Specify whether to check the save credentials box.
+    /// </summary>
+    public bool Save { get; set; }
+    /// <summary>
+    /// Specify the input package for the credentials.
+    /// </summary>
+    public AuthenticationPackage Package { get; set; }
+
+    private protected CREDUI_INFO CreateCredUiInfo()
     {
-        /// <summary>
-        /// Message text for UI.
-        /// </summary>
-        public string MessageText { get; set; }
-        /// <summary>
-        /// Caption text.
-        /// </summary>
-        public string CaptionText { get; set; }
-        /// <summary>
-        /// Parent HWND.
-        /// </summary>
-        public IntPtr HwndParent { get; set; }
-        /// <summary>
-        /// Bitmap for banner.
-        /// </summary>
-        public IntPtr HbmBanner { get; set; }
-        /// <summary>
-        /// Specify the last authentication error.
-        /// </summary>
-        public Win32Error AuthError { get; set; }
-        /// <summary>
-        /// Specify whether to check the save credentials box.
-        /// </summary>
-        public bool Save { get; set; }
-        /// <summary>
-        /// Specify the input package for the credentials.
-        /// </summary>
-        public AuthenticationPackage Package { get; set; }
-
-        private protected CREDUI_INFO CreateCredUiInfo()
+        return new CREDUI_INFO()
         {
-            return new CREDUI_INFO()
-            {
-                cbSize = Marshal.SizeOf<CREDUI_INFO>(),
-                hwndParent = HwndParent,
-                pszMessageText = MessageText,
-                pszCaptionText = CaptionText,
-                hbmBanner = HbmBanner
-            };
-        }
+            cbSize = Marshal.SizeOf<CREDUI_INFO>(),
+            hwndParent = HwndParent,
+            pszMessageText = MessageText,
+            pszCaptionText = CaptionText,
+            hbmBanner = HbmBanner
+        };
+    }
 
-        private protected CredentialPromptDialog()
-        {
-            MessageText = string.Empty;
-            CaptionText = string.Empty;
-        }
+    private protected CredentialPromptDialog()
+    {
+        MessageText = string.Empty;
+        CaptionText = string.Empty;
     }
 }

@@ -12,178 +12,172 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Base security association class.
+/// </summary>
+public class IPsecSecurityAssociationParameter
 {
     /// <summary>
-    /// Base security association class.
+    /// Index of the security parameter (SPI).
     /// </summary>
-    public class IPsecSecurityAssociationParameter
-    {
-        /// <summary>
-        /// Index of the security parameter (SPI).
-        /// </summary>
-        public uint Index { get; }
-
-        /// <summary>
-        /// Transform type.
-        /// </summary>
-        public IPsecTransformType TransformType { get; }
-
-        private protected IPsecSecurityAssociationParameter(IPSEC_SA0 sa)
-        {
-            Index = sa.spi;
-            TransformType = sa.saTransformType;
-        }
-
-        internal static IPsecSecurityAssociationParameter Create(IPSEC_SA0 sa)
-        {
-            switch (sa.saTransformType)
-            {
-                case IPsecTransformType.AH:
-                case IPsecTransformType.EspAuth:
-                case IPsecTransformType.EspAuthFw:
-                    return new IPsecSecurityAssociationAuthInformation(sa);
-                case IPsecTransformType.EspCipher:
-                    return new IPsecSecurityAssociationCipherInformation(sa);
-                case IPsecTransformType.EspAuthAndCipher:
-                    return new IPsecSecurityAssociationAuthCipherInformation(sa);
-            }
-            return new IPsecSecurityAssociationParameter(sa);
-        }
-    }
+    public uint Index { get; }
 
     /// <summary>
-    /// IPsec SA authentication information.
+    /// Transform type.
     /// </summary>
-    public sealed class IPsecSecurityAssociationAuthInformation : IPsecSecurityAssociationParameter
+    public IPsecTransformType TransformType { get; }
+
+    private protected IPsecSecurityAssociationParameter(IPSEC_SA0 sa)
     {
-        /// <summary>
-        /// Type of authentication.
-        /// </summary>
-        public IPsecAuthType Type { get; }
-
-        /// <summary>
-        /// Authentication configuration.
-        /// </summary>
-        public IPsecAuthConfig Config { get; }
-
-        /// <summary>
-        /// Module ID for the crypto.
-        /// </summary>
-        public Guid? CryptoModuleId { get; }
-
-        /// <summary>
-        /// Authentication key.
-        /// </summary>
-        public byte[] Key { get; }
-
-        internal IPsecSecurityAssociationAuthInformation(IPSEC_SA0 sa) : base(sa)
-        {
-            var auth_info = sa.ptr.ReadStruct<IPSEC_SA_AUTH_INFORMATION0>();
-            Key = auth_info.authKey.ToArray();
-            CryptoModuleId = auth_info.authTransform.cryptoModuleId.ReadGuid();
-            Type = auth_info.authTransform.authTransformId.authType;
-            Config = auth_info.authTransform.authTransformId.authConfig;
-        }
+        Index = sa.spi;
+        TransformType = sa.saTransformType;
     }
 
-    /// <summary>
-    /// IPsec SA authentication information.
-    /// </summary>
-    public sealed class IPsecSecurityAssociationCipherInformation : IPsecSecurityAssociationParameter
+    internal static IPsecSecurityAssociationParameter Create(IPSEC_SA0 sa)
     {
-        /// <summary>
-        /// Type of cipher.
-        /// </summary>
-        public IPsecCipherType Type { get; }
-
-        /// <summary>
-        /// Cipher configuration.
-        /// </summary>
-        public IPsecCipherConfig Config { get; }
-
-        /// <summary>
-        /// Module ID for the crypto.
-        /// </summary>
-        public Guid? CryptoModuleId { get; }
-
-        /// <summary>
-        /// Cipher key.
-        /// </summary>
-        public byte[] Key { get; }
-
-        internal IPsecSecurityAssociationCipherInformation(IPSEC_SA0 sa) : base(sa)
+        return sa.saTransformType switch
         {
-            var cipher_info = sa.ptr.ReadStruct<IPSEC_SA_CIPHER_INFORMATION0>();
-            Key = cipher_info.cipherKey.ToArray();
-            CryptoModuleId = cipher_info.cipherTransform.cryptoModuleId.ReadGuid();
-            Type = cipher_info.cipherTransform.cipherTransformId.cipherType;
-            Config = cipher_info.cipherTransform.cipherTransformId.cipherConfig;
-        }
+            IPsecTransformType.AH or IPsecTransformType.EspAuth or IPsecTransformType.EspAuthFw => new IPsecSecurityAssociationAuthInformation(sa),
+            IPsecTransformType.EspCipher => new IPsecSecurityAssociationCipherInformation(sa),
+            IPsecTransformType.EspAuthAndCipher => new IPsecSecurityAssociationAuthCipherInformation(sa),
+            _ => new IPsecSecurityAssociationParameter(sa),
+        };
     }
+}
+
+/// <summary>
+/// IPsec SA authentication information.
+/// </summary>
+public sealed class IPsecSecurityAssociationAuthInformation : IPsecSecurityAssociationParameter
+{
+    /// <summary>
+    /// Type of authentication.
+    /// </summary>
+    public IPsecAuthType Type { get; }
 
     /// <summary>
-    /// IPsec SA authentication information.
+    /// Authentication configuration.
     /// </summary>
-    public sealed class IPsecSecurityAssociationAuthCipherInformation : IPsecSecurityAssociationParameter
+    public IPsecAuthConfig Config { get; }
+
+    /// <summary>
+    /// Module ID for the crypto.
+    /// </summary>
+    public Guid? CryptoModuleId { get; }
+
+    /// <summary>
+    /// Authentication key.
+    /// </summary>
+    public byte[] Key { get; }
+
+    internal IPsecSecurityAssociationAuthInformation(IPSEC_SA0 sa) : base(sa)
     {
-        /// <summary>
-        /// Type of authentication.
-        /// </summary>
-        public IPsecAuthType AuthType { get; }
+        var auth_info = sa.ptr.ReadStruct<IPSEC_SA_AUTH_INFORMATION0>();
+        Key = auth_info.authKey.ToArray();
+        CryptoModuleId = auth_info.authTransform.cryptoModuleId.ReadGuid();
+        Type = auth_info.authTransform.authTransformId.authType;
+        Config = auth_info.authTransform.authTransformId.authConfig;
+    }
+}
 
-        /// <summary>
-        /// Authentication configuration.
-        /// </summary>
-        public IPsecAuthConfig AuthConfig { get; }
+/// <summary>
+/// IPsec SA authentication information.
+/// </summary>
+public sealed class IPsecSecurityAssociationCipherInformation : IPsecSecurityAssociationParameter
+{
+    /// <summary>
+    /// Type of cipher.
+    /// </summary>
+    public IPsecCipherType Type { get; }
 
-        /// <summary>
-        /// Modify ID for the crypto.
-        /// </summary>
-        public Guid? AuthCryptoModuleId { get; }
+    /// <summary>
+    /// Cipher configuration.
+    /// </summary>
+    public IPsecCipherConfig Config { get; }
 
-        /// <summary>
-        /// Authentication key.
-        /// </summary>
-        public byte[] AuthKey { get; }
+    /// <summary>
+    /// Module ID for the crypto.
+    /// </summary>
+    public Guid? CryptoModuleId { get; }
 
-        /// <summary>
-        /// Type of cipher.
-        /// </summary>
-        public IPsecCipherType CipherType { get; }
+    /// <summary>
+    /// Cipher key.
+    /// </summary>
+    public byte[] Key { get; }
 
-        /// <summary>
-        /// Cipher configuration.
-        /// </summary>
-        public IPsecCipherConfig CipherConfig { get; }
+    internal IPsecSecurityAssociationCipherInformation(IPSEC_SA0 sa) : base(sa)
+    {
+        var cipher_info = sa.ptr.ReadStruct<IPSEC_SA_CIPHER_INFORMATION0>();
+        Key = cipher_info.cipherKey.ToArray();
+        CryptoModuleId = cipher_info.cipherTransform.cryptoModuleId.ReadGuid();
+        Type = cipher_info.cipherTransform.cipherTransformId.cipherType;
+        Config = cipher_info.cipherTransform.cipherTransformId.cipherConfig;
+    }
+}
 
-        /// <summary>
-        /// Module ID for the crypto.
-        /// </summary>
-        public Guid? CipherCryptoModuleId { get; }
+/// <summary>
+/// IPsec SA authentication information.
+/// </summary>
+public sealed class IPsecSecurityAssociationAuthCipherInformation : IPsecSecurityAssociationParameter
+{
+    /// <summary>
+    /// Type of authentication.
+    /// </summary>
+    public IPsecAuthType AuthType { get; }
 
-        /// <summary>
-        /// Cipher key.
-        /// </summary>
-        public byte[] CipherKey { get; }
+    /// <summary>
+    /// Authentication configuration.
+    /// </summary>
+    public IPsecAuthConfig AuthConfig { get; }
 
-        internal IPsecSecurityAssociationAuthCipherInformation(IPSEC_SA0 sa) : base(sa)
-        {
-            var auth_and_cipher_info = sa.ptr.ReadStruct<IPSEC_SA_AUTH_AND_CIPHER_INFORMATION0>();
-            var auth_info = auth_and_cipher_info.saAuthInformation;
-            AuthKey = auth_info.authKey.ToArray();
-            AuthCryptoModuleId = auth_info.authTransform.cryptoModuleId.ReadGuid();
-            AuthType = auth_info.authTransform.authTransformId.authType;
-            AuthConfig = auth_info.authTransform.authTransformId.authConfig;
+    /// <summary>
+    /// Modify ID for the crypto.
+    /// </summary>
+    public Guid? AuthCryptoModuleId { get; }
 
-            var cipher_info = auth_and_cipher_info.saCipherInformation;
-            CipherKey = cipher_info.cipherKey.ToArray();
-            CipherCryptoModuleId = cipher_info.cipherTransform.cryptoModuleId.ReadGuid();
-            CipherType = cipher_info.cipherTransform.cipherTransformId.cipherType;
-            CipherConfig = cipher_info.cipherTransform.cipherTransformId.cipherConfig;
-        }
+    /// <summary>
+    /// Authentication key.
+    /// </summary>
+    public byte[] AuthKey { get; }
+
+    /// <summary>
+    /// Type of cipher.
+    /// </summary>
+    public IPsecCipherType CipherType { get; }
+
+    /// <summary>
+    /// Cipher configuration.
+    /// </summary>
+    public IPsecCipherConfig CipherConfig { get; }
+
+    /// <summary>
+    /// Module ID for the crypto.
+    /// </summary>
+    public Guid? CipherCryptoModuleId { get; }
+
+    /// <summary>
+    /// Cipher key.
+    /// </summary>
+    public byte[] CipherKey { get; }
+
+    internal IPsecSecurityAssociationAuthCipherInformation(IPSEC_SA0 sa) : base(sa)
+    {
+        var auth_and_cipher_info = sa.ptr.ReadStruct<IPSEC_SA_AUTH_AND_CIPHER_INFORMATION0>();
+        var auth_info = auth_and_cipher_info.saAuthInformation;
+        AuthKey = auth_info.authKey.ToArray();
+        AuthCryptoModuleId = auth_info.authTransform.cryptoModuleId.ReadGuid();
+        AuthType = auth_info.authTransform.authTransformId.authType;
+        AuthConfig = auth_info.authTransform.authTransformId.authConfig;
+
+        var cipher_info = auth_and_cipher_info.saCipherInformation;
+        CipherKey = cipher_info.cipherKey.ToArray();
+        CipherCryptoModuleId = cipher_info.cipherTransform.cryptoModuleId.ReadGuid();
+        CipherType = cipher_info.cipherTransform.cipherTransformId.cipherType;
+        CipherConfig = cipher_info.cipherTransform.cipherTransformId.cipherConfig;
     }
 }

@@ -12,42 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent an IPsec security association context.
+/// </summary>
+public sealed class IPsecSecurityAssociationContext
 {
     /// <summary>
-    /// Class to represent an IPsec security association context.
+    /// ID of the context.
     /// </summary>
-    public sealed class IPsecSecurityAssociationContext
+    public ulong Id { get; }
+
+    /// <summary>
+    /// Inbound security association.
+    /// </summary>
+    public IPsecSecurityAssociation Inbound { get; }
+
+    /// <summary>
+    /// Outbound security association.
+    /// </summary>
+    public IPsecSecurityAssociation Outbound { get; }
+
+    internal IPsecSecurityAssociationContext(IPSEC_SA_CONTEXT1 context, Func<FWPM_FILTER0, FirewallFilter> get_filter)
     {
-        /// <summary>
-        /// ID of the context.
-        /// </summary>
-        public ulong Id { get; }
-
-        /// <summary>
-        /// Inbound security association.
-        /// </summary>
-        public IPsecSecurityAssociation Inbound { get; }
-
-        /// <summary>
-        /// Outbound security association.
-        /// </summary>
-        public IPsecSecurityAssociation Outbound { get; }
-
-        internal IPsecSecurityAssociationContext(IPSEC_SA_CONTEXT1 context, Func<FWPM_FILTER0, FirewallFilter> get_filter)
+        Id = context.saContextId;
+        if (context.inboundSa != IntPtr.Zero)
         {
-            Id = context.saContextId;
-            if (context.inboundSa != IntPtr.Zero)
-            {
-                Inbound = new IPsecSecurityAssociation(context.inboundSa.ReadStruct<IPSEC_SA_DETAILS1>(), get_filter);
-            }
-            if (context.outboundSa != IntPtr.Zero)
-            {
-                Outbound = new IPsecSecurityAssociation(context.outboundSa.ReadStruct<IPSEC_SA_DETAILS1>(), get_filter);
-            }
+            Inbound = new IPsecSecurityAssociation(context.inboundSa.ReadStruct<IPSEC_SA_DETAILS1>(), get_filter);
+        }
+        if (context.outboundSa != IntPtr.Zero)
+        {
+            Outbound = new IPsecSecurityAssociation(context.outboundSa.ReadStruct<IPSEC_SA_DETAILS1>(), get_filter);
         }
     }
 }

@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1.Parser
+namespace NtCoreLib.Utilities.ASN1.Parser;
+
+/// <summary>
+/// Class to represent an ASN1 private object.
+/// </summary>
+public class ASN1Private : ASN1Object
 {
-    /// <summary>
-    /// Class to represent an ASN1 private object.
-    /// </summary>
-    public class ASN1Private : ASN1Object
+    internal ASN1Private(DERValue value) : base(value)
     {
-        internal ASN1Private(DERValue value) : base(value)
-        {
-            System.Diagnostics.Debug.Assert(value.Type == DERTagType.Private);
-        }
+        System.Diagnostics.Debug.Assert(value.Type == DERTagType.Private);
     }
 }

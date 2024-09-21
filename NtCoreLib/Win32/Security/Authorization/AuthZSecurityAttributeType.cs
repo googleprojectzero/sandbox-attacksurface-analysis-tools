@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Security Attribute type.
+/// </summary>
+public enum AuthZSecurityAttributeType
 {
     /// <summary>
-    /// Security Attribute type.
+    /// Token Security Attributes.
     /// </summary>
-    public enum AuthZSecurityAttributeType
-    {
-        /// <summary>
-        /// Token Security Attributes.
-        /// </summary>
-        Token,
-        /// <summary>
-        /// Device Claims.
-        /// </summary>
-        Device,
-        /// <summary>
-        /// User Claims.
-        /// </summary>
-        User
-    }
+    Token,
+    /// <summary>
+    /// Device Claims.
+    /// </summary>
+    Device,
+    /// <summary>
+    /// User Claims.
+    /// </summary>
+    User
 }

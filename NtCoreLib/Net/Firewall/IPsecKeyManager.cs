@@ -14,41 +14,40 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to prepresent a key manager.
+/// </summary>
+public sealed class IPsecKeyManager
 {
     /// <summary>
-    /// Class to prepresent a key manager.
+    /// The manager's key.
     /// </summary>
-    public sealed class IPsecKeyManager
-    {
-        /// <summary>
-        /// The manager's key.
-        /// </summary>
-        public Guid Key { get; }
-        /// <summary>
-        /// The manager's name.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The manager's description.
-        /// </summary>
-        public string Description { get; }
-        /// <summary>
-        /// The manager's flags.
-        /// </summary>
-        public IPsecKeyManagerFlags Flags { get; }
-        /// <summary>
-        /// The manager's dictation timeout hint.
-        /// </summary>
-        public int KeyDictationTimeoutHint { get; }
+    public Guid Key { get; }
+    /// <summary>
+    /// The manager's name.
+    /// </summary>
+    public string Name { get; }
+    /// <summary>
+    /// The manager's description.
+    /// </summary>
+    public string Description { get; }
+    /// <summary>
+    /// The manager's flags.
+    /// </summary>
+    public IPsecKeyManagerFlags Flags { get; }
+    /// <summary>
+    /// The manager's dictation timeout hint.
+    /// </summary>
+    public int KeyDictationTimeoutHint { get; }
 
-        internal IPsecKeyManager(IPSEC_KEY_MANAGER0 key_manager)
-        {
-            Key = key_manager.keyManagerKey;
-            Name = key_manager.displayData.name ?? string.Empty;
-            Description = key_manager.displayData.description ?? string.Empty;
-            Flags = key_manager.flags;
-            KeyDictationTimeoutHint = key_manager.keyDictationTimeoutHint;
-        }
+    internal IPsecKeyManager(IPSEC_KEY_MANAGER0 key_manager)
+    {
+        Key = key_manager.keyManagerKey;
+        Name = key_manager.displayData.name ?? string.Empty;
+        Description = key_manager.displayData.description ?? string.Empty;
+        Flags = key_manager.flags;
+        KeyDictationTimeoutHint = key_manager.keyDictationTimeoutHint;
     }
 }

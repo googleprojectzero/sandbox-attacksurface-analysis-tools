@@ -12,76 +12,75 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent AD_ETYPE_NEGOTIATION type.
+/// </summary>
+public sealed class KerberosAuthorizationDataEncryptionNegotiation : KerberosAuthorizationData
 {
     /// <summary>
-    /// Class to represent AD_ETYPE_NEGOTIATION type.
+    /// List of supported encryption types.
     /// </summary>
-    public sealed class KerberosAuthorizationDataEncryptionNegotiation : KerberosAuthorizationData
+    public IReadOnlyList<KerberosEncryptionType> EncryptionList { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="enc_list">The list of encryption types.</param>
+    public KerberosAuthorizationDataEncryptionNegotiation(IEnumerable<KerberosEncryptionType> enc_list) 
+        : base(KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
     {
-        /// <summary>
-        /// List of supported encryption types.
-        /// </summary>
-        public IReadOnlyList<KerberosEncryptionType> EncryptionList { get; }
+        EncryptionList = enc_list.ToList().AsReadOnly();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="enc_list">The list of encryption types.</param>
-        public KerberosAuthorizationDataEncryptionNegotiation(IEnumerable<KerberosEncryptionType> enc_list) 
-            : base(KerberosAuthorizationDataType.AD_ETYPE_NEGOTIATION)
-        {
-            EncryptionList = enc_list.ToList().AsReadOnly();
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine(string.Join(", ", EncryptionList));
+    }
 
-        private protected override void FormatData(StringBuilder builder)
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataEncryptionNegotiation entry)
+    {
+        entry = null;
+        DERValue[] values = DERParser.ParseData(data, 0);
+        if (!values.CheckValueSequence())
+            return false;
+        List<KerberosEncryptionType> enc_types = new();
+        try
         {
-            builder.AppendLine(string.Join(", ", EncryptionList));
-        }
-
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataEncryptionNegotiation entry)
-        {
-            entry = null;
-            DERValue[] values = DERParser.ParseData(data, 0);
-            if (!values.CheckValueSequence())
-                return false;
-            List<KerberosEncryptionType> enc_types = new List<KerberosEncryptionType>();
-            try
+            foreach (var next in values[0].Children)
             {
-                foreach (var next in values[0].Children)
-                {
-                    if (!next.CheckPrimitive(UniversalTag.INTEGER))
-                        return false;
-                    enc_types.Add((KerberosEncryptionType)next.ReadInteger());
-                }
+                if (!next.CheckPrimitive(UniversalTag.INTEGER))
+                    return false;
+                enc_types.Add((KerberosEncryptionType)next.ReadInteger());
             }
-            catch (InvalidDataException)
-            {
-                return false;
-            }
-
-            entry = new KerberosAuthorizationDataEncryptionNegotiation(enc_types.AsReadOnly());
-            return true;
         }
-
-        private protected override byte[] GetData()
+        catch (InvalidDataException)
         {
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                foreach (var value in EncryptionList)
-                {
-                    seq.WriteInt32((int)value);
-                }
-            }
-            return builder.ToArray();
+            return false;
         }
+
+        entry = new KerberosAuthorizationDataEncryptionNegotiation(enc_types.AsReadOnly());
+        return true;
+    }
+
+    private protected override byte[] GetData()
+    {
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
+        {
+            foreach (var value in EncryptionList)
+            {
+                seq.WriteInt32((int)value);
+            }
+        }
+        return builder.ToArray();
     }
 }

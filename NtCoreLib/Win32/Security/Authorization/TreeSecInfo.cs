@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authorization
-{
-#pragma warning disable 1591
-    /// <summary>
-    /// Tree security mode.
-    /// </summary>
-    public enum TreeSecInfo
-    {
-        Set = 1,
-        Reset = 2,
-        ResetKeepExplicit = 3
-    }
+namespace NtCoreLib.Win32.Security.Authorization;
 
-    /// <summary>
-    /// Progress function for tree named security info.
-    /// </summary>
-    /// <param name="object_name">The name of the object.</param>
-    /// <param name="status">The operation status.</param>
-    /// <param name="invoke_setting">The current invoke setting.</param>
-    /// <param name="security_set">True if security is set.</param>
-    /// <returns>The invoke setting. Return original invoke_setting if no change.</returns>
-    public delegate ProgressInvokeSetting TreeProgressFunction(string object_name, Win32Error status,
-        ProgressInvokeSetting invoke_setting, bool security_set);
+#pragma warning disable 1591
+/// <summary>
+/// Tree security mode.
+/// </summary>
+public enum TreeSecInfo
+{
+    Set = 1,
+    Reset = 2,
+    ResetKeepExplicit = 3
 }
+
+/// <summary>
+/// Progress function for tree named security info.
+/// </summary>
+/// <param name="object_name">The name of the object.</param>
+/// <param name="status">The operation status.</param>
+/// <param name="invoke_setting">The current invoke setting.</param>
+/// <param name="security_set">True if security is set.</param>
+/// <returns>The invoke setting. Return original invoke_setting if no change.</returns>
+public delegate ProgressInvokeSetting TreeProgressFunction(string object_name, Win32Error status,
+    ProgressInvokeSetting invoke_setting, bool security_set);

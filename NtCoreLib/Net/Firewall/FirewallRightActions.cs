@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Right action flags.
+/// </summary>
+[Flags]
+public enum FirewallRightActions
 {
-    /// <summary>
-    /// Right action flags.
-    /// </summary>
-    [Flags]
-    public enum FirewallRightActions
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("FWPS_RIGHT_ACTION_WRITE")]
-        Write = 0x00000001,
+    None = 0,
+    [SDKName("FWPS_RIGHT_ACTION_WRITE")]
+    Write = 0x00000001,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

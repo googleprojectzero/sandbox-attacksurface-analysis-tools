@@ -12,108 +12,107 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder;
+using NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
 using System;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm;
+
+/// <summary>
+/// Class to represent an NTLM NEGOTIATE token.
+/// </summary>
+public sealed class NtlmNegotiateAuthenticationToken : NtlmAuthenticationToken
 {
+    #region Public Properties
     /// <summary>
-    /// Class to represent an NTLM NEGOTIATE token.
+    /// Domain name.
     /// </summary>
-    public sealed class NtlmNegotiateAuthenticationToken : NtlmAuthenticationToken
+    public string Domain { get; }
+    /// <summary>
+    /// Workstation name.
+    /// </summary>
+    public string Workstation { get; }
+    /// <summary>
+    /// NTLM version.
+    /// </summary>
+    public Version Version { get; }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Convert the authentication token to a builder.
+    /// </summary>
+    /// <returns>The NTLM authentication token builder.</returns>
+    public override NtlmAuthenticationTokenBuilder ToBuilder()
     {
-        #region Public Properties
-        /// <summary>
-        /// Domain name.
-        /// </summary>
-        public string Domain { get; }
-        /// <summary>
-        /// Workstation name.
-        /// </summary>
-        public string Workstation { get; }
-        /// <summary>
-        /// NTLM version.
-        /// </summary>
-        public Version Version { get; }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Convert the authentication token to a builder.
-        /// </summary>
-        /// <returns>The NTLM authentication token builder.</returns>
-        public override NtlmAuthenticationTokenBuilder ToBuilder()
+        return new NtlmNegotiateAuthenticationTokenBuilder
         {
-            return new NtlmNegotiateAuthenticationTokenBuilder
-            {
-                Domain = Domain,
-                Flags = Flags,
-                Workstation = Workstation,
-                Version = Version
-            };
-        }
-
-        /// <summary>
-        /// Format the authentication token.
-        /// </summary>
-        /// <returns>The formatted token.</returns>
-        public override string Format()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("<NTLM NEGOTIATE>");
-            builder.AppendLine($"Flags: {Flags}");
-            if (!string.IsNullOrEmpty(Domain))
-            {
-                builder.AppendLine($"Domain: {Domain}");
-            }
-            if (!string.IsNullOrEmpty(Workstation))
-            {
-                builder.AppendLine($"Workstation: {Workstation}");
-            }
-            if (Version != null)
-            {
-                builder.AppendLine($"Version: {Version}");
-            }
-            return builder.ToString();
-        }
-        #endregion
-
-        #region Constructors
-        private NtlmNegotiateAuthenticationToken(byte[] data, NtlmNegotiateFlags flags, string domain, 
-            string workstation, Version version)
-            : base(data, NtlmMessageType.Negotiate, flags)
-        {
-            Domain = domain;
-            Workstation = workstation;
-            Version = version;
-        }
-        #endregion
-
-        #region Internal Methods
-        internal static bool TryParse(byte[] data, BinaryReader reader, out NtlmAuthenticationToken token)
-        {
-            token = null;
-            NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
-            if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader, 
-                data, flags.HasFlagSet(NtlmNegotiateFlags.OemDomainSupplied), 
-                out string domain))
-            {
-                return false;
-            }
-            if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader,
-                data, flags.HasFlagSet(NtlmNegotiateFlags.OemWorkstationSupplied),
-                out string workstation))
-            {
-                return false;
-            }
-            if (!NtlmUtilsInternal.TryParse(reader, flags, out Version version))
-                return false;
-
-            token = new NtlmNegotiateAuthenticationToken(data, flags, domain, workstation, version);
-            return true;
-        }
-        #endregion
+            Domain = Domain,
+            Flags = Flags,
+            Workstation = Workstation,
+            Version = Version
+        };
     }
+
+    /// <summary>
+    /// Format the authentication token.
+    /// </summary>
+    /// <returns>The formatted token.</returns>
+    public override string Format()
+    {
+        StringBuilder builder = new();
+        builder.AppendLine("<NTLM NEGOTIATE>");
+        builder.AppendLine($"Flags: {Flags}");
+        if (!string.IsNullOrEmpty(Domain))
+        {
+            builder.AppendLine($"Domain: {Domain}");
+        }
+        if (!string.IsNullOrEmpty(Workstation))
+        {
+            builder.AppendLine($"Workstation: {Workstation}");
+        }
+        if (Version != null)
+        {
+            builder.AppendLine($"Version: {Version}");
+        }
+        return builder.ToString();
+    }
+    #endregion
+
+    #region Constructors
+    private NtlmNegotiateAuthenticationToken(byte[] data, NtlmNegotiateFlags flags, string domain, 
+        string workstation, Version version)
+        : base(data, NtlmMessageType.Negotiate, flags)
+    {
+        Domain = domain;
+        Workstation = workstation;
+        Version = version;
+    }
+    #endregion
+
+    #region Internal Methods
+    internal static bool TryParse(byte[] data, BinaryReader reader, out NtlmAuthenticationToken token)
+    {
+        token = null;
+        NtlmNegotiateFlags flags = (NtlmNegotiateFlags)reader.ReadInt32();
+        if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader, 
+            data, flags.HasFlagSet(NtlmNegotiateFlags.OemDomainSupplied), 
+            out string domain))
+        {
+            return false;
+        }
+        if (!NtlmUtilsInternal.ParseString(NtlmNegotiateFlags.Oem, reader,
+            data, flags.HasFlagSet(NtlmNegotiateFlags.OemWorkstationSupplied),
+            out string workstation))
+        {
+            return false;
+        }
+        if (!NtlmUtilsInternal.TryParse(reader, flags, out Version version))
+            return false;
+
+        token = new NtlmNegotiateAuthenticationToken(data, flags, domain, workstation, version);
+        return true;
+    }
+    #endregion
 }

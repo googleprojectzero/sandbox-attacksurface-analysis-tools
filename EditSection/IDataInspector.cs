@@ -14,11 +14,10 @@
 
 using Be.Windows.Forms;
 
-namespace EditSection
+namespace EditSection;
+
+interface IDataInspector
 {
-    interface IDataInspector
-    {
-        string Name { get; }
-        string GetValue(IByteProvider provider, long start, long length);
-    }
+    string Name { get; }
+    string GetValue(IByteProvider provider, long start, long length);
 }

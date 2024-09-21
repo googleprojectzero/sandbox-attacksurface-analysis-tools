@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IPsec traffic type.
+/// </summary>
+[SDKName("IPSEC_TRAFFIC_TYPE")]
+public enum IPsecTrafficType
 {
-    /// <summary>
-    /// IPsec traffic type.
-    /// </summary>
-    [SDKName("IPSEC_TRAFFIC_TYPE")]
-    public enum IPsecTrafficType
-    {
-        [SDKName("IPSEC_TRAFFIC_TYPE_TRANSPORT")]
-        Transport,
-        [SDKName("IPSEC_TRAFFIC_TYPE_TUNNEL")]
-        Tunnel
-    }
+    [SDKName("IPSEC_TRAFFIC_TYPE_TRANSPORT")]
+    Transport,
+    [SDKName("IPSEC_TRAFFIC_TYPE_TUNNEL")]
+    Tunnel
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

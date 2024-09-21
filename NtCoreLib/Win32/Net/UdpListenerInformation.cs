@@ -14,65 +14,65 @@
 
 using System;
 using System.Net;
+using NtCoreLib.Win32.Net.Interop;
 
-namespace NtApiDotNet.Win32.Net
+namespace NtCoreLib.Win32.Net;
+
+/// <summary>
+/// Class to represent a UDP listener with process ID.
+/// </summary>
+public sealed class UdpListenerInformation
 {
+    /// <summary>Gets the local endpoint of a Transmission Control Protocol (TCP) connection.</summary>
+    /// <returns>An <see cref="T:System.Net.IPEndPoint" /> instance that contains the IP address and port on the local computer.</returns>
+    public IPEndPoint LocalEndPoint { get; }
+
     /// <summary>
-    /// Class to represent a UDP listener with process ID.
+    /// Get local address.
     /// </summary>
-    public sealed class UdpListenerInformation
+    public IPAddress LocalAddress => LocalEndPoint.Address;
+
+    /// <summary>
+    /// Get local port.
+    /// </summary>
+    public int LocalPort => LocalEndPoint.Port;
+
+    /// <summary>
+    /// Gets the process ID of the listener on the local system.
+    /// </summary>
+    public int ProcessId { get; }
+
+    /// <summary>
+    /// Gets the time the socket was created.
+    /// </summary>
+    public DateTime CreateTime { get; }
+
+    /// <summary>
+    /// Gets the owner of the module. This could be an executable path or a service name.
+    /// </summary>
+    public string OwnerModule { get; }
+
+    /// <summary>
+    /// Gets if the UDP socket is bound to a specific port.
+    /// </summary>
+    public bool SpecificPortBind { get; }
+
+    internal UdpListenerInformation(MIB_UDPROW_OWNER_MODULE entry)
     {
-        /// <summary>Gets the local endpoint of a Transmission Control Protocol (TCP) connection.</summary>
-        /// <returns>An <see cref="T:System.Net.IPEndPoint" /> instance that contains the IP address and port on the local computer.</returns>
-        public IPEndPoint LocalEndPoint { get; }
+        LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
+        ProcessId = entry.dwOwningPid;
+        CreateTime = entry.liCreateTimestamp.ToDateTime();
+        OwnerModule = Win32NetworkUtils.GetOwnerModule(NativeMethods.GetOwnerModuleFromUdpEntry, entry, ProcessId);
+        SpecificPortBind = entry.dwFlags.HasFlagSet(UDPRowFlags.SpecificPortBind);
+    }
 
-        /// <summary>
-        /// Get local address.
-        /// </summary>
-        public IPAddress LocalAddress => LocalEndPoint.Address;
-
-        /// <summary>
-        /// Get local port.
-        /// </summary>
-        public int LocalPort => LocalEndPoint.Port;
-
-        /// <summary>
-        /// Gets the process ID of the listener on the local system.
-        /// </summary>
-        public int ProcessId { get; }
-
-        /// <summary>
-        /// Gets the time the socket was created.
-        /// </summary>
-        public DateTime CreateTime { get; }
-
-        /// <summary>
-        /// Gets the owner of the module. This could be an executable path or a service name.
-        /// </summary>
-        public string OwnerModule { get; }
-
-        /// <summary>
-        /// Gets if the UDP socket is bound to a specific port.
-        /// </summary>
-        public bool SpecificPortBind { get; }
-
-        internal UdpListenerInformation(MIB_UDPROW_OWNER_MODULE entry)
-        {
-            LocalEndPoint = new IPEndPoint(entry.dwLocalAddr, Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
-            ProcessId = entry.dwOwningPid;
-            CreateTime = entry.liCreateTimestamp.ToDateTime();
-            OwnerModule = Win32NetworkUtils.GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromUdpEntry, entry, ProcessId);
-            SpecificPortBind = entry.dwFlags.HasFlagSet(UDPRowFlags.SpecificPortBind);
-        }
-
-        internal UdpListenerInformation(MIB_UDP6ROW_OWNER_MODULE entry)
-        {
-            LocalEndPoint = new IPEndPoint(new IPAddress(entry.ucLocalAddr.ToArray(), entry.dwLocalScopeId),
-                Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
-            ProcessId = entry.dwOwningPid;
-            CreateTime = entry.liCreateTimestamp.ToDateTime();
-            OwnerModule = Win32NetworkUtils.GetOwnerModule(Win32NetworkNativeMethods.GetOwnerModuleFromUdp6Entry, entry, ProcessId);
-            SpecificPortBind = entry.dwFlags.HasFlagSet(UDPRowFlags.SpecificPortBind);
-        }
+    internal UdpListenerInformation(MIB_UDP6ROW_OWNER_MODULE entry)
+    {
+        LocalEndPoint = new IPEndPoint(new IPAddress(entry.ucLocalAddr.ToArray(), entry.dwLocalScopeId),
+            Win32NetworkUtils.ConvertPort(entry.dwLocalPort));
+        ProcessId = entry.dwOwningPid;
+        CreateTime = entry.liCreateTimestamp.ToDateTime();
+        OwnerModule = Win32NetworkUtils.GetOwnerModule(NativeMethods.GetOwnerModuleFromUdp6Entry, entry, ProcessId);
+        SpecificPortBind = entry.dwFlags.HasFlagSet(UDPRowFlags.SpecificPortBind);
     }
 }

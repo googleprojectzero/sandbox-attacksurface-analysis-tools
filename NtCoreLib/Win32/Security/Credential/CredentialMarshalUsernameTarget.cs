@@ -12,41 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Unmarshalled certificate credentials.
+/// </summary>
+public sealed class CredentialMarshalUsernameTarget : CredentialMarshalBase
 {
     /// <summary>
-    /// Unmarshalled certificate credentials.
+    /// The username target.
     /// </summary>
-    public sealed class CredentialMarshalUsernameTarget : CredentialMarshalBase
+    public string UserName { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="username">The username target.</param>
+    public CredentialMarshalUsernameTarget(string username) : base(CredMarshalType.UsernameTargetCredential)
     {
-        /// <summary>
-        /// The username target.
-        /// </summary>
-        public string UserName { get; }
+        if (username is null)
+            throw new ArgumentNullException(nameof(username));
+        UserName = username;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="username">The username target.</param>
-        public CredentialMarshalUsernameTarget(string username) : base(CredMarshalType.UsernameTargetCredential)
-        {
-            if (username is null)
-                throw new ArgumentNullException(nameof(username));
-            UserName = username;
-        }
+    internal override SafeBuffer ToBuffer()
+    {
+        return new USERNAME_TARGET_CREDENTIAL_INFO() { UserName = UserName }.ToBuffer();
+    }
 
-        internal override SafeBuffer ToBuffer()
-        {
-            return new USERNAME_TARGET_CREDENTIAL_INFO() { UserName = UserName }.ToBuffer();
-        }
-
-        internal CredentialMarshalUsernameTarget(USERNAME_TARGET_CREDENTIAL_INFO info, CredMarshalType cred_type) : base(cred_type)
-        {
-            UserName = info.UserName;
-        }
+    internal CredentialMarshalUsernameTarget(USERNAME_TARGET_CREDENTIAL_INFO info, CredMarshalType cred_type) : base(cred_type)
+    {
+        UserName = info.UserName;
     }
 }

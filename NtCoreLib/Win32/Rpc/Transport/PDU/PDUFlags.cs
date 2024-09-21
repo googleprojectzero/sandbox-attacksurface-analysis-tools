@@ -14,19 +14,18 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+[Flags]
+internal enum PDUFlags : byte
 {
-    [Flags]
-    internal enum PDUFlags : byte
-    {
-        None = 0,
-        FirstFrag = 1,
-        LastFrag = 2,
-        PendingCancel = 4,
-        Reserved1 = 8,
-        ConcMpx = 0x10,
-        DidNotExecute = 0x20,
-        Maybe = 0x40,
-        ObjectUuid = 0x80
-    }
+    None = 0,
+    FirstFrag = 1,
+    LastFrag = 2,
+    PendingCancel = 4,
+    Reserved1 = 8,
+    ConcMpx = 0x10,
+    DidNotExecute = 0x20,
+    Maybe = 0x40,
+    ObjectUuid = 0x80
 }

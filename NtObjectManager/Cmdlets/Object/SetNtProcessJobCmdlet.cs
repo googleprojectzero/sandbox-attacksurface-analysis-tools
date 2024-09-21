@@ -12,77 +12,76 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Assign a process to a Job object.</para>
+/// <para type="description">This cmdlet assigns a process to a Job object.</para>
+/// </summary>
+/// <example>
+///   <code>Set-NtProcessJob -Job $job -Process $process</code>
+///   <para>Assigns the process to the job object.</para>
+/// </example>
+/// <example>
+///   <code>Set-NtProcessJob -Job $job -Current</code>
+///   <para>Assigns the current process to the job object.</para>
+/// </example>
+/// <para type="link">about_ManagingNtObjectLifetime</para>
+[Cmdlet(VerbsCommon.Set, "NtProcessJob", DefaultParameterSetName = "FromProcess")]
+public sealed class SetNtProcessJobCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Assign a process to a Job object.</para>
-    /// <para type="description">This cmdlet assigns a process to a Job object.</para>
+    /// <para type="description">Specify the job object.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Set-NtProcessJob -Job $job -Process $process</code>
-    ///   <para>Assigns the process to the job object.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtProcessJob -Job $job -Current</code>
-    ///   <para>Assigns the current process to the job object.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Set, "NtProcessJob", DefaultParameterSetName = "FromProcess")]
-    public sealed class SetNtProcessJobCmdlet : PSCmdlet
+    [Parameter(Mandatory = true, Position = 0)]
+    public NtJob Job { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the list of processes to assign.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1, ValueFromPipeline = true, ParameterSetName = "FromProcess")]
+    public NtProcess[] Process { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the list of processes to assign.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
+    public SwitchParameter Current { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to pass through the process objects.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromProcess")]
+    public SwitchParameter PassThru { get; set; }
+
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the job object.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public NtJob Job { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the list of processes to assign.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ValueFromPipeline = true, ParameterSetName = "FromProcess")]
-        public NtProcess[] Process { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the list of processes to assign.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
-        public SwitchParameter Current { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to pass through the process objects.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromProcess")]
-        public SwitchParameter PassThru { get; set; }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        if (Current)
         {
-            if (Current)
+            Job.AssignProcess(NtProcess.Current);
+        }
+        else
+        {
+            foreach (var proc in Process)
             {
-                Job.AssignProcess(NtProcess.Current);
-            }
-            else
-            {
-                foreach (var proc in Process)
+                try
                 {
-                    try
-                    {
-                        Job.AssignProcess(proc);
-                    }
-                    catch (NtException ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "AssignJob", ErrorCategory.QuotaExceeded, proc));
-                    }
+                    Job.AssignProcess(proc);
+                }
+                catch (NtException ex)
+                {
+                    WriteError(new ErrorRecord(ex, "AssignJob", ErrorCategory.QuotaExceeded, proc));
+                }
 
-                    if (PassThru)
-                    {
-                        WriteObject(proc);
-                    }
+                if (PassThru)
+                {
+                    WriteObject(proc);
                 }
             }
         }

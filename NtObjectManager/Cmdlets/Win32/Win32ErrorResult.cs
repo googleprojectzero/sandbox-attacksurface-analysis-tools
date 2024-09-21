@@ -12,34 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32;
+using NtCoreLib;
+using NtCoreLib.Win32;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// The result of an WIN32 error code lookup.
+/// </summary>
+public sealed class Win32ErrorResult
 {
     /// <summary>
-    /// The result of an WIN32 error code lookup.
+    /// The numeric value of the error code.
     /// </summary>
-    public sealed class Win32ErrorResult
-    {
-        /// <summary>
-        /// The numeric value of the error code.
-        /// </summary>
-        public int ErrorCode { get; }
-        /// <summary>
-        /// The name of the error code if known.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Corresponding message text.
-        /// </summary>
-        public string Message { get; }
+    public int ErrorCode { get; }
+    /// <summary>
+    /// The name of the error code if known.
+    /// </summary>
+    public string Name { get; }
+    /// <summary>
+    /// Corresponding message text.
+    /// </summary>
+    public string Message { get; }
 
-        internal Win32ErrorResult(Win32Error win32_error)
-        {
-            ErrorCode = (int)win32_error;
-            Message = NtObjectUtils.GetNtStatusMessage(win32_error.MapDosErrorToStatus());
-            Name = win32_error.ToString();
-        }
+    internal Win32ErrorResult(Win32Error win32_error)
+    {
+        ErrorCode = (int)win32_error;
+        Message = NtObjectUtils.GetNtStatusMessage(win32_error.MapDosErrorToStatus());
+        Name = win32_error.ToString();
     }
 }

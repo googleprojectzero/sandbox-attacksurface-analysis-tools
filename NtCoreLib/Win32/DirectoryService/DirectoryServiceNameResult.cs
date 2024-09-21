@@ -12,36 +12,37 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.DirectoryService
+using NtCoreLib.Win32.DirectoryService.Interop;
+
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Structure to represent a directory service name.
+/// </summary>
+public struct DirectoryServiceNameResult
 {
     /// <summary>
-    /// Structure to represent a directory service name.
+    /// Status of the name.
     /// </summary>
-    public struct DirectoryServiceNameResult
+    public DirectoryServiceNameError Status { get; }
+    /// <summary>
+    /// Domain of the name.
+    /// </summary>
+    public string Domain { get; }
+    /// <summary>
+    /// Name of the name.
+    /// </summary>
+    public string Name { get; }
+
+    private DirectoryServiceNameResult(DS_NAME_RESULT_ITEMW item)
     {
-        /// <summary>
-        /// Status of the name.
-        /// </summary>
-        public DirectoryServiceNameError Status { get; }
-        /// <summary>
-        /// Domain of the name.
-        /// </summary>
-        public string Domain { get; }
-        /// <summary>
-        /// Name of the name.
-        /// </summary>
-        public string Name { get; }
+        Status = item.status;
+        Domain = item.pDomain;
+        Name = item.pName;
+    }
 
-        private DirectoryServiceNameResult(DS_NAME_RESULT_ITEMW item)
-        {
-            Status = item.status;
-            Domain = item.pDomain;
-            Name = item.pName;
-        }
-
-        internal static DirectoryServiceNameResult Create(DS_NAME_RESULT_ITEMW item)
-        {
-            return new DirectoryServiceNameResult(item);
-        }
+    internal static DirectoryServiceNameResult Create(DS_NAME_RESULT_ITEMW item)
+    {
+        return new DirectoryServiceNameResult(item);
     }
 }

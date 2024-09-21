@@ -12,49 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get link names for a file.</para>
+/// <para type="description">This cmdlet gets a list of link names to a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileLink -File $f</code>
+///   <para>Get the links for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileLink -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the links for the file by path.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileLink -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the links for the file by win32 path.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileLink", DefaultParameterSetName = "Default")]
+[OutputType(typeof(string))]
+public class GetNtFileLinkCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get link names for a file.</para>
-    /// <para type="description">This cmdlet gets a list of link names to a file.</para>
+    /// <para type="description">Specify to format the links as Win32 paths.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileLink -File $f</code>
-    ///   <para>Get the links for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileLink -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the links for the file by path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileLink -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the links for the file by win32 path.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileLink", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(string))]
-    public class GetNtFileLinkCmdlet : BaseNtFilePropertyCmdlet
+    [Parameter]
+    public SwitchParameter FormatWin32Path { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public GetNtFileLinkCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// <para type="description">Specify to format the links as Win32 paths.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter FormatWin32Path { get; set; }
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileLinkCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
-
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(file.GetHardLinks().Select(l => FormatWin32Path ? l.Win32Path : l.FullPath), true);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(file.GetHardLinks().Select(l => FormatWin32Path ? l.Win32Path : l.FullPath), true);
     }
 }

@@ -14,43 +14,42 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Utilities
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Utilities;
+
+/// <summary>
+/// Class to represent a cache file principal.
+/// </summary>
+public sealed class KerberosCredentialCacheFilePrincipal
 {
     /// <summary>
-    /// Class to represent a cache file principal.
+    /// The kerberos principal name.
     /// </summary>
-    public sealed class KerberosCredentialCacheFilePrincipal
+    public KerberosPrincipalName Name { get; }
+    /// <summary>
+    /// The kerberos realm.
+    /// </summary>
+    public string Realm { get; }
+
+    internal bool IsConfigEntry => Realm.Equals("X-CACHECONF:") && Name.Names.Count > 1 && Name.Names[0] == "krb5_ccache_conf_data";
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="name">The kerberos principal name.</param>
+    /// <param name="realm">The kerberos realm.</param>
+    public KerberosCredentialCacheFilePrincipal(KerberosPrincipalName name, string realm)
     {
-        /// <summary>
-        /// The kerberos principal name.
-        /// </summary>
-        public KerberosPrincipalName Name { get; }
-        /// <summary>
-        /// The kerberos realm.
-        /// </summary>
-        public string Realm { get; }
-
-        internal bool IsConfigEntry => Realm.Equals("X-CACHECONF:") && Name.Names.Count > 1 && Name.Names[0] == "krb5_ccache_conf_data";
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">The kerberos principal name.</param>
-        /// <param name="realm">The kerberos realm.</param>
-        public KerberosCredentialCacheFilePrincipal(KerberosPrincipalName name, string realm)
+        if (name is null)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (realm is null)
-            {
-                throw new ArgumentNullException(nameof(realm));
-            }
-
-            Name = name;
-            Realm = realm;
+            throw new ArgumentNullException(nameof(name));
         }
+
+        if (realm is null)
+        {
+            throw new ArgumentNullException(nameof(realm));
+        }
+
+        Name = name;
+        Realm = realm;
     }
 }

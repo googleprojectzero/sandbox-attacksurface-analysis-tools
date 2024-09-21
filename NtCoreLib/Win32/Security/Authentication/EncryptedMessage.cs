@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// An encrypted message.
+/// </summary>
+public sealed class EncryptedMessage
 {
     /// <summary>
-    /// An encrypted message.
+    /// The encrypted message.
     /// </summary>
-    public sealed class EncryptedMessage
-    {
-        /// <summary>
-        /// The encrypted message.
-        /// </summary>
-        public byte[] Message { get; }
-        /// <summary>
-        /// The signature for the message.
-        /// </summary>
-        public byte[] Signature { get; }
+    public byte[] Message { get; }
+    /// <summary>
+    /// The signature for the message.
+    /// </summary>
+    public byte[] Signature { get; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="message">The encrypted message.</param>
-        /// <param name="signature">The signature for the message.</param>
-        public EncryptedMessage(byte[] message, byte[] signature)
-        {
-            Message = message;
-            Signature = signature;
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="message">The encrypted message.</param>
+    /// <param name="signature">The signature for the message.</param>
+    public EncryptedMessage(byte[] message, byte[] signature)
+    {
+        Message = message;
+        Signature = signature;
     }
 }

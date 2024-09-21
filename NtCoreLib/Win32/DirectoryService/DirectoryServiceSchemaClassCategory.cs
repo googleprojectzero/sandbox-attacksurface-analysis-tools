@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Represents the type of schema class.
+/// </summary>
+public enum DirectoryServiceSchemaClassCategory
 {
     /// <summary>
-    /// Represents the type of schema class.
+    /// Legacy class.
     /// </summary>
-    public enum DirectoryServiceSchemaClassCategory
-    {
-        /// <summary>
-        /// Legacy class.
-        /// </summary>
-        Class88 = 0,
-        /// <summary>
-        /// Structure class (can be created).
-        /// </summary>
-        Structural = 1,
-        /// <summary>
-        /// Abstract class.
-        /// </summary>
-        Abstract = 2,
-        /// <summary>
-        /// Auxiliary class.
-        /// </summary>
-        Auxiliary = 3
-    }
+    Class88 = 0,
+    /// <summary>
+    /// Structure class (can be created).
+    /// </summary>
+    Structural = 1,
+    /// <summary>
+    /// Abstract class.
+    /// </summary>
+    Abstract = 2,
+    /// <summary>
+    /// Auxiliary class.
+    /// </summary>
+    Auxiliary = 3
 }

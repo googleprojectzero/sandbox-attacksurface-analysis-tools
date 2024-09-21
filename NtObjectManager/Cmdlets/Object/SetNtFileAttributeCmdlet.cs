@@ -12,58 +12,57 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Set the file attributes for a file.</para>
+/// <para type="description">This cmdlet sets the file attributes for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Set-NtFileAttribute -File $f -FileAttribute Normal</code>
+///   <para>Set the file attributes for the file.</para>
+/// </example>
+/// <example>
+///   <code>Set-NtFileAttribute -Path "\??\c:\windows\notepad.exe" -FileAttribute Normal</code>
+///   <para>Set the file attributes for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Set-NtFileAttribute -Path "c:\windows\notepad.exe" -Win32Path -FileAttribute Normal</code>
+///   <para>Set the file attributes for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Set, "NtFileAttribute", DefaultParameterSetName = "Default")]
+[OutputType(typeof(FileAttributes))]
+public class SetNtFileAttributeCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Set the file attributes for a file.</para>
-    /// <para type="description">This cmdlet sets the file attributes for a file.</para>
+    /// <para type="description">Specify attributes to set.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Set-NtFileAttribute -File $f -FileAttribute Normal</code>
-    ///   <para>Set the file attributes for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtFileAttribute -Path "\??\c:\windows\notepad.exe" -FileAttribute Normal</code>
-    ///   <para>Set the file attributes for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtFileAttribute -Path "c:\windows\notepad.exe" -Win32Path -FileAttribute Normal</code>
-    ///   <para>Set the file attributes for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Set, "NtFileAttribute", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(FileAttributes))]
-    public class SetNtFileAttributeCmdlet : BaseNtFilePropertyCmdlet
+    [Parameter(Mandatory = true, Position = 1)]
+    public FileAttributes FileAttribute { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to pass through the result.</para>
+    /// </summary>
+    [Parameter]
+    public SwitchParameter PassThru { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public SetNtFileAttributeCmdlet()
+        : base(FileAccessRights.WriteAttributes, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// <para type="description">Specify attributes to set.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
-        public FileAttributes FileAttribute { get; set; }
+    }
 
-        /// <summary>
-        /// <para type="description">Specify to pass through the result.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter PassThru { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SetNtFileAttributeCmdlet()
-            : base(FileAccessRights.WriteAttributes, FileShareMode.None, FileOpenOptions.None)
+    private protected override void HandleFile(NtFile file)
+    {
+        file.FileAttributes = FileAttribute;
+        if (PassThru)
         {
-        }
-
-        private protected override void HandleFile(NtFile file)
-        {
-            file.FileAttributes = FileAttribute;
-            if (PassThru)
-            {
-                WriteObject(file.FileAttributes);
-            }
+            WriteObject(file.FileAttributes);
         }
     }
 }

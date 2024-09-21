@@ -15,44 +15,43 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Type for a synchronous NDR pipe.
+/// </summary>
+/// <typeparam name="T">The base type of pipe blocks.</typeparam>
+public sealed class NdrPipe<T> where T : struct
 {
     /// <summary>
-    /// Type for a synchronous NDR pipe.
+    /// The list of blocks for the pipe.
     /// </summary>
-    /// <typeparam name="T">The base type of pipe blocks.</typeparam>
-    public sealed class NdrPipe<T> where T : struct
+    public IEnumerable<T[]> Blocks { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="blocks">The list of blocks to return.</param>
+    public NdrPipe(IEnumerable<T[]> blocks)
     {
-        /// <summary>
-        /// The list of blocks for the pipe.
-        /// </summary>
-        public IEnumerable<T[]> Blocks { get; }
+        Blocks = blocks;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="blocks">The list of blocks to return.</param>
-        public NdrPipe(IEnumerable<T[]> blocks)
-        {
-            Blocks = blocks;
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="block">A single block to return.</param>
+    public NdrPipe(T[] block)
+    {
+        Blocks = new[] { block };
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="block">A single block to return.</param>
-        public NdrPipe(T[] block)
-        {
-            Blocks = new[] { block };
-        }
-
-        /// <summary>
-        /// Convert the pipe blocks to a flat array.
-        /// </summary>
-        /// <returns>The flat array.</returns>
-        public T[] ToArray()
-        {
-            return Blocks.SelectMany(a => a).ToArray();
-        }
+    /// <summary>
+    /// Convert the pipe blocks to a flat array.
+    /// </summary>
+    /// <returns>The flat array.</returns>
+    public T[] ToArray()
+    {
+        return Blocks.SelectMany(a => a).ToArray();
     }
 }

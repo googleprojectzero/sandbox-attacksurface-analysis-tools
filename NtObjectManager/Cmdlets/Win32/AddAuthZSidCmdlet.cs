@@ -12,106 +12,107 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Win32.Security.Authorization;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Security.Token;
+using NtCoreLib.Win32.Security.Authorization;
 using System;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// <para type="synopsis">Adds a SID to the AuthZ context..</para>
+/// <para type="description">This cmdlet allows you to add SIDs to an AuthZ context. You can specify
+/// normal, restricted or device SIDs.</para>
+/// </summary>
+/// <example>
+///   <code>Add-AuthZSid $ctx -Sid "WD"</code>
+///   <para>Add the World SID to the normal groups in the context.</para>
+/// </example>
+/// <example>
+///   <code>Add-AuthZSid $ctx -KnownSid World"</code>
+///   <para>Add the World SID to the normal groups in the context.</para>
+/// </example>
+/// <example>
+///   <code>Add-AuthZSid $ctx -Sid "WD" -Attribute Enabled, Resource</code>
+///   <para>Add the World SID to the normal groups in the context.</para>
+/// </example>
+/// <example>
+///   <code>Add-AuthZSid $ctx -Sid "WD" -SidType Restricted</code>
+///   <para>Add the World SID to the restricted SID groups in the context.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Add, "AuthZSid", DefaultParameterSetName = "FromSid")]
+public class AddAuthZSidCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Adds a SID to the AuthZ context..</para>
-    /// <para type="description">This cmdlet allows you to add SIDs to an AuthZ context. You can specify
-    /// normal, restricted or device SIDs.</para>
+    /// <para type="description">Specify the AuthZ client context.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Add-AuthZSid $ctx -Sid "WD"</code>
-    ///   <para>Add the World SID to the normal groups in the context.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Add-AuthZSid $ctx -KnownSid World"</code>
-    ///   <para>Add the World SID to the normal groups in the context.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Add-AuthZSid $ctx -Sid "WD" -Attribute Enabled, Resource</code>
-    ///   <para>Add the World SID to the normal groups in the context.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Add-AuthZSid $ctx -Sid "WD" -SidType Restricted</code>
-    ///   <para>Add the World SID to the restricted SID groups in the context.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Add, "AuthZSid", DefaultParameterSetName = "FromSid")]
-    public class AddAuthZSidCmdlet : PSCmdlet
+    [Parameter(Mandatory = true, Position = 0)]
+    public AuthZContext Context { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the SIDs to add.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromSid")]
+    public Sid[] Sid { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the known SIDs to add.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromKnownSid")]
+    public KnownSidValue[] KnownSid { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the attributes for the SIDs to add.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromSid")]
+    [Parameter(ParameterSetName = "FromKnownSid")]
+    public GroupAttributes Attribute { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the user groups to add.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromUserGroup")]
+    public UserGroup[] UserGroup { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the the type of SIDs to add.</para>
+    /// </summary>
+    [Parameter(Position = 2)]
+    public AuthZGroupSidType SidType { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public AddAuthZSidCmdlet()
     {
-        /// <summary>
-        /// <para type="description">Specify the AuthZ client context.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public AuthZContext Context { get; set; }
+        SidType = AuthZGroupSidType.Normal;
+        Attribute = GroupAttributes.Enabled;
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the SIDs to add.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromSid")]
-        public Sid[] Sid { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the known SIDs to add.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromKnownSid")]
-        public KnownSidValue[] KnownSid { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the attributes for the SIDs to add.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        [Parameter(ParameterSetName = "FromKnownSid")]
-        public GroupAttributes Attribute { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the user groups to add.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromUserGroup")]
-        public UserGroup[] UserGroup { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the the type of SIDs to add.</para>
-        /// </summary>
-        [Parameter(Position = 2)]
-        public AuthZGroupSidType SidType { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public AddAuthZSidCmdlet()
+    private UserGroup[] GetUserGroups()
+    {
+        switch (ParameterSetName)
         {
-            SidType = AuthZGroupSidType.Normal;
-            Attribute = GroupAttributes.Enabled;
+            case "FromUserGroup":
+                return UserGroup;
+            case "FromSid":
+                return Sid.Select(s => new UserGroup(s, Attribute)).ToArray();
+            case "FromKnownSid":
+                return KnownSid.Select(s => new UserGroup(KnownSids.GetKnownSid(s), Attribute)).ToArray();
+            default:
+                throw new ArgumentException("Invalid SID type.");
         }
+    }
 
-        private UserGroup[] GetUserGroups()
-        {
-            switch (ParameterSetName)
-            {
-                case "FromUserGroup":
-                    return UserGroup;
-                case "FromSid":
-                    return Sid.Select(s => new UserGroup(s, Attribute)).ToArray();
-                case "FromKnownSid":
-                    return KnownSid.Select(s => new UserGroup(KnownSids.GetKnownSid(s), Attribute)).ToArray();
-                default:
-                    throw new ArgumentException("Invalid SID type.");
-            }
-        }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            var groups = GetUserGroups();
-            Context.ModifyGroups(SidType, groups, Enumerable.Repeat(AuthZSidOperation.Add, groups.Length));
-        }
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+        var groups = GetUserGroups();
+        Context.ModifyGroups(SidType, groups, Enumerable.Repeat(AuthZSidOperation.Add, groups.Length));
     }
 }

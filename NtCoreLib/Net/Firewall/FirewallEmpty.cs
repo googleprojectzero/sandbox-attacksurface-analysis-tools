@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Place holder for an empty value.
+/// </summary>
+public struct FirewallEmpty
 {
     /// <summary>
-    /// Place holder for an empty value.
+    /// Overridden ToString method.
     /// </summary>
-    public struct FirewallEmpty
+    /// <returns>The value as a string.</returns>
+    public override string ToString()
     {
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The value as a string.</returns>
-        public override string ToString()
-        {
-            return "Empty";
-        }
+        return "Empty";
     }
 }

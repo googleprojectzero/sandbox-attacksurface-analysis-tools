@@ -12,36 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Memory;
+using NtCoreLib.Utilities.Memory;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a network event capability allow.
+/// </summary>
+public sealed class FirewallNetEventCapabilityAllow : FirewallNetEvent
 {
     /// <summary>
-    /// Class to represent a network event capability allow.
+    /// AppContainer network capability.
     /// </summary>
-    public sealed class FirewallNetEventCapabilityAllow : FirewallNetEvent
+    public FirewallNetworkCapabilityType NetworkCapabilityId { get; }
+
+    /// <summary>
+    /// Filter ID.
+    /// </summary>
+    public ulong FilterId { get; }
+
+    /// <summary>
+    /// Indicates whether the packet originated from (or was heading to) the loopback adapter.
+    /// </summary>
+    public bool IsLoopback { get; }
+
+    internal FirewallNetEventCapabilityAllow(IFwNetEvent net_event) : base(net_event)
     {
-        /// <summary>
-        /// AppContainer network capability.
-        /// </summary>
-        public FirewallNetworkCapabilityType NetworkCapabilityId { get; }
-
-        /// <summary>
-        /// Filter ID.
-        /// </summary>
-        public ulong FilterId { get; }
-
-        /// <summary>
-        /// Indicates whether the packet originated from (or was heading to) the loopback adapter.
-        /// </summary>
-        public bool IsLoopback { get; }
-
-        internal FirewallNetEventCapabilityAllow(IFwNetEvent net_event) : base(net_event)
-        {
-            var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CAPABILITY_ALLOW0>();
-            NetworkCapabilityId = inner_event.networkCapabilityId;
-            FilterId = inner_event.filterId;
-            IsLoopback = inner_event.isLoopback;
-        }
+        var inner_event = net_event.Value.ReadStruct<FWPM_NET_EVENT_CAPABILITY_ALLOW0>();
+        NetworkCapabilityId = inner_event.networkCapabilityId;
+        FilterId = inner_event.filterId;
+        IsLoopback = inner_event.isLoopback;
     }
 }

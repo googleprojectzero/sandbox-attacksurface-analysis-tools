@@ -12,37 +12,39 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Filter
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Filter.Interop;
+
+namespace NtCoreLib.Win32.Filter;
+
+/// <summary>
+/// Class to represent a mini-filter instance.
+/// </summary>
+public sealed class FilterInstance
 {
     /// <summary>
-    /// Class to represent a mini-filter instance.
+    /// The name of the instance.
     /// </summary>
-    public sealed class FilterInstance
-    {
-        /// <summary>
-        /// The name of the instance.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The altitude of the instance.
-        /// </summary>
-        public long Altitude { get; }
-        /// <summary>
-        /// The volume name.
-        /// </summary>
-        public string VolumeName { get; }
-        /// <summary>
-        /// The filter name.
-        /// </summary>
-        public string FilterName { get; }
+    public string Name { get; }
+    /// <summary>
+    /// The altitude of the instance.
+    /// </summary>
+    public long Altitude { get; }
+    /// <summary>
+    /// The volume name.
+    /// </summary>
+    public string VolumeName { get; }
+    /// <summary>
+    /// The filter name.
+    /// </summary>
+    public string FilterName { get; }
 
-        internal FilterInstance(SafeStructureInOutBuffer<FILTER_INSTANCE_FULL_INFORMATION> buffer)
-        {
-            var result = buffer.Result;
-            Name = buffer.ReadUnicodeString(result.InstanceNameBufferOffset, result.InstanceNameLength / 2);
-            Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.AltitudeBufferOffset, result.AltitudeLength / 2));
-            VolumeName = buffer.ReadUnicodeString(result.VolumeNameBufferOffset, result.VolumeNameLength / 2);
-            FilterName = buffer.ReadUnicodeString(result.FilterNameBufferOffset, result.FilterNameLength / 2);
-        }
+    internal FilterInstance(SafeStructureInOutBuffer<FILTER_INSTANCE_FULL_INFORMATION> buffer)
+    {
+        var result = buffer.Result;
+        Name = buffer.ReadUnicodeString(result.InstanceNameBufferOffset, result.InstanceNameLength / 2);
+        Altitude = FilterManagerUtils.ParseAltitude(buffer.ReadUnicodeString(result.AltitudeBufferOffset, result.AltitudeLength / 2));
+        VolumeName = buffer.ReadUnicodeString(result.VolumeNameBufferOffset, result.VolumeNameLength / 2);
+        FilterName = buffer.ReadUnicodeString(result.FilterNameBufferOffset, result.FilterNameLength / 2);
     }
 }

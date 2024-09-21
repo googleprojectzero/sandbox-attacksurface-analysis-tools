@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
-using NtApiDotNet.Net.Firewall;
+using NtCoreLib.Net.Firewall;
+using NtCoreLib.Security.Authorization;
 using System;
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="description">Access check result for a firewall object.</para>
+/// </summary>
+public class FwObjectAccessCheckResult : CommonAccessCheckResult
 {
     /// <summary>
-    /// <para type="description">Access check result for a firewall object.</para>
+    /// Firewall object description.
     /// </summary>
-    public class FwObjectAccessCheckResult : CommonAccessCheckResult
+    public string Description { get; }
+
+    /// <summary>
+    /// Firewall object key.
+    /// </summary>
+    public Guid Key { get; }
+
+    /// <summary>
+    /// Firewall object key name.
+    /// </summary>
+    public string KeyName { get; }
+
+    internal FwObjectAccessCheckResult(string name, string description, Guid key, string key_name, FwObjectType fw_type, AccessMask granted_access, 
+        GenericMapping generic_mapping, SecurityDescriptor sd, bool is_directory, TokenInformation token_info) 
+        : base(name, fw_type.ToString(), granted_access, generic_mapping, sd, typeof(FirewallAccessRights), is_directory, token_info)
     {
-        /// <summary>
-        /// Firewall object description.
-        /// </summary>
-        public string Description { get; }
-
-        /// <summary>
-        /// Firewall object key.
-        /// </summary>
-        public Guid Key { get; }
-
-        /// <summary>
-        /// Firewall object key name.
-        /// </summary>
-        public string KeyName { get; }
-
-        internal FwObjectAccessCheckResult(string name, string description, Guid key, string key_name, FwObjectType fw_type, AccessMask granted_access, 
-            GenericMapping generic_mapping, SecurityDescriptor sd, bool is_directory, TokenInformation token_info) 
-            : base(name, fw_type.ToString(), granted_access, generic_mapping, sd, typeof(FirewallAccessRights), is_directory, token_info)
-        {
-            Description = description;
-            Key = key;
-            KeyName = key_name;
-        }
+        Description = description;
+        Key = key;
+        KeyName = key_name;
     }
 }

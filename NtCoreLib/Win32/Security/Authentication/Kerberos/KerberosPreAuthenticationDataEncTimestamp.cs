@@ -12,78 +12,77 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent PA-ENC-TIMESTAMP pre-authentication data.
+/// </summary>
+public sealed class KerberosPreAuthenticationDataEncTimestamp : KerberosPreAuthenticationData
 {
     /// <summary>
-    /// Class to represent PA-ENC-TIMESTAMP pre-authentication data.
+    /// The encrypted timestamp data.
     /// </summary>
-    public sealed class KerberosPreAuthenticationDataEncTimestamp : KerberosPreAuthenticationData
+    public KerberosEncryptedData EncryptedData { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="encrypted_data">The encrypted timestamp data.</param>
+    public KerberosPreAuthenticationDataEncTimestamp(KerberosEncryptedData encrypted_data)
+        : base(KerberosPreAuthenticationType.PA_ENC_TIMESTAMP)
     {
-        /// <summary>
-        /// The encrypted timestamp data.
-        /// </summary>
-        public KerberosEncryptedData EncryptedData { get; }
+        EncryptedData = encrypted_data ?? throw new ArgumentNullException(nameof(encrypted_data));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="encrypted_data">The encrypted timestamp data.</param>
-        public KerberosPreAuthenticationDataEncTimestamp(KerberosEncryptedData encrypted_data)
-            : base(KerberosPreAuthenticationType.PA_ENC_TIMESTAMP)
+    /// <summary>
+    /// Create an encrypted timestamp.
+    /// </summary>
+    /// <param name="timestamp">The current timestamp.</param>
+    /// <param name="key">The encryption key.</param>
+    /// <param name="usecs">Optional usecs for the timestamp.</param>
+    /// <param name="key_version">Optional key version for the encrypted data.</param>
+    /// <returns>The encrypted timestamp.</returns>
+    public static KerberosPreAuthenticationDataEncTimestamp Create(KerberosTime timestamp, KerberosAuthenticationKey key, int? usecs = null, int? key_version = null)
+    {
+        if (timestamp is null)
         {
-            EncryptedData = encrypted_data ?? throw new ArgumentNullException(nameof(encrypted_data));
+            throw new ArgumentNullException(nameof(timestamp));
         }
 
-        /// <summary>
-        /// Create an encrypted timestamp.
-        /// </summary>
-        /// <param name="timestamp">The current timestamp.</param>
-        /// <param name="key">The encryption key.</param>
-        /// <param name="usecs">Optional usecs for the timestamp.</param>
-        /// <param name="key_version">Optional key version for the encrypted data.</param>
-        /// <returns>The encrypted timestamp.</returns>
-        public static KerberosPreAuthenticationDataEncTimestamp Create(KerberosTime timestamp, KerberosAuthenticationKey key, int? usecs = null, int? key_version = null)
+        if (key is null)
         {
-            if (timestamp is null)
-            {
-                throw new ArgumentNullException(nameof(timestamp));
-            }
-
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            DERBuilder builder = new DERBuilder();
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, timestamp);
-                seq.WriteContextSpecific(1, usecs);
-            }
-
-            var enc_data = KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
-            return new KerberosPreAuthenticationDataEncTimestamp(enc_data.Encrypt(key, KerberosKeyUsage.AsReqPaEncTimestamp, key_version));
+            throw new ArgumentNullException(nameof(key));
         }
 
-        internal static KerberosPreAuthenticationDataEncTimestamp Parse(byte[] data)
+        DERBuilder builder = new();
+        using (var seq = builder.CreateSequence())
         {
-            return new KerberosPreAuthenticationDataEncTimestamp(KerberosEncryptedData.Parse(data));
+            seq.WriteContextSpecific(0, timestamp);
+            seq.WriteContextSpecific(1, usecs);
         }
 
-        private protected override byte[] GetData()
-        {
-            DERBuilder builder = new DERBuilder();
-            builder.WriteObject(EncryptedData);
-            return builder.ToArray();
-        }
+        var enc_data = KerberosEncryptedData.Create(KerberosEncryptionType.NULL, builder.ToArray());
+        return new KerberosPreAuthenticationDataEncTimestamp(enc_data.Encrypt(key, KerberosKeyUsage.AsReqPaEncTimestamp, key_version));
+    }
 
-        private protected override void Format(StringBuilder builder)
-        {
-            builder.AppendLine(EncryptedData.Format());
-        }
+    internal static KerberosPreAuthenticationDataEncTimestamp Parse(byte[] data)
+    {
+        return new KerberosPreAuthenticationDataEncTimestamp(KerberosEncryptedData.Parse(data));
+    }
+
+    private protected override byte[] GetData()
+    {
+        DERBuilder builder = new();
+        builder.WriteObject(EncryptedData);
+        return builder.ToArray();
+    }
+
+    private protected override void Format(StringBuilder builder)
+    {
+        builder.AppendLine(EncryptedData.Format());
     }
 }

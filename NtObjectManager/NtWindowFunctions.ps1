@@ -31,10 +31,10 @@ function Get-NtWindowStationName {
     )
 
     if ($Current) {
-        [NtApiDotNet.NtWindowStation]::Current.Name | Write-Output
+        [NtCoreLib.NtWindowStation]::Current.Name | Write-Output
     }
     else {
-        [NtApiDotNet.NtWindowStation]::WindowStations | Write-Output
+        [NtCoreLib.NtWindowStation]::WindowStations | Write-Output
     }
 }
 
@@ -59,7 +59,7 @@ function Get-NtDesktopName {
     [CmdletBinding(DefaultParameterSetName = "FromCurrentWindowStation")]
     Param(
         [Parameter(Position = 0, ParameterSetName = "FromWindowStation")]
-        [NtApiDotNet.NtWindowStation]$WindowStation,
+        [NtCoreLib.NtWindowStation]$WindowStation,
         [Parameter(ParameterSetName = "FromCurrentDesktop")]
         [switch]$Current,
         [Parameter(ParameterSetName = "FromThreadId")]
@@ -69,17 +69,17 @@ function Get-NtDesktopName {
 
     switch ($PSCmdlet.ParameterSetName) {
         "FromCurrentWindowStation" {
-            $winsta = [NtApiDotNet.NtWindowStation]::Current
+            $winsta = [NtCoreLib.NtWindowStation]::Current
             $winsta.Desktops | Write-Output
         }
         "FromWindowStation" {
             $WindowStation.Desktops | Write-Output
         }
         "FromCurrentDesktop" {
-            [NtApiDotNet.NtDesktop]::Current.Name | Write-Output
+            [NtCoreLib.NtDesktop]::Current.Name | Write-Output
         }
         "FromThreadId" {
-            [NtApiDotNet.NtDesktop]::GetThreadDesktop($ThreadId).Name | Write-Output
+            [NtCoreLib.NtDesktop]::GetThreadDesktop($ThreadId).Name | Write-Output
         }
     }
 }
@@ -104,22 +104,22 @@ Specify the process ID for the Window.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtWindow
+NtCoreLib.NtWindow
 #>
 function Get-NtWindow {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.NtDesktop]$Desktop,
+        [NtCoreLib.NtDesktop]$Desktop,
         [switch]$Children,
         [switch]$Immersive,
-        [NtApiDotNet.NtWindow]$Parent = [NtApiDotNet.NtWindow]::Null,
+        [NtCoreLib.NtWindow]$Parent = [NtCoreLib.NtWindow]::Null,
         [alias("tid")]
         [int]$ThreadId,
         [alias("pid")]
         [int]$ProcessId
     )
 
-    $ws = [NtApiDotNet.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId)
+    $ws = [NtCoreLib.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId)
     if ($ProcessId -ne 0) {
          $ws = $ws | Where-Object ProcessId -eq $ProcessId
     }
@@ -152,7 +152,7 @@ function Send-NtWindowMessage {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.NtWindow[]]$Window,
+        [NtCoreLib.NtWindow[]]$Window,
         [Parameter(Mandatory, Position = 1)]
         [int]$Message,
         [Parameter(Position = 2)]
@@ -196,7 +196,7 @@ Specify to get a user atom rather than a global.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtAtom
+NtCoreLib.NtAtom
 #>
 function Get-NtAtom {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -211,9 +211,9 @@ function Get-NtAtom {
     )
 
     switch ($PSCmdlet.ParameterSetName) {
-        "All" { [NtApiDotNet.NtAtom]::GetAtoms(!$User) | Write-Output }
-        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom, $true, !$User, $true).Result | Write-Output }
-        "FromName" { [NtApiDotNet.NtAtom]::Find($Name) | Write-Output }
+        "All" { [NtCoreLib.NtAtom]::GetAtoms(!$User) | Write-Output }
+        "FromAtom" { [NtCoreLib.NtAtom]::Open($Atom, $true, !$User, $true).Result | Write-Output }
+        "FromName" { [NtCoreLib.NtAtom]::Find($Name) | Write-Output }
     }
 }
 
@@ -229,17 +229,17 @@ Specify the flags for the ATOM.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtAtom
+NtCoreLib.NtAtom
 #>
 function Add-NtAtom {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [string]$Name,
-        [NtApiDotNet.AddAtomFlags]$Flags = 0
+        [NtCoreLib.AddAtomFlags]$Flags = 0
     )
 
-    [NtApiDotNet.NtAtom]::Add($Name, $Flags) | Write-Output
+    [NtCoreLib.NtAtom]::Add($Name, $Flags) | Write-Output
 }
 
 <#
@@ -262,7 +262,7 @@ function Remove-NtAtom {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName = "FromObject")]
-        [NtApiDotNet.NtAtom]$Object,
+        [NtCoreLib.NtAtom]$Object,
         [Parameter(Mandatory, ParameterSetName = "FromAtom")]
         [uint16]$Atom,
         [Parameter(Mandatory, Position = 0, ParameterSetName = "FromName")]

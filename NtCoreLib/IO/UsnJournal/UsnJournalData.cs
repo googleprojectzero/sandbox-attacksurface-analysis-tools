@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.IO.UsnJournal
+namespace NtCoreLib.IO.UsnJournal;
+
+/// <summary>
+/// Class to represent the USN journal data.
+/// </summary>
+public sealed class UsnJournalData
 {
-    /// <summary>
-    /// Class to represent the USN journal data.
-    /// </summary>
-    public sealed class UsnJournalData
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        public ulong UsnJournalID { get; }
-        public ulong FirstUsn { get; }
-        public ulong NextUsn { get; }
-        public ulong LowestValidUsn { get; }
-        public ulong MaxUsn { get; }
-        public long MaximumSize { get; }
-        public long AllocationDelta { get; }
+    public ulong UsnJournalID { get; }
+    public ulong FirstUsn { get; }
+    public ulong NextUsn { get; }
+    public ulong LowestValidUsn { get; }
+    public ulong MaxUsn { get; }
+    public long MaximumSize { get; }
+    public long AllocationDelta { get; }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
-        internal UsnJournalData(USN_JOURNAL_DATA_V0 data)
-        {
-            UsnJournalID = data.UsnJournalID;
-            FirstUsn = data.FirstUsn;
-            NextUsn = data.NextUsn;
-            LowestValidUsn = data.LowestValidUsn;
-            MaxUsn = data.MaxUsn;
-            MaximumSize = data.MaximumSize;
-            AllocationDelta = data.AllocationDelta;
-        }
+    internal UsnJournalData(USN_JOURNAL_DATA_V0 data)
+    {
+        UsnJournalID = data.UsnJournalID;
+        FirstUsn = data.FirstUsn;
+        NextUsn = data.NextUsn;
+        LowestValidUsn = data.LowestValidUsn;
+        MaxUsn = data.MaxUsn;
+        MaximumSize = data.MaximumSize;
+        AllocationDelta = data.AllocationDelta;
     }
 }

@@ -16,94 +16,93 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Utilities.ASN1.Builder
+namespace NtCoreLib.Utilities.ASN1.Builder;
+
+/// <summary>
+/// An object identifier DER object.
+/// </summary>
+public sealed class DERObjectIdentifier : IDERObject
 {
     /// <summary>
-    /// An object identifier DER object.
+    /// The object identifier as a list of integers.
     /// </summary>
-    public sealed class DERObjectIdentifier : IDERObject
+    public IReadOnlyList<int> ObjectIdentifier { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="oid">The list of object identifier components.</param>
+    /// <exception cref="ArgumentException">Thrown if less than 2 components.</exception>
+    public DERObjectIdentifier(IEnumerable<int> oid)
     {
-        /// <summary>
-        /// The object identifier as a list of integers.
-        /// </summary>
-        public IReadOnlyList<int> ObjectIdentifier { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="oid">The list of object identifier components.</param>
-        /// <exception cref="ArgumentException">Thrown if less than 2 components.</exception>
-        public DERObjectIdentifier(IEnumerable<int> oid)
+        if (oid is null)
         {
-            if (oid is null)
-            {
-                throw new ArgumentNullException(nameof(oid));
-            }
-
-            ObjectIdentifier = oid.ToList().AsReadOnly();
-            if (ObjectIdentifier.Count < 2)
-                throw new ArgumentException("Invalid OID, needs at least two components.", nameof(oid));
+            throw new ArgumentNullException(nameof(oid));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="oid">The object identifier as a string.</param>
-        /// <exception cref="ArgumentException">Thrown if less than 2 components or invalid.</exception>
-        public DERObjectIdentifier(string oid) : this(Parse(oid).ObjectIdentifier)
+        ObjectIdentifier = oid.ToList().AsReadOnly();
+        if (ObjectIdentifier.Count < 2)
+            throw new ArgumentException("Invalid OID, needs at least two components.", nameof(oid));
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="oid">The object identifier as a string.</param>
+    /// <exception cref="ArgumentException">Thrown if less than 2 components or invalid.</exception>
+    public DERObjectIdentifier(string oid) : this(Parse(oid).ObjectIdentifier)
+    {
+    }
+
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The object identifier as a string.</returns>
+    public override string ToString()
+    {
+        return string.Join(".", ObjectIdentifier);
+    }
+
+    /// <summary>
+    /// Try and parse a string to an OID.
+    /// </summary>
+    /// <param name="value">The OID as a string.</param>
+    /// <param name="oid">The parsed OID.</param>
+    /// <returns>Returns true if successful.</returns>
+    public static bool TryParse(string value, out DERObjectIdentifier oid)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
+            throw new ArgumentException($"'{nameof(value)}' cannot be null or whitespace.", nameof(value));
         }
 
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The object identifier as a string.</returns>
-        public override string ToString()
+        oid = null;
+        List<int> values = new();
+        foreach (var part in value.Split('.'))
         {
-            return string.Join(".", ObjectIdentifier);
+            if (!int.TryParse(part, out int v))
+                return false;
+            values.Add(v);
         }
+        oid = new DERObjectIdentifier(values);
+        return true;
+    }
 
-        /// <summary>
-        /// Try and parse a string to an OID.
-        /// </summary>
-        /// <param name="value">The OID as a string.</param>
-        /// <param name="oid">The parsed OID.</param>
-        /// <returns>Returns true if successful.</returns>
-        public static bool TryParse(string value, out DERObjectIdentifier oid)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new ArgumentException($"'{nameof(value)}' cannot be null or whitespace.", nameof(value));
-            }
+    /// <summary>
+    /// Parse a string to an OID.
+    /// </summary>
+    /// <param name="value">The string to parse.</param>
+    /// <returns>The parsed OID.</returns>
+    /// <exception cref="ArgumentException">Thrown if the string is invalid.</exception>
+    public static DERObjectIdentifier Parse(string value)
+    {
+        if (!TryParse(value, out DERObjectIdentifier oid))
+            throw new ArgumentException("Value is not a valid OID.", nameof(value));
+        return oid;
+    }
 
-            oid = null;
-            List<int> values = new List<int>();
-            foreach (var part in value.Split('.'))
-            {
-                if (!int.TryParse(part, out int v))
-                    return false;
-                values.Add(v);
-            }
-            oid = new DERObjectIdentifier(values);
-            return true;
-        }
-
-        /// <summary>
-        /// Parse a string to an OID.
-        /// </summary>
-        /// <param name="value">The string to parse.</param>
-        /// <returns>The parsed OID.</returns>
-        /// <exception cref="ArgumentException">Thrown if the string is invalid.</exception>
-        public static DERObjectIdentifier Parse(string value)
-        {
-            if (!TryParse(value, out DERObjectIdentifier oid))
-                throw new ArgumentException("Value is not a valid OID.", nameof(value));
-            return oid;
-        }
-
-        void IDERObject.Write(DERBuilder builder)
-        {
-            builder.WriteObjectId(ObjectIdentifier);
-        }
+    void IDERObject.Write(DERBuilder builder)
+    {
+        builder.WriteObjectId(ObjectIdentifier);
     }
 }

@@ -14,20 +14,19 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2WriteResponsePacket : Smb2ResponsePacket
-    {
-        public int Count { get; private set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
-        {
-            if (reader.ReadUInt16() != 17)
-                throw new InvalidDataException("Invalid response size for WRITE packet.");
-            // Reserved
-            reader.ReadUInt16();
-            Count = reader.ReadInt32();
-            // Ignore remaining reserved fields.
-        }
+internal sealed class Smb2WriteResponsePacket : Smb2ResponsePacket
+{
+    public int Count { get; private set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 17)
+            throw new InvalidDataException("Invalid response size for WRITE packet.");
+        // Reserved
+        reader.ReadUInt16();
+        Count = reader.ReadInt32();
+        // Ignore remaining reserved fields.
     }
 }

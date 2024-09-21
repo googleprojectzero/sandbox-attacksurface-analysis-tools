@@ -1,429 +1,205 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2B17A3DD-0970-482F-976A-A4027B9B8817}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NtObjectManager</RootNamespace>
-    <AssemblyName>NtObjectManager</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\NtObjectManager.xml</DocumentationFile>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\bin\Release\NtObjectManager.XML</DocumentationFile>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.DirectoryServices" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\3.0\System.Management.Automation.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.XML" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Cmdlets\Accessible\CommonAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\CommonAccessBaseWithAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\DeviceAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\DsObjectAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\DsObjectInformation.cs" />
-    <Compile Include="Cmdlets\Accessible\DsObjectTypeAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\EventTraceAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\FwObjectAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\FwObjectType.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleDsObject.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleFwObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessiblePathCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleTokenCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleWindowStation.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleWnfCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\HandleAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\ProcessTokenInformation.cs" />
-    <Compile Include="Cmdlets\Accessible\ScheduledTaskAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\ServiceAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Accessible\ServiceCheckMode.cs" />
-    <Compile Include="Cmdlets\Accessible\WnfAccessCheckResult.cs" />
-    <Compile Include="Cmdlets\Object\CompareNtSecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\ConvertToNtSecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetGrantedAccessCmdletBase.cs" />
-    <Compile Include="Cmdlets\Win32\ClearAuthZSidCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\GetWin32GrantedAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\NewKerberosKDCProxyCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\SetWin32ServiceConfigCmdlet.cs" />
-    <Compile Include="Utils\ChannelBindingHolder.cs" />
-    <Compile Include="Utils\Firewall\FirewallCalloutGuid.cs" />
-    <Compile Include="Utils\Firewall\FirewallLayerGuid.cs" />
-    <Compile Include="Utils\Firewall\FirewallObjectGuid.cs" />
-    <Compile Include="Utils\Firewall\FirewallPackageSid.cs" />
-    <Compile Include="Utils\Firewall\FirewallSubLayerGuid.cs" />
-    <Compile Include="Utils\Kerberos\PSKerberosKDCProxy.cs" />
-    <Compile Include="Utils\PasswordHolder.cs" />
-    <Compile Include="Utils\ScheduledTask\RunningScheduledTaskEntry.cs" />
-    <Compile Include="Utils\ScheduledTask\ScheduledTaskAction.cs" />
-    <Compile Include="Utils\ScheduledTask\ScheduledTaskEntry.cs" />
-    <Compile Include="Cmdlets\Accessible\TokenEntry.cs" />
-    <Compile Include="Cmdlets\Accessible\TokenInformation.cs" />
-    <Compile Include="Cmdlets\Object\NewNtEnclaveCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\AddNtDebugProcessCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\AddNtKeyHiveCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\AddNtSecurityDescriptorAceCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\AddNtThreadApcCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\AddNtTokenSecurityAttributeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\BaseGetNtChildObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\BaseNtFilePropertyCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\ConnectNtAlpcClientCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\ConnectNtAlpcServerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\CopyNtObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\DbgContinueStatus.cs" />
-    <Compile Include="Cmdlets\Object\GetNtAccessMaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtDebugCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtDesktopCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtDirectoryCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtEnlistmentCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtEventCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileAttributeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileCompressionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileIdCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileLinkCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileObjectIdCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileFinalPathCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileReparsePointCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileShareProcessCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileStreamCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileVolumeInformationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtGrantedAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtJobCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtKeyChildCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtKeyCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtKeySymbolicLinkTarget.cs" />
-    <Compile Include="Cmdlets\Object\GetNtMutantCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtNamedPipeFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtObjectInfoCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtPartitionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtProcessJobCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtResourceManagerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtSectionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtSemaphoreCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtSidCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtStatusCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtSymbolicLinkCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtSymbolicLinkTargetCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTokenCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTokenDefaultDacl.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTransactionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTransactionManagerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtWaitTimeoutCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\InvokeNtTokenCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\JobFormatFilter.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcDataViewCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcMessageCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcPortAttributesCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcPortSectionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcReceiveAttributesCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcSendAttributesCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcServerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtDebugCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtDesktopCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtDirectoryCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtJobCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtKeyCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtKeySymbolicLink.cs" />
-    <Compile Include="Cmdlets\Object\NewNtMailslotFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtNamedPipeFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtSecurityAttributeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtSecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtThreadCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtTokenCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtTransactionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtWindowStationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NtObjectBaseCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NtObjectBaseCmdletWithAccess.cs" />
-    <Compile Include="Cmdlets\Object\NtObjectBaseNoPathCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NtObjectBaseNoPathCmdletWithAccess.cs" />
-    <Compile Include="Cmdlets\Object\ReceiveNtAlpcMessageCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveKeyCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveKeyHiveCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtFileObjectIdCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtFileReparsePointCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtSecurityDescriptorAceCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtTokenSecurityAttributeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RenameNtFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RevokeNtAccessMaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SelectNtSecurityDescriptorAceCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SendNtAlpcMessageCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GrantNtAccessMaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SendNtFileControlCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtFileHardlinkCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileAttributeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileCompressionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileObjectIdCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileReparsePointCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtFileVolumeInformationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtKeySymbolicLinkTarget.cs" />
-    <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtTokenCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtTokenDefaultDacl.cs" />
-    <Compile Include="Cmdlets\Object\SpecificAccessType.cs" />
-    <Compile Include="Cmdlets\Object\StartNtDebugWaitCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\CompareNtSidCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\TestNtAccessMaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\TestNtAceConditionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\TestNtTokenGroupCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\TestNtTokenImpersonationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\TestNtTokenPrivilegeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\UseNtObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\WriteNtAuditCmdlet.cs" />
-    <Compile Include="Cmdlets\Rpc\CompareRpcServerCmdlet.cs" />
-    <Compile Include="Cmdlets\Rpc\CompareRpcServerResult.cs" />
-    <Compile Include="Cmdlets\Rpc\SelectRpcServerCmdlet.cs" />
-    <Compile Include="Cmdlets\Utils\GetRandomByteCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\AddAuthZSidCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\GetAuthZGrantedAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\GetRunningScheduledTaskCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\NewAuthZResourceManagerCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\RemoveAuthZSidCmdlet.cs" />
-    <Compile Include="Utils\BaseTransformAttribute.cs" />
-    <Compile Include="Utils\InfoClassCompleter.cs" />
-    <Compile Include="Utils\NtTypeArgumentCompleter.cs" />
-    <Compile Include="Utils\ScheduledTask\ScheduledTaskTrigger.cs" />
-    <Compile Include="Utils\ScheduledTask\TaskActionType.cs" />
-    <Compile Include="Utils\ScheduledTask\TaskLogonType.cs" />
-    <Compile Include="Utils\ScheduledTask\TaskProcessTokenSid.cs" />
-    <Compile Include="Utils\ScheduledTask\TaskRunFlags.cs" />
-    <Compile Include="Utils\ScheduledTask\TaskRunLevel.cs" />
-    <Compile Include="Utils\SecurityDescriptorTransformAttribute.cs" />
-    <Compile Include="Utils\SidTransformAttribute.cs" />
-    <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />
-    <Compile Include="Cmdlets\Object\NewNtAlpcSecurityContextCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\RemoveNtDebugProcessCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtEnlistmentCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtPartitionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtResourceManagerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTransactionGuidCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtTransactionManagerCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtWindowStationCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\GetWin32ErrorCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\GetWin32SecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\RemoveDosDeviceCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\ResetWin32SecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\SearchWin32SecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\SetWin32SecurityDescriptorCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\Win32ErrorResult.cs" />
-    <Compile Include="Cmdlets\Win32\Win32SetSecurityDescriptorResult.cs" />
-    <Compile Include="Provider\NtDirectoryContainer.cs" />
-    <Compile Include="Provider\NtKeyContainer.cs" />
-    <Compile Include="Provider\NtKeyEntry.cs" />
-    <Compile Include="Provider\NtObjectContainer.cs" />
-    <Compile Include="Provider\NtObjectContainerEntry.cs" />
-    <Compile Include="Provider\ObjectManagerPSDriveInfo.cs" />
-    <Compile Include="Utils\CoreCSharpCodeProvider.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Utils\PSUtils.cs" />
-    <Compile Include="Cmdlets\Rpc\ModifiedRpcServerResult.cs" />
-    <Compile Include="Cmdlets\Rpc\RpcServerNameCmdlets.cs" />
-    <Compile Include="Cmdlets\Accessible\TestNetworkAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\AddDosDeviceCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\CommonAccessBaseCmdlet.cs" />
-    <Compile Include="Provider\GenericObjectSecurity.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleDeviceCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleFileCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleHandle.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleKeyCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleNamedPipeCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleObjectCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleProcessCmdlet.cs" />
-    <Compile Include="Cmdlets\Accessible\GetAccessibleServiceCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtEventCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\FormatNtJobCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtProcessCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtSectionCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtSemaphoreCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtThreadCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtHandleCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtDirectoryChildCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtFileChildCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtKeyValueCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtMutantCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\SetNtObjectInformationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTypeCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\NewNtSymbolicLinkCmdlet.cs" />
-    <Compile Include="Provider\NtDirectoryEntry.cs" />
-    <Compile Include="Provider\NtObjectManagerProvider.cs" />
-    <Compile Include="Cmdlets\Object\StartNtWaitCmdlet.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="en-US\about_ManagingNtObjectLifetime.help.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <None Include="AppModelFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="DsFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="FirewallFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Formatters.ps1xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="KerberosFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="LsaFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="MiscFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtDeviceFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtFileFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtKeyFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtObjectFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtObjectManager.psm1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtObjectManager.psd1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtProcessFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtSectionFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtSecurityFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtSystemInfoFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtThreadFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtTokenFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtVirtualMemoryFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
-    <None Include="RpcFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="SamFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="SocketFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="TypeExtensions.ps1xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="UtilityFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32DebugFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32ModuleFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32ProcessFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32SecurityFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32ServiceFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="NtWindowFunctions.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
-      <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
-      <Name>NtApiDotNet</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="en-US\about_NtObjectManagerProvider.help.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="TaskScheduler">
-      <Guid>{E34CB9F1-C7F7-424C-BE29-027DCC09363A}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\XmlDoc2CmdletDoc.0.3.0\build\XmlDoc2CmdletDoc.targets" Condition="Exists('..\packages\XmlDoc2CmdletDoc.0.3.0\build\XmlDoc2CmdletDoc.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
     <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+        <AssemblyName>NtObjectManager</AssemblyName>
+        <TargetFramework>net461</TargetFramework>
+        <Authors>James Forshaw</Authors>
+        <Company>Google LLC.</Company>
+        <Product>NtObjectManager</Product>
+        <FileVersion>2.0.0.0</FileVersion>
+        <Version>2.0.0</Version>
+        <Copyright>Copyright © Google LLC. 2016-2023</Copyright>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <LangVersion>10.0</LangVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <BaseOutputPath>..\bin</BaseOutputPath>
+        <Configurations>Debug;Release;Publish</Configurations>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\XmlDoc2CmdletDoc.0.3.0\build\XmlDoc2CmdletDoc.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\XmlDoc2CmdletDoc.0.3.0\build\XmlDoc2CmdletDoc.targets'))" />
-  </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
+      <Optimize>True</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="BuildTools\**" />
+      <EmbeddedResource Remove="BuildTools\**" />
+      <None Remove="BuildTools\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="AppModelFunctions.ps1" />
+        <None Remove="DsFunctions.ps1" />
+        <None Remove="en-US\about_ManagingNtObjectLifetime.help.txt" />
+        <None Remove="en-US\about_NtObjectManagerProvider.help.txt" />
+        <None Remove="FirewallFunctions.ps1" />
+        <None Remove="Formatters.ps1xml" />
+        <None Remove="KerberosFunctions.ps1" />
+        <None Remove="LsaFunctions.ps1" />
+        <None Remove="MiscFunctions.ps1" />
+        <None Remove="NtDeviceFunctions.ps1" />
+        <None Remove="NtFileFunctions.ps1" />
+        <None Remove="NtKeyFunctions.ps1" />
+        <None Remove="NtObjectFunctions.ps1" />
+        <None Remove="NtObjectManager.psd1" />
+        <None Remove="NtObjectManager.psm1" />
+        <None Remove="NtProcessFunctions.ps1" />
+        <None Remove="NtSectionFunctions.ps1" />
+        <None Remove="NtSecurityFunctions.ps1" />
+        <None Remove="NtSystemInfoFunctions.ps1" />
+        <None Remove="NtThreadFunctions.ps1" />
+        <None Remove="NtTokenFunctions.ps1" />
+        <None Remove="NtVirtualMemoryFunctions.ps1" />
+        <None Remove="NtWindowFunctions.ps1" />
+        <None Remove="RpcFunctions.ps1" />
+        <None Remove="SamFunctions.ps1" />
+        <None Remove="SocketFunctions.ps1" />
+        <None Remove="TypeExtensions.ps1xml" />
+        <None Remove="UtilityFunctions.ps1" />
+        <None Remove="Win32DebugFunctions.ps1" />
+        <None Remove="Win32ModuleFunctions.ps1" />
+        <None Remove="Win32ProcessFunctions.ps1" />
+        <None Remove="Win32SecurityFunctions.ps1" />
+        <None Remove="Win32ServiceFunctions.ps1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <COMReference Include="TaskScheduler">
+            <WrapperTool>tlbimp</WrapperTool>
+            <VersionMinor>0</VersionMinor>
+            <VersionMajor>1</VersionMajor>
+            <Guid>e34cb9f1-c7f7-424c-be29-027dcc09363a</Guid>
+            <Lcid>0</Lcid>
+            <Isolated>false</Isolated>
+            <EmbedInteropTypes>true</EmbedInteropTypes>
+        </COMReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="AppModelFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="DsFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="en-US\about_ManagingNtObjectLifetime.help.txt">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="en-US\about_NtObjectManagerProvider.help.txt">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="FirewallFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Formatters.ps1xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="KerberosFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="LsaFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="MiscFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtDeviceFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtFileFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtKeyFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtObjectFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtObjectManager.psd1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtObjectManager.psm1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtProcessFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtSectionFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtSecurityFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtSystemInfoFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtThreadFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtTokenFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtVirtualMemoryFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="NtWindowFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="RpcFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="SamFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="SocketFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="TypeExtensions.ps1xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="UtilityFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Win32DebugFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Win32ModuleFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Win32ProcessFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Win32SecurityFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Win32ServiceFunctions.ps1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
+        <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="System.DirectoryServices" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' != 'Publish'">
+        <ProjectReference Include="..\NtCoreLib\NtCoreLib.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Publish'">
+        <Compile Include="..\NtCoreLib\**\*.cs" LinkBase="NtCoreLib" />
+        <Compile Remove="..\NtCoreLib\obj\**" />
+        <Reference Include="System.Security" />
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Publish'">
+      <Exec Command="powershell.exe -ExecutionPolicy Bypass BuildTools\merge_script.ps1 -Path '$(OutputPath)' -RemoveSource" />
+    </Target>
 </Project>

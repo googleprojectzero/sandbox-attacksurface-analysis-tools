@@ -12,49 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IKE main mode states
+/// </summary>
+[SDKName("IKEEXT_MM_SA_STATE")]
+public enum IkeExtMmSaState
 {
     /// <summary>
-    /// IKE main mode states
+    /// Initial state. No MM packets have been sent to the peer yet.
     /// </summary>
-    [SDKName("IKEEXT_MM_SA_STATE")]
-    public enum IkeExtMmSaState
-    {
-        /// <summary>
-        /// Initial state. No MM packets have been sent to the peer yet.
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_NONE")]
-        None,
-        /// <summary>
-        /// First roundtrip packet has been sent to the peer. 
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_SA_SENT")]
-        SaSent,
-        /// <summary>
-        /// Second roundtrip packet has been sent to the peer, for SSPI auth.
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_SSPI_SENT")]
-        SspiSent,
-        /// <summary>
-        /// Second roundtrip packet has been sent to the peer.
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_FINAL")]
-        Final,
-        /// <summary>
-        /// Final roundtrip packet has been sent to the peer.
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_FINAL_SENT")]
-        FinalSent,
-        /// <summary>
-        /// MM has been completed.
-        /// </summary>
-        [SDKName("IKEEXT_MM_SA_STATE_COMPLETE")]
-        Complete,
-    }
+    [SDKName("IKEEXT_MM_SA_STATE_NONE")]
+    None,
+    /// <summary>
+    /// First roundtrip packet has been sent to the peer. 
+    /// </summary>
+    [SDKName("IKEEXT_MM_SA_STATE_SA_SENT")]
+    SaSent,
+    /// <summary>
+    /// Second roundtrip packet has been sent to the peer, for SSPI auth.
+    /// </summary>
+    [SDKName("IKEEXT_MM_SA_STATE_SSPI_SENT")]
+    SspiSent,
+    /// <summary>
+    /// Second roundtrip packet has been sent to the peer.
+    /// </summary>
+    [SDKName("IKEEXT_MM_SA_STATE_FINAL")]
+    Final,
+    /// <summary>
+    /// Final roundtrip packet has been sent to the peer.
+    /// </summary>
+    [SDKName("IKEEXT_MM_SA_STATE_FINAL_SENT")]
+    FinalSent,
+    /// <summary>
+    /// MM has been completed.
+    /// </summary>
+    [SDKName("IKEEXT_MM_SA_STATE_COMPLETE")]
+    Complete,
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

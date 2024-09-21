@@ -14,53 +14,52 @@
 
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.IO.UsnJournal
+namespace NtCoreLib.IO.UsnJournal;
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct USN_RECORD_COMMON_HEADER
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct USN_RECORD_COMMON_HEADER
-    {
-        public int RecordLength;
-        public ushort MajorVersion;
-        public ushort MinorVersion;
-    }
+    public int RecordLength;
+    public ushort MajorVersion;
+    public ushort MinorVersion;
+}
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct USN_RECORD_V2
-    {
-        public USN_RECORD_COMMON_HEADER Header;
-        public long FileReferenceNumber;
-        public long ParentFileReferenceNumber;
-        public ulong Usn;
-        public LargeIntegerStruct TimeStamp;
-        public UsnJournalReasonFlags Reason;
-        public UsnJournalSourceInfoFlags SourceInfo;
-        public int SecurityId;
-        public FileAttributes FileAttributes;
-        public ushort FileNameLength;
-        public ushort FileNameOffset;
-        public ushort FileName;
-    }
+[StructLayout(LayoutKind.Sequential)]
+internal struct USN_RECORD_V2
+{
+    public USN_RECORD_COMMON_HEADER Header;
+    public long FileReferenceNumber;
+    public long ParentFileReferenceNumber;
+    public ulong Usn;
+    public LargeIntegerStruct TimeStamp;
+    public UsnJournalReasonFlags Reason;
+    public UsnJournalSourceInfoFlags SourceInfo;
+    public int SecurityId;
+    public FileAttributes FileAttributes;
+    public ushort FileNameLength;
+    public ushort FileNameOffset;
+    public ushort FileName;
+}
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct USN_JOURNAL_DATA_V0
-    {
-        public ulong UsnJournalID;
-        public ulong FirstUsn;
-        public ulong NextUsn;
-        public ulong LowestValidUsn;
-        public ulong MaxUsn;
-        public long MaximumSize;
-        public long AllocationDelta;
-    }
+[StructLayout(LayoutKind.Sequential)]
+internal struct USN_JOURNAL_DATA_V0
+{
+    public ulong UsnJournalID;
+    public ulong FirstUsn;
+    public ulong NextUsn;
+    public ulong LowestValidUsn;
+    public ulong MaxUsn;
+    public long MaximumSize;
+    public long AllocationDelta;
+}
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct READ_USN_JOURNAL_DATA_V0
-    {
-        public ulong StartUsn;
-        public UsnJournalReasonFlags ReasonMask;
-        public int ReturnOnlyOnClose;
-        public ulong Timeout;
-        public ulong BytesToWaitFor;
-        public ulong UsnJournalID;
-    }
+[StructLayout(LayoutKind.Sequential)]
+internal struct READ_USN_JOURNAL_DATA_V0
+{
+    public ulong StartUsn;
+    public UsnJournalReasonFlags ReasonMask;
+    public int ReturnOnlyOnClose;
+    public ulong Timeout;
+    public ulong BytesToWaitFor;
+    public ulong UsnJournalID;
 }

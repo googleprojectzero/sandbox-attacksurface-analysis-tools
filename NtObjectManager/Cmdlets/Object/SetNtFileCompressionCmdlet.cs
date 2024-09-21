@@ -12,59 +12,58 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Set the compression format for a file.</para>
+/// <para type="description">This cmdlet sets the compression format for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Set-NtFileCompression -File $f -Format Default</code>
+///   <para>Set the compression format for the file.</para>
+/// </example>
+/// <example>
+///   <code>Set-NtFileCompression -Path "\??\c:\windows\notepad.exe" -Format Default</code>
+///   <para>Set the compression format for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Set-NtFileCompression -Path "c:\windows\notepad.exe" -Win32Path -Format Default</code>
+///   <para>Set the compression format for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Set, "NtFileCompression", DefaultParameterSetName = "Default")]
+[OutputType(typeof(CompressionFormat))]
+public class SetNtFileCompressionCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Set the compression format for a file.</para>
-    /// <para type="description">This cmdlet sets the compression format for a file.</para>
+    /// <para type="description">Specify to pass through the result.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Set-NtFileCompression -File $f -Format Default</code>
-    ///   <para>Set the compression format for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtFileCompression -Path "\??\c:\windows\notepad.exe" -Format Default</code>
-    ///   <para>Set the compression format for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtFileCompression -Path "c:\windows\notepad.exe" -Win32Path -Format Default</code>
-    ///   <para>Set the compression format for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Set, "NtFileCompression", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(CompressionFormat))]
-    public class SetNtFileCompressionCmdlet : BaseNtFilePropertyCmdlet
+    [Parameter]
+    public SwitchParameter PassThru { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify compression format to set.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, Position = 1)]
+    public CompressionFormat Format { get; set; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public SetNtFileCompressionCmdlet()
+        : base(FileAccessRights.ReadData | FileAccessRights.WriteData, 
+              FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// <para type="description">Specify to pass through the result.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter PassThru { get; set; }
+    }
 
-        /// <summary>
-        /// <para type="description">Specify compression format to set.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
-        public CompressionFormat Format { get; set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SetNtFileCompressionCmdlet()
-            : base(FileAccessRights.ReadData | FileAccessRights.WriteData, 
-                  FileShareMode.None, FileOpenOptions.None)
+    private protected override void HandleFile(NtFile file)
+    {
+        file.CompressionFormat = Format;
+        if (PassThru)
         {
-        }
-
-        private protected override void HandleFile(NtFile file)
-        {
-            file.CompressionFormat = Format;
-            if (PassThru)
-            {
-                WriteObject(file.CompressionFormat);
-            }
+            WriteObject(file.CompressionFormat);
         }
     }
 }

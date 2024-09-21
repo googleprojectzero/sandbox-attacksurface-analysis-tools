@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Schannel Alert Type.
+/// </summary>
+public enum SchannelAlertType
 {
-    /// <summary>
-    /// Schannel Alert Type.
-    /// </summary>
-    public enum SchannelAlertType
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [SDKName("TLS1_ALERT_WARNING")]
-        Warning = 1,
-        [SDKName("TLS1_ALERT_FATAL")]
-        Fatal = 2,
+    [SDKName("TLS1_ALERT_WARNING")]
+    Warning = 1,
+    [SDKName("TLS1_ALERT_FATAL")]
+    Fatal = 2,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

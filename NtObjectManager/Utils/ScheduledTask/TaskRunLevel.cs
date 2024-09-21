@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// The task run level to use.
+/// </summary>
+public enum TaskRunLevel
 {
     /// <summary>
-    /// The task run level to use.
+    /// Normal limited user.
     /// </summary>
-    public enum TaskRunLevel
-    {
-        /// <summary>
-        /// Normal limited user.
-        /// </summary>
-        Limited,
-        /// <summary>
-        /// Highed run level available.
-        /// </summary>
-        Highest
-    }
+    Limited,
+    /// <summary>
+    /// Highed run level available.
+    /// </summary>
+    Highest
 }

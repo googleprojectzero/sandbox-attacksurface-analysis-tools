@@ -14,21 +14,20 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.Text
+namespace NtCoreLib.Utilities.Text;
+
+/// <summary>
+/// Specify types of strings to extract.
+/// </summary>
+[Flags]
+public enum ExtractedStringType
 {
     /// <summary>
-    /// Specify types of strings to extract.
+    /// Extract ASCII strings.
     /// </summary>
-    [Flags]
-    public enum ExtractedStringType
-    {
-        /// <summary>
-        /// Extract ASCII strings.
-        /// </summary>
-        Ascii = 1,
-        /// <summary>
-        /// Extract Unicode strings.
-        /// </summary>
-        Unicode = 2,
-    }
+    Ascii = 1,
+    /// <summary>
+    /// Extract Unicode strings.
+    /// </summary>
+    Unicode = 2,
 }

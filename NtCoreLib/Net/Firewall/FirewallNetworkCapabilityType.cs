@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// AppContainer capability type.
+/// </summary>
+[SDKName("FWPM_APPC_NETWORK_CAPABILITY_TYPE")]
+public enum FirewallNetworkCapabilityType
 {
-    /// <summary>
-    /// AppContainer capability type.
-    /// </summary>
-    [SDKName("FWPM_APPC_NETWORK_CAPABILITY_TYPE")]
-    public enum FirewallNetworkCapabilityType
-    {
-        [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_CLIENT")]
-        InternetClient = 0,
-        [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_CLIENT_SERVER")]
-        InternetClientServer = (InternetClient + 1),
-        [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_PRIVATE_NETWORK")]
-        InternetPrivateNetwork = (InternetClientServer + 1)
-    }
+    [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_CLIENT")]
+    InternetClient = 0,
+    [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_CLIENT_SERVER")]
+    InternetClientServer = (InternetClient + 1),
+    [SDKName("FWPM_APPC_NETWORK_CAPABILITY_INTERNET_PRIVATE_NETWORK")]
+    InternetPrivateNetwork = (InternetClientServer + 1)
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

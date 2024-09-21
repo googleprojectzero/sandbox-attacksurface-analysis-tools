@@ -12,39 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
+using NtCoreLib.Win32;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// <para type="description">Result object for setting a security descriptor.</para>
+/// </summary>
+public class Win32SetSecurityDescriptorResult
 {
     /// <summary>
-    /// <para type="description">Result object for setting a security descriptor.</para>
+    /// The name of the resource which was set.
     /// </summary>
-    public class Win32SetSecurityDescriptorResult
-    {
-        /// <summary>
-        /// The name of the resource which was set.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The error during the operation.
-        /// </summary>
-        public Win32Error Error { get; }
-        /// <summary>
-        /// Whether security was set.
-        /// </summary>
-        public bool SecuritySet { get; }
+    public string Name { get; }
+    /// <summary>
+    /// The error during the operation.
+    /// </summary>
+    public Win32Error Error { get; }
+    /// <summary>
+    /// Whether security was set.
+    /// </summary>
+    public bool SecuritySet { get; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">The name of the resource which was set.</param>
-        /// <param name="error">The error during the operation.</param>
-        /// <param name="security_set">Whether security was set.</param>
-        internal Win32SetSecurityDescriptorResult(string name, Win32Error error, bool security_set)
-        {
-            Name = name;
-            Error = error;
-            SecuritySet = security_set;
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="name">The name of the resource which was set.</param>
+    /// <param name="error">The error during the operation.</param>
+    /// <param name="security_set">Whether security was set.</param>
+    internal Win32SetSecurityDescriptorResult(string name, Win32Error error, bool security_set)
+    {
+        Name = name;
+        Error = error;
+        SecuritySet = security_set;
     }
 }

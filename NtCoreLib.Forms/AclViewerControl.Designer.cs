@@ -1,4 +1,4 @@
-﻿namespace NtApiDotNet.Forms
+﻿namespace NtCoreLib.Forms
 {
     partial class AclViewerControl
     {

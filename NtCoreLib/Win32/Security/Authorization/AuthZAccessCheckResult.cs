@@ -13,31 +13,32 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Security.Token;
 
-namespace NtApiDotNet.Win32.Security.Authorization
+namespace NtCoreLib.Win32.Security.Authorization;
+
+/// <summary>
+/// Access check result from AuthZ.
+/// </summary>
+public class AuthZAccessCheckResult : AccessCheckResultGeneric
 {
     /// <summary>
-    /// Access check result from AuthZ.
+    /// The Win32 error code from the access check.
     /// </summary>
-    public class AuthZAccessCheckResult : AccessCheckResultGeneric
-    {
-        /// <summary>
-        /// The Win32 error code from the access check.
-        /// </summary>
-        public Win32Error Error { get; }
+    public Win32Error Error { get; }
 
-        internal AuthZAccessCheckResult(
-            NtType type,
-            Win32Error error,
-            AccessMask granted_access,
-            ObjectTypeEntry object_type) : base(error.MapDosErrorToStatus(),
-                granted_access, type.GenericMapping.UnmapMask(granted_access),
-                new TokenPrivilege[0], granted_access.ToSpecificAccess(type.AccessRightsType),
-                type.GenericMapping.UnmapMask(granted_access).ToSpecificAccess(type.AccessRightsType),
-                object_type?.ObjectType ?? Guid.Empty, object_type?.Name ?? string.Empty, 
-                false, object_type?.Level ?? 0)
-        {
-            Error = error;
-        }
+    internal AuthZAccessCheckResult(
+        NtType type,
+        Win32Error error,
+        AccessMask granted_access,
+        ObjectTypeEntry? object_type) : base(error.MapDosErrorToStatus(),
+            granted_access, type.GenericMapping.UnmapMask(granted_access),
+            new TokenPrivilege[0], granted_access.ToSpecificAccess(type.AccessRightsType),
+            type.GenericMapping.UnmapMask(granted_access).ToSpecificAccess(type.AccessRightsType),
+            object_type?.ObjectType ?? Guid.Empty, object_type?.Name ?? string.Empty, 
+            false, object_type?.Level ?? 0)
+    {
+        Error = error;
     }
 }

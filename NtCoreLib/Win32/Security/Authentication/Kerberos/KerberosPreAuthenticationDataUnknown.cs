@@ -12,31 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent an unknown PA-DATA value.
+/// </summary>
+public sealed class KerberosPreAuthenticationDataUnknown : KerberosPreAuthenticationData
 {
     /// <summary>
-    /// Class to represent an unknown PA-DATA value.
+    /// The pre-authentication data.
     /// </summary>
-    public sealed class KerberosPreAuthenticationDataUnknown : KerberosPreAuthenticationData
+    public byte[] Data { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="type">The type of pre-authentication data.</param>
+    /// <param name="data">The data for the preauthentication.</param>
+    public KerberosPreAuthenticationDataUnknown(KerberosPreAuthenticationType type, byte[] data) : base(type)
     {
-        /// <summary>
-        /// The pre-authentication data.
-        /// </summary>
-        public byte[] Data { get; }
+        Data = data.CloneBytes();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="type">The type of pre-authentication data.</param>
-        /// <param name="data">The data for the preauthentication.</param>
-        public KerberosPreAuthenticationDataUnknown(KerberosPreAuthenticationType type, byte[] data) : base(type)
-        {
-            Data = data.CloneBytes();
-        }
-
-        private protected override byte[] GetData()
-        {
-            return Data;
-        }
+    private protected override byte[] GetData()
+    {
+        return Data;
     }
 }

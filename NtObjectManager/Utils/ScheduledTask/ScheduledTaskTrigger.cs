@@ -14,71 +14,70 @@
 
 using TaskScheduler;
 
-namespace NtObjectManager.Utils.ScheduledTask
+namespace NtObjectManager.Utils.ScheduledTask;
+
+/// <summary>
+/// Type of scheduled task trigger.
+/// </summary>
+public enum ScheduledTaskTriggerType
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    Event = 0,
+    Time = 1,
+    Daily = 2,
+    Weekly = 3,
+    Monthly = 4,
+    MouthlyDayOfWeek = 5,
+    Idle = 6,
+    Registration = 7,
+    Boot = 8,
+    Logon = 9,
+    SessionStateChange = 11,
+    WNF = 12,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// Class for a scheduled task trigger.
+/// </summary>
+public class ScheduledTaskTrigger
 {
     /// <summary>
-    /// Type of scheduled task trigger.
+    /// The ID of the trigger.
     /// </summary>
-    public enum ScheduledTaskTriggerType
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        Event = 0,
-        Time = 1,
-        Daily = 2,
-        Weekly = 3,
-        Monthly = 4,
-        MouthlyDayOfWeek = 5,
-        Idle = 6,
-        Registration = 7,
-        Boot = 8,
-        Logon = 9,
-        SessionStateChange = 11,
-        WNF = 12,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
+    public string Id { get; }
 
     /// <summary>
-    /// Class for a scheduled task trigger.
+    /// The type of the trigger.
     /// </summary>
-    public class ScheduledTaskTrigger
+    public ScheduledTaskTriggerType TriggerType { get; }
+
+    /// <summary>
+    /// The start boundary for the trigger.
+    /// </summary>
+    public string StartBoundary { get; }
+
+    /// <summary>
+    /// The end boundary for the trigger.
+    /// </summary>
+    public string EndBoundary { get; }
+
+    /// <summary>
+    /// Time limit for execution.
+    /// </summary>
+    public string ExecutionTimeLimit { get; }
+
+    internal static ScheduledTaskTrigger Create(ITrigger trigger)
     {
-        /// <summary>
-        /// The ID of the trigger.
-        /// </summary>
-        public string Id { get; }
+        return new ScheduledTaskTrigger(trigger);
+    }
 
-        /// <summary>
-        /// The type of the trigger.
-        /// </summary>
-        public ScheduledTaskTriggerType TriggerType { get; }
-
-        /// <summary>
-        /// The start boundary for the trigger.
-        /// </summary>
-        public string StartBoundary { get; }
-
-        /// <summary>
-        /// The end boundary for the trigger.
-        /// </summary>
-        public string EndBoundary { get; }
-
-        /// <summary>
-        /// Time limit for execution.
-        /// </summary>
-        public string ExecutionTimeLimit { get; }
-
-        internal static ScheduledTaskTrigger Create(ITrigger trigger)
-        {
-            return new ScheduledTaskTrigger(trigger);
-        }
-
-        private protected ScheduledTaskTrigger(ITrigger trigger)
-        {
-            Id = trigger.Id;
-            TriggerType = (ScheduledTaskTriggerType)(int)trigger.Type;
-            StartBoundary = trigger.StartBoundary;
-            EndBoundary = trigger.EndBoundary;
-            ExecutionTimeLimit = trigger.ExecutionTimeLimit;
-        }
+    private protected ScheduledTaskTrigger(ITrigger trigger)
+    {
+        Id = trigger.Id;
+        TriggerType = (ScheduledTaskTriggerType)(int)trigger.Type;
+        StartBoundary = trigger.StartBoundary;
+        EndBoundary = trigger.EndBoundary;
+        ExecutionTimeLimit = trigger.ExecutionTimeLimit;
     }
 }

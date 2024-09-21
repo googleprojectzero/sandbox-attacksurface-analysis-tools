@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential.AuthIdentity
+namespace NtCoreLib.Win32.Security.Credential.AuthIdentity;
+
+/// <summary>
+/// Option flags for auth identity encryption/decryption.
+/// </summary>
+[Flags]
+public enum SecWinNtAuthIdentityEncryptionOptions
 {
-    /// <summary>
-    /// Option flags for auth identity encryption/decryption.
-    /// </summary>
-    [Flags]
-    public enum SecWinNtAuthIdentityEncryptionOptions
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_LOGON")]
-        SameLogon = 0x1,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_PROCESS")]
-        SameProcess = 0x2,
-        [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_FOR_SYSTEM")]
-        ForSystem = 0x4
+    None = 0,
+    [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_LOGON")]
+    SameLogon = 0x1,
+    [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_SAME_PROCESS")]
+    SameProcess = 0x2,
+    [SDKName("SEC_WINNT_AUTH_IDENTITY_ENCRYPT_FOR_SYSTEM")]
+    ForSystem = 0x4
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

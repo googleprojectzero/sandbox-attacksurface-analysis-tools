@@ -12,84 +12,82 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Set the Default DACL for a Token.</para>
+/// <para type="description">This cmdlet sets the Default DACL for a Token.</para>
+/// </summary>
+/// <example>
+///   <code>Set-NtTokenDefaultDacl -DefaultDacl $dacl</code>
+///   <para>Set current effective token's Default DACL.</para>
+/// </example>
+/// <example>
+///   <code>Set-NtTokenDefaultDacl -SecurityDescriptor $sd</code>
+///   <para>Set current effective token's Default DACL from a Security Descriptor.</para>
+/// </example>
+/// <example>
+///   <code>Set-NtTokenDefaultDacl -DefaultDacl $dacl -Token $token</code>
+///   <para>Set Default DACL for a Token.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Set, "NtTokenDefaultDacl", DefaultParameterSetName = "FromAcl")]
+public class SetNtTokenDefaultDacl : PSCmdlet
 {
-    /// <summary>
-    /// <para type="synopsis">Set the Default DACL for a Token.</para>
-    /// <para type="description">This cmdlet sets the Default DACL for a Token.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>Set-NtTokenDefaultDacl -DefaultDacl $dacl</code>
-    ///   <para>Set current effective token's Default DACL.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtTokenDefaultDacl -SecurityDescriptor $sd</code>
-    ///   <para>Set current effective token's Default DACL from a Security Descriptor.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Set-NtTokenDefaultDacl -DefaultDacl $dacl -Token $token</code>
-    ///   <para>Set Default DACL for a Token.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Set, "NtTokenDefaultDacl", DefaultParameterSetName = "FromAcl")]
-    public class SetNtTokenDefaultDacl : PSCmdlet
+    private NtToken GetToken()
     {
-        private NtToken GetToken()
+        if (Token != null)
+            return Token.Duplicate();
+        return NtToken.OpenEffectiveToken(NtThread.Current, true, false, TokenAccessRights.AdjustDefault);
+    }
+
+    /// <summary>
+    /// <para type="description">Specify the default DACL.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromAcl", Position = 1, Mandatory = true)]
+    [AllowEmptyCollection]
+    public Acl DefaultDacl { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the default DACL as a Security Descriptor.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromSD", Position = 1, Mandatory = true)]
+    public SecurityDescriptor SecurityDescriptor { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the token to set the default DACL.</para>
+    /// </summary>
+    [Parameter(Position = 1)]
+    public NtToken Token { get; set; }
+
+    /// <summary>
+    /// Overridden ProcessRecord method.
+    /// </summary>
+    protected override void ProcessRecord()
+    {
+
+        Acl default_dacl = null;
+
+        switch (ParameterSetName)
         {
-            if (Token != null)
-                return Token.Duplicate();
-            return NtToken.OpenEffectiveToken(NtThread.Current, true, false, TokenAccessRights.AdjustDefault);
+            case "FromAcl":
+                default_dacl = DefaultDacl;
+                break;
+            case "FromSD":
+                default_dacl = SecurityDescriptor.Dacl;
+                break;
         }
 
-        /// <summary>
-        /// <para type="description">Specify the default DACL.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromAcl", Position = 1, Mandatory = true)]
-        [AllowEmptyCollection]
-        public Acl DefaultDacl { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the default DACL as a Security Descriptor.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSD", Position = 1, Mandatory = true)]
-        public SecurityDescriptor SecurityDescriptor { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the token to set the default DACL.</para>
-        /// </summary>
-        [Parameter(Position = 1)]
-        public NtToken Token { get; set; }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
+        if (default_dacl == null)
         {
-
-            Acl default_dacl = null;
-
-            switch (ParameterSetName)
-            {
-                case "FromAcl":
-                    default_dacl = DefaultDacl;
-                    break;
-                case "FromSD":
-                    default_dacl = SecurityDescriptor.Dacl;
-                    break;
-            }
-
-            if (default_dacl == null)
-            {
-                throw new ArgumentNullException(nameof(DefaultDacl));
-            }
-
-            using (var token = GetToken())
-            {
-                token.SetDefaultDacl(default_dacl);
-            }
+            throw new ArgumentNullException(nameof(DefaultDacl));
         }
+
+        using var token = GetToken();
+        token.SetDefaultDacl(default_dacl);
     }
 }

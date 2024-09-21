@@ -16,37 +16,36 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using static NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography.KerberosEncryptionUtils;
+using static NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography.KerberosEncryptionUtils;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Cryptography
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Cryptography;
+
+internal class KerberosChecksumEngineHMACMD5 : KerberosChecksumEngine
 {
-    internal class KerberosChecksumEngineHMACMD5 : KerberosChecksumEngine
+    public KerberosChecksumEngineHMACMD5() : base(KerberosChecksumType.HMAC_MD5, MD5_CHECKSUM_SIZE)
     {
-        public KerberosChecksumEngineHMACMD5() : base(KerberosChecksumType.HMAC_MD5, MD5_CHECKSUM_SIZE)
+    }
+
+    public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+    {
+        if (key is null)
         {
+            throw new ArgumentNullException(nameof(key));
         }
 
-        public override byte[] ComputeHash(byte[] key, byte[] data, int offset, int length, KerberosKeyUsage key_usage)
+        if (data is null)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (data is null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            byte[] sign_key = new HMACMD5(key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
-
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write((int)key_usage);
-            writer.Write(data, offset, length);
-
-            byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
-            return new HMACMD5(sign_key).ComputeHash(tmp);
+            throw new ArgumentNullException(nameof(data));
         }
+
+        byte[] sign_key = new HMACMD5(key).ComputeHash(Encoding.ASCII.GetBytes("signaturekey\0"));
+
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write((int)key_usage);
+        writer.Write(data, offset, length);
+
+        byte[] tmp = MD5.Create().ComputeHash(stm.ToArray());
+        return new HMACMD5(sign_key).ComputeHash(tmp);
     }
 }

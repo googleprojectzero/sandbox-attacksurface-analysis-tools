@@ -12,241 +12,179 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
-using NtApiDotNet.Win32.Security.Authentication;
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
+using NtCoreLib.Security.Token;
+using NtCoreLib.Win32.Security.Authentication;
+using NtCoreLib.Win32.Rpc.Interop;
 using System;
 using System.Linq;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Class to represent the RPC transport security.
+/// </summary>
+public struct RpcTransportSecurity
 {
-    /// <summary>
-    /// Class to represent the RPC transport security.
-    /// </summary>
-    public struct RpcTransportSecurity
+    #region Private Members
+    private readonly Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
+    private RpcAuthenticationType _auth_type;
+
+    private readonly AuthenticationPackage GetAuthPackage()
     {
-        #region Private Members
-        private readonly Func<RpcTransportSecurity, IClientAuthenticationContext> _auth_factory;
-        private RpcAuthenticationType _auth_type;
+        if (_auth_type == RpcAuthenticationType.None)
+            throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
 
-        private AuthenticationPackage GetAuthPackage()
+        switch (_auth_type)
         {
-            if (_auth_type == RpcAuthenticationType.None)
-                throw new ArgumentException("Must specify an authentication type to authenticate an RPC connection.");
-
-            switch (_auth_type)
-            {
-                case RpcAuthenticationType.WinNT:
-                case RpcAuthenticationType.Kerberos:
-                case RpcAuthenticationType.Negotiate:
-                    break;
-                default:
-                    throw new ArgumentException($"Unknown authentication type: {_auth_type}");
-            }
-
-            var rpc_id = (int)_auth_type;
-            var package = AuthenticationPackage.Get().FirstOrDefault(p => p.RpcId == rpc_id);
-            if (package == null)
-                throw new ArgumentException($"Unsupported authentication type: {_auth_type}");
-
-            return package;
-        }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Get the context request flags for this RPC transport security.
-        /// </summary>
-        /// <returns>The context request flags.</returns>
-        public InitializeContextReqFlags GetContextRequestFlags()
-        {
-            InitializeContextReqFlags flags = InitializeContextReqFlags.Connection | InitializeContextReqFlags.UseDCEStyle;
-            if (SecurityQualityOfService != null)
-            {
-                switch (SecurityQualityOfService.ImpersonationLevel)
-                {
-                    case SecurityImpersonationLevel.Identification:
-                        flags |= InitializeContextReqFlags.Identify;
-                        break;
-                    case SecurityImpersonationLevel.Delegation:
-                        flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
-                        break;
-                }
-            }
-
-            switch (AuthenticationLevel)
-            {
-                case RpcAuthenticationLevel.PacketIntegrity:
-                    flags |= InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
-                    break;
-                case RpcAuthenticationLevel.PacketPrivacy:
-                    flags |= InitializeContextReqFlags.Confidentiality | InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
-                    break;
-            }
-
-            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.MutualAuthentication))
-            {
-                flags |= InitializeContextReqFlags.MutualAuth;
-            }
-            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.NullSession))
-            {
-                flags |= InitializeContextReqFlags.NullSession;
-            }
-            if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.Delegation))
-            {
-                flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
-            }
-
-            return flags;
-        }
-        #endregion
-
-        #region Public Properties
-        /// <summary>
-        /// Security quality of service.
-        /// </summary>
-        public SecurityQualityOfService SecurityQualityOfService { get; set; }
-
-        /// <summary>
-        /// Authentication level.
-        /// </summary>
-        public RpcAuthenticationLevel AuthenticationLevel { get; set; }
-
-        /// <summary>
-        /// Authentication type.
-        /// </summary>
-        public RpcAuthenticationType AuthenticationType
-        {
-            get => _auth_type;
-            set => _auth_type = value == RpcAuthenticationType.Default ? RpcAuthenticationType.WinNT : value;
+            case RpcAuthenticationType.WinNT:
+            case RpcAuthenticationType.Kerberos:
+            case RpcAuthenticationType.Negotiate:
+                break;
+            default:
+                throw new ArgumentException($"Unknown authentication type: {_auth_type}");
         }
 
-        /// <summary>
-        /// Authentication credentials.
-        /// </summary>
-        public AuthenticationCredentials Credentials { get; set; }
-
-        /// <summary>
-        /// The SPN for the authentication.
-        /// </summary>
-        public string ServicePrincipalName { get; set; }
-
-        /// <summary>
-        /// Authentication capabilities.
-        /// </summary>
-        public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
-
-        /// <summary>
-        /// Specify a kerberos ticket cache.
-        /// </summary>
-        /// <remarks>Use <see cref="KerberosTicketCacheAuthenticationCredentials"/> for Credentials instead of this property.</remarks>
-        [Obsolete("Use KerberosTicketCacheAuthenticationCredentials as the RPC credentials to use a ticket cache.")]
-        public KerberosLocalTicketCache TicketCache { get; set; }
-
-        /// <summary>
-        /// Specify optional transport configuration.
-        /// </summary>
-        /// <remarks>Not all transports support this. You also need to set the correct type for the RPC protocol sequence.</remarks>
-        public RpcClientTransportConfiguration Configuration { get; set;}
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="auth_factory">Factory to create a non-standard authentication context.</param>
-        /// <remarks>You can use this version to create a mechanism to pass existing tokens such as pass-the-hash or sending arbitrary Kerberos tickets.</remarks>
-        public RpcTransportSecurity(Func<RpcTransportSecurity, IClientAuthenticationContext> auth_factory) : this()
-        {
-            _auth_factory = auth_factory;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="auth_factory">Factory to create a non-standard authentication context, based on an existing one.</param>
-        /// <remarks>You can use this version to add functionality to the existing security context.</remarks>
-        public RpcTransportSecurity(Func<IClientAuthenticationContext, IClientAuthenticationContext> auth_factory) : this()
-        {
-            _auth_factory = r => auth_factory(r.CreateClientContext(false));
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="security_quality_of_service">Security quality of service.</param>
-        public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
-        {
-            SecurityQualityOfService = security_quality_of_service;
-        }
-        #endregion
-
-        #region Static Members
-        /// <summary>
-        /// Query the service principal name for the server.
-        /// </summary>
-        /// <param name="string_binding">The binding string for the server.</param>
-        /// <param name="authn_svc">The authentication service to query.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The service principal name.</returns>
-        public static NtResult<string> QueryServicePrincipalName(string string_binding, RpcAuthenticationType authn_svc, bool throw_on_error)
-        {
-            using (var binding = SafeRpcBindingHandle.Create(string_binding, false))
-            {
-                if (!binding.IsSuccess)
-                {
-                    return binding.Cast<string>();
-                }
-
-                return Win32NativeMethods.RpcMgmtInqServerPrincName(binding.Result, authn_svc,
-                    out SafeRpcStringHandle spn).CreateWin32Result(throw_on_error, () => {
-                        using (spn)
-                        {
-                            return spn.ToString();
-                        }
-                    }
-                    );
-            }
-        }
-
-        /// <summary>
-        /// Query the service principal name for the server.
-        /// </summary>
-        /// <param name="string_binding">The binding string for the server.</param>
-        /// <param name="authn_svc">The authentication service to query.</param>
-        /// <returns>The service principal name.</returns>
-        public static string QueryServicePrincipalName(string string_binding, RpcAuthenticationType authn_svc)
-        {
-            return QueryServicePrincipalName(string_binding, authn_svc, true).Result;
-        }
-        #endregion
-
-        #region Internal Members
-        internal IClientAuthenticationContext CreateClientContext(bool call_auth_factory = true)
-        {
-            if (call_auth_factory && _auth_factory != null)
-                return _auth_factory(this);
-
-            switch (AuthenticationLevel)
-            {
-                case RpcAuthenticationLevel.None:
-                    return null;
-                case RpcAuthenticationLevel.Connect:
-                case RpcAuthenticationLevel.PacketIntegrity:
-                case RpcAuthenticationLevel.PacketPrivacy:
-                    break;
-                default:
-                    throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
-            }
-
-#pragma warning disable CS0618 // Type or member is obsolete
-            if (_auth_type == RpcAuthenticationType.Kerberos && TicketCache != null)
-            {
-                return TicketCache.CreateClientContext(ServicePrincipalName, GetContextRequestFlags());
-            }
-#pragma warning restore CS0618 // Type or member is obsolete
-            return GetAuthPackage().CreateClient(Credentials, GetContextRequestFlags(), ServicePrincipalName);
-        }
-        #endregion
+        var rpc_id = (int)_auth_type;
+        var package = AuthenticationPackage.Get().FirstOrDefault(p => p.RpcId == rpc_id);
+        return package ?? throw new ArgumentException($"Unsupported authentication type: {_auth_type}");
     }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Get the context request flags for this RPC transport security.
+    /// </summary>
+    /// <returns>The context request flags.</returns>
+    public readonly InitializeContextReqFlags GetContextRequestFlags()
+    {
+        InitializeContextReqFlags flags = InitializeContextReqFlags.Connection | InitializeContextReqFlags.UseDCEStyle;
+        if (SecurityQualityOfService != null)
+        {
+            switch (SecurityQualityOfService.ImpersonationLevel)
+            {
+                case SecurityImpersonationLevel.Identification:
+                    flags |= InitializeContextReqFlags.Identify;
+                    break;
+                case SecurityImpersonationLevel.Delegation:
+                    flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
+                    break;
+            }
+        }
+
+        switch (AuthenticationLevel)
+        {
+            case RpcAuthenticationLevel.PacketIntegrity:
+                flags |= InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
+                break;
+            case RpcAuthenticationLevel.PacketPrivacy:
+                flags |= InitializeContextReqFlags.Confidentiality | InitializeContextReqFlags.Integrity | InitializeContextReqFlags.ReplayDetect | InitializeContextReqFlags.SequenceDetect;
+                break;
+        }
+
+        if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.MutualAuthentication))
+        {
+            flags |= InitializeContextReqFlags.MutualAuth;
+        }
+        if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.NullSession))
+        {
+            flags |= InitializeContextReqFlags.NullSession;
+        }
+        if (AuthenticationCapabilities.HasFlagSet(RpcAuthenticationCapabilities.Delegation))
+        {
+            flags |= InitializeContextReqFlags.Delegate | InitializeContextReqFlags.MutualAuth;
+        }
+
+        return flags;
+    }
+    #endregion
+
+    #region Public Properties
+    /// <summary>
+    /// Security quality of service.
+    /// </summary>
+    public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+    /// <summary>
+    /// Authentication level.
+    /// </summary>
+    public RpcAuthenticationLevel AuthenticationLevel { get; set; }
+
+    /// <summary>
+    /// Authentication type.
+    /// </summary>
+    public RpcAuthenticationType AuthenticationType
+    {
+        get => _auth_type;
+        set => _auth_type = value == RpcAuthenticationType.Default ? RpcAuthenticationType.WinNT : value;
+    }
+
+    /// <summary>
+    /// Authentication credentials.
+    /// </summary>
+    public AuthenticationCredentials Credentials { get; set; }
+
+    /// <summary>
+    /// The SPN for the authentication.
+    /// </summary>
+    public string ServicePrincipalName { get; set; }
+
+    /// <summary>
+    /// Authentication capabilities.
+    /// </summary>
+    public RpcAuthenticationCapabilities AuthenticationCapabilities { get; set; }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="auth_factory">Factory to create a non-standard authentication context.</param>
+    /// <remarks>You can use this version to create a mechanism to pass existing tokens such as pass-the-hash or sending arbitrary Kerberos tickets.</remarks>
+    public RpcTransportSecurity(Func<RpcTransportSecurity, IClientAuthenticationContext> auth_factory) : this()
+    {
+        _auth_factory = auth_factory;
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="auth_factory">Factory to create a non-standard authentication context, based on an existing one.</param>
+    /// <remarks>You can use this version to add functionality to the existing security context.</remarks>
+    public RpcTransportSecurity(Func<IClientAuthenticationContext, IClientAuthenticationContext> auth_factory) : this()
+    {
+        _auth_factory = r => auth_factory(r.CreateClientContext(false));
+    }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="security_quality_of_service">Security quality of service.</param>
+    public RpcTransportSecurity(SecurityQualityOfService security_quality_of_service) : this()
+    {
+        SecurityQualityOfService = security_quality_of_service;
+    }
+    #endregion
+
+    #region Internal Members
+    internal readonly IClientAuthenticationContext CreateClientContext(bool call_auth_factory = true)
+    {
+        if (call_auth_factory && _auth_factory != null)
+            return _auth_factory(this);
+
+        switch (AuthenticationLevel)
+        {
+            case RpcAuthenticationLevel.None:
+                return null;
+            case RpcAuthenticationLevel.Connect:
+            case RpcAuthenticationLevel.PacketIntegrity:
+            case RpcAuthenticationLevel.PacketPrivacy:
+                break;
+            default:
+                throw new ArgumentException($"Unsupported authentication level {AuthenticationLevel}");
+        }
+
+        return GetAuthPackage().CreateClient(Credentials, GetContextRequestFlags(), ServicePrincipalName);
+    }
+    #endregion
 }

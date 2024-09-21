@@ -14,45 +14,44 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Dns
+namespace NtCoreLib.Net.Dns;
+
+/// <summary>
+/// A single DNS service record.
+/// </summary>
+public sealed class DnsServiceRecord
 {
     /// <summary>
-    /// A single DNS service record.
+    /// The service priority.
     /// </summary>
-    public sealed class DnsServiceRecord
+    public int Priority { get; }
+
+    /// <summary>
+    /// The service weight.
+    /// </summary>
+    public int Weight { get; }
+
+    /// <summary>
+    /// The service port.
+    /// </summary>
+    public int Port { get; }
+
+    /// <summary>
+    /// The service host name.
+    /// </summary>
+    public string Target { get; }
+
+    /// <summary>
+    /// Specify the expiry time of this record.
+    /// </summary>
+    public DateTime ExpiryTime { get; }
+
+    internal DnsServiceRecord(DnsResourceRecordSRV srv)
     {
-        /// <summary>
-        /// The service priority.
-        /// </summary>
-        public int Priority { get; }
-
-        /// <summary>
-        /// The service weight.
-        /// </summary>
-        public int Weight { get; }
-
-        /// <summary>
-        /// The service port.
-        /// </summary>
-        public int Port { get; }
-
-        /// <summary>
-        /// The service host name.
-        /// </summary>
-        public string Target { get; }
-
-        /// <summary>
-        /// Specify the expiry time of this record.
-        /// </summary>
-        public DateTime ExpiryTime { get; }
-
-        internal DnsServiceRecord(DnsResourceRecordSRV srv)
-        {
-            Priority = srv.Priority;
-            Weight = srv.Weight;
-            Port = srv.Port;
-            Target = srv.Target;
-            ExpiryTime = DateTime.Now.AddSeconds(srv.TimeToLive);
-        }
+        Priority = srv.Priority;
+        Weight = srv.Weight;
+        Port = srv.Port;
+        Target = srv.Target;
+        ExpiryTime = DateTime.Now.AddSeconds(srv.TimeToLive);
     }
 }

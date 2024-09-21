@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Flags for a firewall provider.
+/// </summary>
+[Flags]
+public enum FirewallProviderFlags
 {
-    /// <summary>
-    /// Flags for a firewall provider.
-    /// </summary>
-    [Flags]
-    public enum FirewallProviderFlags
-    {
-        None = 0,
-        [SDKName("FWPM_PROVIDER_FLAG_PERSISTENT")]
-        Persistent = 0x00000001,
-        [SDKName("FWPM_PROVIDER_FLAG_DISABLED")]
-        Disabled = 0x00000010
-    }
+    None = 0,
+    [SDKName("FWPM_PROVIDER_FLAG_PERSISTENT")]
+    Persistent = 0x00000001,
+    [SDKName("FWPM_PROVIDER_FLAG_DISABLED")]
+    Disabled = 0x00000010
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

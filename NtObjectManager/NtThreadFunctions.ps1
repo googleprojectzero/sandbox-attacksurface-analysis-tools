@@ -20,7 +20,7 @@ This cmdlet suspends a thread.
 .PARAMETER Process
 The thread to suspend.
 .INPUTS
-NtApiDotNet.NtThread
+NtCoreLib.NtThread
 .OUTPUTS
 None
 #>
@@ -28,7 +28,7 @@ function Suspend-NtThread {
     [CmdletBinding(DefaultParameterSetName = "FromThread")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromThread", ValueFromPipeline)]
-        [NtApiDotNet.NtThread[]]$Thread
+        [NtCoreLib.NtThread[]]$Thread
     )
 
     PROCESS {
@@ -50,7 +50,7 @@ This cmdlet resumes a thread.
 .PARAMETER Process
 The thread to resume.
 .INPUTS
-NtApiDotNet.NtThread
+NtCoreLib.NtThread
 .OUTPUTS
 None
 #>
@@ -58,7 +58,7 @@ function Resume-NtThread {
     [CmdletBinding(DefaultParameterSetName = "FromThread")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromThread", ValueFromPipeline)]
-        [NtApiDotNet.NtThread[]]$Thread
+        [NtCoreLib.NtThread[]]$Thread
     )
 
     PROCESS {
@@ -80,7 +80,7 @@ This cmdlet stops/kills a thread with an optional status code.
 .PARAMETER Process
 The thread to stop.
 .INPUTS
-NtApiDotNet.NtThread
+NtCoreLib.NtThread
 .OUTPUTS
 None
 #>
@@ -88,8 +88,8 @@ function Stop-NtThread {
     [CmdletBinding(DefaultParameterSetName = "FromThread")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromThread", ValueFromPipeline)]
-        [NtApiDotNet.NtThread[]]$Thread,
-        [NtApiDotNet.NtStatus]$ExitCode = 0
+        [NtCoreLib.NtThread[]]$Thread,
+        [NtCoreLib.NtStatus]$ExitCode = 0
     )
 
     PROCESS {
@@ -115,7 +115,7 @@ Specify the parts of the context to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.IContext
+NtCoreLib.IContext
 .EXAMPLE
 Get-NtThreadContext -Thread $thread
 Query the thread's context for all state.
@@ -123,8 +123,8 @@ Query the thread's context for all state.
 function Get-NtThreadContext {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtThread]$Thread,
-        [NtApiDotNet.ContextFlags]$ContextFlags = "All"
+        [NtCoreLib.NtThread]$Thread,
+        [NtCoreLib.ContextFlags]$ContextFlags = "All"
     )
     $Thread.GetContext($ContextFlags)
 }
@@ -149,9 +149,9 @@ Sets the thread's context.
 function Set-NtThreadContext {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtThread]$Thread,
+        [NtCoreLib.NtThread]$Thread,
         [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.IContext]$Context
+        [NtCoreLib.IContext]$Context
     )
     $Thread.SetContext($Context)
 }
@@ -166,7 +166,7 @@ Specify a thread to get the ticket from.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.WorkOnBehalfTicket
+NtCoreLib.WorkOnBehalfTicket
 .EXAMPLE
 Get-NtThreadWorkOnBehalfTicket
 Get the work-on-behalf ticket for the current thread.
@@ -177,10 +177,10 @@ Get the work-on-behalf ticket for a thread.
 function Get-NtThreadWorkOnBehalfTicket {
     param(
         [parameter(Position = 0)]
-        [NtApiDotNet.NtThread]$Thread
+        [NtCoreLib.NtThread]$Thread
     )
     if ($Thread -eq $null) {
-        [NtApiDotNet.NtThread]::WorkOnBehalfTicket
+        [NtCoreLib.NtThread]::WorkOnBehalfTicket
     } else {
         $Thread.GetWorkOnBehalfTicket()
     }
@@ -207,15 +207,15 @@ function Set-NtThreadWorkOnBehalfTicket {
     [CmdletBinding(DefaultParameterSetName = "FromTicket")]
     param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromTicket")]
-        [NtApiDotNet.WorkOnBehalfTicket]$Ticket,
+        [NtCoreLib.WorkOnBehalfTicket]$Ticket,
         [parameter(Mandatory, Position = 0, ParameterSetName="FromThreadId")]
         [alias("tid")]
         [int]$ThreadId
     )
     if ($PSCmdlet.ParameterSetName -eq 'FromThreadId') {
-        [NtApiDotNet.NtThread]::SetWorkOnBehalfTicket($ThreadId)
+        [NtCoreLib.NtThread]::SetWorkOnBehalfTicket($ThreadId)
     } else {
-        [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $Ticket
+        [NtCoreLib.NtThread]::WorkOnBehalfTicket = $Ticket
     }
 }
 
@@ -233,8 +233,8 @@ Clear-NtThreadWorkOnBehalfTicket
 Clear the work-on-behalf ticket for the current thread.
 #>
 function Clear-NtThreadWorkOnBehalfTicket {
-    $ticket = [NtApiDotNet.WorkOnBehalfTicket]::new(0)
-    [NtApiDotNet.NtThread]::WorkOnBehalfTicket = $ticket
+    $ticket = [NtCoreLib.WorkOnBehalfTicket]::new(0)
+    [NtCoreLib.NtThread]::WorkOnBehalfTicket = $ticket
 }
 
 <#
@@ -251,7 +251,7 @@ Get-NtThreadContainerId
 Get the container ID for the current thread.
 #>
 function Get-NtThreadContainerId {
-    [NtApiDotNet.NtThread]::Current.ContainerId
+    [NtCoreLib.NtThread]::Current.ContainerId
 }
 
 <#
@@ -264,7 +264,7 @@ The job silo to set as the thread's container.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.ThreadImpersonationContext
+NtCoreLib.Utilities.Token.ThreadImpersonationContext
 .EXAMPLE
 $imp = Set-NtThreadContainer -Job $job
 Sets the container for the current thread.
@@ -272,7 +272,7 @@ Sets the container for the current thread.
 function Set-NtThreadContainer {
     param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.NtJob]$Job
+        [NtCoreLib.NtJob]$Job
     )
-    [NtApiDotNet.NtThread]::AttachContainer($Job)
+    [NtCoreLib.NtThread]::AttachContainer($Job)
 }

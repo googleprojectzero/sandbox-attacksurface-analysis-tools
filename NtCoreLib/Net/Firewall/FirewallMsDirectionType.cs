@@ -12,33 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Direction type for a network event.
+/// </summary>
+public enum FirewallNetEventDirectionType
 {
     /// <summary>
-    /// Direction type for a network event.
+    /// Inbound
     /// </summary>
-    public enum FirewallNetEventDirectionType
-    {
-        /// <summary>
-        /// Inbound
-        /// </summary>
-        [SDKName("FWP_DIRECTION_IN")]
-        Inbound = 0x00003900,
-        /// <summary>
-        /// Outbound.
-        /// </summary>
-        [SDKName("FWP_DIRECTION_OUT")]
-        Outbound = 0x00003901,
-        /// <summary>
-        /// Forwarding
-        /// </summary>
-        [SDKName("FWP_DIRECTION_FORWARD")]
-        Forward = 0x00003902,
-        /// <summary>
-        /// Loopback.
-        /// </summary>
-        Loopback = 0x00003903,
-    }
+    [SDKName("FWP_DIRECTION_IN")]
+    Inbound = 0x00003900,
+    /// <summary>
+    /// Outbound.
+    /// </summary>
+    [SDKName("FWP_DIRECTION_OUT")]
+    Outbound = 0x00003901,
+    /// <summary>
+    /// Forwarding
+    /// </summary>
+    [SDKName("FWP_DIRECTION_FORWARD")]
+    Forward = 0x00003902,
+    /// <summary>
+    /// Loopback.
+    /// </summary>
+    Loopback = 0x00003903,
 }

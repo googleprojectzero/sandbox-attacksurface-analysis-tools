@@ -16,39 +16,38 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2NegotiateRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2NegotiateRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 36;
+
+    public Smb2NegotiateRequestPacket() 
+        : base(Smb2Command.NEGOTIATE)
     {
-        private const ushort STRUCT_SIZE = 36;
+        Dialects = new List<Smb2Dialect>();
+    }
 
-        public Smb2NegotiateRequestPacket() 
-            : base(Smb2Command.NEGOTIATE)
+    public List<Smb2Dialect> Dialects { get; }
+    public Guid ClientGuid { get; set; }
+    public Smb2SecurityMode SecurityMode { get; set; }
+
+    public override void Write(BinaryWriter writer)
+    {
+        Smb2Dialect[] dialects = Dialects.Count > 0 ? Dialects.ToArray() : new[] { Smb2Dialect.Smb202 };
+        writer.Write(STRUCT_SIZE);
+        writer.WriteUInt16(Dialects.Count);
+        writer.Write((ushort)SecurityMode);
+        // Reserved.
+        writer.WriteUInt16(0);
+        // Capabilities
+        writer.Write(0);
+        writer.Write(ClientGuid.ToByteArray());
+        // ClientStartTime
+        writer.Write(0UL);
+        foreach (var dialect in dialects)
         {
-            Dialects = new List<Smb2Dialect>();
-        }
-
-        public List<Smb2Dialect> Dialects { get; }
-        public Guid ClientGuid { get; set; }
-        public Smb2SecurityMode SecurityMode { get; set; }
-
-        public override void Write(BinaryWriter writer)
-        {
-            Smb2Dialect[] dialects = Dialects.Count > 0 ? Dialects.ToArray() : new[] { Smb2Dialect.Smb202 };
-            writer.Write(STRUCT_SIZE);
-            writer.WriteUInt16(Dialects.Count);
-            writer.Write((ushort)SecurityMode);
-            // Reserved.
-            writer.WriteUInt16(0);
-            // Capabilities
-            writer.Write(0);
-            writer.Write(ClientGuid.ToByteArray());
-            // ClientStartTime
-            writer.Write(0UL);
-            foreach (var dialect in dialects)
-            {
-                writer.Write((ushort)dialect);
-            }
+            writer.Write((ushort)dialect);
         }
     }
 }

@@ -12,22 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Credential
-{
+namespace NtCoreLib.Win32.Security.Credential;
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-    /// <summary>
-    /// Type of marshalled credentials.
-    /// </summary>
-    [SDKName("CRED_MARSHAL_TYPE")]
-    public enum CredMarshalType
-    {
-        CertCredential = 1,
-        UsernameTargetCredential,
-        BinaryBlobCredential,
-        UsernameForPackedCredentials,
-        BinaryBlobForSystem
-    }
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+/// <summary>
+/// Type of marshalled credentials.
+/// </summary>
+[SDKName("CRED_MARSHAL_TYPE")]
+public enum CredMarshalType
+{
+    CertCredential = 1,
+    UsernameTargetCredential,
+    BinaryBlobCredential,
+    UsernameForPackedCredentials,
+    BinaryBlobForSystem
 }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+

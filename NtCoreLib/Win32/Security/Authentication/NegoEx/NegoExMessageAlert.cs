@@ -12,72 +12,71 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Data;
+using NtCoreLib.Utilities.Data;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Class for a NEGOEX ALERT_MESSAGE message.
+/// </summary>
+public sealed class NegoExMessageAlert : NegoExMessage
 {
     /// <summary>
-    /// Class for a NEGOEX ALERT_MESSAGE message.
+    /// The authentication scheme selected.
     /// </summary>
-    public sealed class NegoExMessageAlert : NegoExMessage
+    public Guid AuthScheme { get; }
+
+    /// <summary>
+    /// The associated error code.
+    /// </summary>
+    public NtStatus ErrorCode { get; }
+
+    /// <summary>
+    /// The checksum for the message.
+    /// </summary>
+    public IReadOnlyList<NegoExAlert> Alerts { get; }
+
+    private NegoExMessageAlert(NegoExMessageHeader header, Guid auth_scheme, NtStatus error_code, List<NegoExAlert> alerts) : base(header)
     {
-        /// <summary>
-        /// The authentication scheme selected.
-        /// </summary>
-        public Guid AuthScheme { get; }
+        AuthScheme = auth_scheme;
+        ErrorCode = error_code;
+        Alerts = alerts.AsReadOnly();
+    }
 
-        /// <summary>
-        /// The associated error code.
-        /// </summary>
-        public NtStatus ErrorCode { get; }
-
-        /// <summary>
-        /// The checksum for the message.
-        /// </summary>
-        public IReadOnlyList<NegoExAlert> Alerts { get; }
-
-        private NegoExMessageAlert(NegoExMessageHeader header, Guid auth_scheme, NtStatus error_code, List<NegoExAlert> alerts) : base(header)
+    internal static NegoExMessageAlert Parse(NegoExMessageHeader header, byte[] data)
+    {
+        DataReader reader = new(data);
+        reader.Position = NegoExMessageHeader.HEADER_SIZE;
+        Guid auth_scheme = reader.ReadGuid();
+        NtStatus error_code = reader.ReadUInt32Enum<NtStatus>();
+        int alert_ofs = reader.ReadInt32();
+        int alert_count = reader.ReadUInt16();
+        List<NegoExAlert> alerts = new();
+        if (alert_count > 0)
         {
-            AuthScheme = auth_scheme;
-            ErrorCode = error_code;
-            Alerts = alerts.AsReadOnly();
+            reader.Position = alert_ofs;
+            for (int i = 0; i < alert_count; ++i)
+            {
+                int type = reader.ReadInt32();
+                byte[] value = ReadByteVector(reader, data);
+                alerts.Add(new NegoExAlert(type, value));
+            }
         }
 
-        internal static NegoExMessageAlert Parse(NegoExMessageHeader header, byte[] data)
-        {
-            DataReader reader = new DataReader(data);
-            reader.Position = NegoExMessageHeader.HEADER_SIZE;
-            Guid auth_scheme = reader.ReadGuid();
-            NtStatus error_code = reader.ReadUInt32Enum<NtStatus>();
-            int alert_ofs = reader.ReadInt32();
-            int alert_count = reader.ReadUInt16();
-            List<NegoExAlert> alerts = new List<NegoExAlert>();
-            if (alert_count > 0)
-            {
-                reader.Position = alert_ofs;
-                for (int i = 0; i < alert_count; ++i)
-                {
-                    int type = reader.ReadInt32();
-                    byte[] value = ReadByteVector(reader, data);
-                    alerts.Add(new NegoExAlert(type, value));
-                }
-            }
+        return new NegoExMessageAlert(header, auth_scheme, error_code, alerts);
+    }
 
-            return new NegoExMessageAlert(header, auth_scheme, error_code, alerts);
-        }
-
-        private protected override void InnerFormat(StringBuilder builder)
+    private protected override void InnerFormat(StringBuilder builder)
+    {
+        builder.AppendLine($"Auth Scheme      : {FormatAuthScheme(AuthScheme)}");
+        builder.AppendLine($"Error Code       : {ErrorCode}");
+        for (int i = 0; i < Alerts.Count; ++i)
         {
-            builder.AppendLine($"Auth Scheme      : {FormatAuthScheme(AuthScheme)}");
-            builder.AppendLine($"Error Code       : {ErrorCode}");
-            for (int i = 0; i < Alerts.Count; ++i)
-            {
-                builder.AppendLine($"Alert {0} Type   : {Alerts[i].Type}");
-                builder.AppendLine($"Alert {0} Value  : {NtObjectUtils.ToHexString(Alerts[i].Value)}");
-            }
+            builder.AppendLine($"Alert {0} Type   : {Alerts[i].Type}");
+            builder.AppendLine($"Alert {0} Value  : {NtObjectUtils.ToHexString(Alerts[i].Value)}");
         }
     }
 }

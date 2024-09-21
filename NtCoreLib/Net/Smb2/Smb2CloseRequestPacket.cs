@@ -14,26 +14,25 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2CloseRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2CloseRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 24;
+    private readonly Smb2FileId _file_id;
+
+    public Smb2CloseRequestPacket(Smb2FileId file_id) : base(Smb2Command.CLOSE)
     {
-        private const ushort STRUCT_SIZE = 24;
-        private readonly Smb2FileId _file_id;
+        _file_id = file_id;
+    }
 
-        public Smb2CloseRequestPacket(Smb2FileId file_id) : base(Smb2Command.CLOSE)
-        {
-            _file_id = file_id;
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            // Flags.
-            writer.WriteUInt16(0);
-            // Reserved.
-            writer.Write(0);
-            _file_id.Write(writer);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        // Flags.
+        writer.WriteUInt16(0);
+        // Reserved.
+        writer.Write(0);
+        _file_id.Write(writer);
     }
 }

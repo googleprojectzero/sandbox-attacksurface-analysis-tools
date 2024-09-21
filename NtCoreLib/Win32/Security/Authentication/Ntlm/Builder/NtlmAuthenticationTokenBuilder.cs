@@ -12,62 +12,61 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
+using NtCoreLib.Utilities.Text;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
+
+/// <summary>
+/// Base class for an NTLM authentication token builder.
+/// </summary>
+public abstract class NtlmAuthenticationTokenBuilder
 {
     /// <summary>
-    /// Base class for an NTLM authentication token builder.
+    /// Type of NTLM message.
     /// </summary>
-    public abstract class NtlmAuthenticationTokenBuilder
+    public NtlmMessageType MessageType { get; }
+
+    /// <summary>
+    /// NTLM negotitation flags.
+    /// </summary>
+    public NtlmNegotiateFlags Flags { get; set; }
+
+    /// <summary>
+    /// Get or set whether the token should be unicode.
+    /// </summary>
+    public bool Unicode
     {
-        /// <summary>
-        /// Type of NTLM message.
-        /// </summary>
-        public NtlmMessageType MessageType { get; }
-
-        /// <summary>
-        /// NTLM negotitation flags.
-        /// </summary>
-        public NtlmNegotiateFlags Flags { get; set; }
-
-        /// <summary>
-        /// Get or set whether the token should be unicode.
-        /// </summary>
-        public bool Unicode
+        get => Flags.HasFlagSet(NtlmNegotiateFlags.Unicode);
+        set
         {
-            get => Flags.HasFlagSet(NtlmNegotiateFlags.Unicode);
-            set
-            {
-                if (value)
-                    Flags |= NtlmNegotiateFlags.Unicode;
-                else
-                    Flags &= ~NtlmNegotiateFlags.Unicode;
-            }
+            if (value)
+                Flags |= NtlmNegotiateFlags.Unicode;
+            else
+                Flags &= ~NtlmNegotiateFlags.Unicode;
         }
+    }
 
-        private protected NtlmAuthenticationTokenBuilder(NtlmMessageType message_type)
-        {
-            MessageType = message_type;
-        }
+    private protected NtlmAuthenticationTokenBuilder(NtlmMessageType message_type)
+    {
+        MessageType = message_type;
+    }
 
-        private protected abstract byte[] GetBytes();
+    private protected abstract byte[] GetBytes();
 
-        /// <summary>
-        /// Create an authentication token from the builder.
-        /// </summary>
-        /// <returns>The NTLM authentication token.</returns>
-        public NtlmAuthenticationToken Create()
-        {
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
+    /// <summary>
+    /// Create an authentication token from the builder.
+    /// </summary>
+    /// <returns>The NTLM authentication token.</returns>
+    public NtlmAuthenticationToken Create()
+    {
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
 
-            writer.Write(BinaryEncoding.Instance.GetBytes(NtlmUtilsInternal.NTLM_MAGIC));
-            writer.Write((int)MessageType);
-            writer.Write(GetBytes());
+        writer.Write(BinaryEncoding.Instance.GetBytes(NtlmUtilsInternal.NTLM_MAGIC));
+        writer.Write((int)MessageType);
+        writer.Write(GetBytes());
 
-            return NtlmAuthenticationToken.Parse(stm.ToArray());
-        }
+        return NtlmAuthenticationToken.Parse(stm.ToArray());
     }
 }

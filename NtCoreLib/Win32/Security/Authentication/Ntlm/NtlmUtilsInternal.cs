@@ -12,108 +12,107 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
+using NtCoreLib.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm;
+
+internal static class NtlmUtilsInternal
 {
-    internal static class NtlmUtilsInternal
+    internal const string NTLM_MAGIC = "NTLMSSP\0";
+
+    internal static bool TryParseStringValues(BinaryReader reader, out int length, out int position)
     {
-        internal const string NTLM_MAGIC = "NTLMSSP\0";
+        length = 0;
+        position = 0;
 
-        internal static bool TryParseStringValues(BinaryReader reader, out int length, out int position)
+        if (reader.RemainingLength() < 8)
+            return false;
+
+        length = reader.ReadUInt16();
+        _ = reader.ReadUInt16();
+        position = reader.ReadInt32();
+        return true;
+    }
+
+    internal static bool TryParseAvPairs(BinaryReader reader, out List<NtlmAvPair> av_pairs)
+    {
+        av_pairs = new List<NtlmAvPair>();
+        while (reader.RemainingLength() > 0)
         {
-            length = 0;
-            position = 0;
-
-            if (reader.RemainingLength() < 8)
-                return false;
-
-            length = reader.ReadUInt16();
-            _ = reader.ReadUInt16();
-            position = reader.ReadInt32();
-            return true;
-        }
-
-        internal static bool TryParseAvPairs(BinaryReader reader, out List<NtlmAvPair> av_pairs)
-        {
-            av_pairs = new List<NtlmAvPair>();
-            while (reader.RemainingLength() > 0)
-            {
-                if (!NtlmAvPair.TryParse(reader, out NtlmAvPair pair))
-                {
-                    return false;
-                }
-                if (pair.Type == MsAvPairType.EOL)
-                    break;
-                av_pairs.Add(pair);
-            }
-            return true;
-        }
-
-        internal static bool ParseString(NtlmNegotiateFlags flags, byte[] data, int length, int position, out string result)
-        {
-            result = string.Empty;
-            if (data.Length < position + length)
-                return false;
-
-            if (flags.HasFlagSet(NtlmNegotiateFlags.Unicode))
-            {
-                result = Encoding.Unicode.GetString(data, position, length);
-            }
-            else if (flags.HasFlagSet(NtlmNegotiateFlags.Oem))
-            {
-                result = BinaryEncoding.Instance.GetString(data, position, length);
-            }
-            else
+            if (!NtlmAvPair.TryParse(reader, out NtlmAvPair pair))
             {
                 return false;
             }
-
-            return true;
+            if (pair.Type == MsAvPairType.EOL)
+                break;
+            av_pairs.Add(pair);
         }
+        return true;
+    }
 
-        internal static bool ParseBytes(byte[] data, int length, int position, out byte[] result)
+    internal static bool ParseString(NtlmNegotiateFlags flags, byte[] data, int length, int position, out string result)
+    {
+        result = string.Empty;
+        if (data.Length < position + length)
+            return false;
+
+        if (flags.HasFlagSet(NtlmNegotiateFlags.Unicode))
         {
-            result = new byte[0];
-            if (length == 0)
-                return true;
-            if (data.Length < position + length)
-                return false;
-
-            result = new byte[length];
-            Array.Copy(data, position, result, 0, length);
-            return true;
+            result = Encoding.Unicode.GetString(data, position, length);
         }
-
-        internal static bool ParseString(NtlmNegotiateFlags flags, BinaryReader reader, byte[] data, bool valid, out string result)
+        else if (flags.HasFlagSet(NtlmNegotiateFlags.Oem))
         {
-            result = string.Empty;
-            if (!TryParseStringValues(reader, out int length, out int position))
-                return false;
-
-            if (!valid)
-                return true;
-            return ParseString(flags, data, length, position, out result);
+            result = BinaryEncoding.Instance.GetString(data, position, length);
         }
-
-        internal static bool TryParse(BinaryReader reader, NtlmNegotiateFlags flags, out Version version)
+        else
         {
-            version = default;
-            if (reader.RemainingLength() < 8)
-                return false;
-
-            int major = reader.ReadByte();
-            int minor = reader.ReadByte();
-            int build = reader.ReadUInt16();
-            _ = reader.ReadBytes(3);
-            int revision = reader.ReadByte();
-            if (flags.HasFlagSet(NtlmNegotiateFlags.Version))
-                version = new Version(major, minor, build, revision);
-            return true;
+            return false;
         }
+
+        return true;
+    }
+
+    internal static bool ParseBytes(byte[] data, int length, int position, out byte[] result)
+    {
+        result = new byte[0];
+        if (length == 0)
+            return true;
+        if (data.Length < position + length)
+            return false;
+
+        result = new byte[length];
+        Array.Copy(data, position, result, 0, length);
+        return true;
+    }
+
+    internal static bool ParseString(NtlmNegotiateFlags flags, BinaryReader reader, byte[] data, bool valid, out string result)
+    {
+        result = string.Empty;
+        if (!TryParseStringValues(reader, out int length, out int position))
+            return false;
+
+        if (!valid)
+            return true;
+        return ParseString(flags, data, length, position, out result);
+    }
+
+    internal static bool TryParse(BinaryReader reader, NtlmNegotiateFlags flags, out Version version)
+    {
+        version = default;
+        if (reader.RemainingLength() < 8)
+            return false;
+
+        int major = reader.ReadByte();
+        int minor = reader.ReadByte();
+        int build = reader.ReadUInt16();
+        _ = reader.ReadBytes(3);
+        int revision = reader.ReadByte();
+        if (flags.HasFlagSet(NtlmNegotiateFlags.Version))
+            version = new Version(major, minor, build, revision);
+        return true;
     }
 }

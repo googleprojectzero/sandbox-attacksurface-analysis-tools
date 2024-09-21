@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Datalink address type.
+/// </summary>
+[SDKName("DL_ADDRESS_TYPE")]
+public enum DataLinkAddressType : uint
 {
-    /// <summary>
-    /// Datalink address type.
-    /// </summary>
-    [SDKName("DL_ADDRESS_TYPE")]
-    public enum DataLinkAddressType : uint
-    {
-        [SDKName("DlUnicast")]
-        Unicast,
-        [SDKName("DlMulticast")]
-        Multicast,
-        [SDKName("DlBroadcast")]
-        Broadcast
-    }
+    [SDKName("DlUnicast")]
+    Unicast,
+    [SDKName("DlMulticast")]
+    Multicast,
+    [SDKName("DlBroadcast")]
+    Broadcast
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

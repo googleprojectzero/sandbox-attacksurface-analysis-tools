@@ -12,38 +12,38 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.SafeHandles;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Class to represent the result of a package call.
+/// </summary>
+public sealed class LsaCallPackageResult : IDisposable
 {
     /// <summary>
-    /// Class to represent the result of a package call.
+    /// The status result.
     /// </summary>
-    public sealed class LsaCallPackageResult : IDisposable
+    public NtStatus Status { get; }
+
+    /// <summary>
+    /// The return buffer.
+    /// </summary>
+    public SafeBufferGeneric Buffer { get; }
+
+    /// <summary>
+    /// Dispose the response.
+    /// </summary>
+    public void Dispose()
     {
-        /// <summary>
-        /// The status result.
-        /// </summary>
-        public NtStatus Status { get; }
+        ((IDisposable)Buffer)?.Dispose();
+    }
 
-        /// <summary>
-        /// The return buffer.
-        /// </summary>
-        public SafeBufferGeneric Buffer { get; }
-
-        /// <summary>
-        /// Dispose the response.
-        /// </summary>
-        public void Dispose()
-        {
-            ((IDisposable)Buffer)?.Dispose();
-        }
-
-        internal LsaCallPackageResult(LsaCallPackageResponse resp)
-        {
-            Status = resp.Status;
-            Buffer = resp.Buffer;
-        }
+    internal LsaCallPackageResult(LsaCallPackageResponse resp)
+    {
+        Status = resp.Status;
+        Buffer = resp.Buffer;
     }
 }

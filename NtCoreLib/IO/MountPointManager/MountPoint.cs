@@ -13,36 +13,36 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Native.SafeBuffers;
 
-namespace NtApiDotNet.IO.MountPointManager
+namespace NtCoreLib.IO.MountPointManager;
+
+/// <summary>
+/// Class to represent a mount point.
+/// </summary>
+public sealed class MountPoint
 {
     /// <summary>
-    /// Class to represent a mount point.
+    /// Symbolic link name.
     /// </summary>
-    public sealed class MountPoint
-    {
-        /// <summary>
-        /// Symbolic link name.
-        /// </summary>
-        public string SymbolicLinkName { get; }
-        /// <summary>
-        /// Unique ID.
-        /// </summary>
-        public byte[] UniqueId { get; }
-        /// <summary>
-        /// Device name.
-        /// </summary>
-        public string DeviceName { get; }
+    public string SymbolicLinkName { get; }
+    /// <summary>
+    /// Unique ID.
+    /// </summary>
+    public byte[] UniqueId { get; }
+    /// <summary>
+    /// Device name.
+    /// </summary>
+    public string DeviceName { get; }
 
-        internal MountPoint(SafeBufferGeneric buffer, MOUNTMGR_MOUNT_POINT mp)
+    internal MountPoint(SafeBufferGeneric buffer, MOUNTMGR_MOUNT_POINT mp)
+    {
+        SymbolicLinkName = buffer.ReadUnicodeString((ulong)mp.SymbolicLinkNameOffset, mp.SymbolicLinkNameLength / 2);
+        if (SymbolicLinkName.StartsWith(@"\DosDevices", StringComparison.OrdinalIgnoreCase))
         {
-            SymbolicLinkName = buffer.ReadUnicodeString((ulong)mp.SymbolicLinkNameOffset, mp.SymbolicLinkNameLength / 2);
-            if (SymbolicLinkName.StartsWith(@"\DosDevices", StringComparison.OrdinalIgnoreCase))
-            {
-                SymbolicLinkName = @"\??" + SymbolicLinkName.Substring(11);
-            }
-            UniqueId = buffer.ReadBytes((ulong)mp.UniqueIdOffset, mp.UniqueIdLength);
-            DeviceName = buffer.ReadUnicodeString((ulong)mp.DeviceNameOffset, mp.DeviceNameLength / 2);
+            SymbolicLinkName = @"\??" + SymbolicLinkName.Substring(11);
         }
+        UniqueId = buffer.ReadBytes((ulong)mp.UniqueIdOffset, mp.UniqueIdLength);
+        DeviceName = buffer.ReadUnicodeString((ulong)mp.DeviceNameOffset, mp.DeviceNameLength / 2);
     }
 }

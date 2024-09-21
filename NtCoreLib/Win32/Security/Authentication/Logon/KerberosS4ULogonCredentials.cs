@@ -12,71 +12,71 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Utilities.Reflection;
+using NtCoreLib.Win32.Security.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
+
+/// <summary>
+/// Flags for the S4U logon.
+/// </summary>
+[Flags]
+public enum KerberosS4ULogonFlags
+{
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    None = 0,
+    [SDKName("KERB_S4U_LOGON_FLAG_CHECK_LOGONHOURS")]
+    CheckLogonHours = 2,
+    [SDKName("KERB_S4U_LOGON_FLAG_IDENTIFY")]
+    Identify = 8,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+}
+
+/// <summary>
+/// Class to represent a KERB_S4U_LOGON structure.
+/// </summary>
+public sealed class KerberosS4ULogonCredentials : ILsaLogonCredentials
 {
     /// <summary>
-    /// Flags for the S4U logon.
+    /// Flags for the logon.
     /// </summary>
-    [Flags]
-    public enum KerberosS4ULogonFlags
-    {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("KERB_S4U_LOGON_FLAG_CHECK_LOGONHOURS")]
-        CheckLogonHours = 2,
-        [SDKName("KERB_S4U_LOGON_FLAG_IDENTIFY")]
-        Identify = 8,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
+    public KerberosS4ULogonFlags Flags { get; set; }
 
     /// <summary>
-    /// Class to represent a KERB_S4U_LOGON structure.
+    /// The client user principal name.
     /// </summary>
-    public sealed class KerberosS4ULogonCredentials : ILsaLogonCredentials
+    public string ClientUpn { get; set; }
+
+    /// <summary>
+    /// The client realm.
+    /// </summary>
+    public string ClientRealm { get; set; }
+
+    string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
+
+    SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
     {
-        /// <summary>
-        /// Flags for the logon.
-        /// </summary>
-        public KerberosS4ULogonFlags Flags { get; set; }
-
-        /// <summary>
-        /// The client user principal name.
-        /// </summary>
-        public string ClientUpn { get; set; }
-
-        /// <summary>
-        /// The client realm.
-        /// </summary>
-        public string ClientRealm { get; set; }
-
-        string ILsaLogonCredentials.AuthenticationPackage => AuthenticationPackage.KERBEROS_NAME;
-
-        SafeBuffer ILsaLogonCredentials.ToBuffer(DisposableList list)
+        if (ClientUpn is null)
         {
-            if (ClientUpn is null)
-            {
-                throw new ArgumentNullException(nameof(ClientUpn));
-            }
-
-            if (ClientRealm is null)
-            {
-                throw new ArgumentNullException(nameof(ClientRealm));
-            }
-
-            var builder = new KERB_S4U_LOGON()
-            {
-                MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon,
-                Flags = (int)Flags
-            }.ToBuilder();
-
-            builder.AddUnicodeString(nameof(KERB_S4U_LOGON.ClientUpn), ClientUpn);
-            builder.AddUnicodeString(nameof(KERB_S4U_LOGON.ClientRealm), ClientRealm);
-            return builder.ToBuffer();
+            throw new ArgumentNullException(nameof(ClientUpn));
         }
+
+        if (ClientRealm is null)
+        {
+            throw new ArgumentNullException(nameof(ClientRealm));
+        }
+
+        var builder = new KERB_S4U_LOGON()
+        {
+            MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon,
+            Flags = (int)Flags
+        }.ToBuilder();
+
+        builder.AddUnicodeString(nameof(KERB_S4U_LOGON.ClientUpn), ClientUpn);
+        builder.AddUnicodeString(nameof(KERB_S4U_LOGON.ClientRealm), ClientRealm);
+        return builder.ToBuffer();
     }
 }

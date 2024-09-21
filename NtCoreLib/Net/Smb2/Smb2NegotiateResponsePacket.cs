@@ -15,47 +15,46 @@
 using System;
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2NegotiateResponsePacket : Smb2ResponsePacket
-    {
-        public Smb2SecurityMode SecurityMode { get; private set; }
-        public Smb2Dialect DialectRevision { get; private set; }
-        public Guid ServerGuid { get; private set; }
-        public Smb2GlobalCapabilities Capabilities { get; private set; }
-        public int MaxTransactionSize { get; private set; }
-        public int MaxReadSize { get; private set; }
-        public int MaxWriteSize { get; private set; }
-        public long SystemTime { get; private set; }
-        public long ServerStartTime { get; private set; }
-        public byte[] SecurityBuffer { get; private set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
+internal sealed class Smb2NegotiateResponsePacket : Smb2ResponsePacket
+{
+    public Smb2SecurityMode SecurityMode { get; private set; }
+    public Smb2Dialect DialectRevision { get; private set; }
+    public Guid ServerGuid { get; private set; }
+    public Smb2GlobalCapabilities Capabilities { get; private set; }
+    public int MaxTransactionSize { get; private set; }
+    public int MaxReadSize { get; private set; }
+    public int MaxWriteSize { get; private set; }
+    public long SystemTime { get; private set; }
+    public long ServerStartTime { get; private set; }
+    public byte[] SecurityBuffer { get; private set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 65)
+            throw new InvalidDataException("Invalid response size for NEGOTIATE packet.");
+        SecurityMode = (Smb2SecurityMode)reader.ReadUInt16();
+        DialectRevision = (Smb2Dialect)reader.ReadUInt16();
+        // Reserved.
+        reader.ReadUInt16();
+        ServerGuid = new Guid(reader.ReadAllBytes(16));
+        Capabilities = (Smb2GlobalCapabilities)reader.ReadInt32();
+        MaxTransactionSize = reader.ReadInt32();
+        MaxReadSize = reader.ReadInt32();
+        MaxWriteSize = reader.ReadInt32();
+        SystemTime = reader.ReadInt64();
+        ServerStartTime = reader.ReadInt64();
+        int security_buffer_ofs = reader.ReadUInt16();
+        int security_buffer_size = reader.ReadUInt16();
+        if (security_buffer_size == 0)
         {
-            if (reader.ReadUInt16() != 65)
-                throw new InvalidDataException("Invalid response size for NEGOTIATE packet.");
-            SecurityMode = (Smb2SecurityMode)reader.ReadUInt16();
-            DialectRevision = (Smb2Dialect)reader.ReadUInt16();
-            // Reserved.
-            reader.ReadUInt16();
-            ServerGuid = new Guid(reader.ReadAllBytes(16));
-            Capabilities = (Smb2GlobalCapabilities)reader.ReadInt32();
-            MaxTransactionSize = reader.ReadInt32();
-            MaxReadSize = reader.ReadInt32();
-            MaxWriteSize = reader.ReadInt32();
-            SystemTime = reader.ReadInt64();
-            ServerStartTime = reader.ReadInt64();
-            int security_buffer_ofs = reader.ReadUInt16();
-            int security_buffer_size = reader.ReadUInt16();
-            if (security_buffer_size == 0)
-            {
-                SecurityBuffer = Array.Empty<byte>();
-            }
-            else
-            {
-                reader.BaseStream.Position = security_buffer_ofs;
-                SecurityBuffer = reader.ReadAllBytes(security_buffer_size);
-            }
+            SecurityBuffer = Array.Empty<byte>();
+        }
+        else
+        {
+            reader.BaseStream.Position = security_buffer_ofs;
+            SecurityBuffer = reader.ReadAllBytes(security_buffer_size);
         }
     }
 }

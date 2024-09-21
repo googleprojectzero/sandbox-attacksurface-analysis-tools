@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+[SDKName("IKEEXT_KEY_MODULE_TYPE")]
+public enum IkeExtKeyModuleType
 {
-    [SDKName("IKEEXT_KEY_MODULE_TYPE")]
-    public enum IkeExtKeyModuleType
-    {
-        [SDKName("IKEEXT_KEY_MODULE_IKE")]
-        Ike = 0,
-        [SDKName("IKEEXT_KEY_MODULE_AUTHIP")]
-        AuthIP = (Ike + 1),
-        [SDKName("IKEEXT_KEY_MODULE_IKEV2")]
-        IkeV2 = (AuthIP + 1),
-    }
+    [SDKName("IKEEXT_KEY_MODULE_IKE")]
+    Ike = 0,
+    [SDKName("IKEEXT_KEY_MODULE_AUTHIP")]
+    AuthIP = (Ike + 1),
+    [SDKName("IKEEXT_KEY_MODULE_IKEV2")]
+    IkeV2 = (AuthIP + 1),
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

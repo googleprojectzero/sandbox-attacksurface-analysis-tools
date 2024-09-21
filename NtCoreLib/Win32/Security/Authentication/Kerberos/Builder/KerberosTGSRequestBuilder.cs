@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to build a TGS-REQ object.
+/// </summary>
+
+public sealed class KerberosTGSRequestBuilder : KerberosKDCRequestBuilder
 {
     /// <summary>
-    /// Class to build a TGS-REQ object.
+    /// Constructor.
     /// </summary>
-
-    public sealed class KerberosTGSRequestBuilder : KerberosKDCRequestBuilder
+    public KerberosTGSRequestBuilder() : base(KerberosMessageType.KRB_TGS_REQ)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosTGSRequestBuilder() : base(KerberosMessageType.KRB_TGS_REQ)
-        {
-        }
     }
 }

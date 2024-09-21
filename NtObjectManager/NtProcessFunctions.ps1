@@ -48,7 +48,7 @@ Specify to create a secure process.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtProcessCreateConfig
+NtCoreLib.Process.Kernel.NtProcessCreateConfig
 #>
 function New-NtProcessConfig {
     Param(
@@ -56,19 +56,19 @@ function New-NtProcessConfig {
         [string]$ImagePath,
         [Parameter(Position = 1)]
         [string]$CommandLine,
-        [NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
-        [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
-        [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
-        [NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
-        [NtApiDotNet.ImageCharacteristics]$ProhibitedImageCharacteristics = 0,
-        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
-        [NtApiDotNet.FileAccessRights]$AdditionalFileAccess = 0,
-        [NtApiDotNet.ProcessCreateInitFlag]$InitFlags = 0,
+        [NtCoreLib.ProcessCreateFlags]$ProcessFlags = 0,
+        [NtCoreLib.ThreadCreateFlags]$ThreadFlags = 0,
+        [NtCoreLib.PsProtectedType]$ProtectedType = 0,
+        [NtCoreLib.PsProtectedSigner]$ProtectedSigner = 0,
+        [NtCoreLib.ImageCharacteristics]$ProhibitedImageCharacteristics = 0,
+        [NtCoreLib.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [NtCoreLib.FileAccessRights]$AdditionalFileAccess = 0,
+        [NtCoreLib.ProcessCreateInitFlag]$InitFlags = 0,
         [switch]$TerminateOnDispose,
         [switch]$Win32Path,
         [switch]$CaptureAdditionalInformation,
         [switch]$Secure,
-        [NtApiDotNet.NtObject[]]$InheritHandle
+        [NtCoreLib.NtObject[]]$InheritHandle
     )
 
     if ($Win32Path) {
@@ -79,7 +79,7 @@ function New-NtProcessConfig {
         $CommandLine = $ImagePath
     }
 
-    $config = New-Object NtApiDotNet.NtProcessCreateConfig
+    $config = New-Object NtCoreLib.Process.Kernel.NtProcessCreateConfig
     $config.ImagePath = $ImagePath
     $config.ProcessFlags = $ProcessFlags
     $config.ThreadFlags = $ThreadFlags
@@ -129,37 +129,37 @@ Specify process token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtProcessCreateResult
-NtApiDotNet.NtProcess
+NtCoreLib.Process.Kernel.NtProcessCreateResult
+NtCoreLib.NtProcess
 #>
 function New-NtProcess {
     [CmdletBinding(DefaultParameterSetName="FromCreateEx")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName="FromConfig")]
-        [NtApiDotNet.NtProcessCreateConfig]$Config,
+        [NtCoreLib.Process.Kernel.NtProcessCreateConfig]$Config,
         [Parameter(ParameterSetName="FromConfig")]
         [switch]$ReturnOnError,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotnet.ProcessAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.ProcessAccessRights]$Access = "MaximumAllowed",
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.NtProcess]$Parent,
+        [NtCoreLib.NtProcess]$Parent,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.ProcessCreateFlags]$Flags = 0,
+        [NtCoreLib.ProcessCreateFlags]$Flags = 0,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.NtSection]$Section,
+        [NtCoreLib.NtSection]$Section,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.NtDebug]$DebugPort,
+        [NtCoreLib.NtDebug]$DebugPort,
         [Parameter(ParameterSetName="FromCreateEx")]
-        [NtApiDotNet.NtToken]$Token
+        [NtCoreLib.NtToken]$Token
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromConfig") {
-        [NtApiDotNet.NtProcess]::Create($Config, !$ReturnOnError)
+        [NtCoreLib.NtProcess]::Create($Config, !$ReturnOnError)
     } else {
         Use-NtObject($obja = New-NtObjectAttributes -SecurityDescriptor $SecurityDescriptor) {
-            [NtApiDotNet.NtProcess]::Create($obja, $Access, $Parent, $Flags, $Section, $DebugPort, $Token)
+            [NtCoreLib.NtProcess]::Create($obja, $Access, $Parent, $Flags, $Section, $DebugPort, $Token)
         }
     }
 }
@@ -195,7 +195,7 @@ function Get-NtProcessMitigations {
         [parameter(ParameterSetName = "FromProcessId", Position = 0, Mandatory)]
         [int[]]$ProcessId,
         [parameter(ParameterSetName = "FromProcess")]
-        [NtApiDotNet.NtProcess[]]$Process
+        [NtCoreLib.NtProcess[]]$Process
     )
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
     $ps = switch ($PSCmdlet.ParameterSetName) {
@@ -255,9 +255,9 @@ function Get-NtProcessMitigationPolicy {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.ProcessMitigationPolicy]$Policy,
+        [NtCoreLib.ProcessMitigationPolicy]$Policy,
         [parameter(ValueFromPipeline)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [switch]$AsRaw
     )
 
@@ -330,39 +330,39 @@ function Set-NtProcessMitigationPolicy {
     [CmdletBinding()]
     Param(
         [parameter(ValueFromPipeline)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Mandatory, ParameterSetName = "FromRaw")]
         [int]$RawValue,
         [parameter(Mandatory, ParameterSetName = "FromRaw")]
-        [NtApiDotNet.ProcessMitigationPolicy]$Policy,
+        [NtCoreLib.ProcessMitigationPolicy]$Policy,
         [parameter(Mandatory, ParameterSetName = "FromImageLoad")]
-        [NtApiDotNet.ProcessMitigationImageLoadPolicy]$ImageLoad,
+        [NtCoreLib.ProcessMitigationImageLoadPolicy]$ImageLoad,
         [parameter(Mandatory, ParameterSetName = "FromSignature")]
-        [NtApiDotNet.ProcessMitigationBinarySignaturePolicy]$Signature,
+        [NtCoreLib.ProcessMitigationBinarySignaturePolicy]$Signature,
         [parameter(Mandatory, ParameterSetName = "FromSystemCallDisable")]
-        [NtApiDotNet.ProcessMitigationSystemCallDisablePolicy]$SystemCallDisable,
+        [NtCoreLib.ProcessMitigationSystemCallDisablePolicy]$SystemCallDisable,
         [parameter(Mandatory, ParameterSetName = "FromDynamicCode")]
-        [NtApiDotNet.ProcessMitigationDynamicCodePolicy]$DynamicCode,
+        [NtCoreLib.ProcessMitigationDynamicCodePolicy]$DynamicCode,
         [parameter(Mandatory, ParameterSetName = "FromExtensionPointDisable")]
-        [NtApiDotNet.ProcessMitigationExtensionPointDisablePolicy]$ExtensionPointDisable,
+        [NtCoreLib.ProcessMitigationExtensionPointDisablePolicy]$ExtensionPointDisable,
         [parameter(Mandatory, ParameterSetName = "FromFontDisable")]
-        [NtApiDotNet.ProcessMitigationFontDisablePolicy]$FontDisable,
+        [NtCoreLib.ProcessMitigationFontDisablePolicy]$FontDisable,
         [parameter(Mandatory, ParameterSetName = "FromControlFlowGuard")]
-        [NtApiDotNet.ProcessMitigationControlFlowGuardPolicy]$ControlFlowGuard,
+        [NtCoreLib.ProcessMitigationControlFlowGuardPolicy]$ControlFlowGuard,
         [parameter(Mandatory, ParameterSetName = "FromStrictHandleCheck")]
-        [NtApiDotNet.ProcessMitigationStrictHandleCheckPolicy]$StrictHandleCheck,
+        [NtCoreLib.ProcessMitigationStrictHandleCheckPolicy]$StrictHandleCheck,
         [parameter(Mandatory, ParameterSetName = "FromChildProcess")]
-        [NtApiDotNet.ProcessMitigationChildProcessPolicy]$ChildProcess,
+        [NtCoreLib.ProcessMitigationChildProcessPolicy]$ChildProcess,
         [parameter(Mandatory, ParameterSetName = "FromPayloadRestriction")]
-        [NtApiDotNet.ProcessMitigationPayloadRestrictionPolicy]$PayloadRestriction,
+        [NtCoreLib.ProcessMitigationPayloadRestrictionPolicy]$PayloadRestriction,
         [parameter(Mandatory, ParameterSetName = "FromSystemCallFilter")]
-        [NtApiDotNet.ProcessMitigationSystemCallFilterPolicy]$SystemCallFilter,
+        [NtCoreLib.ProcessMitigationSystemCallFilterPolicy]$SystemCallFilter,
         [parameter(Mandatory, ParameterSetName = "FromSideChannelIsolation")]
-        [NtApiDotNet.ProcessMitigationSideChannelIsolationPolicy]$SideChannelIsolation,
+        [NtCoreLib.ProcessMitigationSideChannelIsolationPolicy]$SideChannelIsolation,
         [parameter(Mandatory, ParameterSetName = "FromAslr")]
-        [NtApiDotNet.ProcessMitigationAslrPolicy]$Aslr,
+        [NtCoreLib.ProcessMitigationAslrPolicy]$Aslr,
         [parameter(Mandatory, ParameterSetName = "FromRedirectionTrust")]
-        [NtApiDotNet.ProcessMitigationRedirectionTrustPolicy]$RedirectionTrust
+        [NtCoreLib.ProcessMitigationRedirectionTrustPolicy]$RedirectionTrust
     )
 
     BEGIN {
@@ -409,7 +409,7 @@ This cmdlet suspends a process.
 .PARAMETER Process
 The process to suspend.
 .INPUTS
-NtApiDotNet.NtProcess
+NtCoreLib.NtProcess
 .OUTPUTS
 None
 #>
@@ -417,7 +417,7 @@ function Suspend-NtProcess {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline)]
-        [NtApiDotNet.NtProcess[]]$Process
+        [NtCoreLib.NtProcess[]]$Process
     )
 
     PROCESS {
@@ -439,7 +439,7 @@ This cmdlet resumes a process.
 .PARAMETER Process
 The process to resume.
 .INPUTS
-NtApiDotNet.NtProcess
+NtCoreLib.NtProcess
 .OUTPUTS
 None
 #>
@@ -447,7 +447,7 @@ function Resume-NtProcess {
     [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "FromProcess", ValueFromPipeline)]
-        [NtApiDotNet.NtProcess[]]$Process
+        [NtCoreLib.NtProcess[]]$Process
     )
 
     PROCESS {
@@ -473,7 +473,7 @@ The NTSTATUS exit code.
 .PARAMETER ExitCodeInt
 The exit code as an integer.
 .INPUTS
-NtApiDotNet.NtProcess
+NtCoreLib.NtProcess
 .OUTPUTS
 None
 #>
@@ -481,9 +481,9 @@ function Stop-NtProcess {
     [CmdletBinding(DefaultParameterSetName = "FromStatus")]
     Param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.NtProcess[]]$Process,
+        [NtCoreLib.NtProcess[]]$Process,
         [Parameter(Position = 1, ParameterSetName = "FromStatus")]
-        [NtApiDotNet.NtStatus]$ExitStatus = 0,
+        [NtCoreLib.NtStatus]$ExitStatus = 0,
         [Parameter(Position = 1, ParameterSetName = "FromInt")]
         [int]$ExitCode = 0
     )
@@ -510,7 +510,7 @@ The PID of the process.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid
+NtCoreLib.Security.Authorization.Sid
 .EXAMPLE
 Get-NtProcessUser -ProcessId 1234
 Get user SID for process ID 1234.
@@ -525,7 +525,7 @@ function Get-NtProcessUser {
         [alias("pid")]
         [int]$ProcessId,
         [parameter(ParameterSetName = "FromProcess", Mandatory)]
-        [NtApiDotNet.NtProcess]$Process
+        [NtCoreLib.NtProcess]$Process
     )
     switch ($PSCmdlet.ParameterSetName) {
         "FromProcessId" {
@@ -554,7 +554,7 @@ The name of the variable.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtProcessEnvironmentVariable[]
+NtCoreLib.Kernel.Process.NtProcessEnvironmentVariable[]
 .EXAMPLE
 Get-NtProcessEnvironment -ProcessId 1234
 Get environment for process 1234.
@@ -572,7 +572,7 @@ function Get-NtProcessEnvironment {
         [alias("pid")]
         [int]$ProcessId,
         [parameter(ParameterSetName = "FromProcess", Mandatory)]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [string]$Name
     )
 
@@ -629,9 +629,9 @@ function Test-NtProcessJob {
     [CmdletBinding(DefaultParameterSetName="FromProcess")]
     param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromProcess")]
-        [NtApiDotNet.NtProcess]$Process,
+        [NtCoreLib.NtProcess]$Process,
         [parameter(Position = 1)]
-        [NtApiDotNet.NtJob]$Job,
+        [NtCoreLib.NtJob]$Job,
         [parameter(Mandatory, ParameterSetName="FromCurrent")]
         [switch]$Current
     )
@@ -668,10 +668,10 @@ function Test-NtProcess {
         [alias("pid")]
         [parameter(Mandatory, Position = 0)]
         [int]$ProcessId,
-        [NtApiDotNet.ProcessAccessRights]$Access = "MaximumAllowed"
+        [NtCoreLib.ProcessAccessRights]$Access = "MaximumAllowed"
     )
 
-    Use-NtObject($proc = [NtApiDotNet.NtProcess]::Open($ProcessId, $Access, $false)) {
+    Use-NtObject($proc = [NtCoreLib.NtProcess]::Open($ProcessId, $Access, $false)) {
         $proc.IsSuccess
     }
 }

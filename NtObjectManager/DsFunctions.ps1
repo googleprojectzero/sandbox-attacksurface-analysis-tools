@@ -30,7 +30,7 @@ Specify a schema class to get extended rights.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceExtendedRight[]
+NtCoreLib.Win32.DirectoryService.DirectoryServiceExtendedRight[]
 .EXAMPLE
 Get-DsExtendedRight
 Get all extended rights.
@@ -52,9 +52,9 @@ function Get-DsExtendedRight {
         [parameter(Mandatory, ParameterSetName = "FromName")]
         [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromAttribute")]
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute]$Attribute,
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaAttribute]$Attribute,
         [parameter(Mandatory, ParameterSetName = "FromSchemaClass")]
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$SchemaClass,
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass]$SchemaClass,
         [parameter(ParameterSetName = "FromSchemaClass")]
         [parameter(ParameterSetName = "FromGuid")]
         [parameter(ParameterSetName = "FromName")]
@@ -64,20 +64,20 @@ function Get-DsExtendedRight {
 
     switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRights($Domain) | Write-Output
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRights($Domain) | Write-Output
         }
         "FromGuid" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $RightId)
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $RightId)
         }
         "FromName" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Name)
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Domain, $Name)
         }
         "FromSchemaClass" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRights($Domain, $SchemaClass.SchemaId)
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRights($Domain, $SchemaClass.SchemaId)
         }
         "FromAttribute" {
             if ($null -ne $Attribute.AttributeSecurityGuid) {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Attribute.Domain, $Attribute.AttributeSecurityGuid)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetExtendedRight($Attribute.Domain, $Attribute.AttributeSecurityGuid)
             }
         }
     }
@@ -105,7 +105,7 @@ Specify to return include auxiliary classes with the class.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass[]
+NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass[]
 .EXAMPLE
 Get-DsSchemaClass
 Get all schema classes.
@@ -136,7 +136,7 @@ function Get-DsSchemaClass {
         [parameter(Mandatory, ParameterSetName = "FromName", Position = 0, ValueFromPipelineByPropertyName)]
         [string]$Name,
         [parameter(Mandatory, ParameterSetName = "FromParent", Position = 0)]
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass]$Parent,
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass]$Parent,
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromName")]
         [parameter(ParameterSetName = "FromGuid")]
@@ -158,13 +158,13 @@ function Get-DsSchemaClass {
     PROCESS {
         $cls = switch ($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClasses($Domain) | Write-Output
             }
             "FromGuid" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $SchemaId)
             }
             "FromName" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaClass($Domain, $Name)
             }
             "FromParent" {
                 if (("" -ne $Parent.SubClassOf) -and ($Parent.SubClassOf -ne $Parent.Name)) {
@@ -208,7 +208,7 @@ Specify to get the schema class for an attribute.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaAttribute[]
+NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaAttribute[]
 .EXAMPLE
 Get-DsSchemaAttribute
 Get all schema attributes.
@@ -235,22 +235,22 @@ function Get-DsSchemaAttribute {
         [parameter(ParameterSetName = "FromAttribute")]
         [string]$Domain,
         [parameter(Mandatory, ParameterSetName = "FromAttribute", ValueFromPipeline)]
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClassAttribute]$Attribute
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClassAttribute]$Attribute
     )
 
     PROCESS {
         switch ($PSCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttributes($Domain) | Write-Output
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttributes($Domain) | Write-Output
             }
             "FromGuid" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $SchemaId)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $SchemaId)
             }
             "FromName" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Name)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Name)
             }
             "FromAttribute" {
-                [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Attribute.Name)
+                [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSchemaAttribute($Domain, $Attribute.Name)
             }
         }
     }
@@ -270,7 +270,7 @@ Specify the domain or server name to query for the object. Defaults to current d
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Sid
+NtCoreLib.Security.Authorization.Sid
 .EXAMPLE
 Get-DsObjectSid -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
 Get the object SID for a user object by name.
@@ -295,10 +295,10 @@ function Get-DsObjectSid {
 
     switch ($PSCmdlet.ParameterSetName) {
         "FromName" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Domain, $DistinguishedName)
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Domain, $DistinguishedName)
         }
         "FromObject" {
-            [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Object)
+            [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetObjectSid($Object)
         }
     }
 }
@@ -319,7 +319,7 @@ Specify to get all schema classes for the object in the inheritance chain.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSchemaClass[]
+NtCoreLib.Win32.DirectoryService.DirectoryServiceSchemaClass[]
 .EXAMPLE
 Get-DsObjectSchemaClass -DistinguishedName "CN=Bob,CN=Users,DC=domain,DC=com"
 Get the schema class for a user object by name.
@@ -347,7 +347,7 @@ function Get-DsObjectSchemaClass {
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromName") {
-        $Object = [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetObject($Domain, $DistinguishedName)
+        $Object = [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetObject($Domain, $DistinguishedName)
     }
 
     $obj_class = $Object.objectClass
@@ -368,7 +368,7 @@ Specify the domain or server name to query for the object. Defaults to current d
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceHeuristics[]
+NtCoreLib.Win32.DirectoryService.DirectoryServiceHeuristics[]
 .EXAMPLE
 Get-DsHeuristics
 Get the dsHeuristics for the current domain.
@@ -380,7 +380,7 @@ function Get-DsHeuristics {
     param(
         [string]$Domain
     )
-    [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetDsHeuristics($Domain)
+    [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetDsHeuristics($Domain)
 }
 
 <#
@@ -395,7 +395,7 @@ Specify the distinguished name of the object.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityInformation
+NtCoreLib.Security.Authorization.SecurityInformation
 .EXAMPLE
 Get-DsSDRightsEffective -DistinguishedName "DC=domain,DC=local"
 Get the sDRightsEffective for an object.
@@ -413,7 +413,7 @@ function Get-DsSDRightsEffective {
     )
 
     PROCESS {
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::GetSDRightsEffective($Domain, $DistinguishedName)
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::GetSDRightsEffective($Domain, $DistinguishedName)
     }
 }
 
@@ -429,7 +429,7 @@ Specify the domain or server name to query for the object. Defaults to current d
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DirectoryService.DirectoryServiceSecurityPrincipal
+NtCoreLib.Win32.DirectoryService.DirectoryServiceSecurityPrincipal
 .EXAMPLE
 Search-DsObjectSid -Sid (Get-NtSid)
 Get the name of the object for the current SID.
@@ -438,11 +438,11 @@ function Search-DsObjectSid {
     [CmdletBinding()]
     param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [string]$Domain
     )
 
     PROCESS {
-        [NtApiDotNet.Win32.DirectoryService.DirectoryServiceUtils]::FindObjectFromSid($Domain, $Sid)
+        [NtCoreLib.Win32.DirectoryService.DirectoryServiceUtils]::FindObjectFromSid($Domain, $Sid)
     }
 }

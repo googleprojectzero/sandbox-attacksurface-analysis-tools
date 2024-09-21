@@ -12,72 +12,72 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Interop;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Security.Buffers
+namespace NtCoreLib.Win32.Security.Buffers;
+
+/// <summary>
+/// Base security buffer storage.
+/// </summary>
+public abstract class SecurityBuffer
 {
+    private protected SecurityBufferType _type;
+
     /// <summary>
-    /// Base security buffer storage.
+    /// Type of the security buffer.
     /// </summary>
-    public abstract class SecurityBuffer
+    public SecurityBufferType Type => _type & SecurityBufferType.Mask;
+
+    /// <summary>
+    /// Is the buffer read-only.
+    /// </summary>
+    public bool ReadOnly => _type.HasFlagSet(SecurityBufferType.ReadOnly) || WithChecksum;
+
+    /// <summary>
+    /// Is the buffer read-only with checksum.
+    /// </summary>
+    public bool WithChecksum => _type.HasFlagSet(SecurityBufferType.ReadOnlyWithChecksum);
+
+    /// <summary>
+    /// Convert to buffer back to an array.
+    /// </summary>
+    /// <returns>The buffer as an array.</returns>
+    public abstract byte[] ToArray();
+
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The buffer as a string.</returns>
+    public override string ToString()
     {
-        private protected SecurityBufferType _type;
-
-        /// <summary>
-        /// Type of the security buffer.
-        /// </summary>
-        public SecurityBufferType Type => _type & SecurityBufferType.Mask;
-
-        /// <summary>
-        /// Is the buffer read-only.
-        /// </summary>
-        public bool ReadOnly => _type.HasFlagSet(SecurityBufferType.ReadOnly) || WithChecksum;
-
-        /// <summary>
-        /// Is the buffer read-only with checksum.
-        /// </summary>
-        public bool WithChecksum => _type.HasFlagSet(SecurityBufferType.ReadOnlyWithChecksum);
-
-        /// <summary>
-        /// Convert to buffer back to an array.
-        /// </summary>
-        /// <returns>The buffer as an array.</returns>
-        public abstract byte[] ToArray();
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The buffer as a string.</returns>
-        public override string ToString()
+        List<SecurityBufferType> types = new()
         {
-            List<SecurityBufferType> types = new List<SecurityBufferType>
-            {
-                Type
-            };
-            if (WithChecksum)
-            {
-                types.Add(SecurityBufferType.ReadOnlyWithChecksum);
-            }
-            else if (ReadOnly)
-            {
-                types.Add(SecurityBufferType.ReadOnly);
-            }
-
-            return $"Buffer Type: {string.Join(",", types)}";
+            Type
+        };
+        if (WithChecksum)
+        {
+            types.Add(SecurityBufferType.ReadOnlyWithChecksum);
+        }
+        else if (ReadOnly)
+        {
+            types.Add(SecurityBufferType.ReadOnly);
         }
 
-        internal abstract void FromBuffer(SecBuffer buffer);
-        internal abstract SecBuffer ToBuffer(DisposableList list);
+        return $"Buffer Type: {string.Join(",", types)}";
+    }
 
-        internal virtual void ReleaseBuffer(SecBuffer buffer)
-        {
-            // Do nothing.
-        }
+    internal abstract void FromBuffer(SecBuffer buffer);
+    internal abstract SecBuffer ToBuffer(DisposableList list);
 
-        private protected SecurityBuffer(SecurityBufferType type)
-        {
-            _type = type;
-        }
+    internal virtual void ReleaseBuffer(SecBuffer buffer)
+    {
+        // Do nothing.
+    }
+
+    private protected SecurityBuffer(SecurityBufferType type)
+    {
+        _type = type;
     }
 }

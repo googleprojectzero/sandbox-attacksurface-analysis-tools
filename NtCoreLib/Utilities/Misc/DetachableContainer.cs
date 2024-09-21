@@ -15,38 +15,37 @@
 using System;
 using System.Threading;
 
-namespace NtApiDotNet.Utilities.Misc
+namespace NtCoreLib.Utilities.Misc;
+
+/// <summary>
+/// A container which can detach an innner reference.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public sealed class DetachableContainer<T> : IDisposable where T : class, IDisposable
 {
-    /// <summary>
-    /// A container which can detach an innner reference.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public sealed class DetachableContainer<T> : IDisposable where T : class, IDisposable
+    private T _obj;
+
+    internal DetachableContainer(T obj)
     {
-        private T _obj;
+        _obj = obj;
+    }
 
-        internal DetachableContainer(T obj)
-        {
-            _obj = obj;
-        }
+    /// <summary>
+    /// Get the contained value.
+    /// </summary>
+    public T Value => _obj;
 
-        /// <summary>
-        /// Get the contained value.
-        /// </summary>
-        public T Value => _obj;
+    /// <summary>
+    /// Detach the object so the original isn't disposed.
+    /// </summary>
+    /// <returns>Detached object.</returns>
+    public T Detach()
+    {
+        return Interlocked.Exchange(ref _obj, null);
+    }
 
-        /// <summary>
-        /// Detach the object so the original isn't disposed.
-        /// </summary>
-        /// <returns>Detached object.</returns>
-        public T Detach()
-        {
-            return Interlocked.Exchange(ref _obj, null);
-        }
-
-        void IDisposable.Dispose()
-        {
-            _obj?.Dispose();
-        }
+    void IDisposable.Dispose()
+    {
+        _obj?.Dispose();
     }
 }

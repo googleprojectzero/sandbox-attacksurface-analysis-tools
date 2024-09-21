@@ -14,26 +14,25 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.Reflection
+namespace NtCoreLib.Utilities.Reflection;
+
+/// <summary>
+/// Attribute to apply to a enum or a structure to indicate the original SDK name.
+/// </summary>
+/// <remarks>This is only used when formatting the value.</remarks>
+[AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
+public sealed class SDKNameAttribute : Attribute
 {
     /// <summary>
-    /// Attribute to apply to a enum or a structure to indicate the original SDK name.
+    /// The SDK name associated with this meta-data.
     /// </summary>
-    /// <remarks>This is only used when formatting the value.</remarks>
-    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
-    public sealed class SDKNameAttribute : Attribute
+    public string Name { get; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="name">The SDK name associated with this meta-data.</param>
+    public SDKNameAttribute(string name)
     {
-        /// <summary>
-        /// The SDK name associated with this meta-data.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">The SDK name associated with this meta-data.</param>
-        public SDKNameAttribute(string name)
-        {
-            Name = name;
-        }
+        Name = name;
     }
 }

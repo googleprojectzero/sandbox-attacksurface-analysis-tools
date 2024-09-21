@@ -14,66 +14,65 @@
 
 using System;
 
-namespace NtApiDotNet.Utilities.IO
+namespace NtCoreLib.Utilities.IO;
+
+/// <summary>
+/// Class to implement a scoped file lock.
+/// </summary>
+public sealed class NtFileScopedLock : IDisposable
 {
-    /// <summary>
-    /// Class to implement a scoped file lock.
-    /// </summary>
-    public sealed class NtFileScopedLock : IDisposable
+    private readonly NtFile _file;
+    private readonly long _offset;
+    private readonly long _size;
+
+    private NtFileScopedLock(NtFile file, long offset, long size)
     {
-        private readonly NtFile _file;
-        private readonly long _offset;
-        private readonly long _size;
+        _file = file;
+        _offset = offset;
+        _size = size;
+    }
 
-        private NtFileScopedLock(NtFile file, long offset, long size)
+    /// <summary>
+    /// Lock part of a file.
+    /// </summary>
+    /// <param name="file">The file to lock.</param>
+    /// <param name="offset">The offset into the file to lock</param>
+    /// <param name="size">The number of bytes to lock</param>
+    /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+    /// <param name="exclusive">True to do an exclusive lock</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status code.</returns>
+    public static NtResult<NtFileScopedLock> Create(NtFile file, long offset, long size, bool fail_immediately, bool exclusive, bool throw_on_error)
+    {
+        return file.Lock(offset, size, fail_immediately, 
+            exclusive, false).CreateResult(throw_on_error, () => new NtFileScopedLock(file, offset, size));
+    }
+
+    /// <summary>
+    /// Lock part of a file.
+    /// </summary>
+    /// <param name="file">The file to lock.</param>
+    /// <param name="offset">The offset into the file to lock</param>
+    /// <param name="size">The number of bytes to lock</param>
+    /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+    /// <param name="exclusive">True to do an exclusive lock</param>
+    /// <returns>The NT status code.</returns>
+    public static NtFileScopedLock Create(NtFile file, long offset, long size, bool fail_immediately, bool exclusive)
+    {
+        return Create(file, offset, size, fail_immediately, exclusive, true).Result;
+    }
+
+    /// <summary>
+    /// Unlock the file.
+    /// </summary>
+    public void Dispose()
+    {
+        try
         {
-            _file = file;
-            _offset = offset;
-            _size = size;
+            _file.Unlock(_offset, _size, false);
         }
-
-        /// <summary>
-        /// Lock part of a file.
-        /// </summary>
-        /// <param name="file">The file to lock.</param>
-        /// <param name="offset">The offset into the file to lock</param>
-        /// <param name="size">The number of bytes to lock</param>
-        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
-        /// <param name="exclusive">True to do an exclusive lock</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public static NtResult<NtFileScopedLock> Create(NtFile file, long offset, long size, bool fail_immediately, bool exclusive, bool throw_on_error)
+        catch (ObjectDisposedException)
         {
-            return file.Lock(offset, size, fail_immediately, 
-                exclusive, false).CreateResult(throw_on_error, () => new NtFileScopedLock(file, offset, size));
-        }
-
-        /// <summary>
-        /// Lock part of a file.
-        /// </summary>
-        /// <param name="file">The file to lock.</param>
-        /// <param name="offset">The offset into the file to lock</param>
-        /// <param name="size">The number of bytes to lock</param>
-        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
-        /// <param name="exclusive">True to do an exclusive lock</param>
-        /// <returns>The NT status code.</returns>
-        public static NtFileScopedLock Create(NtFile file, long offset, long size, bool fail_immediately, bool exclusive)
-        {
-            return Create(file, offset, size, fail_immediately, exclusive, true).Result;
-        }
-
-        /// <summary>
-        /// Unlock the file.
-        /// </summary>
-        public void Dispose()
-        {
-            try
-            {
-                _file.Unlock(_offset, _size, false);
-            }
-            catch (ObjectDisposedException)
-            {
-            }
         }
     }
 }

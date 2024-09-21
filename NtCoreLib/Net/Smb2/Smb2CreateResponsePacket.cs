@@ -14,40 +14,39 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
-{
-    internal sealed class Smb2CreateResponsePacket : Smb2ResponsePacket
-    {
-        public Smb2OplockLevel OplockLevel { get; set; }
-        public FileOpenResult CreateAction { get; set; }
-        public long CreationTime { get; set; }
-        public long LastAccessTime { get; set; }
-        public long LastWriteTime { get; set; }
-        public long ChangeTime { get; set; }
-        public long AllocationSize { get; set; }
-        public long EndOfFile { get; set; }
-        public FileAttributes FileAttributes { get; set; }
-        public Smb2FileId FileId { get; set; }
+namespace NtCoreLib.Net.Smb2;
 
-        public override void Read(BinaryReader reader)
-        {
-            if (reader.ReadUInt16() != 89)
-                throw new InvalidDataException("Invalid response size for CREATE packet.");
-            OplockLevel = (Smb2OplockLevel)reader.ReadByte();
-            // Flags (ignored)
-            reader.ReadByte();
-            CreateAction = (FileOpenResult)reader.ReadInt32();
-            CreationTime = reader.ReadInt64();
-            LastAccessTime = reader.ReadInt64();
-            LastWriteTime = reader.ReadInt64();
-            ChangeTime = reader.ReadInt64();
-            AllocationSize = reader.ReadInt64();
-            EndOfFile = reader.ReadInt64();
-            FileAttributes = (FileAttributes)reader.ReadUInt32();
-            // Reserved2 
-            reader.ReadInt32();
-            FileId = Smb2FileId.Read(reader);
-            // Ignore contexts for now.
-        }
+internal sealed class Smb2CreateResponsePacket : Smb2ResponsePacket
+{
+    public Smb2OplockLevel OplockLevel { get; set; }
+    public FileOpenResult CreateAction { get; set; }
+    public long CreationTime { get; set; }
+    public long LastAccessTime { get; set; }
+    public long LastWriteTime { get; set; }
+    public long ChangeTime { get; set; }
+    public long AllocationSize { get; set; }
+    public long EndOfFile { get; set; }
+    public FileAttributes FileAttributes { get; set; }
+    public Smb2FileId FileId { get; set; }
+
+    public override void Read(BinaryReader reader)
+    {
+        if (reader.ReadUInt16() != 89)
+            throw new InvalidDataException("Invalid response size for CREATE packet.");
+        OplockLevel = (Smb2OplockLevel)reader.ReadByte();
+        // Flags (ignored)
+        reader.ReadByte();
+        CreateAction = (FileOpenResult)reader.ReadInt32();
+        CreationTime = reader.ReadInt64();
+        LastAccessTime = reader.ReadInt64();
+        LastWriteTime = reader.ReadInt64();
+        ChangeTime = reader.ReadInt64();
+        AllocationSize = reader.ReadInt64();
+        EndOfFile = reader.ReadInt64();
+        FileAttributes = (FileAttributes)reader.ReadUInt32();
+        // Reserved2 
+        reader.ReadInt32();
+        FileId = Smb2FileId.Read(reader);
+        // Ignore contexts for now.
     }
 }

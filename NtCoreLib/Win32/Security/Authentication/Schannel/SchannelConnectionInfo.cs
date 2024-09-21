@@ -12,53 +12,52 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Native;
+using NtCoreLib.Win32.Security.Interop;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Schannel
+namespace NtCoreLib.Win32.Security.Authentication.Schannel;
+
+/// <summary>
+/// Negotiated connection information for Schannel.
+/// </summary>
+public sealed class SchannelConnectionInfo
 {
     /// <summary>
-    /// Negotiated connection information for Schannel.
+    /// The protocol used by Schannel.
     /// </summary>
-    public sealed class SchannelConnectionInfo
-    {
-        /// <summary>
-        /// The protocol used by Schannel.
-        /// </summary>
-        public SchannelProtocolType Protocol { get; }
-        /// <summary>
-        /// The negotitated cipher algorithm.
-        /// </summary>
-        public SchannelAlgorithmType CipherAlgorithm { get; }
-        /// <summary>
-        /// The negotiated cipher strength in bits.
-        /// </summary>
-        public int CipherStrength { get; }
-        /// <summary>
-        /// The negotiated hash algorithm.
-        /// </summary>
-        public SchannelAlgorithmType HashAlgorithm { get; }
-        /// <summary>
-        /// The negotiated hash string.
-        /// </summary>
-        public int HashStrength { get; }
-        /// <summary>
-        /// The negotiated key exchange algorithm.
-        /// </summary>
-        public SchannelAlgorithmType ExchangeAlgorithm { get; }
-        /// <summary>
-        /// The negotiated key exchange strength.
-        /// </summary>
-        public int ExchangeStrength { get; }
+    public SchannelProtocolType Protocol { get; }
+    /// <summary>
+    /// The negotitated cipher algorithm.
+    /// </summary>
+    public SchannelAlgorithmType CipherAlgorithm { get; }
+    /// <summary>
+    /// The negotiated cipher strength in bits.
+    /// </summary>
+    public int CipherStrength { get; }
+    /// <summary>
+    /// The negotiated hash algorithm.
+    /// </summary>
+    public SchannelAlgorithmType HashAlgorithm { get; }
+    /// <summary>
+    /// The negotiated hash string.
+    /// </summary>
+    public int HashStrength { get; }
+    /// <summary>
+    /// The negotiated key exchange algorithm.
+    /// </summary>
+    public SchannelAlgorithmType ExchangeAlgorithm { get; }
+    /// <summary>
+    /// The negotiated key exchange strength.
+    /// </summary>
+    public int ExchangeStrength { get; }
 
-        internal SchannelConnectionInfo(SecPkgContext_ConnectionInfo info)
-        {
-            Protocol = (SchannelProtocolType)info.dwProtocol;
-            CipherAlgorithm = (SchannelAlgorithmType)info.aiCipher;
-            CipherStrength = info.dwCipherStrength;
-            HashAlgorithm = (SchannelAlgorithmType)info.aiHash;
-            HashStrength = info.dwHashStrength;
-            ExchangeAlgorithm = (SchannelAlgorithmType)info.aiExch;
-            ExchangeStrength = info.dwExchStrength;
-        }
+    internal SchannelConnectionInfo(SecPkgContext_ConnectionInfo info)
+    {
+        Protocol = (SchannelProtocolType)info.dwProtocol;
+        CipherAlgorithm = (SchannelAlgorithmType)info.aiCipher;
+        CipherStrength = info.dwCipherStrength;
+        HashAlgorithm = (SchannelAlgorithmType)info.aiHash;
+        HashStrength = info.dwHashStrength;
+        ExchangeAlgorithm = (SchannelAlgorithmType)info.aiExch;
+        ExchangeStrength = info.dwExchStrength;
     }
 }

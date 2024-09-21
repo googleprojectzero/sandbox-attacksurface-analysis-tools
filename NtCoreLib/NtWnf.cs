@@ -14,454 +14,438 @@
 
 using System;
 using System.Collections.Generic;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+internal class WnfNtFakeTypeFactory : NtFakeTypeFactory
 {
-    internal class WnfNtFakeTypeFactory : NtFakeTypeFactory
+    public override IEnumerable<NtType> CreateTypes()
     {
-        public override IEnumerable<NtType> CreateTypes()
+        return new NtType[] { new NtType(NtWnf.WNF_NT_TYPE_NAME, NtWnf.GenericMapping,
+                    typeof(WnfAccessRights), typeof(WnfAccessRights),
+                    MandatoryLabelPolicy.NoWriteUp) };
+    }
+}
+
+/// <summary>
+/// NT WNF object.
+/// </summary>
+public class NtWnf
+{
+    #region Private Members
+    private bool _read_state_data;
+    private SecurityDescriptor _security_descriptor;
+    private static readonly string[] _root_keys = { 
+        @"\Registry\Machine\System\CurrentControlSet\Control\Notifications",
+        @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\Notifications",
+        @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\VolatileNotifications" };
+
+    private static NtResult<T> Query<T>(ulong state_name, WnfStateNameInformation info_class, bool throw_on_error) where T : struct
+    {
+        using var buffer = new SafeStructureInOutBuffer<T>();
+        return NtSystemCalls.NtQueryWnfStateNameInformation(state_name,
+            info_class, IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
+    }
+
+    private void ReadStateData(NtKeyValue value)
+    {
+        _security_descriptor = new SecurityDescriptor(value.Data, NtType.GetTypeByName(WNF_NT_TYPE_NAME));
+    }
+
+    private void ReadStateData()
+    {
+        if (_read_state_data)
         {
-            return new NtType[] { new NtType(NtWnf.WNF_NT_TYPE_NAME, NtWnf.GenericMapping,
-                        typeof(WnfAccessRights), typeof(WnfAccessRights),
-                        MandatoryLabelPolicy.NoWriteUp) };
+            return;
+        }
+        _read_state_data = true;
+        using ObjectAttributes obj_attr = new(_root_keys[(int)Lifetime], AttributeFlags.CaseInsensitive);
+        using var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false);
+        if (!key.IsSuccess)
+        {
+            return;
+        }
+
+        var value = key.Result.QueryValue(StateName.ToString("X016"), false);
+        if (value.IsSuccess)
+        {
+            ReadStateData(value.Result);
+        }
+    }
+
+    #endregion
+
+    #region Static Members
+    /// <summary>
+    /// Get the generic mapping for a 
+    /// </summary>
+    public static GenericMapping GenericMapping
+    {
+        get
+        {
+            return new GenericMapping()
+            {
+                GenericRead = WnfAccessRights.Synchronize | WnfAccessRights.ReadControl | WnfAccessRights.ReadData,
+                GenericWrite = WnfAccessRights.WriteData,
+                GenericExecute = WnfAccessRights.Synchronize | WnfAccessRights.WriteOwner | WnfAccessRights.WriteDac | WnfAccessRights.ReadControl,
+                GenericAll = WnfAccessRights.Synchronize | WnfAccessRights.WriteOwner | WnfAccessRights.WriteDac
+                | WnfAccessRights.ReadControl | WnfAccessRights.ReadData | WnfAccessRights.WriteData | WnfAccessRights.Unknown10,
+            };
         }
     }
 
     /// <summary>
-    /// NT WNF object.
+    /// Fake NT type name for WNF.
     /// </summary>
-    public class NtWnf
+    public const string WNF_NT_TYPE_NAME = "Wnf";
+
+    /// <summary>
+    /// Create a new WNF state name.
+    /// </summary>
+    /// <param name="name_lifetime">The lifetime of the name.</param>
+    /// <param name="data_scope">The scope of the data.</param>
+    /// <param name="persist_data">Whether to persist data.</param>
+    /// <param name="type_id">Optional type ID.</param>
+    /// <param name="maximum_state_size">Maximum state size.</param>
+    /// <param name="security_descriptor">Mandatory security descriptor.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The created object.</returns>
+    public static NtResult<NtWnf> Create(
+        WnfStateNameLifetime name_lifetime,
+        WnfDataScope data_scope,
+        bool persist_data,
+        WnfTypeId type_id,
+        int maximum_state_size,
+        SecurityDescriptor security_descriptor,
+        bool throw_on_error)
     {
-        #region Private Members
-        private bool _read_state_data;
-        private SecurityDescriptor _security_descriptor;
-        private static readonly string[] _root_keys = { 
-            @"\Registry\Machine\System\CurrentControlSet\Control\Notifications",
-            @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\Notifications",
-            @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\VolatileNotifications" };
-
-        private static NtResult<T> Query<T>(ulong state_name, WnfStateNameInformation info_class, bool throw_on_error) where T : struct
+        if (security_descriptor == null)
         {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
+            throw new ArgumentNullException("Must specify a security descriptor");
+        }
+        using var sd_buffer = security_descriptor.ToSafeBuffer();
+        return NtSystemCalls.NtCreateWnfStateName(out ulong state_name, name_lifetime,
+            data_scope, persist_data, type_id, maximum_state_size, sd_buffer)
+            .CreateResult(throw_on_error, () => new NtWnf(state_name) { _security_descriptor = security_descriptor });
+    }
+
+    /// <summary>
+    /// Kernel derived key which is used to mask the state name.
+    /// </summary>
+    public const ulong StateNameKey = 0x41C64E6DA3BC0074UL;
+
+    /// <summary>
+    /// Create a new WNF state name.
+    /// </summary>
+    /// <param name="name_lifetime">The lifetime of the name.</param>
+    /// <param name="data_scope">The scope of the data.</param>
+    /// <param name="persist_data">Whether to persist data.</param>
+    /// <param name="type_id">Optional type ID.</param>
+    /// <param name="maximum_state_size">Maximum state size.</param>
+    /// <param name="security_descriptor">Mandatory security descriptor.</param>
+    /// <returns>The created object.</returns>
+    public static NtWnf Create(
+        WnfStateNameLifetime name_lifetime,
+        WnfDataScope data_scope,
+        bool persist_data,
+        WnfTypeId type_id,
+        int maximum_state_size,
+        SecurityDescriptor security_descriptor)
+    {
+        return Create(name_lifetime, data_scope, persist_data, type_id, maximum_state_size, security_descriptor, true).Result;
+    }
+
+    /// <summary>
+    /// Open a state name. Doesn't check if it exists.
+    /// </summary>
+    /// <param name="state_name">The statename to open.</param>
+    /// <param name="check_exists">True to check state name exists.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The created object.</returns>
+    public static NtResult<NtWnf> Open(ulong state_name, bool check_exists, bool throw_on_error)
+    {
+        if (check_exists)
+        {
+            var exists = Query<int>(state_name, WnfStateNameInformation.NameExist, throw_on_error);
+            if (!exists.IsSuccess)
             {
-                return NtSystemCalls.NtQueryWnfStateNameInformation(state_name,
-                    info_class, IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
+                return exists.Status.CreateResultFromError<NtWnf>(false);
+            }
+
+            if (exists.Result == 0)
+            {
+                return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<NtWnf>(throw_on_error);
             }
         }
 
-        private void ReadStateData(NtKeyValue value)
-        {
-            _security_descriptor = new SecurityDescriptor(value.Data, NtType.GetTypeByName(WNF_NT_TYPE_NAME));
-        }
+        return new NtResult<NtWnf>(NtStatus.STATUS_SUCCESS, new NtWnf(state_name));
+    }
 
-        private void ReadStateData()
+    /// <summary>
+    /// Open a state name. Doesn't check if it exists.
+    /// </summary>
+    /// <param name="state_name">The statename to open.</param>
+    /// <param name="check_exists">True to check state name exists.</param>
+    /// <returns>The created object.</returns>
+    public static NtWnf Open(ulong state_name, bool check_exists)
+    {
+        return Open(state_name, check_exists, true).Result;
+    }
+
+    /// <summary>
+    /// Open a state name. Doesn't check if it exists.
+    /// </summary>
+    /// <param name="state_name">The statename to open.</param>
+    /// <returns>The created object.</returns>
+    public static NtWnf Open(ulong state_name)
+    {
+        return Open(state_name, true);
+    }
+
+    /// <summary>
+    /// Open a state name. Doesn't check if it exists.
+    /// </summary>
+    /// <param name="name">The name to open.</param>
+    /// <param name="check_exists">True to check state name exists.</param>
+    /// <returns>The created object.</returns>
+    public static NtWnf Open(string name, bool check_exists)
+    {
+        if (!NtWnfWellKnownNames.Names.ContainsKey(name))
         {
-            if (_read_state_data)
+            throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+        }
+        return Open(NtWnfWellKnownNames.Names[name], check_exists, true).Result;
+    }
+
+    /// <summary>
+    /// Open a state name. Doesn't check if it exists.
+    /// </summary>
+    /// <param name="name">The name to open.</param>
+    /// <returns>The created object.</returns>
+    public static NtWnf Open(string name)
+    {
+        return Open(name, true);
+    }
+
+    /// <summary>
+    /// Get registered notifications.
+    /// </summary>
+    /// <returns>The list of registered notifications.</returns>
+    public static IEnumerable<NtWnf> GetRegisteredNotifications()
+    {
+        foreach (string key_name in _root_keys)
+        {
+            using ObjectAttributes obj_attr = new(key_name, AttributeFlags.CaseInsensitive);
+            using var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false);
+            if (!key.IsSuccess)
             {
-                return;
+                continue;
             }
-            _read_state_data = true;
-            using (ObjectAttributes obj_attr = new ObjectAttributes(_root_keys[(int)Lifetime], AttributeFlags.CaseInsensitive))
+            foreach (var value in key.Result.QueryValues())
             {
-                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+                if (!ulong.TryParse(value.Name, System.Globalization.NumberStyles.HexNumber, null, out ulong state_name))
                 {
-                    if (!key.IsSuccess)
-                    {
-                        return;
-                    }
-
-                    var value = key.Result.QueryValue(StateName.ToString("X016"), false);
-                    if (value.IsSuccess)
-                    {
-                        ReadStateData(value.Result);
-                    }
+                    continue;
                 }
+                NtWnf result = new(state_name);
+                result.ReadStateData(value);
+                result._read_state_data = true;
+                yield return result;
             }
         }
+    }
+    #endregion
 
-        #endregion
+    #region Public Properties
+    /// <summary>
+    /// Get the state name for this WNF entry.
+    /// </summary>
+    public ulong StateName { get; }
 
-        #region Static Members
-        /// <summary>
-        /// Get the generic mapping for a 
-        /// </summary>
-        public static GenericMapping GenericMapping
+    /// <summary>
+    /// The state name decoded.
+    /// </summary>
+    public ulong DecodedStateName => StateName ^ StateNameKey;
+
+    /// <summary>
+    /// Get the associated lifetime for the state name.
+    /// </summary>
+    public WnfStateNameLifetime Lifetime => (WnfStateNameLifetime)(int)((DecodedStateName >> 4) & 3);
+
+    /// <summary>
+    /// Version of the WNF state name.
+    /// </summary>
+    public int Version => (int)(DecodedStateName & 0xF);
+
+    /// <summary>
+    /// Data scope of WNF state name.
+    /// </summary>
+    public WnfDataScope DataScope => (WnfDataScope)(int)((DecodedStateName >> 6) & 0xF);
+
+    /// <summary>
+    /// Is WNF state name persistent.
+    /// </summary>
+    public bool IsPersistent => ((DecodedStateName >> 10) & 1) == 1;
+
+    /// <summary>
+    /// Unique identifier of WNF state name,
+    /// </summary>
+    public ulong UniqueId => (DecodedStateName >> 11);
+
+    /// <summary>
+    /// Get if the state has subscribers.
+    /// </summary>
+    public bool SubscribersPresent => GetSubscribersPresent(true).Result;
+
+    /// <summary>
+    /// Get the security descriptor for this object, if known.
+    /// </summary>
+    public SecurityDescriptor SecurityDescriptor
+    {
+        get
         {
-            get
+            ReadStateData();
+            if (Lifetime == WnfStateNameLifetime.Temporary)
             {
-                return new GenericMapping()
-                {
-                    GenericRead = WnfAccessRights.Synchronize | WnfAccessRights.ReadControl | WnfAccessRights.ReadData,
-                    GenericWrite = WnfAccessRights.WriteData,
-                    GenericExecute = WnfAccessRights.Synchronize | WnfAccessRights.WriteOwner | WnfAccessRights.WriteDac | WnfAccessRights.ReadControl,
-                    GenericAll = WnfAccessRights.Synchronize | WnfAccessRights.WriteOwner | WnfAccessRights.WriteDac
-                    | WnfAccessRights.ReadControl | WnfAccessRights.ReadData | WnfAccessRights.WriteData | WnfAccessRights.Unknown10,
-                };
+                return null;
             }
+
+            return _security_descriptor;
         }
+    }
 
-        /// <summary>
-        /// Fake NT type name for WNF.
-        /// </summary>
-        public const string WNF_NT_TYPE_NAME = "Wnf";
+    /// <summary>
+    /// Get a name for the WNF notification.
+    /// </summary>
+    public string Name => NtWnfWellKnownNames.GetName(StateName) ?? StateName.ToString("X016");
+    #endregion
 
-        /// <summary>
-        /// Create a new WNF state name.
-        /// </summary>
-        /// <param name="name_lifetime">The lifetime of the name.</param>
-        /// <param name="data_scope">The scope of the data.</param>
-        /// <param name="persist_data">Whether to persist data.</param>
-        /// <param name="type_id">Optional type ID.</param>
-        /// <param name="maximum_state_size">Maximum state size.</param>
-        /// <param name="security_descriptor">Mandatory security descriptor.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The created object.</returns>
-        public static NtResult<NtWnf> Create(
-            WnfStateNameLifetime name_lifetime,
-            WnfDataScope data_scope,
-            bool persist_data,
-            WnfTypeId type_id,
-            int maximum_state_size,
-            SecurityDescriptor security_descriptor,
-            bool throw_on_error)
+    #region Public Methods
+    /// <summary>
+    /// Query state data for the WNF object.
+    /// </summary>
+    /// <param name="type_id">Optional Type ID.</param>
+    /// <param name="explicit_scope">Optional explicit scope.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The state data.</returns>
+    public NtResult<WnfStateData> QueryStateData(WnfTypeId type_id, IntPtr explicit_scope, bool throw_on_error)
+    {
+        int tries = 10;
+        int size = 4096;
+        while (tries-- > 0)
         {
-            if (security_descriptor == null)
+            using var buffer = new SafeHGlobalBuffer(size);
+            NtStatus status = NtSystemCalls.NtQueryWnfStateData(StateName, type_id,
+                explicit_scope, out int changestamp, buffer, ref size);
+            if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
-                throw new ArgumentNullException("Must specify a security descriptor");
-            }
-            using (var sd_buffer = security_descriptor.ToSafeBuffer())
-            {
-                return NtSystemCalls.NtCreateWnfStateName(out ulong state_name, name_lifetime,
-                    data_scope, persist_data, type_id, maximum_state_size, sd_buffer)
-                    .CreateResult(throw_on_error, () => new NtWnf(state_name) { _security_descriptor = security_descriptor });
-            }
-        }
-
-        /// <summary>
-        /// Kernel derived key which is used to mask the state name.
-        /// </summary>
-        public const ulong StateNameKey = 0x41C64E6DA3BC0074UL;
-
-        /// <summary>
-        /// Create a new WNF state name.
-        /// </summary>
-        /// <param name="name_lifetime">The lifetime of the name.</param>
-        /// <param name="data_scope">The scope of the data.</param>
-        /// <param name="persist_data">Whether to persist data.</param>
-        /// <param name="type_id">Optional type ID.</param>
-        /// <param name="maximum_state_size">Maximum state size.</param>
-        /// <param name="security_descriptor">Mandatory security descriptor.</param>
-        /// <returns>The created object.</returns>
-        public static NtWnf Create(
-            WnfStateNameLifetime name_lifetime,
-            WnfDataScope data_scope,
-            bool persist_data,
-            WnfTypeId type_id,
-            int maximum_state_size,
-            SecurityDescriptor security_descriptor)
-        {
-            return Create(name_lifetime, data_scope, persist_data, type_id, maximum_state_size, security_descriptor, true).Result;
-        }
-
-        /// <summary>
-        /// Open a state name. Doesn't check if it exists.
-        /// </summary>
-        /// <param name="state_name">The statename to open.</param>
-        /// <param name="check_exists">True to check state name exists.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The created object.</returns>
-        public static NtResult<NtWnf> Open(ulong state_name, bool check_exists, bool throw_on_error)
-        {
-            if (check_exists)
-            {
-                var exists = Query<int>(state_name, WnfStateNameInformation.NameExist, throw_on_error);
-                if (!exists.IsSuccess)
-                {
-                    return exists.Status.CreateResultFromError<NtWnf>(false);
-                }
-
-                if (exists.Result == 0)
-                {
-                    return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<NtWnf>(throw_on_error);
-                }
+                continue;
             }
 
-            return new NtResult<NtWnf>(NtStatus.STATUS_SUCCESS, new NtWnf(state_name));
+            return status.CreateResult(throw_on_error, () => new WnfStateData(buffer.ReadBytes(size), changestamp));
         }
 
-        /// <summary>
-        /// Open a state name. Doesn't check if it exists.
-        /// </summary>
-        /// <param name="state_name">The statename to open.</param>
-        /// <param name="check_exists">True to check state name exists.</param>
-        /// <returns>The created object.</returns>
-        public static NtWnf Open(ulong state_name, bool check_exists)
-        {
-            return Open(state_name, check_exists, true).Result;
-        }
+        return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<WnfStateData>(throw_on_error);
+    }
 
-        /// <summary>
-        /// Open a state name. Doesn't check if it exists.
-        /// </summary>
-        /// <param name="state_name">The statename to open.</param>
-        /// <returns>The created object.</returns>
-        public static NtWnf Open(ulong state_name)
-        {
-            return Open(state_name, true);
-        }
+    /// <summary>
+    /// Query state data for the WNF object.
+    /// </summary>
+    /// <param name="type_id">Optional Type ID.</param>
+    /// <param name="explicit_scope">Optional explicit scope.</param>
+    /// <returns>The state data.</returns>
+    public WnfStateData QueryStateData(WnfTypeId type_id, IntPtr explicit_scope)
+    {
+        return QueryStateData(type_id, explicit_scope, true).Result;
+    }
 
-        /// <summary>
-        /// Open a state name. Doesn't check if it exists.
-        /// </summary>
-        /// <param name="name">The name to open.</param>
-        /// <param name="check_exists">True to check state name exists.</param>
-        /// <returns>The created object.</returns>
-        public static NtWnf Open(string name, bool check_exists)
-        {
-            if (!NtWnfWellKnownNames.Names.ContainsKey(name))
-            {
-                throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
-            }
-            return Open(NtWnfWellKnownNames.Names[name], check_exists, true).Result;
-        }
+    /// <summary>
+    /// Query state data for the WNF object.
+    /// </summary>
+    /// <returns>The state data.</returns>
+    public WnfStateData QueryStateData()
+    {
+        return QueryStateData(null, IntPtr.Zero);
+    }
 
-        /// <summary>
-        /// Open a state name. Doesn't check if it exists.
-        /// </summary>
-        /// <param name="name">The name to open.</param>
-        /// <returns>The created object.</returns>
-        public static NtWnf Open(string name)
-        {
-            return Open(name, true);
-        }
+    /// <summary>
+    /// Update state data for the WNF object.
+    /// </summary>
+    /// <param name="data">The data to set.</param>
+    /// <param name="type_id">Optional Type ID.</param>
+    /// <param name="explicit_scope">Optional explicit scope.</param>
+    /// <param name="matching_changestamp">Optional matching changestamp.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The status from the update.</returns>
+    public NtStatus UpdateStateData(byte[] data, WnfTypeId type_id, IntPtr explicit_scope, int? matching_changestamp, bool throw_on_error)
+    {
+        using var buffer = data.ToBuffer();
+        return NtSystemCalls.NtUpdateWnfStateData(StateName, buffer,
+            buffer.Length, type_id, explicit_scope,
+            matching_changestamp ?? 0, matching_changestamp.HasValue).ToNtException(throw_on_error);
+    }
 
-        /// <summary>
-        /// Get registered notifications.
-        /// </summary>
-        /// <returns>The list of registered notifications.</returns>
-        public static IEnumerable<NtWnf> GetRegisteredNotifications()
-        {
-            foreach (string key_name in _root_keys)
-            {
-                using (ObjectAttributes obj_attr = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive))
-                {
-                    using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
-                    {
-                        if (!key.IsSuccess)
-                        {
-                            continue;
-                        }
-                        foreach (var value in key.Result.QueryValues())
-                        {
-                            if (!ulong.TryParse(value.Name, System.Globalization.NumberStyles.HexNumber, null, out ulong state_name))
-                            {
-                                continue;
-                            }
-                            NtWnf result = new NtWnf(state_name);
-                            result.ReadStateData(value);
-                            result._read_state_data = true;
-                            yield return result;
-                        }
-                    }
-                }
-            }
-        }
-        #endregion
+    /// <summary>
+    /// Update state data for the WNF object.
+    /// </summary>
+    /// <param name="data">The data to set.</param>
+    public void UpdateStateData(byte[] data)
+    {
+        UpdateStateData(data, null, IntPtr.Zero, null, true);
+    }
 
-        #region Public Properties
-        /// <summary>
-        /// Get the state name for this WNF entry.
-        /// </summary>
-        public ulong StateName { get; }
+    /// <summary>
+    /// Delete the state data for the WNF object.
+    /// </summary>
+    /// <param name="explicit_scope">Optional explicit scope.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status code.</returns>
+    public NtStatus DeleteStateData(IntPtr explicit_scope, bool throw_on_error)
+    {
+        return NtSystemCalls.NtDeleteWnfStateData(StateName, explicit_scope).ToNtException(throw_on_error);
+    }
 
-        /// <summary>
-        /// The state name decoded.
-        /// </summary>
-        public ulong DecodedStateName => StateName ^ StateNameKey;
+    /// <summary>
+    /// Delete the state data for the WNF object.
+    /// </summary>
+    /// <param name="explicit_scope">Optional explicit scope.</param>
+    public void DeleteStateData(IntPtr explicit_scope)
+    {
+        DeleteStateData(explicit_scope, true);
+    }
 
-        /// <summary>
-        /// Get the associated lifetime for the state name.
-        /// </summary>
-        public WnfStateNameLifetime Lifetime => (WnfStateNameLifetime)(int)((DecodedStateName >> 4) & 3);
+    /// <summary>
+    /// Delete the state data for the WNF object.
+    /// </summary>
+    public void DeleteStateData()
+    {
+        DeleteStateData(IntPtr.Zero);
+    }
 
-        /// <summary>
-        /// Version of the WNF state name.
-        /// </summary>
-        public int Version => (int)(DecodedStateName & 0xF);
+    /// <summary>
+    /// Get if the state has subscribers.
+    /// </summary>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The status of subscribers.</returns>
+    public NtResult<bool> GetSubscribersPresent(bool throw_on_error)
+    {
+        return Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, throw_on_error).Map(i => i != 0);
+    }
+    #endregion
 
-        /// <summary>
-        /// Data scope of WNF state name.
-        /// </summary>
-        public WnfDataScope DataScope => (WnfDataScope)(int)((DecodedStateName >> 6) & 0xF);
+    /// <summary>
+    /// Overridden ToString method.
+    /// </summary>
+    /// <returns>The string representation.</returns>
+    public override string ToString()
+    {
+        return $"WNF:{Name} {Lifetime}";
+    }
 
-        /// <summary>
-        /// Is WNF state name persistent.
-        /// </summary>
-        public bool IsPersistent => ((DecodedStateName >> 10) & 1) == 1;
-
-        /// <summary>
-        /// Unique identifier of WNF state name,
-        /// </summary>
-        public ulong UniqueId => (DecodedStateName >> 11);
-
-        /// <summary>
-        /// Get if the state has subscribers.
-        /// </summary>
-        public bool SubscribersPresent => GetSubscribersPresent(true).Result;
-
-        /// <summary>
-        /// Get the security descriptor for this object, if known.
-        /// </summary>
-        public SecurityDescriptor SecurityDescriptor
-        {
-            get
-            {
-                ReadStateData();
-                if (Lifetime == WnfStateNameLifetime.Temporary)
-                {
-                    return null;
-                }
-
-                return _security_descriptor;
-            }
-        }
-
-        /// <summary>
-        /// Get a name for the WNF notification.
-        /// </summary>
-        public string Name => NtWnfWellKnownNames.GetName(StateName) ?? StateName.ToString("X016");
-
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Query state data for the WNF object.
-        /// </summary>
-        /// <param name="type_id">Optional Type ID.</param>
-        /// <param name="explicit_scope">Optional explicit scope.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The state data.</returns>
-        public NtResult<WnfStateData> QueryStateData(WnfTypeId type_id, IntPtr explicit_scope, bool throw_on_error)
-        {
-            int tries = 10;
-            int size = 4096;
-            while (tries-- > 0)
-            {
-                using (var buffer = new SafeHGlobalBuffer(size))
-                {
-                    NtStatus status = NtSystemCalls.NtQueryWnfStateData(StateName, type_id, 
-                        explicit_scope, out int changestamp, buffer, ref size);
-                    if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
-                    {
-                        continue;
-                    }
-
-                    return status.CreateResult(throw_on_error, () => new WnfStateData(buffer.ReadBytes(size), changestamp));
-                }
-            }
-
-            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<WnfStateData>(throw_on_error);
-        }
-
-        /// <summary>
-        /// Query state data for the WNF object.
-        /// </summary>
-        /// <param name="type_id">Optional Type ID.</param>
-        /// <param name="explicit_scope">Optional explicit scope.</param>
-        /// <returns>The state data.</returns>
-        public WnfStateData QueryStateData(WnfTypeId type_id, IntPtr explicit_scope)
-        {
-            return QueryStateData(type_id, explicit_scope, true).Result;
-        }
-
-        /// <summary>
-        /// Query state data for the WNF object.
-        /// </summary>
-        /// <returns>The state data.</returns>
-        public WnfStateData QueryStateData()
-        {
-            return QueryStateData(null, IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Update state data for the WNF object.
-        /// </summary>
-        /// <param name="data">The data to set.</param>
-        /// <param name="type_id">Optional Type ID.</param>
-        /// <param name="explicit_scope">Optional explicit scope.</param>
-        /// <param name="matching_changestamp">Optional matching changestamp.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The status from the update.</returns>
-        public NtStatus UpdateStateData(byte[] data, WnfTypeId type_id, IntPtr explicit_scope, int? matching_changestamp, bool throw_on_error)
-        {
-            using (var buffer = data.ToBuffer())
-            {
-                return NtSystemCalls.NtUpdateWnfStateData(StateName, buffer, 
-                    buffer.Length, type_id, explicit_scope,
-                    matching_changestamp ?? 0, matching_changestamp.HasValue).ToNtException(throw_on_error);
-            }
-        }
-
-        /// <summary>
-        /// Update state data for the WNF object.
-        /// </summary>
-        /// <param name="data">The data to set.</param>
-        public void UpdateStateData(byte[] data)
-        {
-            UpdateStateData(data, null, IntPtr.Zero, null, true);
-        }
-
-        /// <summary>
-        /// Delete the state data for the WNF object.
-        /// </summary>
-        /// <param name="explicit_scope">Optional explicit scope.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public NtStatus DeleteStateData(IntPtr explicit_scope, bool throw_on_error)
-        {
-            return NtSystemCalls.NtDeleteWnfStateData(StateName, explicit_scope).ToNtException(throw_on_error);
-        }
-
-        /// <summary>
-        /// Delete the state data for the WNF object.
-        /// </summary>
-        /// <param name="explicit_scope">Optional explicit scope.</param>
-        public void DeleteStateData(IntPtr explicit_scope)
-        {
-            DeleteStateData(explicit_scope, true);
-        }
-
-        /// <summary>
-        /// Delete the state data for the WNF object.
-        /// </summary>
-        public void DeleteStateData()
-        {
-            DeleteStateData(IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Get if the state has subscribers.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The status of subscribers.</returns>
-        public NtResult<bool> GetSubscribersPresent(bool throw_on_error)
-        {
-            return Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, throw_on_error).Map(i => i != 0);
-        }
-        #endregion
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The string representation.</returns>
-        public override string ToString()
-        {
-            return $"WNF:{Name} {Lifetime}";
-        }
-
-        internal NtWnf(ulong state_name)
-        {
-            StateName = state_name;
-        }
+    internal NtWnf(ulong state_name)
+    {
+        StateName = state_name;
     }
 }

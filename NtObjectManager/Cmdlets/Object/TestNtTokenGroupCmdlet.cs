@@ -12,132 +12,131 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Security.Authorization;
+using NtCoreLib.Security.Token;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Checks if a SID is present in the Token's groups.</para>
+/// <para type="description">This cmdlet checks if a SID is present in a Token's groups. It supports checking
+/// for normal Groups, Restricted SIDs or Capabilites.</para>
+/// </summary>
+/// <example>
+///   <code>Test-NtTokenGroup -Token $token -Sid $sid</code>
+///   <para>Checks if SID is present in the normal Groups.</para>
+/// </example>
+/// <example>
+///   <code>Test-NtTokenGroup -Token $token -Sid $sid -DenyOnly</code>
+///   <para>Checks if SID is present in the normal Groups including DenyOnly groups.</para>
+/// </example>
+/// <example>
+///   <code>Test-NtTokenGroup -Token $token -Sid $sid -Restricted</code>
+///   <para>Checks if SID is present in the normal Groups.</para>
+/// </example>
+/// <example>
+///   <code>Test-NtTokenGroup -Token $token -Sid $sid -Capability</code>
+///   <para>Checks if SID is present in the normal Groups.</para>
+/// </example>
+[Cmdlet(VerbsDiagnostic.Test, "NtTokenGroup", DefaultParameterSetName = "FromGroup")]
+public class TestNtTokenGroupCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Checks if a SID is present in the Token's groups.</para>
-    /// <para type="description">This cmdlet checks if a SID is present in a Token's groups. It supports checking
-    /// for normal Groups, Restricted SIDs or Capabilites.</para>
+    /// <para type="description">Specify the token to test.</para>
     /// </summary>
-    /// <example>
-    ///   <code>Test-NtTokenGroup -Token $token -Sid $sid</code>
-    ///   <para>Checks if SID is present in the normal Groups.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Test-NtTokenGroup -Token $token -Sid $sid -DenyOnly</code>
-    ///   <para>Checks if SID is present in the normal Groups including DenyOnly groups.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Test-NtTokenGroup -Token $token -Sid $sid -Restricted</code>
-    ///   <para>Checks if SID is present in the normal Groups.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Test-NtTokenGroup -Token $token -Sid $sid -Capability</code>
-    ///   <para>Checks if SID is present in the normal Groups.</para>
-    /// </example>
-    [Cmdlet(VerbsDiagnostic.Test, "NtTokenGroup", DefaultParameterSetName = "FromGroup")]
-    public class TestNtTokenGroupCmdlet : PSCmdlet
+    [Parameter(Position = 1)]
+    public NtToken Token { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the SID to test.</para>
+    /// </summary>
+    [Parameter(Position = 0, Mandatory = true)]
+    public Sid Sid { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the to test the Restricted SIDs.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromRestricted")]
+    public SwitchParameter Restricted { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify the to test the Capability SIDs.</para>
+    /// </summary>
+    [Parameter(Mandatory = true, ParameterSetName = "FromCapability")]
+    public SwitchParameter Capability { get; set; }
+
+    /// <summary>
+    /// <para type="description">Specify to also check DenyOnly SIDs.</para>
+    /// </summary>
+    [Parameter(ParameterSetName = "FromGroup")]
+    [Parameter(ParameterSetName = "FromRestricted")]
+    public SwitchParameter DenyOnly { get; set; }
+
+    /// <summary>
+    /// Process record.
+    /// </summary>
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// <para type="description">Specify the token to test.</para>
-        /// </summary>
-        [Parameter(Position = 1)]
-        public NtToken Token { get; set; }
+        WriteObject(CheckGroups(Sid, GetGroups(), DenyOnly));
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the SID to test.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        public Sid Sid { get; set; }
+    private NtToken GetToken()
+    {
+        if (Token?.IsPseudoToken ?? false)
+            return Token;
+        return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
+    }
 
-        /// <summary>
-        /// <para type="description">Specify the to test the Restricted SIDs.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromRestricted")]
-        public SwitchParameter Restricted { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the to test the Capability SIDs.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromCapability")]
-        public SwitchParameter Capability { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to also check DenyOnly SIDs.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromGroup")]
-        [Parameter(ParameterSetName = "FromRestricted")]
-        public SwitchParameter DenyOnly { get; set; }
-
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
+    private IEnumerable<UserGroup> GetGroups()
+    {
+        List<UserGroup> groups = new();
+        using var token = GetToken();
+        if (Restricted)
         {
-            WriteObject(CheckGroups(Sid, GetGroups(), DenyOnly));
+            return token.RestrictedSids.Select(r => new UserGroup(r.Sid, GroupAttributes.Enabled));
         }
-
-        private NtToken GetToken()
+        else if (Capability)
         {
-            if (Token?.IsPseudoToken ?? false)
-                return Token;
-            return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
-        }
-
-        private IEnumerable<UserGroup> GetGroups()
-        {
-            List<UserGroup> groups = new List<UserGroup>();
-            using (var token = GetToken())
+            if (token.AppContainer)
             {
-                if (Restricted)
+                groups.Add(new UserGroup(token.AppContainerSid, GroupAttributes.Enabled));
+                if (!token.LowPrivilegeAppContainer)
                 {
-                    return token.RestrictedSids.Select(r => new UserGroup(r.Sid, GroupAttributes.Enabled));
+                    groups.Add(new UserGroup(KnownSids.AllApplicationPackages, GroupAttributes.Enabled));
                 }
-                else if (Capability)
-                {
-                    if (token.AppContainer)
-                    {
-                        groups.Add(new UserGroup(token.AppContainerSid, GroupAttributes.Enabled));
-                        if (!token.LowPrivilegeAppContainer)
-                        {
-                            groups.Add(new UserGroup(KnownSids.AllApplicationPackages, GroupAttributes.Enabled));
-                        }
-                        groups.Add(new UserGroup(KnownSids.AllRestrictedApplicationPackages, GroupAttributes.Enabled));
-                        groups.AddRange(token.Capabilities);
-                    }
-                }
-                else
-                {
-                    UserGroup user = token.User;
-                    if (!user.DenyOnly)
-                    {
-                        user = new UserGroup(user.Sid, GroupAttributes.Enabled);
-                    }
-                    groups.Add(user);
-                    groups.AddRange(token.Groups);
-                }
-
-                return groups;
+                groups.Add(new UserGroup(KnownSids.AllRestrictedApplicationPackages, GroupAttributes.Enabled));
+                groups.AddRange(token.Capabilities);
             }
         }
-
-        private static bool CheckGroups(Sid sid, IEnumerable<UserGroup> groups, bool deny_only)
+        else
         {
-            foreach (var group in groups)
+            UserGroup user = token.User;
+            if (!user.DenyOnly)
             {
-                if (group.Sid != sid)
-                    continue;
-                if (group.Enabled)
-                    return true;
-                if (deny_only && group.DenyOnly)
-                    return true;
+                user = new UserGroup(user.Sid, GroupAttributes.Enabled);
             }
-            return false;
+            groups.Add(user);
+            groups.AddRange(token.Groups);
         }
+
+        return groups;
+    }
+
+    private static bool CheckGroups(Sid sid, IEnumerable<UserGroup> groups, bool deny_only)
+    {
+        foreach (var group in groups)
+        {
+            if (group.Sid != sid)
+                continue;
+            if (group.Enabled)
+                return true;
+            if (deny_only && group.DenyOnly)
+                return true;
+        }
+        return false;
     }
 }

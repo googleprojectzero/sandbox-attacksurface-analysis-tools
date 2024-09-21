@@ -12,15 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Marshal
+namespace NtCoreLib.Ndr.Marshal;
+
+/// <summary>
+/// Place holder for unsupported types.
+/// </summary>
+public class NdrUnsupported
 {
-    /// <summary>
-    /// Place holder for unsupported types.
-    /// </summary>
-    public class NdrUnsupported
+    private NdrUnsupported()
     {
-        private NdrUnsupported()
-        {
-        }
     }
 }

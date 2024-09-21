@@ -14,17 +14,16 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+[Flags]
+internal enum Smb2GlobalCapabilities
 {
-    [Flags]
-    internal enum Smb2GlobalCapabilities
-    {
-        DFS = 0x00000001,
-        LEASING = 0x00000002,
-        LARGE_MTU = 0x00000004,
-        MULTI_CHANNEL = 0x00000008,
-        PERSISTENT_HANDLES = 0x00000010,
-        DIRECTORY_LEASING = 0x00000020,
-        ENCRYPTION = 0x00000040
-    }
+    DFS = 0x00000001,
+    LEASING = 0x00000002,
+    LARGE_MTU = 0x00000004,
+    MULTI_CHANNEL = 0x00000008,
+    PERSISTENT_HANDLES = 0x00000010,
+    DIRECTORY_LEASING = 0x00000020,
+    ENCRYPTION = 0x00000040
 }

@@ -13,41 +13,41 @@
 //  limitations under the License.
 
 using System;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Class to represent a firewall sublayer.
+/// </summary>
+public sealed class FirewallSubLayer : FirewallObject
 {
     /// <summary>
-    /// Class to represent a firewall sublayer.
+    /// Sub-layer flags.
     /// </summary>
-    public sealed class FirewallSubLayer : FirewallObject
-    {
-        /// <summary>
-        /// Sub-layer flags.
-        /// </summary>
-        public FirewallSubLayerFlags Flags { get; }
-        /// <summary>
-        /// The provider key.
-        /// </summary>
-        public Guid ProviderKey { get; }
-        /// <summary>
-        /// Provider data.
-        /// </summary>
-        public byte[] ProviderData { get; }
-        /// <summary>
-        /// Weight of the sub-layer.
-        /// </summary>
-        public int Weight { get; }
+    public FirewallSubLayerFlags Flags { get; }
+    /// <summary>
+    /// The provider key.
+    /// </summary>
+    public Guid ProviderKey { get; }
+    /// <summary>
+    /// Provider data.
+    /// </summary>
+    public byte[] ProviderData { get; }
+    /// <summary>
+    /// Weight of the sub-layer.
+    /// </summary>
+    public int Weight { get; }
 
-        internal FirewallSubLayer(FWPM_SUBLAYER0 sublayer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
-            : base(sublayer.subLayerKey, sublayer.displayData, NamedGuidDictionary.SubLayerGuids.Value, engine, get_sd)
+    internal FirewallSubLayer(FWPM_SUBLAYER0 sublayer, FirewallEngine engine, Func<SecurityInformation, bool, NtResult<SecurityDescriptor>> get_sd) 
+        : base(sublayer.subLayerKey, sublayer.displayData, NamedGuidDictionary.SubLayerGuids.Value, engine, get_sd)
+    {
+        if (sublayer.providerKey != IntPtr.Zero)
         {
-            if (sublayer.providerKey != IntPtr.Zero)
-            {
-                ProviderKey = new Guid(NtProcess.Current.ReadMemory(sublayer.providerKey.ToInt64(), 16));
-            }
-            ProviderData = sublayer.providerData.ToArray();
-            Flags = sublayer.flags;
-            Weight = sublayer.weight;
+            ProviderKey = new Guid(NtProcess.Current.ReadMemory(sublayer.providerKey.ToInt64(), 16));
         }
+        ProviderData = sublayer.providerData.ToArray();
+        Flags = sublayer.flags;
+        Weight = sublayer.weight;
     }
 }

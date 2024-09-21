@@ -12,28 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Tls
+namespace NtCoreLib.Net.Tls;
+
+/// <summary>
+/// Type for a TLS record.
+/// </summary>
+public enum TlsRecordType
 {
     /// <summary>
-    /// Type for a TLS record.
+    /// Change cipher spec.
     /// </summary>
-    public enum TlsRecordType
-    {
-        /// <summary>
-        /// Change cipher spec.
-        /// </summary>
-        ChangeCipherSpec = 20,
-        /// <summary>
-        /// Alert.
-        /// </summary>
-        Alert = 21,
-        /// <summary>
-        /// Handshake.
-        /// </summary>
-        Handshake = 22,
-        /// <summary>
-        /// Application data.
-        /// </summary>
-        ApplicationData = 23,
-    }
+    ChangeCipherSpec = 20,
+    /// <summary>
+    /// Alert.
+    /// </summary>
+    Alert = 21,
+    /// <summary>
+    /// Handshake.
+    /// </summary>
+    Handshake = 22,
+    /// <summary>
+    /// Application data.
+    /// </summary>
+    ApplicationData = 23,
 }

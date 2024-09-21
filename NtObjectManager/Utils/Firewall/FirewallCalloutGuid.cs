@@ -12,22 +12,21 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Net.Firewall;
+using NtCoreLib.Net.Firewall;
 
-namespace NtObjectManager.Utils.Firewall
+namespace NtObjectManager.Utils.Firewall;
+
+/// <summary>
+/// Firewall callout GUID.
+/// </summary>
+public sealed class FirewallCalloutGuid : FirewallObjectGuid
 {
     /// <summary>
-    /// Firewall callout GUID.
+    /// Constructor.
     /// </summary>
-    public sealed class FirewallCalloutGuid : FirewallObjectGuid
+    /// <param name="name">Name of the callout or a GUID</param>
+    public FirewallCalloutGuid(string name)
+        : base(name, FirewallUtils.GetKnownCalloutGuid)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="name">Name of the callout or a GUID</param>
-        public FirewallCalloutGuid(string name)
-            : base(name, FirewallUtils.GetKnownCalloutGuid)
-        {
-        }
     }
 }

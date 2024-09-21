@@ -14,28 +14,28 @@
 
 using System;
 using System.Runtime.InteropServices;
+using NtCoreLib.Native.SafeBuffers;
 
-namespace NtApiDotNet.Win32.SafeHandles
+namespace NtCoreLib.Win32.SafeHandles;
+
+internal sealed class SafeCoTaskMemBuffer : SafeBufferGeneric
 {
-    internal sealed class SafeCoTaskMemBuffer : SafeBufferGeneric
+    protected override bool ReleaseHandle()
     {
-        protected override bool ReleaseHandle()
-        {
-            Marshal.FreeCoTaskMem(handle);
-            return true;
-        }
-
-        public SafeCoTaskMemBuffer(IntPtr handle, bool owns_handle) 
-            : base(handle, 0, owns_handle)
-        {
-        }
-
-        public SafeCoTaskMemBuffer()
-            : base(IntPtr.Zero, 0, true)
-        {
-        }
-
-        public static SafeCoTaskMemBuffer Null => new SafeCoTaskMemBuffer();
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        Marshal.FreeCoTaskMem(handle);
+        return true;
     }
+
+    public SafeCoTaskMemBuffer(IntPtr handle, bool owns_handle) 
+        : base(handle, 0, owns_handle)
+    {
+    }
+
+    public SafeCoTaskMemBuffer()
+        : base(IntPtr.Zero, 0, true)
+    {
+    }
+
+    public static SafeCoTaskMemBuffer Null => new();
+    public override bool IsInvalid => handle == IntPtr.Zero;
 }

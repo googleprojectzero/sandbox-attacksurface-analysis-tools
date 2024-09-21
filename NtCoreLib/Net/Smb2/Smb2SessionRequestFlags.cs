@@ -14,12 +14,11 @@
 
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+[Flags]
+internal enum Smb2SessionRequestFlags
 {
-    [Flags]
-    internal enum Smb2SessionRequestFlags
-    {
-        None = 0,
-        BINDING = 1,
-    }
+    None = 0,
+    BINDING = 1,
 }

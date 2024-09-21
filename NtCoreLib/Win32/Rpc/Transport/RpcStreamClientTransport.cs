@@ -12,74 +12,75 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr.Marshal;
-using NtApiDotNet.Win32.Rpc.Transport.PDU;
+using NtCoreLib.Ndr.Marshal;
+using NtCoreLib.Win32.Rpc.Transport.PDU;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// Class to implement a RPC client transport based on a stream.
+/// </summary>
+public abstract class RpcStreamClientTransport : RpcConnectedClientTransport
 {
+    #region Private Members
+    private readonly BinaryReader _reader;
+    private readonly BinaryWriter _writer;
+    #endregion
+
+    #region Protected Members
     /// <summary>
-    /// Class to implement a RPC client transport based on a stream.
+    /// Constructor.
     /// </summary>
-    public abstract class RpcStreamClientTransport : RpcConnectedClientTransport
+    /// <param name="stream">The stream to use to communicate with the transport.</param>
+    /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
+    /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
+    /// <param name="config">The transport configuration for the connection.</param>
+    /// <param name="data_rep">The data representation.</param>
+    /// <param name="transport_security">The security for the transport.</param>
+    protected RpcStreamClientTransport(Stream stream, ushort max_recv_fragment, ushort max_send_fragment, 
+        NdrDataRepresentation data_rep, RpcTransportSecurity transport_security, 
+        RpcConnectedClientTransportConfiguration config) 
+        : base(max_recv_fragment, max_send_fragment, data_rep, transport_security, config)
     {
-        #region Private Members
-        private readonly BinaryReader _reader;
-        private readonly BinaryWriter _writer;
-        #endregion
-
-        #region Protected Members
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="stream">The stream to use to communicate with the transport.</param>
-        /// <param name="max_recv_fragment">The initial maximum receive fragment length.</param>
-        /// <param name="max_send_fragment">The initial maximum send fragment length.</param>
-        /// <param name="transport_security">The transport security for the connection.</param>
-        /// <param name="data_rep">The data representation.</param>
-        protected RpcStreamClientTransport(Stream stream, ushort max_recv_fragment, ushort max_send_fragment, 
-            NdrDataRepresentation data_rep, RpcTransportSecurity transport_security) 
-            : base(max_recv_fragment, max_send_fragment, data_rep, transport_security)
-        {
-            _reader = new BinaryReader(stream, Encoding.ASCII, true);
-            _writer = new BinaryWriter(stream, Encoding.ASCII, true);
-        }
-
-        /// <summary>
-        /// Read the next fragment from the transport.
-        /// </summary>
-        /// <param name="max_recv_fragment">The maximum receive fragment length.</param>
-        /// <returns>The read fragment.</returns>
-        protected override byte[] ReadFragment(int max_recv_fragment)
-        {
-            var header = PDUHeader.Read(_reader);
-            byte[] remaining = _reader.ReadAllBytes(header.FragmentLength - PDUHeader.PDU_HEADER_SIZE);
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            header.Write(writer);
-            writer.Write(remaining);
-            return stm.ToArray();
-        }
-
-        /// <summary>
-        /// Write the fragment to the transport.
-        /// </summary>
-        /// <param name="fragment">The fragment to write.</param>
-        /// <returns>True if successfully wrote the fragment.</returns>
-        protected override bool WriteFragment(byte[] fragment)
-        {
-            try
-            {
-                _writer.Write(fragment);
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-
-            return true;
-        }
-        #endregion
+        _reader = new BinaryReader(stream, Encoding.ASCII, true);
+        _writer = new BinaryWriter(stream, Encoding.ASCII, true);
     }
+
+    /// <summary>
+    /// Read the next fragment from the transport.
+    /// </summary>
+    /// <param name="max_recv_fragment">The maximum receive fragment length.</param>
+    /// <returns>The read fragment.</returns>
+    protected override byte[] ReadFragment(int max_recv_fragment)
+    {
+        var header = PDUHeader.Read(_reader);
+        byte[] remaining = _reader.ReadAllBytes(header.FragmentLength - PDUHeader.PDU_HEADER_SIZE);
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        header.Write(writer);
+        writer.Write(remaining);
+        return stm.ToArray();
+    }
+
+    /// <summary>
+    /// Write the fragment to the transport.
+    /// </summary>
+    /// <param name="fragment">The fragment to write.</param>
+    /// <returns>True if successfully wrote the fragment.</returns>
+    protected override bool WriteFragment(byte[] fragment)
+    {
+        try
+        {
+            _writer.Write(fragment);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+
+        return true;
+    }
+    #endregion
 }

@@ -14,53 +14,52 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Server;
+
+/// <summary>
+/// Base class for a KDC server.
+/// </summary>
+public abstract class KerberosKDCServer : IDisposable
 {
+    private readonly IKerberosKDCServerListener _listener;
+
     /// <summary>
-    /// Base class for a KDC server.
+    /// Constructor.
     /// </summary>
-    public abstract class KerberosKDCServer : IDisposable
+    /// <param name="listener">The network listener.</param>
+    protected KerberosKDCServer(IKerberosKDCServerListener listener)
     {
-        private readonly IKerberosKDCServerListener _listener;
+        _listener = listener ?? throw new ArgumentNullException(nameof(listener));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="listener">The network listener.</param>
-        protected KerberosKDCServer(IKerberosKDCServerListener listener)
-        {
-            _listener = listener ?? throw new ArgumentNullException(nameof(listener));
-        }
+    /// <summary>
+    /// Handle a request.
+    /// </summary>
+    /// <param name="request">The request to handle.</param>
+    /// <returns>The reply.</returns>
+    protected abstract byte[] HandleRequest(byte[] request);
 
-        /// <summary>
-        /// Handle a request.
-        /// </summary>
-        /// <param name="request">The request to handle.</param>
-        /// <returns>The reply.</returns>
-        protected abstract byte[] HandleRequest(byte[] request);
+    /// <summary>
+    /// Dispose the server.
+    /// </summary>
+    public virtual void Dispose()
+    {
+        _listener.Dispose();
+    }
 
-        /// <summary>
-        /// Dispose the server.
-        /// </summary>
-        public virtual void Dispose()
-        {
-            _listener.Dispose();
-        }
+    /// <summary>
+    /// Start the server.
+    /// </summary>
+    public void Start()
+    {
+        _listener.Start(HandleRequest);
+    }
 
-        /// <summary>
-        /// Start the server.
-        /// </summary>
-        public void Start()
-        {
-            _listener.Start(HandleRequest);
-        }
-
-        /// <summary>
-        /// Stop the server.
-        /// </summary>
-        public void Stop()
-        {
-            _listener.Stop();
-        }
+    /// <summary>
+    /// Stop the server.
+    /// </summary>
+    public void Stop()
+    {
+        _listener.Stop();
     }
 }

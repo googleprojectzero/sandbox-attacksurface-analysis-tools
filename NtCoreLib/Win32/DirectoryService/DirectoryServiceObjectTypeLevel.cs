@@ -12,29 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.DirectoryService
+namespace NtCoreLib.Win32.DirectoryService;
+
+/// <summary>
+/// Object type level for a directory object.
+/// </summary>
+public enum DirectoryServiceObjectTypeLevel
 {
     /// <summary>
-    /// Object type level for a directory object.
+    /// Object type.
     /// </summary>
-    public enum DirectoryServiceObjectTypeLevel
-    {
-        /// <summary>
-        /// Object type.
-        /// </summary>
-        [SDKName("ACCESS_OBJECT_GUID")]
-        Object = 0,
-        /// <summary>
-        /// Property set type.
-        /// </summary>
-        [SDKName("ACCESS_PROPERTY_SET_GUID")]
-        PropertySet = 1,
-        /// <summary>
-        /// Property type.
-        /// </summary>
-        [SDKName("ACCESS_PROPERTY_GUID")]
-        Property = 2,
-    }
+    [SDKName("ACCESS_OBJECT_GUID")]
+    Object = 0,
+    /// <summary>
+    /// Property set type.
+    /// </summary>
+    [SDKName("ACCESS_PROPERTY_SET_GUID")]
+    PropertySet = 1,
+    /// <summary>
+    /// Property type.
+    /// </summary>
+    [SDKName("ACCESS_PROPERTY_GUID")]
+    Property = 2,
 }

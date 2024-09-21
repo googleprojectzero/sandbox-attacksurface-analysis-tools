@@ -17,169 +17,168 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to represent a builder for a PAC entry.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACBuilder : KerberosAuthorizationDataBuilder
 {
     /// <summary>
-    /// Class to represent a builder for a PAC entry.
+    /// The list of PAC entries.
     /// </summary>
-    public sealed class KerberosAuthorizationDataPACBuilder : KerberosAuthorizationDataBuilder
+    public List<KerberosAuthorizationDataPACEntryBuilder> Entries { get; }
+
+    /// <summary>
+    /// The PAC version. Should usually be 0.
+    /// </summary>
+    public int Version { get; set; }
+
+    /// <summary>
+    /// Get the logon info PAC entry.
+    /// </summary>
+    public KerberosAuthorizationDataPACLogonBuilder LogonInfo => Entries.OfType<KerberosAuthorizationDataPACLogonBuilder>().FirstOrDefault();
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    public KerberosAuthorizationDataPACBuilder() : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)
     {
-        /// <summary>
-        /// The list of PAC entries.
-        /// </summary>
-        public List<KerberosAuthorizationDataPACEntryBuilder> Entries { get; }
+        Entries = new List<KerberosAuthorizationDataPACEntryBuilder>();
+    }
 
-        /// <summary>
-        /// The PAC version. Should usually be 0.
-        /// </summary>
-        public int Version { get; set; }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="entries">The list of entries in the PAC.</param>
+    /// <param name="version">The PAC version. Typically is 0.</param>
+    public KerberosAuthorizationDataPACBuilder(int version, IEnumerable<KerberosAuthorizationDataPACEntry> entries) 
+        : this()
+    {
+        Version = version;
+        Entries.AddRange(entries.Select(e => e.ToBuilder()));
+    }
 
-        /// <summary>
-        /// Get the logon info PAC entry.
-        /// </summary>
-        public KerberosAuthorizationDataPACLogonBuilder LogonInfo => Entries.OfType<KerberosAuthorizationDataPACLogonBuilder>().FirstOrDefault();
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosAuthorizationDataPACBuilder() : base(KerberosAuthorizationDataType.AD_WIN2K_PAC)
+    /// <summary>
+    /// Compute the PAC's server and optionally KDC and full PAC signatures.
+    /// </summary>
+    /// <param name="server_key">The server's key to use for the signature.</param>
+    /// <param name="kdc_key">The KDC key if known. If not specified then only the server signature is updated.</param>
+    public void ComputeSignatures(KerberosAuthenticationKey server_key, KerberosAuthenticationKey kdc_key = null)
+    {
+        if (server_key is null)
         {
-            Entries = new List<KerberosAuthorizationDataPACEntryBuilder>();
+            throw new ArgumentNullException(nameof(server_key));
         }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="entries">The list of entries in the PAC.</param>
-        /// <param name="version">The PAC version. Typically is 0.</param>
-        public KerberosAuthorizationDataPACBuilder(int version, IEnumerable<KerberosAuthorizationDataPACEntry> entries) 
-            : this()
+        List<KerberosAuthorizationDataPACEntryBuilder> entries = new(Entries);
+        KerberosAuthorizationDataPACSignatureBuilder server_checksum = null;
+        KerberosAuthorizationDataPACSignatureBuilder kdc_checksum = null;
+        KerberosAuthorizationDataPACSignatureBuilder full_pac_checksum = null;
+        int full_pac_checksum_index = 0;
+        for (int i = 0; i < entries.Count; ++i)
         {
-            Version = version;
-            Entries.AddRange(entries.Select(e => e.ToBuilder()));
-        }
-
-        /// <summary>
-        /// Compute the PAC's server and optionally KDC and full PAC signatures.
-        /// </summary>
-        /// <param name="server_key">The server's key to use for the signature.</param>
-        /// <param name="kdc_key">The KDC key if known. If not specified then only the server signature is updated.</param>
-        public void ComputeSignatures(KerberosAuthenticationKey server_key, KerberosAuthenticationKey kdc_key = null)
-        {
-            if (server_key is null)
+            if (!(entries[i] is KerberosAuthorizationDataPACSignatureBuilder sig_builder)
+                || entries[i].PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum)
             {
-                throw new ArgumentNullException(nameof(server_key));
+                continue;
             }
 
-            List<KerberosAuthorizationDataPACEntryBuilder> entries = new List<KerberosAuthorizationDataPACEntryBuilder>(Entries);
-            KerberosAuthorizationDataPACSignatureBuilder server_checksum = null;
-            KerberosAuthorizationDataPACSignatureBuilder kdc_checksum = null;
-            KerberosAuthorizationDataPACSignatureBuilder full_pac_checksum = null;
-            int full_pac_checksum_index = 0;
-            for (int i = 0; i < entries.Count; ++i)
+            KerberosAuthenticationKey key;
+            switch (entries[i].PACType)
             {
-                if (!(entries[i] is KerberosAuthorizationDataPACSignatureBuilder sig_builder)
-                    || entries[i].PACType == KerberosAuthorizationDataPACEntryType.TicketChecksum)
-                {
-                    continue;
-                }
-
-                KerberosAuthenticationKey key;
-                switch (entries[i].PACType)
-                {
-                    case KerberosAuthorizationDataPACEntryType.ServerChecksum:
-                        key = server_key;
-                        server_checksum = sig_builder;
-                        break;
-                    case KerberosAuthorizationDataPACEntryType.KDCChecksum:
-                        key = kdc_key;
-                        kdc_checksum = sig_builder;
-                        break;
-                    case KerberosAuthorizationDataPACEntryType.FullPacChecksum:
-                        if (kdc_key == null)
-                            continue;
-                        key = kdc_key;
-                        full_pac_checksum = sig_builder;
-                        full_pac_checksum_index = i;
-                        break;
-                    default:
+                case KerberosAuthorizationDataPACEntryType.ServerChecksum:
+                    key = server_key;
+                    server_checksum = sig_builder;
+                    break;
+                case KerberosAuthorizationDataPACEntryType.KDCChecksum:
+                    key = kdc_key;
+                    kdc_checksum = sig_builder;
+                    break;
+                case KerberosAuthorizationDataPACEntryType.FullPacChecksum:
+                    if (kdc_key == null)
                         continue;
-                }
-
-                entries[i] = new KerberosAuthorizationDataPACSignatureBuilder(sig_builder.PACType,
-                     key?.ChecksumType ?? sig_builder.SignatureType,
-                     new byte[key?.ChecksumSize ?? sig_builder.Signature.Length],
-                     sig_builder.RODCIdentifier);
+                    key = kdc_key;
+                    full_pac_checksum = sig_builder;
+                    full_pac_checksum_index = i;
+                    break;
+                default:
+                    continue;
             }
 
-            if (server_checksum == null)
-                throw new ArgumentException("No server checksum found in the PAC.");
-
-            if (full_pac_checksum != null)
-            {
-                full_pac_checksum.UpdateSignature(kdc_key, Encode(Version, entries));
-                entries[full_pac_checksum_index] = full_pac_checksum;
-            }
-
-            server_checksum.UpdateSignature(server_key, Encode(Version, entries));
-            if (kdc_key != null)
-            {
-                if (kdc_checksum == null)
-                    throw new ArgumentException("No KDC checksum found in the PAC.");
-
-                kdc_checksum.UpdateSignature(kdc_key, server_checksum.Signature);
-            }
+            entries[i] = new KerberosAuthorizationDataPACSignatureBuilder(sig_builder.PACType,
+                 key?.ChecksumType ?? sig_builder.SignatureType,
+                 new byte[key?.ChecksumSize ?? sig_builder.Signature.Length],
+                 sig_builder.RODCIdentifier);
         }
 
-        /// <summary>
-        /// Create the Kerberos PAC.
-        /// </summary>
-        /// <returns>The kerberos PAC.</returns>
-        public override KerberosAuthorizationData Create()
+        if (server_checksum == null)
+            throw new ArgumentException("No server checksum found in the PAC.");
+
+        if (full_pac_checksum != null)
         {
-            if (EncodeForTicketSignature)
-                return new KerberosAuthorizationDataRaw(KerberosAuthorizationDataType.AD_WIN2K_PAC, new byte[1]);
-            if (!KerberosAuthorizationDataPAC.Parse(Encode(Version, Entries), out KerberosAuthorizationDataPAC auth_data))
-                throw new InvalidDataException("PAC is invalid.");
-            return auth_data;
+            full_pac_checksum.UpdateSignature(kdc_key, Encode(Version, entries));
+            entries[full_pac_checksum_index] = full_pac_checksum;
         }
 
-        internal bool EncodeForTicketSignature { get; set; }
-
-        private static byte[] Encode(int version, ICollection<KerberosAuthorizationDataPACEntryBuilder> entries)
+        server_checksum.UpdateSignature(server_key, Encode(Version, entries));
+        if (kdc_key != null)
         {
-            MemoryStream stream = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stream);
+            if (kdc_checksum == null)
+                throw new ArgumentException("No KDC checksum found in the PAC.");
 
-            // Based on code from monoxgas.
-            writer.Write(entries.Count);
-            writer.Write(version);
-
-            // sizeof(PACTYPE) + sizeof(PAC_INFO_BUFFER) * EntryCount
-            long offset = 8 + 16 * entries.Count;
-
-            foreach (var entry in entries.Select(e => e.Create()))
-            {
-                var entryData = entry.Data;
-
-                // Write the PAC_INFO_BUFFER
-                writer.Write((int)entry.PACType);
-                writer.Write(entryData.Length);
-                writer.Write(offset);
-
-                // Write the actual data
-                int current = (int)writer.BaseStream.Position;
-                writer.BaseStream.Position = offset;
-                writer.Write(entryData);
-                offset = (offset + entryData.Length + 7) / 8 * 8;
-                while (writer.BaseStream.Position < offset)
-                {
-                    // MS always rounds data boundaries
-                    writer.Write('\x00');
-                }
-                writer.BaseStream.Position = current;
-            }
-            return stream.ToArray();
+            kdc_checksum.UpdateSignature(kdc_key, server_checksum.Signature);
         }
+    }
+
+    /// <summary>
+    /// Create the Kerberos PAC.
+    /// </summary>
+    /// <returns>The kerberos PAC.</returns>
+    public override KerberosAuthorizationData Create()
+    {
+        if (EncodeForTicketSignature)
+            return new KerberosAuthorizationDataRaw(KerberosAuthorizationDataType.AD_WIN2K_PAC, new byte[1]);
+        if (!KerberosAuthorizationDataPAC.Parse(Encode(Version, Entries), out KerberosAuthorizationDataPAC auth_data))
+            throw new InvalidDataException("PAC is invalid.");
+        return auth_data;
+    }
+
+    internal bool EncodeForTicketSignature { get; set; }
+
+    private static byte[] Encode(int version, ICollection<KerberosAuthorizationDataPACEntryBuilder> entries)
+    {
+        MemoryStream stream = new();
+        BinaryWriter writer = new(stream);
+
+        // Based on code from monoxgas.
+        writer.Write(entries.Count);
+        writer.Write(version);
+
+        // sizeof(PACTYPE) + sizeof(PAC_INFO_BUFFER) * EntryCount
+        long offset = 8 + 16 * entries.Count;
+
+        foreach (var entry in entries.Select(e => e.Create()))
+        {
+            var entryData = entry.Data;
+
+            // Write the PAC_INFO_BUFFER
+            writer.Write((int)entry.PACType);
+            writer.Write(entryData.Length);
+            writer.Write(offset);
+
+            // Write the actual data
+            int current = (int)writer.BaseStream.Position;
+            writer.BaseStream.Position = offset;
+            writer.Write(entryData);
+            offset = (offset + entryData.Length + 7) / 8 * 8;
+            while (writer.BaseStream.Position < offset)
+            {
+                // MS always rounds data boundaries
+                writer.Write('\x00');
+            }
+            writer.BaseStream.Position = current;
+        }
+        return stream.ToArray();
     }
 }

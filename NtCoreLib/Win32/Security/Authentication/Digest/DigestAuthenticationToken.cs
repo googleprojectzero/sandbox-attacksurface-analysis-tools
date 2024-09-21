@@ -16,69 +16,68 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Digest
+namespace NtCoreLib.Win32.Security.Authentication.Digest;
+
+/// <summary>
+/// Authentication token for a digest token.
+/// </summary>
+public sealed class DigestAuthenticationToken : AuthenticationToken
 {
+    private readonly Lazy<List<string>> _split_token;
+
     /// <summary>
-    /// Authentication token for a digest token.
+    /// The digest token as a string.
     /// </summary>
-    public sealed class DigestAuthenticationToken : AuthenticationToken
+    public string Data { get; }
+
+    /// <summary>
+    /// Format the authentication token.
+    /// </summary>
+    /// <returns></returns>
+    public override string Format()
     {
-        private readonly Lazy<List<string>> _split_token;
+        return string.Join("," + Environment.NewLine, _split_token.Value);
+    }
 
-        /// <summary>
-        /// The digest token as a string.
-        /// </summary>
-        public string Data { get; }
+    private DigestAuthenticationToken(byte[] data) : base(data)
+    {
+        Data = Encoding.UTF8.GetString(data);
+        _split_token = new Lazy<List<string>>(SplitToken);
+    }
 
-        /// <summary>
-        /// Format the authentication token.
-        /// </summary>
-        /// <returns></returns>
-        public override string Format()
+    private List<string> SplitToken()
+    {
+        int start_index = 0;
+        bool in_quote = false;
+        List<string> ret = new();
+
+        for (int i = 0; i < Data.Length - 1; ++i)
         {
-            return string.Join("," + Environment.NewLine, _split_token.Value);
-        }
-
-        private DigestAuthenticationToken(byte[] data) : base(data)
-        {
-            Data = Encoding.UTF8.GetString(data);
-            _split_token = new Lazy<List<string>>(SplitToken);
-        }
-
-        private List<string> SplitToken()
-        {
-            int start_index = 0;
-            bool in_quote = false;
-            List<string> ret = new List<string>();
-
-            for (int i = 0; i < Data.Length - 1; ++i)
+            if (Data[i] == ',' && !in_quote)
             {
-                if (Data[i] == ',' && !in_quote)
-                {
-                    ret.Add(Data.Substring(start_index, i - start_index));
-                    start_index = i + 1;
-                }
-                else if (Data[i] == '"')
-                {
-                    in_quote = !in_quote;
-                }
+                ret.Add(Data.Substring(start_index, i - start_index));
+                start_index = i + 1;
             }
-            ret.Add(Data.Substring(start_index));
-            return ret;
+            else if (Data[i] == '"')
+            {
+                in_quote = !in_quote;
+            }
         }
+        ret.Add(Data.Substring(start_index));
+        return ret;
+    }
 
-        internal static bool TryParse(byte[] data, out DigestAuthenticationToken token)
+    internal static bool TryParse(byte[] data, out DigestAuthenticationToken token)
+    {
+        token = null;
+        try
         {
-            token = null;
-            try
-            {
-                token = new DigestAuthenticationToken(data);
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
+            token = new DigestAuthenticationToken(data);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
         }
     }
 }

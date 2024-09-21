@@ -12,28 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet
+using NtCoreLib.Native.SafeHandles;
+
+namespace NtCoreLib;
+
+/// <summary>
+/// Class representing a NT FilterConnectionPort object. Note this is just a dummy object for typing purposes.
+/// </summary>
+[NtType("FilterConnectionPort")]
+public sealed class NtFilterConnectionPort : NtObjectWithDuplicate<NtFilterConnectionPort, FilterConnectionPortAccessRights>
 {
-    /// <summary>
-    /// Class representing a NT FilterConnectionPort object. Note this is just a dummy object for typing purposes.
-    /// </summary>
-    [NtType("FilterConnectionPort")]
-    public sealed class NtFilterConnectionPort : NtObjectWithDuplicate<NtFilterConnectionPort, FilterConnectionPortAccessRights>
+    #region Constructors
+    internal NtFilterConnectionPort(SafeKernelObjectHandle handle)
+        : base(handle)
     {
-        #region Constructors
-        internal NtFilterConnectionPort(SafeKernelObjectHandle handle)
-            : base(handle)
-        {
-        }
-
-        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
-        {
-            public NtTypeFactoryImpl() 
-                : base(false)
-            {
-            }
-        }
-
-        #endregion
     }
+
+    internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+    {
+        public NtTypeFactoryImpl() 
+            : base(false)
+        {
+        }
+    }
+
+    #endregion
 }

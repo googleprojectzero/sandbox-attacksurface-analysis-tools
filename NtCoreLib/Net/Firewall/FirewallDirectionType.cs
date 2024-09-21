@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Direction of stream for firewall.
+/// </summary>
+public enum FirewallDirectionType : uint
 {
     /// <summary>
-    /// Direction of stream for firewall.
+    /// Outbound flow.
     /// </summary>
-    public enum FirewallDirectionType : uint
-    {
-        /// <summary>
-        /// Outbound flow.
-        /// </summary>
-        [SDKName("FWP_DIRECTION_OUTBOUND")]
-        Outbound = 0,
-        /// <summary>
-        /// Inbound flow.
-        /// </summary>
-        [SDKName("FWP_DIRECTION_INBOUND")]
-        Inbound = (Outbound + 1)
-    }
+    [SDKName("FWP_DIRECTION_OUTBOUND")]
+    Outbound = 0,
+    /// <summary>
+    /// Inbound flow.
+    /// </summary>
+    [SDKName("FWP_DIRECTION_INBOUND")]
+    Inbound = (Outbound + 1)
 }

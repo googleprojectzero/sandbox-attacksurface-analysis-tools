@@ -17,97 +17,92 @@ using System.Collections;
 using System.Globalization;
 using System.Windows.Forms;
 
-namespace TokenViewer
+namespace TokenViewer;
+
+class ListItemComparer : IComparer
 {
-    class ListItemComparer : IComparer
+    public ListItemComparer(int column)
     {
-        public ListItemComparer(int column)
-        {
-            Column = column;
-            Ascending = true;
-        }
-
-        private static IComparable GetComparableItem(string value)
-        {
-            long l;
-            if (long.TryParse(value, out l))
-            {
-                return l;
-            }
-            else if (value.StartsWith("0x") && long.TryParse(value.Substring(2), NumberStyles.HexNumber, null, out l))
-            {
-                return l;
-            }
-            Guid g;
-            if (Guid.TryParse(value, out g))
-            {
-                return g;
-            }
-            return value;
-        }
-
-        public int Compare(object x, object y)
-        {
-            ListViewItem xi = (ListViewItem)x;
-            ListViewItem yi = (ListViewItem)y;
-
-            if (xi.SubItems.Count <= Column)
-            {
-                throw new ArgumentException("Invalid item for comparer", "x");
-            }
-
-            if (yi.SubItems.Count <= Column)
-            {
-                throw new ArgumentException("Invalid item for comparer", "y");
-            }
-
-            IComparable left = GetComparableItem(xi.SubItems[Column].Text);
-            IComparable right = GetComparableItem(yi.SubItems[Column].Text);
-
-            if (Ascending)
-            {
-                return left.CompareTo(right);
-            }
-            else
-            {
-                return right.CompareTo(left);
-            }
-        }
-
-        public int Column
-        {
-            get;
-            set;
-        }
-
-        public bool Ascending
-        {
-            get;
-            set;
-        }
-
-        public static void UpdateListComparer(ListView view, int selected_column)
-        {
-            if (view != null)
-            {
-                ListItemComparer comparer = view.ListViewItemSorter as ListItemComparer;
-
-                if (comparer != null)
-                {
-                    if (selected_column != comparer.Column)
-                    {
-                        comparer.Column = selected_column;
-                        comparer.Ascending = true;
-                    }
-                    else
-                    {
-                        comparer.Ascending = !comparer.Ascending;
-                    }
-
-                    view.Sort();
-                }
-            }
-        }
-
+        Column = column;
+        Ascending = true;
     }
+
+    private static IComparable GetComparableItem(string value)
+    {
+        if (long.TryParse(value, out long l))
+        {
+            return l;
+        }
+        else if (value.StartsWith("0x") && long.TryParse(value.Substring(2), NumberStyles.HexNumber, null, out l))
+        {
+            return l;
+        }
+        if (Guid.TryParse(value, out Guid g))
+        {
+            return g;
+        }
+        return value;
+    }
+
+    public int Compare(object x, object y)
+    {
+        ListViewItem xi = (ListViewItem)x;
+        ListViewItem yi = (ListViewItem)y;
+
+        if (xi.SubItems.Count <= Column)
+        {
+            throw new ArgumentException("Invalid item for comparer", "x");
+        }
+
+        if (yi.SubItems.Count <= Column)
+        {
+            throw new ArgumentException("Invalid item for comparer", "y");
+        }
+
+        IComparable left = GetComparableItem(xi.SubItems[Column].Text);
+        IComparable right = GetComparableItem(yi.SubItems[Column].Text);
+
+        if (Ascending)
+        {
+            return left.CompareTo(right);
+        }
+        else
+        {
+            return right.CompareTo(left);
+        }
+    }
+
+    public int Column
+    {
+        get;
+        set;
+    }
+
+    public bool Ascending
+    {
+        get;
+        set;
+    }
+
+    public static void UpdateListComparer(ListView? view, int selected_column)
+    {
+        if (view != null)
+        {
+            if (view.ListViewItemSorter is ListItemComparer comparer)
+            {
+                if (selected_column != comparer.Column)
+                {
+                    comparer.Column = selected_column;
+                    comparer.Ascending = true;
+                }
+                else
+                {
+                    comparer.Ascending = !comparer.Ascending;
+                }
+
+                view.Sort();
+            }
+        }
+    }
+
 }

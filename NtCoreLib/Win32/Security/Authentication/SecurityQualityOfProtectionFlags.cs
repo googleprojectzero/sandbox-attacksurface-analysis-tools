@@ -14,25 +14,24 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Flags for message encryption.
+/// </summary>
+[Flags]
+public enum SecurityQualityOfProtectionFlags : uint
 {
     /// <summary>
-    /// Flags for message encryption.
+    /// None.
     /// </summary>
-    [Flags]
-    public enum SecurityQualityOfProtectionFlags : uint
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Wrap out of bound data.
-        /// </summary>
-        WrapOOBData = 0x40000000,
-        /// <summary>
-        /// Wrap but don't encrypt.
-        /// </summary>
-        WrapNoEncrypt = 0x80000001
-    }
+    None = 0,
+    /// <summary>
+    /// Wrap out of bound data.
+    /// </summary>
+    WrapOOBData = 0x40000000,
+    /// <summary>
+    /// Wrap but don't encrypt.
+    /// </summary>
+    WrapNoEncrypt = 0x80000001
 }

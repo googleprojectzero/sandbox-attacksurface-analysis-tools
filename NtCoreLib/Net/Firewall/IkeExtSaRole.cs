@@ -12,29 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IKE main mode or quick mode SA role
+/// </summary>
+[SDKName("IKEEXT_SA_ROLE")]
+public enum IkeExtSaRole
 {
     /// <summary>
-    /// IKE main mode or quick mode SA role
+    /// SA is initiator
     /// </summary>
-    [SDKName("IKEEXT_SA_ROLE")]
-    public enum IkeExtSaRole
-    {
-        /// <summary>
-        /// SA is initiator
-        /// </summary>
-        [SDKName("IKEEXT_SA_ROLE_INITIATOR")]
-        Initiator,
-        /// <summary>
-        /// SA is responder
-        /// </summary>
-        [SDKName("IKEEXT_SA_ROLE_RESPONDER")]
-        Responder,
-    }
+    [SDKName("IKEEXT_SA_ROLE_INITIATOR")]
+    Initiator,
+    /// <summary>
+    /// SA is responder
+    /// </summary>
+    [SDKName("IKEEXT_SA_ROLE_RESPONDER")]
+    Responder,
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

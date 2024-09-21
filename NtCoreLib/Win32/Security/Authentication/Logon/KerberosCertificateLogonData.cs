@@ -14,25 +14,24 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Logon
-{
-    /// <summary>
-    /// Base class for CSP data.
-    /// </summary>
-    public abstract class KerberosCertificateLogonData
-    {
-        internal abstract byte[] GetData();
-        internal abstract int GetLogonType();
+namespace NtCoreLib.Win32.Security.Authentication.Logon;
 
-        internal byte[] ToArray()
-        {
-            byte[] data = GetData();
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            writer.Write(data.Length);
-            writer.Write(GetLogonType());
-            writer.Write(data);
-            return stm.ToArray();
-        }
+/// <summary>
+/// Base class for CSP data.
+/// </summary>
+public abstract class KerberosCertificateLogonData
+{
+    internal abstract byte[] GetData();
+    internal abstract int GetLogonType();
+
+    internal byte[] ToArray()
+    {
+        byte[] data = GetData();
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        writer.Write(data.Length);
+        writer.Write(GetLogonType());
+        writer.Write(data);
+        return stm.ToArray();
     }
 }

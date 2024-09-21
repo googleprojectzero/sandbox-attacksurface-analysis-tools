@@ -12,242 +12,243 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Native.SafeHandles;
+using NtCoreLib.Utilities.Reflection;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
-    [Flags]
-    public enum DebugAccessRights : uint
-    {
-        [SDKName("DEBUG_READ_EVENT")]
-        ReadEvent = 0x1,
-        [SDKName("DEBUG_PROCESS_ASSIGN")]
-        ProcessAssign = 0x2,
-        [SDKName("DEBUG_SET_INFORMATION")]
-        SetInformation = 0x4,
-        [SDKName("DEBUG_QUERY_INFORMATION")]
-        QueryInformation = 0x8,
-        [SDKName("GENERIC_READ")]
-        GenericRead = GenericAccessRights.GenericRead,
-        [SDKName("GENERIC_WRITE")]
-        GenericWrite = GenericAccessRights.GenericWrite,
-        [SDKName("GENERIC_EXECUTE")]
-        GenericExecute = GenericAccessRights.GenericExecute,
-        [SDKName("GENERIC_ALL")]
-        GenericAll = GenericAccessRights.GenericAll,
-        [SDKName("DELETE")]
-        Delete = GenericAccessRights.Delete,
-        [SDKName("READ_CONTROL")]
-        ReadControl = GenericAccessRights.ReadControl,
-        [SDKName("WRITE_DAC")]
-        WriteDac = GenericAccessRights.WriteDac,
-        [SDKName("WRITE_OWNER")]
-        WriteOwner = GenericAccessRights.WriteOwner,
-        [SDKName("SYNCHRONIZE")]
-        Synchronize = GenericAccessRights.Synchronize,
-        [SDKName("MAXIMUM_ALLOWED")]
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        [SDKName("ACCESS_SYSTEM_SECURITY")]
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    [Flags]
-    public enum DebugObjectFlags
-    {
-        None = 0,
-        KillOnClose = 1,
-    }
-
-    public enum DebugObjectInformationClass
-    {
-        DebugObjectKillProcessOnExitInformation = 1,
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ExceptionRecord
-    {
-        public NtStatus ExceptionCode;
-        public NtStatus ExceptionFlags;
-        public IntPtr ExceptionRecordChain;
-        public IntPtr ExceptionAddress;
-        public int NumberParameters;
-        public IntPtr ExceptionInformation0;
-        public IntPtr ExceptionInformation1;
-        public IntPtr ExceptionInformation2;
-        public IntPtr ExceptionInformation3;
-        public IntPtr ExceptionInformation4;
-        public IntPtr ExceptionInformation5;
-        public IntPtr ExceptionInformation6;
-        public IntPtr ExceptionInformation7;
-        public IntPtr ExceptionInformation8;
-        public IntPtr ExceptionInformation9;
-        public IntPtr ExceptionInformationA;
-        public IntPtr ExceptionInformationB;
-        public IntPtr ExceptionInformationC;
-        public IntPtr ExceptionInformationD;
-        public IntPtr ExceptionInformationE;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmException
-    {
-        public ExceptionRecord ExceptionRecord;
-        public int FirstChance;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmCreateThread
-    {
-        public int SubSystemKey;
-        public IntPtr StartAddress;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmCreateProcess
-    {
-        public int SubSystemKey;
-        public IntPtr FileHandle;
-        public IntPtr BaseOfImage;
-        public int DebugInfoFileOffset;
-        public int DebugInfoSize;
-        public DbgKmCreateThread InitialThread;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmExitThread
-    {
-        public NtStatus ExitStatus;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmExitProcess
-    {
-        public NtStatus ExitStatus;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmLoadDll
-    {
-        public IntPtr FileHandle;
-        public IntPtr BaseOfDll;
-        public int DebugInfoFileOffset;
-        public int DebugInfoSize;
-        public IntPtr NamePointer;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgKmUnloadDll
-    {
-        public IntPtr BaseAddress;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgUiCreateThread
-    {
-        public IntPtr HandleToThread;
-        public DbgKmCreateThread NewThread;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgUiCreateProcess
-    {
-        public IntPtr HandleToProcess;
-        public IntPtr HandleToThread;
-        public DbgKmCreateProcess NewProcess;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    public struct DbgUiStateInfo
-    {
-        [FieldOffset(0)]
-        public DbgKmException Exception;
-        [FieldOffset(0)]
-        public DbgUiCreateThread CreateThread;
-        [FieldOffset(0)]
-        public DbgUiCreateProcess CreateProcess;
-        [FieldOffset(0)]
-        public DbgKmExitThread ExitThread;
-        [FieldOffset(0)]
-        public DbgKmExitProcess ExitProcess;
-        [FieldOffset(0)]
-        public DbgKmLoadDll LoadDll;
-        [FieldOffset(0)]
-        public DbgKmUnloadDll UnloadDll;
-    }
-
-    public enum DbgState
-    {
-        Idle,
-        ReplyPending,
-        CreateThreadStateChange,
-        CreateProcessStateChange,
-        ExitThreadStateChange,
-        ExitProcessStateChange,
-        ExceptionStateChange,
-        BreakpointStateChange,
-        SingleStepStateChange,
-        LoadDllStateChange,
-        UnloadDllStateChange
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DbgUiWaitStatusChange
-    {
-        public DbgState NewState;
-        public ClientIdStruct AppClientId;
-        public DbgUiStateInfo StateInfo;
-    }
-
-    public static class NtDbgUi
-    {
-        [DllImport("ntdll.dll")]
-        public static extern IntPtr DbgUiGetThreadDebugObject();
-
-        [DllImport("ntdll.dll")]
-        public static extern void DbgUiSetThreadDebugObject(IntPtr DebugObjectHandle);
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugObjectHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugObjectHandle,
-            DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, DebugObjectFlags Flags);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDebugContinue(
-            SafeKernelObjectHandle DebugObjectHandle,
-            ClientId ClientId,
-            NtStatus ContinueStatus
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtRemoveProcessDebug(
-            SafeKernelObjectHandle ProcessHandle, 
-            SafeKernelObjectHandle DebugObjectHandle
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationDebugObject(
-            SafeKernelObjectHandle DebugObjectHandle,
-            DebugObjectInformationClass DebugObjectInformationClass,
-            SafeBuffer DebugInformation,
-            int DebugInformationLength,
-            out int ReturnLength
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtWaitForDebugEvent(
-            SafeKernelObjectHandle DebugObjectHandle,
-            bool Alertable,
-            LargeInteger Timeout,
-            SafeBuffer WaitStateChange
-        );
-    }
-#pragma warning restore 1591
+[Flags]
+public enum DebugAccessRights : uint
+{
+    [SDKName("DEBUG_READ_EVENT")]
+    ReadEvent = 0x1,
+    [SDKName("DEBUG_PROCESS_ASSIGN")]
+    ProcessAssign = 0x2,
+    [SDKName("DEBUG_SET_INFORMATION")]
+    SetInformation = 0x4,
+    [SDKName("DEBUG_QUERY_INFORMATION")]
+    QueryInformation = 0x8,
+    [SDKName("GENERIC_READ")]
+    GenericRead = GenericAccessRights.GenericRead,
+    [SDKName("GENERIC_WRITE")]
+    GenericWrite = GenericAccessRights.GenericWrite,
+    [SDKName("GENERIC_EXECUTE")]
+    GenericExecute = GenericAccessRights.GenericExecute,
+    [SDKName("GENERIC_ALL")]
+    GenericAll = GenericAccessRights.GenericAll,
+    [SDKName("DELETE")]
+    Delete = GenericAccessRights.Delete,
+    [SDKName("READ_CONTROL")]
+    ReadControl = GenericAccessRights.ReadControl,
+    [SDKName("WRITE_DAC")]
+    WriteDac = GenericAccessRights.WriteDac,
+    [SDKName("WRITE_OWNER")]
+    WriteOwner = GenericAccessRights.WriteOwner,
+    [SDKName("SYNCHRONIZE")]
+    Synchronize = GenericAccessRights.Synchronize,
+    [SDKName("MAXIMUM_ALLOWED")]
+    MaximumAllowed = GenericAccessRights.MaximumAllowed,
+    [SDKName("ACCESS_SYSTEM_SECURITY")]
+    AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
 }
+
+[Flags]
+public enum DebugObjectFlags
+{
+    None = 0,
+    KillOnClose = 1,
+}
+
+public enum DebugObjectInformationClass
+{
+    DebugObjectKillProcessOnExitInformation = 1,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ExceptionRecord
+{
+    public NtStatus ExceptionCode;
+    public NtStatus ExceptionFlags;
+    public IntPtr ExceptionRecordChain;
+    public IntPtr ExceptionAddress;
+    public int NumberParameters;
+    public IntPtr ExceptionInformation0;
+    public IntPtr ExceptionInformation1;
+    public IntPtr ExceptionInformation2;
+    public IntPtr ExceptionInformation3;
+    public IntPtr ExceptionInformation4;
+    public IntPtr ExceptionInformation5;
+    public IntPtr ExceptionInformation6;
+    public IntPtr ExceptionInformation7;
+    public IntPtr ExceptionInformation8;
+    public IntPtr ExceptionInformation9;
+    public IntPtr ExceptionInformationA;
+    public IntPtr ExceptionInformationB;
+    public IntPtr ExceptionInformationC;
+    public IntPtr ExceptionInformationD;
+    public IntPtr ExceptionInformationE;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmException
+{
+    public ExceptionRecord ExceptionRecord;
+    public int FirstChance;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmCreateThread
+{
+    public int SubSystemKey;
+    public IntPtr StartAddress;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmCreateProcess
+{
+    public int SubSystemKey;
+    public IntPtr FileHandle;
+    public IntPtr BaseOfImage;
+    public int DebugInfoFileOffset;
+    public int DebugInfoSize;
+    public DbgKmCreateThread InitialThread;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmExitThread
+{
+    public NtStatus ExitStatus;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmExitProcess
+{
+    public NtStatus ExitStatus;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmLoadDll
+{
+    public IntPtr FileHandle;
+    public IntPtr BaseOfDll;
+    public int DebugInfoFileOffset;
+    public int DebugInfoSize;
+    public IntPtr NamePointer;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgKmUnloadDll
+{
+    public IntPtr BaseAddress;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgUiCreateThread
+{
+    public IntPtr HandleToThread;
+    public DbgKmCreateThread NewThread;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgUiCreateProcess
+{
+    public IntPtr HandleToProcess;
+    public IntPtr HandleToThread;
+    public DbgKmCreateProcess NewProcess;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct DbgUiStateInfo
+{
+    [FieldOffset(0)]
+    public DbgKmException Exception;
+    [FieldOffset(0)]
+    public DbgUiCreateThread CreateThread;
+    [FieldOffset(0)]
+    public DbgUiCreateProcess CreateProcess;
+    [FieldOffset(0)]
+    public DbgKmExitThread ExitThread;
+    [FieldOffset(0)]
+    public DbgKmExitProcess ExitProcess;
+    [FieldOffset(0)]
+    public DbgKmLoadDll LoadDll;
+    [FieldOffset(0)]
+    public DbgKmUnloadDll UnloadDll;
+}
+
+public enum DbgState
+{
+    Idle,
+    ReplyPending,
+    CreateThreadStateChange,
+    CreateProcessStateChange,
+    ExitThreadStateChange,
+    ExitProcessStateChange,
+    ExceptionStateChange,
+    BreakpointStateChange,
+    SingleStepStateChange,
+    LoadDllStateChange,
+    UnloadDllStateChange
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbgUiWaitStatusChange
+{
+    public DbgState NewState;
+    public ClientIdStruct AppClientId;
+    public DbgUiStateInfo StateInfo;
+}
+
+public static class NtDbgUi
+{
+    [DllImport("ntdll.dll")]
+    public static extern IntPtr DbgUiGetThreadDebugObject();
+
+    [DllImport("ntdll.dll")]
+    public static extern void DbgUiSetThreadDebugObject(IntPtr DebugObjectHandle);
+}
+
+public static partial class NtSystemCalls
+{
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugObjectHandle);
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugObjectHandle,
+        DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, DebugObjectFlags Flags);
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtDebugContinue(
+        SafeKernelObjectHandle DebugObjectHandle,
+        ClientId ClientId,
+        NtStatus ContinueStatus
+    );
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtRemoveProcessDebug(
+        SafeKernelObjectHandle ProcessHandle, 
+        SafeKernelObjectHandle DebugObjectHandle
+    );
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtSetInformationDebugObject(
+        SafeKernelObjectHandle DebugObjectHandle,
+        DebugObjectInformationClass DebugObjectInformationClass,
+        SafeBuffer DebugInformation,
+        int DebugInformationLength,
+        out int ReturnLength
+    );
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtWaitForDebugEvent(
+        SafeKernelObjectHandle DebugObjectHandle,
+        bool Alertable,
+        LargeInteger Timeout,
+        SafeBuffer WaitStateChange
+    );
+}
+#pragma warning restore 1591
+

@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
-{
-    /// <summary>
-    /// Class for an NTLM authentication authentication token builder.
-    /// </summary>
-    public sealed class NtlmAuthenticateAuthenticationTokenBuilder : NtlmAuthenticateAuthenticationTokenBuilderBase
-    {
-        #region Public Properties
-        /// <summary>
-        /// NT Challenge Response.
-        /// </summary>
-        public byte[] NtChallengeResponse { get; set; }
-        #endregion
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
 
-        #region Private Members
-        private protected override byte[] GetNtChallenge()
-        {
-            return (byte[])NtChallengeResponse?.Clone();
-        }
-        #endregion
+/// <summary>
+/// Class for an NTLM authentication authentication token builder.
+/// </summary>
+public sealed class NtlmAuthenticateAuthenticationTokenBuilder : NtlmAuthenticateAuthenticationTokenBuilderBase
+{
+    #region Public Properties
+    /// <summary>
+    /// NT Challenge Response.
+    /// </summary>
+    public byte[] NtChallengeResponse { get; set; }
+    #endregion
+
+    #region Private Members
+    private protected override byte[] GetNtChallenge()
+    {
+        return (byte[])NtChallengeResponse?.Clone();
     }
+    #endregion
 }

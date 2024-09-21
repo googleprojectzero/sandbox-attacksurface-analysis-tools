@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Builder;
+
+/// <summary>
+/// Class to build a AS-REQ object.
+/// </summary>
+public sealed class KerberosASRequestBuilder : KerberosKDCRequestBuilder
 {
     /// <summary>
-    /// Class to build a AS-REQ object.
+    /// Constructor.
     /// </summary>
-    public sealed class KerberosASRequestBuilder : KerberosKDCRequestBuilder
+    public KerberosASRequestBuilder() : base(KerberosMessageType.KRB_AS_REQ)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public KerberosASRequestBuilder() : base(KerberosMessageType.KRB_AS_REQ)
-        {
-        }
     }
 }

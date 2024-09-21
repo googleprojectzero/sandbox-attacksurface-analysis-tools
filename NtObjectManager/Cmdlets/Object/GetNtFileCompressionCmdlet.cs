@@ -12,42 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the compression format for a file.</para>
+/// <para type="description">This cmdlet gets the compression format for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileCompression -File $f</code>
+///   <para>Get the compression format for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileCompression -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the compression format for the file by path</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileCompression -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the compression format for the file by win32 path</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileCompression", DefaultParameterSetName = "Default")]
+[OutputType(typeof(CompressionFormat))]
+public class GetNtFileCompressionCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the compression format for a file.</para>
-    /// <para type="description">This cmdlet gets the compression format for a file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileCompression -File $f</code>
-    ///   <para>Get the compression format for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileCompression -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the compression format for the file by path</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileCompression -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the compression format for the file by win32 path</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileCompression", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(CompressionFormat))]
-    public class GetNtFileCompressionCmdlet : BaseNtFilePropertyCmdlet
+    public GetNtFileCompressionCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileCompressionCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(file.CompressionFormat);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(file.CompressionFormat);
     }
 }

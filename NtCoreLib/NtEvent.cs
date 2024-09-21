@@ -12,271 +12,265 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtCoreLib.Native.SafeHandles;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
+namespace NtCoreLib;
+
+/// <summary>
+/// Class representing a NT Event object
+/// </summary>
+[NtType("Event")]
+public sealed class NtEvent : NtObjectWithDuplicateAndInfo<NtEvent, EventAccessRights, EventInformationClass, EventInformationClass>
 {
-    /// <summary>
-    /// Class representing a NT Event object
-    /// </summary>
-    [NtType("Event")]
-    public sealed class NtEvent : NtObjectWithDuplicateAndInfo<NtEvent, EventAccessRights, EventInformationClass, EventInformationClass>
+    #region Constructors
+    internal NtEvent(SafeKernelObjectHandle handle) 
+        : base(handle)
     {
-        #region Constructors
-        internal NtEvent(SafeKernelObjectHandle handle) 
-            : base(handle)
-        {
-        }
-
-        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
-        {
-            public NtTypeFactoryImpl() : base(true)
-            {
-            }
-
-            protected override sealed NtResult<NtEvent> OpenInternal(ObjectAttributes obj_attributes,
-                EventAccessRights desired_access, bool throw_on_error)
-            {
-                return NtEvent.Open(obj_attributes, desired_access, throw_on_error);
-            }
-        }
-
-        #endregion
-
-        #region Static Methods
-
-        /// <summary>
-        /// Create an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <param name="root">The root object for relative path names</param>
-        /// <param name="type">The type of the event</param>
-        /// <param name="initial_state">The initial state of the event</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The event object</returns>
-        public static NtResult<NtEvent> Create(string name, NtObject root, EventType type, bool initial_state, bool throw_on_error)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
-            {
-                return Create(obja, type, initial_state, EventAccessRights.MaximumAllowed, throw_on_error);
-            }
-        }
-
-        /// <summary>
-        /// Create an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <param name="root">The root object for relative path names</param>
-        /// <param name="type">The type of the event</param>
-        /// <param name="initial_state">The initial state of the event</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Create(string name, NtObject root, EventType type, bool initial_state)
-        {
-            return Create(name, root, type, initial_state, true).Result;
-        }
-
-        /// <summary>
-        /// Create an event object
-        /// </summary>
-        /// <param name="object_attributes">The event object attributes</param>
-        /// <param name="type">The type of the event</param>
-        /// <param name="initial_state">The initial state of the event</param>
-        /// <param name="desired_access">The desired access for the event</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
-        {
-            return Create(object_attributes, type, initial_state, desired_access, true).Result;
-        }
-
-
-        /// <summary>
-        /// Create an event object
-        /// </summary>
-        /// <param name="object_attributes">The event object attributes</param>
-        /// <param name="type">The type of the event</param>
-        /// <param name="initial_state">The initial state of the event</param>
-        /// <param name="desired_access">The desired access for the event</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtEvent> Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access, bool throw_on_error)
-        {
-            return NtSystemCalls.NtCreateEvent(out SafeKernelObjectHandle handle, desired_access, 
-                object_attributes, type, initial_state).CreateResult(throw_on_error, () => new NtEvent(handle));
-        }
-
-        /// <summary>
-        /// Create an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <param name="type">The type of the event</param>
-        /// <param name="initial_state">The initial state of the event</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Create(string name, EventType type, bool initial_state)
-        {
-            return Create(name, null, type, initial_state);
-        }
-        /// <summary>
-        /// Open an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <param name="root">The root object for relative path names</param>
-        /// <param name="desired_access">The desired access for the event</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Open(string name, NtObject root, EventAccessRights desired_access)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
-            {
-                return Open(obja, desired_access);
-            }
-        }
-
-        /// <summary>
-        /// Open an event object
-        /// </summary>
-        /// <param name="object_attributes">The event object attributes</param>
-        /// <param name="desired_access">The desired access for the event</param>
-        /// <returns>The event object.</returns>
-        public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights desired_access)
-        {
-            return Open(object_attributes, desired_access, true).Result;
-        }
-
-        /// <summary>
-        /// Open an event object
-        /// </summary>
-        /// <param name="object_attributes">The event object attributes</param>
-        /// <param name="desired_access">The desired access for the event</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtEvent> Open(ObjectAttributes object_attributes, EventAccessRights desired_access, bool throw_on_error)
-        {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtEvent(handle));
-        }
-
-        /// <summary>
-        /// Open an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <param name="root">The root object for relative path names</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Open(string name, NtObject root)
-        {
-            return Open(name, root, EventAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Open an event object
-        /// </summary>
-        /// <param name="name">The path to the event</param>
-        /// <returns>The event object</returns>
-        public static NtEvent Open(string name)
-        {
-            return Open(name, null);
-        }
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Set the event state
-        /// </summary>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The previous state of the event and NT status.</returns>
-        public NtResult<int> Set(bool throw_on_error)
-        {
-            return NtSystemCalls.NtSetEvent(Handle, out int previous_state).CreateResult(throw_on_error, () => previous_state);
-        }
-
-        /// <summary>
-        /// Set the event state
-        /// </summary>
-        /// <returns>The previous state of the event</returns>
-        public int Set()
-        {
-            return Set(true).Result;
-        }
-
-        /// <summary>
-        /// Clear the event state
-        /// </summary>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code.</returns>
-        public NtStatus Clear(bool throw_on_error)
-        {
-            return NtSystemCalls.NtClearEvent(Handle).ToNtException(throw_on_error);
-        }
-
-        /// <summary>
-        /// Clear the event state
-        /// </summary>
-        public void Clear()
-        {
-            Clear(true);
-        }
-
-        /// <summary>
-        /// Pulse the event state.
-        /// </summary>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The previous state of the event and NT status.</returns>
-        public NtResult<int> Pulse(bool throw_on_error)
-        {
-            return NtSystemCalls.NtPulseEvent(Handle, out int previous_state).CreateResult(throw_on_error, () => previous_state);
-        }
-
-        /// <summary>
-        /// Pulse the event state.
-        /// </summary>
-        /// <returns>The previous state of the event</returns>
-        public int Pulse()
-        {
-            return Pulse(true).Result;
-        }
-
-        /// <summary>
-        /// Method to query information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to return data in.</param>
-        /// <param name="return_length">Return length from the query.</param>
-        /// <returns>The NT status code for the query.</returns>
-        public override NtStatus QueryInformation(EventInformationClass info_class, SafeBuffer buffer, out int return_length)
-        {
-            return NtSystemCalls.NtQueryEvent(Handle, info_class, buffer, buffer.GetLength(), out return_length);
-        }
-
-        /// <summary>
-        /// Query the information class as an object.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The information class as an object.</returns>
-        public override NtResult<object> QueryObject(EventInformationClass info_class, bool throw_on_error)
-        {
-            switch (info_class)
-            {
-                case EventInformationClass.EventBasicInformation:
-                    return Query<EventBasicInformation>(info_class, default, throw_on_error);
-            }
-
-            return base.QueryObject(info_class, throw_on_error);
-        }
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Get event type.
-        /// </summary>
-        public EventType EventType => Query<EventBasicInformation>(EventInformationClass.EventBasicInformation).EventType;
-
-        /// <summary>
-        /// Get current event state.
-        /// </summary>
-        public int EventState => Query<EventBasicInformation>(EventInformationClass.EventBasicInformation).EventState;
-
-        #endregion
     }
+
+    internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+    {
+        public NtTypeFactoryImpl() : base(true)
+        {
+        }
+
+        protected override sealed NtResult<NtEvent> OpenInternal(ObjectAttributes obj_attributes,
+            EventAccessRights desired_access, bool throw_on_error)
+        {
+            return NtEvent.Open(obj_attributes, desired_access, throw_on_error);
+        }
+    }
+
+    #endregion
+
+    #region Static Methods
+
+    /// <summary>
+    /// Create an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <param name="root">The root object for relative path names</param>
+    /// <param name="type">The type of the event</param>
+    /// <param name="initial_state">The initial state of the event</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The event object</returns>
+    public static NtResult<NtEvent> Create(string name, NtObject root, EventType type, bool initial_state, bool throw_on_error)
+    {
+        using ObjectAttributes obja = new(name, AttributeFlags.CaseInsensitive, root);
+        return Create(obja, type, initial_state, EventAccessRights.MaximumAllowed, throw_on_error);
+    }
+
+    /// <summary>
+    /// Create an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <param name="root">The root object for relative path names</param>
+    /// <param name="type">The type of the event</param>
+    /// <param name="initial_state">The initial state of the event</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Create(string name, NtObject root, EventType type, bool initial_state)
+    {
+        return Create(name, root, type, initial_state, true).Result;
+    }
+
+    /// <summary>
+    /// Create an event object
+    /// </summary>
+    /// <param name="object_attributes">The event object attributes</param>
+    /// <param name="type">The type of the event</param>
+    /// <param name="initial_state">The initial state of the event</param>
+    /// <param name="desired_access">The desired access for the event</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
+    {
+        return Create(object_attributes, type, initial_state, desired_access, true).Result;
+    }
+
+
+    /// <summary>
+    /// Create an event object
+    /// </summary>
+    /// <param name="object_attributes">The event object attributes</param>
+    /// <param name="type">The type of the event</param>
+    /// <param name="initial_state">The initial state of the event</param>
+    /// <param name="desired_access">The desired access for the event</param>
+    /// <param name="throw_on_error">True to throw an exception on error.</param>
+    /// <returns>The NT status code and object result.</returns>
+    public static NtResult<NtEvent> Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access, bool throw_on_error)
+    {
+        return NtSystemCalls.NtCreateEvent(out SafeKernelObjectHandle handle, desired_access, 
+            object_attributes, type, initial_state).CreateResult(throw_on_error, () => new NtEvent(handle));
+    }
+
+    /// <summary>
+    /// Create an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <param name="type">The type of the event</param>
+    /// <param name="initial_state">The initial state of the event</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Create(string name, EventType type, bool initial_state)
+    {
+        return Create(name, null, type, initial_state);
+    }
+    /// <summary>
+    /// Open an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <param name="root">The root object for relative path names</param>
+    /// <param name="desired_access">The desired access for the event</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Open(string name, NtObject root, EventAccessRights desired_access)
+    {
+        using ObjectAttributes obja = new(name, AttributeFlags.CaseInsensitive, root);
+        return Open(obja, desired_access);
+    }
+
+    /// <summary>
+    /// Open an event object
+    /// </summary>
+    /// <param name="object_attributes">The event object attributes</param>
+    /// <param name="desired_access">The desired access for the event</param>
+    /// <returns>The event object.</returns>
+    public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights desired_access)
+    {
+        return Open(object_attributes, desired_access, true).Result;
+    }
+
+    /// <summary>
+    /// Open an event object
+    /// </summary>
+    /// <param name="object_attributes">The event object attributes</param>
+    /// <param name="desired_access">The desired access for the event</param>
+    /// <param name="throw_on_error">True to throw an exception on error.</param>
+    /// <returns>The NT status code and object result.</returns>
+    public static NtResult<NtEvent> Open(ObjectAttributes object_attributes, EventAccessRights desired_access, bool throw_on_error)
+    {
+        SafeKernelObjectHandle handle;
+        return NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtEvent(handle));
+    }
+
+    /// <summary>
+    /// Open an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <param name="root">The root object for relative path names</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Open(string name, NtObject root)
+    {
+        return Open(name, root, EventAccessRights.MaximumAllowed);
+    }
+
+    /// <summary>
+    /// Open an event object
+    /// </summary>
+    /// <param name="name">The path to the event</param>
+    /// <returns>The event object</returns>
+    public static NtEvent Open(string name)
+    {
+        return Open(name, null);
+    }
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Set the event state
+    /// </summary>
+    /// <param name="throw_on_error">True to throw an exception on error.</param>
+    /// <returns>The previous state of the event and NT status.</returns>
+    public NtResult<int> Set(bool throw_on_error)
+    {
+        return NtSystemCalls.NtSetEvent(Handle, out int previous_state).CreateResult(throw_on_error, () => previous_state);
+    }
+
+    /// <summary>
+    /// Set the event state
+    /// </summary>
+    /// <returns>The previous state of the event</returns>
+    public int Set()
+    {
+        return Set(true).Result;
+    }
+
+    /// <summary>
+    /// Clear the event state
+    /// </summary>
+    /// <param name="throw_on_error">True to throw an exception on error.</param>
+    /// <returns>The NT status code.</returns>
+    public NtStatus Clear(bool throw_on_error)
+    {
+        return NtSystemCalls.NtClearEvent(Handle).ToNtException(throw_on_error);
+    }
+
+    /// <summary>
+    /// Clear the event state
+    /// </summary>
+    public void Clear()
+    {
+        Clear(true);
+    }
+
+    /// <summary>
+    /// Pulse the event state.
+    /// </summary>
+    /// <param name="throw_on_error">True to throw an exception on error.</param>
+    /// <returns>The previous state of the event and NT status.</returns>
+    public NtResult<int> Pulse(bool throw_on_error)
+    {
+        return NtSystemCalls.NtPulseEvent(Handle, out int previous_state).CreateResult(throw_on_error, () => previous_state);
+    }
+
+    /// <summary>
+    /// Pulse the event state.
+    /// </summary>
+    /// <returns>The previous state of the event</returns>
+    public int Pulse()
+    {
+        return Pulse(true).Result;
+    }
+
+    /// <summary>
+    /// Method to query information for this object type.
+    /// </summary>
+    /// <param name="info_class">The information class.</param>
+    /// <param name="buffer">The buffer to return data in.</param>
+    /// <param name="return_length">Return length from the query.</param>
+    /// <returns>The NT status code for the query.</returns>
+    public override NtStatus QueryInformation(EventInformationClass info_class, SafeBuffer buffer, out int return_length)
+    {
+        return NtSystemCalls.NtQueryEvent(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+    }
+
+    /// <summary>
+    /// Query the information class as an object.
+    /// </summary>
+    /// <param name="info_class">The information class.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The information class as an object.</returns>
+    public override NtResult<object> QueryObject(EventInformationClass info_class, bool throw_on_error)
+    {
+        return info_class switch
+        {
+            EventInformationClass.EventBasicInformation => (NtResult<object>)Query<EventBasicInformation>(info_class, default, throw_on_error),
+            _ => base.QueryObject(info_class, throw_on_error),
+        };
+    }
+
+    #endregion
+
+    #region Public Properties
+
+    /// <summary>
+    /// Get event type.
+    /// </summary>
+    public EventType EventType => Query<EventBasicInformation>(EventInformationClass.EventBasicInformation).EventType;
+
+    /// <summary>
+    /// Get current event state.
+    /// </summary>
+    public int EventState => Query<EventBasicInformation>(EventInformationClass.EventBasicInformation).EventState;
+
+    #endregion
 }

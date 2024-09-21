@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Class to represent a NEGOEX ALERT structure.
+/// </summary>
+public sealed class NegoExAlert
 {
     /// <summary>
-    /// Class to represent a NEGOEX ALERT structure.
+    /// The alert type.
     /// </summary>
-    public sealed class NegoExAlert
+    public int Type { get; }
+
+    /// <summary>
+    /// The alert value.
+    /// </summary>
+    public byte[] Value { get; }
+
+    internal NegoExAlert(int type, byte[] value)
     {
-        /// <summary>
-        /// The alert type.
-        /// </summary>
-        public int Type { get; }
-
-        /// <summary>
-        /// The alert value.
-        /// </summary>
-        public byte[] Value { get; }
-
-        internal NegoExAlert(int type, byte[] value)
-        {
-            Type = type;
-            Value = value;
-        }
+        Type = type;
+        Value = value;
     }
 }

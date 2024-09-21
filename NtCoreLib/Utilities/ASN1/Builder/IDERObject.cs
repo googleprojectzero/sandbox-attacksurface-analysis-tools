@@ -12,17 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Utilities.ASN1.Builder
+namespace NtCoreLib.Utilities.ASN1.Builder;
+
+/// <summary>
+/// Interface for a DER object for serialization.
+/// </summary>
+public interface IDERObject
 {
     /// <summary>
-    /// Interface for a DER object for serialization.
+    /// Write the object to a DER builder.
     /// </summary>
-    public interface IDERObject
-    {
-        /// <summary>
-        /// Write the object to a DER builder.
-        /// </summary>
-        /// <param name="builder">The DER builder.</param>
-        void Write(DERBuilder builder);
-    }
+    /// <param name="builder">The DER builder.</param>
+    void Write(DERBuilder builder);
 }

@@ -19,8 +19,10 @@
 
 using System;
 using System.Windows.Forms;
+using NtCoreLib.Security;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Forms
+namespace NtCoreLib.Forms
 {
     /// <summary>
     /// Control to display a security descriptor.

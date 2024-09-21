@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Flags when creating a transaction.
+/// </summary>
+[Flags]
+public enum FirewallTransactionFlags
 {
     /// <summary>
-    /// Flags when creating a transaction.
+    /// No flags, creates a read/write transaction.
     /// </summary>
-    [Flags]
-    public enum FirewallTransactionFlags
-    {
-        /// <summary>
-        /// No flags, creates a read/write transaction.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Read-only transaction.
-        /// </summary>
-        [SDKName("FWPM_TXN_READ_ONLY")]
-        ReadOnly = 0x00000001,
-    }
+    None = 0,
+    /// <summary>
+    /// Read-only transaction.
+    /// </summary>
+    [SDKName("FWPM_TXN_READ_ONLY")]
+    ReadOnly = 0x00000001,
 }

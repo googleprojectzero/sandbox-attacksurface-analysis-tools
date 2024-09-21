@@ -12,26 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+[SDKName("IPSEC_TRANSFORM_TYPE")]
+public enum IPsecTransformType
 {
-    [SDKName("IPSEC_TRANSFORM_TYPE")]
-    public enum IPsecTransformType
-    {
-        [SDKName("IPSEC_TRANSFORM_AH")]
-        AH,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH")]
-        EspAuth,
-        [SDKName("IPSEC_TRANSFORM_ESP_CIPHER")]
-        EspCipher,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_AND_CIPHER")]
-        EspAuthAndCipher,
-        [SDKName("IPSEC_TRANSFORM_ESP_AUTH_FW")]
-        EspAuthFw
-    }
+    [SDKName("IPSEC_TRANSFORM_AH")]
+    AH,
+    [SDKName("IPSEC_TRANSFORM_ESP_AUTH")]
+    EspAuth,
+    [SDKName("IPSEC_TRANSFORM_ESP_CIPHER")]
+    EspCipher,
+    [SDKName("IPSEC_TRANSFORM_ESP_AUTH_AND_CIPHER")]
+    EspAuthAndCipher,
+    [SDKName("IPSEC_TRANSFORM_ESP_AUTH_FW")]
+    EspAuthFw
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

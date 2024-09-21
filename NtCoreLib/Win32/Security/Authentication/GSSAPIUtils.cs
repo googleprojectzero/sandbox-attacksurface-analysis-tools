@@ -12,58 +12,57 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// A class which represents an GSS-API Token.
+/// </summary>
+internal static class GSSAPIUtils
 {
-    /// <summary>
-    /// A class which represents an GSS-API Token.
-    /// </summary>
-    internal static class GSSAPIUtils
+    #region Internal Static Methods
+    internal static bool TryParse(byte[] data, out byte[] token, out string oid)
     {
-        #region Internal Static Methods
-        internal static bool TryParse(byte[] data, out byte[] token, out string oid)
+        token = null;
+        oid = string.Empty;
+        try
         {
-            token = null;
-            oid = string.Empty;
-            try
-            {
-                BinaryReader reader = new BinaryReader(new MemoryStream(data));
+            BinaryReader reader = new(new MemoryStream(data));
 
-                byte start = reader.ReadByte();
-                if (start != 0x60)
-                    return false;
-                int length = DERUtils.ReadLength(reader);
-                byte[] inner_token = reader.ReadAllBytes(length);
-                reader = new BinaryReader(new MemoryStream(inner_token));
-                if (reader.ReadByte() != 0x06)
-                    return false;
-                int oid_length = DERUtils.ReadLength(reader);
-                oid = DERUtils.ReadObjID(reader.ReadAllBytes(oid_length));
-                token = reader.ReadAllBytes((int)reader.RemainingLength());
-                return true;
-            }
-            catch
-            {
+            byte start = reader.ReadByte();
+            if (start != 0x60)
                 return false;
-            }
+            int length = DERUtils.ReadLength(reader);
+            byte[] inner_token = reader.ReadAllBytes(length);
+            reader = new BinaryReader(new MemoryStream(inner_token));
+            if (reader.ReadByte() != 0x06)
+                return false;
+            int oid_length = DERUtils.ReadLength(reader);
+            oid = DERUtils.ReadObjID(reader.ReadAllBytes(oid_length));
+            token = reader.ReadAllBytes((int)reader.RemainingLength());
+            return true;
         }
-
-        internal static byte[] Wrap(string oid, byte[] token, byte[] id = null)
+        catch
         {
-            DERBuilder builder = new DERBuilder();
-            using (var app = builder.CreateApplication(0))
-            {
-                app.WriteObjectId(oid);
-                if (id != null)
-                    app.WriteRawBytes(id);
-                app.WriteRawBytes(token);
-            }
-            return builder.ToArray();
+            return false;
         }
-
-        #endregion
     }
+
+    internal static byte[] Wrap(string oid, byte[] token, byte[] id = null)
+    {
+        DERBuilder builder = new();
+        using (var app = builder.CreateApplication(0))
+        {
+            app.WriteObjectId(oid);
+            if (id != null)
+                app.WriteRawBytes(id);
+            app.WriteRawBytes(token);
+        }
+        return builder.ToArray();
+    }
+
+    #endregion
 }

@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Client
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Client;
+
+/// <summary>
+/// Configuration class for the client authentication context.
+/// </summary>
+public sealed class NtlmClientAuthenticationContextConfig
 {
     /// <summary>
-    /// Configuration class for the client authentication context.
+    /// Channel binding.
     /// </summary>
-    public sealed class NtlmClientAuthenticationContextConfig
-    {
-        /// <summary>
-        /// Channel binding.
-        /// </summary>
-        public SecurityChannelBinding ChannelBinding { get; set; }
-    }
+    public SecurityChannelBinding ChannelBinding { get; set; }
 }

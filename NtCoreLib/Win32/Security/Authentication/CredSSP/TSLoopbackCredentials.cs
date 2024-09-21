@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Security.Authentication.CredSSP
+namespace NtCoreLib.Win32.Security.Authentication.CredSSP;
+
+/// <summary>
+/// Class to represent a TSLoopbackCreds structure.
+/// </summary>
+public sealed class TSLoopbackCredentials : TSCredentials
 {
     /// <summary>
-    /// Class to represent a TSLoopbackCreds structure.
+    /// Constructor.
     /// </summary>
-    public sealed class TSLoopbackCredentials : TSCredentials
+    public TSLoopbackCredentials() : base(TSCredentialsType.Loopback)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public TSLoopbackCredentials() : base(TSCredentialsType.Loopback)
-        {
-        }
+    }
 
-        private protected override byte[] GetCredentials()
-        {
-            return null;
-        }
+    private protected override byte[] GetCredentials()
+    {
+        return null;
     }
 }

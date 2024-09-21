@@ -12,72 +12,69 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.IO;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a ETYPE-INFO-ENTRY structure.
+/// </summary>
+public sealed class KerberosEncryptionTypeInfoEntry : IDERObject
 {
+    private readonly byte[] _salt;
+
     /// <summary>
-    /// Class to represent a ETYPE-INFO-ENTRY structure.
+    /// The kerberos encryption type.
     /// </summary>
-    public sealed class KerberosEncryptionTypeInfoEntry : IDERObject
+    public KerberosEncryptionType EncryptionType { get; }
+
+    /// <summary>
+    /// The optional salt for the encryption type.
+    /// </summary>
+    public byte[] Salt => _salt?.CloneBytes();
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="encryption_type">The encryption type.</param>
+    /// <param name="salt">Optional salt.</param>
+    public KerberosEncryptionTypeInfoEntry(KerberosEncryptionType encryption_type, byte[] salt = null)
     {
-        private readonly byte[] _salt;
+        EncryptionType = encryption_type;
+        _salt = salt?.CloneBytes();
+    }
 
-        /// <summary>
-        /// The kerberos encryption type.
-        /// </summary>
-        public KerberosEncryptionType EncryptionType { get; }
-
-        /// <summary>
-        /// The optional salt for the encryption type.
-        /// </summary>
-        public byte[] Salt => _salt?.CloneBytes();
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="encryption_type">The encryption type.</param>
-        /// <param name="salt">Optional salt.</param>
-        public KerberosEncryptionTypeInfoEntry(KerberosEncryptionType encryption_type, byte[] salt = null)
+    internal static KerberosEncryptionTypeInfoEntry Parse(DERValue value)
+    {
+        if (!value.CheckSequence())
+            throw new InvalidDataException();
+        KerberosEncryptionType encryption_type = KerberosEncryptionType.NULL;
+        byte[] salt = null;
+        foreach (var next in value.Children)
         {
-            EncryptionType = encryption_type;
-            _salt = salt?.CloneBytes();
-        }
-
-        internal static KerberosEncryptionTypeInfoEntry Parse(DERValue value)
-        {
-            if (!value.CheckSequence())
+            if (next.Type != DERTagType.ContextSpecific)
                 throw new InvalidDataException();
-            KerberosEncryptionType encryption_type = KerberosEncryptionType.NULL;
-            byte[] salt = null;
-            foreach (var next in value.Children)
+            switch (next.Tag)
             {
-                if (next.Type != DERTagType.ContextSpecific)
+                case 0:
+                    encryption_type = (KerberosEncryptionType)next.ReadChildInteger();
+                    break;
+                case 1:
+                    salt = next.ReadChildOctetString();
+                    break;
+                default:
                     throw new InvalidDataException();
-                switch (next.Tag)
-                {
-                    case 0:
-                        encryption_type = (KerberosEncryptionType)next.ReadChildInteger();
-                        break;
-                    case 1:
-                        salt = next.ReadChildOctetString();
-                        break;
-                    default:
-                        throw new InvalidDataException();
-                }
             }
-            return new KerberosEncryptionTypeInfoEntry(encryption_type, salt);
         }
+        return new KerberosEncryptionTypeInfoEntry(encryption_type, salt);
+    }
 
-        void IDERObject.Write(DERBuilder builder)
-        {
-            using (var seq = builder.CreateSequence())
-            {
-                seq.WriteContextSpecific(0, EncryptionType);
-                seq.WriteContextSpecific(1, Salt);
-            }
-        }
+    void IDERObject.Write(DERBuilder builder)
+    {
+        using var seq = builder.CreateSequence();
+        seq.WriteContextSpecific(0, EncryptionType);
+        seq.WriteContextSpecific(1, Salt);
     }
 }

@@ -13,40 +13,40 @@
 //  limitations under the License.
 
 using System.Text;
+using NtCoreLib.Security.Authorization;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a PAC_REQUESTOR entry.
+/// </summary>
+public sealed class KerberosAuthorizationDataPACRequestor : KerberosAuthorizationDataPACEntry
 {
     /// <summary>
-    /// Class to represent a PAC_REQUESTOR entry.
+    /// The SID of the requestor.
     /// </summary>
-    public sealed class KerberosAuthorizationDataPACRequestor : KerberosAuthorizationDataPACEntry
+    public Sid Requestor { get; }
+
+    private KerberosAuthorizationDataPACRequestor(byte[] data, Sid requestor) 
+        : base(KerberosAuthorizationDataPACEntryType.Requestor, data)
     {
-        /// <summary>
-        /// The SID of the requestor.
-        /// </summary>
-        public Sid Requestor { get; }
+        Requestor = requestor;
+    }
 
-        private KerberosAuthorizationDataPACRequestor(byte[] data, Sid requestor) 
-            : base(KerberosAuthorizationDataPACEntryType.Requestor, data)
-        {
-            Requestor = requestor;
-        }
+    internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
+    {
+        entry = null;
 
-        internal static bool Parse(byte[] data, out KerberosAuthorizationDataPACEntry entry)
-        {
-            entry = null;
+        var sid = Sid.Parse(data, false);
+        if (!sid.IsSuccess)
+            return false;
+        entry = new KerberosAuthorizationDataPACRequestor(data, sid.Result);
+        return true;
+    }
 
-            var sid = Sid.Parse(data, false);
-            if (!sid.IsSuccess)
-                return false;
-            entry = new KerberosAuthorizationDataPACRequestor(data, sid.Result);
-            return true;
-        }
-
-        private protected override void FormatData(StringBuilder builder)
-        {
-            builder.AppendLine($"Requestor Name   : {Requestor.Name}");
-            builder.AppendLine($"Requestor SID    : {Requestor}");
-        }
+    private protected override void FormatData(StringBuilder builder)
+    {
+        builder.AppendLine($"Requestor Name   : {Requestor.Name}");
+        builder.AppendLine($"Requestor SID    : {Requestor}");
     }
 }

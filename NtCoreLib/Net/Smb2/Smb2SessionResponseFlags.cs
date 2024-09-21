@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+/// <summary>
+/// Flags for the SMB2 session.
+/// </summary>
+[Flags]
+public enum Smb2SessionResponseFlags
 {
-    /// <summary>
-    /// Flags for the SMB2 session.
-    /// </summary>
-    [Flags]
-    public enum Smb2SessionResponseFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("SMB2_SESSION_FLAG_IS_GUEST")]
-        IsGuest = 1,
-        [SDKName("SMB2_SESSION_FLAG_IS_NULL")]
-        IsNull = 2,
-        [SDKName("SMB2_SESSION_FLAG_ENCRYPT_DATA")]
-        EncryptData = 4,
+    None = 0,
+    [SDKName("SMB2_SESSION_FLAG_IS_GUEST")]
+    IsGuest = 1,
+    [SDKName("SMB2_SESSION_FLAG_IS_NULL")]
+    IsNull = 2,
+    [SDKName("SMB2_SESSION_FLAG_ENCRYPT_DATA")]
+    EncryptData = 4,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

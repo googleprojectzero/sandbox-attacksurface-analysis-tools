@@ -12,20 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Enumeration for ALE layer types.
+/// </summary>
+public enum FirewallAleLayer
 {
-    /// <summary>
-    /// Enumeration for ALE layer types.
-    /// </summary>
-    public enum FirewallAleLayer
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        ConnectV4,
-        ConnectV6,
-        ListenV4,
-        ListenV6,
-        RecvAcceptV4,
-        RecvAcceptV6
+    ConnectV4,
+    ConnectV6,
+    ListenV4,
+    ListenV6,
+    RecvAcceptV4,
+    RecvAcceptV6
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

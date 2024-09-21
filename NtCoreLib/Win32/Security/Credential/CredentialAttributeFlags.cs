@@ -14,17 +14,16 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Flags for a credential attribute.
+/// </summary>
+[Flags]
+public enum CredentialAttributeFlags
 {
     /// <summary>
-    /// Flags for a credential attribute.
+    /// No flags.
     /// </summary>
-    [Flags]
-    public enum CredentialAttributeFlags
-    {
-        /// <summary>
-        /// No flags.
-        /// </summary>
-        None = 0,
-    }
+    None = 0,
 }

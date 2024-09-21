@@ -14,17 +14,16 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal abstract class Smb2RequestPacket
 {
-    internal abstract class Smb2RequestPacket
+    protected Smb2RequestPacket(Smb2Command command)
     {
-        protected Smb2RequestPacket(Smb2Command command)
-        {
-            Command = command;
-        }
-
-        public Smb2Command Command { get; }
-
-        public abstract void Write(BinaryWriter writer);
+        Command = command;
     }
+
+    public Smb2Command Command { get; }
+
+    public abstract void Write(BinaryWriter writer);
 }

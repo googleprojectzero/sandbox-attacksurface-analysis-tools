@@ -24,7 +24,7 @@ Specify to get a managed authentication package.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage
+NtCoreLib.Win32.Security.Authentication.AuthenticationPackage
 .EXAMPLE
 Get-LsaPackage
 Get all authentication packages.
@@ -43,10 +43,10 @@ function Get-LsaPackage {
 
     switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::Get() | Write-Output
+            [NtCoreLib.Win32.Security.Authentication.AuthenticationPackage]::Get() | Write-Output
         }
         "FromName" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationPackage]::FromName($Name, $Managed) | Write-Output
+            [NtCoreLib.Win32.Security.Authentication.AuthenticationPackage]::FromName($Name, $Managed) | Write-Output
         }
     }
 }
@@ -67,7 +67,7 @@ Specify to convert the user credential to an NT hash credential.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.UserCredentials
+NtCoreLib.Win32.Security.Authentication.UserCredentials
 .EXAMPLE
 $user_creds = Read-LsaCredential
 Read user credentials from the shell.
@@ -84,7 +84,7 @@ function Read-LsaCredential {
         [switch]$AsNtHashCred
     )
 
-    $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
+    $creds = [NtCoreLib.Win32.Security.Authentication.UserCredentials]::new()
     if ($UserName -eq "") {
         $UserName = Read-Host -Prompt "UserName"
     }
@@ -100,7 +100,7 @@ function Read-LsaCredential {
         $creds.Password = Read-Host -AsSecureString -Prompt "Password"
     }
     if ($AsNtHashCred) {
-        [NtApiDotNet.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
+        [NtCoreLib.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
     } else {
         $creds
     }
@@ -128,7 +128,7 @@ Specify to convert the user credential to an NT hash credential.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials
+NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials
 .EXAMPLE
 $user_creds = Get-LsaCredential -UserName "ABC" -Domain "DOMAIN" -Password "pwd"
 Get user credentials from components.
@@ -146,16 +146,16 @@ function Get-LsaCredential {
         [Parameter(ParameterSetName="FromCreds")]
         [switch]$AsNtHashCred,
         [Parameter(ParameterSetName="FromLocalCache", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(ParameterSetName="FromLocalCache")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket,
         [Parameter(ParameterSetName="FromTicket", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket]$Ticket
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket]$Ticket
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "FromCreds" {
-            $creds = [NtApiDotNet.Win32.Security.Authentication.UserCredentials]::new()
+            $creds = [NtCoreLib.Win32.Security.Authentication.UserCredentials]::new()
             if ($UserName -ne "") {
                 $creds.UserName = $UserName
             }
@@ -168,16 +168,16 @@ function Get-LsaCredential {
                 $creds.Password = $Password.Password
             }
             if ($AsNtHashCred) {
-                [NtApiDotNet.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
+                [NtCoreLib.Win32.Security.Authentication.Ntlm.Client.NtHashAuthenticationCredentials]::new($creds)
             } else {
                 $creds
             }
         }
         "FromLocalCache" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTicketCacheAuthenticationCredentials]::new($Cache, $SessionKeyTicket)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTicketCacheAuthenticationCredentials]::new($Cache, $SessionKeyTicket)
         }
         "FromTicket" {
-            [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosTicketAuthenticationCredentials]::new($Ticket)
+            [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosTicketAuthenticationCredentials]::new($Ticket)
         }
     }
 }
@@ -196,7 +196,7 @@ The list of certificates to use. Needs to have a private key.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials
+NtCoreLib.Win32.Security.Authentication.Schannel.SchannelCredentials
 .EXAMPLE
 $creds = Get-LsaSchannelCredential -Certificate $cert
 Get credentials with a certificate.
@@ -204,12 +204,12 @@ Get credentials with a certificate.
 function Get-LsaSchannelCredential {
     [CmdletBinding()]
     Param(
-        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentialsFlags]$Flags = 0,
+        [NtCoreLib.Win32.Security.Authentication.Schannel.SchannelCredentialsFlags]$Flags = 0,
         [int]$SessionLifespan = 0,
         [X509Certificate[]]$Certificate
     )
 
-    $creds = [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]::new()
+    $creds = [NtCoreLib.Win32.Security.Authentication.Schannel.SchannelCredentials]::new()
     $creds.Flags = $Flags
     $creds.SessionLifespan = $SessionLifespan
     foreach($cert in $Certificate) {
@@ -231,7 +231,7 @@ The user credentials.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials
+NtCoreLib.Win32.Security.Authentication.CredSSP.CredSSPCredentials
 .EXAMPLE
 $creds = Get-LsaCredSSPCredential -Schannel $schannel -User $user
 Get credentials from a schannel and user credentials object.
@@ -240,12 +240,12 @@ function Get-LsaCredSSPCredential {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, Position=0)]
-        [NtApiDotNet.Win32.Security.Authentication.Schannel.SchannelCredentials]$Schannel,
+        [NtCoreLib.Win32.Security.Authentication.Schannel.SchannelCredentials]$Schannel,
         [Parameter(Mandatory, Position=1)]
-        [NtApiDotNet.Win32.Security.Authentication.UserCredentials]$User
+        [NtCoreLib.Win32.Security.Authentication.UserCredentials]$User
     )
 
-    [NtApiDotNet.Win32.Security.Authentication.CredSSP.CredSSPCredentials]::new($Schannel, $User)
+    [NtCoreLib.Win32.Security.Authentication.CredSSP.CredSSPCredentials]::new($Schannel, $User)
 }
 
 <#
@@ -276,7 +276,7 @@ Specify to create a managed credential handle.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.ICredentialHandle
+NtCoreLib.Win32.Security.Authentication.ICredentialHandle
 .EXAMPLE
 $h = New-LsaCredentialHandle -Package "NTLM" -UseFlag Both
 Get a credential handle for the NTLM package for both directions.
@@ -293,11 +293,11 @@ function New-LsaCredentialHandle {
         [Parameter(Position = 0, Mandatory)]
         [string]$Package,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.SecPkgCredFlags]$UseFlag,
-        [Nullable[NtApiDotNet.Luid]]$AuthId,
+        [NtCoreLib.Win32.Security.Authentication.SecPkgCredFlags]$UseFlag,
+        [Nullable[NtCoreLib.Luid]]$AuthId,
         [string]$Principal,
         [Parameter(ParameterSetName="FromCreds")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials]$Credential,
         [Parameter(ParameterSetName="FromParts")]
         [switch]$ReadCredential,
         [Parameter(ParameterSetName="FromParts")]
@@ -361,36 +361,36 @@ Specify a specify key to use for the authenticator subkey.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.ClientAuthenticationContext
+NtCoreLib.Win32.Security.Authentication.ClientAuthenticationContext
 #>
 function New-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromCredHandle")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromCredHandle")]
-        [NtApiDotNet.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
+        [NtCoreLib.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicketCache")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromTicket")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosExternalTicket]$Ticket,
-        [NtApiDotNet.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosExternalTicket]$Ticket,
+        [NtCoreLib.Win32.Security.Authentication.InitializeContextReqFlags]$RequestAttribute = 0,
         [Parameter(ParameterSetName="FromCredHandle")]
         [Parameter(Mandatory, ParameterSetName="FromTicketCache")]
         [string]$Target,
         [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding,
         [Parameter(ParameterSetName="FromCredHandle")]
-        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
+        [NtCoreLib.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
         [Parameter(ParameterSetName="FromCredHandle")]
         [switch]$NoInit,
         [Parameter(ParameterSetName="FromTicketCache")]
         [Parameter(ParameterSetName="FromTicket")]
-        [System.Nullable[NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]]$SubKeyEncryptionType,
+        [System.Nullable[NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosEncryptionType]]$SubKeyEncryptionType,
         [Parameter(ParameterSetName="FromTicketCache")]
         [Parameter(ParameterSetName="FromTicket")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosAuthenticationKey]$SubKey,
         [Parameter(ParameterSetName="FromTicketCache")]
         [switch]$CacheOnly,
         [Parameter(ParameterSetName="FromTicketCache")]
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket,
+        [NtCoreLib.Win32.Security.Authentication.Kerberos.KerberosTicket]$SessionKeyTicket,
         [Parameter(ParameterSetName="FromTicketCache")]
         [switch]$S4U2Self
     )
@@ -400,7 +400,7 @@ function New-LsaClientContext {
             $CredHandle.CreateClient($RequestAttribute, $Target, $ChannelBinding, $DataRepresentation, !$NoInit)
         }
         "FromTicketCache" {
-            $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
+            $config = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
             $config.ChannelBinding = $ChannelBinding
@@ -409,7 +409,7 @@ function New-LsaClientContext {
             $Cache.CreateClientContext($Target, $RequestAttribute, $CacheOnly, $config)
         }
         "FromTicket" {
-            $config = [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
+            $config = [NtCoreLib.Win32.Security.Authentication.Kerberos.Client.KerberosClientAuthenticationContextConfig]::new()
             $config.SubKeyEncryptionType = $SubKeyEncryptionType
             $config.SubKey = $SubKey
             $config.ChannelBinding = $ChannelBinding
@@ -434,15 +434,15 @@ Optional channel binding token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.ServerAuthenticationContext
+NtCoreLib.Win32.Security.ServerAuthenticationContext
 #>
 function New-LsaServerContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
-        [NtApiDotNet.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttribute = 0,
-        [NtApiDotNet.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
+        [NtCoreLib.Win32.Security.Authentication.ICredentialHandle]$CredHandle,
+        [NtCoreLib.Win32.Security.Authentication.AcceptContextReqFlags]$RequestAttribute = 0,
+        [NtCoreLib.Win32.Security.Authentication.SecDataRep]$DataRepresentation = "Native",
         [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding
     )
 
@@ -471,21 +471,21 @@ Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function Update-LsaClientContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
+        [NtCoreLib.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
+        [NtCoreLib.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
         [Parameter(Mandatory, ParameterSetName="FromNoToken")]
         [switch]$NoToken,
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [switch]$PassThru
     )
 
@@ -527,21 +527,21 @@ Specify to passthrough the new context token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function Update-LsaServerContext {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
+        [NtCoreLib.Win32.Security.Authentication.IServerAuthenticationContext]$Server,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
+        [NtCoreLib.Win32.Security.Authentication.IClientAuthenticationContext]$Client,
         [Parameter(Position = 1, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Mandatory, ParameterSetName="FromNoToken")]
         [switch]$NoToken,
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$InputBuffer = @(),
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$OutputBuffer = @(),
         [switch]$PassThru
     )
 
@@ -571,13 +571,13 @@ The authentication server.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtToken
+NtCoreLib.NtToken
 #>
 function Get-LsaAccessToken {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.ServerAuthenticationContext]$Server
+        [NtCoreLib.Win32.Security.Authentication.ServerAuthenticationContext]$Server
     )
 
     $Server.GetAccessToken() | Write-Output
@@ -605,7 +605,7 @@ Specify the token is from a client.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function Get-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
@@ -620,7 +620,7 @@ function Get-LsaAuthToken {
         [Parameter(ParameterSetName="FromBytes")]
         [Parameter(ParameterSetName="FromHex")]
         [Parameter(ParameterSetName="FromBase64")]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [Parameter(ParameterSetName="FromBytes")]
         [Parameter(ParameterSetName="FromHex")]
         [Parameter(ParameterSetName="FromBase64")]
@@ -647,11 +647,11 @@ function Get-LsaAuthToken {
                 }
             }
             if ($null -ne $Context) {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
+                [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
             } elseif ($null -ne $Package) {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
+                [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
             } else {
-                [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($ba)
+                [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::new($ba)
             }
         }
     } catch {
@@ -677,7 +677,7 @@ function Test-LsaContext {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context
     )
 
     return $Context.Done
@@ -708,12 +708,12 @@ function Format-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ParameterSetName="FromToken")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [switch]$AsBytes,
         [switch]$AsDER,
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key = @()
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationKey[]]$Key = @()
     )
 
     PROCESS {
@@ -759,9 +759,9 @@ function Export-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [Parameter(Position = 1, Mandatory)]
         [string]$Path
     )
@@ -790,7 +790,7 @@ Specifies that the token is from a client. Advisory only.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function Import-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromPath")]
@@ -798,7 +798,7 @@ function Import-LsaAuthToken {
         [Parameter(Position = 0, Mandatory)]
         [string]$Path,
         [parameter(Position = 1, ParameterSetName="FromContext", Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Position = 1, ParameterSetName="FromPackage", Mandatory)]
         [string]$Package,
         [parameter(ParameterSetName="FromContext")]
@@ -808,13 +808,13 @@ function Import-LsaAuthToken {
     $ba = Read-BinaryFile -Path $Path
     switch($PSCmdlet.ParameterSetName) {
         "FromContext" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
+            [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::Parse($Context, $ba)
         }
         "FromPackage" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
+            [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::Parse($Package, $Client, $ba)
         }
         "FromPath" {
-            [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]::new($ba)
+            [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]::new($ba)
         }
     }
 }
@@ -836,17 +836,17 @@ The authentication context which has the token.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function Unprotect-LsaAuthToken {
     [CmdletBinding(DefaultParameterSetName="FromToken")]
     Param(
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromToken", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [Parameter(Position = 0, Mandatory, ParameterSetName="FromContext", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [Parameter(Position = 1, Mandatory)]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationKey[]]$Key
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationKey[]]$Key
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromContext") {
@@ -877,11 +877,11 @@ function Get-LsaContextSignature {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0
     )
@@ -932,11 +932,11 @@ function Test-LsaContextSignature {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Mandatory, Position = 2)]
         [byte[]]$Signature,
         [parameter(Position = 3)]
@@ -973,20 +973,20 @@ Specify to not automatically generate a signature buffer. You'll need to specify
 .INPUTS
 byte[]
 .OUTPUTS
-NtApiDotNet.Win32.Security.Authentication.EncryptedMessage
+NtCoreLib.Win32.Security.Authentication.EncryptedMessage
 #>
 function Protect-LsaContextMessage {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ValueFromPipeline, ParameterSetName="FromBytes")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Position = 2)]
         [int]$SequenceNumber = 0,
-        [NtApiDotNet.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0,
+        [NtCoreLib.Win32.Security.Authentication.SecurityQualityOfProtectionFlags]$QualityOfProtection = 0,
         [parameter(ParameterSetName="FromBuffers")]
         [switch]$NoSignature
     )
@@ -1042,12 +1042,12 @@ function Unprotect-LsaContextMessage {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
     param (
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Authentication.IAuthenticationContext]$Context,
+        [NtCoreLib.Win32.Security.Authentication.IAuthenticationContext]$Context,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Message,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffers")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBuffersNoSig")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer[]]$Buffer,
         [parameter(Mandatory, Position = 2, ParameterSetName="FromBytes")]
         [parameter(Mandatory, Position = 2, ParameterSetName="FromBuffers")]
         [byte[]]$Signature,
@@ -1059,7 +1059,7 @@ function Unprotect-LsaContextMessage {
 
     switch($PSCmdlet.ParameterSetName) {
         "FromBytes" {
-            $msg = [NtApiDotNet.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
+            $msg = [NtCoreLib.Win32.Security.Authentication.EncryptedMessage]::new($Message, $Signature)
             $Context.DecryptMessage($msg, $SequenceNumber)
         }
         "FromBuffers" {
@@ -1093,7 +1093,7 @@ Specify the character encoding when making a buffer from a string.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+NtCoreLib.Win32.Security.Buffers.SecurityBuffer
 #>
 function New-LsaSecurityBuffer {
     [CmdletBinding(DefaultParameterSetName="FromBytes")]
@@ -1102,7 +1102,7 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, Position = 0, ParameterSetName="FromSize")]
         [parameter(Mandatory, Position = 0, ParameterSetName="FromString")]
         [parameter(ParameterSetName="FromEmpty")]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]$Type = 0,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBufferType]$Type = 0,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromBytes")]
         [byte[]]$Byte,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromSize")]
@@ -1112,7 +1112,7 @@ function New-LsaSecurityBuffer {
         [parameter(Mandatory, ParameterSetName="FromChannelBinding")]
         [NtObjectManager.Utils.ChannelBindingHolder]$ChannelBinding,
         [Parameter(Mandatory, ParameterSetName="FromToken")]
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationToken]$Token,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationToken]$Token,
         [parameter(Mandatory, ParameterSetName="FromString")]
         [string]$String,
         [parameter(ParameterSetName="FromString")]
@@ -1128,35 +1128,35 @@ function New-LsaSecurityBuffer {
     )
 
     $type_flags = if ($PSCmdlet.ParameterSetName -eq "FromToken") {
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::Token
+        [NtCoreLib.Win32.Security.Buffers.SecurityBufferType]::Token
     } else {
         $Type
     }
     if ($ReadOnly) {
-        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnly
+        $type_flags = $type_flags -bor [NtCoreLib.Win32.Security.Buffers.SecurityBufferType]::ReadOnly
     }
     if ($ReadOnlyWithChecksum) {
-        $type_flags = $type_flags -bor [NtApiDotNet.Win32.Security.Buffers.SecurityBufferType]::ReadOnlyWithChecksum
+        $type_flags = $type_flags -bor [NtCoreLib.Win32.Security.Buffers.SecurityBufferType]::ReadOnlyWithChecksum
     }
 
     switch($PSCmdlet.ParameterSetName) {
         "FromBytes" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Byte)
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Byte)
         }
         "FromSize" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, $Size)
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, $Size)
         }
         "FromEmpty" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, 0)
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferOut]::new($type_flags, 0)
         }
         "FromChannelBinding" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferChannelBinding]::new($ChannelBinding)
         }
         "FromToken" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Token.ToArray())
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, $Token.ToArray())
         }
         "FromString" {
-            [NtApiDotNet.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
+            [NtCoreLib.Win32.Security.Buffers.SecurityBufferInOut]::new($type_flags, [System.Text.Encoding]::GetEncoding($Encoding).GetBytes($String))
         }
     }
 }
@@ -1175,17 +1175,17 @@ Specify the character encoding when converting to a string.
 .PARAMETER AsToken
 Specify to convert the buffer to an authentication token.
 .INPUTS
-NtApiDotNet.Win32.Security.Buffers.SecurityBuffer
+NtCoreLib.Win32.Security.Buffers.SecurityBuffer
 .OUTPUTS
 byte[]
 string
-NtApiDotNet.Win32.Security.Authentication.AuthenticationToken
+NtCoreLib.Win32.Security.Authentication.AuthenticationToken
 #>
 function ConvertFrom-LsaSecurityBuffer {
     [CmdletBinding(DefaultParameterSetName="ToBytes")]
     param (
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Security.Buffers.SecurityBuffer]$Buffer,
+        [NtCoreLib.Win32.Security.Buffers.SecurityBuffer]$Buffer,
         [parameter(Mandatory, ParameterSetName="ToString")]
         [switch]$AsString,
         [parameter(ParameterSetName="ToString")]
@@ -1221,7 +1221,7 @@ Specify the access rights on the policy.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Policy.LsaPolicy
+NtCoreLib.Win32.Security.Policy.LsaPolicy
 .EXAMPLE
 Get-LsaPolicy
 Get the local LSA policy object with maximum access.
@@ -1235,11 +1235,11 @@ Get the local LSA policy object with LookupNames access.
 function Get-LsaPolicy { 
     [CmdletBinding()]
     param(
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicyAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Policy.LsaPolicyAccessRights]$Access = "MaximumAllowed",
         [string]$SystemName
     )
 
-    [NtApiDotNet.Win32.Security.Policy.LsaPolicy]::Open($SystemName, $Access)
+    [NtCoreLib.Win32.Security.Policy.LsaPolicy]::Open($SystemName, $Access)
 }
 
 <#
@@ -1258,7 +1258,7 @@ Specify to get account by SID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Policy.LsaAccount
+NtCoreLib.Win32.Security.Policy.LsaAccount
 .EXAMPLE
 Get-LsaAccount -Policy $policy
 Get all accessible account objects in the policy.
@@ -1273,12 +1273,12 @@ function Get-LsaAccount {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [NtCoreLib.Win32.Security.Policy.LsaPolicy]$Policy,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromSid")]
-        [NtApiDotNet.Win32.Security.Policy.LsaAccountAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Policy.LsaAccountAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -1315,7 +1315,7 @@ Specify to get trusted domain by name.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Policy.LsaTrustedDomain
+NtCoreLib.Win32.Security.Policy.LsaTrustedDomain
 .EXAMPLE
 Get-LsaTrustedDomain -Policy $policy
 Get all accessible trusted domain objects in the policy.
@@ -1333,15 +1333,15 @@ function Get-LsaTrustedDomain {
     [CmdletBinding(DefaultParameterSetName="All")]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [NtCoreLib.Win32.Security.Policy.LsaPolicy]$Policy,
         [Parameter(Mandatory, ParameterSetName="FromSid")]
-        [NtApiDotNet.Sid]$Sid,
+        [NtCoreLib.Security.Authorization.Sid]$Sid,
         [Parameter(Mandatory, Position = 1, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(ParameterSetName="All")]
         [Parameter(ParameterSetName="FromSid")]
         [Parameter(ParameterSetName="FromName")]
-        [NtApiDotNet.Win32.Security.Policy.LsaTrustedDomainAccessRights]$Access = "MaximumAllowed",
+        [NtCoreLib.Win32.Security.Policy.LsaTrustedDomainAccessRights]$Access = "MaximumAllowed",
         [Parameter(Mandatory, ParameterSetName="AllInfoOnly")]
         [switch]$InfoOnly
     )
@@ -1377,7 +1377,7 @@ Specify to get trusted domain by name.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Security.Policy.LsaSecret
+NtCoreLib.Win32.Security.Policy.LsaSecret
 .EXAMPLE
 Get-LsaSecret -Policy $policy -Name '$SECRET_NAME'
 Get the secret by name.
@@ -1386,10 +1386,10 @@ function Get-LsaSecret {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [NtCoreLib.Win32.Security.Policy.LsaPolicy]$Policy,
         [Parameter(Mandatory, Position = 1)]
         [string]$Name,
-        [NtApiDotNet.Win32.Security.Policy.LsaSecretAccessRights]$Access = "MaximumAllowed"
+        [NtCoreLib.Win32.Security.Policy.LsaSecretAccessRights]$Access = "MaximumAllowed"
     )
 
     $Policy.OpenSecret($Name, $Access)
@@ -1409,7 +1409,7 @@ Specify flags for the looked up names.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SidName[]
+NtCoreLib.Security.Authorization.SidName[]
 .EXAMPLE
 Get-LsaSid -Policy $policy -Name 'Administrator'
 Lookup the name Administrator in the policy.
@@ -1418,10 +1418,10 @@ function Get-LsaSid {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [NtCoreLib.Win32.Security.Policy.LsaPolicy]$Policy,
         [Parameter(Mandatory, Position = 1)]
         [string[]]$Name,
-        [NtApiDotnet.Win32.Security.Policy.LsaLookupNameOptionFlags]$Flags = 0
+        [NtCoreLib.Win32.Security.Policy.LsaLookupNameOptionFlags]$Flags = 0
     )
 
     $Policy.LookupNames($Name, $Flags) | Write-Output
@@ -1441,7 +1441,7 @@ Specify flags for the looked up SIDs.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SidName[]
+NtCoreLib.Security.Authorization.SidName[]
 .EXAMPLE
 Get-LsaName -Policy $policy -Sid 'S-1-5-32-544'
 Lookup the SID S-1-5-32-544 in the policy.
@@ -1450,10 +1450,10 @@ function Get-LsaName {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Security.Policy.LsaPolicy]$Policy,
+        [NtCoreLib.Win32.Security.Policy.LsaPolicy]$Policy,
         [Parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Sid[]]$Sid,
-        [NtApiDotnet.Win32.Security.Policy.LsaLookupSidOptionFlags]$Flags = 0
+        [NtCoreLib.Security.Authorization.Sid[]]$Sid,
+        [NtCoreLib.Win32.Security.Policy.LsaLookupSidOptionFlags]$Flags = 0
     )
 
     if ($Flags -ne 0) {
@@ -1491,7 +1491,7 @@ function Get-LsaPrivateData {
         [string]$SystemName
     )
 
-    [NtApiDotNet.Win32.Security.Win32Security]::LsaRetrievePrivateData($SystemName, $Name)
+    [NtCoreLib.Win32.Security.Win32Security]::LsaRetrievePrivateData($SystemName, $Name)
 }
 
 <#
@@ -1526,22 +1526,6 @@ function Set-LsaPrivateData {
         [string]$SystemName
     )
 
-    [NtApiDotNet.Win32.Security.Win32Security]::LsaStorePrivateData($SystemName, $Name, $Data)
+    [NtCoreLib.Win32.Security.Win32Security]::LsaStorePrivateData($SystemName, $Name, $Data)
 }
 
-# Alias old functions. Remove eventually.
-Set-Alias -Name Get-AuthPackage -Value Get-LsaPackage
-Set-Alias -Name Read-AuthCredential -Value Read-LsaCredential
-Set-Alias -Name Get-AuthCredential -Value Get-LsaCredential
-Set-Alias -Name Get-AuthCredentialHandle -Value New-LsaCredentialHandle
-Set-Alias -Name Get-AuthClientContext -Value New-LsaClientContext
-Set-Alias -Name Get-AuthServerContext -Value New-LsaServerContext
-Set-Alias -Name Update-AuthClientContext -Value Update-LsaClientContext
-Set-Alias -Name Update-AuthServerContext -Value Update-LsaServerContext
-Set-Alias -Name Get-AuthAccessToken -Value Get-LsaAccessToken
-Set-Alias -Name Get-AuthToken -Value Get-LsaAuthToken
-Set-Alias -Name Test-AuthContext -Value Test-LsaContext
-Set-Alias -Name Format-AuthToken -Value Format-LsaAuthToken
-Set-Alias -Name Export-AuthToken -Value Export-LsaAuthToken
-Set-Alias -Name Import-AuthToken -Value Import-LsaAuthToken
-Set-Alias -Name Unprotect-AuthToken -Value Unprotect-LsaAuthToken

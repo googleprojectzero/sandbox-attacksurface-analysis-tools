@@ -14,20 +14,19 @@
 
 using System;
 
-namespace NtApiDotNet.IO.UsnJournal
+namespace NtCoreLib.IO.UsnJournal;
+
+/// <summary>
+/// Flags for USN journal source information.
+/// </summary>
+[Flags]
+public enum UsnJournalSourceInfoFlags
 {
-    /// <summary>
-    /// Flags for USN journal source information.
-    /// </summary>
-    [Flags]
-    public enum UsnJournalSourceInfoFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        DataManagement = 0x00000001,
-        AuxilaryData = 0x00000002,
-        ReplicationManagement = 0x00000004,
-        ClientReplicationManagement = 0x00000008,
+    None = 0,
+    DataManagement = 0x00000001,
+    AuxilaryData = 0x00000002,
+    ReplicationManagement = 0x00000004,
+    ClientReplicationManagement = 0x00000008,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

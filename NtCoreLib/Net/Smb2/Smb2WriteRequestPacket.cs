@@ -14,44 +14,43 @@
 
 using System.IO;
 
-namespace NtApiDotNet.Net.Smb2
+namespace NtCoreLib.Net.Smb2;
+
+internal sealed class Smb2WriteRequestPacket : Smb2RequestPacket
 {
-    internal sealed class Smb2WriteRequestPacket : Smb2RequestPacket
+    private const ushort STRUCT_SIZE = 49;
+
+    private readonly byte[] _data;
+    private readonly int _data_ofs;
+    private readonly int _data_length;
+    private readonly long _offset;
+    private readonly Smb2FileId _file_id;
+
+    public Smb2WriteRequestPacket(byte[] data, int data_ofs, int data_length, long offset, Smb2FileId file_id) 
+        : base(Smb2Command.WRITE)
     {
-        private const ushort STRUCT_SIZE = 49;
+        _data = data;
+        _data_ofs = data_ofs;
+        _data_length = data_length;
+        _offset = offset;
+        _file_id = file_id;
+    }
 
-        private readonly byte[] _data;
-        private readonly int _data_ofs;
-        private readonly int _data_length;
-        private readonly long _offset;
-        private readonly Smb2FileId _file_id;
-
-        public Smb2WriteRequestPacket(byte[] data, int data_ofs, int data_length, long offset, Smb2FileId file_id) 
-            : base(Smb2Command.WRITE)
-        {
-            _data = data;
-            _data_ofs = data_ofs;
-            _data_length = data_length;
-            _offset = offset;
-            _file_id = file_id;
-        }
-
-        public override void Write(BinaryWriter writer)
-        {
-            writer.Write(STRUCT_SIZE);
-            writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
-            writer.Write(_data_length);
-            writer.Write(_offset);
-            _file_id.Write(writer);
-            // Channel
-            writer.Write(0);
-            // RemainingBytes
-            writer.Write(0);
-            // WriterChannelInfoOffset/WriterChannelInfoLength
-            writer.Write(0);
-            // Flags
-            writer.Write(0);
-            writer.Write(_data, _data_ofs, _data_length);
-        }
+    public override void Write(BinaryWriter writer)
+    {
+        writer.Write(STRUCT_SIZE);
+        writer.Write(Smb2PacketHeader.CalculateOffset(STRUCT_SIZE));
+        writer.Write(_data_length);
+        writer.Write(_offset);
+        _file_id.Write(writer);
+        // Channel
+        writer.Write(0);
+        // RemainingBytes
+        writer.Write(0);
+        // WriterChannelInfoOffset/WriterChannelInfoLength
+        writer.Write(0);
+        // Flags
+        writer.Write(0);
+        writer.Write(_data, _data_ofs, _data_length);
     }
 }

@@ -12,25 +12,24 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// Flags for classify output.
+/// </summary>
+[Flags]
+public enum FirewallClassifyOutFlags
 {
-    /// <summary>
-    /// Flags for classify output.
-    /// </summary>
-    [Flags]
-    public enum FirewallClassifyOutFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("FWPS_CLASSIFY_OUT_FLAG_ABSORB")]
-        Absorb                      = 0x00000001,
-        [SDKName("FWPS_CLASSIFY_OUT_FLAG_BUFFER_LIMIT_REACHED")]
-        BufferLimitReached        = 0x00000002,
-        [SDKName("FWPS_CLASSIFY_OUT_FLAG_NO_MORE_DATA")]
-        NoMoreData                = 0x00000004,
+    None = 0,
+    [SDKName("FWPS_CLASSIFY_OUT_FLAG_ABSORB")]
+    Absorb                      = 0x00000001,
+    [SDKName("FWPS_CLASSIFY_OUT_FLAG_BUFFER_LIMIT_REACHED")]
+    BufferLimitReached        = 0x00000002,
+    [SDKName("FWPS_CLASSIFY_OUT_FLAG_NO_MORE_DATA")]
+    NoMoreData                = 0x00000004,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32.Rpc.Transport.PDU
+namespace NtCoreLib.Win32.Rpc.Transport.PDU;
+
+internal enum BindRejectionReason
 {
-    internal enum BindRejectionReason
-    {
-        NotSpecified = 0,
-        TemporaryCongestion = 1,
-        LocalLimitExceeded = 2,
-        CalledPAddrUnknown = 3,
-        ProtocolVersionNotSupported = 4,
-        DefaultContextNotSupported = 5,
-        UserDataNotReadable = 6,
-        NoPSAPAvailable = 7,
-        AuthenticationTypeNotRecognized = 8,
-        InvalidChecksum = 9,
-    }
+    NotSpecified = 0,
+    TemporaryCongestion = 1,
+    LocalLimitExceeded = 2,
+    CalledPAddrUnknown = 3,
+    ProtocolVersionNotSupported = 4,
+    DefaultContextNotSupported = 5,
+    UserDataNotReadable = 6,
+    NoPSAPAvailable = 7,
+    AuthenticationTypeNotRecognized = 8,
+    InvalidChecksum = 9,
 }

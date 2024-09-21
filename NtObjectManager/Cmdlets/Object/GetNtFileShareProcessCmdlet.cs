@@ -12,46 +12,45 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get the list of processes which are sharing this file.</para>
+/// <para type="description">This cmdlet gets the list of processes which are sharing this file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileShareProcess -File $f</code>
+///   <para>Get the sharing processes for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileShareProcess -Path "\??\C:\windows\system32\kernel32.dll"</code>
+///   <para>Get the sharing processes for kernel32.dll.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileShareProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path</code>
+///   <para>Get the sharing processes for kernel32.dll.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileShareProcess", DefaultParameterSetName = "Default")]
+[OutputType(typeof(NtProcessInformation))]
+public class GetNtFileShareProcessCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get the list of processes which are sharing this file.</para>
-    /// <para type="description">This cmdlet gets the list of processes which are sharing this file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileShareProcess -File $f</code>
-    ///   <para>Get the sharing processes for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileShareProcess -Path "\??\C:\windows\system32\kernel32.dll"</code>
-    ///   <para>Get the sharing processes for kernel32.dll.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileShareProcess -Path "C:\windows\system32\kernel32.dll" -Win32Path</code>
-    ///   <para>Get the sharing processes for kernel32.dll.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileShareProcess", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(NtProcessInformation))]
-    public class GetNtFileShareProcessCmdlet : BaseNtFilePropertyCmdlet
+    public GetNtFileShareProcessCmdlet()
+        : base(FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileShareProcessCmdlet()
-            : base(FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            var pids = new HashSet<int>(file.GetUsingProcessIds());
+    private protected override void HandleFile(NtFile file)
+    {
+        var pids = new HashSet<int>(file.GetUsingProcessIds());
 
-            WriteObject(NtSystemInfo.GetProcessInformationExtended().Where(p => pids.Contains(p.ProcessId)), true);
-        }
+        WriteObject(NtSystemInfo.GetProcessInformationExtended().Where(p => pids.Contains(p.ProcessId)), true);
     }
 }

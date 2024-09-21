@@ -1,160 +1,53 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E0EC1C79-4200-466B-8415-DE70E18192CC}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EditSection</RootNamespace>
-    <AssemblyName>EditSection</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup />
-  <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>main.ico</ApplicationIcon>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="WeifenLuo.WinFormsUI.Docking, Version=3.0.6.0, Culture=neutral, PublicKeyToken=5cded1a1a0a7b481, processorArchitecture=MSIL">
-      <HintPath>..\packages\DockPanelSuite.3.0.6\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CorruptSectionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CorruptSectionForm.Designer.cs">
-      <DependentUpon>CorruptSectionForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CorruptSectionImpl.cs" />
-    <Compile Include="ICorruptSection.cs" />
-    <Compile Include="IDataInspector.cs" />
-    <Compile Include="MainForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="NamedObjectForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="NamedObjectForm.Designer.cs">
-      <DependentUpon>NamedObjectForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="NativeMappedFileByteProvider.cs" />
-    <Compile Include="ProcessTreeNode.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SectionEditorForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SectionEditorForm.Designer.cs">
-      <DependentUpon>SectionEditorForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="SectionTreeNode.cs" />
-    <Compile Include="SelectSectionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SelectSectionForm.Designer.cs">
-      <DependentUpon>SelectSectionForm.cs</DependentUpon>
-    </Compile>
-    <EmbeddedResource Include="CorruptSectionForm.resx">
-      <DependentUpon>CorruptSectionForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="NamedObjectForm.resx">
-      <DependentUpon>NamedObjectForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <EmbeddedResource Include="SectionEditorForm.resx">
-      <DependentUpon>SectionEditorForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SelectSectionForm.resx">
-      <DependentUpon>SelectSectionForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <None Include="app.manifest" />
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
-      <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
-      <Name>NtApiDotNet</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\third_party\Be.Windows.Forms.HexBox\Be.Windows.Forms.HexBox.csproj">
-      <Project>{26c5f25f-b450-4caf-ad8b-b8d11ae73457}</Project>
-      <Name>Be.Windows.Forms.HexBox</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="main.ico" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyName>EditSection</AssemblyName>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net461</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWindowsForms>true</UseWindowsForms>
+        <LangVersion>10.0</LangVersion>
+        <ApplicationIcon>main.ico</ApplicationIcon>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <Authors>James Forshaw</Authors>
+        <Company>Google LLC.</Company>
+        <Product>EditSection</Product>
+        <FileVersion>2.0.0.0</FileVersion>
+        <Version>2.0.0</Version>
+        <Copyright>Copyright © Google LLC. 2016-2023</Copyright>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <BaseOutputPath>..\bin</BaseOutputPath>
+        <Configurations>Debug;Release;Publish</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
+      <Optimize>True</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="main.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="DockPanelSuite" Version="3.0.6" />
+        <PackageReference Include="NDesk.Options" Version="0.2.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\third_party\Be.Windows.Forms.HexBox\Be.Windows.Forms.HexBox.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' != 'Publish'">
+        <ProjectReference Include="..\NtCoreLib\NtCoreLib.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Publish'">
+        <Compile Include="..\NtCoreLib\**\*.cs" LinkBase="NtCoreLib" />
+        <Compile Remove="..\NtCoreLib\obj\**" />
+        <Reference Include="System.DirectoryServices" />
+        <Reference Include="System.Security" />
+    </ItemGroup>
 </Project>

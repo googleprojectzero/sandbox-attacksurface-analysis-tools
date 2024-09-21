@@ -12,19 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Buffers;
+using NtCoreLib.Win32.Security.Buffers;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Base class for a security control token.
+/// </summary>
+public abstract class ControlToken
 {
     /// <summary>
-    /// Base class for a security control token.
+    /// Convert the token into a security buffer.
     /// </summary>
-    public abstract class ControlToken
-    {
-        /// <summary>
-        /// Convert the token into a security buffer.
-        /// </summary>
-        /// <returns>The security buffer.</returns>
-        public abstract SecurityBuffer ToBuffer();
-    }
+    /// <returns>The security buffer.</returns>
+    public abstract SecurityBuffer ToBuffer();
 }

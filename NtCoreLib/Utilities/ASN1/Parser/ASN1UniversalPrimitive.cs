@@ -14,34 +14,27 @@
 
 using System.Text;
 
-namespace NtApiDotNet.Utilities.ASN1.Parser
+namespace NtCoreLib.Utilities.ASN1.Parser;
+
+/// <summary>
+/// Class to represent a primitive ASN.1 object.
+/// </summary>
+public class ASN1UniversalPrimitive : ASN1Universal
 {
-    /// <summary>
-    /// Class to represent a primitive ASN.1 object.
-    /// </summary>
-    public class ASN1UniversalPrimitive : ASN1Universal
+    private protected override string FormatValue()
     {
-        private protected override string FormatValue()
+        return Tag switch
         {
-            switch (Tag)
-            {
-                case ASN1UniversalTag.ObjectIdentifier:
-                    return DERUtils.ReadObjID(_data);
-                case ASN1UniversalTag.GeneralString:
-                    return Encoding.ASCII.GetString(_data);
-                case ASN1UniversalTag.IA5String:
-                    return Encoding.ASCII.GetString(_data);
-                case ASN1UniversalTag.UTF8String:
-                    return Encoding.UTF8.GetString(_data);
-                case ASN1UniversalTag.GeneralizedTime:
-                    return Encoding.ASCII.GetString(_data);
-            }
+            ASN1UniversalTag.ObjectIdentifier => DERUtils.ReadObjID(_data),
+            ASN1UniversalTag.GeneralString => Encoding.ASCII.GetString(_data),
+            ASN1UniversalTag.IA5String => Encoding.ASCII.GetString(_data),
+            ASN1UniversalTag.UTF8String => Encoding.UTF8.GetString(_data),
+            ASN1UniversalTag.GeneralizedTime => Encoding.ASCII.GetString(_data),
+            _ => NtObjectUtils.ToHexString(_data),
+        };
+    }
 
-            return NtObjectUtils.ToHexString(_data);
-        }
-
-        internal ASN1UniversalPrimitive(DERValue value) : base(value)
-        {
-        }
+    internal ASN1UniversalPrimitive(DERValue value) : base(value)
+    {
     }
 }

@@ -12,24 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtObjectManager.Cmdlets.Accessible
+namespace NtObjectManager.Cmdlets.Accessible;
+
+/// <summary>
+/// <para type="description">Check mode for accessible services.</para>
+/// </summary>
+public enum ServiceCheckMode
 {
     /// <summary>
-    /// <para type="description">Check mode for accessible services.</para>
+    /// Only services.
     /// </summary>
-    public enum ServiceCheckMode
-    {
-        /// <summary>
-        /// Only services.
-        /// </summary>
-        ServiceOnly,
-        /// <summary>
-        /// Only drivers.
-        /// </summary>
-        DriverOnly,
-        /// <summary>
-        /// Services and drivers.
-        /// </summary>
-        ServiceAndDriver
-    }
+    ServiceOnly,
+    /// <summary>
+    /// Only drivers.
+    /// </summary>
+    DriverOnly,
+    /// <summary>
+    /// Services and drivers.
+    /// </summary>
+    ServiceAndDriver
 }

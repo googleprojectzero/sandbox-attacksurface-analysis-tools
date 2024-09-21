@@ -12,47 +12,84 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr.Marshal;
-using NtApiDotNet.Net.Sockets;
+using NtCoreLib.Ndr.Marshal;
+using NtCoreLib.Net.Sockets.HyperV;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
+using System;
 using System.Net.Sockets;
 
-namespace NtApiDotNet.Win32.Rpc.Transport
+namespace NtCoreLib.Win32.Rpc.Transport;
+
+/// <summary>
+/// RPC client transport over HyperV sockets.
+/// </summary>
+public sealed class RpcHyperVClientTransport : RpcStreamSocketClientTransport
 {
-    /// <summary>
-    /// RPC client transport over HyperV sockets.
-    /// </summary>
-    public sealed class RpcHyperVClientTransport : RpcStreamSocketClientTransport
+    #region Private Members
+    private const ushort MaxXmitFrag = 5840;
+    private const ushort MaxRecvFrag = 5840;
+
+    private static Socket CreateSocket(HyperVEndPoint endpoint)
     {
-        #region Private Members
-        private const ushort MaxXmitFrag = 5840;
-        private const ushort MaxRecvFrag = 5840;
-
-        private static Socket CreateSocket(HyperVEndPoint endpoint)
-        {
-            Socket socket = new Socket(HyperVEndPoint.AF_HYPERV, 
-                SocketType.Stream, HyperVEndPoint.HV_PROTOCOL_RAW);
-            socket.Connect(endpoint);
-            return socket;
-        }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="endpoint">The HyperV socket endpoint to connect to.</param>
-        /// <param name="transport_security">The transport security for the connection.</param>
-        public RpcHyperVClientTransport(HyperVEndPoint endpoint, RpcTransportSecurity transport_security)
-            : base(CreateSocket(endpoint), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security)
-        {
-        }
-        #endregion
-
-        #region Public Properties
-        /// <summary>
-        /// Get the transport protocol sequence.
-        /// </summary>
-        public override string ProtocolSequence => RpcProtocolSequence.Container;
-        #endregion
+        Socket socket = new(HyperVEndPoint.AF_HYPERV, 
+            SocketType.Stream, HyperVEndPoint.HV_PROTOCOL_RAW);
+        socket.Connect(endpoint);
+        return socket;
     }
+
+    private RpcServerProcessInformation GetServerProcess()
+    {
+        if (_socket.RemoteEndPoint is HyperVEndPoint ep)
+        {
+            foreach (var entry in HyperVSocketUtils.GetSocketTable(true, Guid.Empty))
+            {
+                if (entry.SystemId == ep.ServiceId)
+                {
+                    return new RpcServerProcessInformation(entry.ProcessId, 0);
+                }
+            }
+        }
+        throw new ArgumentException("Can't find local listener for Hyper-V socket.");
+    }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="endpoint">The HyperV socket endpoint to connect to.</param>
+    /// <param name="transport_security">The security for the transport.</param>
+    /// <param name="config">The transport configuration for the connection.</param>
+    public RpcHyperVClientTransport(HyperVEndPoint endpoint, RpcTransportSecurity transport_security, RpcConnectedClientTransportConfiguration config)
+        : base(CreateSocket(endpoint), MaxRecvFrag, MaxXmitFrag, new NdrDataRepresentation(), transport_security, config)
+    {
+    }
+    #endregion
+
+    #region Public Properties
+    /// <summary>
+    /// Get the transport protocol sequence.
+    /// </summary>
+    public override string ProtocolSequence => RpcProtocolSequence.Container;
+
+    /// <inheritdoc/>
+    public override RpcServerProcessInformation ServerProcess => GetServerProcess();
+    #endregion
+
+    #region Internal Members
+    internal static Guid ResolveVmId(string guid)
+    {
+        if (string.IsNullOrEmpty(guid))
+            return HyperVSocketGuids.HV_GUID_LOOPBACK;
+
+        return guid.ToLower() switch
+        {
+            "parent" => HyperVSocketGuids.HV_GUID_PARENT,
+            "children" => HyperVSocketGuids.HV_GUID_CHILDREN,
+            "silohost" => HyperVSocketGuids.HV_GUID_SILOHOST,
+            "loopback" => HyperVSocketGuids.HV_GUID_LOOPBACK,
+            _ => Guid.Parse(guid),
+        };
+    }
+    #endregion
 }

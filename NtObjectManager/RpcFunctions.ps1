@@ -14,7 +14,7 @@
 
 $protseq_completer = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    @("ncalrpc", "ncacn_np", "ncacn_ip_tcp", "ncacn_http") | Where-Object { $_ -like "$wordToComplete*" }
+    @("ncalrpc", "ncacn_np", "ncacn_ip_tcp", "ncacn_http", "ncacn_hvsocket") | Where-Object { $_ -like "$wordToComplete*" }
 }
 
 <#
@@ -55,9 +55,9 @@ function Get-AccessibleAlpcPort {
         [alias("ProcessCommandLines")]
         [string[]]$ProcessCommandLine,
         [alias("Tokens")]
-        [NtApiDotNet.NtToken[]]$Token,
+        [NtCoreLib.NtToken[]]$Token,
         [alias("Processes")]
-        [NtApiDotNet.NtProcess[]]$Process
+        [NtCoreLib.NtProcess[]]$Process
     )
     $access = Get-NtAccessMask -AlpcPortAccess Connect -ToGenericAccess
     Get-AccessibleObject -FromHandle -ProcessId $ProcessId -ProcessName $ProcessName `
@@ -86,9 +86,9 @@ Use brute force to find a valid ALPC endpoint for the interface.
 .PARAMETER ProcessId
 Used to find all ALPC ports in a process and get the supported interfaces.
 .INPUTS
-None or NtApiDotNet.Ndr.NdrRpcServerInterface
+None or NtCoreLib.Ndr.Rpc.RpcServerInterface
 .OUTPUTS
-NtApiDotNet.Win32.RpcEndpoint[]
+NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpoint[]
 .EXAMPLE
 Get-RpcEndpoint
 Get all RPC registered RPC endpoints.
@@ -121,11 +121,11 @@ function Get-RpcEndpoint {
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromIdAndVersion")]
         [Guid]$InterfaceId,
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromIdAndVersion")]
-        [Version]$InterfaceVersion,
-        [parameter(Mandatory, ParameterSetName = "FromServer", ValueFromPipeline)]
-        [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server,
+        [NtCoreLib.Ndr.Rpc.RpcVersion]$InterfaceVersion,
+        [parameter(Mandatory, ParameterSetName = "FromRpcServer", ValueFromPipeline)]
+        [NtCoreLib.Ndr.Rpc.RpcServerInterface]$Server,
         [parameter(Mandatory, ParameterSetName = "FromBinding")]
-        [string]$Binding,
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$Binding,
         [parameter(Mandatory, ParameterSetName = "FromAlpc")]
         [string]$AlpcPort,
         [parameter(Mandatory, ParameterSetName = "FromProcessId")]
@@ -134,54 +134,55 @@ function Get-RpcEndpoint {
         [parameter(Mandatory, ParameterSetName = "FromServiceName")]
         [string]$ServiceName,
         [parameter(ParameterSetName = "FromIdAndVersion")]
-        [parameter(ParameterSetName = "FromServer")]
+        [parameter(ParameterSetName = "FromRpcServer")]
         [switch]$FindAlpcPort,
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromId")]
         [parameter(ParameterSetName = "FromIdAndVersion")]
         [parameter(ParameterSetName = "FromRpcClient")]
-        [string]$SearchBinding = "",
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$SearchBinding,
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromId")]
         [parameter(ParameterSetName = "FromIdAndVersion")]
         [parameter(ParameterSetName = "FromRpcClient")]
         [string[]]$ProtocolSequence = @(),
         [parameter(Mandatory, ParameterSetName = "FromRpcClient")]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client
     )
 
     PROCESS {
         $eps = switch ($PsCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding)
+                [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryAllEndpoints($SearchBinding)
             }
             "FromId" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $InterfaceId)
+                [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForInterface($SearchBinding, $InterfaceId)
             }
             "FromIdAndVersion" {
+                $syntax_id = [NtCoreLib.Ndr.Rpc.RpcSyntaxIdentifier]::new($InterfaceId, $InterfaceVersion)
                 if ($FindAlpcPort) {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($InterfaceId, $InterfaceVersion)
+                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::FindAlpcEndpointForInterface($syntax_id)
                 }
                 else {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $InterfaceId, $InterfaceVersion)
+                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForInterface($SearchBinding, $syntax_id)
                 }
             }
-            "FromServer" {
+            "FromRpcServer" {
                 if ($FindAlpcPort) {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server.InterfaceId, $Server.InterfaceVersion)
+                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server)
                 }
                 else {
-                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server)
+                    $Server.Endpoints | Write-Output
                 }
             }
             "FromBinding" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding)
+                [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForBinding($Binding)
             }
             "FromAlpc" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
+                [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
             }
             "FromRpcClient" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($SearchBinding, $Client.InterfaceId, $Client.InterfaceVersion)
+                [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForInterface($SearchBinding, $Client.InterfaceId)
             }
             "FromProcessId" {
                 (Get-RpcAlpcServer -ProcessId $ProcessId).Endpoints
@@ -305,28 +306,18 @@ function Get-RpcServer {
     )
 
     BEGIN {
-        if ($DbgHelpPath -eq "") {
-            $DbgHelpPath = $Script:GlobalDbgHelpPath
-        }
-        if ($SymbolPath -eq "") {
-            $SymbolPath = $env:_NT_SYMBOL_PATH
-            if ($SymbolPath -eq "") {
-                $SymbolPath = $Script:GlobalSymbolPath
-            }
-        }
-
-        $ParserFlags = [NtApiDotNet.Win32.RpcServerParserFlags]::None
+        $ParserFlags = [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::None
         if ($ParseClients) {
-            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::ParseClients
+            $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::ParseClients
         }
         if ($IgnoreSymbols) {
-            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::IgnoreSymbols
+            $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::IgnoreSymbols
         }
         if ($ResolveStructureNames) {
-            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::ResolveStructureNames
+            $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::ResolveStructureNames
         }
         if ($SymSrvFallback) {
-            $ParserFlags = $ParserFlags -bor [NtApiDotNet.Win32.RpcServerParserFlags]::SymSrvFallback
+            $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::SymSrvFallback
         }
     }
 
@@ -336,13 +327,13 @@ function Get-RpcServer {
                 "FromDll" {
                     $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
                     Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-                    [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParserFlags)
+                    [NtCoreLib.Win32.Rpc.Server.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParserFlags)
                 }
                 "FromSerialized" {
                     $FullName = Resolve-Path -LiteralPath $SerializedPath -ErrorAction Stop
                     Use-NtObject($stm = [System.IO.File]::OpenRead($FullName)) {
                         while ($stm.Position -lt $stm.Length) {
-                            [NtApiDotNet.Win32.RpcServer]::Deserialize($stm) | Write-Output
+                            [NtCoreLib.Win32.Rpc.Server.RpcServer]::Deserialize($stm) | Write-Output
                         }
                     }
                 }
@@ -406,7 +397,7 @@ Serialize servers to file rpc.bin.
 function Set-RpcServer {
     Param(
         [parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.RpcServer[]]$Server,
+        [NtCoreLib.Win32.Rpc.Server.RpcServer[]]$Server,
         [parameter(Mandatory = $true, Position = 1)]
         [string]$Path
     )
@@ -441,9 +432,11 @@ This cmdlet formats a list of RPC servers as text.
 .PARAMETER RpcServer
 The RPC servers to format.
 .PARAMETER RemoveComments
-When outputing as text remove comments from the output.
-.PARAMETER CppFormat
-Format output in C++ pseudo syntax rather than C++.
+Specify to remove comments from the output.
+.PARAMETER DisableTypeDefs
+Specify to not use typedefs in the output.
+.PARAMETER Format
+Format output in a different language type.
 .INPUTS
 RpcServer[] The RPC servers to format.
 .OUTPUTS
@@ -462,14 +455,23 @@ function Format-RpcServer {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.RpcServer[]]$RpcServer,
+        [NtCoreLib.Win32.Rpc.Server.RpcServer[]]$RpcServer,
         [switch]$RemoveComments,
-        [switch]$CppFormat
+        [switch]$DisableTypeDefs,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl"
     )
 
     PROCESS {
+        $flags = if ($DisableTypeDefs) {
+            [NtCoreLib.Ndr.Formatter.NdrFormatterFlags]::None
+        } else {
+            [NtCoreLib.Ndr.Formatter.NdrFormatterFlags]::EnableTypeDefs
+        }
+        if ($RemoveComments) {
+            $flags = $flags -bor [NtCoreLib.Ndr.Formatter.NdrFormatterFlags]::RemoveComments
+        }
         foreach ($server in $RpcServer) {
-            $server.FormatAsText($RemoveComments, $CppFormat) | Write-Output
+            $server.FormatAsText($flags, $Format) | Write-Output
         }
     }
 }
@@ -488,7 +490,7 @@ Ignore COM only interfaces.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RpcAlpcServer[]
+NtCoreLib.Win32.Rpc.Server.RpcAlpcServer[]
 .EXAMPLE
 Get-RpcAlpcServer
 Get all ALPC RPC servers.
@@ -496,7 +498,7 @@ Get all ALPC RPC servers.
 Get-RpcAlpcServer -ProcessId 1234
 Get all ALPC RPC servers in process ID 1234.
 .EXAMPLE
-Get-RpcAlpcServer -AlpcPort srvsvc
+Get-RpcAlpcServer -AlpcPort "\RPC Control\srvsvc"
 Get the ALPC RPC servers for the srvsvc ALPC port. Needs Windows 10 19H1 and above to work.
 #>
 function Get-RpcAlpcServer {
@@ -512,13 +514,13 @@ function Get-RpcAlpcServer {
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
     switch ($PsCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($IgnoreComInterface)
+            [NtCoreLib.Win32.Rpc.Server.RpcAlpcServer]::GetAlpcServers($IgnoreComInterface)
         }
         "FromProcessId" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($ProcessId, $IgnoreComInterface)
+            [NtCoreLib.Win32.Rpc.Server.RpcAlpcServer]::GetAlpcServers($ProcessId, $IgnoreComInterface)
         }
         "FromAlpc" {
-            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServer($AlpcPort, $IgnoreComInterface)
+            [NtCoreLib.Win32.Rpc.Server.RpcAlpcServer]::GetAlpcServer($AlpcPort, $IgnoreComInterface)
         }
     }
 }
@@ -554,7 +556,7 @@ Specify to try and use the Add-Type command instead of the C# compiler to build 
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Rpc.RpcClientBase
+NtCoreLib.Win32.Rpc.Client.RpcClientBase
 .EXAMPLE
 Get-RpcClient -Server $Server
 Create a new RPC client from a parsed RPC server.
@@ -563,7 +565,7 @@ function Get-RpcClient {
     [CmdletBinding(DefaultParameterSetName = "FromServer")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer", ValueFromPipeline)]
-        [NtApiDotNet.Win32.Rpc.IRpcBuildableClient]$Server,
+        [NtCoreLib.Win32.Rpc.Server.RpcServer]$Server,
         [parameter(ParameterSetName = "FromServer")]
         [string]$NamespaceName,
         [parameter(ParameterSetName = "FromServer")]
@@ -573,11 +575,11 @@ function Get-RpcClient {
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromIdAndVersion")]
         [string]$InterfaceId,
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromIdAndVersion")]
-        [Version]$InterfaceVersion,
+        [NtCoreLib.Ndr.Rpc.RpcVersion]$InterfaceVersion,
         [parameter(ParameterSetName = "FromServer")]
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [parameter(ParameterSetName = "FromServer")]
-        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = "GenerateConstructorProperties, StructureReturn, HideWrappedMethods, UnsignedChar, NoNamespace, MarshalPipesAsArrays",
+        [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderFlags]$Flags = "GenerateConstructorProperties, StructureReturn, HideWrappedMethods, UnsignedChar, NoNamespace, MarshalPipesAsArrays, GenerateTypeStrictHandles",
         [switch]$EnableDebugging,
         [switch]$UseAddType
     )
@@ -591,11 +593,12 @@ function Get-RpcClient {
                 $Provider = New-Object NtObjectManager.Utils.CoreCSharpCodeProvider
             } else {
                 $UseAddType = $true
+                $AsmName = [NtCoreLib.Win32.Rpc.Client.RpcClientBase].Assembly.FullName
             }
         }
         if ($UseAddType) {
-            $Flags = $Flags -band (-bnot [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]::NoNamespace)
-            $flags = $Flags -bor [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]::ExcludeVariableSourceText
+            $Flags = $Flags -band (-bnot [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderFlags]::NoNamespace)
+            $flags = $Flags -bor [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderFlags]::ExcludeVariableSourceText
         }
     }
 
@@ -603,25 +606,25 @@ function Get-RpcClient {
         if ($PSCmdlet.ParameterSetName -eq "FromServer") {
             if ($UseAddType) {
                 $src = Format-RpcClient -Server $Server -ClientName $ClientName -Flags $Flags
-                $ts = Add-Type -TypeDefinition $src -ReferencedAssemblies "NtApiDotNet.dll",'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089','System.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' -PassThru
+                $ts = Add-Type -TypeDefinition $src -ReferencedAssemblies $AsmName,'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089','System.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' -PassThru
                 foreach($t in $ts) {
-                    if ($t.BaseType -eq [NtApiDotNet.Win32.Rpc.RpcClientBase]) {
+                    if ($t.BaseType -eq [NtCoreLib.Win32.Rpc.Client.RpcClientBase]) {
                         New-Object $t.AssemblyQualifiedName
                         break
                     }
                 }
             } else {
-                $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
+                $args = [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderArguments]::new();
                 $args.NamespaceName = $NamespaceName
                 $args.ClientName = $ClientName
                 $args.Flags = $Flags
                 $args.EnableDebugging = $EnableDebugging
 
-                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
+                [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
             }
         }
         else {
-            [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)
+            [NtCoreLib.Win32.Rpc.Client.RpcClient]::new($InterfaceId, $InterfaceVersion)
         }
     }
 }
@@ -657,14 +660,12 @@ Specify to the pass the client object to the output.
 Specify to search for an ALPC port for the RPC client.
 .PARAMETER Force
 Specify to for the client to connect even if the client is already connected to another transport.
-.PARAMETER Cache
-Specify a local kerberos ticket cache for use with Kerberos authentication.
 .PARAMETER Configuration
 Specify low-level transport configuration.
 .INPUTS
-NtApiDotNet.Win32.Rpc.RpcClientBase[]
+NtCoreLib.Win32.Rpc.Client.RpcClientBase[]
 .OUTPUTS
-NtApiDotNet.Win32.Rpc.RpcClientBase[]
+NtCoreLib.Win32.Rpc.Client.RpcClientBase[]
 .EXAMPLE
 Connect-RpcClient -Client $Client
 Connect an RPC ALPC client, looking up the path using the endpoint mapper.
@@ -688,7 +689,7 @@ function Connect-RpcClient {
     [CmdletBinding(DefaultParameterSetName = "FromProtocol")]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client,
         [parameter(Position = 1, ParameterSetName = "FromProtocol")]
         [string]$EndpointPath,
         [parameter(ParameterSetName = "FromProtocol")]
@@ -696,33 +697,27 @@ function Connect-RpcClient {
         [parameter(ParameterSetName = "FromProtocol")]
         [string]$NetworkAddress,
         [parameter(Position = 1, Mandatory, ParameterSetName = "FromEndpoint")]
-        [NtApiDotNet.Win32.RpcEndpoint]$Endpoint,
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpoint]$Endpoint,
         [parameter(Mandatory, ParameterSetName = "FromFindEndpoint")]
         [switch]$FindAlpcPort,
         [parameter(ParameterSetName = "FromBindingString")]
-        [string]$StringBinding,
-        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$StringBinding,
+        [NtCoreLib.Security.Token.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
         [string]$ServicePrincipalName,
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
-        [NtApiDotNet.Win32.Security.Authentication.Kerberos.Client.KerberosLocalTicketCache]$Cache,
-        [NtApiDotNet.Win32.Rpc.Transport.RpcClientTransportConfiguration]$Configuration,
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcClientTransportConfiguration]$Configuration,
         [switch]$PassThru,
         [switch]$Force
     )
 
     BEGIN {
-        $security = New-Object NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity
-        $security.SecurityQualityOfService = $SecurityQualityOfService
-        $security.Credentials = $Credentials
-        $security.ServicePrincipalName = $ServicePrincipalName
-        $security.AuthenticationLevel = $AuthenticationLevel
-        $security.AuthenticationType = $AuthenticationType
-        $security.AuthenticationCapabilities = $AuthenticationCapabilities
-        $security.TicketCache = $Cache
-        $security.Configuration = $Configuration
+        $security = New-RpcTransportSecurity -SecurityQualityOfService $SecurityQualityOfService `
+            -Credentials $Credentials -ServicePrincipalName $ServicePrincipalName `
+            -AuthenticationLevel $AuthenticationLevel -AuthenticationType $AuthenticationType `
+            -AuthenticationCapabilities $AuthenticationCapabilities
     }
 
     PROCESS {
@@ -731,17 +726,17 @@ function Connect-RpcClient {
         }
         switch ($PSCmdlet.ParameterSetName) {
             "FromProtocol" {
-                $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $security)
+                $Client.Connect($ProtocolSequence, $EndpointPath, $NetworkAddress, $security, $Configuration)
             }
             "FromEndpoint" {
-                $Client.Connect($Endpoint, $security)
+                $Client.Connect($Endpoint, $security, $Configuration)
             }
             "FromFindEndpoint" {
                 foreach ($ep in $(Get-ChildItem "NtObject:\RPC Control")) {
                     try {
                         $name = $ep.Name
                         Write-Progress -Activity "Finding ALPC Endpoint" -CurrentOperation "$name"
-                        $Client.Connect("ncalrpc", $name, $security)
+                        $Client.Connect("ncalrpc", $name, [NullString]::Value, $security)
                     }
                     catch {
                         Write-Information $_
@@ -749,7 +744,7 @@ function Connect-RpcClient {
                 }
             }
             "FromBindingString" {
-                $Client.Connect($StringBinding, $security)
+                $Client.Connect($StringBinding, $security, $Configuration)
             }
         }
 
@@ -771,9 +766,9 @@ Specify the RPC client to disconnect.
 .PARAMETER PassThru
 Specify to the pass the client object to the output.
 .INPUTS
-NtApiDotNet.Win32.Rpc.RpcClientBase[]
+NtCoreLib.Win32.Rpc.Client.RpcClientBase[]
 .OUTPUTS
-NtApiDotNet.Win32.Rpc.RpcClientBase[]
+NtCoreLib.Win32.Rpc.Client.RpcClientBase[]
 .EXAMPLE
 Disconnect-RpcClient -Client $Client
 Disconnect an RPC ALPC client.
@@ -782,7 +777,7 @@ function Disconnect-RpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client,
         [switch]$PassThru
     )
 
@@ -834,10 +829,10 @@ function Format-RpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.Rpc.IRpcBuildableClient[]]$Server,
+        [NtCoreLib.Win32.Rpc.Server.RpcServer[]]$Server,
         [string]$NamespaceName,
         [string]$ClientName,
-        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
+        [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderFlags]$Flags = 0,
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [System.CodeDom.Compiler.CodeGeneratorOptions]$Options,
         [string]$OutputPath,
@@ -856,13 +851,18 @@ function Format-RpcClient {
     }
 
     PROCESS {
-        $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
+        $args = [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilderArguments]::new();
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
         $args.Flags = $Flags
 
         foreach ($s in $Server) {
-            $src = [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
+            $src = if ($null -eq $Provider) {
+                [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilder]::BuildSource($s, $args)
+            }
+            else {
+                [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
+            }
 
             if ("" -eq $OutputPath) {
                 $src | Write-Output
@@ -917,9 +917,9 @@ function Format-RpcComplexType {
     [CmdletBinding(DefaultParameterSetName = "FromTypes")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromTypes")]
-        [NtApiDotNet.Ndr.NdrComplexTypeReference[]]$ComplexType,
+        [NtCoreLib.Ndr.Dce.NdrComplexTypeReference[]]$ComplexType,
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer")]
-        [NtApiDotNet.Win32.RpcServer]$Server,
+        [NtCoreLib.Win32.Rpc.Server.RpcServer]$Server,
         [string]$NamespaceName,
         [string]$EncoderName,
         [string]$DecoderName,
@@ -934,10 +934,10 @@ function Format-RpcComplexType {
             "FromServer" { $Server.ComplexTypes }
         }
         if ($null -eq $Provider) {
-            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer) | Write-Output
+            [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilder]::BuildSource([NtCoreLib.Ndr.Dce.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer) | Write-Output
         }
         else {
-            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer, $Provider, $Options) | Write-Output
+            [NtCoreLib.Win32.Rpc.Client.Builder.RpcClientBuilder]::BuildSource([NtCoreLib.Ndr.Dce.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Pointer, $Provider, $Options) | Write-Output
         }
     }
 }
@@ -954,7 +954,7 @@ The attribute flags for the context handle.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Ndr.NdrContextHandle
+NtCoreLib.Ndr.Marshal.NdrContextHandle
 .EXAMPLE
 New-RpcContextHandle
 Creates a new RPC context handle.
@@ -964,7 +964,7 @@ function New-RpcContextHandle {
         [guid]$Uuid = [guid]::Empty,
         [int]$Attributes = 0
     )
-    [NtApiDotNet.Ndr.Marshal.NdrContextHandle]::new($Attributes, $Uuid)
+    [NtCoreLib.Ndr.Marshal.NdrContextHandle]::new($Attributes, $Uuid)
 }
 
 <#
@@ -1008,7 +1008,7 @@ function Get-RpcStringBinding {
         [switch]$AsObject
     )
 
-    $binding = [NtApiDotNet.Win32.Rpc.RpcStringBinding]::new($ProtocolSequence, $NetworkAddress, $Endpoint, $Options, $ObjectUuid)
+    $binding = [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]::new($ProtocolSequence, $NetworkAddress, $Endpoint, $Options, $ObjectUuid)
     if ($AsObject) {
         $binding
     } else {
@@ -1030,7 +1030,7 @@ Specify a symbol resolver for the parser. Note that this should be a resolver fo
 .PARAMETER ParserFlags
 Specify flags which affect the parsing operation.
 .OUTPUTS
-NtApiDotNet.Ndr.NdrParser - The NDR parser.
+NtCoreLib.Ndr.Parser.NdrParser - The NDR parser.
 .EXAMPLE
 $ndr = New-NdrParser
 Get an NDR parser for the current process.
@@ -1040,17 +1040,17 @@ Get an NDR parser for a specific process with a known resolver.
 #>
 function New-NdrParser {
     Param(
-        [NtApiDotNet.NtProcess]$Process,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
-        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
+        [NtCoreLib.NtProcess]$Process,
+        [NtCoreLib.Win32.Debugger.Symbols.ISymbolResolver]$SymbolResolver,
+        [NtCoreLib.Ndr.Parser.NdrParserFlags]$ParserFlags = 0
     )
-    [NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver, $ParserFlags)
+    [NtCoreLib.Ndr.Parser.NdrParser]::new($Process, $SymbolResolver, $ParserFlags)
 }
 
 function Convert-HashTableToIidNames {
     Param(
         [Hashtable]$IidToName,
-        [NtApiDotNet.Ndr.NdrComProxyDefinition[]]$Proxy
+        [NtCoreLib.Ndr.Com.NdrComProxy[]]$Proxy
     )
     $dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
     if ($null -ne $IidToName) {
@@ -1061,7 +1061,7 @@ function Convert-HashTableToIidNames {
     }
 
     if ($null -ne $Proxy) {
-        foreach ($p in $Proxy) {
+        foreach ($p in $Proxy.Interfaces) {
             $dict.Add($p.Iid, $p.Name)
         }
     }
@@ -1107,20 +1107,19 @@ function Get-NdrComProxy {
         [parameter(Mandatory, Position = 0)]
         [string]$Path,
         [Guid]$Clsid = [Guid]::Empty,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
+        [NtCoreLib.Win32.Debugger.Symbols.ISymbolResolver]$SymbolResolver,
         [Guid[]]$Iid,
-        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
+        [NtCoreLib.Ndr.Parser.NdrParserFlags]$ParserFlags = 0
     )
     $Path = Resolve-Path $Path -ErrorAction Stop
     Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver -NdrParserFlags $ParserFlags) {
-        $proxies = $parser.ReadFromComProxyFile($Path, $Clsid, $Iid)
+        $proxies = $parser.ReadFromComProxyFile($Path, $Clsid, $Iid) | Write-Output
         $props = @{
             Path         = $Path;
             Proxies      = $proxies;
-            ComplexTypes = $parser.ComplexTypes;
             IidToNames   = Convert-HashTableToIidNames -Proxy $proxies;
         }
-        $obj = New-Object –TypeName PSObject –Prop $props
+        $obj = New-Object -TypeName PSObject -Prop $props
         Write-Output $obj
     }
 }
@@ -1134,13 +1133,15 @@ This cmdlet formats a parsed NDR procedure.
 The procedure to format.
 .PARAMETER IidToName
 A dictionary of IID to name mappings for parameters.
+.PARAMETER Format
+The output text format.
 .OUTPUTS
 string - The formatted procedure.
 .EXAMPLE
 Format-NdrProcedure $proc
 Format a procedure.
 .EXAMPLE
-$procs = | Format-NdrProcedure
+$procs | Format-NdrProcedure
 Format a list of procedures from a pipeline.
 .EXAMPLE
 Format-NdrProcedure $proc -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
@@ -1150,13 +1151,14 @@ function Format-NdrProcedure {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline = $true)]
-        [NtApiDotNet.Ndr.NdrProcedureDefinition]$Procedure,
-        [Hashtable]$IidToName
+        [NtCoreLib.Ndr.Dce.NdrProcedureDefinition]$Procedure,
+        [Hashtable]$IidToName,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl"
     )
 
     BEGIN {
         $dict = Convert-HashTableToIidNames($IidToName)
-        $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+        $formatter = [NtCoreLib.Ndr.Formatter.NdrFormatter]::Create($Format, $dict)
     }
 
     PROCESS {
@@ -1174,13 +1176,15 @@ This cmdlet formats a parsed NDR complex type.
 The complex type to format.
 .PARAMETER IidToName
 A dictionary of IID to name mappings for parameters.
+.PARAMETER Format
+The output text format.
 .OUTPUTS
 string - The formatted complex type.
 .EXAMPLE
 Format-NdrComplexType $type
 Format a complex type.
 .EXAMPLE
-$ndr.ComplexTypes | Format-NdrComplexType
+$cts | Format-NdrComplexType
 Format a list of complex types from a pipeline.
 .EXAMPLE
 Format-NdrComplexType $type -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
@@ -1190,13 +1194,14 @@ function Format-NdrComplexType {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Ndr.NdrComplexTypeReference[]]$ComplexType,
-        [Hashtable]$IidToName
+        [NtCoreLib.Ndr.Dce.NdrComplexTypeReference[]]$ComplexType,
+        [Hashtable]$IidToName,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl"
     )
 
     BEGIN {
         $dict = Convert-HashTableToIidNames($IidToName)
-        $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+        $formatter = [NtCoreLib.Ndr.Formatter.NdrFormatter]::Create($Format, $dict)
     }
 
     PROCESS {
@@ -1217,13 +1222,15 @@ The proxy to format.
 A dictionary of IID to name mappings for parameters.
 .PARAMETER DemangleComName
 A script block which demangles a COM name (for WinRT types)
+.PARAMETER Format
+The output text format.
 .OUTPUTS
 string - The formatted proxy.
 .EXAMPLE
 Format-NdrComProxy $proxy
 Format a COM proxy.
 .EXAMPLE
-$proxies = | Format-NdrComProxy
+$proxies | Format-NdrComProxy
 Format a list of COM proxies from a pipeline.
 .EXAMPLE
 Format-NdrComProxy $proxy -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
@@ -1233,24 +1240,26 @@ function Format-NdrComProxy {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Ndr.NdrComProxyDefinition]$Proxy,
+        [NtCoreLib.Ndr.Com.NdrComProxy]$Proxy,
         [Hashtable]$IidToName,
-        [ScriptBlock]$DemangleComName
+        [ScriptBlock]$DemangleComName,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl"
     )
 
     BEGIN {
         $dict = Convert-HashTableToIidNames($IidToName)
-        $formatter = if ($null -eq $DemangleComName) {
-            [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
-        }
-        else {
-            [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict, [Func[string, string]]$DemangleComName)
-        }
     }
 
     PROCESS {
-        $fmt = $formatter.FormatComProxy($Proxy)
-        Write-Output $fmt
+         $formatter = if ($null -eq $DemangleComName) {
+            [NtCoreLib.Ndr.Formatter.NdrFormatter]::Create($Format, $dict)
+        }
+        else {
+            [NtCoreLib.Ndr.Formatter.NdrFormatter]::Create($Format, $dict, [Func[string, string]]$DemangleComName)
+        }
+        $formatter.ComProxies.AddRange($Proxy.Interfaces)
+        $formatter.ComplexTypes.AddRange($Proxy.ComplexTypes)
+        $formatter.Format() | Write-Output
     }
 }
 
@@ -1277,8 +1286,8 @@ function Get-NdrRpcServerInterface {
         [string]$Path,
         [parameter(Mandatory, Position = 1)]
         [int]$Offset,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
-        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
+        [NtCoreLib.Win32.Debugger.Symbols.ISymbolResolver]$SymbolResolver,
+        [NtCoreLib.Ndr.Parser.NdrParserFlags]$ParserFlags = 0
     )
     $Path = Resolve-Path $Path -ErrorAction Stop
     Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver -ParserFlags $ParserFlags) {
@@ -1286,9 +1295,8 @@ function Get-NdrRpcServerInterface {
         $props = @{
             Path         = $Path;
             RpcServer    = $rpc_server;
-            ComplexTypes = $parser.ComplexTypes;
         }
-        $obj = New-Object –TypeName PSObject –Prop $props
+        $obj = New-Object -TypeName PSObject -Prop $props
         Write-Output $obj
     }
 }
@@ -1300,6 +1308,8 @@ Format an RPC server interface type.
 This cmdlet formats a parsed RPC server interface type.
 .PARAMETER RpcServer
 The RPC server interface to format.
+.PARAMETER Format
+The output text format.
 .OUTPUTS
 string - The formatted RPC server interface.
 .EXAMPLE
@@ -1310,11 +1320,12 @@ function Format-NdrRpcServerInterface {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [NtApiDotNet.Ndr.NdrRpcServerInterface]$RpcServer
+        [NtCoreLib.Ndr.Rpc.RpcServerInterface]$RpcServer,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl"
     )
 
     BEGIN {
-        $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create()
+        $formatter = [NtCoreLib.Ndr.Formatter.NdrFormatter]::Create($Format)
     }
 
     PROCESS {
@@ -1370,9 +1381,9 @@ function Get-NdrComplexType {
         [long]$OffsetTable,
         [Parameter(Mandatory, ParameterSetName = "FromDecode3")]
         [int[]]$TypeIndex,
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
-        [NtApiDotNet.NtProcess]$Process,
-        [NtApiDotNet.Ndr.NdrParserFlags]$Flags = "IgnoreUserMarshal"
+        [NtCoreLib.Win32.Loader.SafeLoadLibraryHandle]$Module,
+        [NtCoreLib.NtProcess]$Process,
+        [NtCoreLib.Ndr.Parser.NdrParserFlags]$Flags = "IgnoreUserMarshal"
     )
 
     $base_address = 0
@@ -1383,15 +1394,15 @@ function Get-NdrComplexType {
     switch($PSCmdlet.ParameterSetName) {
         "FromDecode2" {
             $type_offset = $TypeFormat | % { [intptr]($_ + $base_address) }
-            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+            [NtCoreLib.Ndr.Parser.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
                 $StubDesc+$base_address, $type_offset, $Flags) | Write-Output
         }
         "FromDecode2Offset" {
-            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+            [NtCoreLib.Ndr.Parser.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
                 $StubDesc+$base_address, $TypeOffset, $Flags) | Write-Output
         }
         "FromDecode3" {
-            [NtApiDotNet.Ndr.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
+            [NtCoreLib.Ndr.Parser.NdrParser]::ReadPicklingComplexTypes($Process, $PicklingInfo+$base_address,`
                 $StublessProxy+$base_address, $OffsetTable+$base_address, $TypeIndex, $Flags) | Write-Output
         }
     }
@@ -1411,7 +1422,7 @@ The process ID of the process to query for ALPC servers.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.NtAlpc
+NtCoreLib.NtAlpc
 .EXAMPLE
 Get-NtAlpcServer
 Gets all ALPC server objects accessible to the current process.
@@ -1432,7 +1443,7 @@ function Get-NtAlpcServer {
         [int]$ProcessId
     )
 
-    if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
+    if (![NtCoreLib.NtToken]::EnableDebugPrivilege()) {
         Write-Warning "Can't enable debug privilege, results might be incomplete"
     }
 
@@ -1484,30 +1495,27 @@ the security context will be set as the current context before returning.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext
+NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurityContext
 #>
 function Add-RpcClientSecurityContext {
-    [CmdletBinding(DefaultParameterSetName = "FromProtocol")]
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
-        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
-        [NtApiDotNet.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client,
+        [NtCoreLib.Security.Token.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
         [string]$ServicePrincipalName,
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None",
         [switch]$PassThru
     )
 
     try {
-        $security = New-Object NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity
-        $security.SecurityQualityOfService = $SecurityQualityOfService
-        $security.Credentials = $Credentials
-        $security.ServicePrincipalName = $ServicePrincipalName
-        $security.AuthenticationLevel = $AuthenticationLevel
-        $security.AuthenticationType = $AuthenticationType
-        $security.AuthenticationCapabilities = $AuthenticationCapabilities
+        $security = New-RpcTransportSecurity -SecurityQualityOfService $SecurityQualityOfService `
+            -Credentials $Credentials -ServicePrincipalName $ServicePrincipalName `
+            -AuthenticationLevel $AuthenticationLevel -AuthenticationType $AuthenticationType `
+            -AuthenticationCapabilities $AuthenticationCapabilities
         $ctx = $Client.Transport.AddSecurityContext($security)
         if ($PassThru) {
             $ctx
@@ -1539,9 +1547,9 @@ function Set-RpcClientSecurityContext {
     [CmdletBinding(DefaultParameterSetName="FromContext")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromContext")]
-        [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext]$SecurityContext,
+        [NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurityContext]$SecurityContext,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
         [int]$ContextId
     )
@@ -1567,13 +1575,13 @@ Specify to return the context with the specified ID.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurityContext[]
+NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurityContext[]
 #>
 function Get-RpcClientSecurityContext {
     [CmdletBinding(DefaultParameterSetName="All")]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client,
         [parameter(Mandatory, ParameterSetName="FromCurrent")]
         [switch]$Current,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromId")]
@@ -1595,9 +1603,42 @@ function Get-RpcClientSecurityContext {
 
 <#
 .SYNOPSIS
-Get the registered security principal name for a RPC server.
+Get the registered service principal name for a RPC server.
 .DESCRIPTION
-This cmdlet gets the registered security principal name for a RPC server.
+This cmdlet gets the registered service principal name for a RPC server.
+.PARAMETER Binding
+Specify the server binding.
+.PARAMETER AuthenticationType
+Specify the authentication type.
+.PARAMETER UseManagedClient
+Specify to use a managed client.
+.PARAMETER Security
+Specify security to use with a managed client.
+.INPUTS
+None
+.OUTPUTS
+string
+#>
+function Get-RpcServicePrincipalName {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$Binding,
+        [parameter(Mandatory, Position = 1)]
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType,
+        [switch]$UseManagedClient,
+        [NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurity]$Security = (New-RpcTransportSecurity)
+    )
+
+    $intf = [NtCoreLib.Win32.Rpc.Management.RpcManagementInterface]::new($Binding, $UseManagedClient, $Security)
+    $intf.QueryServicePrincipalName($AuthenticationType)
+}
+
+<#
+.SYNOPSIS
+Create a transport security object a RPC client.
+.DESCRIPTION
+This cmdlet creates a transport security object for a RPC client.
 .PARAMETER Binding
 Specify the server binding.
 .PARAMETER AuthenticationType
@@ -1605,15 +1646,196 @@ Specify the authentication type.
 .INPUTS
 None
 .OUTPUTS
-string
+NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurity
 #>
-function Get-RpcSecurityPrincipalName {
+function New-RpcTransportSecurity {
+    Param(
+        [NtCoreLib.Security.Token.SecurityQualityOfService]$SecurityQualityOfService,
+        [NtCoreLib.Win32.Security.Authentication.AuthenticationCredentials]$Credentials,
+        [string]$ServicePrincipalName,
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationLevel]$AuthenticationLevel = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType = "None",
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationCapabilities]$AuthenticationCapabilities = "None"
+    )
+
+    $security = New-Object NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurity
+    $security.SecurityQualityOfService = $SecurityQualityOfService
+    $security.Credentials = $Credentials
+    $security.ServicePrincipalName = $ServicePrincipalName
+    $security.AuthenticationLevel = $AuthenticationLevel
+    $security.AuthenticationType = $AuthenticationType
+    $security.AuthenticationCapabilities = $AuthenticationCapabilities
+    $security
+}
+
+<#
+.SYNOPSIS
+Get the listening interfaces for a RPC server.
+.DESCRIPTION
+This cmdlet gets the listening interfaces for a RPC server.
+.PARAMETER Binding
+Specify the server binding.
+.PARAMETER UseManagedClient
+Specify to use a managed client.
+.PARAMETER Security
+Specify security to use with a managed client.
+.INPUTS
+None
+.OUTPUTS
+NtCoreLib.Ndr.Rpc.RpcSyntaxIdentifier
+#>
+function Get-RpcInterface {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [string]$Binding,
-        [parameter(Mandatory, Position = 1)]
-        [NtApiDotNet.Win32.Rpc.Transport.RpcAuthenticationType]$AuthenticationType
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$Binding,
+        [switch]$UseManagedClient,
+        [NtCoreLib.Win32.Rpc.Transport.RpcTransportSecurity]$Security = (New-RpcTransportSecurity)
     )
-    [NtApiDotNet.Win32.Rpc.Transport.RpcTransportSecurity]::QueryServicePrincipalName($Binding, $AuthenticationType)
+
+    $intf = [NtCoreLib.Win32.Rpc.Management.RpcManagementInterface]::new($Binding, $UseManagedClient, $Security)
+    $intf.QueryInterfaces() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Create a configuration a RPC client transport.
+.DESCRIPTION
+This cmdlet creates a new configuration for and RPC client transport.
+.PARAMETER Binding
+Specify the string binding.
+.PARAMETER ProtocolSequence
+Specify the protocol sequence.
+.PARAMETER Endpoint
+Specify the endpoint.
+.INPUTS
+None
+.OUTPUTS
+NtCoreLib.Win32.Rpc.Transport.RpcClientTransportConfiguration
+#>
+function New-RpcClientTransportConfig {
+        [CmdletBinding(DefaultParameterSetName="FromProtocol")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromProtocol")]
+        [string]$ProtocolSequence,
+        [parameter(Mandatory, ParameterSetName = "FromBinding")]
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$Binding,
+        [parameter(Mandatory, ParameterSetName = "FromEndpoint")]
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpoint]$Endpoint
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromProtocol" {
+            [NtCoreLib.Win32.Rpc.Transport.RpcClientTransportConfiguration]::Create($ProtocolSequence)
+        }
+        "FromBinding" {
+            [NtCoreLib.Win32.Rpc.Transport.RpcClientTransportConfiguration]::Create($Binding)
+        }
+        "FromEndpoint" {
+            [NtCoreLib.Win32.Rpc.Transport.RpcClientTransportConfiguration]::Create($Endpoint)
+        }
+    }
+}
+
+Register-ArgumentCompleter -CommandName New-RpcClientTransportConfig -ParameterName ProtocolSequence -ScriptBlock $protseq_completer
+
+<#
+.SYNOPSIS
+Get the association group ID for a client.
+.DESCRIPTION
+This cmdlet gets the association group ID for a client.
+.PARAMETER Client
+Specify the RPC client.
+.INPUTS
+None
+.OUTPUTS
+int
+#>
+function Get-RpcClientAssociationGroupId {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtCoreLib.Win32.Rpc.Client.RpcClientBase]$Client
+    )
+    if ($Client.Transport -is [NtCoreLib.Win32.Rpc.Transport.RpcConnectedClientTransport]) {
+        $Client.Transport.AssociationGroupId
+    } else {
+        0
+    }
+}
+
+<#
+.SYNOPSIS
+Parses COM proxy information.
+.DESCRIPTION
+This cmdlet parses the COM proxy information for an interface.
+.PARAMETER Path
+The path to the DLL containing the COM proxy information.
+.PARAMETER Clsid
+CLSID for the object used to find the proxy information.
+.PARAMETER Iid
+IID for the proy used to find the proxy information.
+.OUTPUTS
+NtCoreLib.Win32.Com.Proxy.ComProxyFile
+#>
+function Get-ComProxyFile {
+    [CmdletBinding(DefaultParameterSetName="FromFile")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromFile")]
+        [string]$Path,
+        [parameter(ParameterSetName="FromFile")]
+        [parameter(Mandatory, ParameterSetName="FromClsid")]
+        [Guid]$Clsid = [Guid]::Empty,
+        [parameter(Mandatory, ParameterSetName="FromIid")]
+        [Guid]$Iid
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromFile" {
+            $Path = Resolve-Path $Path -ErrorAction Stop
+            [NtCoreLib.Win32.Com.Proxy.ComProxyFile]::FromFile($Path, $Clsid)
+        }
+        "FromClsid" {
+            [NtCoreLib.Win32.Com.Proxy.ComProxyFile]::FromClsid($Clsid)
+        }
+        "FromIid" {
+            [NtCoreLib.Win32.Com.Proxy.ComProxyFile]::FromIid($Iid)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Format an NDR COM proxy file.
+.DESCRIPTION
+This cmdlet formats a parsed COM proxy file.
+.PARAMETER Proxy
+The proxy to format.
+.PARAMETER Format
+The output text format.
+.PARAMETER RemoveComments
+Specify to remove comments.
+.OUTPUTS
+string - The formatted proxy.
+.EXAMPLE
+Format-ComProxyFile $proxy
+Format a COM proxy.
+.EXAMPLE
+$proxies | Format-ComProxyFile
+Format a list of COM proxies from a pipeline.
+#>
+function Format-ComProxyFile {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtCoreLib.Win32.Com.Proxy.ComProxyFile]$Proxy,
+        [NtCoreLib.Ndr.Formatter.NdrFormatterTextFormat]$Format = "Idl",
+        [switch]$RemoveComments
+    )
+
+    PROCESS {
+        $flags = 0
+        if ($RemoveComments) {
+            $flags = "RemoveComments"
+        }
+        $Proxy.FormatAsText($flags, $Format)
+    }
 }

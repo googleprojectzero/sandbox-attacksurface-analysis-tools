@@ -15,63 +15,63 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet
-{
+namespace NtCoreLib;
+
 #pragma warning disable 1591
-    public enum AtomInformationClass
-    {
-        AtomBasicInformation,
-        AtomTableInformation
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public class AtomBasicInformation
-    {
-        public ushort UsageCount;
-        public ushort Flags;
-        public ushort NameLength;
-        //WCHAR Name[1];
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public class AtomTableInformation
-    {
-        public int NumberOfAtoms;
-        //RTL_ATOM Atoms[1];
-    }
-
-    [Flags]
-    public enum AddAtomFlags
-    {
-        None = 0,
-        Global = 2,
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtAddAtom(string String, int StringLength, out ushort Atom);
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtAddAtomEx(string String, int StringLength, out ushort Atom, AddAtomFlags Flags);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDeleteAtom(ushort Atom);
-
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtFindAtom(string String, int StringLength, out ushort Atom);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryInformationAtom(
-            ushort Atom,
-            AtomInformationClass AtomInformationClass,
-            SafeBuffer AtomInformation,
-            int AtomInformationLength,
-            out int ReturnLength
-        );
-
-        [DllImport("win32u.dll", SetLastError = true)]
-        public static extern int NtUserGetAtomName(ushort Atom,  UnicodeStringAllocated Name);
-    }
-#pragma warning restore 1591
+public enum AtomInformationClass
+{
+    AtomBasicInformation,
+    AtomTableInformation
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public class AtomBasicInformation
+{
+    public ushort UsageCount;
+    public ushort Flags;
+    public ushort NameLength;
+    //WCHAR Name[1];
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public class AtomTableInformation
+{
+    public int NumberOfAtoms;
+    //RTL_ATOM Atoms[1];
+}
+
+[Flags]
+public enum AddAtomFlags
+{
+    None = 0,
+    Global = 2,
+}
+
+public static partial class NtSystemCalls
+{
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus NtAddAtom(string String, int StringLength, out ushort Atom);
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus NtAddAtomEx(string String, int StringLength, out ushort Atom, AddAtomFlags Flags);
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtDeleteAtom(ushort Atom);
+
+    [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+    public static extern NtStatus NtFindAtom(string String, int StringLength, out ushort Atom);
+
+    [DllImport("ntdll.dll")]
+    public static extern NtStatus NtQueryInformationAtom(
+        ushort Atom,
+        AtomInformationClass AtomInformationClass,
+        SafeBuffer AtomInformation,
+        int AtomInformationLength,
+        out int ReturnLength
+    );
+
+    [DllImport("win32u.dll", SetLastError = true)]
+    public static extern int NtUserGetAtomName(ushort Atom,  UnicodeStringAllocated Name);
+}
+#pragma warning restore 1591
+

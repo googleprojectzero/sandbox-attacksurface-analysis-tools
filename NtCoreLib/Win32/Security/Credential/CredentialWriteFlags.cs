@@ -12,21 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Flags for writing credentials to the manager.
+/// </summary>
+[Flags]
+public enum CredentialWriteFlags
 {
-    /// <summary>
-    /// Flags for writing credentials to the manager.
-    /// </summary>
-    [Flags]
-    public enum CredentialWriteFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("CRED_PRESERVE_CREDENTIAL_BLOB")]
-        PreserveCredentialBlob = 1,
+    None = 0,
+    [SDKName("CRED_PRESERVE_CREDENTIAL_BLOB")]
+    PreserveCredentialBlob = 1,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

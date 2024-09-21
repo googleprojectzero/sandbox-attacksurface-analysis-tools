@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Credential
+namespace NtCoreLib.Win32.Security.Credential;
+
+/// <summary>
+/// Specify credential persistence.
+/// </summary>
+public enum CredentialPersistence
 {
-    /// <summary>
-    /// Specify credential persistence.
-    /// </summary>
-    public enum CredentialPersistence
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("CRED_PERSIST_SESSION")]
-        Session = 1,
-        [SDKName("CRED_PERSIST_LOCAL_MACHINE")]
-        LocalMachine = 2,
-        [SDKName("CRED_PERSIST_ENTERPRISE")]
-        Enterprise = 3,
+    None = 0,
+    [SDKName("CRED_PERSIST_SESSION")]
+    Session = 1,
+    [SDKName("CRED_PERSIST_LOCAL_MACHINE")]
+    LocalMachine = 2,
+    [SDKName("CRED_PERSIST_ENTERPRISE")]
+    Enterprise = 3,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

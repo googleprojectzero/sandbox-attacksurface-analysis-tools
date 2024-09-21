@@ -12,23 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 using System;
 
-namespace NtApiDotNet.Win32.Security.Credential.CredUI
+namespace NtCoreLib.Win32.Security.Credential.CredUI;
+
+/// <summary>
+/// Flags for the SSPI credential prompt.
+/// </summary>
+[Flags]
+public enum SspiCredentialPromptDialogFlags
 {
-    /// <summary>
-    /// Flags for the SSPI credential prompt.
-    /// </summary>
-    [Flags]
-    public enum SspiCredentialPromptDialogFlags
-    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        None = 0,
-        [SDKName("SSPIPFC_CREDPROV_DO_NOT_SAVE")]
-        DoNotSave = 1,
-        [SDKName("SSPIPFC_NO_CHECKBOX")]
-        NoCheckbox = 2,
+    None = 0,
+    [SDKName("SSPIPFC_CREDPROV_DO_NOT_SAVE")]
+    DoNotSave = 1,
+    [SDKName("SSPIPFC_NO_CHECKBOX")]
+    NoCheckbox = 2,
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

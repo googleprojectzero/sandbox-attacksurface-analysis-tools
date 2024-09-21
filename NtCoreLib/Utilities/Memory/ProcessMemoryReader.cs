@@ -14,101 +14,83 @@
 
 using System;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Utilities.Memory
+namespace NtCoreLib.Utilities.Memory;
+
+/// <summary>
+/// IMemoryReader implementation for a process.
+/// </summary>
+internal sealed class ProcessMemoryReader : IMemoryReader
 {
-    /// <summary>
-    /// IMemoryReader implementation for a process.
-    /// </summary>
-    internal class ProcessMemoryReader : IMemoryReader
+    private readonly NtProcess _process;
+
+    internal ProcessMemoryReader(NtProcess process)
     {
-        protected readonly NtProcess _process;
-
-        internal ProcessMemoryReader(NtProcess process)
-        {
-            _process = process;
-            PointerSize = _process.Is64Bit ? 8 : 4;
-        }
-
-        public bool InProcess => false;
-
-        public BinaryReader GetReader(IntPtr address)
-        {
-            return new BinaryReader(new ProcessMemoryStream(_process, address));
-        }
-
-        public byte ReadByte(IntPtr address)
-        {
-            return _process.ReadMemory<byte>(address.ToInt64());
-        }
-
-        public byte[] ReadBytes(IntPtr address, int length)
-        {
-            return _process.ReadMemory(address.ToInt64(), length, true);
-        }
-
-        public short ReadInt16(IntPtr address)
-        {
-            return _process.ReadMemory<short>(address.ToInt64());
-        }
-
-        public int ReadInt32(IntPtr address)
-        {
-            return _process.ReadMemory<int>(address.ToInt64());
-        }
-
-        public virtual IntPtr ReadIntPtr(IntPtr address)
-        {
-            return _process.ReadMemory<IntPtr>(address.ToInt64());
-        }
-
-        public virtual T ReadStruct<T>(IntPtr address) where T : struct
-        {
-            return _process.ReadMemory<T>(address.ToInt64());
-        }
-
-        public virtual T[] ReadArray<T>(IntPtr address, int count) where T : struct
-        {
-            T[] ret = new T[count];
-            int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(T));
-            for (int i = 0; i < count; ++i)
-            {
-                ret[i] = ReadStruct<T>(address + i * size);
-            }
-            return ret;
-        }
-
-        public string ReadAnsiStringZ(IntPtr address)
-        {
-            ProcessMemoryStream stm = new ProcessMemoryStream(_process, address);
-            StringBuilder builder = new StringBuilder();
-            int ch = stm.ReadByte();
-            while (ch > 0)
-            {
-                builder.Append((char)ch);
-                ch = stm.ReadByte();
-            }
-            return builder.ToString();
-        }
-
-        public int PointerSize { get; }
-
-        public static ProcessMemoryReader Create(NtProcess process)
-        {
-            if (!Environment.Is64BitProcess && process.Is64Bit)
-            {
-                throw new ArgumentException("Do not support 32 to 64 bit reading.");
-            }
-
-            if (Environment.Is64BitProcess != process.Is64Bit)
-            {
-                return new CrossBitnessProcessMemoryReader(process);
-            }
-            else
-            {
-                return new ProcessMemoryReader(process);
-            }
-        }
+        _process = process;
+        Is64Bit = _process.Is64Bit;
+        PointerSize = Is64Bit ? 8 : 4;
     }
+
+    public bool InProcess => false;
+
+    public Stream GetStream(IntPtr address, int length)
+    {
+        return new MemoryReaderStream(this, address, length);
+    }
+
+    public byte ReadByte(IntPtr address)
+    {
+        return _process.ReadMemory<byte>(address.ToInt64());
+    }
+
+    public byte[] ReadBytes(IntPtr address, int length)
+    {
+        return _process.ReadMemory(address.ToInt64(), length, true);
+    }
+
+    public short ReadInt16(IntPtr address)
+    {
+        return _process.ReadMemory<short>(address.ToInt64());
+    }
+
+    public int ReadInt32(IntPtr address)
+    {
+        return _process.ReadMemory<int>(address.ToInt64());
+    }
+
+    public IntPtr ReadIntPtr(IntPtr address)
+    {
+        return _process.ReadMemory<IntPtr>(address.ToInt64());
+    }
+
+    public T ReadStruct<T>(IntPtr address, int index) where T : struct
+    {
+        int offset = index > 0 ? index * Marshal.SizeOf<T>() : 0;
+        return _process.ReadMemory<T>(address.ToInt64() + offset);
+    }
+
+    public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+    {
+        T[] ret = new T[count];
+        for (int i = 0; i < count; ++i)
+        {
+            ret[i] = ReadStruct<T>(address, i);
+        }
+        return ret;
+    }
+
+    public string ReadAnsiStringZ(IntPtr address)
+    {
+        return new MemoryReaderStream(this, address, int.MaxValue).ReadAnsiStringZ();
+    }
+
+    public string ReadUnicodeStringZ(IntPtr address)
+    {
+        return new MemoryReaderStream(this, address, int.MaxValue).ReadUnicodeStringZ();
+    }
+
+    public int PointerSize { get; }
+
+    public bool Is64Bit { get; }
 }

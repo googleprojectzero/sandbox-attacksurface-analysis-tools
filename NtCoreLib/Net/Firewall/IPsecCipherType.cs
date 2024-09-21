@@ -12,29 +12,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace NtApiDotNet.Net.Firewall
+namespace NtCoreLib.Net.Firewall;
+
+/// <summary>
+/// IPSec Cipher Type.
+/// </summary>
+[SDKName("IPSEC_CIPHER_TYPE")]
+public enum IPsecCipherType
 {
-    /// <summary>
-    /// IPSec Cipher Type.
-    /// </summary>
-    [SDKName("IPSEC_CIPHER_TYPE")]
-    public enum IPsecCipherType
-    {
-        [SDKName("IPSEC_CIPHER_TYPE_DES")]
-        DES = 1,
-        [SDKName("IPSEC_CIPHER_TYPE_3DES")]
-        TripleDES = (DES + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_128")]
-        AES128 = (TripleDES + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_192")]
-        AES192 = (AES128 + 1),
-        [SDKName("IPSEC_CIPHER_TYPE_AES_256")]
-        AES256 = (AES192 + 1)
-    }
+    [SDKName("IPSEC_CIPHER_TYPE_DES")]
+    DES = 1,
+    [SDKName("IPSEC_CIPHER_TYPE_3DES")]
+    TripleDES = (DES + 1),
+    [SDKName("IPSEC_CIPHER_TYPE_AES_128")]
+    AES128 = (TripleDES + 1),
+    [SDKName("IPSEC_CIPHER_TYPE_AES_192")]
+    AES192 = (AES128 + 1),
+    [SDKName("IPSEC_CIPHER_TYPE_AES_256")]
+    AES256 = (AES192 + 1)
 }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

@@ -12,48 +12,47 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.ASN1;
-using NtApiDotNet.Utilities.ASN1.Builder;
+using NtCoreLib.Utilities.ASN1;
+using NtCoreLib.Utilities.ASN1.Builder;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos;
+
+/// <summary>
+/// Class to represent a PA-ETYPE-INFO structure.
+/// </summary>
+public sealed class KerberosPreAuthenticationDataEncryptionTypeInfo : KerberosPreAuthenticationData
 {
     /// <summary>
-    /// Class to represent a PA-ETYPE-INFO structure.
+    /// The list of encryption info entries.
     /// </summary>
-    public sealed class KerberosPreAuthenticationDataEncryptionTypeInfo : KerberosPreAuthenticationData
+    public IReadOnlyList<KerberosEncryptionTypeInfoEntry> Entries { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="entries">The list of encryption type entries.</param>
+    public KerberosPreAuthenticationDataEncryptionTypeInfo(IEnumerable<KerberosEncryptionTypeInfoEntry> entries) 
+        : base(KerberosPreAuthenticationType.PA_ETYPE_INFO)
     {
-        /// <summary>
-        /// The list of encryption info entries.
-        /// </summary>
-        public IReadOnlyList<KerberosEncryptionTypeInfoEntry> Entries { get; }
+        Entries = entries.ToList().AsReadOnly();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="entries">The list of encryption type entries.</param>
-        public KerberosPreAuthenticationDataEncryptionTypeInfo(IEnumerable<KerberosEncryptionTypeInfoEntry> entries) 
-            : base(KerberosPreAuthenticationType.PA_ETYPE_INFO)
-        {
-            Entries = entries.ToList().AsReadOnly();
-        }
+    internal static KerberosPreAuthenticationDataEncryptionTypeInfo Parse(byte[] data)
+    {
+        DERValue[] values = DERParser.ParseData(data);
+        if (!values.CheckValueSequence())
+            throw new InvalidDataException();
 
-        internal static KerberosPreAuthenticationDataEncryptionTypeInfo Parse(byte[] data)
-        {
-            DERValue[] values = DERParser.ParseData(data);
-            if (!values.CheckValueSequence())
-                throw new InvalidDataException();
+        return new KerberosPreAuthenticationDataEncryptionTypeInfo(values[0].Children.Select(KerberosEncryptionTypeInfoEntry.Parse));
+    }
 
-            return new KerberosPreAuthenticationDataEncryptionTypeInfo(values[0].Children.Select(KerberosEncryptionTypeInfoEntry.Parse));
-        }
-
-        private protected override byte[] GetData()
-        {
-            DERBuilder builder = new DERBuilder();
-            builder.WriteSequence(Entries);
-            return builder.ToArray();
-        }
+    private protected override byte[] GetData()
+    {
+        DERBuilder builder = new();
+        builder.WriteSequence(Entries);
+        return builder.ToArray();
     }
 }

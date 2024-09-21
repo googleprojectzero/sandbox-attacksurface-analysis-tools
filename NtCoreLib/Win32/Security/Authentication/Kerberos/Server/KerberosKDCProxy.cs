@@ -12,36 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Kerberos.Client;
+using NtCoreLib.Win32.Security.Authentication.Kerberos.Client;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Kerberos.Server
+namespace NtCoreLib.Win32.Security.Authentication.Kerberos.Server;
+
+/// <summary>
+/// Class to represent a KDC proxy.
+/// </summary>
+public class KerberosKDCProxy : KerberosKDCServer
 {
+    private readonly IKerberosKDCClientTransport _client_transport;
+
     /// <summary>
-    /// Class to represent a KDC proxy.
+    /// Constructor.
     /// </summary>
-    public class KerberosKDCProxy : KerberosKDCServer
+    /// <param name="listener">The server listener.</param>
+    /// <param name="client_transport">The kerberos client transport.</param>
+    public KerberosKDCProxy(IKerberosKDCServerListener listener, IKerberosKDCClientTransport client_transport) 
+        : base(listener)
     {
-        private readonly IKerberosKDCClientTransport _client_transport;
+        _client_transport = client_transport;
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="listener">The server listener.</param>
-        /// <param name="client_transport">The kerberos client transport.</param>
-        public KerberosKDCProxy(IKerberosKDCServerListener listener, IKerberosKDCClientTransport client_transport) 
-            : base(listener)
-        {
-            _client_transport = client_transport;
-        }
-
-        /// <summary>
-        /// Handle a request.
-        /// </summary>
-        /// <param name="request">The request to handle.</param>
-        /// <returns>The reply.</returns>
-        protected override byte[] HandleRequest(byte[] request)
-        {
-            return _client_transport.SendReceive(request);
-        }
+    /// <summary>
+    /// Handle a request.
+    /// </summary>
+    /// <param name="request">The request to handle.</param>
+    /// <returns>The reply.</returns>
+    protected override byte[] HandleRequest(byte[] request)
+    {
+        return _client_transport.SendReceive(request);
     }
 }

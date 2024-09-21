@@ -18,39 +18,38 @@ using System.Linq;
 using System.Management.Automation;
 using TaskScheduler;
 
-namespace NtObjectManager.Cmdlets.Win32
+namespace NtObjectManager.Cmdlets.Win32;
+
+/// <summary>
+/// <para type="synopsis">Get a list of running scheduled tasks.</para>
+/// <para type="description">This cmdlet enumerates all running scheduled tasks.</para>
+/// </summary>
+/// <remarks>For best results this command should be run as an administrator.</remarks>
+/// <example>
+///   <code>Get-RunningScheduledTask</code>
+///   <para>Get all running scheduled tasks.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "RunningScheduledTask")]
+[OutputType(typeof(RunningScheduledTaskEntry))]
+public class GetRunningScheduledTaskCmdlet : PSCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get a list of running scheduled tasks.</para>
-    /// <para type="description">This cmdlet enumerates all running scheduled tasks.</para>
+    /// Process record.
     /// </summary>
-    /// <remarks>For best results this command should be run as an administrator.</remarks>
-    /// <example>
-    ///   <code>Get-RunningScheduledTask</code>
-    ///   <para>Get all running scheduled tasks.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "RunningScheduledTask")]
-    [OutputType(typeof(RunningScheduledTaskEntry))]
-    public class GetRunningScheduledTaskCmdlet : PSCmdlet
+    protected override void ProcessRecord()
     {
-        /// <summary>
-        /// Process record.
-        /// </summary>
-        protected override void ProcessRecord()
+        ITaskService service = new TaskScheduler.TaskScheduler();
+        service.Connect();
+        foreach (var running_task in service.GetRunningTasks((int)_TASK_ENUM_FLAGS.TASK_ENUM_HIDDEN).Cast<IRunningTask>())
         {
-            ITaskService service = new TaskScheduler.TaskScheduler();
-            service.Connect();
-            foreach (var running_task in service.GetRunningTasks((int)_TASK_ENUM_FLAGS.TASK_ENUM_HIDDEN).Cast<IRunningTask>())
+            try
             {
-                try
-                {
-                    ITaskFolder folder = service.GetFolder(Path.GetDirectoryName(running_task.Path));
-                    IRegisteredTask task = folder.GetTask(running_task.Name);
-                    WriteObject(new RunningScheduledTaskEntry(running_task, task));
-                }
-                catch
-                {
-                }
+                ITaskFolder folder = service.GetFolder(Path.GetDirectoryName(running_task.Path));
+                IRegisteredTask task = folder.GetTask(running_task.Name);
+                WriteObject(new RunningScheduledTaskEntry(running_task, task));
+            }
+            catch
+            {
             }
         }
     }

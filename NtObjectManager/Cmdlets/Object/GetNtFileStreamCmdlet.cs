@@ -12,42 +12,42 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
+using NtCoreLib;
+using NtCoreLib.Kernel.IO;
 using System.Management.Automation;
 
-namespace NtObjectManager.Cmdlets.Object
+namespace NtObjectManager.Cmdlets.Object;
+
+/// <summary>
+/// <para type="synopsis">Get named streams for a file.</para>
+/// <para type="description">This cmdlet gets a list of the named streams for a file.</para>
+/// </summary>
+/// <example>
+///   <code>Get-NtFileStream -File $f</code>
+///   <para>Get the streams for the file.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileStream -Path "\??\c:\windows\notepad.exe"</code>
+///   <para>Get the streams for the file by path.</para>
+/// </example>
+/// <example>
+///   <code>Get-NtFileStream -Path "c:\windows\notepad.exe" -Win32Path</code>
+///   <para>Get the streams for the file by win32 path.</para>
+/// </example>
+[Cmdlet(VerbsCommon.Get, "NtFileStream", DefaultParameterSetName = "Default")]
+[OutputType(typeof(FileStreamEntry))]
+public class GetNtFileStreamCmdlet : BaseNtFilePropertyCmdlet
 {
     /// <summary>
-    /// <para type="synopsis">Get named streams for a file.</para>
-    /// <para type="description">This cmdlet gets a list of the named streams for a file.</para>
+    /// Constructor.
     /// </summary>
-    /// <example>
-    ///   <code>Get-NtFileStream -File $f</code>
-    ///   <para>Get the streams for the file.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileStream -Path "\??\c:\windows\notepad.exe"</code>
-    ///   <para>Get the streams for the file by path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-NtFileStream -Path "c:\windows\notepad.exe" -Win32Path</code>
-    ///   <para>Get the streams for the file by win32 path.</para>
-    /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtFileStream", DefaultParameterSetName = "Default")]
-    [OutputType(typeof(FileStreamEntry))]
-    public class GetNtFileStreamCmdlet : BaseNtFilePropertyCmdlet
+    public GetNtFileStreamCmdlet()
+        : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtFileStreamCmdlet()
-            : base(FileAccessRights.Synchronize, FileShareMode.None, FileOpenOptions.None)
-        {
-        }
+    }
 
-        private protected override void HandleFile(NtFile file)
-        {
-            WriteObject(file.GetStreams(), true);
-        }
+    private protected override void HandleFile(NtFile file)
+    {
+        WriteObject(file.GetStreams(), true);
     }
 }

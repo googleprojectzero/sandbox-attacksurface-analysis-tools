@@ -12,32 +12,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Reflection;
+using NtCoreLib.Utilities.Reflection;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Type of NEGOEX message.
+/// </summary>
+public enum NegoExMessageType
 {
-    /// <summary>
-    /// Type of NEGOEX message.
-    /// </summary>
-    public enum NegoExMessageType
-    {
-        [SDKName("MESSAGE_TYPE_INITIATOR_NEGO")]
+    [SDKName("MESSAGE_TYPE_INITIATOR_NEGO")]
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        InitiatorNego = 0,
-        [SDKName("MESSAGE_TYPE_ACCEPTOR_NEGO")]
-        AcceptorNego,
-        [SDKName("MESSAGE_TYPE_INITIATOR_META_DATA")]
-        InitiatorMetaData,
-        [SDKName("MESSAGE_TYPE_ACCEPTOR_META_DATA")]
-        AcceptorMetaData,
-        [SDKName("MESSAGE_TYPE_CHALLENGE")]
-        Challenge,
-        [SDKName("MESSAGE_TYPE_AP_REQUEST")]
-        ApRequest,
-        [SDKName("MESSAGE_TYPE_VERIFY")]
-        Verify,
-        [SDKName("MESSAGE_TYPE_ALERT")]
-        Alert
+    InitiatorNego = 0,
+    [SDKName("MESSAGE_TYPE_ACCEPTOR_NEGO")]
+    AcceptorNego,
+    [SDKName("MESSAGE_TYPE_INITIATOR_META_DATA")]
+    InitiatorMetaData,
+    [SDKName("MESSAGE_TYPE_ACCEPTOR_META_DATA")]
+    AcceptorMetaData,
+    [SDKName("MESSAGE_TYPE_CHALLENGE")]
+    Challenge,
+    [SDKName("MESSAGE_TYPE_AP_REQUEST")]
+    ApRequest,
+    [SDKName("MESSAGE_TYPE_VERIFY")]
+    Verify,
+    [SDKName("MESSAGE_TYPE_ALERT")]
+    Alert
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-    }
 }

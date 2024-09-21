@@ -12,40 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Security.Authentication.Logon;
+using NtCoreLib.Native.SafeBuffers;
+using NtCoreLib.Utilities.Collections;
+using NtCoreLib.Win32.Security.Authentication.Logon;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.Security.Authentication
+namespace NtCoreLib.Win32.Security.Authentication;
+
+/// <summary>
+/// Class to represent authentication credentials which is backed by a byte array.
+/// </summary>
+public sealed class BufferAuthenticationCredentials : AuthenticationCredentials
 {
+    private readonly byte[] _buffer;
+
     /// <summary>
-    /// Class to represent authentication credentials which is backed by a byte array.
+    /// Constructor.
     /// </summary>
-    public sealed class BufferAuthenticationCredentials : AuthenticationCredentials
+    /// <param name="buffer">The buffer for the credentials.</param>
+    public BufferAuthenticationCredentials(byte[] buffer)
     {
-        private readonly byte[] _buffer;
+        _buffer = buffer?.CloneBytes() ?? throw new ArgumentNullException(nameof(buffer));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="buffer">The buffer for the credentials.</param>
-        public BufferAuthenticationCredentials(byte[] buffer)
-        {
-            _buffer = buffer?.CloneBytes() ?? throw new ArgumentNullException(nameof(buffer));
-        }
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="credentials">The LSA logon credentials.</param>
+    public BufferAuthenticationCredentials(ILsaLogonCredentialsSerializable credentials)
+    {
+        _buffer = credentials.ToArray() ?? throw new ArgumentNullException(nameof(credentials));
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="credentials">The LSA logon credentials.</param>
-        public BufferAuthenticationCredentials(ILsaLogonCredentialsSerializable credentials)
-        {
-            _buffer = credentials.ToArray() ?? throw new ArgumentNullException(nameof(credentials));
-        }
-
-        internal override SafeBuffer ToBuffer(DisposableList list, string package)
-        {
-            return _buffer.ToBuffer();
-        }
+    internal override SafeBuffer ToBuffer(DisposableList list, string package)
+    {
+        return _buffer.ToBuffer();
     }
 }

@@ -14,28 +14,27 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.Security.Authentication.NegoEx
+namespace NtCoreLib.Win32.Security.Authentication.NegoEx;
+
+/// <summary>
+/// Known authentication schemes for NEGOEX.
+/// </summary>
+public static class NegoExAuthSchemes
 {
     /// <summary>
-    /// Known authentication schemes for NEGOEX.
+    /// PKU2U.
     /// </summary>
-    public static class NegoExAuthSchemes
-    {
-        /// <summary>
-        /// PKU2U.
-        /// </summary>
-        public static readonly Guid PKU2U = new Guid("0d53335c-f9ea-4d0d-b2ec-4ae3786ec308");
+    public static readonly Guid PKU2U = new("0d53335c-f9ea-4d0d-b2ec-4ae3786ec308");
 
-        /// <summary>
-        /// The the name of a authentication scheme from it's GUID.
-        /// </summary>
-        /// <param name="guid">The authentication scheme GUID.</param>
-        /// <returns>The name, or an empty string is not known.</returns>
-        public static string GetName(Guid guid)
-        {
-            if (guid == PKU2U)
-                return "PKU2U";
-            return string.Empty;
-        }
+    /// <summary>
+    /// The the name of a authentication scheme from it's GUID.
+    /// </summary>
+    /// <param name="guid">The authentication scheme GUID.</param>
+    /// <returns>The name, or an empty string is not known.</returns>
+    public static string GetName(Guid guid)
+    {
+        if (guid == PKU2U)
+            return "PKU2U";
+        return string.Empty;
     }
 }

@@ -12,65 +12,64 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Utilities.Text;
+using NtCoreLib.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace NtApiDotNet.Win32.Security.Authentication.Ntlm.Builder
+namespace NtCoreLib.Win32.Security.Authentication.Ntlm.Builder;
+
+internal static class NtlmBuilderUtils
 {
-    internal static class NtlmBuilderUtils
+    internal static void WriteVersion(this BinaryWriter writer, Version version)
     {
-        internal static void WriteVersion(this BinaryWriter writer, Version version)
+        if (version == null)
+            version = new Version(0, 0, 0, 0);
+        writer.Write((byte)version.Major);
+        writer.Write((byte)version.Minor);
+        writer.Write((ushort)version.Build);
+        writer.Write(new byte[3]);
+        writer.Write((byte)version.Revision);
+    }
+
+    internal static void WriteBinary(this BinaryWriter writer, byte[] data, int base_offset, MemoryStream payload)
+    {
+        data = data ?? Array.Empty<byte>();
+        writer.Write((ushort)data.Length);
+        writer.Write((ushort)data.Length);
+        writer.Write((int)(base_offset + payload.Length));
+        payload.Write(data, 0, data.Length);
+    }
+
+    internal static void WriteString(this BinaryWriter writer, string value, bool unicode, int base_offset, MemoryStream payload)
+    {
+        Encoding encoding = unicode ? Encoding.Unicode : BinaryEncoding.Instance;
+        if (unicode && ((payload.Length % 2) != 0))
         {
-            if (version == null)
-                version = new Version(0, 0, 0, 0);
-            writer.Write((byte)version.Major);
-            writer.Write((byte)version.Minor);
-            writer.Write((ushort)version.Build);
-            writer.Write(new byte[3]);
-            writer.Write((byte)version.Revision);
+            // Pad the payload for a unicode string.
+            payload.WriteByte(0);
         }
 
-        internal static void WriteBinary(this BinaryWriter writer, byte[] data, int base_offset, MemoryStream payload)
-        {
-            data = data ?? Array.Empty<byte>();
-            writer.Write((ushort)data.Length);
-            writer.Write((ushort)data.Length);
-            writer.Write((int)(base_offset + payload.Length));
-            payload.Write(data, 0, data.Length);
-        }
+        WriteBinary(writer, value != null ? encoding.GetBytes(value) : Array.Empty<byte>(), base_offset, payload);
+    }
 
-        internal static void WriteString(this BinaryWriter writer, string value, bool unicode, int base_offset, MemoryStream payload)
+    internal static void SerializeAvPairs(this IReadOnlyCollection<NtlmAvPair> pairs, BinaryWriter writer)
+    {
+        foreach (var pair in pairs)
         {
-            Encoding encoding = unicode ? Encoding.Unicode : BinaryEncoding.Instance;
-            if (unicode && ((payload.Length % 2) != 0))
-            {
-                // Pad the payload for a unicode string.
-                payload.WriteByte(0);
-            }
-
-            WriteBinary(writer, value != null ? encoding.GetBytes(value) : Array.Empty<byte>(), base_offset, payload);
+            pair.Write(writer);
         }
+        new NtlmAvPairBytes(MsAvPairType.EOL, Array.Empty<byte>()).Write(writer);
+    }
 
-        internal static void SerializeAvPairs(this IReadOnlyCollection<NtlmAvPair> pairs, BinaryWriter writer)
-        {
-            foreach (var pair in pairs)
-            {
-                pair.Write(writer);
-            }
-            new NtlmAvPairBytes(MsAvPairType.EOL, Array.Empty<byte>()).Write(writer);
-        }
-
-        internal static byte[] SerializeAvPairs(this IReadOnlyCollection<NtlmAvPair> pairs)
-        {
-            if (pairs.Count == 0)
-                return Array.Empty<byte>();
-            MemoryStream stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(stm);
-            pairs.SerializeAvPairs(writer);
-            return stm.ToArray();
-        }
+    internal static byte[] SerializeAvPairs(this IReadOnlyCollection<NtlmAvPair> pairs)
+    {
+        if (pairs.Count == 0)
+            return Array.Empty<byte>();
+        MemoryStream stm = new();
+        BinaryWriter writer = new(stm);
+        pairs.SerializeAvPairs(writer);
+        return stm.ToArray();
     }
 }
