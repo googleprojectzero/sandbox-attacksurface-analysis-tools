@@ -20,7 +20,7 @@ namespace NtCoreLib.Security.Authorization;
 /// <summary>
 /// Structure for an NT access mask.
 /// </summary>
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential), Serializable]
 public readonly struct AccessMask : IFormattable, IEquatable<AccessMask>, IComparable<AccessMask>
 {
     /// <summary>
