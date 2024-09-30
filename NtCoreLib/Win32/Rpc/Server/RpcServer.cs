@@ -311,6 +311,9 @@ public sealed class RpcServer : IRpcBuildableClient
         if (flags.HasFlagSet(RpcServerParserFlags.ResolveStructureNames))
             parser_flags |= NdrParserFlags.ResolveStructureNames;
 
+        if (flags.HasFlagSet(RpcServerParserFlags.IgnoreNdr64))
+            parser_flags |= NdrParserFlags.IgnoreNdr64;
+
         List<RpcServer> servers = new();
         foreach (var offset in offsets)
         {

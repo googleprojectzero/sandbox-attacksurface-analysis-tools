@@ -44,4 +44,8 @@ public enum RpcServerParserFlags
     /// resolving.
     /// </summary>
     SymSrvFallback = 8,
+    /// <summary>
+    /// Disable parsing NDR64 byte code.
+    /// </summary>
+    IgnoreNdr64 = 0x10,
 }

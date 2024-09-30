@@ -240,6 +240,8 @@ Specify to use a built-in fallback for symbol server resolving when using the sy
 Specify a process to extract the RPC servers from. This parses all the modules in a process for any available servers.
 .PARAMETER ServiceName
 Specify the name of a service to extract the RPC servers from.
+.PARAMETER IgnoreNdr64
+Specify to not parse NDR64 byte code.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -301,6 +303,10 @@ function Get-RpcServer {
         [parameter(ParameterSetName = "FromProcessId")]
         [parameter(ParameterSetName = "FromServiceName")]
         [switch]$SymSrvFallback,
+        [parameter(ParameterSetName = "FromDll")]
+        [parameter(ParameterSetName = "FromProcessId")]
+        [parameter(ParameterSetName = "FromServiceName")]
+        [switch]$IgnoreNdr64,
         [switch]$AsText,
         [switch]$RemoveComments
     )
@@ -318,6 +324,9 @@ function Get-RpcServer {
         }
         if ($SymSrvFallback) {
             $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::SymSrvFallback
+        }
+        if ($IgnoreNdr64) {
+            $ParserFlags = $ParserFlags -bor [NtCoreLib.Win32.Rpc.Server.RpcServerParserFlags]::IgnoreNdr64
         }
     }
 
