@@ -123,7 +123,7 @@ function Get-RpcEndpoint {
         [parameter(Mandatory, Position = 1, ParameterSetName = "FromIdAndVersion")]
         [NtCoreLib.Ndr.Rpc.RpcVersion]$InterfaceVersion,
         [parameter(Mandatory, ParameterSetName = "FromRpcServer", ValueFromPipeline)]
-        [NtCoreLib.Ndr.Rpc.RpcServerInterface]$Server,
+        [NtObjectManager.Utils.RpcInterfaceIdWrapper]$Server,
         [parameter(Mandatory, ParameterSetName = "FromBinding")]
         [NtCoreLib.Win32.Rpc.EndpointMapper.RpcStringBinding]$Binding,
         [parameter(Mandatory, ParameterSetName = "FromAlpc")]
@@ -169,10 +169,10 @@ function Get-RpcEndpoint {
             }
             "FromRpcServer" {
                 if ($FindAlpcPort) {
-                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server)
+                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server.InterfaceId)
                 }
                 else {
-                    $Server.Endpoints | Write-Output
+                    [NtCoreLib.Win32.Rpc.EndpointMapper.RpcEndpointMapper]::QueryEndpointsForInterface($SearchBinding, $Server.InterfaceId)
                 }
             }
             "FromBinding" {
