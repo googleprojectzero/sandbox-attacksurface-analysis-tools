@@ -12,7 +12,7 @@ EditSection: View and manipulate memory sections.
 TokenViewer: View and manipulate various process token values.
 NtCoreLib: A basic managed library to access NT system calls and objects.
 NtCoreLib.Forms: A few simple forms to view security descriptors and tokens.
-NtObjectManager: A powershell module which uses NtApiDotNet to expose the NT object manager.
+NtObjectManager: A powershell module which uses NtCoreLib to expose the NT object manager.
 ViewSecurityDescriptor: View the security descriptor from an SDDL string or an inherited object.
 
 You can load the using the Import-Module Cmdlet. You'll need to disable signing requirements however.
