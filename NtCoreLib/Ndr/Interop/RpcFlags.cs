@@ -19,6 +19,7 @@ namespace NtCoreLib.Ndr.Interop;
 [Flags]
 internal enum RpcFlags : uint
 {
+    None = 0,
     HasPipes = 0x0001,
     Message = 0x01000000,
     AutoComplete = 0x08000000,

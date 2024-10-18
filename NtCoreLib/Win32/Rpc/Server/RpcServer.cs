@@ -45,7 +45,6 @@ namespace NtCoreLib.Win32.Rpc.Server;
 public sealed class RpcServer : IRpcBuildableClient
 {
     #region Public Methods
-
     /// <summary>
     /// Resolve the current running endpoint for this server.
     /// </summary>
@@ -109,8 +108,7 @@ public sealed class RpcServer : IRpcBuildableClient
     /// versions of the library or the specific format used.</remarks>
     public void Serialize(Stream stm)
     {
-        BinaryFormatter formatter = new();
-        formatter.Serialize(stm, this);
+        RpcServerSerializer.Serialize(this, stm);
     }
 
     /// <summary>
@@ -341,12 +339,7 @@ public sealed class RpcServer : IRpcBuildableClient
     /// versions of the library or the specific format used.</remarks>
     public static RpcServer Deserialize(Stream stm)
     {
-        BinaryFormatter fmt = new()
-        {
-            FilterLevel = TypeFilterLevel.Low
-        };
-        // TODO: Filter types to avoid people complaining.
-        return (RpcServer)fmt.Deserialize(stm);
+        return RpcServerSerializer.Deserialize(stm);
     }
 
     /// <summary>

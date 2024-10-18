@@ -23,6 +23,7 @@ namespace NtCoreLib.Ndr.Dce;
 #pragma warning disable 1591
 public enum NdrExpressionType
 {
+    Invalid = 0,
     FC_EXPR_CONST32 = 0x01,
     FC_EXPR_CONST64 = 0x02,
     FC_EXPR_VAR = 0x03,
@@ -32,6 +33,7 @@ public enum NdrExpressionType
 
 public enum NdrExpressionOperator
 {
+    Invalid = 0,
     OP_UNARY_PLUS = 0x01,
     OP_UNARY_MINUS = 0x02,
     OP_UNARY_NOT = 0x03,

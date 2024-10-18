@@ -12,14 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtCoreLib.Ndr.Ndr64;
 
 /// <summary>
 /// Flags for a context handle.
 /// </summary>
+[Flags]
 public enum Ndr64ContextHandleFlags : byte
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    None = 0,
     CannotBeNull = 0x1,
     Serialize = 0x2,
     NoSerialize = 0x4,

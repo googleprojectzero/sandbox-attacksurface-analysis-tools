@@ -24,6 +24,7 @@ namespace NtCoreLib.Ndr.Dce;
 [Serializable]
 public enum NdrParamAttributes : ushort
 {
+    None = 0,
     MustSize = 0x0001,
     MustFree = 0x0002,
     IsPipe = 0x0004,
@@ -34,7 +35,12 @@ public enum NdrParamAttributes : ushort
     IsByValue = 0x0080,
     IsSimpleRef = 0x0100,
     IsDontCallFreeInst = 0x0200,
-    SaveForAsyncFinish = 0x0400
+    SaveForAsyncFinish = 0x0400,
+    Unused0800 = 0x0800,
+    Unused1000 = 0x1000,
+    ServerAllocSize2000 = 0x2000,  // This is the server alloc size.
+    ServerAllocSize4000 = 0x4000,
+    ServerAllocSize8000 = 0x8000
 }
 
 #pragma warning restore 1591
