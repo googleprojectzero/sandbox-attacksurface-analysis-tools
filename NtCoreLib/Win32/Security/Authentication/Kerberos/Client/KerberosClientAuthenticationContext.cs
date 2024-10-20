@@ -78,7 +78,8 @@ public sealed class KerberosClientAuthenticationContext : IClientAuthenticationC
             ret |= InitializeContextRetFlags.Integrity | InitializeContextRetFlags.SequenceDetect;
         if (request_attributes.HasFlagSet(InitializeContextReqFlags.Delegate))
             ret |= InitializeContextRetFlags.Delegate;
-
+        if (request_attributes.HasFlagSet(InitializeContextReqFlags.Integrity))
+            ret |= InitializeContextRetFlags.Integrity;
         return ret;
     }
 
