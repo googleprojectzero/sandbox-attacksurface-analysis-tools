@@ -118,11 +118,8 @@ public abstract class RpcClientBase : IDisposable
     /// <exception cref="RpcTransportException">Thrown if not connected.</exception>
     protected INdrMarshalBuffer CreateMarshalBuffer()
     {
-        RpcSyntaxIdentifier transfer_syntax =
-            _transport?.TransferSyntax ?? throw new RpcTransportException("Client not connected.");
-        return new NdrMarshalBuffer(default, transfer_syntax == RpcSyntaxIdentifier.NDR64TransferSyntax);
+        return _transport?.CreateMarshalBuffer() ?? throw new RpcTransportException("Client not connected.");
     }
-
     #endregion
 
     #region Public Properties

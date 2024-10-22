@@ -31,6 +31,12 @@ public interface IRpcClientTransport : IDisposable
     void Bind(RpcSyntaxIdentifier interface_id);
 
     /// <summary>
+    /// Create a NDR marshal buffer for this transport.
+    /// </summary>
+    /// <returns>The NDR marshal buffer.</returns>
+    INdrMarshalBuffer CreateMarshalBuffer();
+
+    /// <summary>
     /// Send and receive an RPC message.
     /// </summary>
     /// <param name="proc_num">The procedure number.</param>

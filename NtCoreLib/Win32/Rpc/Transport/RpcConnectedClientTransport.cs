@@ -547,6 +547,15 @@ public abstract class RpcConnectedClientTransport : IRpcClientTransport
     }
 
     /// <summary>
+    /// Create a NDR marshal buffer for this transport.
+    /// </summary>
+    /// <returns>The NDR marshal buffer.</returns>
+    public INdrMarshalBuffer CreateMarshalBuffer()
+    {
+        return new NdrMarshalBuffer(default, _transfer_syntax == RpcSyntaxIdentifier.NDR64TransferSyntax);
+    }
+
+    /// <summary>
     /// Add and authenticate a new security context.
     /// </summary>
     /// <param name="transport_security">The transport security for the context.</param>
