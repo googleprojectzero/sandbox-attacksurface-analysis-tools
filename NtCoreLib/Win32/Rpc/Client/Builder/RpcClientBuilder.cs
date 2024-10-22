@@ -368,8 +368,10 @@ public sealed class RpcClientBuilder
                                 nameof(NdrMarshalBuffer.WriteBasicString), known_type, RpcPointerType.Unique),
             NdrKnownTypes.HSTRING => new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadHString),
                                 nameof(NdrMarshalBuffer.WriteHString), known_type, RpcPointerType.Unique),
-            // TODO: Implement remaining custom marshallers?
-            _ => null,
+            NdrKnownTypes.HWND or NdrKnownTypes.HMENU => new RpcTypeDescriptor(typeof(NdrWindowHandle), nameof(NdrUnmarshalBuffer.ReadStruct), marshal_helper,
+                        nameof(NdrMarshalBuffer.WriteStruct), known_type, null, null, new AdditionalArguments(true), new AdditionalArguments(true), RpcPointerType.Unique),
+        // TODO: Implement remaining custom marshallers?
+        _ => null,
         };
     }
 

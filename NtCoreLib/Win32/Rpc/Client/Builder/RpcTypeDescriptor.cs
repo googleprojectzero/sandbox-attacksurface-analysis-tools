@@ -82,17 +82,18 @@ internal sealed class RpcTypeDescriptor
 
     public RpcTypeDescriptor(Type code_type, string unmarshal_method, MarshalHelperBuilder marshal_helper,
         string marshal_method, NdrBaseTypeReference ndr_type,
-        NdrCorrelationDescriptor conformance, NdrCorrelationDescriptor variance, AdditionalArguments additional_marshal_args, AdditionalArguments additional_unmarshal_args)
+        NdrCorrelationDescriptor conformance, NdrCorrelationDescriptor variance, 
+        AdditionalArguments additional_marshal_args, AdditionalArguments additional_unmarshal_args, RpcPointerType pointer_type = RpcPointerType.None)
         : this(new CodeTypeReference(code_type), code_type.IsValueType || typeof(NtObject).IsAssignableFrom(code_type),
               unmarshal_method, marshal_helper, marshal_method, ndr_type, conformance, variance, additional_marshal_args, additional_unmarshal_args)
     {
         BuiltinType = code_type;
+        PointerType = pointer_type;
     }
 
     public RpcTypeDescriptor(Type code_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type, RpcPointerType pointer_type = RpcPointerType.None)
-        : this(code_type, unmarshal_method, null, marshal_method, ndr_type, null, null, null, null)
+        : this(code_type, unmarshal_method, null, marshal_method, ndr_type, null, null, null, null, pointer_type)
     {
-        PointerType = pointer_type;
     }
 
     public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, MarshalHelperBuilder marshal_helper,
