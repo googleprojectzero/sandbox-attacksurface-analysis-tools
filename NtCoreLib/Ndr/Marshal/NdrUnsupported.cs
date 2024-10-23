@@ -17,9 +17,6 @@ namespace NtCoreLib.Ndr.Marshal;
 /// <summary>
 /// Place holder for unsupported types.
 /// </summary>
-public class NdrUnsupported
+public struct NdrUnsupported
 {
-    private NdrUnsupported()
-    {
-    }
 }

@@ -52,6 +52,15 @@ public sealed class NdrUserMarshalTypeReference : NdrBaseTypeReference
         }
         return base.FormatType(context);
     }
+
+    public override int GetSize()
+    {
+        if ((Flags & NdrUserMarshalFlags.USER_MARSHAL_POINTER) != 0)
+        {
+            return IntPtr.Size;
+        }
+        return base.GetSize();
+    }
 }
 
 #pragma warning restore 1591
