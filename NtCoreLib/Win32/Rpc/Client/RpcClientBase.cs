@@ -254,7 +254,21 @@ public abstract class RpcClientBase : IDisposable
     /// <remarks>The ALPC endpoint will be looked up in the endpoint mapper.</remarks>
     public void Connect()
     {
-        Connect(null);
+        Connect(null, null);
+    }
+
+    /// <summary>
+    /// Connect directly to a transport.
+    /// </summary>
+    /// <param name="transport">The client transport.</param>
+    /// <remarks>The transport must already be pre-bound.</remarks>
+    public void Connect(IRpcClientTransport transport)
+    {
+        if (Connected)
+        {
+            Disconnect();
+        }
+        _transport = transport;
     }
 
     /// <summary>
