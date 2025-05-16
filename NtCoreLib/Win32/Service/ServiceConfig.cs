@@ -147,17 +147,7 @@ public sealed class ServiceConfig
                 key = OpenKeySafe(rootKey, keyName);
             }
 
-            string valueString = string.Empty;
-            if (key is not null)
-            {
-                object valueObject = key.GetValue(valueName);
-                if (valueObject != null)
-                {
-                    valueString = valueObject.ToString();
-                }
-            }
-
-            return valueString.TrimEnd('\0');
+            return key?.GetValue(valueName)?.ToString()?.TrimEnd('\0') ?? string.Empty;
         }
         finally
         {

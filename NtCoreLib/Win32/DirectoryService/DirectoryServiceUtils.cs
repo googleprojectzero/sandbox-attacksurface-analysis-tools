@@ -227,7 +227,7 @@ public static class DirectoryServiceUtils
             string path;
             if (string.IsNullOrEmpty(prefix))
             {
-                path = ConstructLdapUrl(domain, entry.Properties[context][0].ToString());
+                path = ConstructLdapUrl(domain, entry.Properties[context][0]?.ToString());
             }
             else
             {

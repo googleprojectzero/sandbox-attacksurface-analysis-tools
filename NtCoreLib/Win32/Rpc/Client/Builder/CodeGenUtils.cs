@@ -14,7 +14,6 @@
 
 using NtCoreLib.Ndr.Dce;
 using NtCoreLib.Ndr.Marshal;
-using NtCoreLib.Win32.Rpc.Client.Builder;
 using System;
 using System.CodeDom;
 using System.Collections.Generic;

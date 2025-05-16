@@ -14,10 +14,8 @@
 
 using NtCoreLib.Security.Token;
 using NtCoreLib.Win32.Security.Authentication;
-using NtCoreLib.Win32.Rpc.Interop;
 using System;
 using System.Linq;
-using NtCoreLib.Win32.Rpc.EndpointMapper;
 
 namespace NtCoreLib.Win32.Rpc.Transport;
 
