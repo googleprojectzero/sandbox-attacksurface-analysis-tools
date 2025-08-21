@@ -16,6 +16,7 @@ using NtCoreLib.Win32;
 using NtCoreLib.Win32.Windows.Interop;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace NtCoreLib;
@@ -23,7 +24,7 @@ namespace NtCoreLib;
 /// <summary>
 /// Structure to represent a Window.
 /// </summary>
-public struct NtWindow
+public readonly struct NtWindow
 {
     #region Public Methods
     /// <summary>
@@ -50,6 +51,16 @@ public struct NtWindow
     /// Get the class name for the Window.
     /// </summary>
     public string ClassName => GetClassName(false, false).GetResultOrDefault(string.Empty);
+
+    /// <summary>
+    /// Get the path of the associated process.
+    /// </summary>
+    public string ProcessImagePath => NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
+
+    /// <summary>
+    /// Get the name of the associated process.
+    /// </summary>
+    public string ProcessName => Path.GetFileName(ProcessImagePath);
     #endregion
 
     #region Public Methods
@@ -127,6 +138,70 @@ public struct NtWindow
         PostMessageAnsi(message, wparam, lparam, true);
     }
 
+    /// <summary>
+    /// Find a window
+    /// </summary>
+    /// <param name="child_after">Optional child after.</param>
+    /// <param name="class_name">Optional class name.</param>
+    /// <param name="window_name">Optional window name.</param>
+    /// <returns>The found window.</returns>
+    public NtWindow FindWindow(NtWindow? child_after,
+        string class_name, string window_name)
+    {
+        return FindWindow(child_after, class_name, window_name, true).Result;
+    }
+
+    /// <summary>
+    /// Find a window
+    /// </summary>
+    /// <param name="child_after">Optional child after.</param>
+    /// <param name="class_name">Optional class name.</param>
+    /// <param name="window_name">Optional window name.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The found window.</returns>
+    public NtResult<NtWindow> FindWindow(NtWindow? child_after,
+        string class_name, string window_name, bool throw_on_error)
+    {
+        return FindWindow(this, child_after, class_name, window_name, throw_on_error);
+    }
+
+    /// <summary>
+    /// Get all child windows for the current window.
+    /// </summary>
+    /// <returns>The list of child windows.</returns>
+    public IEnumerable<NtWindow> GetChildWindows()
+    {
+        List<NtWindow> ws = new();
+        NtResult<NtWindow> next = FindWindow(null, null, null, false);
+        while (next.IsSuccess)
+        {
+            ws.Add(next.Result);
+            next = FindWindow(next.Result, null, null, false);
+        }
+        return ws.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Get the process handle for a window.
+    /// </summary>
+    /// <param name="desired_access">The desired access (normally can only be VmOperation, VmRead, VmWrite, DupHandle)</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The process handle.</returns>
+    public NtResult<NtProcess> GetWindowProcessHandle(ProcessAccessRights desired_access, bool throw_on_error)
+    {
+        return NtSystemCalls.NtUserGetWindowProcessHandle(Handle, desired_access).CreateWin32Result(throw_on_error, h => new NtProcess(h));
+    }
+
+    /// <summary>
+    /// Get the process handle for a window.
+    /// </summary>
+    /// <param name="desired_access">The desired access (normally can only be VmOperation, VmRead, VmWrite, DupHandle)</param>
+    /// <returns>The process handle.</returns>
+    public NtProcess GetWindowProcessHandle(ProcessAccessRights desired_access = ProcessAccessRights.VmOperation | ProcessAccessRights.VmRead 
+        | ProcessAccessRights.VmWrite | ProcessAccessRights.DupHandle)
+    {
+        return GetWindowProcessHandle(desired_access, true).Result;
+    }
     #endregion
 
     #region Constructors
@@ -164,6 +239,11 @@ public struct NtWindow
     /// Get the broadcast window.
     /// </summary>
     public static NtWindow Broadcast => new(0xFFFF);
+
+    /// <summary>
+    /// Get the message only parent window.
+    /// </summary>
+    public static NtWindow Message => new(-3);
 
     /// <summary>
     /// Get all Top Level windows.
@@ -218,6 +298,43 @@ public struct NtWindow
         return GetWindows(desktop, parent, enum_children, hide_immersive, thread_id, true).Result;
     }
 
+    /// <summary>
+    /// Find a window with optional parent and child.
+    /// </summary>
+    /// <param name="parent">Optional parent window.</param>
+    /// <param name="child_after">Optional child after.</param>
+    /// <param name="class_name">Optional class name.</param>
+    /// <param name="window_name">Optional window name.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The found window.</returns>
+    public static NtResult<NtWindow> FindWindow(NtWindow? parent, NtWindow? child_after, 
+        string class_name, string window_name, bool throw_on_error)
+    {
+        UnicodeStringIn class_name_ustr = class_name == null ? new() : new(class_name);
+        UnicodeStringIn window_name_ustr = window_name == null ? new() : new(window_name);
+
+        IntPtr window = NtSystemCalls.NtUserFindWindowEx(parent?.Handle ?? IntPtr.Zero, child_after?.Handle ?? IntPtr.Zero,
+            class_name_ustr, window_name_ustr);
+        if (window == IntPtr.Zero)
+        {
+            return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<NtWindow>(throw_on_error);
+        }
+        return new NtWindow(window).CreateResult();
+    }
+
+    /// <summary>
+    /// Find a window with optional parent and child.
+    /// </summary>
+    /// <param name="parent">Optional parent window.</param>
+    /// <param name="child_after">Optional child after.</param>
+    /// <param name="class_name">Optional class name.</param>
+    /// <param name="window_name">Optional window name.</param>
+    /// <returns>The found window.</returns>
+    public static NtWindow FindWindow(NtWindow? parent, NtWindow? child_after,
+        string class_name, string window_name)
+    {
+        return FindWindow(parent, child_after, class_name, window_name, true).Result;
+    }
     #endregion
 
     #region Private Members

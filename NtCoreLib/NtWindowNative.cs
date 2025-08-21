@@ -13,6 +13,7 @@
 //  limitations under the License
 
 using NtCoreLib.Native.SafeHandles;
+using NtCoreLib.Security.Authorization;
 using System;
 using System.Runtime.InteropServices;
 
@@ -40,6 +41,17 @@ public static partial class NtSystemCalls
 
     [DllImport("win32u.dll", SetLastError = true)]
     public static extern int NtUserGetClassName(IntPtr Window, [MarshalAs(UnmanagedType.Bool)] bool RealName, UnicodeStringAllocated Name);
+
+    [DllImport("win32u.dll", SetLastError = true)]
+    public static extern SafeKernelObjectHandle NtUserGetWindowProcessHandle(IntPtr Window, AccessMask DesiredAccess);
+
+    [DllImport("win32u.dll", SetLastError = true)]
+    public static extern IntPtr NtUserFindWindowEx(
+        IntPtr hWndParent,
+        IntPtr hWndChildAfter,
+        in UnicodeStringIn lpszClass,
+        in UnicodeStringIn lpszWindow
+    );
 }
 
 #pragma warning restore
