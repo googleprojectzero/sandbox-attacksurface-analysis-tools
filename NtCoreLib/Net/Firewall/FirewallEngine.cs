@@ -546,6 +546,41 @@ public sealed class FirewallEngine : IDisposable, INtObjectSecurity
     }
 
     /// <summary>
+    /// Add a sub-layer.
+    /// </summary>
+    /// <param name="builder">The builder used to create the sub-layer.</param>
+    /// <param name="security_descriptor">Optional security descriptor.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status.</returns>
+    public NtStatus AddSubLayer(FirewallSubLayerBuilder builder, SecurityDescriptor security_descriptor, bool throw_on_error)
+    {
+        using var list = new DisposableList();
+        var sd_buffer = security_descriptor != null ? list.AddResource(security_descriptor.ToSafeBuffer()) : SafeHGlobalBuffer.Null;
+        return FirewallNativeMethods.FwpmSubLayerAdd0(_handle, builder.ToStruct(list),
+            sd_buffer).ToNtException(throw_on_error);
+    }
+
+    /// <summary>
+    /// Delete a sub-layer.
+    /// </summary>
+    /// <param name="key">The sub-layer key.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status.</returns>
+    public NtStatus DeleteSubLayer(Guid key, bool throw_on_error)
+    {
+        return FirewallNativeMethods.FwpmProviderDeleteByKey0(_handle, key).ToNtException(throw_on_error);
+    }
+
+    /// <summary>
+    /// Delete a sub-layer.
+    /// </summary>
+    /// <param name="key">The sub-layer key.</param>
+    public void DeleteSubLayer(Guid key)
+    {
+        DeleteSubLayer(key, true);
+    }
+
+    /// <summary>
     /// Get a sub-layer by its key.
     /// </summary>
     /// <param name="key">The key of the sub-layer.</param>
@@ -826,6 +861,41 @@ public sealed class FirewallEngine : IDisposable, INtObjectSecurity
     public void DeleteFilter(ulong id)
     {
         DeleteFilter(id, true);
+    }
+
+    /// <summary>
+    /// Add a provider.
+    /// </summary>
+    /// <param name="builder">The builder used to create the provider.</param>
+    /// <param name="security_descriptor">Optional security descriptor.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status.</returns>
+    public NtStatus AddProvider(FirewallProviderBuilder builder, SecurityDescriptor security_descriptor, bool throw_on_error)
+    {
+        using var list = new DisposableList();
+        var sd_buffer = security_descriptor != null ? list.AddResource(security_descriptor.ToSafeBuffer()) : SafeHGlobalBuffer.Null;
+        return FirewallNativeMethods.FwpmProviderAdd0(_handle, builder.ToStruct(list),
+            sd_buffer).ToNtException(throw_on_error);
+    }
+
+    /// <summary>
+    /// Delete a provider.
+    /// </summary>
+    /// <param name="key">The provider key.</param>
+    /// <param name="throw_on_error">True to throw on error.</param>
+    /// <returns>The NT status.</returns>
+    public NtStatus DeleteProvider(Guid key, bool throw_on_error)
+    {
+        return FirewallNativeMethods.FwpmProviderDeleteByKey0(_handle, key).ToNtException(throw_on_error);
+    }
+
+    /// <summary>
+    /// Delete a provider.
+    /// </summary>
+    /// <param name="key">The provider key.</param>
+    public void DeleteProvider(Guid key)
+    {
+        DeleteProvider(key, true);
     }
 
     /// <summary>

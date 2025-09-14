@@ -1163,6 +1163,19 @@ internal static class FirewallNativeMethods
     );
 
     [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    internal static extern Win32Error FwpmProviderAdd0(
+       SafeFwpmEngineHandle engineHandle,
+       in FWPM_PROVIDER0 provider,
+       SafeBuffer sd // PSECURITY_DESCRIPTOR 
+    );
+
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    internal static extern Win32Error FwpmProviderDeleteByKey0(
+        SafeFwpmEngineHandle engineHandle,
+        in Guid key
+    );
+
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
     internal static extern Win32Error FwpmProviderContextGetSecurityInfoByKey0(
         SafeFwpmEngineHandle engineHandle,
         in Guid key,
@@ -1261,6 +1274,19 @@ internal static class FirewallNativeMethods
     internal static extern Win32Error FwpmLayerDestroyEnumHandle0(
         SafeFwpmEngineHandle engineHandle,
         IntPtr enumHandle
+    );
+
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    internal static extern Win32Error FwpmSubLayerAdd0(
+       SafeFwpmEngineHandle engineHandle,
+       in FWPM_SUBLAYER0 subLayer,
+       SafeBuffer sd // PSECURITY_DESCRIPTOR 
+    );
+
+    [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
+    internal static extern Win32Error FwpmSubLayerDeleteByKey0(
+        SafeFwpmEngineHandle engineHandle,
+        in Guid key
     );
 
     [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
