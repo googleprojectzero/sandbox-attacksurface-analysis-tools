@@ -396,6 +396,10 @@ Specify action type.
 Specify the filter's key.
 .PARAMETER Id
 Specify the filter's ID.
+.PARAMETER RawContext
+Specify the raw filter context value.
+.PARAMETER Validate
+Validate conditions against the target layer.
 .PARAMETER Condition
 A filter condition builder containing conditions to add.
 .INPUTS
@@ -416,12 +420,14 @@ function Add-FwFilter {
         [parameter(Mandatory, ParameterSetName="FromAleLayer")]
         [NtCoreLib.Net.Firewall.FirewallAleLayer]$AleLayer,
         [NtObjectManager.Utils.Firewall.FirewallSubLayerGuid]$SubLayerKey = "FWPM_SUBLAYER_UNIVERSAL",
+        [uint64]$RawContext,
         [guid]$Key = [guid]::Empty,
         [NtCoreLib.Net.Firewall.FirewallActionType]$ActionType = "Permit",
         [NtCoreLib.Net.Firewall.FirewallConditionBuilder]$Condition,
         [NtCoreLib.Net.Firewall.FirewallValue]$Weight = [NtCoreLib.Net.Firewall.FirewallValue]::Empty,
         [NtCoreLib.Net.Firewall.FirewallFilterFlags]$Flags = 0,
-        [guid]$ProviderKey = [guid]::Empty
+        [guid]$ProviderKey = [guid]::Empty,
+        [switch]$Validate
     )
 
     try {
@@ -446,6 +452,15 @@ function Add-FwFilter {
         $builder.Weight = $Weight
         $builder.Flags = $Flags
         $builder.ProviderKey = $ProviderKey
+        if ($null -ne $RawContext) {
+            $builder.SetContextValue($RawContext)
+        }
+
+        if ($Validate) {
+            $Layer = $Engine.GetLayer($builder.LayerKey)
+            $builder.ValidateWithLayer($Layer)
+        }
+
         $Engine.AddFilter($builder)
     }
     catch {
@@ -606,6 +621,8 @@ The remote TCP/UDP port.
 The local IP address.
 .PARAMETER LocalPort
 The local TCP/UDP port.
+.PARAMETER UseRpcAddressFields
+Create IP conditions compatible with RPC layers.
 .PARAMETER IPAddress
 The local IP address.
 .PARAMETER Port
@@ -624,6 +641,25 @@ Specify condition flags to match.
 Specify process to populate from. Adds token information and app ID.
 .PARAMETER ProcessId
 Specify process ID to populate from. Adds token information and app ID.
+
+.PARAMETER RpcInterfaceUuid
+The GUID of the RPC interface.
+.PARAMETER RpcInterfaceVersion
+The version of the RPC interface.
+.PARAMETER RpcRemoteUser
+The security descriptor to check against the remote RPC user.
+.PARAMETER RpcRemoteUserToken
+The token for a token information condition for the remote RPC user.
+.PARAMETER RpcProtocol
+The RPC protocol sequence.
+.PARAMETER RpcAuthenticationLevel
+The RPC authentication level.
+.PARAMETER RpcAuthenticationType
+The RPC authentication type.
+.PARAMETER RpcOpNum
+The RPC method opnum.
+.PARAMETER DcomAppId
+The DCOM AppID.
 .PARAMETER PassThru
 Pass through the condition builder/template.
 .INPUTS
@@ -667,6 +703,9 @@ function Add-FwCondition {
         [System.Net.IPAddress]$LocalIPAddress,
         [parameter(ParameterSetName="FromLocalEndpoint")]
         [int]$LocalPort = -1,
+        [parameter(ParameterSetName="FromRemoteEndpoint")]
+        [parameter(ParameterSetName="FromLocalEndpoint")]
+        [switch]$UseRpcAddressFields = $false,
         [parameter(Mandatory, ParameterSetName="FromToken")]
         [NtCoreLib.NtToken]$Token,
         [parameter(Mandatory, ParameterSetName="FromRemoteToken")]
@@ -681,7 +720,25 @@ function Add-FwCondition {
         [alias("pid")]
         [int]$ProcessId,
         [parameter(Mandatory, ParameterSetName="FromNetEventType")]
-        [NtCoreLib.Net.Firewall.FirewallNetEventType]$NetEventType
+        [NtCoreLib.Net.Firewall.FirewallNetEventType]$NetEventType,
+        [parameter(Mandatory, ParameterSetName="FromRpcInterfaceUuid")]
+        [guid]$RpcInterfaceUuid,
+        [parameter(Mandatory, ParameterSetName="FromRpcInterfaceVersion")]
+        [int]$RpcInterfaceVersion,
+        [parameter(Mandatory, ParameterSetName="FromRpcRemoteUser")]
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$RpcRemoteUser,
+        [parameter(Mandatory, ParameterSetName="FromRpcRemoteUserToken")]
+        [NtCoreLib.Security.Authorization.SecurityDescriptor]$RpcRemoteUserToken,
+        [parameter(Mandatory, ParameterSetName="FromRpcProtocol")]
+        [NtCoreLib.Win32.Rpc.EndpointMapper.RpcProtocolSequenceIdentifier]$RpcProtocol,
+        [parameter(Mandatory, ParameterSetName="FromRpcAuthenticationLevel")]
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationLevel]$RpcAuthenticationLevel,
+        [parameter(Mandatory, ParameterSetName="FromRpcAuthenticationType")]
+        [NtCoreLib.Win32.Rpc.Transport.RpcAuthenticationLevel]$RpcAuthenticationType,
+        [parameter(Mandatory, ParameterSetName="FromRpcOpNum")]
+        [int]$RpcOpNum,
+        [parameter(Mandatory, ParameterSetName="FromDcomAppId")]
+        [guid]$DcomAppId
     )
 
     try {
@@ -706,7 +763,7 @@ function Add-FwCondition {
             }
             "FromRemoteEndpoint" {
                 if ($null -ne $IPAddress) {
-                    $Builder.AddIpAddress($MatchType, $true, $IPAddress)
+                    $Builder.AddIpAddress($MatchType, $true, $IPAddress, $UseRpcAddressFields)
                 }
                 if ($Port -ge 0) {
                     $Builder.AddPort($MatchType, $true, $Port)
@@ -714,7 +771,7 @@ function Add-FwCondition {
             }
             "FromLocalEndpoint" {
                 if ($null -ne $LocalIPAddress) {
-                    $Builder.AddIpAddress($MatchType, $false, $LocalIPAddress)
+                    $Builder.AddIpAddress($MatchType, $false, $LocalIPAddress, $UseRpcAddressFields)
                 }
                 if ($LocalPort -ge 0) {
                     $Builder.AddPort($MatchType, $false, $LocalPort)
@@ -740,6 +797,33 @@ function Add-FwCondition {
             }
             "FromNetEventType" {
                 $Builder.AddNetEventType($MatchType, $NetEventType)
+            }
+            "FromRpcInterfaceUuid" {
+                $Builder.AddRpcUuid($MatchType, $RpcInterfaceUuid)
+            }
+            "FromRpcInterfaceVersion" {
+                $Builder.AddRpcInterfaceVersion($MatchType, $RpcInterfaceVersion)
+            }
+            "FromRpcRemoteUser" {
+                $Builder.AddRpcRemoteUser($MatchType, $RpcRemoteUser)
+            }
+            "FromRpcRemoteUserToken" {
+                $Builder.AddRpcRemoteUserToken($MatchType, $RpcRemoteUserToken)
+            }
+            "FromRpcProtocol" {
+                $Builder.AddRpcProtocol($MatchType, $RpcProtocol)
+            }
+            "FromRpcAuthenticationLevel" {
+                $Builder.AddRpcAuthenticationLevel($MatchType, $RpcAuthenticationLevel)
+            }
+            "FromRpcAuthenticationType" {
+                $Builder.AddRpcAuthenticationType($MatchType, $RpcAuthenticationType)
+            }
+            "FromRpcOpNum" {
+                $Builder.AddRpcOpNum($MatchType, $RpcOpNum)
+            }
+            "AddDcomAppId" {
+                $Builder.AddDcomAppId($MatchType, $DcomAppId)
             }
         }
         if ($PassThru) {

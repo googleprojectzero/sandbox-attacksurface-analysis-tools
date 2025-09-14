@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
 using NtCoreLib.Win32.Rpc.Transport;
 
 namespace NtCoreLib.Net.Firewall;
@@ -312,6 +313,16 @@ public class FirewallConditionBuilder
     }
 
     /// <summary>
+    /// Add a condition matching an RPC protocol sequence.
+    /// </summary>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="protocol">The RPC protocol sequence.</param>
+    public void AddRpcProtocol(FirewallMatchType match_type, RpcProtocolSequenceIdentifier protocol)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_PROTOCOL, FirewallValue.FromUInt8((byte)protocol));
+    }
+
+    /// <summary>
     /// Add a condition matching an RPC interface UUID.
     /// </summary>
     /// <param name="match_type">Match type.</param>
@@ -336,10 +347,21 @@ public class FirewallConditionBuilder
     /// </summary>
     /// <param name="match_type">The match type for the condition.</param>
     /// <param name="security_descriptor">The security descriptor.</param>
-    public void AddRpcRemoteUserToken(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
+    public void AddRpcRemoteUser(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
     {
         AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_REMOTE_USER_TOKEN,
             FirewallValue.FromSecurityDescriptor(security_descriptor));
+    }
+
+    /// <summary>
+    /// Add a condition matching the RPC remote user token.
+    /// </summary>
+    /// <param name="match_type">The match type.</param>
+    /// <param name="token">The token.</param>
+    public void AddRpcRemoteUserToken(FirewallMatchType match_type, NtToken token)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_REMOTE_USER_TOKEN,
+            FirewallValue.FromTokenInformation(token));
     }
 
     /// <summary>
