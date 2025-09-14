@@ -80,6 +80,46 @@ public sealed class FirewallFilterBuilder : FirewallConditionBuilder
     /// </summary>
     public Guid ProviderKey { get; set; }
 
+    /// <summary>
+    /// When the filter flag FWPM_FILTER_FLAG_HAS_PROVIDER_CONTEXT is not set,
+    /// the context data is stored in-place in the filter. 
+    /// </summary>
+    public ulong RawContext { get; internal set; }
+
+    /// <summary>
+    /// When the filter flag FWPM_FILTER_FLAG_HAS_PROVIDER_CONTEXT is set,
+    /// the context data is stored in a policy provider context.
+    /// </summary>
+    public Guid ProviderContextKey { get; internal set; }
+
+    /// <summary>
+    /// Provider data.
+    /// </summary>
+    public byte[] ProviderData { get; set; }
+    #endregion
+
+    #region Public Members
+    /// <summary>
+    /// Add a raw context value to the filter.
+    /// </summary>
+    /// <param name="raw_context">The raw context data.</param>
+    /// <returns>The filter context value.</returns>
+    public void SetContextValue(ulong raw_context)
+    {
+        Flags = Flags & ~FirewallFilterFlags.HasProviderContext;
+        RawContext = raw_context;
+    }
+
+    /// <summary>
+    /// Add a provider context GUID to the filter.
+    /// </summary>
+    /// <param name="provider_context_key">The key of the provider context.</param>
+    /// <returns>The filter context value.</returns>
+    public void SetContextValue(Guid provider_context_key)
+    {
+        Flags = Flags | FirewallFilterFlags.HasProviderContext;
+        ProviderContextKey = provider_context_key;
+    }
     #endregion
 
     #region Constructors
@@ -119,10 +159,30 @@ public sealed class FirewallFilterBuilder : FirewallConditionBuilder
             ret.providerKey = list.AddStructureRef(ProviderKey).DangerousGetHandle();
         }
 
+        ret.context = new FWPM_FILTER0_UNION();
+        if (Flags.HasFlag(FirewallFilterFlags.HasProviderContext))
+        {
+            ret.context.providerContextKey = ProviderContextKey;
+        }
+        else
+        {
+            ret.context.rawContext = RawContext;
+        }
+
         if (Conditions.Count > 0)
         {
             ret.numFilterConditions = Conditions.Count;
             ret.filterCondition = list.AddList(Conditions.Select(c => c.ToStruct(list))).DangerousGetHandle();
+        }
+
+        if (ProviderData?.Length > 0)
+        {
+            FWP_BYTE_BLOB blob = new()
+            {
+                size = ProviderData.Length,
+                data = list.AddBytes(ProviderData).DangerousGetHandle()
+            };
+            ret.providerData = blob;
         }
 
         return ret;
