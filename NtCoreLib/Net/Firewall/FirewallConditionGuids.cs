@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Net;
+using System.Net.Sockets;
 
 namespace NtCoreLib.Net.Firewall;
 
@@ -222,6 +224,8 @@ public static class FirewallConditionGuids
     public static Guid FWPM_CONDITION_RPC_AUTH_TYPE = new(0xdaba74ab, 0x0d67, 0x43e7, 0x98, 0x6e, 0x75, 0xb8, 0x4f, 0x82, 0xf5, 0x94);
     // e5a0aed5-59ac-46ea-be05-a5f05ecf446e
     public static Guid FWPM_CONDITION_RPC_AUTH_LEVEL = new(0xe5a0aed5, 0x59ac, 0x46ea, 0xbe, 0x05, 0xa5, 0xf0, 0x5e, 0xcf, 0x44, 0x6e);
+    // d58efb76-aab7-4148-a87e-9581134129b9
+    public static Guid FWPM_CONDITION_RPC_OPNUM = new(0xd58efb76, 0xaab7, 0x4148, 0xa8, 0x7e, 0x95, 0x81, 0x13, 0x41, 0x29, 0xb9);
     // 0d306ef0-e974-4f74-b5c7-591b0da7d562
     public static Guid FWPM_CONDITION_SEC_ENCRYPT_ALGORITHM = new(0x0d306ef0, 0xe974, 0x4f74, 0xb5, 0xc7, 0x59, 0x1b, 0x0d, 0xa7, 0xd5, 0x62);
     // 4772183b-ccf8-4aeb-bce1-c6c6161c8fe4
@@ -364,7 +368,7 @@ public static class FirewallConditionGuids
     public static bool IsTunnelType(Guid condition_key)
     {
         return condition_key == FWPM_CONDITION_ARRIVAL_TUNNEL_TYPE ||
-            condition_key == FWPM_LOCAL_CONDITION_TUNNEL_TYPE || 
+            condition_key == FWPM_LOCAL_CONDITION_TUNNEL_TYPE ||
             condition_key == FWPM_CONDITION_NEXTHOP_TUNNEL_TYPE;
     }
 
@@ -380,6 +384,30 @@ public static class FirewallConditionGuids
         return condition_key == FWPM_CONDITION_ALE_USER_ID ||
             condition_key == FWPM_CONDITION_ALE_REMOTE_USER_ID ||
             condition_key == FWPM_CONDITION_ALE_REMOTE_MACHINE_ID;
+    }
+
+    internal static Guid FromIPAddress(IPAddress address, bool remote, bool rpc_layer)
+    {
+        // RPC_UM and RPC_EPMAP layers use _V4/_V6 suffixes
+        if (rpc_layer)
+        {
+            if (address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                return remote ?
+                    FWPM_CONDITION_IP_REMOTE_ADDRESS_V4 :
+                    FWPM_CONDITION_IP_LOCAL_ADDRESS_V4;
+            }
+            else if (address.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+                return remote ?
+                    FWPM_CONDITION_IP_REMOTE_ADDRESS_V6 :
+                    FWPM_CONDITION_IP_LOCAL_ADDRESS_V6;
+            }
+
+            throw new ArgumentException("Must specify V4 or V6 IP address.", nameof(address));
+        }
+
+        return remote ? FWPM_CONDITION_IP_REMOTE_ADDRESS : FWPM_CONDITION_IP_LOCAL_ADDRESS;
     }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

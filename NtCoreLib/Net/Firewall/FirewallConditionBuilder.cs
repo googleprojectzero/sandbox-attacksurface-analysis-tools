@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using NtCoreLib.Security.Authorization;
+using NtCoreLib.Win32.Rpc.Transport;
 
 namespace NtCoreLib.Net.Firewall;
 
@@ -130,27 +131,58 @@ public class FirewallConditionBuilder
     }
 
     /// <summary>
-    /// Add IP address.
+    /// Add IP address for non-RPC layers.
     /// </summary>
     /// <param name="match_type">The match type for the condition.</param>
     /// <param name="remote">True to specify remote, false for local.</param>
     /// <param name="address">The low IP address.</param>
     public void AddIpAddress(FirewallMatchType match_type, bool remote, IPAddress address)
     {
-        AddCondition(match_type, remote ? FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS : FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_ADDRESS,
+        AddIpAddress(match_type, remote, address, false);
+    }
+
+    /// <summary>
+    /// Add IP address, optionally using address family-specific
+    /// fields, which appear in the RPC_EPMAP and RPC_UM layers.
+    /// </summary>
+    /// <param name="match_type">The match type for the condition.</param>
+    /// <param name="remote">True to specify remote, false for local.</param>
+    /// <param name="address">The low IP address.</param>
+    /// <param name="is_rpc_layer">True if the condition is for use in an RPC firewall layer.</param>
+    public void AddIpAddress(FirewallMatchType match_type, bool remote, IPAddress address, bool is_rpc_layer)
+    {
+        AddCondition(
+            match_type,
+            FirewallConditionGuids.FromIPAddress(address, remote, is_rpc_layer),
             FirewallValue.FromIpAddress(address));
     }
 
     /// <summary>
-    /// Add IP address range.
+    /// Add IP address range for non-RPC layers.
     /// </summary>
     /// <param name="remote">True to specify remote, false for local.</param>
     /// <param name="low_address">The low IP address.</param>
     /// <param name="high_address">The high IP address.</param>
     public void AddIpRange(bool remote, IPAddress low_address, IPAddress high_address)
     {
-        AddConditionRange(remote ? FirewallConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS : FirewallConditionGuids.FWPM_CONDITION_IP_LOCAL_ADDRESS,
-            FirewallValue.FromIpAddress(low_address), FirewallValue.FromIpAddress(high_address));
+        AddIpRange(remote, low_address, high_address, false);
+    }
+
+
+    /// <summary>
+    /// Add IP address range, optionally using address family-specific
+    /// fields, which appear in the RPC_EPMAP and RPC_UM layers.
+    /// </summary>
+    /// <param name="remote">True to specify remote, false for local.</param>
+    /// <param name="low_address">The low IP address.</param>
+    /// <param name="high_address">The high IP address.</param>
+    /// <param name="is_rpc_layer">True if the condition is for use in an RPC firewall layer.</param>
+    public void AddIpRange(bool remote, IPAddress low_address, IPAddress high_address, bool is_rpc_layer)
+    {
+        AddConditionRange(
+            FirewallConditionGuids.FromIPAddress(low_address, remote, is_rpc_layer),
+            FirewallValue.FromIpAddress(low_address),
+            FirewallValue.FromIpAddress(high_address));
     }
 
     /// <summary>
@@ -280,13 +312,75 @@ public class FirewallConditionBuilder
     }
 
     /// <summary>
-    /// Add the RPC UUID.
+    /// Add a condition matching an RPC interface UUID.
     /// </summary>
     /// <param name="match_type">Match type.</param>
     /// <param name="uuid">The RPC UUID.</param>
     public void AddRpcUuid(FirewallMatchType match_type, Guid uuid)
     {
         AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_IF_UUID, FirewallValue.FromGuid(uuid));
+    }
+
+    /// <summary>
+    /// Add a condition matching an RPC interface version.
+    /// </summary>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="version">The RPC interface version.</param>
+    public void AddRpcInterfaceVersion(FirewallMatchType match_type, int version)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_IF_VERSION, FirewallValue.FromUInt16((ushort)version));
+    }
+
+    /// <summary>
+    /// Add a condition matching the RPC remote user token.
+    /// </summary>
+    /// <param name="match_type">The match type for the condition.</param>
+    /// <param name="security_descriptor">The security descriptor.</param>
+    public void AddRpcRemoteUserToken(FirewallMatchType match_type, SecurityDescriptor security_descriptor)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_REMOTE_USER_TOKEN,
+            FirewallValue.FromSecurityDescriptor(security_descriptor));
+    }
+
+    /// <summary>
+    /// Add a condition matching the RPC authentication level.
+    /// </summary>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="auth_level">The RPC authentication level.</param>
+    public void AddRpcAuthenticationLevel(FirewallMatchType match_type, RpcAuthenticationLevel auth_level)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_AUTH_LEVEL, FirewallValue.FromUInt8((byte)auth_level));
+    }
+
+    /// <summary>
+    /// Add a condition matching the RPC authentication type.
+    /// </summary>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="auth_type">The RPC authentication type.</param>
+    public void AddRpcAuthenticationType(FirewallMatchType match_type, RpcAuthenticationType auth_type)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_AUTH_TYPE, FirewallValue.FromUInt8((byte)auth_type));
+    }
+
+    /// <summary>
+    /// Add a condition matching the RPC opnum.
+    /// </summary>
+    /// <remarks>Available in Windows 11, Server 2025 or later.</remarks>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="op_num">The RPC Authentication Type.</param>
+    public void AddRpcOpNum(FirewallMatchType match_type, int op_num)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_RPC_OPNUM, FirewallValue.FromUInt16((ushort)op_num));
+    }
+
+    /// <summary>
+    /// Add a condition matching a DCOM AppId.
+    /// </summary>
+    /// <param name="match_type">Match type.</param>
+    /// <param name="uuid">The DCOM AppId.</param>
+    public void AddDcomAppId(FirewallMatchType match_type, Guid uuid)
+    {
+        AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_DCOM_APP_ID, FirewallValue.FromGuid(uuid));
     }
 
     /// <summary>
@@ -298,7 +392,6 @@ public class FirewallConditionBuilder
     {
         AddCondition(match_type, FirewallConditionGuids.FWPM_CONDITION_NET_EVENT_TYPE, FirewallValue.FromUInt32((uint)type));
     }
-
     #endregion
 
     #region Constructors
