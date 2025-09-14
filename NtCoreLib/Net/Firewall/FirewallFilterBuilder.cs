@@ -120,6 +120,25 @@ public sealed class FirewallFilterBuilder : FirewallConditionBuilder
         Flags = Flags | FirewallFilterFlags.HasProviderContext;
         ProviderContextKey = provider_context_key;
     }
+
+    /// <summary>
+    /// Given an instance of a FirewallLayer, test if the conditions in the filter are valid, given the fields available in the layer.
+    /// </summary>
+    /// <param name="layer">The target firewall layer.</param>
+    /// <exception cref="ArgumentException">The provided layer doesn't match the layer specified in LayerKey.</exception>
+    /// <exception cref="InvalidOperationException">An incorrect argument was found in a condition.</exception>
+    public void ValidateWithLayer(FirewallLayer layer)
+    {
+        if (layer.Key != LayerKey)
+        {
+            throw new ArgumentException($"The layer ({layer.Name}) does not match the layer defined in the filter.");
+        }
+
+        foreach (var condition in Conditions)
+        {
+            condition.ValidateWithLayer(layer);
+        }
+    }
     #endregion
 
     #region Constructors
