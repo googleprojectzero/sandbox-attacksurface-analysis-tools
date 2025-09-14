@@ -86,6 +86,36 @@ public struct FirewallFilterCondition : ICloneable
     {
         return FieldKeyName;
     }
+
+    /// <summary>
+    /// Given an instance of a FirewallLayer, test if this condition is valid, given the fields available in the layer:
+    /// <list type="bullet">
+    /// <item><description>Check the layer contains the condition field,</description></item>
+    /// <item><description>Check the field supports the condition match type, and</description></item>
+    /// <item><description>Check the field supports comparison with condition value.</description></item>
+    /// </list>
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <exception cref="InvalidOperationException">An incorrect argument was found in the condition.</exception>
+    public void ValidateWithLayer(FirewallLayer layer)
+    {
+        if (!layer.HasField(FieldKey))
+        {
+            throw new InvalidOperationException($"Layer {layer.Name} does not support field {FieldKeyName ?? FieldKey.ToString()}");
+        }
+
+        FirewallField field = layer.GetField(FieldKey);
+
+        if (!field.SupportsMatchType(MatchType))
+        {
+            throw new InvalidOperationException($"Field {field.KeyName ?? field.Key.ToString()} does not support match type {MatchType}");
+        }
+
+        if (!field.SupportsComparisonWithType(Value.Type))
+        {
+            throw new InvalidOperationException($"Data of type {field.DataType} cannot be matched against {Value.Type}");
+        }
+    }
     #endregion
 
     #region Interface Implementations

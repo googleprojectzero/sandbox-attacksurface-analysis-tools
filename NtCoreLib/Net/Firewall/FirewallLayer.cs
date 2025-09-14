@@ -56,6 +56,27 @@ public sealed class FirewallLayer : FirewallObject
     public bool IsUser => !Flags.HasFlagSet(FirewallLayerFlags.Kernel);
 
     /// <summary>
+    /// Check if the layer contains a field for a specific condition GUID.
+    /// </summary>
+    /// <param name="condition_guid">The condition type to check.</param>
+    /// <returns>True if the layer supports a condition of the specified type.</returns>
+    public bool HasField(Guid condition_guid)
+    {
+        return Fields.Any(f => f.Key == condition_guid);
+    }
+
+
+    /// <summary>
+    /// Get the layer field for a specific condition GUID.
+    /// </summary>
+    /// <param name="condition_guid">The condition type to get.</param>
+    /// <returns>The filter condition.</returns>
+    public FirewallField GetField(Guid condition_guid)
+    {
+        return Fields.First(c => c.Key == condition_guid);
+    }
+
+    /// <summary>
     /// Enumerate filters for this layer.
     /// </summary>
     /// <param name="throw_on_error">True to throw on error.</param>

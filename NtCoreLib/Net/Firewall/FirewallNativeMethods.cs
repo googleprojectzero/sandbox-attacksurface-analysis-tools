@@ -1226,7 +1226,7 @@ internal static class FirewallNativeMethods
         IntPtr dacl,
         IntPtr sacl,
         out SafeFwpmMemoryBuffer securityDescriptor
-    );
+    );    
 
     [DllImport("Fwpuclnt.dll", CharSet = CharSet.Unicode)]
     internal static extern Win32Error FwpmSubLayerGetSecurityInfoByKey0(
