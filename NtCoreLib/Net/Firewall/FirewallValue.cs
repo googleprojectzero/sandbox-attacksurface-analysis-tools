@@ -16,6 +16,7 @@ using NtCoreLib.Native.SafeBuffers;
 using NtCoreLib.Security.Authorization;
 using NtCoreLib.Utilities.Collections;
 using NtCoreLib.Utilities.Memory;
+using NtCoreLib.Win32.Rpc.EndpointMapper;
 using NtCoreLib.Win32.Rpc.Transport;
 using System;
 using System.Collections;
@@ -136,7 +137,14 @@ public struct FirewallValue : IComparable<FirewallValue>, IComparable, ICloneabl
         {
             if (value is byte b)
             {
-                return (RpcAuthenticationType)b;
+                return (RpcAuthenticationLevel)b;
+            }
+        }
+        else if (condition_key == FirewallConditionGuids.FWPM_CONDITION_RPC_PROTOCOL)
+        {
+            if (value is byte b)
+            {
+                return (RpcProtocolSequenceIdentifier)b;
             }
         }
         else if (FirewallConditionGuids.IsMacAddressCondition(condition_key))
