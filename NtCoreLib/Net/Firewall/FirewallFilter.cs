@@ -45,6 +45,15 @@ public sealed class FirewallFilter : FirewallObject
         SubLayerKeyName = NamedGuidDictionary.SubLayerGuids.Value.GetName(SubLayerKey);
         Flags = filter.flags;
 
+        if (Flags.HasFlag(FirewallFilterFlags.HasProviderContext))
+        {
+            ProviderContextKey = filter.context.providerContextKey;
+        }
+        else
+        {
+            RawContext = filter.context.rawContext;
+        }
+
         List<FirewallFilterCondition> conditions = new();
         if (filter.numFilterConditions > 0)
         {
@@ -137,6 +146,18 @@ public sealed class FirewallFilter : FirewallObject
     /// Name of the callout key if known.
     /// </summary>
     public string CalloutKeyName { get; }
+
+    /// <summary>
+    /// When the filter flag FWPM_FILTER_FLAG_HAS_PROVIDER_CONTEXT is not set,
+    /// the context data is stored in-place in the filter. 
+    /// </summary>
+    public ulong RawContext { get; }
+
+    /// <summary>
+    /// When the filter flag FWPM_FILTER_FLAG_HAS_PROVIDER_CONTEXT is set,
+    /// the context data is stored in a policy provider context.
+    /// </summary>
+    public Guid ProviderContextKey { get; }
 
     /// <summary>
     /// Is the filter a callout.
@@ -256,7 +277,9 @@ public sealed class FirewallFilter : FirewallObject
             FilterKey = Key,
             Flags = Flags,
             SubLayerKey = SubLayerKey,
-            Weight = Weight
+            Weight = Weight,
+            ProviderContextKey = ProviderContextKey,
+            RawContext = RawContext,
         };
         builder.Conditions.AddRange(Conditions.Select(c => c.CloneValue()));
         return builder;

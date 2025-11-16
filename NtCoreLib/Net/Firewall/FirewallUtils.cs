@@ -99,14 +99,15 @@ public static class FirewallUtils
     public static NtResult<string> GetAppIdFromFileName(string filename, bool throw_on_error)
     {
         return FirewallNativeMethods.FwpmGetAppIdFromFileName0(filename, out SafeFwpmMemoryBuffer appid).CreateWin32Result(
-            throw_on_error, () => {
-            using (appid)
+            throw_on_error, () =>
             {
-                appid.Initialize<FWP_BYTE_BLOB>(1);
-                var blob = appid.Read<FWP_BYTE_BLOB>(0);
-                return Encoding.Unicode.GetString(blob.ToArray()).TrimEnd('\0');
-            }
-        });
+                using (appid)
+                {
+                    appid.Initialize<FWP_BYTE_BLOB>(1);
+                    var blob = appid.Read<FWP_BYTE_BLOB>(0);
+                    return Encoding.Unicode.GetString(blob.ToArray()).TrimEnd('\0');
+                }
+            });
     }
 
     /// <summary>
@@ -213,6 +214,55 @@ public static class FirewallUtils
         };
     }
 
+    /// <summary>
+    /// Identifies if a FirewallDataType is an integer type
+    /// </summary>
+    /// <param name="type">The data type</param>
+    /// <returns>True if sortable, otherwise false.</returns>
+    public static bool IsInteger(this FirewallDataType type) => type switch
+    {
+        FirewallDataType.UInt8 => true,
+        FirewallDataType.UInt16 => true,
+        FirewallDataType.UInt32 => true,
+        FirewallDataType.UInt64 => true,
+        FirewallDataType.Int8 => true,
+        FirewallDataType.Int16 => true,
+        FirewallDataType.Int32 => true,
+        FirewallDataType.Int64 => true,
+        _ => false
+    };
+
+    /// <summary>
+    /// Identifies if a FirewallDataType is an unsigned integer type
+    /// 
+    /// Unsigned integer types can be used in flag comparisons.
+    /// </summary>
+    /// <param name="type">The data type</param>
+    /// <returns>True if sortable, otherwise false.</returns>
+    public static bool IsUnsignedInteger(this FirewallDataType type) => type switch
+    {
+        FirewallDataType.UInt8 => true,
+        FirewallDataType.UInt16 => true,
+        FirewallDataType.UInt32 => true,
+        FirewallDataType.UInt64 => true,
+        _ => false
+    };
+
+    /// <summary>
+    /// Identifies if a FirewallDataType is sortable.
+    /// 
+    /// Sortable types can be used in less/greater/range comparisons.
+    /// </summary>
+    /// <param name="type">The data type</param>
+    /// <returns>True if sortable, otherwise false.</returns>
+    public static bool IsSortable(this FirewallDataType type) => type switch
+    {
+        FirewallDataType.ByteArray6 => true,
+        FirewallDataType.ByteBlob => true,
+        FirewallDataType.UnicodeString => true,
+        var t when t.IsInteger() => true,
+        _ => false
+    };
     #endregion
 
     #region Internal Methods
